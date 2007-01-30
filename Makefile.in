@@ -1,0 +1,22 @@
+.PHONY: all driver tests clean clean-driver clean-tests
+
+all: driver tests
+
+clean: clean-driver clean-tests
+
+driver:
+	$(MAKE) -C driver/linux
+
+clean-driver:
+	$(MAKE) -C driver/linux clean
+
+tests:
+	$(MAKE) -C tests 
+
+clean-tests:
+	$(MAKE) -C tests clean
+
+wc:
+	wc -cl \
+		driver/linux/*.[ch] \
+		tests/*.c

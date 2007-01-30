@@ -1,0 +1,15 @@
+* no need to pad cmd_hdr to 64 ?
+* ntoh[sl] fields
+* drop skb_linearize and support fragmented receive
+* use kref to get user region without keeping a spinlock ?
+* user region seqnum
+* write parameter in ioctl to register a region, check it when reading/writing from/to the region
+* keep a current (segment+offset+remaining) in user_region and recompute only when unordered
+* use IOAT
+* extend threshold for small/tiny ?
+* pass the user-address of contig small/tiny buffer instead of copying ?
+
+* non MXoE compatible extensions:
+  + rdma in both direction with optional notification containing the target window id ?
+  + no notify message, report event on rdma get completion ?
+  + multiple segments in large messages

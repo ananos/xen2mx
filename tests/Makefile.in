@@ -1,0 +1,25 @@
+TESTS	=	mpoe_basic \
+		mpoe_large \
+		mpoe_pingpong \
+		mpoe_reg
+
+CC	=	gcc
+
+CFLAGS	=	-Wall
+CFLAGS	+=	-g -O2
+CFLAGS	+=	-I@top_srcdir@/common
+
+LD	=	gcc
+
+.PHONY: all clean $(TESTS)
+
+all: $(TESTS)
+
+$(TESTS): %: %.o
+	$(CC) $< -o $@
+
+%.o: @srcdir@/%.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
+clean:
+	$(RM) $(TESTS) *.o
