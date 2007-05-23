@@ -93,7 +93,6 @@ struct mpoe_hdr {
 		struct mpoe_pkt_pull_request pull;
 		struct mpoe_pkt_pull_reply pull_reply;
 	} body;
-	char data[0];
 };
 
 #endif /* __mpoe_wire_h__ */

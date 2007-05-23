@@ -7,6 +7,7 @@
 #include <linux/netdevice.h>
 #include <linux/vmalloc.h>
 
+/* FIXME: useless now */
 #ifdef MPOE_SKB_LINEARIZE_HAS_GFP
 #define mpoe_skb_linearize(skb) skb_linearize(skb, GFP_ATOMIC)
 #else

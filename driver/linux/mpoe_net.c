@@ -327,6 +327,7 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 {
 	struct mpoe_iface *iface;
 	struct mpoe_endpoint *endpoint;
+	struct mpoe_hdr linear_header;
 	struct mpoe_hdr *mh;
 	struct ethhdr *eh;
 	int index;
@@ -335,8 +336,7 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	skb = skb_share_check(skb, GFP_ATOMIC);
 	if (skb == NULL)
 		return 0;
-	if (mpoe_skb_linearize(skb)) /* FIXME: don't linearize */
-		goto exit;
+
 	/* len doesn't include header */
 	skb_push(skb, ETH_HLEN);
 
@@ -346,7 +346,17 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 		goto exit;
 	}
 
-	mh = (struct mpoe_hdr *) skb->mac.raw;
+	/* no need to linearize the whole skb,
+	 * but at least the header to make things simple */
+	if (skb_headlen(skb) < sizeof(struct mpoe_hdr)) {
+		skb_copy_bits(skb, 0, &linear_header,
+			      sizeof(struct mpoe_hdr));
+		/* check for EFAULT */
+		mh = &linear_header;
+	} else {
+		/* no need to linearize the header */
+		mh = (struct mpoe_hdr *) skb->mac.raw;
+	}
 	eh = &mh->head.eth;
 
 	index = mh->body.generic.dst_endpoint;
@@ -369,7 +379,9 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 		event->src_endpoint = mh->body.tiny.src_endpoint;
 		event->length = mh->body.tiny.length;
 		event->match_info = (((uint64_t) mh->body.tiny.match_a) << 32) | ((uint64_t) mh->body.tiny.match_b);
-		memcpy(event->data, mh->data, mh->body.tiny.length);
+		skb_copy_bits(skb, sizeof(struct mpoe_hdr), event->data,
+			      mh->body.tiny.length);
+		/* check for EFAULT */
 		event->type = MPOE_EVT_RECV_TINY;
 		break;
 	}
@@ -382,7 +394,9 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 		event->length = mh->body.medium.msg.length;
 		event->match_info = (((uint64_t) mh->body.medium.msg.match_a) << 32) | ((uint64_t) mh->body.medium.msg.match_b);
 		event->type = MPOE_EVT_RECV_MEDIUM;
-		memcpy(recvq_slot, mh->data, skb->len - sizeof(*mh));
+		skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot,
+			      skb->len - sizeof(*mh));
+		/* check for EFAULT */
 		break;
 	}
 
@@ -482,7 +496,8 @@ mpoe_net_send_tiny(struct mpoe_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	ret = copy_from_user(&mh->data, &((struct mpoe_cmd_send_tiny __user *) uparam)->data, length);
+	/* copy the data right after the header */
+	ret = copy_from_user(mh+1, &((struct mpoe_cmd_send_tiny __user *) uparam)->data, length);
 	if (ret) {
 		printk(KERN_ERR "MPoE: Failed to read send tiny cmd data\n");
 		ret = -EFAULT;

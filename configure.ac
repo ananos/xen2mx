@@ -34,10 +34,10 @@ echo "#define __mpoe_checks_h__ 1" >> ${CHECKS_OUTPUT}
 echo "" >> ${CHECKS_OUTPUT}
 
 # skb_linearize had a gfp argument before 2.6.18
-AC_MSG_CHECKING(skb_linearize gfp argument)
-grep "skb_linearize *(.*, .* gfp)" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null \
-  && echo "#define MPOE_SKB_LINEARIZE_HAS_GFP 1" >> ${CHECKS_OUTPUT} \
-  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+#AC_MSG_CHECKING(skb_linearize gfp argument)
+#grep "skb_linearize *(.*, .* gfp)" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null \
+#  && echo "#define MPOE_SKB_LINEARIZE_HAS_GFP 1" >> ${CHECKS_OUTPUT} \
+#  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
 
 # netdev_alloc_skb deprecates dev_alloc_skb in 2.6.18
 AC_MSG_CHECKING(netdev_alloc_skb availability)
