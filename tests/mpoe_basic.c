@@ -60,6 +60,44 @@ send_medium(int fd, int i, void * sendq)
   return 0;
 }
 
+static int
+wait_for_event(volatile union mpoe_evt ** evtp,
+	       void * recvq, void * eventq)
+{
+  volatile union mpoe_evt * evt = *evtp;
+
+  /* wait for the message */
+  while (evt->generic.type == MPOE_EVT_NONE) ;
+
+  printf("received type %d\n", evt->generic.type);
+  switch (evt->generic.type) {
+  case MPOE_EVT_RECV_TINY:
+    printf("tiny contains \"%s\"\n", evt->tiny.data);
+    break;
+
+  case MPOE_EVT_RECV_MEDIUM: {
+    char * buf = recvq + ((char *) evt - (char *) eventq)/sizeof(*evt)*4096; /* FIXME: get pagesize somehow */
+    printf("medium length %d contains \"%s\"\n", evt->medium.length, buf);
+    break;
+  }
+
+  default:
+    printf("unknown type\n");
+    return -1;
+  }
+
+  /* mark event as done */
+  evt->generic.type = MPOE_EVT_NONE;
+
+  /* next event */
+  evt++;
+  if ((void *) evt >= eventq + MPOE_EVENTQ_SIZE)
+    evt = eventq;
+  *evtp = evt;
+
+  return 0;
+}
+
 int main(void)
 {
   int fd, ret;
@@ -99,48 +137,30 @@ int main(void)
   printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
 
   evt = eventq;
+
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
-
-    /* send a message */
-#if 0
-    ret = send_tiny(fd, i);
-#else
-    ret = send_medium(fd, i, sendq);
-#endif
-    if (ret < 0)
+    /* send a tiny message */
+    if (send_tiny(fd, i) < 0)
       goto out_with_fd;
-
-    /* wait for the message */
-    while (evt->generic.type == MPOE_EVT_NONE) ;
-
-    printf("received type %d\n", evt->generic.type);
-    switch (evt->generic.type) {
-    case MPOE_EVT_RECV_TINY:
-      printf("tiny contains \"%s\"\n", evt->tiny.data);
-      break;
-
-    case MPOE_EVT_RECV_MEDIUM: {
-      char * buf = recvq + ((char *) evt - (char *) eventq)/sizeof(*evt)*4096; /* FIXME: get pagesize somehow */
-      printf("medium length %d contains \"%s\"\n", evt->medium.length, buf);
-      break;
-   }
-
-    default:
-      printf("unknown type\n");
+    if (wait_for_event(&evt, recvq, eventq) < 0)
       goto out_with_fd;
-    }
-
-    /* mark event as done */
-    evt->generic.type = MPOE_EVT_NONE;
-
-    /* next event */
-    evt++;
-    if ((void *) evt >= eventq + MPOE_EVENTQ_SIZE)
-      evt = eventq;
   }
   gettimeofday(&tv2, NULL);
-  printf("%lld us\n", (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+  printf("tiny latency %lld us\n",
+	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+
+  gettimeofday(&tv1, NULL);
+  for(i=0; i<ITER; i++) {
+    /* send a medium message */
+    if (send_medium(fd, i, sendq) < 0)
+      goto out_with_fd;
+    if (wait_for_event(&evt, recvq, eventq) < 0)
+      goto out_with_fd;
+  }
+  gettimeofday(&tv2, NULL);
+  printf("medium latency %lld us\n",
+	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
   close(fd);
 
