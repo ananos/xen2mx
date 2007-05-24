@@ -219,6 +219,40 @@ mpoe_net_iface_from_ifp(struct net_device *ifp)
 	return NULL;
 }
 
+int
+mpoe_net_get_iface_count(void)
+{
+	int i, count = 0;
+
+	for (i=0; i<mpoe_iface_max; i++)
+		if (mpoe_ifaces[i] != NULL)
+			count++;
+
+	return count;
+}
+
+int
+mpoe_net_get_iface_id(uint8_t board_index, uint64_t * board_id)
+{
+	struct net_device * ifp;
+	uint64_t id;
+
+	if (board_index >= mpoe_iface_max
+	    || mpoe_ifaces[board_index] == NULL)
+		return -EINVAL;
+
+	ifp = mpoe_ifaces[board_index]->eth_ifp;
+	id = ifp->dev_addr[5]
+	     + ((uint64_t)ifp->dev_addr[4] << 8)
+	     + ((uint64_t)ifp->dev_addr[3] << 16)
+	     + ((uint64_t)ifp->dev_addr[2] << 24)
+	     + ((uint64_t)ifp->dev_addr[1] << 32)
+	     + ((uint64_t)ifp->dev_addr[0] << 40);
+	*board_id = id;
+
+	return 0;
+}
+
 /**********
  * Attaching endpoints to boards
  */

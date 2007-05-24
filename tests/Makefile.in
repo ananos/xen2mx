@@ -1,4 +1,5 @@
 TESTS	=	mpoe_basic \
+		mpoe_info \
 		mpoe_large \
 		mpoe_pingpong \
 		mpoe_reg

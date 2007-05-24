@@ -31,19 +31,25 @@ struct mpoe_cmd_region_segment {
  * IOCTL commands
  */
 
-#define MPOE_CMD_OPEN_ENDPOINT		0x01
-#define MPOE_CMD_CLOSE_ENDPOINT		0x02
-#define MPOE_CMD_SEND_TINY		0x03
-#define MPOE_CMD_SEND_MEDIUM		0x04
-#define MPOE_CMD_SEND_RENDEZ_VOUS	0x05
-#define MPOE_CMD_SEND_PULL		0x06
-#define MPOE_CMD_REGISTER_REGION	0x07
-#define MPOE_CMD_DEREGISTER_REGION	0x08
+#define MPOE_CMD_GET_BOARD_COUNT	0x01
+#define MPOE_CMD_GET_BOARD_ID		0x02
+#define MPOE_CMD_OPEN_ENDPOINT		0x81
+#define MPOE_CMD_CLOSE_ENDPOINT		0x82
+#define MPOE_CMD_SEND_TINY		0x83
+#define MPOE_CMD_SEND_MEDIUM		0x84
+#define MPOE_CMD_SEND_RENDEZ_VOUS	0x85
+#define MPOE_CMD_SEND_PULL		0x86
+#define MPOE_CMD_REGISTER_REGION	0x87
+#define MPOE_CMD_DEREGISTER_REGION	0x88
 
 static inline const char *
 mpoe_strcmd(unsigned int cmd)
 {
 	switch (cmd) {
+	case MPOE_CMD_GET_BOARD_COUNT:
+		return "Get Board Count";
+	case MPOE_CMD_GET_BOARD_ID:
+		return "Get Board ID";
 	case MPOE_CMD_OPEN_ENDPOINT:
 		return "Open Endpoint";
 	case MPOE_CMD_CLOSE_ENDPOINT:
@@ -68,6 +74,11 @@ mpoe_strcmd(unsigned int cmd)
 /************************
  * IOCTL parameter types
  */
+
+struct mpoe_cmd_get_board_id {
+	uint8_t board_index;
+	uint64_t board_id;
+};
 
 struct mpoe_cmd_open_endpoint {
 	uint8_t board_index;

@@ -54,6 +54,9 @@ extern int mpoe_close_endpoint(struct mpoe_endpoint * endpoint, void __user * du
 extern int mpoe_net_ifaces_show(char *buf);
 extern int mpoe_net_ifaces_store(const char *buf, size_t size);
 
+extern int mpoe_net_get_iface_count(void);
+extern int mpoe_net_get_iface_id(uint8_t board_index, uint64_t * board_id);
+
 extern int mpoe_net_send_tiny(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_net_send_medium(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_net_send_rendez_vous(struct mpoe_endpoint * endpoint, void __user * uparam);

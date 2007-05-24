@@ -137,6 +137,44 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 
 	switch (cmd) {
 
+	case MPOE_CMD_GET_BOARD_COUNT: {
+		uint32_t count = mpoe_net_get_iface_count();
+
+		ret = copy_to_user((void __user *) arg, &count,
+				   sizeof(count));
+		if (ret < 0) {
+			printk(KERN_ERR "MPoE: Failed to write get_board_count command result, error %d\n", ret);
+			goto out;
+		}
+
+		break;
+	}
+
+	case MPOE_CMD_GET_BOARD_ID: {
+		struct mpoe_cmd_get_board_id get_board_id;
+
+		ret = copy_from_user(&get_board_id, (void __user *) arg,
+				     sizeof(get_board_id));
+		if (ret < 0) {
+			printk(KERN_ERR "MPoE: Failed to read get_board_id command argument, error %d\n", ret);
+			goto out;
+		}
+
+		ret = mpoe_net_get_iface_id(get_board_id.board_index,
+					    &get_board_id.board_id);
+		if (ret < 0)
+			goto out;
+
+		ret = copy_to_user((void __user *) arg, &get_board_id,
+				   sizeof(get_board_id));
+		if (ret < 0) {
+			printk(KERN_ERR "MPoE: Failed to write get_board_id command result, error %d\n", ret);
+			goto out;
+		}
+
+		break;
+	}
+
 	case MPOE_CMD_OPEN_ENDPOINT: {
 		struct mpoe_endpoint * endpoint = NULL; /* gcc's boring */
 
