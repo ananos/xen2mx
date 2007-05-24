@@ -14,12 +14,12 @@
 #define ITER 10
 
 static int
-send_tiny(int fd, int i)
+send_tiny(int fd, int i, uint8_t * dest_mac)
 {
   struct mpoe_cmd_send_tiny tiny_param;
   int ret;
 
-  memset(tiny_param.hdr.dest_mac, 0xff, sizeof (tiny_param.hdr.dest_mac));
+  memcpy(tiny_param.hdr.dest_mac, dest_mac, sizeof (tiny_param.hdr.dest_mac));
   tiny_param.hdr.dest_endpoint = EP;
   tiny_param.hdr.match_info = 0x1234567887654321ULL;
 
@@ -37,13 +37,13 @@ send_tiny(int fd, int i)
 }
 
 static int
-send_medium(int fd, int i, void * sendq)
+send_medium(int fd, int i, uint8_t * dest_mac, void * sendq)
 {
   struct mpoe_cmd_send_medium_hdr medium_param;
   char * buffer = (char*)sendq + 23*4096;
   int ret;
 
-  memset(medium_param.dest_mac, 0xff, sizeof (medium_param.dest_mac));
+  memcpy(medium_param.dest_mac, dest_mac, sizeof (medium_param.dest_mac));
   medium_param.dest_endpoint = EP;
   medium_param.match_info = 0x1234567887654321ULL;
   medium_param.sendq_page_offset = 23;
@@ -109,7 +109,8 @@ int main(void)
   uint32_t count;
   int i;
   struct timeval tv1, tv2;
-  char * ifname = IFNAME;
+  char * ifname = IFNAME; /* FIXME: option to change it */
+  uint8_t dest_mac[6]; /* FIXME: option to change it, or at least set to broadcast */
 
   fd = open(DEVNAME, O_RDWR);
   if (fd < 0) {
@@ -147,14 +148,16 @@ int main(void)
   goto out_with_fd;
 
  found:
+  dest_mac[0] = (uint8_t) (board_id.board_addr >> 40);
+  dest_mac[1] = (uint8_t) (board_id.board_addr >> 32);
+  dest_mac[2] = (uint8_t) (board_id.board_addr >> 24);
+  dest_mac[3] = (uint8_t) (board_id.board_addr >> 16);
+  dest_mac[4] = (uint8_t) (board_id.board_addr >> 8);
+  dest_mac[5] = (uint8_t) board_id.board_addr;
+  
   fprintf(stderr, "Got board %s id #%d id %02x:%02x:%02x:%02x:%02x:%02x\n",
 	  board_id.board_name, i,
-	  (uint8_t) (board_id.board_addr >> 40),
-	  (uint8_t) (board_id.board_addr >> 32),
-	  (uint8_t) (board_id.board_addr >> 24),
-	  (uint8_t) (board_id.board_addr >> 16),
-	  (uint8_t) (board_id.board_addr >> 8),
-	  (uint8_t) board_id.board_addr);
+	  dest_mac[0], dest_mac[1], dest_mac[2], dest_mac[3], dest_mac[4], dest_mac[5]);
 
   /* ok */
   open_param.board_index = i;
@@ -177,7 +180,7 @@ int main(void)
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a tiny message */
-    if (send_tiny(fd, i) < 0)
+    if (send_tiny(fd, i, dest_mac) < 0)
       goto out_with_fd;
     if (wait_for_event(&evt, recvq, eventq) < 0)
       goto out_with_fd;
@@ -189,7 +192,7 @@ int main(void)
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a medium message */
-    if (send_medium(fd, i, sendq) < 0)
+    if (send_medium(fd, i, dest_mac, sendq) < 0)
       goto out_with_fd;
     if (wait_for_event(&evt, recvq, eventq) < 0)
       goto out_with_fd;
