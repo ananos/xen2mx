@@ -102,7 +102,6 @@ int main(void)
 {
   int fd, ret;
   struct mpoe_cmd_open_endpoint open_param;
-  struct mpoe_cmd_get_board_id get_board_id;
   volatile union mpoe_evt * evt;
   void * recvq, * sendq, * eventq;
   int i;
@@ -130,21 +129,6 @@ int main(void)
     goto out_with_fd;
   }
   fprintf(stderr, "Successfully attached endpoint %d/%d\n", 0, 34);
-
-  /* get mac addr */
-  get_board_id.board_index = 0;
-  ret = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &get_board_id);
-  if (ret < 0) {
-    perror("get board id");
-    goto out_with_fd;
-  }
-  fprintf(stderr, "Got board #0 id %02x:%02x:%02x:%02x:%02x:%02x\n",
-	  (uint8_t) (get_board_id.board_addr >> 40),
-	  (uint8_t) (get_board_id.board_addr >> 32),
-	  (uint8_t) (get_board_id.board_addr >> 24),
-	  (uint8_t) (get_board_id.board_addr >> 16),
-	  (uint8_t) (get_board_id.board_addr >> 8),
-	  (uint8_t) get_board_id.board_addr);
 
   /* mmap */
   sendq = mmap(0, MPOE_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_SENDQ_OFFSET);
