@@ -21,9 +21,9 @@ static int mpoe_net_pull_reply(struct mpoe_endpoint *, struct mpoe_pkt_pull_requ
  * Finding, attaching, detaching interfaces
  */
 
-/* returns an interface hold */
+/* returns an interface hold matching ifname */
 static struct net_device *
-mpoe_net_find_iface(const char * ifname)
+mpoe_net_find_iface_by_name(const char * ifname)
 {
 	struct net_device * ifp;
 
@@ -187,7 +187,7 @@ mpoe_net_ifaces_store(const char *buf, size_t size)
 		struct net_device * ifp;
 		int ret;
 
-		ifp = mpoe_net_find_iface(copy);
+		ifp = mpoe_net_find_iface_by_name(copy);
 		if (!ifp)
 			return -EINVAL;
 
@@ -848,7 +848,7 @@ mpoe_net_init(const char * ifnames)
 
 		while ((ifname = strsep(&copy, ",")) != NULL) {
 			struct net_device * ifp;
-			ifp = mpoe_net_find_iface(ifname);
+			ifp = mpoe_net_find_iface_by_name(ifname);
 			if (ifp)
 				if (mpoe_net_attach_iface(ifp) < 0)
 					break;
