@@ -9,6 +9,7 @@
 #include "mpoe_io.h"
 
 #define DEVNAME "/dev/mpoe"
+#define IFNAME "lo"
 #define EP 3
 #define ITER 10
 
@@ -102,10 +103,13 @@ int main(void)
 {
   int fd, ret;
   struct mpoe_cmd_open_endpoint open_param;
+  struct mpoe_cmd_get_board_id board_id;
   volatile union mpoe_evt * evt;
   void * recvq, * sendq, * eventq;
+  uint32_t count;
   int i;
   struct timeval tv1, tv2;
+  char * ifname = IFNAME;
 
   fd = open(DEVNAME, O_RDWR);
   if (fd < 0) {
@@ -120,8 +124,40 @@ int main(void)
     perror("attach unknown interface");
   }
 
+  /* get board count */
+  ret = ioctl(fd, MPOE_CMD_GET_BOARD_COUNT, &count);
+  if (ret < 0) {
+    perror("get board id");
+    goto out_with_fd;
+  }
+
+  /* find "lo" */
+  for(i=0; i<count; i++) {
+    board_id.board_index = i;
+    ret = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &board_id);
+    if (ret < 0) {
+      perror("get board id");
+      goto out_with_fd;
+    }
+    if (!strcmp(board_id.board_name, ifname))
+      goto found;
+  }
+
+  fprintf(stderr, "Cannot find interface '%s'\n", ifname);
+  goto out_with_fd;
+
+ found:
+  fprintf(stderr, "Got board %s id #%d id %02x:%02x:%02x:%02x:%02x:%02x\n",
+	  board_id.board_name, i,
+	  (uint8_t) (board_id.board_addr >> 40),
+	  (uint8_t) (board_id.board_addr >> 32),
+	  (uint8_t) (board_id.board_addr >> 24),
+	  (uint8_t) (board_id.board_addr >> 16),
+	  (uint8_t) (board_id.board_addr >> 8),
+	  (uint8_t) board_id.board_addr);
+
   /* ok */
-  open_param.board_index = 0;
+  open_param.board_index = i;
   open_param.endpoint_index = EP;
   ret = ioctl(fd, MPOE_CMD_OPEN_ENDPOINT, &open_param);
   if (ret < 0) {
