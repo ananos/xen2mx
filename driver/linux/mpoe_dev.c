@@ -161,7 +161,8 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 		}
 
 		ret = mpoe_net_get_iface_id(get_board_id.board_index,
-					    &get_board_id.board_id);
+					    &get_board_id.board_addr,
+					    get_board_id.board_name);
 		if (ret < 0)
 			goto out;
 

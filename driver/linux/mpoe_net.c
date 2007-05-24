@@ -232,23 +232,24 @@ mpoe_net_get_iface_count(void)
 }
 
 int
-mpoe_net_get_iface_id(uint8_t board_index, uint64_t * board_id)
+mpoe_net_get_iface_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
 {
 	struct net_device * ifp;
-	uint64_t id;
 
 	if (board_index >= mpoe_iface_max
 	    || mpoe_ifaces[board_index] == NULL)
 		return -EINVAL;
 
 	ifp = mpoe_ifaces[board_index]->eth_ifp;
-	id = ifp->dev_addr[5]
-	     + ((uint64_t)ifp->dev_addr[4] << 8)
-	     + ((uint64_t)ifp->dev_addr[3] << 16)
-	     + ((uint64_t)ifp->dev_addr[2] << 24)
-	     + ((uint64_t)ifp->dev_addr[1] << 32)
-	     + ((uint64_t)ifp->dev_addr[0] << 40);
-	*board_id = id;
+
+	*board_addr = ifp->dev_addr[5]
+		      + ((uint64_t)ifp->dev_addr[4] << 8)
+		      + ((uint64_t)ifp->dev_addr[3] << 16)
+		      + ((uint64_t)ifp->dev_addr[2] << 24)
+		      + ((uint64_t)ifp->dev_addr[1] << 32)
+		      + ((uint64_t)ifp->dev_addr[0] << 40);
+
+	strncpy(board_name, ifp->name, MPOE_IF_NAMESIZE);
 
 	return 0;
 }

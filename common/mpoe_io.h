@@ -75,9 +75,18 @@ mpoe_strcmd(unsigned int cmd)
  * IOCTL parameter types
  */
 
+/* FIXME: need a mpoe_common_hal.h ?*/
+#if __KERNEL__
+#include <linux/if.h>
+#else
+#include <net/if.h>
+#endif
+#define MPOE_IF_NAMESIZE IFNAMSIZ
+
 struct mpoe_cmd_get_board_id {
 	uint8_t board_index;
-	uint64_t board_id;
+	uint64_t board_addr;
+	char board_name[MPOE_IF_NAMESIZE];
 };
 
 struct mpoe_cmd_open_endpoint {
