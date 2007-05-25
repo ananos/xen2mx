@@ -6,9 +6,8 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "mpoe_io.h"
+#include "mpoe_lib.h"
 
-#define DEVNAME "/dev/mpoe"
 #define IFNAME "lo"
 #define EP 3
 #define ITER 10
@@ -112,7 +111,7 @@ int main(void)
   char * ifname = IFNAME; /* FIXME: option to change it */
   uint8_t dest_mac[6]; /* FIXME: option to change it, or at least set to broadcast */
 
-  fd = open(DEVNAME, O_RDWR);
+  fd = open(MPOE_DEVNAME, O_RDWR);
   if (fd < 0) {
     perror("open");
     goto out;

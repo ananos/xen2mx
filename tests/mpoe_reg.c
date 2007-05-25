@@ -5,9 +5,8 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 
-#include "mpoe_io.h"
+#include "mpoe_lib.h"
 
-#define DEVNAME "/dev/mpoe"
 #define EP 3
 #define ITER 10000
 #define LENGTH (1024*1024*4*4)
@@ -49,7 +48,7 @@ int main(void)
   struct timeval tv1, tv2;
   char *buffer1, *buffer2;
 
-  fd = open(DEVNAME, O_RDWR);
+  fd = open(MPOE_DEVNAME, O_RDWR);
   if (fd < 0) {
     perror("open");
     goto out;

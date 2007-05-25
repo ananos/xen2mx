@@ -9,9 +9,8 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "mpoe_io.h"
+#include "mpoe_lib.h"
 
-#define DEVNAME "/dev/mpoe"
 #define BID 0
 #define EID 0
 #define RID 0
@@ -77,7 +76,7 @@ int main(int argc, char *argv[])
       break;
     }
 
-  fd = open(DEVNAME, O_RDWR);
+  fd = open(MPOE_DEVNAME, O_RDWR);
   if (fd < 0) {
     perror("open");
     goto out;

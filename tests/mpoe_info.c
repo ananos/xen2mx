@@ -3,9 +3,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
-#include "mpoe_io.h"
-
-#define DEVNAME "/dev/mpoe"
+#include "mpoe_lib.h"
 
 int main(void)
 {
@@ -14,7 +12,7 @@ int main(void)
   int i;
   struct mpoe_cmd_get_board_id get_board_id;
 
-  fd = open(DEVNAME, O_RDWR);
+  fd = open(MPOE_DEVNAME, O_RDWR);
   if (fd < 0) {
     perror("open");
     goto out;
