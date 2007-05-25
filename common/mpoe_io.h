@@ -21,6 +21,8 @@
 #define MPOE_USER_REGION_MAX		255
 typedef uint8_t mpoe_user_region_id_t;
 
+#define MPOE_IF_NAMESIZE	16
+
 struct mpoe_cmd_region_segment {
 	uint64_t vaddr;
 	uint32_t len;
@@ -74,14 +76,6 @@ mpoe_strcmd(unsigned int cmd)
 /************************
  * IOCTL parameter types
  */
-
-/* FIXME: need a mpoe_common_hal.h ?*/
-#if __KERNEL__
-#include <linux/if.h>
-#else
-#include <net/if.h>
-#endif
-#define MPOE_IF_NAMESIZE IFNAMSIZ
 
 struct mpoe_cmd_get_board_id {
 	uint8_t board_index;

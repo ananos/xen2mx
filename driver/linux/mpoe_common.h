@@ -4,6 +4,7 @@
 #include <linux/fs.h>
 
 #include "mpoe_io.h"
+/* FIXME: assertion to check MPOE_IF_NAMESIZE == IFNAMSIZ */
 
 extern int mpoe_iface_max;
 extern int mpoe_endpoint_max;
