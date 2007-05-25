@@ -18,7 +18,7 @@ send_pull(int fd, int id, int from, int to, int len)
   struct mpoe_cmd_send_pull_hdr pull_param;
   int ret;
 
-  memset(pull_param.dest_mac, 0xff, sizeof (pull_param.dest_mac));
+  mpoe_mac_addr_set_bcast(&pull_param.dest_addr);
   pull_param.dest_endpoint = EP;
   pull_param.local_rdma_id = id;
   pull_param.local_offset = from;

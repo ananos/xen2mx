@@ -2,6 +2,7 @@
 #define __mpoe_common_h__
 
 #include <linux/fs.h>
+#include <linux/netdevice.h>
 
 #include "mpoe_io.h"
 /* FIXME: assertion to check MPOE_IF_NAMESIZE == IFNAMSIZ */
@@ -56,7 +57,7 @@ extern int mpoe_net_ifaces_show(char *buf);
 extern int mpoe_net_ifaces_store(const char *buf, size_t size);
 
 extern int mpoe_net_get_iface_count(void);
-extern int mpoe_net_get_iface_id(uint8_t board_index, uint64_t * board_addr, char * board_name);
+extern int mpoe_net_get_iface_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name);
 
 extern int mpoe_net_send_tiny(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_net_send_medium(struct mpoe_endpoint * endpoint, void __user * uparam);
@@ -70,6 +71,28 @@ extern void mpoe_deregister_endpoint_user_regions(struct mpoe_endpoint * endpoin
 
 extern int mpoe_dev_init(void);
 extern void mpoe_dev_exit(void);
+
+static inline void
+mpoe_mac_addr_of_netdevice(struct net_device * ifp,
+			   struct mpoe_mac_addr * mpoe_addr)
+{
+	memcpy(mpoe_addr, ifp->dev_addr, sizeof(struct mpoe_mac_addr));
+}
+
+/* FIXME: assert sizes are equal */
+static inline void
+mpoe_ethhdr_src_to_mac_addr(struct mpoe_mac_addr * mpoe_addr,
+			    struct ethhdr * eh)
+{
+	memcpy(mpoe_addr, eh->h_source, sizeof(eh->h_source));
+}
+
+static inline void
+mpoe_mac_addr_to_ethhdr_dst(struct mpoe_mac_addr * mpoe_addr,
+			    struct ethhdr * eh)
+{
+	memcpy(eh->h_dest, mpoe_addr, sizeof(eh->h_dest));
+}
 
 #endif /* __mpoe_common_h__ */
 

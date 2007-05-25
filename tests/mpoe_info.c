@@ -10,7 +10,6 @@ int main(void)
   int fd, ret;
   uint32_t count;
   int i;
-  struct mpoe_cmd_get_board_id get_board_id;
 
   fd = open(MPOE_DEVNAME, O_RDWR);
   if (fd < 0) {
@@ -26,22 +25,20 @@ int main(void)
   }
 
   for(i=0; i<count; i++) {
+    struct mpoe_cmd_get_board_id board_id;
+    char addr_str[MPOE_MAC_ADDR_STRLEN];
+
     /* get mac addr */
-    get_board_id.board_index = i;
-    ret = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &get_board_id);
+    board_id.board_index = i;
+    ret = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &board_id);
     if (ret < 0) {
       perror("get board id");
       goto out_with_fd;
     }
-    fprintf(stderr, "board #%d name %s addr %02x:%02x:%02x:%02x:%02x:%02x\n",
-	    i,
-	    get_board_id.board_name,
-	    (uint8_t) (get_board_id.board_addr >> 40),
-	    (uint8_t) (get_board_id.board_addr >> 32),
-	    (uint8_t) (get_board_id.board_addr >> 24),
-	    (uint8_t) (get_board_id.board_addr >> 16),
-	    (uint8_t) (get_board_id.board_addr >> 8),
-	    (uint8_t) get_board_id.board_addr);
+
+    mpoe_mac_addr_sprintf(addr_str, &board_id.board_addr);
+    fprintf(stderr, "board #%d name %s addr %s\n",
+	    i, board_id.board_name, addr_str);
   }
 
   close(fd);

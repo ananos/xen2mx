@@ -23,6 +23,10 @@ typedef uint8_t mpoe_user_region_id_t;
 
 #define MPOE_IF_NAMESIZE	16
 
+struct mpoe_mac_addr {
+	uint8_t hex[6];
+};
+
 struct mpoe_cmd_region_segment {
 	uint64_t vaddr;
 	uint32_t len;
@@ -79,7 +83,7 @@ mpoe_strcmd(unsigned int cmd)
 
 struct mpoe_cmd_get_board_id {
 	uint8_t board_index;
-	uint64_t board_addr;
+	struct mpoe_mac_addr board_addr;
 	char board_name[MPOE_IF_NAMESIZE];
 };
 
@@ -90,7 +94,7 @@ struct mpoe_cmd_open_endpoint {
 
 struct mpoe_cmd_send_tiny {
 	struct mpoe_cmd_send_tiny_hdr {
-		uint8_t dest_mac[6];
+		struct mpoe_mac_addr dest_addr;
 		uint8_t dest_endpoint;
 		uint8_t length;
 		uint64_t match_info;
@@ -101,7 +105,7 @@ struct mpoe_cmd_send_tiny {
 };
 
 struct mpoe_cmd_send_pull_hdr {
-	uint8_t dest_mac[6];
+	struct mpoe_mac_addr dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t pad;
 	/* 8 */
@@ -117,7 +121,7 @@ struct mpoe_cmd_send_pull_hdr {
 };
 
 struct mpoe_cmd_send_medium_hdr {
-	uint8_t dest_mac[6];
+	struct mpoe_mac_addr dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t sendq_page_offset;
 	/* 8 */
@@ -180,7 +184,7 @@ union mpoe_evt {
 
 	/* recv tiny */
 	struct mpoe_evt_recv_tiny {
-		uint8_t src_mac[6];
+		struct mpoe_mac_addr src_addr;
 		uint8_t src_endpoint;
 		uint8_t length;
 		uint64_t match_info;
@@ -192,7 +196,7 @@ union mpoe_evt {
 
 	/* recv medium */
 	struct mpoe_evt_recv_medium {
-		uint8_t src_mac[6];
+		struct mpoe_mac_addr src_addr;
 		uint8_t src_endpoint;
 		uint8_t pad1;
 		/* 8 */

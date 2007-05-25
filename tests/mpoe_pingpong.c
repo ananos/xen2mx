@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
   int eid = EID;
   int rid = RID;
   int iter = ITER;
-  uint8_t dest[6];
+  struct mpoe_mac_addr dest;
   int sender = 0;
   int verbose = 0;
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
       eid = atoi(optarg);
       break;
     case 'd':
-      sscanf(optarg, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &dest[0], &dest[1], &dest[2], &dest[3], &dest[4], &dest[5]);
+      mpoe_mac_addr_sscanf(optarg, &dest);
       sender = 1;
       break;
     case 'r':
@@ -102,15 +102,16 @@ int main(int argc, char *argv[])
     volatile union mpoe_evt * evt = eventq;
     struct mpoe_cmd_send_tiny tiny_param;
     struct param * param;
+    char dest_str[MPOE_MAC_ADDR_STRLEN];
     int i;
 
-    printf("Starting sender to %02x:%02x:%02x:%02x:%02x:%02x...\n",
-	   dest[0], dest[1], dest[2], dest[3], dest[4], dest[5]);
+    mpoe_mac_addr_sprintf(dest_str, &dest);
+    printf("Starting sender to %s...\n", dest_str);
 
     /* sending the param message */
     param = (void *) tiny_param.data;
     param->iter = iter;
-    memcpy(tiny_param.hdr.dest_mac, dest, sizeof (tiny_param.hdr.dest_mac));
+    mpoe_mac_addr_copy(&tiny_param.hdr.dest_addr, &dest);
     tiny_param.hdr.dest_endpoint = rid;
     tiny_param.hdr.length = sizeof(struct param);
     tiny_param.hdr.match_info = 0x1234567887654321ULL;
@@ -137,7 +138,7 @@ int main(int argc, char *argv[])
 	evt = eventq;
 
       /* send a tiny message */
-      memcpy(tiny_param.hdr.dest_mac, dest, sizeof (tiny_param.hdr.dest_mac));
+      mpoe_mac_addr_copy(&tiny_param.hdr.dest_addr, &dest);
       tiny_param.hdr.dest_endpoint = rid;
       tiny_param.hdr.length = 0;
       tiny_param.hdr.match_info = 0x1234567887654321ULL;
@@ -170,7 +171,7 @@ int main(int argc, char *argv[])
     /* mark event as done */
     evt->generic.type = MPOE_EVT_NONE;
     /* retrieve parameters */
-    memcpy(dest, (void *) evt->tiny.src_mac, sizeof(evt->tiny.src_mac));
+    mpoe_mac_addr_copy(&dest, &((union mpoe_evt *)evt)->tiny.src_addr);
     rid = evt->tiny.src_endpoint;
     param = (void *) evt->tiny.data;
     iter = param->iter;
@@ -188,7 +189,7 @@ int main(int argc, char *argv[])
 	printf("Iteration %d/%d\n", i, iter);
 
       /* send a tiny message */
-      memcpy(tiny_param.hdr.dest_mac, dest, sizeof (tiny_param.hdr.dest_mac));
+      mpoe_mac_addr_copy(&tiny_param.hdr.dest_addr, &dest);
       tiny_param.hdr.dest_endpoint = rid;
       tiny_param.hdr.length = 0;
       tiny_param.hdr.match_info = 0x1234567887654321ULL;

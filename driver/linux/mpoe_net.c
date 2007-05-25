@@ -232,7 +232,7 @@ mpoe_net_get_iface_count(void)
 }
 
 int
-mpoe_net_get_iface_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
+mpoe_net_get_iface_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name)
 {
 	struct net_device * ifp;
 
@@ -242,13 +242,7 @@ mpoe_net_get_iface_id(uint8_t board_index, uint64_t * board_addr, char * board_n
 
 	ifp = mpoe_ifaces[board_index]->eth_ifp;
 
-	*board_addr = ifp->dev_addr[5]
-		      + ((uint64_t)ifp->dev_addr[4] << 8)
-		      + ((uint64_t)ifp->dev_addr[3] << 16)
-		      + ((uint64_t)ifp->dev_addr[2] << 24)
-		      + ((uint64_t)ifp->dev_addr[1] << 32)
-		      + ((uint64_t)ifp->dev_addr[0] << 40);
-
+	mpoe_mac_addr_of_netdevice(ifp, board_addr);
 	strncpy(board_name, ifp->name, MPOE_IF_NAMESIZE);
 
 	return 0;
@@ -410,7 +404,7 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	switch (mh->body.generic.ptype) {
 	case MPOE_PKT_TINY: {
 		struct mpoe_evt_recv_tiny * event = &evt->tiny;
-		memcpy(&event->src_mac, eh->h_source, sizeof(eh->h_source));
+		mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
 		event->src_endpoint = mh->body.tiny.src_endpoint;
 		event->length = mh->body.tiny.length;
 		event->match_info = (((uint64_t) mh->body.tiny.match_a) << 32) | ((uint64_t) mh->body.tiny.match_b);
@@ -424,7 +418,7 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	case MPOE_PKT_MEDIUM: {
 		struct mpoe_evt_recv_medium * event = &evt->medium;
 		char * recvq_slot = mpoe_find_next_recvq_slot(endpoint);
-		memcpy(&evt->medium.src_mac, eh->h_source, sizeof(eh->h_source));
+		mpoe_ethhdr_src_to_mac_addr(&evt->medium.src_addr, eh);
 		event->src_endpoint = mh->body.medium.msg.src_endpoint;
 		event->length = mh->body.medium.msg.length;
 		event->match_info = (((uint64_t) mh->body.medium.msg.match_a) << 32) | ((uint64_t) mh->body.medium.msg.match_b);
@@ -510,7 +504,7 @@ mpoe_net_send_tiny(struct mpoe_endpoint * endpoint,
 
 	/* fill ethernet header */
 	memset(eh, 0, sizeof(*eh));
-	memcpy(eh->h_dest, cmd_hdr.dest_mac, sizeof (eh->h_dest));
+	mpoe_mac_addr_to_ethhdr_dst(&cmd_hdr.dest_addr, eh);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
@@ -586,7 +580,7 @@ mpoe_net_send_medium(struct mpoe_endpoint * endpoint,
 
 	/* fill ethernet header */
 	memset(eh, 0, sizeof(*eh));
-	memcpy(eh->h_dest, cmd_hdr.dest_mac, sizeof (eh->h_dest));
+	mpoe_mac_addr_to_ethhdr_dst(&cmd_hdr.dest_addr, eh);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
@@ -666,7 +660,7 @@ mpoe_net_send_pull(struct mpoe_endpoint * endpoint,
 
 	/* fill ethernet header */
 	memset(eh, 0, sizeof(*eh));
-	memcpy(eh->h_dest, cmd_hdr.dest_mac, sizeof (eh->h_dest));
+	mpoe_mac_addr_to_ethhdr_dst(&cmd_hdr.dest_addr, eh);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
