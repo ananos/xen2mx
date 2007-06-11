@@ -439,6 +439,7 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 		mpoe_ethhdr_src_to_mac_addr(&src_addr, eh);
 		/* FIXME: do not convert twice */
 		mpoe_net_pull_reply(endpoint, &mh->body.pull, &src_addr);
+		/* FIXME: check return value */
 		break;
 	}
 
