@@ -15,7 +15,7 @@
 #include "mpoe_wire.h"
 
 /* Forward declarations */
-static int mpoe_net_pull_reply(struct mpoe_endpoint *, struct mpoe_pkt_pull_request *, uint8_t dest_mac[6]);
+static int mpoe_net_pull_reply(struct mpoe_endpoint *, struct mpoe_pkt_pull_request *, struct mpoe_mac_addr *);
 
 /*************
  * Finding, attaching, detaching interfaces
@@ -435,8 +435,10 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	}
 
 	case MPOE_PKT_PULL: {
-		mpoe_net_pull_reply(endpoint, &mh->body.pull, eh->h_source);
-		/* FIXME: check return value */
+		struct mpoe_mac_addr src_addr;
+		mpoe_ethhdr_src_to_mac_addr(&src_addr, eh);
+		/* FIXME: do not convert twice */
+		mpoe_net_pull_reply(endpoint, &mh->body.pull, &src_addr);
 		break;
 	}
 
@@ -694,7 +696,8 @@ mpoe_net_pull_reply_append_user_region_segment(struct sk_buff *skb,
 
 static int
 mpoe_net_pull_reply(struct mpoe_endpoint * endpoint,
-		    struct mpoe_pkt_pull_request * pull_request, uint8_t dest_mac[6])
+		    struct mpoe_pkt_pull_request * pull_request,
+		    struct mpoe_mac_addr * dest_addr)
 {
 	struct sk_buff *skb;
 	struct mpoe_hdr *mh;
@@ -719,7 +722,7 @@ mpoe_net_pull_reply(struct mpoe_endpoint * endpoint,
 
 	/* fill ethernet header */
 	memset(eh, 0, sizeof(*eh));
-	memcpy(eh->h_dest, dest_mac, sizeof (eh->h_dest));
+	mpoe_mac_addr_to_ethhdr_dst(dest_addr, eh);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
