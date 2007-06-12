@@ -3,6 +3,10 @@ MPOE_DIR	=	@abs_builddir@
 
 .PHONY: all clean wc
 
+# Cannot avoid symlinking source files here and using O=builddir M=srcdir
+# since configure would have to generate Kbuild and mpoe_checks.h in srcdir
+# instead of builddir
+
 all:
 	@echo Linking kernel module source files to local directory
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do ln -sf $$file ; done
