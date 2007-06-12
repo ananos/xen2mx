@@ -2,6 +2,7 @@
 #include <linux/module.h>
 
 #include "mpoe_common.h"
+#include "mpoe_hal.h"
 
 /*************
  * Finding, attaching, detaching interfaces
@@ -14,7 +15,7 @@ mpoe_net_find_iface_by_name(const char * ifname)
 	struct net_device * ifp;
 
         read_lock(&dev_base_lock);
-        for (ifp = dev_base; ifp != NULL; ifp = ifp->next) {
+        mpoe_for_each_netdev(ifp) {
 		dev_hold(ifp);
 		if (!strcmp(ifp->name, ifname)) {
 		        read_unlock(&dev_base_lock);
@@ -370,7 +371,7 @@ mpoe_net_init(const char * ifnames)
 		struct net_device * ifp;
 
 	        read_lock(&dev_base_lock);
-        	for (ifp = dev_base; ifp != NULL; ifp = ifp->next) {
+		mpoe_for_each_netdev(ifp) {
 			dev_hold(ifp);
 			if (mpoe_net_attach_iface(ifp) < 0)
 				break;

@@ -58,6 +58,12 @@ sed -ne '/^struct miscdevice/,/^};/p' ${LINUX_HDR}/include/linux/miscdevice.h \
  && echo "#define MPOE_MISCDEV_HAVE_CLASS_DEVICE 1" >> ${CHECKS_OUTPUT} \
  && AC_MSG_RESULT(struct class_device) || AC_MSG_RESULT(struct device)
 
+# dev_base list replaced with for_each_netdev added in 2.6.22
+AC_MSG_CHECKING(for_each_netdev availability)
+grep "for_each_netdev *(" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null \
+  && echo "#define MPOE_HAVE_FOR_EACH_NETDEV 1" >> ${CHECKS_OUTPUT} \
+  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+
 # add the footer
 echo "" >> ${CHECKS_OUTPUT}
 echo "#endif /* __mpoe_checks_h__ */" >> ${CHECKS_OUTPUT}

@@ -63,6 +63,12 @@ mpoe_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long p
 }
 #endif /* MPOE_HAVE_REMAP_VMALLOC_RANGE */
 
+#ifdef MPOE_HAVE_FOR_EACH_NETDEV
+#define mpoe_for_each_netdev(_ifp) for_each_netdev(_ifp)
+#else /* MPOE_HAVE_FOR_EACH_NETDEV */
+#define mpoe_for_each_netdev(_ifp) for ((_ifp) = dev_base; (_ifp) != NULL; (_ifp) = (_ifp)->next)
+#endif /* MPOE_HAVE_FOR_EACH_NETDEV */
+
 #endif /* __mpoe_hal_h__ */
 
 /*
