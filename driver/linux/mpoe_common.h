@@ -4,6 +4,7 @@
 #include <linux/fs.h>
 #include <linux/netdevice.h>
 
+#include "mpoe_wire.h"
 #include "mpoe_io.h"
 /* FIXME: assertion to check MPOE_IF_NAMESIZE == IFNAMSIZ */
 
@@ -58,11 +59,15 @@ extern int mpoe_net_ifaces_store(const char *buf, size_t size);
 
 extern int mpoe_net_get_iface_count(void);
 extern int mpoe_net_get_iface_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name);
+extern struct mpoe_iface * mpoe_net_iface_from_ifp(struct net_device *ifp);
 
 extern int mpoe_net_send_tiny(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_net_send_medium(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_net_send_rendez_vous(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_net_send_pull(struct mpoe_endpoint * endpoint, void __user * uparam);
+extern int mpoe_net_pull_reply(struct mpoe_endpoint * endpoint, struct mpoe_pkt_pull_request * pull_request, struct mpoe_mac_addr * dest_addr);
+
+extern int mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt, struct net_device *orig_dev);
 
 extern void mpoe_init_endpoint_user_regions(struct mpoe_endpoint * endpoint);
 extern int mpoe_register_user_region(struct mpoe_endpoint * endpoint, void __user * uparam);

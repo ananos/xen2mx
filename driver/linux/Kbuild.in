@@ -1,4 +1,6 @@
 EXTRA_CFLAGS	+=	-I@abs_top_srcdir@/common/
 
 obj-m	+=	mpoe.o
-mpoe-objs	:=	mpoe_main.o mpoe_net.o mpoe_dev.o mpoe_reg.o
+mpoe-objs	:=	mpoe_main.o mpoe_dev.o \
+			mpoe_net.o mpoe_send.o mpoe_recv.o \
+			mpoe_reg.o
