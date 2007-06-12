@@ -2,6 +2,7 @@
 #include <linux/module.h>
 
 #include "mpoe_common.h"
+#include "mpoe_hal.h"
 
 static inline union mpoe_evt *
 mpoe_find_next_eventq_slot(struct mpoe_endpoint *endpoint)
@@ -63,7 +64,7 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 		mh = &linear_header;
 	} else {
 		/* no need to linearize the header */
-		mh = (struct mpoe_hdr *) skb->mac.raw;
+		mh = mpoe_hdr(skb);
 	}
 	eh = &mh->head.eth;
 

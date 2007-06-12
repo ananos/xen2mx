@@ -64,6 +64,12 @@ grep "for_each_netdev *(" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null \
   && echo "#define MPOE_HAVE_FOR_EACH_NETDEV 1" >> ${CHECKS_OUTPUT} \
   && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
 
+# skb got mac/network/transport headers in 2.6.22
+AC_MSG_CHECKING(for_each_netdev availability)
+grep "sk_buff_data_t.*mac_header;" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null \
+  && echo "#define MPOE_HAVE_SKB_HEADERS 1" >> ${CHECKS_OUTPUT} \
+  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+
 # add the footer
 echo "" >> ${CHECKS_OUTPUT}
 echo "#endif /* __mpoe_checks_h__ */" >> ${CHECKS_OUTPUT}

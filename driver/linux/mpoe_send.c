@@ -12,7 +12,8 @@ mpoe_new_skb(struct net_device *ifp, unsigned long len)
 
 	skb = mpoe_netdev_alloc_skb(ifp, len);
 	if (skb) {
-		skb->nh.raw = skb->mac.raw = skb->data;
+		mpoe_skb_reset_mac_header(skb);
+		mpoe_skb_reset_network_header(skb);
 		skb->protocol = __constant_htons(ETH_P_MPOE);
 		skb->priority = 0;
 		skb_put(skb, len);
@@ -56,7 +57,7 @@ mpoe_net_send_tiny(struct mpoe_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = (struct mpoe_hdr *) skb->mac.raw;
+	mh = mpoe_hdr(skb);
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
@@ -132,7 +133,7 @@ mpoe_net_send_medium(struct mpoe_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = (struct mpoe_hdr *) skb->mac.raw;
+	mh = mpoe_hdr(skb);
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
@@ -212,7 +213,7 @@ mpoe_net_send_pull(struct mpoe_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = (struct mpoe_hdr *) skb->mac.raw;
+	mh = mpoe_hdr(skb);
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
@@ -272,7 +273,7 @@ mpoe_net_pull_reply(struct mpoe_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = (struct mpoe_hdr *) skb->mac.raw;
+	mh = mpoe_hdr(skb);
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
