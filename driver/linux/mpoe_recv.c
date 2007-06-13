@@ -277,7 +277,7 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 
 	iface = mpoe_net_iface_from_ifp(ifp);
 	if (!iface) {
-		printk(KERN_INFO "MPoE: Dropping packets on non MPoE interface\n");
+		printk(KERN_DEBUG "MPoE: Dropping packets on non MPoE interface\n");
 		goto exit;
 	}
 
@@ -315,7 +315,8 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 		break;
 
 	default:
-		printk(KERN_INFO "MPoE: Dropping packing with unrecognized type %d\n", mh->body.generic.ptype);
+		printk(KERN_DEBUG "MPoE: Dropping packing with unrecognized type %d\n",
+		       mh->body.generic.ptype);
 		goto exit;
 	}
 
