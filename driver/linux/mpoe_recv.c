@@ -43,9 +43,10 @@ mpoe_find_next_recvq_slot(struct mpoe_endpoint *endpoint)
 static void
 mpoe_net_recv_tiny(struct mpoe_evt_recv_tiny * event,
 		   struct sk_buff * skb,
-		   struct ethhdr * eh,
-		   struct mpoe_pkt_msg * tiny)
+		   struct mpoe_hdr * mh)
 {
+	struct ethhdr *eh = &mh->head.eth;
+	struct mpoe_pkt_msg *tiny = &mh->body.tiny;
 	int err = 0;
 
 	/* fill event */
@@ -68,10 +69,11 @@ static void
 mpoe_net_recv_medium_frag(struct mpoe_evt_recv_medium * event,
 			  struct mpoe_endpoint * endpoint,
 			  struct sk_buff * skb,
-			  struct ethhdr  * eh,
-			  struct mpoe_pkt_medium_frag * medium)
+			  struct mpoe_hdr * mh)
 {
-	char * recvq_slot;
+	struct ethhdr *eh = &mh->head.eth;
+	struct mpoe_pkt_medium_frag *medium = &mh->body.medium;
+	char *recvq_slot;
 	int err;
 
 	/* fill event */
@@ -92,17 +94,19 @@ mpoe_net_recv_medium_frag(struct mpoe_evt_recv_medium * event,
 }
 
 static void
-mpoe_net_recv_rndv(void)
+mpoe_net_recv_rndv(struct mpoe_hdr * mh)
 {
 
 }
 
 static void
 mpoe_net_recv_pull(struct mpoe_endpoint * endpoint,
-		   struct ethhdr  * eh,
-		   struct mpoe_pkt_pull_request * pull)
+		   struct mpoe_hdr * mh)
 {
+	struct ethhdr *eh = &mh->head.eth;
+	struct mpoe_pkt_pull_request *pull = &mh->body.pull;
 	struct mpoe_mac_addr src_addr;
+
 	mpoe_ethhdr_src_to_mac_addr(&src_addr, eh);
 	/* FIXME: do not convert twice */
 	mpoe_net_pull_reply(endpoint, pull, &src_addr);
@@ -110,8 +114,10 @@ mpoe_net_recv_pull(struct mpoe_endpoint * endpoint,
 }
 
 static void
-mpoe_net_recv_pull_reply(struct mpoe_pkt_pull_reply * pull_reply)
+mpoe_net_recv_pull_reply(struct mpoe_hdr * mh)
 {
+	struct mpoe_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
+
 	printk("got a pull reply length %d\n", pull_reply->length);
 	/* FIXME */
 }
@@ -128,7 +134,6 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	struct mpoe_endpoint *endpoint;
 	struct mpoe_hdr linear_header;
 	struct mpoe_hdr *mh;
-	struct ethhdr *eh;
 	int index;
 	union mpoe_evt *evt;
 
@@ -156,7 +161,6 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 		/* no need to linearize the header */
 		mh = mpoe_hdr(skb);
 	}
-	eh = &mh->head.eth;
 
 	index = mh->body.generic.dst_endpoint;
 	if (index >= mpoe_endpoint_max || iface->endpoints[index] == NULL) {
@@ -173,23 +177,23 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 
 	switch (mh->body.generic.ptype) {
 	case MPOE_PKT_TINY:
-		mpoe_net_recv_tiny(&evt->tiny, skb, eh, &mh->body.tiny);
+		mpoe_net_recv_tiny(&evt->tiny, skb, mh);
 		break;
 
 	case MPOE_PKT_MEDIUM:
-		mpoe_net_recv_medium_frag(&evt->medium, endpoint, skb, eh, &mh->body.medium);
+		mpoe_net_recv_medium_frag(&evt->medium, endpoint, skb, mh);
 		break;
 
 	case MPOE_PKT_RENDEZ_VOUS:
-		mpoe_net_recv_rndv();
+		mpoe_net_recv_rndv(mh);
 		break;
 
 	case MPOE_PKT_PULL:
-		mpoe_net_recv_pull(endpoint, eh, &mh->body.pull);
+		mpoe_net_recv_pull(endpoint, mh);
 		break;
 
 	case MPOE_PKT_PULL_REPLY:
-		mpoe_net_recv_pull_reply(&mh->body.pull_reply);
+		mpoe_net_recv_pull_reply(mh);
 		break;
 
 	default:
