@@ -4,6 +4,10 @@
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
 
+/******************************
+ * Manage event and data slots
+ */
+
 static inline union mpoe_evt *
 mpoe_find_next_eventq_slot(struct mpoe_endpoint *endpoint)
 {
@@ -29,6 +33,92 @@ mpoe_find_next_recvq_slot(struct mpoe_endpoint *endpoint)
 {
 	return endpoint->next_recvq_slot;
 }
+
+/***************************
+ * Event reporting routines
+ */
+
+#define MPOE_MATCH_INFO_FROM_PKT(_pkt) (((uint64_t) (_pkt)->match_a) << 32) | ((uint64_t) (_pkt)->match_b)
+
+static void
+mpoe_net_recv_tiny(struct mpoe_evt_recv_tiny * event,
+		   struct sk_buff * skb,
+		   struct ethhdr * eh,
+		   struct mpoe_pkt_msg * tiny)
+{
+	int err = 0;
+
+	/* fill event */
+	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
+	event->src_endpoint = tiny->src_endpoint;
+	event->length = tiny->length;
+	event->match_info = MPOE_MATCH_INFO_FROM_PKT(tiny);
+
+	/* copy data in event data */
+	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), event->data,
+			    tiny->length);
+	/* cannot fail since pages are allocated by us */
+	BUG_ON(err < 0);
+
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = MPOE_EVT_RECV_TINY;
+}
+
+static void
+mpoe_net_recv_medium_frag(struct mpoe_evt_recv_medium * event,
+			  struct mpoe_endpoint * endpoint,
+			  struct sk_buff * skb,
+			  struct ethhdr  * eh,
+			  struct mpoe_pkt_medium_frag * medium)
+{
+	char * recvq_slot;
+	int err;
+
+	/* fill event */
+	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
+	event->src_endpoint = medium->msg.src_endpoint;
+	event->length = medium->msg.length;
+	event->match_info = MPOE_MATCH_INFO_FROM_PKT(&medium->msg);
+
+	/* copy data in recvq slot */
+	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
+	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot,
+			    skb->len - sizeof(struct mpoe_hdr));
+	/* cannot fail since pages are allocated by us */
+	BUG_ON(err < 0);
+
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = MPOE_EVT_RECV_MEDIUM;
+}
+
+static void
+mpoe_net_recv_rndv(void)
+{
+
+}
+
+static void
+mpoe_net_recv_pull(struct mpoe_endpoint * endpoint,
+		   struct ethhdr  * eh,
+		   struct mpoe_pkt_pull_request * pull)
+{
+	struct mpoe_mac_addr src_addr;
+	mpoe_ethhdr_src_to_mac_addr(&src_addr, eh);
+	/* FIXME: do not convert twice */
+	mpoe_net_pull_reply(endpoint, pull, &src_addr);
+	/* FIXME: check return value */
+}
+
+static void
+mpoe_net_recv_pull_reply(struct mpoe_pkt_pull_reply * pull_reply)
+{
+	printk("got a pull reply length %d\n", pull_reply->length);
+	/* FIXME */
+}
+
+/***********************
+ * Main receive routine
+ */
 
 int
 mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
@@ -82,57 +172,29 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	}
 
 	switch (mh->body.generic.ptype) {
-	case MPOE_PKT_TINY: {
-		struct mpoe_evt_recv_tiny * event = &evt->tiny;
-		mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
-		event->src_endpoint = mh->body.tiny.src_endpoint;
-		event->length = mh->body.tiny.length;
-		event->match_info = (((uint64_t) mh->body.tiny.match_a) << 32) | ((uint64_t) mh->body.tiny.match_b);
-		skb_copy_bits(skb, sizeof(struct mpoe_hdr), event->data,
-			      mh->body.tiny.length);
-		/* check for EFAULT */
-		event->type = MPOE_EVT_RECV_TINY;
+	case MPOE_PKT_TINY:
+		mpoe_net_recv_tiny(&evt->tiny, skb, eh, &mh->body.tiny);
 		break;
-	}
 
-	case MPOE_PKT_MEDIUM: {
-		struct mpoe_evt_recv_medium * event = &evt->medium;
-		char * recvq_slot = mpoe_find_next_recvq_slot(endpoint);
-		mpoe_ethhdr_src_to_mac_addr(&evt->medium.src_addr, eh);
-		event->src_endpoint = mh->body.medium.msg.src_endpoint;
-		event->length = mh->body.medium.msg.length;
-		event->match_info = (((uint64_t) mh->body.medium.msg.match_a) << 32) | ((uint64_t) mh->body.medium.msg.match_b);
-		event->type = MPOE_EVT_RECV_MEDIUM;
-		skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot,
-			      skb->len - sizeof(*mh));
-		/* check for EFAULT */
+	case MPOE_PKT_MEDIUM:
+		mpoe_net_recv_medium_frag(&evt->medium, endpoint, skb, eh, &mh->body.medium);
 		break;
-	}
 
-	case MPOE_PKT_RENDEZ_VOUS: {
-		/* FIXME */
+	case MPOE_PKT_RENDEZ_VOUS:
+		mpoe_net_recv_rndv();
 		break;
-	}
 
-	case MPOE_PKT_PULL: {
-		struct mpoe_mac_addr src_addr;
-		mpoe_ethhdr_src_to_mac_addr(&src_addr, eh);
-		/* FIXME: do not convert twice */
-		mpoe_net_pull_reply(endpoint, &mh->body.pull, &src_addr);
-		/* FIXME: check return value */
+	case MPOE_PKT_PULL:
+		mpoe_net_recv_pull(endpoint, eh, &mh->body.pull);
 		break;
-	}
 
-	case MPOE_PKT_PULL_REPLY: {
-		printk("got a pull reply length %d\n", mh->body.pull_reply.length);
-		/* FIXME */
+	case MPOE_PKT_PULL_REPLY:
+		mpoe_net_recv_pull_reply(&mh->body.pull_reply);
 		break;
-	}
 
-	default: {
+	default:
 		printk(KERN_INFO "MPoE: Dropping packing with unrecognized type %d\n", mh->body.generic.ptype);
 		goto exit;
-	}
 	}
 
 //	printk(KERN_INFO "MPoE: got packet type %d length %d matching 0x%llx for endpoint %d from %d\n",
