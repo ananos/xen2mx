@@ -4,6 +4,19 @@
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
 
+static inline struct mpoe_endpoint *
+mpoe_net_get_dst_endpoint(struct mpoe_iface *iface,
+			  uint8_t dst_endpoint)
+{
+	if (dst_endpoint >= mpoe_endpoint_max
+	    || iface->endpoints[dst_endpoint] == NULL)
+		return NULL;
+
+	/* FIXME: increase use count while holding a lock */
+
+	return iface->endpoints[dst_endpoint];
+}
+
 /******************************
  * Manage event and data slots
  */
@@ -40,14 +53,35 @@ mpoe_find_next_recvq_slot(struct mpoe_endpoint *endpoint)
 
 #define MPOE_MATCH_INFO_FROM_PKT(_pkt) (((uint64_t) (_pkt)->match_a) << 32) | ((uint64_t) (_pkt)->match_b)
 
-static void
-mpoe_net_recv_tiny(struct mpoe_evt_recv_tiny * event,
-		   struct sk_buff * skb,
-		   struct mpoe_hdr * mh)
+static int
+mpoe_net_recv_tiny(struct mpoe_iface * iface,
+		   struct mpoe_hdr * mh,
+		   struct sk_buff * skb)
 {
+	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_msg *tiny = &mh->body.tiny;
+	union mpoe_evt *evt;
+	struct mpoe_evt_recv_tiny *event;
 	int err = 0;
+
+	/* get the destination endpoint */
+	endpoint = mpoe_net_get_dst_endpoint(iface, tiny->dst_endpoint);
+	if (!endpoint) {
+		printk(KERN_DEBUG "MPoE: Dropping TINY packet for unknown endpoint %d\n",
+		       tiny->dst_endpoint);
+		err = -EINVAL;
+		goto drop;
+	}
+
+	/* get the eventq slot */
+	evt = mpoe_find_next_eventq_slot(endpoint);
+	if (!evt) {
+		printk(KERN_INFO "MPoE: Dropping TINY packet because of event queue full\n");
+		err = -EBUSY;
+		goto drop;
+	}
+	event = &evt->tiny;
 
 	/* fill event */
 	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
@@ -63,18 +97,43 @@ mpoe_net_recv_tiny(struct mpoe_evt_recv_tiny * event,
 
 	/* set the type at the end so that user-space does not find the slot on error */
 	event->type = MPOE_EVT_RECV_TINY;
+
+	return 0;
+
+ drop:
+	return err;
 }
 
-static void
-mpoe_net_recv_medium_frag(struct mpoe_evt_recv_medium * event,
-			  struct mpoe_endpoint * endpoint,
-			  struct sk_buff * skb,
-			  struct mpoe_hdr * mh)
+static int
+mpoe_net_recv_medium_frag(struct mpoe_iface * iface,
+			  struct mpoe_hdr * mh,
+			  struct sk_buff * skb)
 {
+	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_medium_frag *medium = &mh->body.medium;
+	union mpoe_evt *evt;
+	struct mpoe_evt_recv_medium *event;
 	char *recvq_slot;
 	int err;
+
+	/* get the destination endpoint */
+	endpoint = mpoe_net_get_dst_endpoint(iface, medium->msg.dst_endpoint);
+	if (!endpoint) {
+		printk(KERN_DEBUG "MPoE: Dropping MEDIUM packet for unknown endpoint %d\n",
+		       medium->msg.dst_endpoint);
+		err = -EINVAL;
+		goto drop;
+	}
+
+	/* get the eventq slot */
+	evt = mpoe_find_next_eventq_slot(endpoint);
+	if (!evt) {
+		printk(KERN_INFO "MPoE: Dropping MEDIUM packet because of event queue full\n");
+		err = -EBUSY;
+		goto drop;
+	}
+	event = &evt->medium;
 
 	/* fill event */
 	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
@@ -91,35 +150,110 @@ mpoe_net_recv_medium_frag(struct mpoe_evt_recv_medium * event,
 
 	/* set the type at the end so that user-space does not find the slot on error */
 	event->type = MPOE_EVT_RECV_MEDIUM;
+
+	return 0;
+
+ drop:
+	return err;
 }
 
 static void
-mpoe_net_recv_rndv(struct mpoe_hdr * mh)
+mpoe_net_recv_rndv(struct mpoe_iface * iface,
+		   struct mpoe_hdr * mh)
 {
+#if 0
+	struct mpoe_endpoint * endpoint;
+	struct ethhdr *eh = &mh->head.eth;
+	struct mpoe_pkt_rndv *rndv = &mh->body.rndv;
+
+	/* get the destination endpoint */
+	endpoint = mpoe_net_get_dst_endpoint(iface, rndv->dst_endpoint);
+	if (!endpoint) {
+		printk(KERN_DEBUG "MPoE: Dropping RNDV packet for unknown endpoint %d\n",
+		       rndv->dst_endpoint);
+		err = -EINVAL;
+		goto drop;
+	}
+
+	/* get the eventq slot */
+	evt = mpoe_find_next_eventq_slot(endpoint);
+	if (!evt) {
+		printk(KERN_INFO "MPoE: Dropping RNDV packet because of event queue full\n");
+		err = -EBUSY;
+		goto drop;
+	}
+	event = &evt->rndv;
+
+	return 0;
+
+ drop:
+	return err;
+#endif
+
 	/* FIXME */
 }
 
-static void
-mpoe_net_recv_pull(struct mpoe_endpoint * endpoint,
+static int
+mpoe_net_recv_pull(struct mpoe_iface * iface,
 		   struct mpoe_hdr * mh)
 {
+	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_pull_request *pull = &mh->body.pull;
 	struct mpoe_mac_addr src_addr;
+	int err = 0;
+
+	/* get the destination endpoint */
+	endpoint = mpoe_net_get_dst_endpoint(iface, pull->dst_endpoint);
+	if (!endpoint) {
+		printk(KERN_DEBUG "MPoE: Dropping PULL packet for unknown endpoint %d\n",
+		       pull->dst_endpoint);
+		err = -EINVAL;
+		goto drop;
+	}
+
+	printk("got a pull length %d\n", pull->length);
 
 	mpoe_ethhdr_src_to_mac_addr(&src_addr, eh);
 	/* FIXME: do not convert twice */
 	mpoe_net_pull_reply(endpoint, pull, &src_addr);
 	/* FIXME: check return value */
+
+	return 0;
+
+ drop:
+	return err;
 }
 
-static void
-mpoe_net_recv_pull_reply(struct mpoe_hdr * mh)
+static int
+mpoe_net_recv_pull_reply(struct mpoe_iface * iface,
+			 struct mpoe_hdr * mh)
 {
+#if 0
+	struct mpoe_endpoint * endpoint;
+	struct ethhdr *eh = &mh->head.eth;
+#endif
 	struct mpoe_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
+	int err = 0;
 
 	printk("got a pull reply length %d\n", pull_reply->length);
 	/* FIXME */
+
+#if 0
+	/* get the destination endpoint */
+	endpoint = mpoe_net_get_dst_endpoint(iface, pull_reply->dst_endpoint);
+	if (!endpoint) {
+		printk(KERN_DEBUG "MPoE: Dropping PULL REPLY packet for unknown endpoint %d\n",
+		       pull_reply->dst_endpoint);
+		err = -EINVAL;
+		goto drop;
+	}
+
+	return 0;
+
+ drop:
+#endif
+	return err;
 }
 
 /***********************
@@ -131,11 +265,8 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	      struct net_device *orig_dev)
 {
 	struct mpoe_iface *iface;
-	struct mpoe_endpoint *endpoint;
 	struct mpoe_hdr linear_header;
 	struct mpoe_hdr *mh;
-	int index;
-	union mpoe_evt *evt;
 
 	skb = skb_share_check(skb, GFP_ATOMIC);
 	if (skb == NULL)
@@ -162,38 +293,25 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 		mh = mpoe_hdr(skb);
 	}
 
-	index = mh->body.generic.dst_endpoint;
-	if (index >= mpoe_endpoint_max || iface->endpoints[index] == NULL) {
-		printk(KERN_INFO "MPoE: Dropping packet for unknown endpoint %d\n", index);
-		goto exit;
-	}
-	endpoint = iface->endpoints[index];
-
-	evt = mpoe_find_next_eventq_slot(endpoint);
-	if (!evt) {
-		printk(KERN_INFO "MPoE: Dropping packet because of event queue full\n");
-		goto exit;
-	}
-
 	switch (mh->body.generic.ptype) {
 	case MPOE_PKT_TINY:
-		mpoe_net_recv_tiny(&evt->tiny, skb, mh);
+		mpoe_net_recv_tiny(iface, mh, skb);
 		break;
 
 	case MPOE_PKT_MEDIUM:
-		mpoe_net_recv_medium_frag(&evt->medium, endpoint, skb, mh);
+		mpoe_net_recv_medium_frag(iface, mh, skb);
 		break;
 
 	case MPOE_PKT_RENDEZ_VOUS:
-		mpoe_net_recv_rndv(mh);
+		mpoe_net_recv_rndv(iface, mh);
 		break;
 
 	case MPOE_PKT_PULL:
-		mpoe_net_recv_pull(endpoint, mh);
+		mpoe_net_recv_pull(iface, mh);
 		break;
 
 	case MPOE_PKT_PULL_REPLY:
-		mpoe_net_recv_pull_reply(mh);
+		mpoe_net_recv_pull_reply(iface, mh);
 		break;
 
 	default:
