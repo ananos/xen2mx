@@ -78,12 +78,12 @@ int main(void)
 
   ret = do_register(fd, 34, buffer1, LENGTH, buffer2, LENGTH);
   if (ret < 0) {
-    fprintf(stderr, "Successfully couldn't to register window again (%m)\n");
+    fprintf(stderr, "Successfully couldn't register window again (%m)\n");
   }
 
   ret = do_deregister(fd, 35);
   if (ret < 0) {
-    fprintf(stderr, "Successfully couldn't to deregister unknown window (%m)\n");
+    fprintf(stderr, "Successfully couldn't deregister unknown window (%m)\n");
   }
 
   ret = do_deregister(fd, 34);
