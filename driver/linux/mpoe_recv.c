@@ -209,3 +209,11 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	dev_kfree_skb(skb);
 	return 0;
 }
+
+/*
+ * Local variables:
+ *  tab-width: 8
+ *  c-basic-offset: 8
+ *  c-indent-level: 8
+ * End:
+ */

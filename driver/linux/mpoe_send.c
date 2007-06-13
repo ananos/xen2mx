@@ -332,3 +332,11 @@ mpoe_net_pull_reply(struct mpoe_endpoint * endpoint,
  out:
 	return ret;
 }
+
+/*
+ * Local variables:
+ *  tab-width: 8
+ *  c-basic-offset: 8
+ *  c-indent-level: 8
+ * End:
+ */

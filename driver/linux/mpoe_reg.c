@@ -223,7 +223,6 @@ mpoe_deregister_endpoint_user_regions(struct mpoe_endpoint * endpoint)
 	}
 }
 
-
 /*
  * Local variables:
  *  tab-width: 8
