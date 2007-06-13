@@ -96,7 +96,7 @@ mpoe_net_recv_medium_frag(struct mpoe_evt_recv_medium * event,
 static void
 mpoe_net_recv_rndv(struct mpoe_hdr * mh)
 {
-
+	/* FIXME */
 }
 
 static void
