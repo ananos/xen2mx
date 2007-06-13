@@ -8,6 +8,7 @@
 #define ETH_P_MPOE 0x86DF
 
 enum mpoe_pkt_type {
+	MPOE_PKT_NONE=0,
 	MPOE_PKT_TINY,
 	MPOE_PKT_MEDIUM,
 	MPOE_PKT_RENDEZ_VOUS,
