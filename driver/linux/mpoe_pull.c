@@ -1,8 +1,51 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/slab.h>
 
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
+
+/**********************
+ * pull handles
+ */
+
+struct mpoe_pull_handle {
+	struct mpoe_endpoint * endpoint;
+	uint32_t pull_handle;
+};
+
+/* FIXME: need a lock */
+struct kmem_cache * mpoe_pull_handle_cachep = NULL;
+
+int
+mpoe_init_pull(void)
+{
+	int err = 0;
+
+	mpoe_pull_handle_cachep = kmem_cache_create("mpoe_pull_handle",
+						    sizeof(struct mpoe_pull_handle),
+						    0, 0, NULL, NULL);
+	if (!mpoe_pull_handle_cachep) {
+		printk(KERN_ERR "MPoE: Failed to create pull handle cache\n");
+		err = -ENOMEM;
+		goto out;
+	}
+
+	return 0;
+
+ out:
+	return err;
+}
+
+void
+mpoe_exit_pull(void)
+{
+	kmem_cache_destroy(mpoe_pull_handle_cachep);
+}
+
+/**********************
+ * main pull routines
+ */
 
 int
 mpoe_net_send_pull(struct mpoe_endpoint * endpoint,
@@ -14,6 +57,7 @@ mpoe_net_send_pull(struct mpoe_endpoint * endpoint,
 	struct mpoe_cmd_send_pull_hdr cmd_hdr;
 	struct mpoe_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	struct mpoe_pull_handle * pull_handle;
 	int ret;
 
 	ret = copy_from_user(&cmd_hdr, uparam, sizeof(cmd_hdr));
@@ -23,11 +67,19 @@ mpoe_net_send_pull(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
+	pull_handle = kmem_cache_alloc(mpoe_pull_handle_cachep, GFP_KERNEL);
+	if (!pull_handle) {
+		printk(KERN_INFO "MPoE: Failed to allocate a pull handle\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+	printk("allocated pull handle %p\n", pull_handle);
+
 	skb = mpoe_new_skb(ifp, sizeof(*mh));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create pull skb\n");
 		ret = -ENOMEM;
-		goto out;
+		goto out_with_pull_handle;
 	}
 
 	/* locate headers */
@@ -50,6 +102,11 @@ mpoe_net_send_pull(struct mpoe_endpoint * endpoint,
 	mh->body.pull.pulled_rdma_id = cmd_hdr.remote_rdma_id;
 	mh->body.pull.pulled_offset = cmd_hdr.remote_offset;
 
+	/* fill pull handle */
+	pull_handle->endpoint = endpoint;
+	pull_handle->pull_handle = (uint32_t) pull_handle; /* FIXME: ugly */
+	mh->body.pull.src_pull_handle = pull_handle->pull_handle;
+
 	dev_queue_xmit(skb);
 
 //	printk(KERN_INFO "MPoE: sent a pull message from endpoint %d\n",
@@ -57,6 +114,8 @@ mpoe_net_send_pull(struct mpoe_endpoint * endpoint,
 
 	return 0;
 
+ out_with_pull_handle:
+	kmem_cache_free(mpoe_pull_handle_cachep, pull_handle);
  out:
 	return ret;
 }
@@ -115,6 +174,7 @@ mpoe_net_recv_pull(struct mpoe_iface * iface,
 	reply_mh->body.pull_reply.puller_rdma_id = pull_request->puller_rdma_id;
 	reply_mh->body.pull_reply.puller_offset = pull_request->puller_offset;
 	reply_mh->body.pull_reply.ptype = MPOE_PKT_PULL_REPLY;
+	reply_mh->body.pull_reply.src_pull_handle = pull_request->src_pull_handle;
 
 	/* get the rdma window */
 	rdma_id = pull_request->pulled_rdma_id;
@@ -166,30 +226,35 @@ int
 mpoe_net_recv_pull_reply(struct mpoe_iface * iface,
 			 struct mpoe_hdr * mh)
 {
-#if 0
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-#endif
 	struct mpoe_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
+	struct mpoe_pull_handle * pull_handle;
 	int err = 0;
 
-	printk("got a pull reply length %d\n", pull_reply->length);
+	printk("got a pull reply length %d handle %d\n",
+	       pull_reply->length, pull_reply->src_pull_handle);
 	/* FIXME */
 
-#if 0
-	/* get the destination endpoint */
-	endpoint = mpoe_net_get_dst_endpoint(iface, pull_reply->dst_endpoint);
-	if (!endpoint) {
-		printk(KERN_DEBUG "MPoE: Dropping PULL REPLY packet for unknown endpoint %d\n",
-		       pull_reply->dst_endpoint);
+	pull_handle = (struct mpoe_pull_handle *) pull_reply->src_pull_handle;
+
+	/* basic checks */
+	endpoint = pull_handle->endpoint;
+	if (endpoint->iface != iface) {
+		printk(KERN_DEBUG "MPoE: got a pull reply on wrong iface\n");
 		err = -EINVAL;
 		goto drop;
 	}
 
+	/* FIXME: store the sender mac in the handle and check it ? */
+
+	kmem_cache_free(mpoe_pull_handle_cachep, pull_handle);
+
+	printk("releasing pull handle %p\n", pull_handle);
+
 	return 0;
 
  drop:
-#endif
 	return err;
 }
 

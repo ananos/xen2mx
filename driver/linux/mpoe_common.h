@@ -76,6 +76,10 @@ extern struct mpoe_endpoint * mpoe_net_get_dst_endpoint(struct mpoe_iface *iface
 extern int mpoe_net_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 extern int mpoe_net_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 
+/* pull */
+extern int mpoe_init_pull(void);
+extern void mpoe_exit_pull(void);
+
 /* user regions */
 extern void mpoe_init_endpoint_user_regions(struct mpoe_endpoint * endpoint);
 extern int mpoe_register_user_region(struct mpoe_endpoint * endpoint, void __user * uparam);

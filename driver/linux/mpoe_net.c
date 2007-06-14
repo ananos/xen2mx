@@ -336,6 +336,10 @@ mpoe_net_init(const char * ifnames)
 {
 	int ret = 0;
 
+	ret = mpoe_init_pull();
+	if (ret < 0)
+		goto abort;
+
 	dev_add_pack(&mpoe_pt);
 
 	ret = register_netdevice_notifier(&mpoe_netdevice_notifier);
@@ -387,6 +391,8 @@ mpoe_net_init(const char * ifnames)
 	unregister_netdevice_notifier(&mpoe_netdevice_notifier);
  abort_with_pack:
 	dev_remove_pack(&mpoe_pt);
+	mpoe_exit_pull();
+ abort:
 	return ret;
 }
 
@@ -414,6 +420,8 @@ mpoe_net_exit(void)
 	unregister_netdevice_notifier(&mpoe_netdevice_notifier);
 
 	dev_remove_pack(&mpoe_pt);
+
+	mpoe_exit_pull();
 }
 
 /*

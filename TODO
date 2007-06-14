@@ -1,3 +1,5 @@
+* factorize access to pull packet fields
+* events for sending (needs a handle)
 * no need to pad cmd_hdr to 64 ?
 * ntoh[sl] fields
 * use kref to get user region without keeping a spinlock ?
