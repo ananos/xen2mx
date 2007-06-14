@@ -69,41 +69,52 @@ mpoe_net_pull_reply_append_user_region_segment(struct sk_buff *skb,
 }
 
 int
-mpoe_net_pull_reply(struct mpoe_endpoint * endpoint,
-		    struct mpoe_pkt_pull_request * pull_request,
-		    struct mpoe_mac_addr * dest_addr)
+mpoe_net_recv_pull(struct mpoe_iface * iface,
+		   struct mpoe_hdr * pull_mh)
 {
+	struct mpoe_endpoint * endpoint;
+	struct ethhdr *pull_eh = &pull_mh->head.eth;
+	struct mpoe_pkt_pull_request *pull_request = &pull_mh->body.pull;
 	struct sk_buff *skb;
-	struct mpoe_hdr *mh;
-	struct ethhdr *eh;
-	struct mpoe_iface * iface = endpoint->iface;
+	struct mpoe_hdr *reply_mh;
+	struct ethhdr *reply_eh;
 	struct net_device * ifp = iface->eth_ifp;
 	struct mpoe_user_region *region;
-	uint32_t rdma_id;
-	int ret;
-	uint32_t length, queued, iseg;
+	uint32_t rdma_id, length, queued, iseg;
+	int err = 0;
 
-	skb = mpoe_new_skb(ifp, sizeof(*mh));
+	/* get the destination endpoint */
+	endpoint = mpoe_net_get_dst_endpoint(iface, pull_request->dst_endpoint);
+	if (!endpoint) {
+		printk(KERN_DEBUG "MPoE: Dropping PULL packet for unknown endpoint %d\n",
+		       pull_request->dst_endpoint);
+		err = -EINVAL;
+		goto out;
+	}
+
+	printk("got a pull length %d\n", pull_request->length);
+
+	skb = mpoe_new_skb(ifp, sizeof(*reply_mh));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create pull reply skb\n");
-		ret = -ENOMEM;
+		err = -ENOMEM;
 		goto out;
 	}
 
 	/* locate headers */
-	mh = mpoe_hdr(skb);
-	eh = &mh->head.eth;
+	reply_mh = mpoe_hdr(skb);
+	reply_eh = &reply_mh->head.eth;
 
 	/* fill ethernet header */
-	memset(eh, 0, sizeof(*eh));
-	mpoe_mac_addr_to_ethhdr_dst(dest_addr, eh);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
-	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
+	memcpy(reply_eh->h_source, ifp->dev_addr, sizeof (reply_eh->h_source));
+	reply_eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
+	/* get the destination address */
+	memcpy(reply_eh->h_dest, pull_eh->h_source, sizeof(reply_eh->h_dest));
 
 	/* fill mpoe header */
-	mh->body.pull_reply.puller_rdma_id = pull_request->puller_rdma_id;
-	mh->body.pull_reply.puller_offset = pull_request->puller_offset;
-	mh->body.pull_reply.ptype = MPOE_PKT_PULL_REPLY;
+	reply_mh->body.pull_reply.puller_rdma_id = pull_request->puller_rdma_id;
+	reply_mh->body.pull_reply.puller_offset = pull_request->puller_offset;
+	reply_mh->body.pull_reply.ptype = MPOE_PKT_PULL_REPLY;
 
 	/* get the rdma window */
 	rdma_id = pull_request->pulled_rdma_id;
@@ -134,7 +145,7 @@ mpoe_net_pull_reply(struct mpoe_endpoint * endpoint,
 #endif
 	spin_unlock(&endpoint->user_regions_lock);
 
-	mh->body.pull_reply.length = queued;
+	reply_mh->body.pull_reply.length = queued;
 
 	dev_queue_xmit(skb);
 
@@ -148,39 +159,6 @@ mpoe_net_pull_reply(struct mpoe_endpoint * endpoint,
  out_with_skb:
 	dev_kfree_skb(skb);
  out:
-	return ret;
-}
-
-/* FIXME: merge with below */
-int
-mpoe_net_recv_pull(struct mpoe_iface * iface,
-		   struct mpoe_hdr * mh)
-{
-	struct mpoe_endpoint * endpoint;
-	struct ethhdr *eh = &mh->head.eth;
-	struct mpoe_pkt_pull_request *pull = &mh->body.pull;
-	struct mpoe_mac_addr src_addr;
-	int err = 0;
-
-	/* get the destination endpoint */
-	endpoint = mpoe_net_get_dst_endpoint(iface, pull->dst_endpoint);
-	if (!endpoint) {
-		printk(KERN_DEBUG "MPoE: Dropping PULL packet for unknown endpoint %d\n",
-		       pull->dst_endpoint);
-		err = -EINVAL;
-		goto drop;
-	}
-
-	printk("got a pull length %d\n", pull->length);
-
-	mpoe_ethhdr_src_to_mac_addr(&src_addr, eh);
-	/* FIXME: do not convert twice */
-	mpoe_net_pull_reply(endpoint, pull, &src_addr);
-	/* FIXME: check return value */
-
-	return 0;
-
- drop:
 	return err;
 }
 
