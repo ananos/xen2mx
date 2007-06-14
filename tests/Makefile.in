@@ -17,7 +17,7 @@ LD	=	gcc
 all: $(TESTS)
 
 $(TESTS): %: %.o
-	$(CC) $< -o $@
+	$(LD) $< -o $@
 
 %.o: @srcdir@/%.c
 	$(CC) -c $(CFLAGS) $< -o $@

@@ -4,7 +4,7 @@
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
 
-static inline struct mpoe_endpoint *
+struct mpoe_endpoint *
 mpoe_net_get_dst_endpoint(struct mpoe_iface *iface,
 			  uint8_t dst_endpoint)
 {
@@ -191,69 +191,6 @@ mpoe_net_recv_rndv(struct mpoe_iface * iface,
 #endif
 
 	/* FIXME */
-}
-
-static int
-mpoe_net_recv_pull(struct mpoe_iface * iface,
-		   struct mpoe_hdr * mh)
-{
-	struct mpoe_endpoint * endpoint;
-	struct ethhdr *eh = &mh->head.eth;
-	struct mpoe_pkt_pull_request *pull = &mh->body.pull;
-	struct mpoe_mac_addr src_addr;
-	int err = 0;
-
-	/* get the destination endpoint */
-	endpoint = mpoe_net_get_dst_endpoint(iface, pull->dst_endpoint);
-	if (!endpoint) {
-		printk(KERN_DEBUG "MPoE: Dropping PULL packet for unknown endpoint %d\n",
-		       pull->dst_endpoint);
-		err = -EINVAL;
-		goto drop;
-	}
-
-	printk("got a pull length %d\n", pull->length);
-
-	mpoe_ethhdr_src_to_mac_addr(&src_addr, eh);
-	/* FIXME: do not convert twice */
-	mpoe_net_pull_reply(endpoint, pull, &src_addr);
-	/* FIXME: check return value */
-
-	return 0;
-
- drop:
-	return err;
-}
-
-static int
-mpoe_net_recv_pull_reply(struct mpoe_iface * iface,
-			 struct mpoe_hdr * mh)
-{
-#if 0
-	struct mpoe_endpoint * endpoint;
-	struct ethhdr *eh = &mh->head.eth;
-#endif
-	struct mpoe_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
-	int err = 0;
-
-	printk("got a pull reply length %d\n", pull_reply->length);
-	/* FIXME */
-
-#if 0
-	/* get the destination endpoint */
-	endpoint = mpoe_net_get_dst_endpoint(iface, pull_reply->dst_endpoint);
-	if (!endpoint) {
-		printk(KERN_DEBUG "MPoE: Dropping PULL REPLY packet for unknown endpoint %d\n",
-		       pull_reply->dst_endpoint);
-		err = -EINVAL;
-		goto drop;
-	}
-
-	return 0;
-
- drop:
-#endif
-	return err;
 }
 
 /***********************

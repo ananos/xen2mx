@@ -63,6 +63,7 @@ extern int mpoe_net_get_iface_id(uint8_t board_index, struct mpoe_mac_addr * boa
 extern struct mpoe_iface * mpoe_net_iface_from_ifp(struct net_device *ifp);
 
 /* sending */
+extern struct sk_buff * mpoe_new_skb(struct net_device *ifp, unsigned long len);
 extern int mpoe_net_send_tiny(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_net_send_medium(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_net_send_rendez_vous(struct mpoe_endpoint * endpoint, void __user * uparam);
@@ -71,6 +72,9 @@ extern int mpoe_net_pull_reply(struct mpoe_endpoint * endpoint, struct mpoe_pkt_
 
 /* receiving */
 extern int mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt, struct net_device *orig_dev);
+extern struct mpoe_endpoint * mpoe_net_get_dst_endpoint(struct mpoe_iface *iface, uint8_t dst_endpoint);
+extern int mpoe_net_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh);
+extern int mpoe_net_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 
 /* user regions */
 extern void mpoe_init_endpoint_user_regions(struct mpoe_endpoint * endpoint);
