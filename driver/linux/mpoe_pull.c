@@ -143,7 +143,7 @@ mpoe_net_recv_pull(struct mpoe_iface * iface,
 	int err = 0;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_net_get_dst_endpoint(iface, pull_request->dst_endpoint);
+	endpoint = mpoe_net_acquire_endpoint(iface, pull_request->dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping PULL packet for unknown endpoint %d\n",
 		       pull_request->dst_endpoint);
@@ -157,7 +157,7 @@ mpoe_net_recv_pull(struct mpoe_iface * iface,
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create pull reply skb\n");
 		err = -ENOMEM;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* locate headers */
@@ -209,6 +209,8 @@ mpoe_net_recv_pull(struct mpoe_iface * iface,
 
 	dev_queue_xmit(skb);
 
+	mpoe_net_release_endpoint(endpoint);
+
 //	printk(KERN_INFO "MPoE: sent a pull reply from endpoint %d\n",
 //	       endpoint->endpoint_index);
 
@@ -218,6 +220,8 @@ mpoe_net_recv_pull(struct mpoe_iface * iface,
 	spin_unlock(&endpoint->user_regions_lock);
  out_with_skb:
 	dev_kfree_skb(skb);
+ out_with_endpoint:
+	mpoe_net_release_endpoint(endpoint);
  out:
 	return err;
 }

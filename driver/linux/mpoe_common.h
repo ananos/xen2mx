@@ -28,6 +28,9 @@ struct mpoe_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
 
+	atomic_t refcount;
+	wait_queue_head_t noref_queue;
+
 	struct mpoe_iface * iface;
 
 	void * sendq, * recvq, * eventq;
@@ -54,6 +57,8 @@ struct mpoe_user_region {
 extern int mpoe_net_attach_endpoint(struct mpoe_endpoint * endpoint, uint8_t board_index, uint8_t endpoint_index);
 extern void mpoe_net_detach_endpoint(struct mpoe_endpoint * endpoint);
 extern int mpoe_close_endpoint(struct mpoe_endpoint * endpoint, void __user * dummy);
+extern struct mpoe_endpoint * mpoe_net_acquire_endpoint(struct mpoe_iface *iface, uint8_t dst_endpoint);
+extern void mpoe_net_release_endpoint(struct mpoe_endpoint * endpoint);
 
 /* manage ifaces */
 extern int mpoe_net_ifaces_show(char *buf);
@@ -72,7 +77,6 @@ extern int mpoe_net_pull_reply(struct mpoe_endpoint * endpoint, struct mpoe_pkt_
 
 /* receiving */
 extern int mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt, struct net_device *orig_dev);
-extern struct mpoe_endpoint * mpoe_net_get_dst_endpoint(struct mpoe_iface *iface, uint8_t dst_endpoint);
 extern int mpoe_net_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 extern int mpoe_net_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 

@@ -4,19 +4,6 @@
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
 
-struct mpoe_endpoint *
-mpoe_net_get_dst_endpoint(struct mpoe_iface *iface,
-			  uint8_t dst_endpoint)
-{
-	if (dst_endpoint >= mpoe_endpoint_max
-	    || iface->endpoints[dst_endpoint] == NULL)
-		return NULL;
-
-	/* FIXME: increase use count while holding a lock */
-
-	return iface->endpoints[dst_endpoint];
-}
-
 /******************************
  * Manage event and data slots
  */
@@ -66,12 +53,12 @@ mpoe_net_recv_tiny(struct mpoe_iface * iface,
 	int err = 0;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_net_get_dst_endpoint(iface, tiny->dst_endpoint);
+	endpoint = mpoe_net_acquire_endpoint(iface, tiny->dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping TINY packet for unknown endpoint %d\n",
 		       tiny->dst_endpoint);
 		err = -EINVAL;
-		goto drop;
+		goto out;
 	}
 
 	/* get the eventq slot */
@@ -79,7 +66,7 @@ mpoe_net_recv_tiny(struct mpoe_iface * iface,
 	if (!evt) {
 		printk(KERN_INFO "MPoE: Dropping TINY packet because of event queue full\n");
 		err = -EBUSY;
-		goto drop;
+		goto out_with_endpoint;
 	}
 	event = &evt->tiny;
 
@@ -98,9 +85,13 @@ mpoe_net_recv_tiny(struct mpoe_iface * iface,
 	/* set the type at the end so that user-space does not find the slot on error */
 	event->type = MPOE_EVT_RECV_TINY;
 
+	mpoe_net_release_endpoint(endpoint);
+
 	return 0;
 
- drop:
+ out_with_endpoint:
+	mpoe_net_release_endpoint(endpoint);
+ out:
 	return err;
 }
 
@@ -118,12 +109,12 @@ mpoe_net_recv_medium_frag(struct mpoe_iface * iface,
 	int err;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_net_get_dst_endpoint(iface, medium->msg.dst_endpoint);
+	endpoint = mpoe_net_acquire_endpoint(iface, medium->msg.dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping MEDIUM packet for unknown endpoint %d\n",
 		       medium->msg.dst_endpoint);
 		err = -EINVAL;
-		goto drop;
+		goto out;
 	}
 
 	/* get the eventq slot */
@@ -131,7 +122,7 @@ mpoe_net_recv_medium_frag(struct mpoe_iface * iface,
 	if (!evt) {
 		printk(KERN_INFO "MPoE: Dropping MEDIUM packet because of event queue full\n");
 		err = -EBUSY;
-		goto drop;
+		goto out_with_endpoint;
 	}
 	event = &evt->medium;
 
@@ -151,9 +142,13 @@ mpoe_net_recv_medium_frag(struct mpoe_iface * iface,
 	/* set the type at the end so that user-space does not find the slot on error */
 	event->type = MPOE_EVT_RECV_MEDIUM;
 
+	mpoe_net_release_endpoint(endpoint);
+
 	return 0;
 
- drop:
+ out_with_endpoint:
+	mpoe_net_release_endpoint(endpoint);
+ out:
 	return err;
 }
 
@@ -167,12 +162,12 @@ mpoe_net_recv_rndv(struct mpoe_iface * iface,
 	struct mpoe_pkt_rndv *rndv = &mh->body.rndv;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_net_get_dst_endpoint(iface, rndv->dst_endpoint);
+	endpoint = mpoe_net_acquire_endpoint(iface, rndv->dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping RNDV packet for unknown endpoint %d\n",
 		       rndv->dst_endpoint);
 		err = -EINVAL;
-		goto drop;
+		goto out;
 	}
 
 	/* get the eventq slot */
@@ -180,13 +175,17 @@ mpoe_net_recv_rndv(struct mpoe_iface * iface,
 	if (!evt) {
 		printk(KERN_INFO "MPoE: Dropping RNDV packet because of event queue full\n");
 		err = -EBUSY;
-		goto drop;
+		goto out_with_endpoint;
 	}
 	event = &evt->rndv;
 
+	mpoe_net_release_endpoint(endpoint);
+
 	return 0;
 
- drop:
+ out_with_endpoint:
+	mpoe_net_release_endpoint(endpoint);
+ out:
 	return err;
 #endif
 

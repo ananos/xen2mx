@@ -263,6 +263,9 @@ mpoe_net_attach_endpoint(struct mpoe_endpoint * endpoint, uint8_t board_index, u
 	endpoint->board_index = board_index;
 	endpoint->endpoint_index = endpoint_index;
 
+	atomic_set(&endpoint->refcount, 0);
+	init_waitqueue_head(&endpoint->noref_queue);
+
 	spin_lock(&iface->endpoint_lock);
 	iface->endpoint_nr++;
 	iface->endpoints[endpoint_index] = endpoint ;
@@ -277,12 +280,55 @@ mpoe_net_detach_endpoint(struct mpoe_endpoint * endpoint)
 {
 	struct mpoe_iface * iface = endpoint->iface;
 	int index = endpoint->endpoint_index;
+	DECLARE_WAITQUEUE(wq, current);
 
 	spin_lock(&iface->endpoint_lock);
-	iface->endpoint_nr--;
 	BUG_ON(iface->endpoints[index] == NULL);
+
+	/* wait until refcount is 0 */
+	add_wait_queue(&endpoint->noref_queue, &wq);
+	set_current_state(TASK_INTERRUPTIBLE);
+	while (atomic_read(&endpoint->refcount)) {
+		spin_unlock(&iface->endpoint_lock);
+		schedule();
+		spin_lock(&iface->endpoint_lock);
+	}
+	set_current_state(TASK_RUNNING);
+	remove_wait_queue(&endpoint->noref_queue, &wq);
+
 	iface->endpoints[index] = NULL;
+	iface->endpoint_nr--;
 	spin_unlock(&iface->endpoint_lock);
+}
+
+struct mpoe_endpoint *
+mpoe_net_acquire_endpoint(struct mpoe_iface *iface,
+			  uint8_t dst_endpoint)
+{
+	struct mpoe_endpoint * endpoint;
+
+	/* FIXME: fail if endpoint is closing */
+
+	spin_lock(&iface->endpoint_lock);
+
+	if (dst_endpoint >= mpoe_endpoint_max
+	    || iface->endpoints[dst_endpoint] == NULL)
+		return NULL;
+
+	endpoint = iface->endpoints[dst_endpoint];
+	atomic_inc(&endpoint->refcount);
+
+	spin_unlock(&iface->endpoint_lock);
+
+	return iface->endpoints[dst_endpoint];
+}
+
+void
+mpoe_net_release_endpoint(struct mpoe_endpoint * endpoint)
+{
+	/* decrement refcount and wake up the closer */
+	if (atomic_dec_and_test(&endpoint->refcount))
+		wake_up(&endpoint->noref_queue);
 }
 
 static struct packet_type mpoe_pt = {
