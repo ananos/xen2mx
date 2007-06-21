@@ -347,6 +347,8 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
 
         if (event == NETDEV_UNREGISTER) {
 		int i;
+
+		down(&mpoe_iface_mutex);
 		for (i=0; i<mpoe_iface_max; i++) {
 			struct mpoe_iface * iface = mpoe_ifaces[i];
 			if (iface && iface->eth_ifp == ifp) {
@@ -363,6 +365,7 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
 				BUG_ON(ret);
 			}
 		}
+		up(&mpoe_iface_mutex);
 	}
 
         return NOTIFY_DONE;
@@ -451,25 +454,37 @@ mpoe_net_exit(void)
 {
 	int i, nr = 0;
 
-	down(&mpoe_iface_mutex); /* should not be needed, since all other users
-				  * have a reference to the chardev and thus prevent
-				  * the module from being unloaded */
+	/* Module unloading cannot happen before all users exit
+	 * since they hold a reference on the chardev.
+	 * So _all_ endpoint are closed once we arrive here.
+	 */
+
+	dev_remove_pack(&mpoe_pt);
+	/* Now, no iface should be in use by future incoming packets
+	 */
+
+	/* prevent mpoe_netdevice_notifier from removing an iface now */
+	down(&mpoe_iface_mutex);
 
 	for (i=0; i<mpoe_iface_max; i++) {
 		struct mpoe_iface * iface = mpoe_ifaces[i];
 		if (iface != NULL) {
+			/* mpoe_net_detach_iface() will take care of waiting for remaining users
+			 * (packets that were being received before dev_remove_pack())
+			 */
 			BUG_ON(mpoe_net_detach_iface(iface) < 0);
 			nr++;
 		}
 	}
-
 	printk(KERN_INFO "MPoE: detached %d interfaces\n", nr);
 
-	kfree(mpoe_ifaces);
-
+	/* Let mpoe_netdevice_notifier finish in case it got called during our loop,
+	 * and unregister the notifier then */
+	up(&mpoe_iface_mutex);
 	unregister_netdevice_notifier(&mpoe_netdevice_notifier);
 
-	dev_remove_pack(&mpoe_pt);
+	/* Free structures now that the notifier is gone */
+	kfree(mpoe_ifaces);
 
 	mpoe_exit_pull();
 }
