@@ -30,6 +30,7 @@ struct mpoe_endpoint {
 
 	atomic_t refcount;
 	wait_queue_head_t noref_queue;
+	int closing : 1;
 
 	struct mpoe_iface * iface;
 

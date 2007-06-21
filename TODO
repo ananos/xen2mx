@@ -1,4 +1,3 @@
-* fail acquire_endpoint if endpoint is closing
 * add references in mpoe_iface
 * factorize access to pull packet fields
 * events for sending (needs a handle)

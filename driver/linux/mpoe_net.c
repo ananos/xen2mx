@@ -265,6 +265,7 @@ mpoe_net_attach_endpoint(struct mpoe_endpoint * endpoint, uint8_t board_index, u
 
 	atomic_set(&endpoint->refcount, 0);
 	init_waitqueue_head(&endpoint->noref_queue);
+	endpoint->closing = 0;
 
 	spin_lock(&iface->endpoint_lock);
 	iface->endpoint_nr++;
@@ -284,6 +285,9 @@ mpoe_net_detach_endpoint(struct mpoe_endpoint * endpoint)
 
 	spin_lock(&iface->endpoint_lock);
 	BUG_ON(iface->endpoints[index] == NULL);
+
+	/* mark as closing so that other people won't acquire anymore */
+	endpoint->closing = 0;
 
 	/* wait until refcount is 0 */
 	add_wait_queue(&endpoint->noref_queue, &wq);
@@ -307,15 +311,15 @@ mpoe_net_acquire_endpoint(struct mpoe_iface *iface,
 {
 	struct mpoe_endpoint * endpoint;
 
-	/* FIXME: fail if endpoint is closing */
-
 	spin_lock(&iface->endpoint_lock);
 
-	if (dst_endpoint >= mpoe_endpoint_max
-	    || iface->endpoints[dst_endpoint] == NULL)
+	if (dst_endpoint >= mpoe_endpoint_max)
 		return NULL;
 
 	endpoint = iface->endpoints[dst_endpoint];
+	if (!endpoint || endpoint->closing)
+		return NULL;
+
 	atomic_inc(&endpoint->refcount);
 
 	spin_unlock(&iface->endpoint_lock);
