@@ -375,11 +375,6 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
  * Initialization and termination
  */
 
-static struct packet_type mpoe_pt = {
-	.type = __constant_htons(ETH_P_MPOE),
-	.func = mpoe_net_recv,
-};
-
 static struct notifier_block mpoe_netdevice_notifier = {
         .notifier_call = mpoe_netdevice_notifier_cb,
 };

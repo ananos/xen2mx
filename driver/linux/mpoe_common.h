@@ -77,7 +77,7 @@ extern int mpoe_net_send_pull(struct mpoe_endpoint * endpoint, void __user * upa
 extern int mpoe_net_pull_reply(struct mpoe_endpoint * endpoint, struct mpoe_pkt_pull_request * pull_request, struct mpoe_mac_addr * dest_addr);
 
 /* receiving */
-extern int mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt, struct net_device *orig_dev);
+extern struct packet_type mpoe_pt;
 extern int mpoe_net_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 extern int mpoe_net_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 

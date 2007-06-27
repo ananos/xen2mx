@@ -196,7 +196,7 @@ mpoe_net_recv_rndv(struct mpoe_iface * iface,
  * Main receive routine
  */
 
-int
+static int
 mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	      struct net_device *orig_dev)
 {
@@ -264,6 +264,11 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	dev_kfree_skb(skb);
 	return 0;
 }
+
+struct packet_type mpoe_pt = {
+	.type = __constant_htons(ETH_P_MPOE),
+	.func = mpoe_net_recv,
+};
 
 /*
  * Local variables:
