@@ -26,12 +26,82 @@ mpoe_ifp_find_by_name(const char * ifname)
 }
 
 /*************
- * Attaching/Detaching interfaces
+ * Managing interfaces
  */
 
 static struct mpoe_iface ** mpoe_ifaces;
 static unsigned int mpoe_iface_nr = 0;
 static spinlock_t mpoe_iface_lock = SPIN_LOCK_UNLOCKED;
+
+/*
+ * Used when an incoming packets is to be processed on net_device ifp
+ * and returns the corresponding iface.
+ *
+ * Since iface removal disables incoming packet processing, we don't
+ * need to lock the iface array or to hold a reference on the iface.
+ */
+struct mpoe_iface *
+mpoe_iface_find_by_ifp(struct net_device *ifp)
+{
+	int i;
+
+	for (i=0; i<mpoe_iface_max; i++) {
+		struct mpoe_iface * iface = mpoe_ifaces[i];
+		if (iface && iface->eth_ifp == ifp)
+			return iface;
+	}
+
+	return NULL;
+}
+
+/*
+ * Return the number of mpoe ifaces.
+ * No need to lock since the array of iface is always coherent
+ * and we don't access the internals of the ifaces
+ */
+int
+mpoe_ifaces_get_count(void)
+{
+	int i, count = 0;
+
+	for (i=0; i<mpoe_iface_max; i++)
+		if (mpoe_ifaces[i] != NULL)
+			count++;
+
+	return count;
+}
+
+int
+mpoe_iface_get_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name)
+{
+	struct net_device * ifp;
+	int ret;
+
+	/* need to lock since we access the internals of the iface */
+	spin_lock(&mpoe_iface_lock);
+
+	ret = -EINVAL;
+	if (board_index >= mpoe_iface_max
+	    || mpoe_ifaces[board_index] == NULL)
+		goto out_with_lock;
+
+	ifp = mpoe_ifaces[board_index]->eth_ifp;
+
+	mpoe_mac_addr_of_netdevice(ifp, board_addr);
+	strncpy(board_name, ifp->name, MPOE_IF_NAMESIZE);
+
+	spin_unlock(&mpoe_iface_lock);
+
+	return 0;
+
+ out_with_lock:
+	spin_unlock(&mpoe_iface_lock);
+	return ret;
+}
+
+/*************
+ * Attaching/Detaching interfaces
+ */
 
 /* called with ifaces lock hold */
 static int
@@ -164,7 +234,7 @@ mpoe_iface_detach_force(struct mpoe_iface * iface)
 }
 
 /*************
- * Managing interfaces
+ * Attribute-based attaching/detaching of interfaces
  */
 
 /* list attached interfaces */
@@ -257,72 +327,6 @@ mpoe_ifaces_store(const char *buf, size_t size)
 		printk(KERN_ERR "MPoE: Unrecognized command passed in the ifaces file, need either +name or -name\n");
 		return -EINVAL;
 	}
-}
-
-/*
- * Used when an incoming packets is to be processed on net_device ifp
- * and returns the corresponding iface.
- *
- * Since iface removal disables incoming packet processing, we don't
- * need to lock the iface array or to hold a reference on the iface.
- */
-struct mpoe_iface *
-mpoe_iface_find_by_ifp(struct net_device *ifp)
-{
-	int i;
-
-	for (i=0; i<mpoe_iface_max; i++) {
-		struct mpoe_iface * iface = mpoe_ifaces[i];
-		if (iface && iface->eth_ifp == ifp)
-			return iface;
-	}
-
-	return NULL;
-}
-
-/*
- * Return the number of mpoe ifaces.
- * No need to lock since the array of iface is always coherent
- * and we don't access the internals of the ifaces
- */
-int
-mpoe_ifaces_get_count(void)
-{
-	int i, count = 0;
-
-	for (i=0; i<mpoe_iface_max; i++)
-		if (mpoe_ifaces[i] != NULL)
-			count++;
-
-	return count;
-}
-
-int
-mpoe_iface_get_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name)
-{
-	struct net_device * ifp;
-	int ret;
-
-	/* need to lock since we access the internals of the iface */
-	spin_lock(&mpoe_iface_lock);
-
-	ret = -EINVAL;
-	if (board_index >= mpoe_iface_max
-	    || mpoe_ifaces[board_index] == NULL)
-		goto out_with_lock;
-
-	ifp = mpoe_ifaces[board_index]->eth_ifp;
-
-	mpoe_mac_addr_of_netdevice(ifp, board_addr);
-	strncpy(board_name, ifp->name, MPOE_IF_NAMESIZE);
-
-	spin_unlock(&mpoe_iface_lock);
-
-	return 0;
-
- out_with_lock:
-	spin_unlock(&mpoe_iface_lock);
-	return ret;
 }
 
 /**********
