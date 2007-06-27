@@ -260,7 +260,7 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 //	       mh->ptype, mh->length, mh->match_info, mh->dst_endpoint, mh->src_endpoint);
 
  exit:
-	/* TODO: send nack */
+	/* FIXME: send nack */
 	dev_kfree_skb(skb);
 	return 0;
 }

@@ -47,7 +47,7 @@ mpoe_iface_attach(struct net_device * ifp)
 		goto out_with_ifp_hold;
 	}
 
-	/* TODO: do not attach twice ? */
+	/* FIXME: do not attach twice? */
 
 	for(i=0; i<mpoe_iface_max; i++)
 		if (mpoe_ifaces[i] == NULL)
@@ -120,7 +120,7 @@ mpoe_ifaces_show(char *buf)
 		if (iface) {
 			char * ifname = iface->eth_ifp->name;
 			int length = strlen(ifname);
-			/* TODO: check total+length+2 <= PAGE_SIZE ? */
+			/* FIXME: check total+length+2 <= PAGE_SIZE ? */
 			strcpy(buf, ifname);
 			buf += length;
 			strcpy(buf, "\n");
