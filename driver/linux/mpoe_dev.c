@@ -270,18 +270,18 @@ mpoe_miscdev = {
 #ifdef MPOE_MISCDEV_HAVE_CLASS_DEVICE
 
 static ssize_t
-mpoe_ifaces_show(struct class_device *dev, char *buf)
+mpoe_ifaces_attr_show(struct class_device *dev, char *buf)
 {
 	return mpoe_net_ifaces_show(buf);
 }
 
 static ssize_t
-mpoe_ifaces_store(struct class_device *dev, const char *buf, size_t size)
+mpoe_ifaces_attr_store(struct class_device *dev, const char *buf, size_t size)
 {
 	return mpoe_net_ifaces_store(buf, size);
 }
 
-static CLASS_DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, mpoe_ifaces_show, mpoe_ifaces_store);
+static CLASS_DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, mpoe_ifaces_attr_show, mpoe_ifaces_attr_store);
 
 static int
 mpoe_init_attributes(void)
@@ -298,18 +298,18 @@ mpoe_exit_attributes(void)
 #else /* !MPOE_MISCDEV_HAVE_CLASS_DEVICE */
 
 static ssize_t
-mpoe_ifaces_show(struct device *dev, struct device_attribute *attr, char *buf)
+mpoe_ifaces_attr_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	return mpoe_net_ifaces_show(buf);
 }
 
 static ssize_t
-mpoe_ifaces_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+mpoe_ifaces_attr_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
 	return mpoe_net_ifaces_store(buf, size);
 }
 
-static DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, mpoe_ifaces_show, mpoe_ifaces_store);
+static DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, mpoe_ifaces_attr_show, mpoe_ifaces_attr_store);
 
 static int
 mpoe_init_attributes(void)
