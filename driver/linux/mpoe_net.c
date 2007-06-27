@@ -31,7 +31,7 @@ mpoe_ifp_find_by_name(const char * ifname)
 
 static struct mpoe_iface ** mpoe_ifaces;
 static unsigned int mpoe_iface_nr = 0;
-static DECLARE_MUTEX_LOCKED(mpoe_iface_mutex);
+static spinlock_t mpoe_iface_lock = SPIN_LOCK_UNLOCKED;
 
 /* called with interface hold */
 static int
@@ -114,7 +114,7 @@ mpoe_ifaces_show(char *buf)
 	int total = 0;
 	int i;
 
-	down(&mpoe_iface_mutex);
+	spin_lock(&mpoe_iface_lock);
 	for (i=0; i<mpoe_iface_max; i++) {
 		struct mpoe_iface * iface = mpoe_ifaces[i];
 		if (iface) {
@@ -128,7 +128,7 @@ mpoe_ifaces_show(char *buf)
 			total += length+1;
 		}
 	}
-	up(&mpoe_iface_mutex);
+	spin_unlock(&mpoe_iface_lock);
 
 	return total + 1;
 }
@@ -152,7 +152,7 @@ mpoe_ifaces_store(const char *buf, size_t size)
 		/* in case none matches, we return -EINVAL. if one matches, it sets ret accordingly */
 		int ret = -EINVAL;
 
-		down(&mpoe_iface_mutex);
+		spin_lock(&mpoe_iface_lock);
 		for(i=0; i<mpoe_iface_max; i++) {
 			struct mpoe_iface * iface = mpoe_ifaces[i];
 			if (iface != NULL && !strcmp(iface->eth_ifp->name, copy)) {
@@ -162,7 +162,7 @@ mpoe_ifaces_store(const char *buf, size_t size)
 				break;
 			}
 		}
-		up(&mpoe_iface_mutex);
+		spin_unlock(&mpoe_iface_lock);
 
 		if (!found) {
 			printk(KERN_ERR "MPoE: Cannot find any attached interface '%s' to detach\n", copy);
@@ -178,9 +178,9 @@ mpoe_ifaces_store(const char *buf, size_t size)
 		if (!ifp)
 			return -EINVAL;
 
-		down(&mpoe_iface_mutex);
+		spin_lock(&mpoe_iface_lock);
 		ret = mpoe_iface_attach(ifp);
-		up(&mpoe_iface_mutex);
+		spin_unlock(&mpoe_iface_lock);
 		if (ret < 0)
 			return ret;
 
@@ -244,10 +244,10 @@ mpoe_endpoint_attach(struct mpoe_endpoint * endpoint, uint8_t board_index, uint8
 {
 	struct mpoe_iface * iface;
 
-	down(&mpoe_iface_mutex);
+	spin_lock(&mpoe_iface_lock);
 	if (board_index >= mpoe_iface_max || mpoe_ifaces[board_index] == NULL) {
 		printk(KERN_ERR "MPoE: Cannot open endpoint on unexisting board %d\n", board_index);
-		up(&mpoe_iface_mutex);
+		spin_unlock(&mpoe_iface_lock);
 		return -EINVAL;
 	}
 
@@ -255,7 +255,7 @@ mpoe_endpoint_attach(struct mpoe_endpoint * endpoint, uint8_t board_index, uint8
 
 	if (endpoint_index >= mpoe_endpoint_max || iface->endpoints[endpoint_index] != NULL) {
 		printk(KERN_ERR "MPoE: Cannot open busy endpoint %d\n", endpoint_index);
-		up(&mpoe_iface_mutex);
+		spin_unlock(&mpoe_iface_lock);
 		return -EBUSY;
 	}
 
@@ -271,7 +271,7 @@ mpoe_endpoint_attach(struct mpoe_endpoint * endpoint, uint8_t board_index, uint8
 	iface->endpoint_nr++;
 	iface->endpoints[endpoint_index] = endpoint ;
 	spin_unlock(&iface->endpoint_lock);
-	up(&mpoe_iface_mutex);
+	spin_unlock(&mpoe_iface_lock);
 
 	return 0;
 }
@@ -348,7 +348,7 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
         if (event == NETDEV_UNREGISTER) {
 		int i;
 
-		down(&mpoe_iface_mutex);
+		spin_lock(&mpoe_iface_lock);
 		for (i=0; i<mpoe_iface_max; i++) {
 			struct mpoe_iface * iface = mpoe_ifaces[i];
 			if (iface && iface->eth_ifp == ifp) {
@@ -365,7 +365,7 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
 				BUG_ON(ret);
 			}
 		}
-		up(&mpoe_iface_mutex);
+		spin_unlock(&mpoe_iface_lock);
 	}
 
         return NOTIFY_DONE;
@@ -430,7 +430,6 @@ mpoe_net_init(const char * ifnames)
 		}
 	        read_unlock(&dev_base_lock);
 	}
-	up(&mpoe_iface_mutex); /* has been initialized locked */
 
 	printk(KERN_INFO "MPoE: attached %d interfaces\n", mpoe_iface_nr);
 	return 0;
@@ -459,7 +458,7 @@ mpoe_net_exit(void)
 	 */
 
 	/* prevent mpoe_netdevice_notifier from removing an iface now */
-	down(&mpoe_iface_mutex);
+	spin_lock(&mpoe_iface_lock);
 
 	for (i=0; i<mpoe_iface_max; i++) {
 		struct mpoe_iface * iface = mpoe_ifaces[i];
@@ -475,7 +474,7 @@ mpoe_net_exit(void)
 
 	/* Let mpoe_netdevice_notifier finish in case it got called during our loop,
 	 * and unregister the notifier then */
-	up(&mpoe_iface_mutex);
+	spin_unlock(&mpoe_iface_lock);
 	unregister_netdevice_notifier(&mpoe_netdevice_notifier);
 
 	/* Free structures now that the notifier is gone */
