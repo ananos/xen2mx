@@ -139,7 +139,8 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 	struct ethhdr *reply_eh;
 	struct net_device * ifp = iface->eth_ifp;
 	struct mpoe_user_region *region;
-	uint32_t rdma_id, length, queued, iseg;
+	uint32_t rdma_id, queued;
+//	uint32_t rdma_id, length, queued, iseg;
 	int err = 0;
 
 	/* get the destination endpoint */
@@ -216,8 +217,10 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 
 	return 0;
 
+#if 0
  out_with_region:
 	spin_unlock(&endpoint->user_regions_lock);
+#endif
  out_with_skb:
 	dev_kfree_skb(skb);
  out_with_endpoint:
@@ -231,7 +234,7 @@ mpoe_recv_pull_reply(struct mpoe_iface * iface,
 		     struct mpoe_hdr * mh)
 {
 	struct mpoe_endpoint * endpoint;
-	struct ethhdr *eh = &mh->head.eth;
+//	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
 	struct mpoe_pull_handle * pull_handle;
 	int err = 0;
