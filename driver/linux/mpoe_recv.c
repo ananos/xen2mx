@@ -53,7 +53,7 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	int err = 0;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_endpoint_acquire(iface, tiny->dst_endpoint);
+	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, tiny->dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping TINY packet for unknown endpoint %d\n",
 		       tiny->dst_endpoint);
@@ -109,7 +109,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	int err;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_endpoint_acquire(iface, medium->msg.dst_endpoint);
+	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, medium->msg.dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping MEDIUM packet for unknown endpoint %d\n",
 		       medium->msg.dst_endpoint);
@@ -162,7 +162,7 @@ mpoe_recv_rndv(struct mpoe_iface * iface,
 	struct mpoe_pkt_rndv *rndv = &mh->body.rndv;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_endpoint_acquire(iface, rndv->dst_endpoint);
+	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, rndv->dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping RNDV packet for unknown endpoint %d\n",
 		       rndv->dst_endpoint);

@@ -14,6 +14,13 @@ extern int mpoe_endpoint_max;
 extern int mpoe_net_init(const char * ifnames);
 extern void mpoe_net_exit(void);
 
+enum mpoe_iface_status {
+	/* iface is ready to be used */
+	MPOE_IFACE_STATUS_OK,
+	/* iface is being closed by somebody else, no new endpoint may be open */
+	MPOE_IFACE_STATUS_CLOSING,
+};
+
 struct mpoe_iface {
 	int index;
 
@@ -22,15 +29,29 @@ struct mpoe_iface {
 	spinlock_t endpoint_lock;
 	int endpoint_nr;
 	struct mpoe_endpoint ** endpoints;
+
+	enum mpoe_iface_status status;
+};
+
+enum mpoe_endpoint_status {
+	/* endpoint is free and may be open */
+	MPOE_ENDPOINT_STATUS_FREE,
+	/* endpoint is already being open by somebody else */
+	MPOE_ENDPOINT_STATUS_INITIALIZING,
+	/* endpoint is ready to be used */
+	MPOE_ENDPOINT_STATUS_OK,
+	/* endpoint is being closed by somebody else */
+	MPOE_ENDPOINT_STATUS_CLOSING,
 };
 
 struct mpoe_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
 
+	spinlock_t lock;
+	enum mpoe_endpoint_status status;
 	atomic_t refcount;
 	wait_queue_head_t noref_queue;
-	int closing : 1;
 
 	struct mpoe_iface * iface;
 
@@ -38,11 +59,39 @@ struct mpoe_endpoint {
 	union mpoe_evt * next_eventq_slot;
 	char * next_recvq_slot;
 
-	struct file * file;
-
 	spinlock_t user_regions_lock;
 	struct mpoe_user_region * user_regions[MPOE_USER_REGION_MAX];
 };
+
+
+/************************
+ * Notes about locking:
+ *
+ * The endpoint has 2 main status: FREE and OK. To prevent 2 people from changing it
+ * at the same time, it is protected by a lock. To reduce the time we hold the lock,
+ * there are 2 intermediate status: INITIALIZING and CLOSING.
+ * When an endpoint is being used, its refcount is increased (by acquire/release)
+ * When somebody wants to close an endpoint, it sets the CLOSING status (so that
+ * new users can't acquire the endpoint) and waits for current users to release
+ * (when refcount becomes 0).
+ *
+ * The iface doesn't have an actual refcount since it has a number of endpoints attached.
+ * There's a lock to protect this array against concurrent endpoint attach/detach.
+ * When removing an iface (either by the user or by the netdevice notifier), the status
+ * is set to CLOSING so that any new endpoint opener fails.
+ *
+ * The list of ifaces is always coherent since new ifaces are only added once initialized,
+ * and removed in a coherent state (endpoints have been properly detached first)
+ * Incoming packet processing is disabled while removing an iface.
+ * So scanning the array of ifaces does not require locking,
+ * but looking in the iface internals requires locking.
+ * The iface may not be removed while processing an incoming packet, so
+ * we don't need locking and no need hold a reference on the iface either.
+ *
+ * The locks are always taken in this priority order:
+ * mpoe_iface_lock, iface->endpoint_lock, endpoint->lock
+ */
+
 
 struct mpoe_user_region {
 	unsigned int nr_segments;
@@ -55,10 +104,10 @@ struct mpoe_user_region {
 };
 
 /* manage endpoints */
-extern int mpoe_endpoint_attach(struct mpoe_endpoint * endpoint, uint8_t board_index, uint8_t endpoint_index);
-extern void mpoe_endpoint_detach(struct mpoe_endpoint * endpoint);
-extern int mpoe_endpoint_close(struct mpoe_endpoint * endpoint, void __user * dummy);
-extern struct mpoe_endpoint * mpoe_endpoint_acquire(struct mpoe_iface *iface, uint8_t dst_endpoint);
+extern int mpoe_iface_attach_endpoint(struct mpoe_endpoint * endpoint);
+extern void mpoe_iface_detach_endpoint(struct mpoe_endpoint * endpoint, int ifacelocked);
+extern int __mpoe_endpoint_close(struct mpoe_endpoint * endpoint, int ifacelocked);
+extern struct mpoe_endpoint * mpoe_endpoint_acquire_by_iface_index(struct mpoe_iface * iface, uint8_t index);
 extern void mpoe_endpoint_release(struct mpoe_endpoint * endpoint);
 
 /* manage ifaces */

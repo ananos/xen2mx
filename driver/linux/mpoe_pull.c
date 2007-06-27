@@ -144,7 +144,7 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 	int err = 0;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_endpoint_acquire(iface, pull_request->dst_endpoint);
+	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, pull_request->dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping PULL packet for unknown endpoint %d\n",
 		       pull_request->dst_endpoint);

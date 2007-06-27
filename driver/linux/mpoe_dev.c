@@ -11,48 +11,28 @@
 #include "mpoe_io.h"
 #include "mpoe_common.h"
 
-/**********
- * ioctl commands
+/******************
+ * Alloc/Release internal endpoint fields once everything is setup/locked
  */
 
 static int
-mpoe_endpoint_open(void __user * p,
-		   struct mpoe_endpoint ** endpointp)
+mpoe_endpoint_alloc_resources(struct mpoe_endpoint * endpoint)
 {
-	struct mpoe_cmd_open_endpoint param;
-	struct mpoe_endpoint * endpoint;
 	union mpoe_evt * evt;
 	char * buffer;
 	int ret;
 
-	ret = copy_from_user(&param, p, sizeof(param));
-	if (ret < 0) {
-		printk(KERN_ERR "MPoE: Failed to read open endpoint command argument, error %d\n", ret);
-		ret = -EFAULT;
-		goto out;
-	}
-
-	endpoint = kmalloc(sizeof(*endpoint), GFP_KERNEL);
-	if (!endpoint) {
-		printk(KERN_ERR "MPoE: Failed to allocate memory for endpoint\n");
-		goto out;
-	}
-
-	ret = mpoe_endpoint_attach(endpoint, param.board_index, param.endpoint_index);
-	if (ret < 0)
-		goto out_with_endpoint;
-
+	/* alloc and init user queues */
+	ret = -ENOMEM;
 	buffer = mpoe_vmalloc_user(MPOE_SENDQ_SIZE + MPOE_RECVQ_SIZE + MPOE_EVENTQ_SIZE);
 	if (!buffer) {
 		printk(KERN_ERR "MPoE: failed to allocate queues\n");
-		ret = -ENOMEM;
-		goto out_with_attach;
+		goto out;
 	}
 	endpoint->sendq = buffer;
 	endpoint->recvq = buffer + MPOE_SENDQ_SIZE;
 	endpoint->eventq = buffer + MPOE_SENDQ_SIZE + MPOE_RECVQ_SIZE;
 
-	/* initialize eventq */
 	for(evt = endpoint->eventq;
 	    (void *) evt < endpoint->eventq + MPOE_EVENTQ_SIZE;
 	    evt++)
@@ -63,35 +43,186 @@ mpoe_endpoint_open(void __user * p,
 	/* initialize user regions */
 	mpoe_endpoint_user_regions_init(endpoint);
 
-	*endpointp = endpoint;
+	return 0;
+
+ out:
+	return ret;
+}
+
+static void
+mpoe_endpoint_free_resources(struct mpoe_endpoint * endpoint)
+{
+	mpoe_endpoint_user_regions_exit(endpoint);
+	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
+}
+
+/**********
+ * Ioctl commands
+ */
+
+static int
+mpoe_endpoint_open(struct mpoe_endpoint * endpoint, void __user * uparam)
+{
+	struct mpoe_cmd_open_endpoint param;
+	int ret;
+
+	ret = copy_from_user(&param, uparam, sizeof(param));
+	if (ret < 0) {
+		printk(KERN_ERR "MPoE: Failed to read open endpoint command argument, error %d\n", ret);
+		goto out;
+	}
+	endpoint->board_index = param.board_index;
+	endpoint->endpoint_index = param.endpoint_index;
+
+	/* test whether the endpoint is ok to be open
+	 * and mark it as initializing */
+	spin_lock(&endpoint->lock);
+	ret = -EINVAL;
+	if (endpoint->status != MPOE_ENDPOINT_STATUS_FREE) {
+		spin_unlock(&endpoint->lock);
+		goto out;
+	}
+	endpoint->status = MPOE_ENDPOINT_STATUS_INITIALIZING;
+	atomic_inc(&endpoint->refcount);
+	spin_unlock(&endpoint->lock);
+
+	/* alloc internal fields */
+	ret = mpoe_endpoint_alloc_resources(endpoint);
+	if (ret < 0)
+		goto out_with_init;
+
+	/* attach the endpoint to the iface */
+	ret = mpoe_iface_attach_endpoint(endpoint);
+	if (ret < 0)
+		goto out_with_resources;
+
 	printk(KERN_INFO "MPoE: Successfully open board %d endpoint %d\n",
 	       endpoint->board_index, endpoint->endpoint_index);
 
 	return 0;
 
- out_with_attach:
-	mpoe_endpoint_detach(endpoint);
- out_with_endpoint:
-	kfree(endpoint);
+ out_with_resources:
+	mpoe_endpoint_free_resources(endpoint);
+ out_with_init:
+	atomic_dec(&endpoint->refcount);
+	endpoint->status = MPOE_ENDPOINT_STATUS_FREE;
  out:
 	return ret;
 }
 
+/* Wait for all users to release an endpoint and then close it.
+ * If already closing, return -EBUSY.
+ */
 int
-mpoe_endpoint_close(struct mpoe_endpoint * endpoint, void __user * dummy)
+__mpoe_endpoint_close(struct mpoe_endpoint * endpoint,
+		      int ifacelocked)
 {
-	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
+	DECLARE_WAITQUEUE(wq, current);
+	int ret;
 
-	mpoe_endpoint_user_regions_exit(endpoint);
-	mpoe_endpoint_detach(endpoint);
+	/* test whether the endpoint is ok to be closed */
+	spin_lock(&endpoint->lock);
+	ret = -EBUSY;
+	if (endpoint->status != MPOE_ENDPOINT_STATUS_OK) {
+		/* only CLOSING and OK endpoints may be attached to the iface */
+		BUG_ON(endpoint->status != MPOE_ENDPOINT_STATUS_CLOSING);
+		spin_unlock(&endpoint->lock);
+		goto out;
+	}
+	/* mark it as closing so that nobody may use it again */
+	endpoint->status = MPOE_ENDPOINT_STATUS_CLOSING;
+	/* release our refcount now that other users cannot use again */
+	atomic_dec(&endpoint->refcount);
+	spin_unlock(&endpoint->lock);
 
-	printk(KERN_INFO "MPoE: Successfully closed board %d endpoint %d\n",
-	       endpoint->board_index, endpoint->endpoint_index);
+	/* wait until refcount is 0 so that other users are gone */
+	add_wait_queue(&endpoint->noref_queue, &wq);
+	for(;;) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		if (!atomic_read(&endpoint->refcount))
+			break;
+		schedule();
+	}
+	set_current_state(TASK_RUNNING);
+	remove_wait_queue(&endpoint->noref_queue, &wq);
 
-	endpoint->file->private_data = NULL;
-	kfree(endpoint);
+	/* release resources */
+	mpoe_endpoint_free_resources(endpoint);
+
+	/* detach */
+	mpoe_iface_detach_endpoint(endpoint, ifacelocked);
+
+	/* mark as free now */
+	endpoint->status = MPOE_ENDPOINT_STATUS_FREE;
 
 	return 0;
+
+ out:
+	return ret;
+}
+
+static inline int
+mpoe_endpoint_close(struct mpoe_endpoint * endpoint)
+{
+	return __mpoe_endpoint_close(endpoint, 0); /* we don't hold the iface lock */
+}
+
+/**********************
+ * Acquiring/Releasing endpoints
+ */
+
+static int
+mpoe_endpoint_acquire(struct mpoe_endpoint * endpoint)
+{
+	int ret = -EINVAL;
+
+	spin_lock(&endpoint->lock);
+	if (endpoint->status != MPOE_ENDPOINT_STATUS_OK)
+		goto out_with_lock;
+
+	atomic_inc(&endpoint->refcount);
+
+	spin_unlock(&endpoint->lock);
+	return 0;
+
+ out_with_lock:
+	spin_unlock(&endpoint->lock);
+	return ret;
+}
+
+struct mpoe_endpoint *
+mpoe_endpoint_acquire_by_iface_index(struct mpoe_iface * iface, uint8_t index)
+{
+	struct mpoe_endpoint * endpoint;
+
+	spin_lock(&iface->endpoint_lock);
+	if (index >= mpoe_endpoint_max
+	    || (endpoint = iface->endpoints[index]) == NULL)
+		goto out_with_iface_lock;
+
+	spin_lock(&endpoint->lock);
+	if (endpoint->status != MPOE_ENDPOINT_STATUS_OK)
+		goto out_with_endpoint_lock;
+
+	atomic_inc(&endpoint->refcount);
+
+	spin_unlock(&endpoint->lock);
+	spin_unlock(&iface->endpoint_lock);
+	return endpoint;
+
+ out_with_endpoint_lock:
+	spin_unlock(&endpoint->lock);
+ out_with_iface_lock:
+	spin_unlock(&iface->endpoint_lock);
+	return NULL;
+}
+
+void
+mpoe_endpoint_release(struct mpoe_endpoint * endpoint)
+{
+	/* decrement refcount and wake up the closer */
+	if (atomic_dec_and_test(&endpoint->refcount))
+		wake_up(&endpoint->noref_queue);
 }
 
 /***************
@@ -101,7 +232,18 @@ mpoe_endpoint_close(struct mpoe_endpoint * endpoint, void __user * dummy)
 static int
 mpoe_miscdev_open(struct inode * inode, struct file * file)
 {
-	file->private_data = NULL;
+	struct mpoe_endpoint * endpoint;
+
+	endpoint = kmalloc(sizeof(struct mpoe_endpoint), GFP_KERNEL);
+	if (!endpoint)
+		return -ENOMEM;
+
+	spin_lock_init(&endpoint->lock);
+	endpoint->status = MPOE_ENDPOINT_STATUS_FREE;
+	atomic_set(&endpoint->refcount, 0);
+	init_waitqueue_head(&endpoint->noref_queue);
+
+	file->private_data = endpoint;
 	return 0;
 }
 
@@ -110,17 +252,15 @@ mpoe_miscdev_release(struct inode * inode, struct file * file)
 {
 	struct mpoe_endpoint * endpoint = file->private_data;
 
-	if (endpoint != NULL) {
-		printk(KERN_INFO "MPoE: Forcing close of board %d endpoint %d\n",
-		       endpoint->board_index, endpoint->endpoint_index);
-		mpoe_endpoint_close(endpoint, NULL);
-		file->private_data = NULL;
-	}
+	BUG_ON(!endpoint);
+
+	if (endpoint->status != MPOE_ENDPOINT_STATUS_FREE)
+		mpoe_endpoint_close(endpoint);
+
 	return 0;
 }
 
 static int (*mpoe_cmd_with_endpoint_handlers[])(struct mpoe_endpoint * endpoint, void __user * uparam) = {
-	[MPOE_CMD_CLOSE_ENDPOINT]	= mpoe_endpoint_close,
 	[MPOE_CMD_SEND_TINY]		= mpoe_send_tiny,
 	[MPOE_CMD_SEND_MEDIUM]		= mpoe_send_medium,
 	[MPOE_CMD_SEND_RENDEZ_VOUS]	= mpoe_send_rendez_vous,
@@ -142,10 +282,8 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 
 		ret = copy_to_user((void __user *) arg, &count,
 				   sizeof(count));
-		if (ret < 0) {
+		if (ret < 0)
 			printk(KERN_ERR "MPoE: Failed to write get_board_count command result, error %d\n", ret);
-			goto out;
-		}
 
 		break;
 	}
@@ -168,32 +306,30 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 
 		ret = copy_to_user((void __user *) arg, &get_board_id,
 				   sizeof(get_board_id));
-		if (ret < 0) {
+		if (ret < 0)
 			printk(KERN_ERR "MPoE: Failed to write get_board_id command result, error %d\n", ret);
-			goto out;
-		}
 
 		break;
 	}
 
 	case MPOE_CMD_OPEN_ENDPOINT: {
-		struct mpoe_endpoint * endpoint = NULL; /* gcc's boring */
+		struct mpoe_endpoint * endpoint = file->private_data;
+		BUG_ON(!endpoint);
 
-		if (file->private_data != NULL) {
-			ret = -EBUSY;
-			goto out;
-		}
+		ret = mpoe_endpoint_open(endpoint, (void __user *) arg);
 
-		ret = mpoe_endpoint_open((void __user *) arg, &endpoint);
-		if (ret)
-			goto out;
-
-		file->private_data = endpoint;
-		endpoint->file = file;
 		break;
 	}
 
-	case MPOE_CMD_CLOSE_ENDPOINT:
+	case MPOE_CMD_CLOSE_ENDPOINT: {
+		struct mpoe_endpoint * endpoint = file->private_data;
+		BUG_ON(!endpoint);
+
+		ret = mpoe_endpoint_close(endpoint);
+
+		break;
+	}
+
 	case MPOE_CMD_SEND_TINY:
 	case MPOE_CMD_SEND_MEDIUM:
 	case MPOE_CMD_SEND_RENDEZ_VOUS:
@@ -203,17 +339,17 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 	{
 		struct mpoe_endpoint * endpoint = file->private_data;
 
-		if (unlikely(endpoint == NULL)) {
-			printk(KERN_ERR "MPoE: Cannot process command '%s' without any endpoint open\n",
-			       mpoe_strcmd(cmd));
-			ret = -EINVAL;
-			goto out;
-		}
-
 		BUG_ON(cmd >= ARRAY_SIZE(mpoe_cmd_with_endpoint_handlers));
 		BUG_ON(mpoe_cmd_with_endpoint_handlers[cmd] == NULL);
 
+		ret = mpoe_endpoint_acquire(endpoint);
+		if (ret < 0)
+			goto out;
+
 		ret = mpoe_cmd_with_endpoint_handlers[cmd](endpoint, (void __user *) arg);
+
+		mpoe_endpoint_release(endpoint);
+
 		break;
 	}
 
@@ -221,6 +357,7 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 		ret = -ENOSYS;
 		break;
 	}
+
  out:
 	return ret;
 }
