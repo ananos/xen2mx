@@ -14,16 +14,16 @@ mpoe_ifp_find_by_name(const char * ifname)
 {
 	struct net_device * ifp;
 
-        read_lock(&dev_base_lock);
-        mpoe_for_each_netdev(ifp) {
+	read_lock(&dev_base_lock);
+	mpoe_for_each_netdev(ifp) {
 		dev_hold(ifp);
 		if (!strcmp(ifp->name, ifname)) {
-		        read_unlock(&dev_base_lock);
+			read_unlock(&dev_base_lock);
 			return ifp;
 		}
 		dev_put(ifp);
 	}
-        read_unlock(&dev_base_lock);
+	read_unlock(&dev_base_lock);
 
 	printk(KERN_ERR "MPoE: Failed to find interface '%s'\n", ifname);
 	return NULL;
@@ -341,11 +341,11 @@ mpoe_endpoint_release(struct mpoe_endpoint * endpoint)
 
 static int
 mpoe_netdevice_notifier_cb(struct notifier_block *unused,
-				      unsigned long event, void *ptr)
+			   unsigned long event, void *ptr)
 {
-        struct net_device *ifp = (struct net_device *) ptr;
+	struct net_device *ifp = (struct net_device *) ptr;
 
-        if (event == NETDEV_UNREGISTER) {
+	if (event == NETDEV_UNREGISTER) {
 		int i;
 
 		spin_lock(&mpoe_iface_lock);
@@ -368,7 +368,7 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
 		spin_unlock(&mpoe_iface_lock);
 	}
 
-        return NOTIFY_DONE;
+	return NOTIFY_DONE;
 }
 
 /*************
@@ -376,7 +376,7 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
  */
 
 static struct notifier_block mpoe_netdevice_notifier = {
-        .notifier_call = mpoe_netdevice_notifier_cb,
+	.notifier_call = mpoe_netdevice_notifier_cb,
 };
 
 int
@@ -422,13 +422,13 @@ mpoe_net_init(const char * ifnames)
 		/* attach everything (limited to mpoe_iface_max) */
 		struct net_device * ifp;
 
-	        read_lock(&dev_base_lock);
+		read_lock(&dev_base_lock);
 		mpoe_for_each_netdev(ifp) {
 			dev_hold(ifp);
 			if (mpoe_iface_attach(ifp) < 0)
 				break;
 		}
-	        read_unlock(&dev_base_lock);
+		read_unlock(&dev_base_lock);
 	}
 
 	printk(KERN_INFO "MPoE: attached %d interfaces\n", mpoe_iface_nr);

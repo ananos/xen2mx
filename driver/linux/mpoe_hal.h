@@ -20,10 +20,10 @@
 static inline struct sk_buff *
 mpoe_netdev_alloc_skb(struct net_device * dev, unsigned int length)
 {
-        struct sk_buff * skb = dev_alloc_skb(length);
-        if (likely(skb))
-                skb->dev = dev;
-        return skb;
+	struct sk_buff * skb = dev_alloc_skb(length);
+	if (likely(skb))
+		skb->dev = dev;
+	return skb;
 }
 #endif /* MPOE_HAVE_NETDEV_ALLOC_SKB */
 
