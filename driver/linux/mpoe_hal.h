@@ -34,7 +34,7 @@ mpoe_netdev_alloc_skb(struct net_device * dev, unsigned int length)
 static inline void *
 mpoe_vmalloc_user(unsigned long size)
 {
-  return __vmalloc(size, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO, PAGE_KERNEL);
+	return __vmalloc(size, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO, PAGE_KERNEL);
 }
 
 static inline int
