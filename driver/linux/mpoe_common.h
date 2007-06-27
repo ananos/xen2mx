@@ -64,7 +64,7 @@ struct mpoe_endpoint {
 };
 
 
-/************************
+/******************************
  * Notes about locking:
  *
  * The endpoint has 2 main status: FREE and OK. To prevent 2 people from changing it

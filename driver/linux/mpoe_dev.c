@@ -11,7 +11,7 @@
 #include "mpoe_io.h"
 #include "mpoe_common.h"
 
-/******************
+/******************************
  * Alloc/Release internal endpoint fields once everything is setup/locked
  */
 
@@ -56,8 +56,8 @@ mpoe_endpoint_free_resources(struct mpoe_endpoint * endpoint)
 	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
 }
 
-/**********
- * Ioctl commands
+/******************************
+ * Opening/Closing endpoint main routines
  */
 
 static int
@@ -167,7 +167,7 @@ mpoe_endpoint_close(struct mpoe_endpoint * endpoint)
 	return __mpoe_endpoint_close(endpoint, 0); /* we don't hold the iface lock */
 }
 
-/**********************
+/******************************
  * Acquiring/Releasing endpoints
  */
 
@@ -225,7 +225,7 @@ mpoe_endpoint_release(struct mpoe_endpoint * endpoint)
 		wake_up(&endpoint->noref_queue);
 }
 
-/***************
+/******************************
  * File operations
  */
 
@@ -269,6 +269,9 @@ static int (*mpoe_cmd_with_endpoint_handlers[])(struct mpoe_endpoint * endpoint,
 	[MPOE_CMD_DEREGISTER_REGION]	= mpoe_deregister_user_region,
 };
 
+/*
+ * Main ioctl switch where all application ioctls arrive
+ */
 static int
 mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 		   unsigned int cmd, unsigned long arg)
@@ -400,7 +403,7 @@ mpoe_miscdev = {
 	.fops = &mpoe_miscdev_fops,
 };
 
-/*************
+/******************************
  * Device attributes
  */
 
@@ -462,7 +465,8 @@ mpoe_exit_attributes(void)
 
 #endif /* !MPOE_MISCDEV_HAVE_CLASS_DEVICE */
 
-/*************
+
+/******************************
  * Device registration
  */
 

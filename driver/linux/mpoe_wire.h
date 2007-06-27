@@ -1,7 +1,7 @@
 #ifndef __mpoe_wire_h__
 #define __mpoe_wire_h__
 
-/***********
+/******************************
  * Packet definition
  */
 

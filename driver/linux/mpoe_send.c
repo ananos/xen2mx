@@ -5,6 +5,9 @@
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
 
+/*
+ * Allocate and initialize a MPOE skb
+ */
 struct sk_buff *
 mpoe_new_skb(struct net_device *ifp, unsigned long len)
 {

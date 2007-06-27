@@ -5,8 +5,8 @@
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
 
-/**********************
- * pull handles
+/******************************
+ * Pull handles management
  */
 
 struct mpoe_pull_handle {
@@ -43,8 +43,8 @@ mpoe_exit_pull(void)
 	kmem_cache_destroy(mpoe_pull_handle_cachep);
 }
 
-/**********************
- * main pull routines
+/******************************
+ * Pull-related networking
  */
 
 int

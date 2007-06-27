@@ -4,7 +4,10 @@
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
 
-/* returns an interface hold matching ifname */
+/*
+ * Scan the list of physical interfaces and return the
+ * one that matches ifname (and take a reference on it).
+ */
 static struct net_device *
 mpoe_ifp_find_by_name(const char * ifname)
 {
@@ -25,26 +28,29 @@ mpoe_ifp_find_by_name(const char * ifname)
 	return NULL;
 }
 
-/*************
+/******************************
  * Managing interfaces
  */
 
+/*
+ * Array, number and lock for the list of ifaces
+ */
 static struct mpoe_iface ** mpoe_ifaces;
 static unsigned int mpoe_iface_nr = 0;
 static spinlock_t mpoe_iface_lock = SPIN_LOCK_UNLOCKED;
 
 /*
- * Used when an incoming packets is to be processed on net_device ifp
- * and returns the corresponding iface.
- *
- * Since iface removal disables incoming packet processing, we don't
- * need to lock the iface array or to hold a reference on the iface.
+ * Returns the iface associated to a physical interface.
+ * Should be used when an incoming packets has been received by ifp.
  */
 struct mpoe_iface *
 mpoe_iface_find_by_ifp(struct net_device *ifp)
 {
 	int i;
 
+	/* since iface removal disables incoming packet processing, we don't
+	 * need to lock the iface array or to hold a reference on the iface.
+	 */
 	for (i=0; i<mpoe_iface_max; i++) {
 		struct mpoe_iface * iface = mpoe_ifaces[i];
 		if (iface && iface->eth_ifp == ifp)
@@ -56,14 +62,15 @@ mpoe_iface_find_by_ifp(struct net_device *ifp)
 
 /*
  * Return the number of mpoe ifaces.
- * No need to lock since the array of iface is always coherent
- * and we don't access the internals of the ifaces
  */
 int
 mpoe_ifaces_get_count(void)
 {
 	int i, count = 0;
 
+	/* no need to lock since the array of iface is always coherent
+	 * and we don't access the internals of the ifaces
+	 */
 	for (i=0; i<mpoe_iface_max; i++)
 		if (mpoe_ifaces[i] != NULL)
 			count++;
@@ -71,6 +78,9 @@ mpoe_ifaces_get_count(void)
 	return count;
 }
 
+/*
+ * Return the address and name of an iface.
+ */
 int
 mpoe_iface_get_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name)
 {
@@ -99,11 +109,15 @@ mpoe_iface_get_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char *
 	return ret;
 }
 
-/*************
+/******************************
  * Attaching/Detaching interfaces
  */
 
-/* called with ifaces lock hold */
+/*
+ * Attach a new iface.
+ *
+ * Must be called with ifaces lock hold.
+ */
 static int
 mpoe_iface_attach(struct net_device * ifp)
 {
@@ -159,9 +173,13 @@ mpoe_iface_attach(struct net_device * ifp)
 	return ret;
 }
 
-/* called with ifaces lock hold
- * Incoming packets should be disabled (by removing mpoe_pt)
- * to prevent users while detaching the iface
+/*
+ * Detach an existing iface, possibly by force.
+ *
+ * Must be called with ifaces lock hold.
+ * Incoming packets should be disabled (by temporarily
+ * removing mpoe_pt in the caller if necessary)
+ * to prevent users while detaching the iface.
  */
 static int
 __mpoe_iface_detach(struct mpoe_iface * iface, int force)
@@ -176,8 +194,8 @@ __mpoe_iface_detach(struct mpoe_iface * iface, int force)
 	 */
 	iface->status = MPOE_IFACE_STATUS_CLOSING;
 
-	/* if force, close all endpoints
-	 * if not force, error if some endpoints are open
+	/* if force, close all endpoints.
+	 * if not force, error if some endpoints are open.
 	 */
 	spin_lock(&iface->endpoint_lock);
 	ret = -EBUSY;
@@ -200,7 +218,7 @@ __mpoe_iface_detach(struct mpoe_iface * iface, int force)
 		ret = __mpoe_endpoint_close(endpoint, 1);
 		if (ret < 0) {
 			BUG_ON(ret != -EBUSY);
-			/* somebody else is already closing this endpoint
+			/* somebody else is already closing this endpoint,
 			 * let's forget about it for now, we'll wait later
 			 */
 		}
@@ -237,11 +255,13 @@ mpoe_iface_detach_force(struct mpoe_iface * iface)
 	return __mpoe_iface_detach(iface, 1);
 }
 
-/*************
+/******************************
  * Attribute-based attaching/detaching of interfaces
  */
 
-/* list attached interfaces */
+/*
+ * Format a buffer containing the list of attached ifaces.
+ */
 int
 mpoe_ifaces_show(char *buf)
 {
@@ -270,7 +290,12 @@ mpoe_ifaces_show(char *buf)
 	return total + 1;
 }
 
-/* +name add an interface, -name removes one */
+/*
+ * Attach/Detach ifaces depending on the given string.
+ *
+ * +name adds an iface
+ * -name removes one
+ */
 int
 mpoe_ifaces_store(const char *buf, size_t size)
 {
@@ -286,15 +311,18 @@ mpoe_ifaces_store(const char *buf, size_t size)
 
 	if (buf[0] == '-') {
 		int i, found = 0;
-		/* in case none matches, we return -EINVAL. if one matches, it sets ret accordingly */
+		/* if none matches, we return -EINVAL.
+		 * if one matches, it sets ret accordingly.
+		 */
 		int ret = -EINVAL;
 
 		spin_lock(&mpoe_iface_lock);
 		for(i=0; i<mpoe_iface_max; i++) {
 			struct mpoe_iface * iface = mpoe_ifaces[i];
 			if (iface != NULL && !strcmp(iface->eth_ifp->name, copy)) {
-				/* Disable incoming packets while removing the iface
-				 * to prevent races */
+				/* disable incoming packets while removing the iface
+				 * to prevent races
+				 */
 				dev_remove_pack(&mpoe_pt);
 				ret = mpoe_iface_detach(iface);
 				dev_add_pack(&mpoe_pt);
@@ -333,10 +361,13 @@ mpoe_ifaces_store(const char *buf, size_t size)
 	}
 }
 
-/**********
- * Attaching endpoints to ifaces
+/******************************
+ * Attaching/Detaching endpoints to ifaces
  */
 
+/*
+ * Attach a new endpoint
+ */
 int
 mpoe_iface_attach_endpoint(struct mpoe_endpoint * endpoint)
 {
@@ -393,9 +424,15 @@ mpoe_iface_attach_endpoint(struct mpoe_endpoint * endpoint)
 	return ret;
 }
 
-/* called while endpoint is status CLOSING.
- * either without holding the iface lock (when closing from the application)
- * or holding it (when detaching an iface and thus removing all endpoints)
+/*
+ * Detach an existing endpoint
+ *
+ * Must be called while endpoint is status CLOSING.
+ *
+ * ifacelocked is set when detaching an iface and thus removing all endpoints
+ * by force.
+ * It is not (and thus the iface lock has to be taken) when the endpoint is
+ * normally closed from the application.
  */
 void
 mpoe_iface_detach_endpoint(struct mpoe_endpoint * endpoint,
@@ -417,7 +454,7 @@ mpoe_iface_detach_endpoint(struct mpoe_endpoint * endpoint,
 		spin_unlock(&iface->endpoint_lock);
 }
 
-/*************
+/******************************
  * Netdevice notifier
  */
 
@@ -436,7 +473,7 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
 			int ret;
 			printk(KERN_INFO "MPoE: interface '%s' being unregistered, forcing closing of endpoints...\n",
 			       ifp->name);
-			/* There is no need to disable incoming packets since
+			/* there is no need to disable incoming packets since
 			 * the ethernet ifp is already disabled before the notifier is called
 			 */
 			ret = mpoe_iface_detach_force(iface);
@@ -448,13 +485,13 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
 	return NOTIFY_DONE;
 }
 
-/*************
- * Initialization and termination
- */
-
 static struct notifier_block mpoe_netdevice_notifier = {
 	.notifier_call = mpoe_netdevice_notifier_cb,
 };
+
+/******************************
+ * Initialization and termination
+ */
 
 int
 mpoe_net_init(const char * ifnames)
@@ -525,35 +562,37 @@ mpoe_net_exit(void)
 {
 	int i, nr = 0;
 
-	/* Module unloading cannot happen before all users exit
+	/* module unloading cannot happen before all users exit
 	 * since they hold a reference on the chardev.
-	 * So _all_ endpoint are closed once we arrive here.
+	 * so all endpoints are closed once we arrive here.
 	 */
 
 	dev_remove_pack(&mpoe_pt);
-	/* Now, no iface may be used by any incoming packet */
+	/* now, no iface may be used by any incoming packet */
 
-	/* Prevent mpoe_netdevice_notifier from removing an iface now */
+	/* prevent mpoe_netdevice_notifier from removing an iface now */
 	spin_lock(&mpoe_iface_lock);
 
 	for (i=0; i<mpoe_iface_max; i++) {
 		struct mpoe_iface * iface = mpoe_ifaces[i];
 		if (iface != NULL) {
-			/* Detach the iface now
-			 * All endpoints are closed, no need to force */
+			/* detach the iface now.
+			 * all endpoints are closed, no need to force
+			 */
 			BUG_ON(mpoe_iface_detach(iface) < 0);
 			nr++;
 		}
 	}
 	printk(KERN_INFO "MPoE: detached %d interfaces\n", nr);
 
-	/* Release the lock and let mpoe_netdevice_notifier finish in case
-	 * it got called during our loop.
-	 * And unregister the notifier then */
+	/* release the lock to let mpoe_netdevice_notifier finish
+	 * in case it has been invoked during our loop
+	 */
 	spin_unlock(&mpoe_iface_lock);
+	/* unregister the notifier then */
 	unregister_netdevice_notifier(&mpoe_netdevice_notifier);
 
-	/* Free structures now that the notifier is gone */
+	/* free structures now that the notifier is gone */
 	kfree(mpoe_ifaces);
 
 	mpoe_exit_pull();

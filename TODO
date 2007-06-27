@@ -1,5 +1,4 @@
 * change mpoe_ifp_find_by_name into acquire and fix missing dev_put?
-* fix comments before functions */
 * waitqueue to wait for closer while detaching an iface
 * reorganize attach/detach and co in mpoe_net.c
 * factorize access to pull packet fields
