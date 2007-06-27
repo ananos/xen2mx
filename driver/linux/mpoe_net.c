@@ -117,7 +117,11 @@ mpoe_iface_attach(struct net_device * ifp)
 		goto out_with_ifp_hold;
 	}
 
-	/* FIXME: do not attach twice? */
+	if (mpoe_iface_find_by_ifp(ifp)) {
+		printk(KERN_ERR "MPoE: Interface %s already attached\n", ifp->name);
+		ret = -EBUSY;
+		goto out_with_ifp_hold;
+	}
 
 	for(i=0; i<mpoe_iface_max; i++)
 		if (mpoe_ifaces[i] == NULL)
