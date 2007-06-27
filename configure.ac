@@ -4,8 +4,15 @@ AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/mpoe)
 
 LINUX_SRC="/lib/modules/"`uname -r`"/source"
-AC_ARG_WITH(linux, [  --with-linux=<dir>	location of the Linux kernel source], LINUX_SRC="$withval")
-LINUX_BUILD=$LINUX_SRC
+LINUX_BUILD="/lib/modules/"`uname -r`"/build"
+# If the user changes the source, use it as build by default
+# If it changes the build, do not use it as the source by default
+AC_ARG_WITH(linux,
+	[  --with-linux=<dir>	location of the Linux kernel source],
+	LINUX_SRC="$withval"; LINUX_BUILD="$withval")
+AC_ARG_WITH(linux-build,
+	[  --with-linux-build=<dir>	location of the Linux kernel build tree],
+	LINUX_BUILD="$withval")
 AC_SUBST(LINUX_SRC)
 AC_SUBST(LINUX_BUILD)
 
@@ -23,6 +30,12 @@ if test -z ${LINUX_HDR} ; then
   AC_MSG_ERROR(not found)
 fi
 AC_MSG_RESULT(found in in ${LINUX_HDR})
+
+AC_MSG_CHECKING(kernel build Makefile)
+if ! test -f ${LINUX_BUILD}/Makefile ; then
+  AC_MSG_ERROR(not found in ${LINUX_BUILD})
+fi
+AC_MSG_RESULT(found in ${LINUX_BUILD})
 
 # create the output file
 CHECKS_OUTPUT=`pwd`/driver/linux/mpoe_checks.h
