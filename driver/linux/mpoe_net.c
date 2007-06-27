@@ -374,6 +374,8 @@ mpoe_iface_attach_endpoint(struct mpoe_endpoint * endpoint)
 	struct mpoe_iface * iface;
 	int ret;
 
+	BUG_ON(endpoint->status != MPOE_ENDPOINT_STATUS_INITIALIZING);
+
 	ret = -EINVAL;
 	if (endpoint->endpoint_index >= mpoe_endpoint_max)
 		goto out;
