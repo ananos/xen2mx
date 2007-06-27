@@ -452,21 +452,21 @@ mpoe_net_init(const char * ifnames)
 
 	ret = mpoe_init_pull();
 	if (ret < 0)
-		goto abort;
+		goto out;
 
 	dev_add_pack(&mpoe_pt);
 
 	ret = register_netdevice_notifier(&mpoe_netdevice_notifier);
 	if (ret < 0) {
 		printk(KERN_ERR "MPoE: failed to register netdevice notifier\n");
-		goto abort_with_pack;
+		goto out_with_pack;
 	}
 
 	mpoe_ifaces = kzalloc(mpoe_iface_max * sizeof(struct mpoe_iface *), GFP_KERNEL);
 	if (!mpoe_ifaces) {
 		printk(KERN_ERR "MPoE: failed to allocate interface array\n");
 		ret = -ENOMEM;
-		goto abort_with_notifier;
+		goto out_with_notifier;
 	}
 
 	if (ifnames) {
@@ -500,12 +500,12 @@ mpoe_net_init(const char * ifnames)
 	printk(KERN_INFO "MPoE: attached %d interfaces\n", mpoe_iface_nr);
 	return 0;
 
- abort_with_notifier:
+ out_with_notifier:
 	unregister_netdevice_notifier(&mpoe_netdevice_notifier);
- abort_with_pack:
+ out_with_pack:
 	dev_remove_pack(&mpoe_pt);
 	mpoe_exit_pull();
- abort:
+ out:
 	return ret;
 }
 

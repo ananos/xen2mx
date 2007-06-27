@@ -214,7 +214,7 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	iface = mpoe_iface_find_by_ifp(ifp);
 	if (!iface) {
 		printk(KERN_DEBUG "MPoE: Dropping packets on non MPoE interface\n");
-		goto exit;
+		goto out;
 	}
 
 	/* no need to linearize the whole skb,
@@ -253,13 +253,13 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	default:
 		printk(KERN_DEBUG "MPoE: Dropping packing with unrecognized type %d\n",
 		       mh->body.generic.ptype);
-		goto exit;
+		goto out;
 	}
 
 //	printk(KERN_INFO "MPoE: got packet type %d length %d matching 0x%llx for endpoint %d from %d\n",
 //	       mh->ptype, mh->length, mh->match_info, mh->dst_endpoint, mh->src_endpoint);
 
- exit:
+ out:
 	/* FIXME: send nack */
 	dev_kfree_skb(skb);
 	return 0;

@@ -250,7 +250,7 @@ mpoe_recv_pull_reply(struct mpoe_iface * iface,
 	if (endpoint->iface != iface) {
 		printk(KERN_DEBUG "MPoE: got a pull reply on wrong iface\n");
 		err = -EINVAL;
-		goto drop;
+		goto out;
 	}
 
 	/* FIXME: store the sender mac in the handle and check it ? */
@@ -261,7 +261,7 @@ mpoe_recv_pull_reply(struct mpoe_iface * iface,
 
 	return 0;
 
- drop:
+ out:
 	return err;
 }
 
