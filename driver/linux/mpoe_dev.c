@@ -16,7 +16,7 @@
  */
 
 static int
-mpoe_open_endpoint(void __user * p,
+mpoe_endpoint_open(void __user * p,
 		   struct mpoe_endpoint ** endpointp)
 {
 	struct mpoe_cmd_open_endpoint param;
@@ -38,7 +38,7 @@ mpoe_open_endpoint(void __user * p,
 		goto out;
 	}
 
-	ret = mpoe_net_attach_endpoint(endpoint, param.board_index, param.endpoint_index);
+	ret = mpoe_endpoint_attach(endpoint, param.board_index, param.endpoint_index);
 	if (ret < 0)
 		goto out_with_endpoint;
 
@@ -61,7 +61,7 @@ mpoe_open_endpoint(void __user * p,
 	endpoint->next_recvq_slot = endpoint->recvq;
 
 	/* initialize user regions */
-	mpoe_init_endpoint_user_regions(endpoint);
+	mpoe_endpoint_user_regions_init(endpoint);
 
 	*endpointp = endpoint;
 	printk(KERN_INFO "MPoE: Successfully open board %d endpoint %d\n",
@@ -70,7 +70,7 @@ mpoe_open_endpoint(void __user * p,
 	return 0;
 
  out_with_attach:
-	mpoe_net_detach_endpoint(endpoint);
+	mpoe_endpoint_detach(endpoint);
  out_with_endpoint:
 	kfree(endpoint);
  out:
@@ -78,12 +78,12 @@ mpoe_open_endpoint(void __user * p,
 }
 
 int
-mpoe_close_endpoint(struct mpoe_endpoint * endpoint, void __user * dummy)
+mpoe_endpoint_close(struct mpoe_endpoint * endpoint, void __user * dummy)
 {
 	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
 
-	mpoe_deregister_endpoint_user_regions(endpoint);
-	mpoe_net_detach_endpoint(endpoint);
+	mpoe_endpoint_user_regions_exit(endpoint);
+	mpoe_endpoint_detach(endpoint);
 
 	printk(KERN_INFO "MPoE: Successfully closed board %d endpoint %d\n",
 	       endpoint->board_index, endpoint->endpoint_index);
@@ -113,18 +113,18 @@ mpoe_miscdev_release(struct inode * inode, struct file * file)
 	if (endpoint != NULL) {
 		printk(KERN_INFO "MPoE: Forcing close of board %d endpoint %d\n",
 		       endpoint->board_index, endpoint->endpoint_index);
-		mpoe_close_endpoint(endpoint, NULL);
+		mpoe_endpoint_close(endpoint, NULL);
 		file->private_data = NULL;
 	}
 	return 0;
 }
 
 static int (*mpoe_cmd_with_endpoint_handlers[])(struct mpoe_endpoint * endpoint, void __user * uparam) = {
-	[MPOE_CMD_CLOSE_ENDPOINT]	= mpoe_close_endpoint,
-	[MPOE_CMD_SEND_TINY]		= mpoe_net_send_tiny,
-	[MPOE_CMD_SEND_MEDIUM]		= mpoe_net_send_medium,
-	[MPOE_CMD_SEND_RENDEZ_VOUS]	= mpoe_net_send_rendez_vous,
-	[MPOE_CMD_SEND_PULL]		= mpoe_net_send_pull,
+	[MPOE_CMD_CLOSE_ENDPOINT]	= mpoe_endpoint_close,
+	[MPOE_CMD_SEND_TINY]		= mpoe_send_tiny,
+	[MPOE_CMD_SEND_MEDIUM]		= mpoe_send_medium,
+	[MPOE_CMD_SEND_RENDEZ_VOUS]	= mpoe_send_rendez_vous,
+	[MPOE_CMD_SEND_PULL]		= mpoe_send_pull,
 	[MPOE_CMD_REGISTER_REGION]	= mpoe_register_user_region,
 	[MPOE_CMD_DEREGISTER_REGION]	= mpoe_deregister_user_region,
 };
@@ -138,7 +138,7 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 	switch (cmd) {
 
 	case MPOE_CMD_GET_BOARD_COUNT: {
-		uint32_t count = mpoe_net_get_iface_count();
+		uint32_t count = mpoe_ifaces_get_count();
 
 		ret = copy_to_user((void __user *) arg, &count,
 				   sizeof(count));
@@ -160,9 +160,9 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 			goto out;
 		}
 
-		ret = mpoe_net_get_iface_id(get_board_id.board_index,
-					    &get_board_id.board_addr,
-					    get_board_id.board_name);
+		ret = mpoe_iface_get_id(get_board_id.board_index,
+					&get_board_id.board_addr,
+					get_board_id.board_name);
 		if (ret < 0)
 			goto out;
 
@@ -184,7 +184,7 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 			goto out;
 		}
 
-		ret = mpoe_open_endpoint((void __user *) arg, &endpoint);
+		ret = mpoe_endpoint_open((void __user *) arg, &endpoint);
 		if (ret)
 			goto out;
 
@@ -272,13 +272,13 @@ mpoe_miscdev = {
 static ssize_t
 mpoe_ifaces_attr_show(struct class_device *dev, char *buf)
 {
-	return mpoe_net_ifaces_show(buf);
+	return mpoe_ifaces_show(buf);
 }
 
 static ssize_t
 mpoe_ifaces_attr_store(struct class_device *dev, const char *buf, size_t size)
 {
-	return mpoe_net_ifaces_store(buf, size);
+	return mpoe_ifaces_store(buf, size);
 }
 
 static CLASS_DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, mpoe_ifaces_attr_show, mpoe_ifaces_attr_store);
@@ -300,13 +300,13 @@ mpoe_exit_attributes(void)
 static ssize_t
 mpoe_ifaces_attr_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	return mpoe_net_ifaces_show(buf);
+	return mpoe_ifaces_show(buf);
 }
 
 static ssize_t
 mpoe_ifaces_attr_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
-	return mpoe_net_ifaces_store(buf, size);
+	return mpoe_ifaces_store(buf, size);
 }
 
 static DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, mpoe_ifaces_attr_show, mpoe_ifaces_attr_store);

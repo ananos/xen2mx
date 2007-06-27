@@ -41,9 +41,9 @@ mpoe_find_next_recvq_slot(struct mpoe_endpoint *endpoint)
 #define MPOE_MATCH_INFO_FROM_PKT(_pkt) (((uint64_t) (_pkt)->match_a) << 32) | ((uint64_t) (_pkt)->match_b)
 
 static int
-mpoe_net_recv_tiny(struct mpoe_iface * iface,
-		   struct mpoe_hdr * mh,
-		   struct sk_buff * skb)
+mpoe_recv_tiny(struct mpoe_iface * iface,
+	       struct mpoe_hdr * mh,
+	       struct sk_buff * skb)
 {
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
@@ -53,7 +53,7 @@ mpoe_net_recv_tiny(struct mpoe_iface * iface,
 	int err = 0;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_net_acquire_endpoint(iface, tiny->dst_endpoint);
+	endpoint = mpoe_endpoint_acquire(iface, tiny->dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping TINY packet for unknown endpoint %d\n",
 		       tiny->dst_endpoint);
@@ -85,20 +85,20 @@ mpoe_net_recv_tiny(struct mpoe_iface * iface,
 	/* set the type at the end so that user-space does not find the slot on error */
 	event->type = MPOE_EVT_RECV_TINY;
 
-	mpoe_net_release_endpoint(endpoint);
+	mpoe_endpoint_release(endpoint);
 
 	return 0;
 
  out_with_endpoint:
-	mpoe_net_release_endpoint(endpoint);
+	mpoe_endpoint_release(endpoint);
  out:
 	return err;
 }
 
 static int
-mpoe_net_recv_medium_frag(struct mpoe_iface * iface,
-			  struct mpoe_hdr * mh,
-			  struct sk_buff * skb)
+mpoe_recv_medium_frag(struct mpoe_iface * iface,
+		      struct mpoe_hdr * mh,
+		      struct sk_buff * skb)
 {
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
@@ -109,7 +109,7 @@ mpoe_net_recv_medium_frag(struct mpoe_iface * iface,
 	int err;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_net_acquire_endpoint(iface, medium->msg.dst_endpoint);
+	endpoint = mpoe_endpoint_acquire(iface, medium->msg.dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping MEDIUM packet for unknown endpoint %d\n",
 		       medium->msg.dst_endpoint);
@@ -142,19 +142,19 @@ mpoe_net_recv_medium_frag(struct mpoe_iface * iface,
 	/* set the type at the end so that user-space does not find the slot on error */
 	event->type = MPOE_EVT_RECV_MEDIUM;
 
-	mpoe_net_release_endpoint(endpoint);
+	mpoe_endpoint_release(endpoint);
 
 	return 0;
 
  out_with_endpoint:
-	mpoe_net_release_endpoint(endpoint);
+	mpoe_endpoint_release(endpoint);
  out:
 	return err;
 }
 
 static void
-mpoe_net_recv_rndv(struct mpoe_iface * iface,
-		   struct mpoe_hdr * mh)
+mpoe_recv_rndv(struct mpoe_iface * iface,
+	       struct mpoe_hdr * mh)
 {
 #if 0
 	struct mpoe_endpoint * endpoint;
@@ -162,7 +162,7 @@ mpoe_net_recv_rndv(struct mpoe_iface * iface,
 	struct mpoe_pkt_rndv *rndv = &mh->body.rndv;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_net_acquire_endpoint(iface, rndv->dst_endpoint);
+	endpoint = mpoe_endpoint_acquire(iface, rndv->dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping RNDV packet for unknown endpoint %d\n",
 		       rndv->dst_endpoint);
@@ -179,12 +179,12 @@ mpoe_net_recv_rndv(struct mpoe_iface * iface,
 	}
 	event = &evt->rndv;
 
-	mpoe_net_release_endpoint(endpoint);
+	mpoe_endpoint_release(endpoint);
 
 	return 0;
 
  out_with_endpoint:
-	mpoe_net_release_endpoint(endpoint);
+	mpoe_endpoint_release(endpoint);
  out:
 	return err;
 #endif
@@ -197,8 +197,8 @@ mpoe_net_recv_rndv(struct mpoe_iface * iface,
  */
 
 static int
-mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
-	      struct net_device *orig_dev)
+mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
+	  struct net_device *orig_dev)
 {
 	struct mpoe_iface *iface;
 	struct mpoe_hdr linear_header;
@@ -211,7 +211,7 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 	/* len doesn't include header */
 	skb_push(skb, ETH_HLEN);
 
-	iface = mpoe_net_iface_from_ifp(ifp);
+	iface = mpoe_iface_find_by_ifp(ifp);
 	if (!iface) {
 		printk(KERN_DEBUG "MPoE: Dropping packets on non MPoE interface\n");
 		goto exit;
@@ -231,23 +231,23 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 
 	switch (mh->body.generic.ptype) {
 	case MPOE_PKT_TINY:
-		mpoe_net_recv_tiny(iface, mh, skb);
+		mpoe_recv_tiny(iface, mh, skb);
 		break;
 
 	case MPOE_PKT_MEDIUM:
-		mpoe_net_recv_medium_frag(iface, mh, skb);
+		mpoe_recv_medium_frag(iface, mh, skb);
 		break;
 
 	case MPOE_PKT_RENDEZ_VOUS:
-		mpoe_net_recv_rndv(iface, mh);
+		mpoe_recv_rndv(iface, mh);
 		break;
 
 	case MPOE_PKT_PULL:
-		mpoe_net_recv_pull(iface, mh);
+		mpoe_recv_pull(iface, mh);
 		break;
 
 	case MPOE_PKT_PULL_REPLY:
-		mpoe_net_recv_pull_reply(iface, mh);
+		mpoe_recv_pull_reply(iface, mh);
 		break;
 
 	default:
@@ -267,7 +267,7 @@ mpoe_net_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *p
 
 struct packet_type mpoe_pt = {
 	.type = __constant_htons(ETH_P_MPOE),
-	.func = mpoe_net_recv,
+	.func = mpoe_recv,
 };
 
 /*

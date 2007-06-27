@@ -55,41 +55,41 @@ struct mpoe_user_region {
 };
 
 /* manage endpoints */
-extern int mpoe_net_attach_endpoint(struct mpoe_endpoint * endpoint, uint8_t board_index, uint8_t endpoint_index);
-extern void mpoe_net_detach_endpoint(struct mpoe_endpoint * endpoint);
-extern int mpoe_close_endpoint(struct mpoe_endpoint * endpoint, void __user * dummy);
-extern struct mpoe_endpoint * mpoe_net_acquire_endpoint(struct mpoe_iface *iface, uint8_t dst_endpoint);
-extern void mpoe_net_release_endpoint(struct mpoe_endpoint * endpoint);
+extern int mpoe_endpoint_attach(struct mpoe_endpoint * endpoint, uint8_t board_index, uint8_t endpoint_index);
+extern void mpoe_endpoint_detach(struct mpoe_endpoint * endpoint);
+extern int mpoe_endpoint_close(struct mpoe_endpoint * endpoint, void __user * dummy);
+extern struct mpoe_endpoint * mpoe_endpoint_acquire(struct mpoe_iface *iface, uint8_t dst_endpoint);
+extern void mpoe_endpoint_release(struct mpoe_endpoint * endpoint);
 
 /* manage ifaces */
-extern int mpoe_net_ifaces_show(char *buf);
-extern int mpoe_net_ifaces_store(const char *buf, size_t size);
-extern int mpoe_net_get_iface_count(void);
-extern int mpoe_net_get_iface_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name);
-extern struct mpoe_iface * mpoe_net_iface_from_ifp(struct net_device *ifp);
+extern int mpoe_ifaces_show(char *buf);
+extern int mpoe_ifaces_store(const char *buf, size_t size);
+extern int mpoe_ifaces_get_count(void);
+extern int mpoe_iface_get_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name);
+extern struct mpoe_iface * mpoe_iface_find_by_ifp(struct net_device *ifp);
 
 /* sending */
 extern struct sk_buff * mpoe_new_skb(struct net_device *ifp, unsigned long len);
-extern int mpoe_net_send_tiny(struct mpoe_endpoint * endpoint, void __user * uparam);
-extern int mpoe_net_send_medium(struct mpoe_endpoint * endpoint, void __user * uparam);
-extern int mpoe_net_send_rendez_vous(struct mpoe_endpoint * endpoint, void __user * uparam);
-extern int mpoe_net_send_pull(struct mpoe_endpoint * endpoint, void __user * uparam);
-extern int mpoe_net_pull_reply(struct mpoe_endpoint * endpoint, struct mpoe_pkt_pull_request * pull_request, struct mpoe_mac_addr * dest_addr);
+extern int mpoe_send_tiny(struct mpoe_endpoint * endpoint, void __user * uparam);
+extern int mpoe_send_medium(struct mpoe_endpoint * endpoint, void __user * uparam);
+extern int mpoe_send_rendez_vous(struct mpoe_endpoint * endpoint, void __user * uparam);
+extern int mpoe_send_pull(struct mpoe_endpoint * endpoint, void __user * uparam);
+extern int mpoe_pull_reply(struct mpoe_endpoint * endpoint, struct mpoe_pkt_pull_request * pull_request, struct mpoe_mac_addr * dest_addr);
 
 /* receiving */
 extern struct packet_type mpoe_pt;
-extern int mpoe_net_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh);
-extern int mpoe_net_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh);
+extern int mpoe_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh);
+extern int mpoe_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 
 /* pull */
 extern int mpoe_init_pull(void);
 extern void mpoe_exit_pull(void);
 
 /* user regions */
-extern void mpoe_init_endpoint_user_regions(struct mpoe_endpoint * endpoint);
+extern void mpoe_endpoint_user_regions_init(struct mpoe_endpoint * endpoint);
 extern int mpoe_register_user_region(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_deregister_user_region(struct mpoe_endpoint * endpoint, void __user * uparam);
-extern void mpoe_deregister_endpoint_user_regions(struct mpoe_endpoint * endpoint);
+extern void mpoe_endpoint_user_regions_exit(struct mpoe_endpoint * endpoint);
 
 /* device */
 extern int mpoe_dev_init(void);

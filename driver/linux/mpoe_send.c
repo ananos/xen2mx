@@ -29,8 +29,8 @@ mpoe_new_skb(struct net_device *ifp, unsigned long len)
 }
 
 int
-mpoe_net_send_tiny(struct mpoe_endpoint * endpoint,
-		   void __user * uparam)
+mpoe_send_tiny(struct mpoe_endpoint * endpoint,
+	       void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct mpoe_hdr *mh;
@@ -105,8 +105,8 @@ mpoe_net_send_tiny(struct mpoe_endpoint * endpoint,
 }
 
 int
-mpoe_net_send_medium(struct mpoe_endpoint * endpoint,
-		     void __user * uparam)
+mpoe_send_medium(struct mpoe_endpoint * endpoint,
+		 void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct mpoe_hdr *mh;
@@ -180,8 +180,8 @@ mpoe_net_send_medium(struct mpoe_endpoint * endpoint,
 }
 
 int
-mpoe_net_send_rendez_vous(struct mpoe_endpoint * endpoint,
-			  void __user * uparam)
+mpoe_send_rendez_vous(struct mpoe_endpoint * endpoint,
+		      void __user * uparam)
 {
 	return -ENOSYS;
 }

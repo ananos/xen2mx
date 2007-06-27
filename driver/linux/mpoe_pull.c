@@ -48,8 +48,8 @@ mpoe_exit_pull(void)
  */
 
 int
-mpoe_net_send_pull(struct mpoe_endpoint * endpoint,
-		   void __user * uparam)
+mpoe_send_pull(struct mpoe_endpoint * endpoint,
+	       void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct mpoe_hdr *mh;
@@ -121,15 +121,15 @@ mpoe_net_send_pull(struct mpoe_endpoint * endpoint,
 }
 
 static inline int
-mpoe_net_pull_reply_append_user_region_segment(struct sk_buff *skb,
-					       struct mpoe_user_region_segment *seg)
+mpoe_pull_reply_append_user_region_segment(struct sk_buff *skb,
+					   struct mpoe_user_region_segment *seg)
 {
 	return -ENOSYS;
 }
 
 int
-mpoe_net_recv_pull(struct mpoe_iface * iface,
-		   struct mpoe_hdr * pull_mh)
+mpoe_recv_pull(struct mpoe_iface * iface,
+	       struct mpoe_hdr * pull_mh)
 {
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *pull_eh = &pull_mh->head.eth;
@@ -143,7 +143,7 @@ mpoe_net_recv_pull(struct mpoe_iface * iface,
 	int err = 0;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_net_acquire_endpoint(iface, pull_request->dst_endpoint);
+	endpoint = mpoe_endpoint_acquire(iface, pull_request->dst_endpoint);
 	if (!endpoint) {
 		printk(KERN_DEBUG "MPoE: Dropping PULL packet for unknown endpoint %d\n",
 		       pull_request->dst_endpoint);
@@ -194,7 +194,7 @@ mpoe_net_recv_pull(struct mpoe_iface * iface,
 	    iseg++) {
 		struct mpoe_user_region_segment *segment = &region->segments[iseg];
 		uint32_t append;
-		append = mpoe_net_pull_reply_append_user_region_segment(skb, segment);
+		append = mpoe_pull_reply_append_user_region_segment(skb, segment);
 		if (append < 0) {
 			printk(KERN_ERR "MPoE: failed to queue segment to skb, error %d\n", append);
 			/* FIXME: release pages */
@@ -209,7 +209,7 @@ mpoe_net_recv_pull(struct mpoe_iface * iface,
 
 	dev_queue_xmit(skb);
 
-	mpoe_net_release_endpoint(endpoint);
+	mpoe_endpoint_release(endpoint);
 
 //	printk(KERN_INFO "MPoE: sent a pull reply from endpoint %d\n",
 //	       endpoint->endpoint_index);
@@ -221,14 +221,14 @@ mpoe_net_recv_pull(struct mpoe_iface * iface,
  out_with_skb:
 	dev_kfree_skb(skb);
  out_with_endpoint:
-	mpoe_net_release_endpoint(endpoint);
+	mpoe_endpoint_release(endpoint);
  out:
 	return err;
 }
 
 int
-mpoe_net_recv_pull_reply(struct mpoe_iface * iface,
-			 struct mpoe_hdr * mh)
+mpoe_recv_pull_reply(struct mpoe_iface * iface,
+		     struct mpoe_hdr * mh)
 {
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
