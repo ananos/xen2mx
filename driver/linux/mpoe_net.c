@@ -119,6 +119,9 @@ __mpoe_iface_detach(struct mpoe_iface * iface, int force)
 		if (!endpoint)
 			continue;
 
+		printk(KERN_INFO "MPoE: forcing close of endpoint #%d attached to iface #%d '%s'\n",
+		       i, iface->index, iface->eth_ifp->name);
+
 		/* close the endpoint, with the iface lock hold */
 		ret = __mpoe_endpoint_close(endpoint, 1);
 		if (ret < 0) {

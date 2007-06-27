@@ -1,4 +1,3 @@
-* add printk when closing endpoints in __mpoe_iface_detach
 * change mpoe_ifp_find_by_name into acquire and fix missing dev_put?
 * do not attach twice
 * fix comments before functions */
