@@ -8,7 +8,7 @@
 #include "mpoe_common.h"
 
 void
-mpoe_init_endpoint_user_regions(struct mpoe_endpoint * endpoint)
+mpoe_endpoint_user_regions_init(struct mpoe_endpoint * endpoint)
 {
 	memset(endpoint->user_regions, 0, sizeof(endpoint->user_regions));
 	spin_lock_init(&endpoint->user_regions_lock);
@@ -206,7 +206,7 @@ mpoe_deregister_user_region(struct mpoe_endpoint * endpoint,
 }
 
 void
-mpoe_deregister_endpoint_user_regions(struct mpoe_endpoint * endpoint)
+mpoe_endpoint_user_regions_exit(struct mpoe_endpoint * endpoint)
 {
 	struct mpoe_user_region * region;
 	int i;
