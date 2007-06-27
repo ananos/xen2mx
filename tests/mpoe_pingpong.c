@@ -20,7 +20,7 @@ static void
 usage(void)
 {
   fprintf(stderr, "Common options:\n");
-  fprintf(stderr, " -b <n>\tchange local board id [%d\n", BID);
+  fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
   fprintf(stderr, " -v\tverbose\n");
   fprintf(stderr, "Sender options:\n");
