@@ -58,6 +58,7 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	struct mpoe_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	struct mpoe_pull_handle * pull_handle;
+	struct mpoe_pkt_pull_request * pull;
 	int ret;
 
 	ret = copy_from_user(&cmd_hdr, uparam, sizeof(cmd_hdr));
@@ -93,19 +94,20 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
 	/* fill mpoe header */
-	mh->body.pull.src_endpoint = endpoint->endpoint_index;
-	mh->body.pull.dst_endpoint = cmd_hdr.dest_endpoint;
-	mh->body.pull.ptype = MPOE_PKT_PULL;
-	mh->body.pull.length = cmd_hdr.length;
-	mh->body.pull.puller_rdma_id = cmd_hdr.local_rdma_id;
-	mh->body.pull.puller_offset = cmd_hdr.local_offset;
-	mh->body.pull.pulled_rdma_id = cmd_hdr.remote_rdma_id;
-	mh->body.pull.pulled_offset = cmd_hdr.remote_offset;
+	pull = &mh->body.pull;
+	pull->src_endpoint = endpoint->endpoint_index;
+	pull->dst_endpoint = cmd_hdr.dest_endpoint;
+	pull->ptype = MPOE_PKT_PULL;
+	pull->length = cmd_hdr.length;
+	pull->puller_rdma_id = cmd_hdr.local_rdma_id;
+	pull->puller_offset = cmd_hdr.local_offset;
+	pull->pulled_rdma_id = cmd_hdr.remote_rdma_id;
+	pull->pulled_offset = cmd_hdr.remote_offset;
 
 	/* fill pull handle */
 	pull_handle->endpoint = endpoint;
 	pull_handle->pull_handle = (uint32_t) pull_handle; /* FIXME: ugly */
-	mh->body.pull.src_pull_handle = pull_handle->pull_handle;
+	pull->src_pull_handle = pull_handle->pull_handle;
 
 	dev_queue_xmit(skb);
 
@@ -134,6 +136,7 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *pull_eh = &pull_mh->head.eth;
 	struct mpoe_pkt_pull_request *pull_request = &pull_mh->body.pull;
+	struct mpoe_pkt_pull_reply *pull_reply;
 	struct sk_buff *skb;
 	struct mpoe_hdr *reply_mh;
 	struct ethhdr *reply_eh;
@@ -172,10 +175,11 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 	memcpy(reply_eh->h_dest, pull_eh->h_source, sizeof(reply_eh->h_dest));
 
 	/* fill mpoe header */
-	reply_mh->body.pull_reply.puller_rdma_id = pull_request->puller_rdma_id;
-	reply_mh->body.pull_reply.puller_offset = pull_request->puller_offset;
-	reply_mh->body.pull_reply.ptype = MPOE_PKT_PULL_REPLY;
-	reply_mh->body.pull_reply.src_pull_handle = pull_request->src_pull_handle;
+	pull_reply = &reply_mh->body.pull_reply;
+	pull_reply->puller_rdma_id = pull_request->puller_rdma_id;
+	pull_reply->puller_offset = pull_request->puller_offset;
+	pull_reply->ptype = MPOE_PKT_PULL_REPLY;
+	pull_reply->src_pull_handle = pull_request->src_pull_handle;
 
 	/* get the rdma window */
 	rdma_id = pull_request->pulled_rdma_id;
@@ -206,7 +210,7 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 #endif
 	spin_unlock(&endpoint->user_regions_lock);
 
-	reply_mh->body.pull_reply.length = queued;
+	pull_reply->length = queued;
 
 	dev_queue_xmit(skb);
 
