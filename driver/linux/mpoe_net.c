@@ -159,6 +159,7 @@ mpoe_iface_attach(struct net_device * ifp)
 		goto out_with_iface;
 	}
 
+	init_waitqueue_head(&iface->noendpoint_queue);
 	spin_lock_init(&iface->endpoint_lock);
 	iface->index = i;
 	mpoe_iface_nr++;
@@ -184,6 +185,7 @@ mpoe_iface_attach(struct net_device * ifp)
 static int
 __mpoe_iface_detach(struct mpoe_iface * iface, int force)
 {
+	DECLARE_WAITQUEUE(wq, current);
 	int ret;
 	int i;
 
@@ -223,11 +225,20 @@ __mpoe_iface_detach(struct mpoe_iface * iface, int force)
 			 */
 		}
 	}
-	spin_unlock(&iface->endpoint_lock);
 
-	/* release the lock and wait for concurrent endpoint closers to be done */
-	while (iface->endpoint_nr)
-		schedule_timeout(1); /* FIXME: use msleep (needs a hal)? or waitqueue? */
+	/* wait for concurrent endpoint closers to be done */
+	add_wait_queue(&iface->noendpoint_queue, &wq);
+	for(;;) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		if (!iface->endpoint_nr)
+			break;
+		spin_unlock(&iface->endpoint_lock);
+		schedule();
+		spin_lock(&iface->endpoint_lock);
+	}
+	set_current_state(TASK_RUNNING);
+	remove_wait_queue(&iface->noendpoint_queue, &wq);
+	spin_unlock(&iface->endpoint_lock);
 
 	printk(KERN_INFO "MPoE: detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
 
@@ -450,7 +461,9 @@ mpoe_iface_detach_endpoint(struct mpoe_endpoint * endpoint,
 
 	BUG_ON(iface->endpoints[endpoint->endpoint_index] != endpoint);
 	iface->endpoints[endpoint->endpoint_index] = NULL;
-	iface->endpoint_nr--;
+	/* decrease the number of endpoints and wakeup the iface detacher if needed */
+	if (!--iface->endpoint_nr)
+		wake_up(&iface->noendpoint_queue);
 
 	if (!ifacelocked)
 		spin_unlock(&iface->endpoint_lock);

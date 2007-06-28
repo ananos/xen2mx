@@ -23,6 +23,7 @@ struct mpoe_iface {
 	spinlock_t endpoint_lock;
 	int endpoint_nr;
 	struct mpoe_endpoint ** endpoints;
+	wait_queue_head_t noendpoint_queue;
 
 	enum mpoe_iface_status status;
 };
