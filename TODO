@@ -1,5 +1,3 @@
-* change mpoe_ifp_find_by_name into acquire and fix missing dev_put?
-* reorganize attach/detach and co in mpoe_net.c
 * factorize access to pull packet fields
 * events for sending (needs a handle)
 * no need to pad cmd_hdr to 64 ?

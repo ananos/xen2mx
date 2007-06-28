@@ -9,7 +9,7 @@
  * one that matches ifname (and take a reference on it).
  */
 static struct net_device *
-mpoe_ifp_find_by_name(const char * ifname)
+dev_hold_by_name(const char * ifname)
 {
 	struct net_device * ifp;
 
@@ -170,7 +170,6 @@ mpoe_iface_attach(struct net_device * ifp)
  out_with_iface:
 	kfree(iface);
  out_with_ifp_hold:
-	dev_put(ifp);
 	return ret;
 }
 
@@ -245,7 +244,6 @@ __mpoe_iface_detach(struct mpoe_iface * iface, int force)
 	mpoe_ifaces[iface->index] = NULL;
 	mpoe_iface_nr--;
 	kfree(iface->endpoints);
-	dev_put(iface->eth_ifp);
 	kfree(iface);
 
 	return 0;
@@ -321,7 +319,7 @@ mpoe_ifaces_store(const char *buf, size_t size)
 		*ptr = '\0';
 
 	if (buf[0] == '-') {
-		int i, found = 0;
+		int i;
 		/* if none matches, we return -EINVAL.
 		 * if one matches, it sets ret accordingly.
 		 */
@@ -330,21 +328,29 @@ mpoe_ifaces_store(const char *buf, size_t size)
 		spin_lock(&mpoe_iface_lock);
 		for(i=0; i<mpoe_iface_max; i++) {
 			struct mpoe_iface * iface = mpoe_ifaces[i];
-			if (iface != NULL && !strcmp(iface->eth_ifp->name, copy)) {
-				/* disable incoming packets while removing the iface
-				 * to prevent races
-				 */
-				dev_remove_pack(&mpoe_pt);
-				ret = mpoe_iface_detach(iface);
-				dev_add_pack(&mpoe_pt);
-				if (!ret)
-					found = 1;
-				break;
-			}
+			struct net_device * ifp;
+
+			if (iface == NULL)
+				continue;
+
+			ifp = iface->eth_ifp;
+			if (strcmp(ifp->name, copy))
+				continue;
+
+			/* disable incoming packets while removing the iface
+			 * to prevent races
+			 */
+			dev_remove_pack(&mpoe_pt);
+			ret = mpoe_iface_detach(iface);
+			dev_add_pack(&mpoe_pt);
+
+			/* release the interface now */
+			dev_put(ifp);
+			break;
 		}
 		spin_unlock(&mpoe_iface_lock);
 
-		if (!found) {
+		if (ret == -EINVAL) {
 			printk(KERN_ERR "MPoE: Cannot find any attached interface '%s' to detach\n", copy);
 			return -EINVAL;
 		}
@@ -354,15 +360,17 @@ mpoe_ifaces_store(const char *buf, size_t size)
 		struct net_device * ifp;
 		int ret;
 
-		ifp = mpoe_ifp_find_by_name(copy);
+		ifp = dev_hold_by_name(copy);
 		if (!ifp)
 			return -EINVAL;
 
 		spin_lock(&mpoe_iface_lock);
 		ret = mpoe_iface_attach(ifp);
 		spin_unlock(&mpoe_iface_lock);
-		if (ret < 0)
+		if (ret < 0) {
+			dev_put(ifp);
 			return ret;
+		}
 
 		return size;
 
@@ -493,6 +501,7 @@ mpoe_netdevice_notifier_cb(struct notifier_block *unused,
 			 */
 			ret = mpoe_iface_detach_force(iface);
 			BUG_ON(ret);
+			dev_put(ifp);
 		}
 		spin_unlock(&mpoe_iface_lock);
 	}
@@ -539,10 +548,12 @@ mpoe_net_init(const char * ifnames)
 
 		while ((ifname = strsep(&copy, ",")) != NULL) {
 			struct net_device * ifp;
-			ifp = mpoe_ifp_find_by_name(ifname);
+			ifp = dev_hold_by_name(ifname);
 			if (ifp)
-				if (mpoe_iface_attach(ifp) < 0)
+				if (mpoe_iface_attach(ifp) < 0) {
+					dev_put(ifp);
 					break;
+				}
 		}
 
 		kfree(copy);
@@ -554,8 +565,10 @@ mpoe_net_init(const char * ifnames)
 		read_lock(&dev_base_lock);
 		mpoe_for_each_netdev(ifp) {
 			dev_hold(ifp);
-			if (mpoe_iface_attach(ifp) < 0)
+			if (mpoe_iface_attach(ifp) < 0) {
+				dev_put(ifp);
 				break;
+			}
 		}
 		read_unlock(&dev_base_lock);
 	}
@@ -591,10 +604,13 @@ mpoe_net_exit(void)
 	for (i=0; i<mpoe_iface_max; i++) {
 		struct mpoe_iface * iface = mpoe_ifaces[i];
 		if (iface != NULL) {
+			struct net_device * ifp = iface->eth_ifp;
+
 			/* detach the iface now.
 			 * all endpoints are closed, no need to force
 			 */
 			BUG_ON(mpoe_iface_detach(iface) < 0);
+			dev_put(ifp);
 			nr++;
 		}
 	}
