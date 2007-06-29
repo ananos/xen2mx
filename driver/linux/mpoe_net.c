@@ -522,10 +522,6 @@ mpoe_net_init(const char * ifnames)
 {
 	int ret = 0;
 
-	ret = mpoe_init_pull();
-	if (ret < 0)
-		goto out;
-
 	dev_add_pack(&mpoe_pt);
 
 	ret = register_netdevice_notifier(&mpoe_netdevice_notifier);
@@ -580,8 +576,6 @@ mpoe_net_init(const char * ifnames)
 	unregister_netdevice_notifier(&mpoe_netdevice_notifier);
  out_with_pack:
 	dev_remove_pack(&mpoe_pt);
-	mpoe_exit_pull();
- out:
 	return ret;
 }
 
@@ -625,8 +619,6 @@ mpoe_net_exit(void)
 
 	/* free structures now that the notifier is gone */
 	kfree(mpoe_ifaces);
-
-	mpoe_exit_pull();
 }
 
 /*

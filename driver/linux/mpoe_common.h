@@ -39,8 +39,6 @@ extern int mpoe_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 extern int mpoe_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 
 /* pull */
-extern int mpoe_init_pull(void);
-extern void mpoe_exit_pull(void);
 
 /* user regions */
 extern void mpoe_endpoint_user_regions_init(struct mpoe_endpoint * endpoint);

@@ -5,43 +5,10 @@
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
 
-/******************************
- * Pull handles management
- */
-
 struct mpoe_pull_handle {
 	struct mpoe_endpoint * endpoint;
 	uint32_t pull_handle;
 };
-
-/* FIXME: need a lock */
-struct kmem_cache * mpoe_pull_handle_cachep = NULL;
-
-int
-mpoe_init_pull(void)
-{
-	int err = 0;
-
-	mpoe_pull_handle_cachep = kmem_cache_create("mpoe_pull_handle",
-						    sizeof(struct mpoe_pull_handle),
-						    0, 0, NULL, NULL);
-	if (!mpoe_pull_handle_cachep) {
-		printk(KERN_ERR "MPoE: Failed to create pull handle cache\n");
-		err = -ENOMEM;
-		goto out;
-	}
-
-	return 0;
-
- out:
-	return err;
-}
-
-void
-mpoe_exit_pull(void)
-{
-	kmem_cache_destroy(mpoe_pull_handle_cachep);
-}
 
 /******************************
  * Pull-related networking
@@ -68,7 +35,7 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
-	pull_handle = kmem_cache_alloc(mpoe_pull_handle_cachep, GFP_KERNEL);
+	pull_handle = kmalloc(sizeof(struct mpoe_pull_handle), GFP_KERNEL);
 	if (!pull_handle) {
 		printk(KERN_INFO "MPoE: Failed to allocate a pull handle\n");
 		ret = -ENOMEM;
@@ -117,7 +84,7 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	return 0;
 
  out_with_pull_handle:
-	kmem_cache_free(mpoe_pull_handle_cachep, pull_handle);
+	kfree(pull_handle);
  out:
 	return ret;
 }
@@ -259,7 +226,7 @@ mpoe_recv_pull_reply(struct mpoe_iface * iface,
 
 	/* FIXME: store the sender mac in the handle and check it ? */
 
-	kmem_cache_free(mpoe_pull_handle_cachep, pull_handle);
+	kfree(pull_handle);
 
 	printk("releasing pull handle %p\n", pull_handle);
 
