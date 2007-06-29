@@ -51,6 +51,14 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
+	length = cmd_hdr.length;
+	if (length > MPOE_TINY_MAX) {
+		printk(KERN_ERR "MPoE: Cannot send more than %d as a tiny (tried %d)\n",
+		       MPOE_TINY_MAX, length);
+		ret = -EINVAL;
+		goto out;
+	}
+
 	skb = mpoe_new_skb(ifp,
 			   sizeof(struct mpoe_hdr) + cmd_hdr.length);
 	if (skb == NULL) {
@@ -73,18 +81,9 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	mh->body.tiny.src_endpoint = endpoint->endpoint_index;
 	mh->body.tiny.dst_endpoint = cmd_hdr.dest_endpoint;
 	mh->body.tiny.ptype = MPOE_PKT_TINY;
-	length = mh->body.tiny.length = cmd_hdr.length;
-	/* mh->offset useless for tiny */
+	mh->body.tiny.length = length;
 	mh->body.tiny.match_a = cmd_hdr.match_info >> 32;
 	mh->body.tiny.match_b = cmd_hdr.match_info & 0xffffffff;
-
-	/* fill data */
-	if (length > MPOE_TINY_MAX) {
-		printk(KERN_ERR "MPoE: Cannot send more than %d as a tiny (tried %d)\n",
-		       MPOE_TINY_MAX, length);
-		ret = -EINVAL;
-		goto out_with_skb;
-	}
 
 	/* copy the data right after the header */
 	ret = copy_from_user(mh+1, &((struct mpoe_cmd_send_tiny __user *) uparam)->data, length);
@@ -128,6 +127,14 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
+	length = cmd_hdr.length;
+	if (length > PAGE_SIZE) { /* FIXME */
+		printk(KERN_ERR "MPoE: Cannot send more than %ld as a medium (tried %ld)\n",
+		       PAGE_SIZE * 1UL, (unsigned long) length);
+		ret = -EINVAL;
+		goto out;
+	}
+
 	skb = mpoe_new_skb(ifp, sizeof(*mh));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create medium skb\n");
@@ -149,19 +156,11 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	mh->body.medium.msg.src_endpoint = endpoint->endpoint_index;
 	mh->body.medium.msg.dst_endpoint = cmd_hdr.dest_endpoint;
 	mh->body.medium.msg.ptype = MPOE_PKT_MEDIUM;
-	length = mh->body.medium.msg.length = cmd_hdr.length;
+	mh->body.medium.msg.length = length;
 	mh->body.medium.msg.match_a = cmd_hdr.match_info >> 32;
 	mh->body.medium.msg.match_b = cmd_hdr.match_info & 0xffffffff;
 
-	/* fill data */
-	if (length > PAGE_SIZE) { /* FIXME */
-		printk(KERN_ERR "MPoE: Cannot send more than %ld as a medium (tried %ld)\n",
-		       PAGE_SIZE * 1UL, (unsigned long) length);
-		ret = -EINVAL;
-		goto out_with_skb;
-	}
-
-	/* append sendq page */
+	/* attach the sendq page */
 	page = vmalloc_to_page(endpoint->sendq + (cmd_hdr.sendq_page_offset << PAGE_SHIFT));
 	BUG_ON(page == NULL);
 	get_page(page);
@@ -176,8 +175,6 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 
 	return 0;
 
- out_with_skb:
-	dev_kfree_skb(skb);
  out:
 	return ret;
 }
