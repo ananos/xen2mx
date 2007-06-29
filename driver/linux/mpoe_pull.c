@@ -7,8 +7,251 @@
 
 struct mpoe_pull_handle {
 	struct mpoe_endpoint * endpoint;
-	uint32_t pull_handle;
+	struct list_head endpoint_pull_handles;
+	uint32_t idr_index;
+
+	spinlock_t lock;
+
+	/*
+	 * Masks of frames missing (not received at all)
+	 * and transferring (received but not copied yet)
+	 *
+	 * handle is done when frame_transferring = frame_missing = 0
+	 * handle is being used when frame_transferring != frame_missing
+	 */
+	uint32_t frame_missing;
+	uint32_t frame_transferring;
+	/* FIXME: need a frame window for multiple pull request */
+
+	/* FIXME: need a refcount in the endpoint and a waitqueue? */
 };
+
+/*
+ * Notes about locking:
+ *
+ * A reference is hold on the endpoint while using a pull handle:
+ * - when manipulating its internal fields
+ *   (by taking the endpoint reference as long as we hold the handle lock)
+ * - when copying data corresponding to the handle
+ *   (the endpoint reference is hold without taking the handle lock)
+ */
+
+/******************************
+ * Per-endpoint pull handles management
+ */
+
+int
+mpoe_endpoint_pull_handles_init(struct mpoe_endpoint * endpoint)
+{
+	spin_lock_init(&endpoint->pull_handle_lock);
+	idr_init(&endpoint->pull_handle_idr);
+	INIT_LIST_HEAD(&endpoint->pull_handle_list);
+
+	return 0;
+}
+
+void
+mpoe_endpoint_pull_handles_exit(struct mpoe_endpoint * endpoint)
+{
+	struct mpoe_pull_handle * handle, * next;
+
+	spin_lock(&endpoint->pull_handle_lock);
+
+	/* release all pull handles of endpoint */
+	list_for_each_entry_safe(handle, next,
+				 &endpoint->pull_handle_list,
+				 endpoint_pull_handles) {
+		list_del(&handle->endpoint_pull_handles);
+		idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
+		kfree(handle);
+	}
+
+	spin_unlock(&endpoint->pull_handle_lock);
+}
+
+/******************************
+ * Endpoint pull-magic management
+ */
+
+static inline uint32_t
+mpoe_endpoint_pull_magic(struct mpoe_endpoint * endpoint)
+{
+	uint32_t magic;
+
+	magic = endpoint->endpoint_index; /* FIXME: need something better with a xor */
+
+	return magic;
+}
+
+static inline struct mpoe_endpoint *
+mpoe_endpoint_acquire_by_pull_magic(struct mpoe_iface * iface, uint32_t magic)
+{
+	uint8_t index = magic;
+
+	index = magic; /* FIXME: need something better with a xor */
+
+	return mpoe_endpoint_acquire_by_iface_index(iface, index);
+}
+
+/******************************
+ * Per-endpoint pull handles create/find/...
+ */
+
+/*
+ * Create a pull handle and return it as acquired,
+ * with a reference on the endpoint
+ */
+static inline struct mpoe_pull_handle *
+mpoe_pull_handle_create(struct mpoe_endpoint * endpoint)
+{
+	struct mpoe_pull_handle * handle;
+	int err;
+
+	/* take a reference on the endpoint since we will return the pull_handle as acquired */
+	err = mpoe_endpoint_acquire(endpoint);
+	if (err < 0)
+		goto out;
+
+	/* alloc the pull handle */
+	handle = kmalloc(sizeof(struct mpoe_pull_handle), GFP_KERNEL);
+	if (!handle) {
+		printk(KERN_INFO "MPoE: Failed to allocate a pull handle\n");
+		goto out_with_endpoint;
+	}
+
+	/* while failed, realloc and retry */
+ idr_try_alloc:
+	err = idr_pre_get(&endpoint->pull_handle_idr, GFP_KERNEL);
+	if (!err) {
+		printk(KERN_ERR "MPoE: Failed to allocate idr space for pull handles\n");
+		err = -ENOMEM; /* unused for now */
+		goto out_with_endpoint;
+	}
+
+	spin_lock(&endpoint->pull_handle_lock);
+
+	err = idr_get_new(&endpoint->pull_handle_idr, handle, &handle->idr_index);
+	if (err == -EAGAIN) {
+		spin_unlock(&endpoint->pull_handle_lock);
+		printk("mpoe_pull_handle_create try again\n");
+		goto idr_try_alloc;
+	}
+
+	/* we are good now, finish filling the handle */
+	spin_lock_init(&handle->lock);
+	handle->endpoint = endpoint;
+	handle->frame_missing = 0;
+	handle->frame_transferring = 0;
+	list_add_tail(&handle->endpoint_pull_handles,
+		      &endpoint->pull_handle_list);
+
+	/* acquire the handle */
+	spin_lock(&handle->lock);
+
+	spin_unlock(&endpoint->pull_handle_lock);
+
+	printk("created and acquired pull handle %p\n", handle);
+	return handle;
+
+ out_with_endpoint:
+	mpoe_endpoint_release(endpoint);
+ out:
+	return NULL;
+}
+
+/*
+ * Acquire a pull handle and the corresponding endpoint
+ * given by an pull magic and a wire handle
+ */
+static inline struct mpoe_pull_handle *
+mpoe_pull_handle_acquire_by_wire(struct mpoe_iface * iface,
+				 uint32_t magic, uint32_t wire_handle)
+{
+	struct mpoe_pull_handle * handle;
+	struct mpoe_endpoint * endpoint;
+
+	endpoint = mpoe_endpoint_acquire_by_pull_magic(iface, magic);
+	if (!endpoint)
+		return NULL;
+
+	spin_lock(&endpoint->pull_handle_lock);
+	handle = idr_find(&endpoint->pull_handle_idr, wire_handle);
+
+	/* acquire the handle */
+	spin_lock(&handle->lock);
+
+	spin_unlock(&endpoint->pull_handle_lock);
+
+	printk("acquired pull handle %p\n", handle);
+	return handle;
+}
+
+/*
+ * Reacquire a pull handle.
+ *
+ * A reference is still hold on the endpoint.
+ */
+static inline void
+mpoe_pull_handle_reacquire(struct mpoe_pull_handle * handle)
+{
+	/* acquire the handle */
+	spin_lock(&handle->lock);
+
+	printk("reacquired pull handle %p\n", handle);
+}
+
+/*
+ * Takes a locked pull handle and unlocked it if it is not done yet,
+ * or destory it if it is done.
+ */
+static inline void
+mpoe_pull_handle_release(struct mpoe_pull_handle * handle)
+{
+	struct mpoe_endpoint * endpoint = handle->endpoint;
+
+	printk("releasing pull handle %p\n", handle);
+
+	if (handle->frame_transferring != handle->frame_missing) {
+		/* some transfer are pending,
+		 * release the handle but keep the reference on the endpoint
+		 * since it will be reacquired later
+		 */
+		spin_unlock(&handle->lock);
+
+		printk("some frames and being transferred, just release the handle\n");
+
+	} else if (handle->frame_transferring != 0) {
+		/* no transfer pending but frames are missing,
+		 * release the handle and the endpoint
+		 */
+		spin_unlock(&handle->lock);
+
+		/* release the endpoint */
+		mpoe_endpoint_release(endpoint);
+
+		printk("some frames are missing, release the handle and the endpoint\n");
+
+	} else {
+		/* transfer is done,
+		 * destroy the handle and release the endpoint */
+
+		/* FIXME: notify recv_large done to the application */
+		/* FIXME: if multiple pull requests, start the next one */
+
+		/* destroy the handle */
+		spin_lock(&endpoint->pull_handle_lock);
+		list_del(&handle->endpoint_pull_handles);
+		idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
+		kfree(handle);
+		spin_unlock(&endpoint->pull_handle_lock);
+
+		/* release the endpoint */
+		mpoe_endpoint_release(endpoint);
+
+		printk("frame are all done, destroy the handle and release the endpoint\n");
+
+	}
+}
 
 /******************************
  * Pull-related networking
@@ -24,7 +267,7 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	struct mpoe_cmd_send_pull_hdr cmd_hdr;
 	struct mpoe_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
-	struct mpoe_pull_handle * pull_handle;
+	struct mpoe_pull_handle * handle;
 	struct mpoe_pkt_pull_request * pull;
 	int ret;
 
@@ -35,19 +278,18 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
-	pull_handle = kmalloc(sizeof(struct mpoe_pull_handle), GFP_KERNEL);
-	if (!pull_handle) {
+	handle = mpoe_pull_handle_create(endpoint);
+	if (!handle) {
 		printk(KERN_INFO "MPoE: Failed to allocate a pull handle\n");
 		ret = -ENOMEM;
 		goto out;
 	}
-	printk("allocated pull handle %p\n", pull_handle);
 
 	skb = mpoe_new_skb(ifp, sizeof(*mh));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create pull skb\n");
 		ret = -ENOMEM;
-		goto out_with_pull_handle;
+		goto out_with_handle;
 	}
 
 	/* locate headers */
@@ -70,11 +312,15 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	pull->puller_offset = cmd_hdr.local_offset;
 	pull->pulled_rdma_id = cmd_hdr.remote_rdma_id;
 	pull->pulled_offset = cmd_hdr.remote_offset;
+	pull->src_pull_handle = handle->idr_index;
+	pull->src_magic = mpoe_endpoint_pull_magic(endpoint);
+	printk("sending pull with handle %d magic %d\n",
+	       pull->src_pull_handle, pull->src_magic);
 
-	/* fill pull handle */
-	pull_handle->endpoint = endpoint;
-	pull_handle->pull_handle = (uint32_t) pull_handle; /* FIXME: ugly */
-	pull->src_pull_handle = pull_handle->pull_handle;
+	/* mark the frames as missing and release the handle */
+	handle->frame_missing = 1;
+	handle->frame_transferring = 1;
+	mpoe_pull_handle_release(handle);
 
 	dev_queue_xmit(skb);
 
@@ -83,8 +329,8 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 
 	return 0;
 
- out_with_pull_handle:
-	kfree(pull_handle);
+ out_with_handle:
+	mpoe_pull_handle_release(handle);
  out:
 	return ret;
 }
@@ -146,7 +392,8 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 	pull_reply->puller_rdma_id = pull_request->puller_rdma_id;
 	pull_reply->puller_offset = pull_request->puller_offset;
 	pull_reply->ptype = MPOE_PKT_PULL_REPLY;
-	pull_reply->src_pull_handle = pull_request->src_pull_handle;
+	pull_reply->dst_pull_handle = pull_request->src_pull_handle;
+	pull_reply->dst_magic = pull_request->src_magic;
 
 	/* get the rdma window */
 	rdma_id = pull_request->pulled_rdma_id;
@@ -204,31 +451,39 @@ int
 mpoe_recv_pull_reply(struct mpoe_iface * iface,
 		     struct mpoe_hdr * mh)
 {
-	struct mpoe_endpoint * endpoint;
 //	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
-	struct mpoe_pull_handle * pull_handle;
+	struct mpoe_pull_handle * handle;
 	int err = 0;
 
-	printk("got a pull reply length %d handle %d\n",
-	       pull_reply->length, pull_reply->src_pull_handle);
+	printk("got a pull reply with handle %d magic %d\n",
+	       pull_reply->dst_pull_handle, pull_reply->dst_magic);
 	/* FIXME */
 
-	pull_handle = (struct mpoe_pull_handle *) pull_reply->src_pull_handle;
-
-	/* basic checks */
-	endpoint = pull_handle->endpoint;
-	if (endpoint->iface != iface) {
-		printk(KERN_DEBUG "MPoE: got a pull reply on wrong iface\n");
+	handle = mpoe_pull_handle_acquire_by_wire(iface, pull_reply->dst_magic,
+						  pull_reply->dst_pull_handle);
+	if (!handle) {
+		printk(KERN_DEBUG "MPoE: Dropping PULL REPLY packet unknown handle %d magic %d\n",
+		       pull_reply->dst_pull_handle, pull_reply->dst_magic);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* FIXME: store the sender mac in the handle and check it ? */
 
-	kfree(pull_handle);
+	handle->frame_missing = 0;
 
-	printk("releasing pull handle %p\n", pull_handle);
+	/* release the handle during the copy */
+	mpoe_pull_handle_release(handle);
+
+	/* FIXME: copy stuff */
+
+	/* FIXME: release instead of destroy if not done */
+	mpoe_pull_handle_reacquire(handle);
+
+	handle->frame_transferring = 0;
+
+	mpoe_pull_handle_release(handle);
 
 	return 0;
 

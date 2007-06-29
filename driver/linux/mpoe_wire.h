@@ -57,12 +57,12 @@ struct mpoe_pkt_pull_request {
 	uint32_t pulled_rdma_id;
 	uint32_t pulled_offset; /* FIXME: 64bits ? */
 	uint32_t src_pull_handle; /* sender's handle id */
+	uint32_t src_magic; /* sender's endpoint magic */
 #if 0
 	uint32_t total_length; /* full message total length */
 	uint8_t rdmawin_id; /* target window id */
 	uint8_t rdmawin_seqnum; /* target window seqnum */
 	uint16_t rdma_offset; /* offset in target window first page */
-	uint32_t magic; /* sender's endpoint magic */
 	uint16_t offset; /* sender's first page offset */
 	uint16_t pull_length; /* this pull length (pull_reply * pagesize) - target offset */
 	uint32_t index; /* pull interation index (page_nr/page_per_pull) */
@@ -75,12 +75,12 @@ struct mpoe_pkt_pull_reply {
 	uint32_t length; /* FIXME: 64bits ? */
 	uint32_t puller_rdma_id;
 	uint32_t puller_offset; /* FIXME: 64bits ? */
-	uint32_t src_pull_handle; /* sender's handle id */
+	uint32_t dst_pull_handle; /* sender's handle id */
+	uint32_t dst_magic; /* sender's endpoint magic */
 #if 0
 	uint8_t frame_seqnum; /* sender's pull index + page number in this frame */
 	uint16_t frame_length; /* pagesize - frame_offset */
 	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
-	uint32_t magic; /* sender's endpoint magic */
 #endif
 };
 

@@ -3,6 +3,8 @@
 
 #include <linux/fs.h>
 #include <linux/netdevice.h>
+#include <linux/list.h>
+#include <linux/idr.h>
 
 #include "mpoe_wire.h"
 #include "mpoe_io.h"
@@ -56,6 +58,10 @@ struct mpoe_endpoint {
 
 	spinlock_t user_regions_lock;
 	struct mpoe_user_region * user_regions[MPOE_USER_REGION_MAX];
+
+	spinlock_t pull_handle_lock;
+	struct idr pull_handle_idr;
+	struct list_head pull_handle_list;
 };
 
 

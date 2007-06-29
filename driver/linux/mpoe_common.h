@@ -15,6 +15,7 @@ extern void mpoe_net_exit(void);
 extern int mpoe_iface_attach_endpoint(struct mpoe_endpoint * endpoint);
 extern void mpoe_iface_detach_endpoint(struct mpoe_endpoint * endpoint, int ifacelocked);
 extern int __mpoe_endpoint_close(struct mpoe_endpoint * endpoint, int ifacelocked);
+extern int mpoe_endpoint_acquire(struct mpoe_endpoint * endpoint);
 extern struct mpoe_endpoint * mpoe_endpoint_acquire_by_iface_index(struct mpoe_iface * iface, uint8_t index);
 extern void mpoe_endpoint_release(struct mpoe_endpoint * endpoint);
 
@@ -39,6 +40,8 @@ extern int mpoe_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 extern int mpoe_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh);
 
 /* pull */
+extern int mpoe_endpoint_pull_handles_init(struct mpoe_endpoint * endpoint);
+extern void mpoe_endpoint_pull_handles_exit(struct mpoe_endpoint * endpoint);
 
 /* user regions */
 extern void mpoe_endpoint_user_regions_init(struct mpoe_endpoint * endpoint);

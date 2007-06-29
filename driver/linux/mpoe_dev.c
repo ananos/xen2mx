@@ -43,6 +43,9 @@ mpoe_endpoint_alloc_resources(struct mpoe_endpoint * endpoint)
 	/* initialize user regions */
 	mpoe_endpoint_user_regions_init(endpoint);
 
+	/* initialize pull handles */
+	mpoe_endpoint_pull_handles_init(endpoint);
+
 	return 0;
 
  out:
@@ -52,6 +55,7 @@ mpoe_endpoint_alloc_resources(struct mpoe_endpoint * endpoint)
 static void
 mpoe_endpoint_free_resources(struct mpoe_endpoint * endpoint)
 {
+	mpoe_endpoint_pull_handles_exit(endpoint);
 	mpoe_endpoint_user_regions_exit(endpoint);
 	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
 }
@@ -171,7 +175,7 @@ mpoe_endpoint_close(struct mpoe_endpoint * endpoint)
  * Acquiring/Releasing endpoints
  */
 
-static int
+int
 mpoe_endpoint_acquire(struct mpoe_endpoint * endpoint)
 {
 	int ret = -EINVAL;
