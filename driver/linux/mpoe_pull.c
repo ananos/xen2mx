@@ -73,12 +73,16 @@ mpoe_endpoint_pull_handles_exit(struct mpoe_endpoint * endpoint)
  * Endpoint pull-magic management
  */
 
+#define MPOE_ENDPOINT_PULL_MAGIC_XOR 0x22111867
+#define MPOE_ENDPOINT_PULL_MAGIC_SHIFT 13
+
 static inline uint32_t
 mpoe_endpoint_pull_magic(struct mpoe_endpoint * endpoint)
 {
 	uint32_t magic;
 
-	magic = endpoint->endpoint_index; /* FIXME: need something better with a xor */
+	magic = (((uint32_t)endpoint->endpoint_index) << MPOE_ENDPOINT_PULL_MAGIC_SHIFT)
+		^ MPOE_ENDPOINT_PULL_MAGIC_XOR;
 
 	return magic;
 }
@@ -86,9 +90,14 @@ mpoe_endpoint_pull_magic(struct mpoe_endpoint * endpoint)
 static inline struct mpoe_endpoint *
 mpoe_endpoint_acquire_by_pull_magic(struct mpoe_iface * iface, uint32_t magic)
 {
-	uint8_t index = magic;
+	uint32_t full_index;
+	uint8_t index;
 
-	index = magic; /* FIXME: need something better with a xor */
+	full_index = (magic ^ MPOE_ENDPOINT_PULL_MAGIC_XOR) >> MPOE_ENDPOINT_PULL_MAGIC_SHIFT;
+	if (full_index & (~0xff))
+		/* index does not fit in 8 bits, drop the packet */
+		return NULL;
+	index = full_index;
 
 	return mpoe_endpoint_acquire_by_iface_index(iface, index);
 }

@@ -2,7 +2,6 @@
   - multiple frames per pull
   - multiple pull per request
   - actual data transfer with user region locking
-* improve pull src_magic to hide things and keep the endpoint index extractable
 * events for sending (needs a handle)
 * no need to pad cmd_hdr to 64 ?
 * ntoh[sl] fields
