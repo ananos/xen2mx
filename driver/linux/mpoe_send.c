@@ -41,6 +41,8 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	struct mpoe_cmd_send_tiny_hdr cmd_hdr;
 	struct mpoe_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	union mpoe_evt * evt;
+	struct mpoe_evt_send_done * event;
 	int ret;
 	uint8_t length;
 
@@ -59,11 +61,20 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
+	evt = mpoe_find_next_eventq_slot(endpoint);
+	if (!evt) {
+		printk(KERN_INFO "MPoE: Failed to send TINY packet because of event queue full\n");
+		ret = -EBUSY;
+		goto out;
+	}
+	event = &evt->send_done;
+
 	skb = mpoe_new_skb(ifp,
 			   sizeof(struct mpoe_hdr) + cmd_hdr.length);
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create tiny skb\n");
 		ret = -ENOMEM;
+		/* FIXME: restore the event in the queue */
 		goto out;
 	}
 
@@ -90,13 +101,16 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	if (ret) {
 		printk(KERN_ERR "MPoE: Failed to read send tiny cmd data\n");
 		ret = -EFAULT;
+		/* FIXME: restore the event in the queue */
 		goto out_with_skb;
 	}
 
 	dev_queue_xmit(skb);
 
-//	printk(KERN_INFO "MPoE: sent a tiny message from endpoint %d\n",
-//	       endpoint->endpoint_index);
+	/* return the event */
+	event->lib_cookie = cmd_hdr.lib_cookie;
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = MPOE_EVT_SEND_DONE;
 
 	return 0;
 
@@ -117,6 +131,8 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	struct mpoe_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	struct page * page;
+	union mpoe_evt * evt;
+	struct mpoe_evt_send_done * event;
 	int ret;
 	uint32_t length;
 
@@ -135,10 +151,19 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
+	evt = mpoe_find_next_eventq_slot(endpoint);
+	if (!evt) {
+		printk(KERN_INFO "MPoE: Failed to send TINY packet because of event queue full\n");
+		ret = -EBUSY;
+		goto out;
+	}
+	event = &evt->send_done;
+
 	skb = mpoe_new_skb(ifp, sizeof(*mh));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create medium skb\n");
 		ret = -ENOMEM;
+		/* FIXME: restore the event in the queue */
 		goto out;
 	}
 
@@ -170,8 +195,10 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 
 	dev_queue_xmit(skb);
 
-//	printk(KERN_INFO "MPoE: sent a medium message from endpoint %d\n",
-//	       endpoint->endpoint_index);
+	/* return the event */
+	event->lib_cookie = cmd_hdr.lib_cookie;
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = MPOE_EVT_SEND_DONE;
 
 	return 0;
 

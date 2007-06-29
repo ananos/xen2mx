@@ -1,8 +1,21 @@
+* rename recv events into recv_tiny/medium
 * true pull support
+  - events on both sides
   - multiple frames per pull
   - multiple pull per request
   - actual data transfer with user region locking
-* events for sending (needs a handle)
+* support eventq full by queueing things?
+  - upto when? reserve before sending? should be guaranteed by the lib (polls before sending) => no need to queue?
+  - use it for shared memory ?
+
+* truc messages
+* rendez-vous messages
+* notify messages
+* connect messages
+* retransmission
+
+* add functions to manage sendq, eventq, recvq in the lib
+
 * no need to pad cmd_hdr to 64 ?
 * ntoh[sl] fields
 * use kref to get user region without keeping a spinlock ?

@@ -99,6 +99,8 @@ struct mpoe_cmd_send_tiny {
 		uint8_t length;
 		uint64_t match_info;
 		/* 16 */
+		uint32_t lib_cookie;
+		/* 20 */
 	} hdr;
 	char data[64-sizeof(struct mpoe_cmd_send_tiny_hdr)];
 	/* 64 */
@@ -130,7 +132,9 @@ struct mpoe_cmd_send_medium_hdr {
 	/* 16 */
 	uint64_t match_info;
 	/* 24 */
-	uint64_t pad3[5];
+	uint32_t lib_cookie;
+	/* 28 */
+	uint32_t pad3[9];
 	/* 64 */
 };
 
@@ -152,8 +156,9 @@ struct mpoe_cmd_deregister_region {
  */
 
 #define MPOE_EVT_NONE		0x00
-#define MPOE_EVT_RECV_TINY	0x01
-#define MPOE_EVT_RECV_MEDIUM	0x02
+#define MPOE_EVT_SEND_DONE	0x01
+#define MPOE_EVT_RECV_TINY	0x02
+#define MPOE_EVT_RECV_MEDIUM	0x03
 
 static inline const char *
 mpoe_strevt(unsigned int type)
@@ -161,6 +166,8 @@ mpoe_strevt(unsigned int type)
 	switch (type) {
 	case MPOE_EVT_NONE:
 		return "None";
+	case MPOE_EVT_SEND_DONE:
+		return "Send Tiny";
 	case MPOE_EVT_RECV_TINY:
 		return "Receive Tiny";
 	case MPOE_EVT_RECV_MEDIUM:
@@ -181,6 +188,14 @@ union mpoe_evt {
 		uint8_t type;
 		/* 64 */
 	} generic;
+
+	/* send tiny */
+	struct mpoe_evt_send_done {
+		uint32_t lib_cookie;
+		char data[59];
+		uint8_t type;
+		/* 64 */
+	} send_done;
 
 	/* recv tiny */
 	struct mpoe_evt_recv_tiny {

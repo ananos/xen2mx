@@ -8,7 +8,7 @@
  * Manage event and data slots
  */
 
-static inline union mpoe_evt *
+union mpoe_evt *
 mpoe_find_next_eventq_slot(struct mpoe_endpoint *endpoint)
 {
 	union mpoe_evt *slot = endpoint->next_eventq_slot;

@@ -17,6 +17,7 @@ extern void mpoe_iface_detach_endpoint(struct mpoe_endpoint * endpoint, int ifac
 extern int __mpoe_endpoint_close(struct mpoe_endpoint * endpoint, int ifacelocked);
 extern int mpoe_endpoint_acquire(struct mpoe_endpoint * endpoint);
 extern struct mpoe_endpoint * mpoe_endpoint_acquire_by_iface_index(struct mpoe_iface * iface, uint8_t index);
+extern union mpoe_evt * mpoe_find_next_eventq_slot(struct mpoe_endpoint *endpoint);
 extern void mpoe_endpoint_release(struct mpoe_endpoint * endpoint);
 
 /* manage ifaces */
