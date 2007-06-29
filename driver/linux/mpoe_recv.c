@@ -68,7 +68,7 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->tiny;
+	event = &evt->recv_tiny;
 
 	/* fill event */
 	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
@@ -124,7 +124,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->medium;
+	event = &evt->recv_medium;
 
 	/* fill event */
 	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);

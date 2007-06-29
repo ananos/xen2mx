@@ -1,4 +1,3 @@
-* rename recv events into recv_tiny/medium
 * true pull support
   - events on both sides
   - multiple frames per pull

@@ -207,7 +207,7 @@ union mpoe_evt {
 		char data[47];
 		uint8_t type;
 		/* 64 */
-	} tiny;
+	} recv_tiny;
 
 	/* recv medium */
 	struct mpoe_evt_recv_medium {
@@ -223,7 +223,7 @@ union mpoe_evt {
 		char data[39];
 		uint8_t type;
 		/* 64 */
-	} medium;
+	} recv_medium;
 };
 
 #endif /* __mpoe_io_h__ */
