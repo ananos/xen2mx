@@ -36,7 +36,7 @@ struct param {
 int main(int argc, char *argv[])
 {
   struct mpoe_endpoint * ep;
-  int ret;
+  mpoe_return_t ret;
   char c;
 
   int bid = BID;
@@ -76,8 +76,9 @@ int main(int argc, char *argv[])
     }
 
   ret = mpoe_open_endpoint(bid, eid, &ep);
-  if (ret < 0) {
-    perror("open_endpoint");
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to open endpoint (%s)\n",
+	    mpoe_strerror(ret));
     goto out;
   }
 
@@ -98,13 +99,15 @@ int main(int argc, char *argv[])
     ret = mpoe_isend(ep, &param, sizeof(param),
 		     0x1234567887654321ULL, &dest, rid,
 		     NULL, &req);
-    if (ret < 0) {
-      perror("isend param");
+    if (ret != MPOE_SUCCESS) {
+      fprintf(stderr, "Failed to isend (%s)\n",
+	      mpoe_strerror(ret));
       goto out_with_ep;
     }
     ret = mpoe_wait(ep, &req, &status);
-    if (ret < 0) {
-      perror("wait isend param");
+    if (ret != MPOE_SUCCESS) {
+      fprintf(stderr, "Failed to wait (%s)\n",
+	      mpoe_strerror(ret));
       goto out_with_ep;
     }
 
@@ -118,13 +121,15 @@ int main(int argc, char *argv[])
       ret = mpoe_irecv(ep, NULL, 0,
 		       0, 0,
 		       NULL, &req);
-      if (ret < 0) {
-	perror("irecv");
+      if (ret != MPOE_SUCCESS) {
+	fprintf(stderr, "Failed to irecv (%s)\n",
+		mpoe_strerror(ret));
 	goto out_with_ep;
       }
       ret = mpoe_wait(ep, &req, &status);
-      if (ret < 0) {
-	perror("wait irecv");
+      if (ret != MPOE_SUCCESS) {
+	fprintf(stderr, "Failed to wait (%s)\n",
+		mpoe_strerror(ret));
 	goto out_with_ep;
       }
 
@@ -132,13 +137,15 @@ int main(int argc, char *argv[])
       ret = mpoe_isend(ep, NULL, 0,
 		       0x1234567887654321ULL, &dest, rid,
 		       NULL, &req);
-      if (ret < 0) {
-	perror("isend/tiny");
+      if (ret != MPOE_SUCCESS) {
+	fprintf(stderr, "Failed to isend (%s)\n",
+		mpoe_strerror(ret));
 	goto out_with_ep;
       }
       ret = mpoe_wait(ep, &req, &status);
-      if (ret < 0) {
-	perror("wait isend/tiny");
+      if (ret != MPOE_SUCCESS) {
+	fprintf(stderr, "Failed to wait (%s)\n",
+		mpoe_strerror(ret));
 	goto out_with_ep;
       }
     }
@@ -163,13 +170,15 @@ int main(int argc, char *argv[])
     ret = mpoe_irecv(ep, &param, sizeof(param),
 		     0, 0,
 		     NULL, &req);
-    if (ret < 0) {
-      perror("irecv param");
+    if (ret != MPOE_SUCCESS) {
+      fprintf(stderr, "Failed to irecv (%s)\n",
+	      mpoe_strerror(ret));
       goto out_with_ep;
     }
     ret = mpoe_wait(ep, &req, &status);
-    if (ret < 0) {
-      perror("wait irecv param");
+    if (ret != MPOE_SUCCESS) {
+      fprintf(stderr, "Failed to wait (%s)\n",
+	      mpoe_strerror(ret));
       goto out_with_ep;
     }
 
@@ -188,13 +197,15 @@ int main(int argc, char *argv[])
       ret = mpoe_isend(ep, NULL, 0,
 		       0x1234567887654321ULL, &status.mac, status.ep,
 		       NULL, &req);
-      if (ret < 0) {
-	perror("isend/tiny");
+      if (ret != MPOE_SUCCESS) {
+	fprintf(stderr, "Failed to isend (%s)\n",
+		mpoe_strerror(ret));
 	goto out_with_ep;
       }
       ret = mpoe_wait(ep, &req, &status);
-      if (ret < 0) {
-	perror("wait isend/tiny");
+      if (ret != MPOE_SUCCESS) {
+	fprintf(stderr, "Failed to wait (%s)\n",
+		mpoe_strerror(ret));
 	goto out_with_ep;
       }
 
@@ -202,13 +213,15 @@ int main(int argc, char *argv[])
       ret = mpoe_irecv(ep, NULL, 0,
 		       0, 0,
 		       NULL, &req);
-      if (ret < 0) {
-	perror("irecv");
+      if (ret != MPOE_SUCCESS) {
+	fprintf(stderr, "Failed to irecv (%s)\n",
+		mpoe_strerror(ret));
 	goto out_with_ep;
       }
       ret = mpoe_wait(ep, &req, &status);
-      if (ret < 0) {
-	perror("wait irecv");
+      if (ret != MPOE_SUCCESS) {
+	fprintf(stderr, "Failed to wait (%s)\n",
+		mpoe_strerror(ret));
 	goto out_with_ep;
       }
 

@@ -7,31 +7,37 @@
 #define EP 3
 #define ITER 10
 
-static int
+static mpoe_return_t
 send_tiny(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 	  int i)
 {
   union mpoe_request * request;
   struct mpoe_status status;
   char buffer[12];
-  int ret;
+  mpoe_return_t ret;
 
   sprintf(buffer, "message %d", i);
 
   ret = mpoe_isend(ep, buffer, strlen(buffer) + 1,
 		   0x1234567887654321ULL, dest_addr, EP,
 		   NULL, &request);
-  if (ret < 0)
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to send a tiny message (%s)\n",
+	    mpoe_strerror(ret));
     return ret;
+  }
   fprintf(stderr, "Successfully sent tiny \"%s\"\n", (char*) buffer);
 
   ret = mpoe_wait(ep, &request, &status);
-  if (ret < 0)
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to wait for completion (%s)\n",
+	    mpoe_strerror(ret));
     return ret;
+  }
 
   fprintf(stderr, "Successfully waited for send completion\n");
 
-  return 0;
+  return MPOE_SUCCESS;
 }
 
 static int
@@ -41,24 +47,31 @@ send_medium(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
   union mpoe_request * request;
   struct mpoe_status status;
   char buffer[4096];
-  int ret;
+  mpoe_return_t ret;
 
   sprintf(buffer, "message %d is much longer than in a tiny buffer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", i);
 
   ret = mpoe_isend(ep, buffer, strlen(buffer) + 1,
 		   0x1234567887654321ULL, dest_addr, EP,
 		   NULL, &request);
-  if (ret < 0)
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to send a medium message (%s)\n",
+	    mpoe_strerror(ret));
     return ret;
+  }
+
   fprintf(stderr, "Successfully sent medium \"%s\"\n", (char*) buffer);
 
   ret = mpoe_wait(ep, &request, &status);
-  if (ret < 0)
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to wait for completion (%s)\n",
+	    mpoe_strerror(ret));
     return ret;
+  }
 
   fprintf(stderr, "Successfully waited for send completion\n");
 
-  return 0;
+  return MPOE_SUCCESS;
 }
 
 int main(void)
@@ -67,13 +80,15 @@ int main(void)
   struct mpoe_mac_addr dest_addr;
   struct timeval tv1, tv2;
   int i;
-  int ret;
+  mpoe_return_t ret;
 
   ret = mpoe_open_endpoint(0, EP, &ep);
-  if (ret < 0) {
-    perror("open endpoint");
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to open endpoint (%s)\n",
+	    mpoe_strerror(ret));
     goto out;
   }
+
   fprintf(stderr, "Successfully open endpoint %d/%d\n", 0, EP);
 
   mpoe_mac_addr_set_bcast(&dest_addr);
@@ -81,7 +96,8 @@ int main(void)
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a tiny message */
-    if (send_tiny(ep, &dest_addr, i) < 0)
+    ret = send_tiny(ep, &dest_addr, i);
+    if (ret != MPOE_SUCCESS)
       goto out_with_ep;
   }
   gettimeofday(&tv2, NULL);
@@ -91,7 +107,8 @@ int main(void)
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a medium message */
-    if (send_medium(ep, &dest_addr, i) < 0)
+    ret = send_medium(ep, &dest_addr, i);
+    if (ret != MPOE_SUCCESS)
       goto out_with_ep;
   }
   gettimeofday(&tv2, NULL);

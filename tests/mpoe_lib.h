@@ -30,6 +30,17 @@ enum mpoe__request_state {
   MPOE_REQUEST_STATE_DONE,
 };
 
+enum mpoe_return {
+  MPOE_SUCCESS=0,
+  MPOE_BAD_ERROR,
+  MPOE_NO_DEVICE,
+  MPOE_ACCESS_DENIED,
+  MPOE_NO_RESOURCES,
+  MPOE_NO_SYSTEM_RESOURCES,
+  MPOE_INVALID_PARAMETER,
+};
+typedef enum mpoe_return mpoe_return_t;
+
 enum mpoe_status_code {
   MPOE_STATUS_SUCCESS=0,
   MPOE_STATUS_FAILED,
@@ -66,27 +77,30 @@ union mpoe_request {
   } recv;
 };
 
-extern int
+const char *
+mpoe_strerror(mpoe_return_t ret);
+
+extern mpoe_return_t
 mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 		   struct mpoe_endpoint **epp);
 
-extern int
+extern mpoe_return_t
 mpoe_close_endpoint(struct mpoe_endpoint *ep);
 
-extern int
+extern mpoe_return_t
 mpoe_isend(struct mpoe_endpoint *ep,
 	   void *buffer, size_t length,
 	   uint64_t match_info,
 	   struct mpoe_mac_addr * dest_addr, uint32_t dest_endpoint,
 	   void * context, union mpoe_request ** request);
 
-extern int
+extern mpoe_return_t
 mpoe_irecv(struct mpoe_endpoint *ep,
 	   void *buffer, size_t length,
 	   uint64_t match_info, uint64_t match_mask,
 	   void *context, union mpoe_request **requestp);
 
-extern int
+extern mpoe_return_t
 mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
 	  struct mpoe_status *status);
 

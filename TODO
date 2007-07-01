@@ -7,7 +7,8 @@
   - upto when? reserve before sending? should be guaranteed by the lib (polls before sending) => no need to queue?
   - use it for shared memory ?
 
-* nice mpoe errors
+* nice request queues
+* mpoe_strerror mpoe_strstatus
 * hide internals from the application
 * medium level helpers for tools accessing small part of internals
 * unexpected

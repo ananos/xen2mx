@@ -12,24 +12,71 @@
 #include "mpoe_lib.h"
 #include "mpoe_internals.h"
 
-int
+static mpoe_return_t
+mpoe_errno_to_return(int error, char * caller)
+{
+  switch (error) {
+  case EINVAL:
+    return MPOE_INVALID_PARAMETER;
+  case EACCES:
+  case EPERM:
+    return MPOE_ACCESS_DENIED;
+  case EMFILE:
+  case ENFILE:
+  case ENOMEM:
+    return MPOE_NO_SYSTEM_RESOURCES;
+  case ENODEV:
+  case ENOENT:
+    return MPOE_NO_DEVICE;
+  default:
+    fprintf(stderr, "MPoE: %s got unexpected errno %d (%s)\n",
+	    caller, error, strerror(error));
+    return MPOE_BAD_ERROR;
+  }
+}
+
+const char *
+mpoe_strerror(mpoe_return_t ret)
+{
+  switch (ret) {
+  case MPOE_SUCCESS:
+    return "Success";
+  case MPOE_BAD_ERROR:
+    return "Bad (internal?) error";
+  case MPOE_NO_DEVICE:
+    return "No device";
+  case MPOE_ACCESS_DENIED:
+    return "Access denied";
+  case MPOE_NO_RESOURCES:
+    return "No resources available";
+  case MPOE_NO_SYSTEM_RESOURCES:
+    return "No resources available in the system";
+  case MPOE_INVALID_PARAMETER:
+    return "Invalid parameter";
+  }
+  assert(0);
+}
+
+mpoe_return_t
 mpoe_get_board_count(uint32_t * count)
 {
-  int ret;
-  int fd;
+  mpoe_return_t ret = MPOE_SUCCESS;
+  int err, fd;
 
-  ret = open(MPOE_DEVNAME, O_RDWR);
-  if (ret < 0) {
-    perror("open");
+  err = open(MPOE_DEVNAME, O_RDWR);
+  if (err < 0) {
+    ret = mpoe_errno_to_return(errno, "open");
     goto out;
   }
-  fd = ret;
+  fd = err;
 
-  ret = ioctl(fd, MPOE_CMD_GET_BOARD_COUNT, &count);
-  if (ret < 0) {
-    perror("get board id");
+  err = ioctl(fd, MPOE_CMD_GET_BOARD_COUNT, &count);
+  if (err < 0) {
+    ret = mpoe_errno_to_return(errno, "ioctl GET_BOARD_COUNT");
+    goto out_with_fd;
   }
 
+ out_with_fd:
   close(fd);
  out:
   return ret;
@@ -37,7 +84,7 @@ mpoe_get_board_count(uint32_t * count)
 
 /* FIXME: get board id */
 
-int
+mpoe_return_t
 mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 		   struct mpoe_endpoint **epp)
 {
@@ -45,29 +92,28 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
   struct mpoe_cmd_open_endpoint open_param;
   struct mpoe_endpoint * ep;
   void * recvq, * sendq, * eventq;
-  int fd;
-  int ret = 0;
+  mpoe_return_t ret = MPOE_SUCCESS;
+  int err, fd;
 
   ep = malloc(sizeof(struct mpoe_endpoint));
   if (!ep) {
-    perror("endpoint malloc");
-    ret = -ENOMEM;
+    ret = mpoe_errno_to_return(ENOMEM, "endpoint malloc");
     goto out;
   }
 
-  fd = open(MPOE_DEVNAME, O_RDWR);
-  if (fd < 0) {
-    perror("open");
-    ret = fd;
+  err = open(MPOE_DEVNAME, O_RDWR);
+  if (err < 0) {
+    ret = mpoe_errno_to_return(errno, "open");
     goto out_with_ep;
   }
+  fd = err;
 
   /* ok */
   open_param.board_index = board_index;
   open_param.endpoint_index = index;
-  ret = ioctl(fd, MPOE_CMD_OPEN_ENDPOINT, &open_param);
-  if (ret < 0) {
-    perror("attach endpoint");
+  err = ioctl(fd, MPOE_CMD_OPEN_ENDPOINT, &open_param);
+  if (err < 0) {
+    ret = mpoe_errno_to_return(errno, "ioctl OPEN_ENDPOINT");
     goto out_with_fd;
   }
   fprintf(stderr, "Successfully attached endpoint %d/%d\n", 0, 34);
@@ -76,6 +122,12 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
   sendq = mmap(0, MPOE_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_SENDQ_OFFSET);
   recvq = mmap(0, MPOE_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_RECVQ_OFFSET);
   eventq = mmap(0, MPOE_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_EVENTQ_OFFSET);
+  if (sendq == (void *) -1
+      || recvq == (void *) -1
+      || eventq == (void *) -1) {
+    ret = mpoe_errno_to_return(errno, "mmap");
+    goto out_with_attached;
+  }
   printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
 
   ep->fd = fd;
@@ -90,8 +142,10 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 
   *epp = ep;
 
-  return 0;
+  return MPOE_SUCCESS;
 
+ out_with_attached:
+  /* could detach here, but close will do it */
  out_with_fd:
   close(fd);
  out_with_ep:
@@ -100,7 +154,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
   return ret;
 }
 
-int
+mpoe_return_t
 mpoe_close_endpoint(struct mpoe_endpoint *ep)
 {
   munmap(ep->sendq, MPOE_SENDQ_SIZE);
@@ -108,7 +162,8 @@ mpoe_close_endpoint(struct mpoe_endpoint *ep)
   munmap(ep->eventq, MPOE_EVENTQ_SIZE);
   close(ep->fd);
   free(ep);
-  return 0;
+
+  return MPOE_SUCCESS;
 }
 
 static inline void
@@ -158,7 +213,7 @@ mpoe_find_request_by_cookie(union mpoe_request *head,
   return NULL;
 }
 
-static int
+static mpoe_return_t
 mpoe_progress(struct mpoe_endpoint * ep)
 {
   volatile union mpoe_evt * evt;
@@ -243,10 +298,10 @@ mpoe_progress(struct mpoe_endpoint * ep)
     evt = ep->eventq;
   ep->next_event = (void *) evt;
 
-  return 0;
+  return MPOE_SUCCESS;
 }
 
-int
+mpoe_return_t
 mpoe_isend(struct mpoe_endpoint *ep,
 	   void *buffer, size_t length,
 	   uint64_t match_info,
@@ -254,13 +309,14 @@ mpoe_isend(struct mpoe_endpoint *ep,
 	   void *context, union mpoe_request **requestp)
 {
   union mpoe_request * req;
-  int ret;
   static int send_lib_cookie = 0;
+  mpoe_return_t ret;
+  int err;
 
   req = malloc(sizeof(union mpoe_request));
   if (!req) {
-    perror("request malloc");
-    return -ENOMEM;
+    ret = mpoe_errno_to_return(ENOMEM, "isend request malloc");
+    goto out;
   }
 
   if (length <= MPOE_TINY_MAX) {
@@ -273,11 +329,10 @@ mpoe_isend(struct mpoe_endpoint *ep,
     tiny_param.hdr.lib_cookie = send_lib_cookie;
     memcpy(tiny_param.data, buffer, length);
 
-    ret = ioctl(ep->fd, MPOE_CMD_SEND_TINY, &tiny_param);
-    if (ret < 0) {
-      perror("ioctl/send/tiny");
-      free(req);
-      return ret;
+    err = ioctl(ep->fd, MPOE_CMD_SEND_TINY, &tiny_param);
+    if (err < 0) {
+      ret = mpoe_errno_to_return(errno, "ioctl send/tiny");
+      goto out_with_req;
     }
 
     req->generic.type = MPOE_REQUEST_TYPE_SEND_TINY;
@@ -293,11 +348,10 @@ mpoe_isend(struct mpoe_endpoint *ep,
     memcpy(ep->sendq + 23 * 4096, buffer, length);
     medium_param.sendq_page_offset = 23;
 
-    ret = ioctl(ep->fd, MPOE_CMD_SEND_MEDIUM, &medium_param);
-    if (ret < 0) {
-      perror("ioctl/send/medium");
-      free(req);
-      return ret;
+    err = ioctl(ep->fd, MPOE_CMD_SEND_MEDIUM, &medium_param);
+    if (err < 0) {
+      ret = mpoe_errno_to_return(errno, "ioctl send/medium");
+      goto out_with_req;
     }
 
     req->generic.type = MPOE_REQUEST_TYPE_SEND_MEDIUM;
@@ -312,21 +366,27 @@ mpoe_isend(struct mpoe_endpoint *ep,
 
   *requestp = req;
 
-  return 0;
+  return MPOE_SUCCESS;
+
+ out_with_req:
+  free(req);
+ out:
+  return ret;
 }
 
-int
+mpoe_return_t
 mpoe_irecv(struct mpoe_endpoint *ep,
 	   void *buffer, size_t length,
 	   uint64_t match_info, uint64_t match_mask,
 	   void *context, union mpoe_request **requestp)
 {
   union mpoe_request * req;
+  mpoe_return_t ret;
 
   req = malloc(sizeof(union mpoe_request));
   if (!req) {
-    perror("request malloc");
-    return -ENOMEM;
+    ret = mpoe_errno_to_return(ENOMEM, "irecv request malloc");
+    goto out;
   }
 
   /* FIXME */
@@ -341,22 +401,30 @@ mpoe_irecv(struct mpoe_endpoint *ep,
 
   *requestp = req;
 
-  return 0;
+  return MPOE_SUCCESS;
+
+ out:
+  return ret;
 }
 
-int
+mpoe_return_t
 mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
 	  struct mpoe_status *status)
 {
   union mpoe_request * req = *requestp;
+  mpoe_return_t ret = MPOE_SUCCESS;
 
-  while (req->generic.state != MPOE_REQUEST_STATE_DONE)
-    mpoe_progress(ep);
+  while (req->generic.state != MPOE_REQUEST_STATE_DONE) {
+    ret = mpoe_progress(ep);
+    if (ret != MPOE_SUCCESS)
+      goto out;
+  }
 
   memcpy(status, &req->generic.status, sizeof(*status));
 
   free(req);
   *requestp = NULL;
 
-  return 0;
+ out:
+  return ret;
 }
