@@ -8,7 +8,6 @@
   - use it for shared memory ?
 
 * nice request queues
-* mpoe_strerror mpoe_strstatus
 * hide internals from the application
 * medium level helpers for tools accessing small part of internals
 * unexpected

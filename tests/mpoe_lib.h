@@ -80,6 +80,9 @@ union mpoe_request {
 const char *
 mpoe_strerror(mpoe_return_t ret);
 
+const char *
+mpoe_strstatus(mpoe_status_code_t code);
+
 extern mpoe_return_t
 mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 		   struct mpoe_endpoint **epp);

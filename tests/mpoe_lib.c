@@ -57,6 +57,18 @@ mpoe_strerror(mpoe_return_t ret)
   assert(0);
 }
 
+const char *
+mpoe_strstatus(mpoe_status_code_t code)
+{
+  switch (code) {
+  case MPOE_STATUS_SUCCESS:
+    return "Success";
+  case MPOE_STATUS_FAILED:
+    return "Failed";
+  }
+  assert(0);
+}
+
 mpoe_return_t
 mpoe_get_board_count(uint32_t * count)
 {
