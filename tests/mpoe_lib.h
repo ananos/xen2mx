@@ -34,6 +34,7 @@ enum mpoe_status_code {
   MPOE_STATUS_SUCCESS=0,
   MPOE_STATUS_FAILED,
 };
+typedef enum mpoe_status_code mpoe_status_code_t;
 
 struct mpoe_status {
   enum mpoe_status_code code;
