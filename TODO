@@ -10,7 +10,7 @@
 * nice request queues
 * hide internals from the application
 * medium level helpers for tools accessing small part of internals
-* unexpected
+* unexpected medium
 * multiple frame mediums
 * matching
 * improve lib_cookie -> req association

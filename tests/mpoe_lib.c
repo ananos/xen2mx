@@ -237,10 +237,40 @@ mpoe_progress(struct mpoe_endpoint * ep)
   switch (evt->generic.type) {
 
   case MPOE_EVT_RECV_TINY: {
-    if (!ep->recv_req_q)
-      printf("missed a tiny unexpected\n");
-    else {
-      struct mpoe_evt_recv_tiny * event = &((union mpoe_evt *)evt)->recv_tiny;
+    struct mpoe_evt_recv_tiny * event = &((union mpoe_evt *)evt)->recv_tiny;
+
+    if (!ep->recv_req_q) {
+      union mpoe_request *req;
+      void *buffer;
+      unsigned long length;
+
+      req = malloc(sizeof(*req));
+      if (!req) {
+	fprintf(stderr, "Failed to allocate request for unexpected tiny messages, dropping\n");
+	break;
+      }
+
+      length = event->length;
+      buffer = malloc(length);
+      if (!buffer) {
+	fprintf(stderr, "Failed to allocate buffer for unexpected tiny messages, dropping\n");
+	free(req);
+	break;
+      }
+
+      mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+      /* FIXME: set state and status.code? */
+      req->generic.status.ep = event->src_endpoint;
+      req->generic.status.match_info = event->match_info;
+      req->generic.status.msg_length = length;
+      req->generic.status.xfer_length = length;
+      req->recv.buffer = buffer;
+
+      memcpy(buffer, (void *) evt->recv_tiny.data, length);
+
+      mpoe_enqueue_request(&ep->unexp_req_q, req);
+
+    } else {
       union mpoe_request * req = ep->recv_req_q;
       unsigned long length;
 
@@ -395,21 +425,33 @@ mpoe_irecv(struct mpoe_endpoint *ep,
   union mpoe_request * req;
   mpoe_return_t ret;
 
-  req = malloc(sizeof(union mpoe_request));
-  if (!req) {
-    ret = mpoe_errno_to_return(ENOMEM, "irecv request malloc");
-    goto out;
+  if ((req = ep->unexp_req_q) != NULL) {
+    mpoe_dequeue_request(&ep->sent_req_q, req);
+
+    if (length > req->recv.length)
+      length = req->recv.length;
+    memcpy(buffer, req->recv.buffer, length);
+    free(req->recv.buffer);
+    req->recv.buffer = buffer;
+
+    req->generic.status.xfer_length = length;
+    req->generic.state = MPOE_REQUEST_STATE_DONE;
+
+  } else {
+    req = malloc(sizeof(union mpoe_request));
+    if (!req) {
+      ret = mpoe_errno_to_return(ENOMEM, "irecv request malloc");
+      goto out;
+    }
+
+    req->generic.type = MPOE_REQUEST_TYPE_RECV;
+    req->generic.state = MPOE_REQUEST_STATE_PENDING;
+    req->generic.status.context = context;
+    req->recv.buffer = buffer;
+    req->recv.length = length;
+
+    mpoe_enqueue_request(&ep->recv_req_q, req);
   }
-
-  /* FIXME */
-
-  req->generic.type = MPOE_REQUEST_TYPE_RECV;
-  req->generic.state = MPOE_REQUEST_STATE_PENDING;
-  req->generic.status.context = context;
-  req->recv.buffer = buffer;
-  req->recv.length = length;
-
-  mpoe_enqueue_request(&ep->recv_req_q, req);
 
   *requestp = req;
 

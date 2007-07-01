@@ -13,12 +13,14 @@ send_tiny(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 {
   union mpoe_request * request;
   struct mpoe_status status;
-  char buffer[12];
+  char buffer[12], buffer2[12];
+  unsigned long length;
   mpoe_return_t ret;
 
   sprintf(buffer, "message %d", i);
+  length = strlen(buffer) + 1;
 
-  ret = mpoe_isend(ep, buffer, strlen(buffer) + 1,
+  ret = mpoe_isend(ep, buffer, length,
 		   0x1234567887654321ULL, dest_addr, EP,
 		   NULL, &request);
   if (ret != MPOE_SUCCESS) {
@@ -35,7 +37,23 @@ send_tiny(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
     return ret;
   }
 
-  fprintf(stderr, "Successfully waited for send completion\n");
+  ret = mpoe_irecv(ep, buffer2, length,
+		   0, 0,
+		   NULL, &request);
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to send a tiny message (%s)\n",
+	    mpoe_strerror(ret));
+    return ret;
+  }
+
+  ret = mpoe_wait(ep, &request, &status);
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to wait for completion (%s)\n",
+	    mpoe_strerror(ret));
+    return ret;
+  }
+
+  fprintf(stderr, "Successfully received tiny \"%s\"\n", (char*) buffer2);
 
   return MPOE_SUCCESS;
 }
