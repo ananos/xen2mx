@@ -2,8 +2,11 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
+#include <stdint.h>
 
+#include "mpoe_internals.h"
 #include "mpoe_lib.h"
+#include "mpoe_io.h"
 
 int main(void)
 {

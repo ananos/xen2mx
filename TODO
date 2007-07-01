@@ -7,13 +7,21 @@
   - upto when? reserve before sending? should be guaranteed by the lib (polls before sending) => no need to queue?
   - use it for shared memory ?
 
+* close endpoint
+* nice mpoe errors
+* hide internals from the application
+* medium level helpers for tools accessing small part of internals
+* unexpected
+* multiple frame mediums
+* matching
+* improve lib_cookie -> req association
+* seqnum for in-order matching, associated with lib_cookie
+
 * truc messages
 * rendez-vous messages
 * notify messages
 * connect messages
 * retransmission
-
-* add functions to manage sendq, eventq, recvq in the lib
 
 * no need to pad cmd_hdr to 64 ?
 * ntoh[sl] fields

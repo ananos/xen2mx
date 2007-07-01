@@ -12,15 +12,17 @@ CFLAGS	+=	-I@top_srcdir@/common
 
 LD	=	gcc
 
+LIB	=	mpoe_lib.o
+
 .PHONY: all clean $(TESTS)
 
 all: $(TESTS)
 
-$(TESTS): %: %.o
-	$(LD) $< -o $@
+$(TESTS): %: %.o $(LIB)
+	$(LD) $^ -o $@
 
-%.o: @srcdir@/%.c
+%.o: @srcdir@/%.c @srcdir@/mpoe_lib.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	$(RM) $(TESTS) *.o
+	$(RM) $(TESTS) $(LIB) *.o

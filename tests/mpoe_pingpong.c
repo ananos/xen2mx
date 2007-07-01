@@ -35,9 +35,8 @@ struct param {
 
 int main(int argc, char *argv[])
 {
-  int fd, ret;
-  struct mpoe_cmd_open_endpoint open_param;
-  void * recvq, * sendq, * eventq;
+  struct mpoe_endpoint * ep;
+  int ret;
   char c;
 
   int bid = BID;
@@ -76,32 +75,18 @@ int main(int argc, char *argv[])
       break;
     }
 
-  fd = open(MPOE_DEVNAME, O_RDWR);
-  if (fd < 0) {
-    perror("open");
+  ret = mpoe_open_endpoint(bid, eid, &ep);
+  if (ret < 0) {
+    perror("open_endpoint");
     goto out;
   }
-
-  /* ok */
-  open_param.board_index = bid;
-  open_param.endpoint_index = eid;
-  ret = ioctl(fd, MPOE_CMD_OPEN_ENDPOINT, &open_param);
-  if (ret < 0) {
-    perror("attach endpoint");
-    goto out_with_fd;
-  }
-
-  /* mmap */
-  sendq = mmap(0, MPOE_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_SENDQ_OFFSET);
-  recvq = mmap(0, MPOE_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_RECVQ_OFFSET);
-  eventq = mmap(0, MPOE_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_EVENTQ_OFFSET);
 
   if (sender) {
     /* sender */
 
-    volatile union mpoe_evt * evt = eventq;
-    struct mpoe_cmd_send_tiny tiny_param;
-    struct param * param;
+    union mpoe_request * req;
+    struct mpoe_status status;
+    struct param param;
     char dest_str[MPOE_MAC_ADDR_STRLEN];
     int i;
 
@@ -109,43 +94,52 @@ int main(int argc, char *argv[])
     printf("Starting sender to %s...\n", dest_str);
 
     /* sending the param message */
-    param = (void *) tiny_param.data;
-    param->iter = iter;
-    mpoe_mac_addr_copy(&tiny_param.hdr.dest_addr, &dest);
-    tiny_param.hdr.dest_endpoint = rid;
-    tiny_param.hdr.length = sizeof(struct param);
-    tiny_param.hdr.match_info = 0x1234567887654321ULL;
-    ret = ioctl(fd, MPOE_CMD_SEND_TINY, &tiny_param);
+    param.iter = iter;
+    ret = mpoe_isend(ep, &param, sizeof(param),
+		     0x1234567887654321ULL, &dest, rid,
+		     NULL, &req);
     if (ret < 0) {
-      perror("ioctl/send/tiny");
-      goto out_with_fd;
+      perror("isend param");
+      goto out;
+    }
+    ret = mpoe_wait(ep, &req, &status);
+    if (ret < 0) {
+      perror("wait isend param");
+      goto out;
     }
 
-    printf("Sent parameters (iter=%d)\n", param->iter);
+    printf("Sent parameters (iter=%d)\n", iter);
 
     for(i=0; i<iter; i++) {
       if (verbose)
 	printf("Iteration %d/%d\n", i, iter);
 
-      /* wait for the message */
-      while (evt->generic.type == MPOE_EVT_NONE) ;
-      assert(evt->generic.type == MPOE_EVT_RECV_TINY);
-      /* mark event as done */
-      evt->generic.type = MPOE_EVT_NONE;
-      /* next event */
-      evt++;
-      if ((void *) evt >= eventq + MPOE_EVENTQ_SIZE)
-	evt = eventq;
-
-      /* send a tiny message */
-      mpoe_mac_addr_copy(&tiny_param.hdr.dest_addr, &dest);
-      tiny_param.hdr.dest_endpoint = rid;
-      tiny_param.hdr.length = 0;
-      tiny_param.hdr.match_info = 0x1234567887654321ULL;
-      ret = ioctl(fd, MPOE_CMD_SEND_TINY, &tiny_param);
+      /* wait for an incoming message */
+      ret = mpoe_irecv(ep, NULL, 0,
+		       0, 0,
+		       NULL, &req);
       if (ret < 0) {
-	perror("ioctl/send/tiny");
-	goto out_with_fd;
+	perror("irecv");
+	goto out;
+      }
+      ret = mpoe_wait(ep, &req, &status);
+      if (ret < 0) {
+	perror("wait irecv");
+	goto out;
+      }
+
+      /* sending the param message */
+      ret = mpoe_isend(ep, NULL, 0,
+		       0x1234567887654321ULL, &dest, rid,
+		       NULL, &req);
+      if (ret < 0) {
+	perror("isend/tiny");
+	goto out;
+      }
+      ret = mpoe_wait(ep, &req, &status);
+      if (ret < 0) {
+	perror("wait isend/tiny");
+	goto out;
       }
     }
     if (verbose)
@@ -154,9 +148,9 @@ int main(int argc, char *argv[])
   } else {
     /* receiver */
 
-    volatile union mpoe_evt * evt = eventq;
-    struct mpoe_cmd_send_tiny tiny_param;
-    struct param * param;
+    union mpoe_request * req;
+    struct mpoe_status status;
+    struct param param;
     struct timeval tv1, tv2;
     unsigned long long us;
     int i;
@@ -165,22 +159,24 @@ int main(int argc, char *argv[])
 
     printf("Waiting for parameters...\n");
 
-    /* wait for the message */
-    while (evt->generic.type == MPOE_EVT_NONE) ;
-    assert(evt->generic.type == MPOE_EVT_RECV_TINY);
-    /* mark event as done */
-    evt->generic.type = MPOE_EVT_NONE;
-    /* retrieve parameters */
-    mpoe_mac_addr_copy(&dest, &((union mpoe_evt *)evt)->tiny.src_addr);
-    rid = evt->tiny.src_endpoint;
-    param = (void *) evt->tiny.data;
-    iter = param->iter;
-    /* next event */
-    evt++;
-    if ((void *) evt >= eventq + MPOE_EVENTQ_SIZE)
-      evt = eventq;
+    /* wait for theparam  message */
+    ret = mpoe_irecv(ep, &param, sizeof(param),
+		     0, 0,
+		     NULL, &req);
+    if (ret < 0) {
+      perror("irecv param");
+      goto out;
+    }
+    ret = mpoe_wait(ep, &req, &status);
+    if (ret < 0) {
+      perror("wait irecv param");
+      goto out;
+    }
 
-    printf("Got parameters (iter=%d)\n", param->iter);
+    /* retrieve parameters */
+    iter = param.iter;
+
+    printf("Got parameters (iter=%d)\n", iter);
 
     gettimeofday(&tv1, NULL);
 
@@ -188,26 +184,34 @@ int main(int argc, char *argv[])
       if (verbose)
 	printf("Iteration %d/%d\n", i, iter);
 
-      /* send a tiny message */
-      mpoe_mac_addr_copy(&tiny_param.hdr.dest_addr, &dest);
-      tiny_param.hdr.dest_endpoint = rid;
-      tiny_param.hdr.length = 0;
-      tiny_param.hdr.match_info = 0x1234567887654321ULL;
-      ret = ioctl(fd, MPOE_CMD_SEND_TINY, &tiny_param);
+      /* sending the param message */
+      ret = mpoe_isend(ep, NULL, 0,
+		       0x1234567887654321ULL, &status.mac, status.ep,
+		       NULL, &req);
       if (ret < 0) {
-	perror("ioctl/send/tiny");
-	goto out_with_fd;
+	perror("isend/tiny");
+	goto out;
+      }
+      ret = mpoe_wait(ep, &req, &status);
+      if (ret < 0) {
+	perror("wait isend/tiny");
+	goto out;
       }
 
-      /* wait for the message */
-      while (evt->generic.type == MPOE_EVT_NONE) ;
-      assert(evt->generic.type == MPOE_EVT_RECV_TINY);
-      /* mark event as done */
-      evt->generic.type = MPOE_EVT_NONE;
-      /* next event */
-      evt++;
-      if ((void *) evt >= eventq + MPOE_EVENTQ_SIZE)
-	evt = eventq;
+      /* wait for an incoming message */
+      ret = mpoe_irecv(ep, NULL, 0,
+		       0, 0,
+		       NULL, &req);
+      if (ret < 0) {
+	perror("irecv");
+	goto out;
+      }
+      ret = mpoe_wait(ep, &req, &status);
+      if (ret < 0) {
+	perror("wait irecv");
+	goto out;
+      }
+
     }
     if (verbose)
       printf("Iteration %d/%d\n", i, iter);
@@ -218,12 +222,8 @@ int main(int argc, char *argv[])
     printf("Latency: %f us\n", ((float) us)/2./iter);
   }
 
-  close(fd);
-
   return 0;
 
- out_with_fd:
-  close(fd);
  out:
   return -1;
 }

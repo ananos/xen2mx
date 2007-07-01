@@ -6,6 +6,7 @@
 #include <sys/time.h>
 
 #include "mpoe_lib.h"
+#include "mpoe_internals.h"
 
 #define EP 3
 #define ITER 10000
