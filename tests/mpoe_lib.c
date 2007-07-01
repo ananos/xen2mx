@@ -100,6 +100,17 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
   return ret;
 }
 
+int
+mpoe_close_endpoint(struct mpoe_endpoint *ep)
+{
+  munmap(ep->sendq, MPOE_SENDQ_SIZE);
+  munmap(ep->recvq, MPOE_RECVQ_SIZE);
+  munmap(ep->eventq, MPOE_EVENTQ_SIZE);
+  close(ep->fd);
+  free(ep);
+  return 0;
+}
+
 static inline void
 mpoe_enqueue_request(union mpoe_request **headp,
 		     union mpoe_request *req)

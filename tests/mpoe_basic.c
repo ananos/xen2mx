@@ -101,7 +101,7 @@ int main(void)
   return 0;
 
  out_with_ep:
-  /* FIXME: close endpoint */
+  mpoe_close_endpoint(ep);
  out:
   return -1;
 }

@@ -70,6 +70,9 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 		   struct mpoe_endpoint **epp);
 
 extern int
+mpoe_close_endpoint(struct mpoe_endpoint *ep);
+
+extern int
 mpoe_isend(struct mpoe_endpoint *ep,
 	   void *buffer, size_t length,
 	   uint64_t match_info,

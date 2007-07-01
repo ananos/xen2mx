@@ -7,7 +7,6 @@
   - upto when? reserve before sending? should be guaranteed by the lib (polls before sending) => no need to queue?
   - use it for shared memory ?
 
-* close endpoint
 * nice mpoe errors
 * hide internals from the application
 * medium level helpers for tools accessing small part of internals

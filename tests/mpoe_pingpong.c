@@ -100,12 +100,12 @@ int main(int argc, char *argv[])
 		     NULL, &req);
     if (ret < 0) {
       perror("isend param");
-      goto out;
+      goto out_with_ep;
     }
     ret = mpoe_wait(ep, &req, &status);
     if (ret < 0) {
       perror("wait isend param");
-      goto out;
+      goto out_with_ep;
     }
 
     printf("Sent parameters (iter=%d)\n", iter);
@@ -120,12 +120,12 @@ int main(int argc, char *argv[])
 		       NULL, &req);
       if (ret < 0) {
 	perror("irecv");
-	goto out;
+	goto out_with_ep;
       }
       ret = mpoe_wait(ep, &req, &status);
       if (ret < 0) {
 	perror("wait irecv");
-	goto out;
+	goto out_with_ep;
       }
 
       /* sending the param message */
@@ -134,12 +134,12 @@ int main(int argc, char *argv[])
 		       NULL, &req);
       if (ret < 0) {
 	perror("isend/tiny");
-	goto out;
+	goto out_with_ep;
       }
       ret = mpoe_wait(ep, &req, &status);
       if (ret < 0) {
 	perror("wait isend/tiny");
-	goto out;
+	goto out_with_ep;
       }
     }
     if (verbose)
@@ -165,12 +165,12 @@ int main(int argc, char *argv[])
 		     NULL, &req);
     if (ret < 0) {
       perror("irecv param");
-      goto out;
+      goto out_with_ep;
     }
     ret = mpoe_wait(ep, &req, &status);
     if (ret < 0) {
       perror("wait irecv param");
-      goto out;
+      goto out_with_ep;
     }
 
     /* retrieve parameters */
@@ -190,12 +190,12 @@ int main(int argc, char *argv[])
 		       NULL, &req);
       if (ret < 0) {
 	perror("isend/tiny");
-	goto out;
+	goto out_with_ep;
       }
       ret = mpoe_wait(ep, &req, &status);
       if (ret < 0) {
 	perror("wait isend/tiny");
-	goto out;
+	goto out_with_ep;
       }
 
       /* wait for an incoming message */
@@ -204,12 +204,12 @@ int main(int argc, char *argv[])
 		       NULL, &req);
       if (ret < 0) {
 	perror("irecv");
-	goto out;
+	goto out_with_ep;
       }
       ret = mpoe_wait(ep, &req, &status);
       if (ret < 0) {
 	perror("wait irecv");
-	goto out;
+	goto out_with_ep;
       }
 
     }
@@ -224,6 +224,8 @@ int main(int argc, char *argv[])
 
   return 0;
 
+ out_with_ep:
+  mpoe_close_endpoint(ep);
  out:
   return -1;
 }
