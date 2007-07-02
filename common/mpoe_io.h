@@ -106,22 +106,6 @@ struct mpoe_cmd_send_tiny {
 	/* 64 */
 };
 
-struct mpoe_cmd_send_pull_hdr {
-	struct mpoe_mac_addr dest_addr;
-	uint8_t dest_endpoint;
-	uint8_t pad;
-	/* 8 */
-	uint32_t length; /* FIXME: 64bits ? */
-	uint32_t local_rdma_id;
-	/* 16 */
-	uint32_t local_offset; /* FIXME: 64bits ? */
-	uint32_t remote_rdma_id;
-	/* 24 */
-	uint32_t remote_offset; /* FIXME: 64bits ? */
-	uint32_t pad2[9];
-	/* 64 */
-};
-
 struct mpoe_cmd_send_medium_hdr {
 	struct mpoe_mac_addr dest_addr;
 	uint8_t dest_endpoint;
@@ -135,6 +119,22 @@ struct mpoe_cmd_send_medium_hdr {
 	uint32_t lib_cookie;
 	/* 28 */
 	uint32_t pad3[9];
+	/* 64 */
+};
+
+struct mpoe_cmd_send_pull_hdr {
+	struct mpoe_mac_addr dest_addr;
+	uint8_t dest_endpoint;
+	uint8_t pad;
+	/* 8 */
+	uint32_t length; /* FIXME: 64bits ? */
+	uint32_t local_rdma_id;
+	/* 16 */
+	uint32_t local_offset; /* FIXME: 64bits ? */
+	uint32_t remote_rdma_id;
+	/* 24 */
+	uint32_t remote_offset; /* FIXME: 64bits ? */
+	uint32_t pad2[9];
 	/* 64 */
 };
 
