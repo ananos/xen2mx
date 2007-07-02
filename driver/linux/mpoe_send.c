@@ -153,7 +153,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 
 	evt = mpoe_find_next_eventq_slot(endpoint);
 	if (!evt) {
-		printk(KERN_INFO "MPoE: Failed to send TINY packet because of event queue full\n");
+		printk(KERN_INFO "MPoE: Failed to send MEDIUM packet because of event queue full\n");
 		ret = -EBUSY;
 		goto out;
 	}
