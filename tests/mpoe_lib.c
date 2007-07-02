@@ -231,7 +231,8 @@ mpoe_progress(struct mpoe_endpoint * ep)
   volatile union mpoe_evt * evt;
 
   evt = ep->next_event;
-  while (evt->generic.type == MPOE_EVT_NONE) ;
+  if (evt->generic.type == MPOE_EVT_NONE)
+    return MPOE_SUCCESS;
 
   printf("received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
