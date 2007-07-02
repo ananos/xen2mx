@@ -34,7 +34,6 @@ extern int mpoe_send_small(struct mpoe_endpoint * endpoint, void __user * uparam
 extern int mpoe_send_medium(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_send_rendez_vous(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_send_pull(struct mpoe_endpoint * endpoint, void __user * uparam);
-extern int mpoe_pull_reply(struct mpoe_endpoint * endpoint, struct mpoe_pkt_pull_request * pull_request, struct mpoe_mac_addr * dest_addr);
 
 /* receiving */
 extern struct packet_type mpoe_pt;
