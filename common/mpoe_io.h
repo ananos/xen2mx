@@ -16,7 +16,7 @@
 #define MPOE_EVENTQ_SIZE	(64*1024)
 #define MPOE_EVENTQ_OFFSET	(2*4096)
 
-#define MPOE_TINY_MAX           48 /* FIXME: check that it fills in the data field in the request and event below */
+#define MPOE_TINY_MAX           32 /* at most 48. FIXME: check that it fits in the data field in the request and event below */
 
 #define MPOE_USER_REGION_MAX		255
 typedef uint8_t mpoe_user_region_id_t;
