@@ -482,6 +482,8 @@ mpoe_isend(struct mpoe_endpoint *ep,
 
   mpoe_enqueue_request(&ep->sent_req_q, req);
 
+  mpoe_progress(ep);
+
   *requestp = req;
 
   return MPOE_SUCCESS;
@@ -530,6 +532,8 @@ mpoe_irecv(struct mpoe_endpoint *ep,
 
     mpoe_enqueue_request(&ep->recv_req_q, req);
   }
+
+  mpoe_progress(ep);
 
   *requestp = req;
 
@@ -621,7 +625,6 @@ mpoe_peek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
   mpoe_return_t ret = MPOE_SUCCESS;
 
   while ((req = ep->done_req_q) == NULL) {
-    printf("progress\n");
     ret = mpoe_progress(ep);
     if (ret != MPOE_SUCCESS)
       goto out;
