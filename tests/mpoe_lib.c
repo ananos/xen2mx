@@ -215,7 +215,7 @@ static union mpoe_request * cookie_req;
 
 static inline uint32_t
 mpoe_lib_cookie_alloc(struct mpoe_endpoint *ep,
-                     union mpoe_request *req)
+		      union mpoe_request *req)
 {
   /* FIXME */
   cookie_req = req;
@@ -225,15 +225,15 @@ mpoe_lib_cookie_alloc(struct mpoe_endpoint *ep,
 
 static inline union mpoe_request *
 mpoe_find_request_by_cookie(struct mpoe_endpoint *ep,
-                           uint32_t cookie)
+			    uint32_t cookie)
 {
   /* FIXME */
   return cookie_req;
 }
- 
+
 static inline void
 mpoe_lib_cookie_free(struct mpoe_endpoint *ep,
-                    uint32_t cookie)
+		     uint32_t cookie)
 {
   /* FIXME */
 }
