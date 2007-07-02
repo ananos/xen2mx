@@ -70,7 +70,7 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	event = &evt->send_done;
 
 	skb = mpoe_new_skb(ifp,
-			   sizeof(struct mpoe_hdr) + cmd.length);
+			   sizeof(struct mpoe_hdr) + length);
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create tiny skb\n");
 		ret = -ENOMEM;
