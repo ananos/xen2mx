@@ -380,7 +380,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     req->generic.type = MPOE_REQUEST_TYPE_SEND_TINY;
 
   } else {
-    struct mpoe_cmd_send_medium_hdr medium_param;
+    struct mpoe_cmd_send_medium medium_param;
 
     mpoe_mac_addr_copy(&medium_param.dest_addr, dest_addr);
     medium_param.dest_endpoint = dest_endpoint;
