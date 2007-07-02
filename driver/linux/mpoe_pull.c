@@ -273,14 +273,14 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	struct sk_buff *skb;
 	struct mpoe_hdr *mh;
 	struct ethhdr *eh;
-	struct mpoe_cmd_send_pull_hdr cmd_hdr;
+	struct mpoe_cmd_send_pull cmd;
 	struct mpoe_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	struct mpoe_pull_handle * handle;
 	struct mpoe_pkt_pull_request * pull;
 	int ret;
 
-	ret = copy_from_user(&cmd_hdr, uparam, sizeof(cmd_hdr));
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (ret) {
 		printk(KERN_ERR "MPoE: Failed to read send pull cmd hdr\n");
 		ret = -EFAULT;
@@ -307,20 +307,20 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 
 	/* fill ethernet header */
 	memset(eh, 0, sizeof(*eh));
-	mpoe_mac_addr_to_ethhdr_dst(&cmd_hdr.dest_addr, eh);
+	mpoe_mac_addr_to_ethhdr_dst(&cmd.dest_addr, eh);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
 	/* fill mpoe header */
 	pull = &mh->body.pull;
 	pull->src_endpoint = endpoint->endpoint_index;
-	pull->dst_endpoint = cmd_hdr.dest_endpoint;
+	pull->dst_endpoint = cmd.dest_endpoint;
 	pull->ptype = MPOE_PKT_PULL;
-	pull->length = cmd_hdr.length;
-	pull->puller_rdma_id = cmd_hdr.local_rdma_id;
-	pull->puller_offset = cmd_hdr.local_offset;
-	pull->pulled_rdma_id = cmd_hdr.remote_rdma_id;
-	pull->pulled_offset = cmd_hdr.remote_offset;
+	pull->length = cmd.length;
+	pull->puller_rdma_id = cmd.local_rdma_id;
+	pull->puller_offset = cmd.local_offset;
+	pull->pulled_rdma_id = cmd.remote_rdma_id;
+	pull->pulled_offset = cmd.remote_offset;
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = mpoe_endpoint_pull_magic(endpoint);
 	printk("sending pull with handle %d magic %d\n",

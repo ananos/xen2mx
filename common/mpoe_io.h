@@ -106,7 +106,7 @@ struct mpoe_cmd_send_tiny {
 	/* 64 */
 };
 
-struct mpoe_cmd_send_medium_hdr {
+struct mpoe_cmd_send_medium {
 	struct mpoe_mac_addr dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t sendq_page_offset;
@@ -122,7 +122,7 @@ struct mpoe_cmd_send_medium_hdr {
 	/* 64 */
 };
 
-struct mpoe_cmd_send_pull_hdr {
+struct mpoe_cmd_send_pull {
 	struct mpoe_mac_addr dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t pad;
