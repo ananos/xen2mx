@@ -8,6 +8,7 @@
 #define ETH_P_MPOE 0x86DF
 
 enum mpoe_pkt_type {
+	/* Must be contigous, starting with NONE, ending with MAX */
 	MPOE_PKT_NONE=0,
 	MPOE_PKT_TINY,
 	MPOE_PKT_SMALL,
@@ -15,6 +16,7 @@ enum mpoe_pkt_type {
 	MPOE_PKT_RENDEZ_VOUS,
 	MPOE_PKT_PULL,
 	MPOE_PKT_PULL_REPLY,
+	MPOE_PKT_TYPE_MAX
 };
 
 struct mpoe_pkt_head {

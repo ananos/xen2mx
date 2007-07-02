@@ -38,8 +38,8 @@ extern int mpoe_pull_reply(struct mpoe_endpoint * endpoint, struct mpoe_pkt_pull
 
 /* receiving */
 extern struct packet_type mpoe_pt;
-extern int mpoe_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh);
-extern int mpoe_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh);
+extern int mpoe_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh, struct sk_buff * skb);
+extern int mpoe_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh, struct sk_buff * skb);
 
 /* pull */
 extern int mpoe_endpoint_pull_handles_init(struct mpoe_endpoint * endpoint);

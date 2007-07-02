@@ -353,7 +353,8 @@ mpoe_pull_reply_append_user_region_segment(struct sk_buff *skb,
 
 int
 mpoe_recv_pull(struct mpoe_iface * iface,
-	       struct mpoe_hdr * pull_mh)
+	       struct mpoe_hdr * pull_mh,
+	       struct sk_buff * orig_skb)
 {
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *pull_eh = &pull_mh->head.eth;
@@ -458,7 +459,8 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 
 int
 mpoe_recv_pull_reply(struct mpoe_iface * iface,
-		     struct mpoe_hdr * mh)
+		     struct mpoe_hdr * mh,
+		     struct sk_buff * skb)
 {
 //	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_pull_reply *pull_reply = &mh->body.pull_reply;

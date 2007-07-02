@@ -209,9 +209,10 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	return err;
 }
 
-static void
+static int
 mpoe_recv_rndv(struct mpoe_iface * iface,
-	       struct mpoe_hdr * mh)
+	       struct mpoe_hdr * mh,
+	       struct sk_buff * skb)
 {
 #if 0
 	struct mpoe_endpoint * endpoint;
@@ -247,11 +248,22 @@ mpoe_recv_rndv(struct mpoe_iface * iface,
 #endif
 
 	/* FIXME */
+
+	return 0;
 }
 
 /***********************
  * Main receive routine
  */
+
+static int (*mpoe_pkt_handlers[])(struct mpoe_iface * iface, struct mpoe_hdr * mh, struct sk_buff * skb) = {
+	[MPOE_PKT_TINY]		= mpoe_recv_tiny,
+	[MPOE_PKT_SMALL]	= mpoe_recv_small,
+	[MPOE_PKT_MEDIUM]	= mpoe_recv_medium_frag,
+	[MPOE_PKT_RENDEZ_VOUS]	= mpoe_recv_rndv,
+	[MPOE_PKT_PULL]		= mpoe_recv_pull,
+	[MPOE_PKT_PULL_REPLY]	= mpoe_recv_pull_reply,
+};
 
 static int
 mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
@@ -260,6 +272,7 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	struct mpoe_iface *iface;
 	struct mpoe_hdr linear_header;
 	struct mpoe_hdr *mh;
+	uint8_t ptype;
 
 	skb = skb_share_check(skb, GFP_ATOMIC);
 	if (skb == NULL)
@@ -286,39 +299,14 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 		mh = mpoe_hdr(skb);
 	}
 
-	switch (mh->body.generic.ptype) {
-	case MPOE_PKT_TINY:
-		mpoe_recv_tiny(iface, mh, skb);
-		break;
-
-	case MPOE_PKT_SMALL:
-		mpoe_recv_small(iface, mh, skb);
-		break;
-
-	case MPOE_PKT_MEDIUM:
-		mpoe_recv_medium_frag(iface, mh, skb);
-		break;
-
-	case MPOE_PKT_RENDEZ_VOUS:
-		mpoe_recv_rndv(iface, mh);
-		break;
-
-	case MPOE_PKT_PULL:
-		mpoe_recv_pull(iface, mh);
-		break;
-
-	case MPOE_PKT_PULL_REPLY:
-		mpoe_recv_pull_reply(iface, mh);
-		break;
-
-	default:
+	ptype = mh->body.generic.ptype;
+	if (ptype > MPOE_PKT_NONE && ptype < MPOE_PKT_TYPE_MAX) {
+		mpoe_pkt_handlers[ptype](iface, mh, skb);
+	} else {
 		printk(KERN_DEBUG "MPoE: Dropping packing with unrecognized type %d\n",
-		       mh->body.generic.ptype);
+		       ptype);
 		goto out;
 	}
-
-//	printk(KERN_INFO "MPoE: got packet type %d length %d matching 0x%llx for endpoint %d from %d\n",
-//	       mh->ptype, mh->length, mh->match_info, mh->dst_endpoint, mh->src_endpoint);
 
  out:
 	/* FIXME: send nack */
