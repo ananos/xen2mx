@@ -1,3 +1,5 @@
+* factorize mpoe_basic send functions once unexpected small and medium are ready
+
 * check length of packets before copying to the recvq
 
 * true pull support

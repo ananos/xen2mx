@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
 
     union mpoe_request * req;
     struct mpoe_status status;
+    uint32_t result;
     struct param param;
     char dest_str[MPOE_MAC_ADDR_STRLEN];
     int i;
@@ -104,8 +105,8 @@ int main(int argc, char *argv[])
 	      mpoe_strerror(ret));
       goto out_with_ep;
     }
-    ret = mpoe_wait(ep, &req, &status);
-    if (ret != MPOE_SUCCESS) {
+    ret = mpoe_wait(ep, &req, &status, &result);
+    if (ret != MPOE_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait (%s)\n",
 	      mpoe_strerror(ret));
       goto out_with_ep;
@@ -126,8 +127,8 @@ int main(int argc, char *argv[])
 		mpoe_strerror(ret));
 	goto out_with_ep;
       }
-      ret = mpoe_wait(ep, &req, &status);
-      if (ret != MPOE_SUCCESS) {
+      ret = mpoe_wait(ep, &req, &status, &result);
+      if (ret != MPOE_SUCCESS || !result) {
 	fprintf(stderr, "Failed to wait (%s)\n",
 		mpoe_strerror(ret));
 	goto out_with_ep;
@@ -142,8 +143,8 @@ int main(int argc, char *argv[])
 		mpoe_strerror(ret));
 	goto out_with_ep;
       }
-      ret = mpoe_wait(ep, &req, &status);
-      if (ret != MPOE_SUCCESS) {
+      ret = mpoe_wait(ep, &req, &status, &result);
+      if (ret != MPOE_SUCCESS || !result) {
 	fprintf(stderr, "Failed to wait (%s)\n",
 		mpoe_strerror(ret));
 	goto out_with_ep;
@@ -157,6 +158,7 @@ int main(int argc, char *argv[])
 
     union mpoe_request * req;
     struct mpoe_status status;
+    uint32_t result;
     struct param param;
     struct timeval tv1, tv2;
     unsigned long long us;
@@ -175,8 +177,8 @@ int main(int argc, char *argv[])
 	      mpoe_strerror(ret));
       goto out_with_ep;
     }
-    ret = mpoe_wait(ep, &req, &status);
-    if (ret != MPOE_SUCCESS) {
+    ret = mpoe_wait(ep, &req, &status, &result);
+    if (ret != MPOE_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait (%s)\n",
 	      mpoe_strerror(ret));
       goto out_with_ep;
@@ -202,8 +204,8 @@ int main(int argc, char *argv[])
 		mpoe_strerror(ret));
 	goto out_with_ep;
       }
-      ret = mpoe_wait(ep, &req, &status);
-      if (ret != MPOE_SUCCESS) {
+      ret = mpoe_wait(ep, &req, &status, &result);
+      if (ret != MPOE_SUCCESS || !result) {
 	fprintf(stderr, "Failed to wait (%s)\n",
 		mpoe_strerror(ret));
 	goto out_with_ep;
@@ -218,8 +220,8 @@ int main(int argc, char *argv[])
 		mpoe_strerror(ret));
 	goto out_with_ep;
       }
-      ret = mpoe_wait(ep, &req, &status);
-      if (ret != MPOE_SUCCESS) {
+      ret = mpoe_wait(ep, &req, &status, &result);
+      if (ret != MPOE_SUCCESS || !result) {
 	fprintf(stderr, "Failed to wait (%s)\n",
 		mpoe_strerror(ret));
 	goto out_with_ep;

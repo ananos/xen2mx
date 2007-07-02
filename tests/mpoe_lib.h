@@ -104,9 +104,13 @@ mpoe_irecv(struct mpoe_endpoint *ep,
 	   uint64_t match_info, uint64_t match_mask,
 	   void *context, union mpoe_request **requestp);
 
+mpoe_return_t
+mpoe_test(struct mpoe_endpoint *ep, union mpoe_request **requestp,
+	  struct mpoe_status *status, uint32_t * result);
+
 extern mpoe_return_t
 mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
-	  struct mpoe_status *status);
+	  struct mpoe_status *status, uint32_t * result);
 
 static inline void
 mpoe_mac_addr_copy(struct mpoe_mac_addr * dst,

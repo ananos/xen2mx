@@ -515,8 +515,34 @@ mpoe_irecv(struct mpoe_endpoint *ep,
 }
 
 mpoe_return_t
+mpoe_test(struct mpoe_endpoint *ep, union mpoe_request **requestp,
+	  struct mpoe_status *status, uint32_t * result)
+{
+  union mpoe_request * req = *requestp;
+  mpoe_return_t ret = MPOE_SUCCESS;
+
+  ret = mpoe_progress(ep);
+  if (ret != MPOE_SUCCESS)
+    goto out;
+
+  if (req->generic.state != MPOE_REQUEST_STATE_DONE) {
+    *result = 0;
+  } else {
+    mpoe_dequeue_request(&ep->done_req_q, req);
+    memcpy(status, &req->generic.status, sizeof(*status));
+
+    free(req);
+    *requestp = NULL;
+    *result = 1;
+  }
+
+ out:
+  return ret;
+}
+
+mpoe_return_t
 mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
-	  struct mpoe_status *status)
+	  struct mpoe_status *status, uint32_t * result)
 {
   union mpoe_request * req = *requestp;
   mpoe_return_t ret = MPOE_SUCCESS;
@@ -533,6 +559,7 @@ mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
 
   free(req);
   *requestp = NULL;
+  *result = 1;
 
  out:
   return ret;
