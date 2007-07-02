@@ -10,6 +10,7 @@
 enum mpoe_pkt_type {
 	MPOE_PKT_NONE=0,
 	MPOE_PKT_TINY,
+	MPOE_PKT_SMALL,
 	MPOE_PKT_MEDIUM,
 	MPOE_PKT_RENDEZ_VOUS,
 	MPOE_PKT_PULL,
@@ -90,6 +91,7 @@ struct mpoe_hdr {
 	union {
 		struct mpoe_pkt_msg generic;
 		struct mpoe_pkt_msg tiny;
+		struct mpoe_pkt_msg small;
 		struct mpoe_pkt_medium_frag medium;
 		struct mpoe_pkt_pull_request pull;
 		struct mpoe_pkt_pull_reply pull_reply;

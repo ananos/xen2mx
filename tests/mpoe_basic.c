@@ -59,6 +59,40 @@ send_tiny(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 }
 
 static int
+send_small(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
+	   int i)
+{
+  union mpoe_request * request;
+  struct mpoe_status status;
+  char buffer[4096];
+  mpoe_return_t ret;
+
+  sprintf(buffer, "message %d is much longer than in a tiny buffer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", i);
+
+  ret = mpoe_isend(ep, buffer, strlen(buffer) + 1,
+		   0x1234567887654321ULL, dest_addr, EP,
+		   NULL, &request);
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to send a small message (%s)\n",
+	    mpoe_strerror(ret));
+    return ret;
+  }
+
+  fprintf(stderr, "Successfully sent small \"%s\"\n", (char*) buffer);
+
+  ret = mpoe_wait(ep, &request, &status);
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to wait for completion (%s)\n",
+	    mpoe_strerror(ret));
+    return ret;
+  }
+
+  fprintf(stderr, "Successfully waited for send completion\n");
+
+  return MPOE_SUCCESS;
+}
+
+static int
 send_medium(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 	  int i)
 {
@@ -120,6 +154,17 @@ int main(void)
   }
   gettimeofday(&tv2, NULL);
   printf("tiny latency %lld us\n",
+	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+
+  gettimeofday(&tv1, NULL);
+  for(i=0; i<ITER; i++) {
+    /* send a small message */
+    ret = send_small(ep, &dest_addr, i);
+    if (ret != MPOE_SUCCESS)
+      goto out_with_ep;
+  }
+  gettimeofday(&tv2, NULL);
+  printf("small latency %lld us\n",
 	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
   gettimeofday(&tv1, NULL);

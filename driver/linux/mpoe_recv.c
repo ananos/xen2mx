@@ -96,6 +96,63 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 }
 
 static int
+mpoe_recv_small(struct mpoe_iface * iface,
+		struct mpoe_hdr * mh,
+		struct sk_buff * skb)
+{
+	struct mpoe_endpoint * endpoint;
+	struct ethhdr *eh = &mh->head.eth;
+	struct mpoe_pkt_msg *small = &mh->body.small;
+	union mpoe_evt *evt;
+	struct mpoe_evt_recv_small *event;
+	char *recvq_slot;
+	int err;
+
+	/* get the destination endpoint */
+	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, small->dst_endpoint);
+	if (!endpoint) {
+		printk(KERN_DEBUG "MPoE: Dropping SMALL packet for unknown endpoint %d\n",
+		       small->dst_endpoint);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* get the eventq slot */
+	evt = mpoe_find_next_eventq_slot(endpoint);
+	if (!evt) {
+		printk(KERN_INFO "MPoE: Dropping SMALL packet because of event queue full\n");
+		err = -EBUSY;
+		goto out_with_endpoint;
+	}
+	event = &evt->recv_small;
+
+	/* fill event */
+	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
+	event->src_endpoint = small->src_endpoint;
+	event->length = small->length;
+	event->match_info = MPOE_MATCH_INFO_FROM_PKT(small);
+
+	/* copy data in recvq slot */
+	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
+	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot,
+			    skb->len - sizeof(struct mpoe_hdr));
+	/* cannot fail since pages are allocated by us */
+	BUG_ON(err < 0);
+
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = MPOE_EVT_RECV_SMALL;
+
+	mpoe_endpoint_release(endpoint);
+
+	return 0;
+
+ out_with_endpoint:
+	mpoe_endpoint_release(endpoint);
+ out:
+	return err;
+}
+
+static int
 mpoe_recv_medium_frag(struct mpoe_iface * iface,
 		      struct mpoe_hdr * mh,
 		      struct sk_buff * skb)
@@ -232,6 +289,10 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	switch (mh->body.generic.ptype) {
 	case MPOE_PKT_TINY:
 		mpoe_recv_tiny(iface, mh, skb);
+		break;
+
+	case MPOE_PKT_SMALL:
+		mpoe_recv_small(iface, mh, skb);
 		break;
 
 	case MPOE_PKT_MEDIUM:

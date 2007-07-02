@@ -266,6 +266,7 @@ mpoe_miscdev_release(struct inode * inode, struct file * file)
 
 static int (*mpoe_cmd_with_endpoint_handlers[])(struct mpoe_endpoint * endpoint, void __user * uparam) = {
 	[MPOE_CMD_SEND_TINY]		= mpoe_send_tiny,
+	[MPOE_CMD_SEND_SMALL]		= mpoe_send_small,
 	[MPOE_CMD_SEND_MEDIUM]		= mpoe_send_medium,
 	[MPOE_CMD_SEND_RENDEZ_VOUS]	= mpoe_send_rendez_vous,
 	[MPOE_CMD_SEND_PULL]		= mpoe_send_pull,
@@ -338,6 +339,7 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 	}
 
 	case MPOE_CMD_SEND_TINY:
+	case MPOE_CMD_SEND_SMALL:
 	case MPOE_CMD_SEND_MEDIUM:
 	case MPOE_CMD_SEND_RENDEZ_VOUS:
 	case MPOE_CMD_SEND_PULL:

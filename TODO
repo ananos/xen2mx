@@ -1,3 +1,5 @@
+* check length of packets before copying to the recvq
+
 * true pull support
   - events on both sides
   - multiple frames per pull
@@ -6,6 +8,8 @@
 * support eventq full by queueing things?
   - upto when? reserve before sending? should be guaranteed by the lib (polls before sending) => no need to queue?
   - use it for shared memory ?
+* rdma_get
+* rdma_put
 
 * nice request queues
 * hide internals from the application
@@ -22,7 +26,8 @@
 * connect messages
 * retransmission
 
-* no need to pad cmd_hdr to 64 ?
+* no need to pad cmd to 64 ? no need to put the type at the end
+* no need to pad event to 64 ? no need to put the type at the end
 * ntoh[sl] fields
 * use kref to get user region without keeping a spinlock ?
 * user region seqnum

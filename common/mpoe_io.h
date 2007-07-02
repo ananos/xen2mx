@@ -17,6 +17,7 @@
 #define MPOE_EVENTQ_OFFSET	(2*4096)
 
 #define MPOE_TINY_MAX           32 /* at most 48. FIXME: check that it fits in the data field in the request and event below */
+#define MPOE_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
 
 #define MPOE_USER_REGION_MAX		255
 typedef uint8_t mpoe_user_region_id_t;
@@ -42,11 +43,12 @@ struct mpoe_cmd_region_segment {
 #define MPOE_CMD_OPEN_ENDPOINT		0x81
 #define MPOE_CMD_CLOSE_ENDPOINT		0x82
 #define MPOE_CMD_SEND_TINY		0x83
-#define MPOE_CMD_SEND_MEDIUM		0x84
-#define MPOE_CMD_SEND_RENDEZ_VOUS	0x85
-#define MPOE_CMD_SEND_PULL		0x86
-#define MPOE_CMD_REGISTER_REGION	0x87
-#define MPOE_CMD_DEREGISTER_REGION	0x88
+#define MPOE_CMD_SEND_SMALL             0x84
+#define MPOE_CMD_SEND_MEDIUM		0x85
+#define MPOE_CMD_SEND_RENDEZ_VOUS	0x86
+#define MPOE_CMD_SEND_PULL		0x87
+#define MPOE_CMD_REGISTER_REGION	0x88
+#define MPOE_CMD_DEREGISTER_REGION	0x89
 
 static inline const char *
 mpoe_strcmd(unsigned int cmd)
@@ -62,6 +64,8 @@ mpoe_strcmd(unsigned int cmd)
 		return "Close Endpoint";
 	case MPOE_CMD_SEND_TINY:
 		return "Send Tiny";
+	case MPOE_CMD_SEND_SMALL:
+		return "Send Small";
 	case MPOE_CMD_SEND_MEDIUM:
 		return "Send Medium";
 	case MPOE_CMD_SEND_RENDEZ_VOUS:
@@ -103,6 +107,22 @@ struct mpoe_cmd_send_tiny {
 		/* 20 */
 	} hdr;
 	char data[64-sizeof(struct mpoe_cmd_send_tiny_hdr)];
+	/* 64 */
+};
+
+struct mpoe_cmd_send_small {
+	struct mpoe_mac_addr dest_addr;
+	uint8_t dest_endpoint;
+	uint8_t pad1;
+	/* 8 */
+	uint16_t length;
+	uint16_t pad2;
+	uint32_t lib_cookie;
+	/* 16 */
+	uint64_t vaddr;
+	uint64_t match_info;
+	/* 32 */
+	uint64_t pad3[4];
 	/* 64 */
 };
 
@@ -158,7 +178,8 @@ struct mpoe_cmd_deregister_region {
 #define MPOE_EVT_NONE		0x00
 #define MPOE_EVT_SEND_DONE	0x01
 #define MPOE_EVT_RECV_TINY	0x02
-#define MPOE_EVT_RECV_MEDIUM	0x03
+#define MPOE_EVT_RECV_SMALL	0x03
+#define MPOE_EVT_RECV_MEDIUM	0x04
 
 static inline const char *
 mpoe_strevt(unsigned int type)
@@ -170,6 +191,8 @@ mpoe_strevt(unsigned int type)
 		return "Send Tiny";
 	case MPOE_EVT_RECV_TINY:
 		return "Receive Tiny";
+	case MPOE_EVT_RECV_SMALL:
+		return "Receive Small";
 	case MPOE_EVT_RECV_MEDIUM:
 		return "Receive Medium Fragment";
 	default:
@@ -208,6 +231,22 @@ union mpoe_evt {
 		uint8_t type;
 		/* 64 */
 	} recv_tiny;
+
+	/* recv small */
+	struct mpoe_evt_recv_small {
+		struct mpoe_mac_addr src_addr;
+		uint8_t src_endpoint;
+		uint8_t pad1;
+		/* 8 */
+		uint16_t length;
+		uint16_t pad2[3];
+		/* 16 */
+		uint64_t match_info;
+		/* 24 */
+		char data[39];
+		uint8_t type;
+		/* 64 */
+	} recv_small;
 
 	/* recv medium */
 	struct mpoe_evt_recv_medium {

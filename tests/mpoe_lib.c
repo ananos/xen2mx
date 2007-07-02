@@ -290,6 +290,32 @@ mpoe_progress(struct mpoe_endpoint * ep)
     break;
   }
 
+  case MPOE_EVT_RECV_SMALL: {
+    if (!ep->recv_req_q)
+      printf("missed a small unexpected\n");
+    else {
+      struct mpoe_evt_recv_small * event = &((union mpoe_evt *)evt)->recv_small;
+      union mpoe_request * req = ep->recv_req_q;
+      int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
+      char * buffer = ep->recvq + evt_index*4096; /* FIXME: get pagesize somehow */
+      unsigned long length;
+
+      mpoe_dequeue_request(&ep->recv_req_q, req);
+      req->generic.state = MPOE_REQUEST_STATE_DONE;
+
+      mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+      req->generic.status.ep = event->src_endpoint;
+      req->generic.status.match_info = event->match_info;
+
+      length = event->length > req->recv.length
+	? req->recv.length : event->length;
+      req->generic.status.msg_length = event->length;
+      req->generic.status.xfer_length = length;
+      memcpy(req->recv.buffer, buffer, length);
+    }
+    break;
+  }
+
   case MPOE_EVT_RECV_MEDIUM: {
     if (!ep->recv_req_q)
       printf("missed a medium unexpected\n");
@@ -378,6 +404,24 @@ mpoe_isend(struct mpoe_endpoint *ep,
     }
 
     req->generic.type = MPOE_REQUEST_TYPE_SEND_TINY;
+
+  } else if (length <= MPOE_SMALL_MAX) {
+    struct mpoe_cmd_send_small small_param;
+
+    mpoe_mac_addr_copy(&small_param.dest_addr, dest_addr);
+    small_param.dest_endpoint = dest_endpoint;
+    small_param.match_info = match_info;
+    small_param.length = length;
+    small_param.lib_cookie = send_lib_cookie;
+    small_param.vaddr = (uintptr_t) buffer;
+
+    err = ioctl(ep->fd, MPOE_CMD_SEND_SMALL, &small_param);
+    if (err < 0) {
+      ret = mpoe_errno_to_return(errno, "ioctl send/small");
+      goto out_with_req;
+    }
+
+    req->generic.type = MPOE_REQUEST_TYPE_SEND_SMALL;
 
   } else {
     struct mpoe_cmd_send_medium medium_param;

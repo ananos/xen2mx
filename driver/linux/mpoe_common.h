@@ -30,6 +30,7 @@ extern struct mpoe_iface * mpoe_iface_find_by_ifp(struct net_device *ifp);
 /* sending */
 extern struct sk_buff * mpoe_new_skb(struct net_device *ifp, unsigned long len);
 extern int mpoe_send_tiny(struct mpoe_endpoint * endpoint, void __user * uparam);
+extern int mpoe_send_small(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_send_medium(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_send_rendez_vous(struct mpoe_endpoint * endpoint, void __user * uparam);
 extern int mpoe_send_pull(struct mpoe_endpoint * endpoint, void __user * uparam);

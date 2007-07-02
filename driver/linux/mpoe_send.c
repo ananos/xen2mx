@@ -121,6 +121,95 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 }
 
 int
+mpoe_send_small(struct mpoe_endpoint * endpoint,
+		void __user * uparam)
+{
+	struct sk_buff *skb;
+	struct mpoe_hdr *mh;
+	struct ethhdr *eh;
+	struct mpoe_cmd_send_small cmd;
+	struct mpoe_iface * iface = endpoint->iface;
+	struct net_device * ifp = iface->eth_ifp;
+	union mpoe_evt * evt;
+	struct mpoe_evt_send_done * event;
+	int ret;
+	uint32_t length;
+
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
+	if (ret) {
+		printk(KERN_ERR "MPoE: Failed to read send small cmd hdr\n");
+		ret = -EFAULT;
+		goto out;
+	}
+
+	length = cmd.length;
+	if (length > MPOE_SMALL_MAX) {
+		printk(KERN_ERR "MPoE: Cannot send more than %d as a small (tried %d)\n",
+		       MPOE_SMALL_MAX, length);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	evt = mpoe_find_next_eventq_slot(endpoint);
+	if (!evt) {
+		printk(KERN_INFO "MPoE: Failed to send SMALL packet because of event queue full\n");
+		ret = -EBUSY;
+		goto out;
+	}
+	event = &evt->send_done;
+
+	skb = mpoe_new_skb(ifp,
+			   sizeof(struct mpoe_hdr) + length);
+	if (skb == NULL) {
+		printk(KERN_INFO "MPoE: Failed to create small skb\n");
+		ret = -ENOMEM;
+		/* FIXME: restore the event in the queue */
+		goto out;
+	}
+
+	/* locate headers */
+	mh = mpoe_hdr(skb);
+	eh = &mh->head.eth;
+
+	/* fill ethernet header */
+	memset(eh, 0, sizeof(*eh));
+	mpoe_mac_addr_to_ethhdr_dst(&cmd.dest_addr, eh);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
+
+	/* fill mpoe header */
+	mh->body.small.src_endpoint = endpoint->endpoint_index;
+	mh->body.small.dst_endpoint = cmd.dest_endpoint;
+	mh->body.small.ptype = MPOE_PKT_SMALL;
+	mh->body.small.length = length;
+	mh->body.small.match_a = cmd.match_info >> 32;
+	mh->body.small.match_b = cmd.match_info & 0xffffffff;
+
+	/* copy the data right after the header */
+	ret = copy_from_user(mh+1, (void *)(unsigned long) cmd.vaddr, length);
+	if (ret) {
+		printk(KERN_ERR "MPoE: Failed to read send small cmd data\n");
+		ret = -EFAULT;
+		/* FIXME: restore the event in the queue */
+		goto out_with_skb;
+	}
+
+	dev_queue_xmit(skb);
+
+	/* return the event */
+	event->lib_cookie = cmd.lib_cookie;
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = MPOE_EVT_SEND_DONE;
+
+	return 0;
+
+ out_with_skb:
+	dev_kfree_skb(skb);
+ out:
+	return ret;
+}
+
+int
 mpoe_send_medium(struct mpoe_endpoint * endpoint,
 		 void __user * uparam)
 {
