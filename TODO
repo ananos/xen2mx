@@ -1,5 +1,7 @@
 * factorize mpoe_basic send functions once unexpected small and medium are ready
 
+* drop send events sincethey are synchronous
+
 * check length of packets before copying to the recvq
 
 * true pull support
@@ -13,6 +15,8 @@
 * rdma_get
 * rdma_put
 
+* true sleeping in the kernel
+  - always wakeup on event?
 * nice request queues
 * hide internals from the application
 * medium level helpers for tools accessing small part of internals

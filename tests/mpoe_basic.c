@@ -11,7 +11,7 @@ static mpoe_return_t
 send_tiny(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 	  int i)
 {
-  union mpoe_request * request;
+  union mpoe_request * request, * request2;
   struct mpoe_status status;
   char buffer[12], buffer2[12];
   unsigned long length;
@@ -47,14 +47,24 @@ send_tiny(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
     return ret;
   }
 
-  do {
-    ret = mpoe_test(ep, &request, &status, &result);
-    if (ret != MPOE_SUCCESS) {
-      fprintf(stderr, "Failed to wait for completion (%s)\n",
-	      mpoe_strerror(ret));
-      return ret;
-    }
-  } while (!result);
+  ret = mpoe_peek(ep, &request2, &result);
+  if (ret != MPOE_SUCCESS || !result) {
+    fprintf(stderr, "Failed to peek (%s)\n",
+	    mpoe_strerror(ret));
+    return ret;
+  }
+  if (request != request2) {
+    fprintf(stderr, "Peek got request %p instead of %p\n",
+	    request2, request);
+    return MPOE_BAD_ERROR;
+  }
+
+  ret = mpoe_test(ep, &request, &status, &result);
+  if (ret != MPOE_SUCCESS || !result) {
+    fprintf(stderr, "Failed to wait for completion (%s)\n",
+	    mpoe_strerror(ret));
+    return ret;
+  }
 
   fprintf(stderr, "Successfully received tiny with mpoe_test loop \"%s\"\n", (char*) buffer2);
 

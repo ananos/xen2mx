@@ -576,6 +576,7 @@ mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
     ret = mpoe_progress(ep);
     if (ret != MPOE_SUCCESS)
       goto out;
+    /* FIXME: sleep */
   }
 
   mpoe_dequeue_request(&ep->done_req_q, req);
@@ -589,3 +590,49 @@ mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
  out:
   return ret;
 }
+
+mpoe_return_t
+mpoe_ipeek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
+	   uint32_t *result)
+{
+  union mpoe_request * req;
+  mpoe_return_t ret = MPOE_SUCCESS;
+
+  ret = mpoe_progress(ep);
+  if (ret != MPOE_SUCCESS)
+    goto out;
+
+  if ((req = ep->done_req_q) == NULL) {
+    *result = 0;
+  } else {
+    *requestp = req;
+    *result = 1;
+  }
+
+ out:
+  return ret;
+}
+
+mpoe_return_t
+mpoe_peek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
+	  uint32_t *result)
+{
+  union mpoe_request * req;
+  mpoe_return_t ret = MPOE_SUCCESS;
+
+  while ((req = ep->done_req_q) == NULL) {
+    printf("progress\n");
+    ret = mpoe_progress(ep);
+    if (ret != MPOE_SUCCESS)
+      goto out;
+    /* FIXME: sleep */
+  }
+
+  *requestp = req;
+  *result = 1;
+
+ out:
+  return ret;
+}
+
+/* FIXME: test/wait_any */
