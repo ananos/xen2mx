@@ -238,11 +238,11 @@ mpoe_progress(struct mpoe_endpoint * ep)
 
   case MPOE_EVT_RECV_TINY: {
     struct mpoe_evt_recv_tiny * event = &((union mpoe_evt *)evt)->recv_tiny;
+    union mpoe_request *req;
+    unsigned long length;
 
-    if (!ep->recv_req_q) {
-      union mpoe_request *req;
-      void *buffer;
-      unsigned long length;
+    if ((req = ep->recv_req_q) == NULL) {
+      void *unexp_buffer;
 
       req = malloc(sizeof(*req));
       if (!req) {
@@ -251,8 +251,8 @@ mpoe_progress(struct mpoe_endpoint * ep)
       }
 
       length = event->length;
-      buffer = malloc(length);
-      if (!buffer) {
+      unexp_buffer = malloc(length);
+      if (!unexp_buffer) {
 	fprintf(stderr, "Failed to allocate buffer for unexpected tiny messages, dropping\n");
 	free(req);
 	break;
@@ -264,16 +264,13 @@ mpoe_progress(struct mpoe_endpoint * ep)
       req->generic.status.match_info = event->match_info;
       req->generic.status.msg_length = length;
       req->generic.status.xfer_length = length;
-      req->recv.buffer = buffer;
+      req->recv.buffer = unexp_buffer;
 
-      memcpy(buffer, (void *) evt->recv_tiny.data, length);
+      memcpy(unexp_buffer, (void *) evt->recv_tiny.data, length);
 
       mpoe_enqueue_request(&ep->unexp_req_q, req);
 
     } else {
-      union mpoe_request * req = ep->recv_req_q;
-      unsigned long length;
-
       mpoe_dequeue_request(&ep->recv_req_q, req);
       req->generic.state = MPOE_REQUEST_STATE_DONE;
 
@@ -299,7 +296,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
     union mpoe_request *req;
     unsigned long length;
 
-    if (!ep->recv_req_q) {
+    if ((req = ep->recv_req_q) == NULL) {
       void *unexp_buffer;
 
       req = malloc(sizeof(*req));
@@ -329,8 +326,6 @@ mpoe_progress(struct mpoe_endpoint * ep)
       mpoe_enqueue_request(&ep->unexp_req_q, req);
 
     } else {
-      req = ep->recv_req_q;
-
       mpoe_dequeue_request(&ep->recv_req_q, req);
       req->generic.state = MPOE_REQUEST_STATE_DONE;
 
