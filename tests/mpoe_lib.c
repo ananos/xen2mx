@@ -210,19 +210,32 @@ mpoe_dequeue_request(union mpoe_request **headp,
   }
 }
 
-static inline union mpoe_request *
-mpoe_find_request_by_cookie(union mpoe_request *head,
-			    uint32_t cookie)
+static int lib_cookie = 0;
+static union mpoe_request * cookie_req;
+
+static inline uint32_t
+mpoe_lib_cookie_alloc(struct mpoe_endpoint *ep,
+                     union mpoe_request *req)
 {
-  union mpoe_request * req;
+  /* FIXME */
+  cookie_req = req;
+  req->send.lib_cookie = lib_cookie;
+  return lib_cookie++;
+}
 
-  for(req = head;
-      req != NULL;
-      req = req->generic.next)
-    if (req->send.lib_cookie == cookie)
-      return req;
-
-  return NULL;
+static inline union mpoe_request *
+mpoe_find_request_by_cookie(struct mpoe_endpoint *ep,
+                           uint32_t cookie)
+{
+  /* FIXME */
+  return cookie_req;
+}
+ 
+static inline void
+mpoe_lib_cookie_free(struct mpoe_endpoint *ep,
+                    uint32_t cookie)
+{
+  /* FIXME */
 }
 
 static mpoe_return_t
@@ -377,8 +390,9 @@ mpoe_progress(struct mpoe_endpoint * ep)
     uint32_t lib_cookie = evt->send_done.lib_cookie;
     union mpoe_request * req;
     printf("send done, cookie %ld\n", (unsigned long) lib_cookie);
-    req = mpoe_find_request_by_cookie(ep->sent_req_q, lib_cookie);
+    req = mpoe_find_request_by_cookie(ep, lib_cookie);
     mpoe_dequeue_request(&ep->sent_req_q, req);
+    mpoe_lib_cookie_free(ep, lib_cookie);
     req->generic.state = MPOE_REQUEST_STATE_DONE;
     mpoe_enqueue_request(&ep->done_req_q, req);
     break;
@@ -409,8 +423,8 @@ mpoe_isend(struct mpoe_endpoint *ep,
 	   void *context, union mpoe_request **requestp)
 {
   union mpoe_request * req;
-  static int send_lib_cookie = 0;
   mpoe_return_t ret;
+  uint32_t lib_cookie;
   int err;
 
   req = malloc(sizeof(union mpoe_request));
@@ -419,6 +433,9 @@ mpoe_isend(struct mpoe_endpoint *ep,
     goto out;
   }
 
+  lib_cookie = mpoe_lib_cookie_alloc(ep, req);
+  /* FIXME: check failed */
+
   if (length <= MPOE_TINY_MAX) {
     struct mpoe_cmd_send_tiny tiny_param;
 
@@ -426,13 +443,13 @@ mpoe_isend(struct mpoe_endpoint *ep,
     tiny_param.hdr.dest_endpoint = dest_endpoint;
     tiny_param.hdr.match_info = match_info;
     tiny_param.hdr.length = length;
-    tiny_param.hdr.lib_cookie = send_lib_cookie;
+    tiny_param.hdr.lib_cookie = lib_cookie;
     memcpy(tiny_param.data, buffer, length);
 
     err = ioctl(ep->fd, MPOE_CMD_SEND_TINY, &tiny_param);
     if (err < 0) {
       ret = mpoe_errno_to_return(errno, "ioctl send/tiny");
-      goto out_with_req;
+      goto out_with_cookie;
     }
 
     req->generic.type = MPOE_REQUEST_TYPE_SEND_TINY;
@@ -444,13 +461,13 @@ mpoe_isend(struct mpoe_endpoint *ep,
     small_param.dest_endpoint = dest_endpoint;
     small_param.match_info = match_info;
     small_param.length = length;
-    small_param.lib_cookie = send_lib_cookie;
+    small_param.lib_cookie = lib_cookie;
     small_param.vaddr = (uintptr_t) buffer;
 
     err = ioctl(ep->fd, MPOE_CMD_SEND_SMALL, &small_param);
     if (err < 0) {
       ret = mpoe_errno_to_return(errno, "ioctl send/small");
-      goto out_with_req;
+      goto out_with_cookie;
     }
 
     req->generic.type = MPOE_REQUEST_TYPE_SEND_SMALL;
@@ -462,14 +479,14 @@ mpoe_isend(struct mpoe_endpoint *ep,
     medium_param.dest_endpoint = dest_endpoint;
     medium_param.match_info = match_info;
     medium_param.length = length;
-    medium_param.lib_cookie = send_lib_cookie;
+    medium_param.lib_cookie = lib_cookie;
     memcpy(ep->sendq + 23 * 4096, buffer, length);
     medium_param.sendq_page_offset = 23;
 
     err = ioctl(ep->fd, MPOE_CMD_SEND_MEDIUM, &medium_param);
     if (err < 0) {
       ret = mpoe_errno_to_return(errno, "ioctl send/medium");
-      goto out_with_req;
+      goto out_with_cookie;
     }
 
     req->generic.type = MPOE_REQUEST_TYPE_SEND_MEDIUM;
@@ -478,7 +495,6 @@ mpoe_isend(struct mpoe_endpoint *ep,
 
   req->generic.state = MPOE_REQUEST_STATE_PENDING;
   req->generic.status.context = context;
-  req->send.lib_cookie = send_lib_cookie++;
 
   mpoe_enqueue_request(&ep->sent_req_q, req);
 
@@ -488,6 +504,8 @@ mpoe_isend(struct mpoe_endpoint *ep,
 
   return MPOE_SUCCESS;
 
+ out_with_cookie:
+  mpoe_lib_cookie_free(ep, lib_cookie);
  out_with_req:
   free(req);
  out:

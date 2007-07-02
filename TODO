@@ -1,5 +1,6 @@
 * factorize mpoe_basic send functions once unexpected small and medium are ready
 
+* nice cookies
 * drop send events sincethey are synchronous
 
 * check length of packets before copying to the recvq
