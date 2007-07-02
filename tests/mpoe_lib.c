@@ -11,6 +11,7 @@
 #include "mpoe_io.h"
 #include "mpoe_lib.h"
 #include "mpoe_internals.h"
+#include "mpoe_list.h"
 
 static mpoe_return_t
 mpoe_errno_to_return(int error, char * caller)
@@ -147,10 +148,10 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
   ep->recvq = recvq;
   ep->eventq = ep->next_event = eventq;
 
-  ep->sent_req_q = NULL;
-  ep->unexp_req_q = NULL;
-  ep->recv_req_q = NULL;
-  ep->done_req_q = NULL;
+  INIT_LIST_HEAD(&ep->sent_req_q);
+  INIT_LIST_HEAD(&ep->unexp_req_q);
+  INIT_LIST_HEAD(&ep->recv_req_q);
+  INIT_LIST_HEAD(&ep->done_req_q);
 
   *epp = ep;
 
@@ -179,35 +180,30 @@ mpoe_close_endpoint(struct mpoe_endpoint *ep)
 }
 
 static inline void
-mpoe_enqueue_request(union mpoe_request **headp,
+mpoe_enqueue_request(struct list_head *head,
 		     union mpoe_request *req)
 {
-  req->generic.next = NULL;
-  if (!*headp) {
-    *headp = req;
-  } else {
-    union mpoe_request * prev;
-    for(prev = *headp;
-	prev->generic.next != NULL;
-	prev = prev->generic.next);
-    prev->generic.next = req;
-  }
+  list_add_tail(&req->generic.queue_elt, head);
 }
 
 static inline void
-mpoe_dequeue_request(union mpoe_request **headp,
+mpoe_dequeue_request(struct list_head *head,
 		     union mpoe_request *req)
 {
-  if (*headp == req) {
-    *headp = req->generic.next;
-  } else {
-    union mpoe_request ** prev;
-    for(prev = headp;
-	*prev && (*prev) != req;
-	prev = &(*prev)->generic.next);
-    assert(*prev);
-    *prev = req->generic.next;
-  }
+  /* FIXME: under debug, check that req was in the list */
+  list_del(&req->generic.queue_elt);
+}
+
+static inline union mpoe_request *
+mpoe_queue_first_request(struct list_head *head)
+{
+  return list_first_entry(head, union mpoe_request, generic.queue_elt);
+}
+
+static inline int
+mpoe_queue_empty(struct list_head *head)
+{
+  return list_empty(head);
 }
 
 static int lib_cookie = 0;
@@ -255,7 +251,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
     union mpoe_request *req;
     unsigned long length;
 
-    if ((req = ep->recv_req_q) == NULL) {
+    if (mpoe_queue_empty(&ep->recv_req_q)) {
       void *unexp_buffer;
 
       req = malloc(sizeof(*req));
@@ -285,6 +281,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
       mpoe_enqueue_request(&ep->unexp_req_q, req);
 
     } else {
+      req = mpoe_queue_first_request(&ep->recv_req_q);
       mpoe_dequeue_request(&ep->recv_req_q, req);
       req->generic.state = MPOE_REQUEST_STATE_DONE;
 
@@ -310,7 +307,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
     union mpoe_request *req;
     unsigned long length;
 
-    if ((req = ep->recv_req_q) == NULL) {
+    if (mpoe_queue_empty(&ep->recv_req_q)) {
       void *unexp_buffer;
 
       req = malloc(sizeof(*req));
@@ -340,6 +337,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
       mpoe_enqueue_request(&ep->unexp_req_q, req);
 
     } else {
+      req = mpoe_queue_first_request(&ep->recv_req_q);
       mpoe_dequeue_request(&ep->recv_req_q, req);
       req->generic.state = MPOE_REQUEST_STATE_DONE;
 
@@ -359,17 +357,22 @@ mpoe_progress(struct mpoe_endpoint * ep)
   }
 
   case MPOE_EVT_RECV_MEDIUM: {
-    if (!ep->recv_req_q)
+    union mpoe_request * req;
+
+    if (mpoe_queue_empty(&ep->recv_req_q)) {
       printf("missed a medium unexpected\n");
-    else {
+      /* FIXME */
+    } else {
       struct mpoe_evt_recv_medium * event = &((union mpoe_evt *)evt)->recv_medium;
-      union mpoe_request * req = ep->recv_req_q;
       int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
       char * buffer = ep->recvq + evt_index*4096; /* FIXME: get pagesize somehow */
       unsigned long length;
 
+      req = mpoe_queue_first_request(&ep->recv_req_q);
       mpoe_dequeue_request(&ep->recv_req_q, req);
       req->generic.state = MPOE_REQUEST_STATE_DONE;
+
+      /* FIXME: support multiple frames */
 
       mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
       req->generic.status.ep = event->src_endpoint;
@@ -521,7 +524,8 @@ mpoe_irecv(struct mpoe_endpoint *ep,
   union mpoe_request * req;
   mpoe_return_t ret;
 
-  if ((req = ep->unexp_req_q) != NULL) {
+  if (!mpoe_queue_empty(&ep->unexp_req_q)) {
+    req = mpoe_queue_first_request(&ep->unexp_req_q);
     mpoe_dequeue_request(&ep->sent_req_q, req);
 
     if (length > req->recv.length)
@@ -602,7 +606,6 @@ mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
   }
 
   mpoe_dequeue_request(&ep->done_req_q, req);
-
   memcpy(status, &req->generic.status, sizeof(*status));
 
   free(req);
@@ -617,17 +620,16 @@ mpoe_return_t
 mpoe_ipeek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
 	   uint32_t *result)
 {
-  union mpoe_request * req;
   mpoe_return_t ret = MPOE_SUCCESS;
 
   ret = mpoe_progress(ep);
   if (ret != MPOE_SUCCESS)
     goto out;
 
-  if ((req = ep->done_req_q) == NULL) {
+  if (mpoe_queue_empty(&ep->done_req_q)) {
     *result = 0;
   } else {
-    *requestp = req;
+    *requestp = mpoe_queue_first_request(&ep->done_req_q);
     *result = 1;
   }
 
@@ -639,17 +641,16 @@ mpoe_return_t
 mpoe_peek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
 	  uint32_t *result)
 {
-  union mpoe_request * req;
   mpoe_return_t ret = MPOE_SUCCESS;
 
-  while ((req = ep->done_req_q) == NULL) {
+  while (mpoe_queue_empty(&ep->done_req_q)) {
     ret = mpoe_progress(ep);
     if (ret != MPOE_SUCCESS)
       goto out;
     /* FIXME: sleep */
   }
 
-  *requestp = req;
+  *requestp = mpoe_queue_first_request(&ep->done_req_q);
   *result = 1;
 
  out:
