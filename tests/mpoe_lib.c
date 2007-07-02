@@ -286,6 +286,8 @@ mpoe_progress(struct mpoe_endpoint * ep)
       req->generic.status.msg_length = event->length;
       req->generic.status.xfer_length = length;
       memcpy(req->recv.buffer, (void *) evt->recv_tiny.data, length);
+
+      mpoe_enqueue_request(&ep->done_req_q, req);
     }
     break;
   }
@@ -312,6 +314,8 @@ mpoe_progress(struct mpoe_endpoint * ep)
       req->generic.status.msg_length = event->length;
       req->generic.status.xfer_length = length;
       memcpy(req->recv.buffer, buffer, length);
+
+      mpoe_enqueue_request(&ep->done_req_q, req);
     }
     break;
   }
@@ -338,6 +342,8 @@ mpoe_progress(struct mpoe_endpoint * ep)
       req->generic.status.msg_length = event->length;
       req->generic.status.xfer_length = length;
       memcpy(req->recv.buffer, buffer, length);
+
+      mpoe_enqueue_request(&ep->done_req_q, req);
     }
     break;
   }
@@ -349,6 +355,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
     req = mpoe_find_request_by_cookie(ep->sent_req_q, lib_cookie);
     mpoe_dequeue_request(&ep->sent_req_q, req);
     req->generic.state = MPOE_REQUEST_STATE_DONE;
+    mpoe_enqueue_request(&ep->done_req_q, req);
     break;
   }
 
@@ -481,6 +488,8 @@ mpoe_irecv(struct mpoe_endpoint *ep,
     req->generic.status.xfer_length = length;
     req->generic.state = MPOE_REQUEST_STATE_DONE;
 
+    mpoe_enqueue_request(&ep->done_req_q, req);
+
   } else {
     req = malloc(sizeof(union mpoe_request));
     if (!req) {
@@ -517,6 +526,8 @@ mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
     if (ret != MPOE_SUCCESS)
       goto out;
   }
+
+  mpoe_dequeue_request(&ep->done_req_q, req);
 
   memcpy(status, &req->generic.status, sizeof(*status));
 
