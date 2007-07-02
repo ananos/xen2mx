@@ -293,14 +293,43 @@ mpoe_progress(struct mpoe_endpoint * ep)
   }
 
   case MPOE_EVT_RECV_SMALL: {
-    if (!ep->recv_req_q)
-      printf("missed a small unexpected\n");
-    else {
-      struct mpoe_evt_recv_small * event = &((union mpoe_evt *)evt)->recv_small;
-      union mpoe_request * req = ep->recv_req_q;
-      int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
-      char * buffer = ep->recvq + evt_index*4096; /* FIXME: get pagesize somehow */
-      unsigned long length;
+    struct mpoe_evt_recv_small * event = &((union mpoe_evt *)evt)->recv_small;
+    int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
+    char * recvq_buffer = ep->recvq + evt_index*4096; /* FIXME: get pagesize somehow */
+    union mpoe_request *req;
+    unsigned long length;
+
+    if (!ep->recv_req_q) {
+      void *unexp_buffer;
+
+      req = malloc(sizeof(*req));
+      if (!req) {
+	fprintf(stderr, "Failed to allocate request for unexpected small messages, dropping\n");
+	break;
+      }
+
+      length = event->length;
+      unexp_buffer = malloc(length);
+      if (!unexp_buffer) {
+	fprintf(stderr, "Failed to allocate buffer for unexpected small messages, dropping\n");
+	free(req);
+	break;
+      }
+
+      mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+      /* FIXME: set state and status.code? */
+      req->generic.status.ep = event->src_endpoint;
+      req->generic.status.match_info = event->match_info;
+      req->generic.status.msg_length = length;
+      req->generic.status.xfer_length = length;
+      req->recv.buffer = unexp_buffer;
+
+      memcpy(unexp_buffer, recvq_buffer, length);
+
+      mpoe_enqueue_request(&ep->unexp_req_q, req);
+
+    } else {
+      req = ep->recv_req_q;
 
       mpoe_dequeue_request(&ep->recv_req_q, req);
       req->generic.state = MPOE_REQUEST_STATE_DONE;
@@ -313,7 +342,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
 	? req->recv.length : event->length;
       req->generic.status.msg_length = event->length;
       req->generic.status.xfer_length = length;
-      memcpy(req->recv.buffer, buffer, length);
+      memcpy(req->recv.buffer, recvq_buffer, length);
 
       mpoe_enqueue_request(&ep->done_req_q, req);
     }

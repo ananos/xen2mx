@@ -68,12 +68,15 @@ send_small(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
   union mpoe_request * request;
   struct mpoe_status status;
   char buffer[4096];
+  char buffer2[4096];
+  unsigned long length;
   mpoe_return_t ret;
   uint32_t result;
 
   sprintf(buffer, "message %d is much longer than in a tiny buffer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", i);
+  length = strlen(buffer) + 1;
 
-  ret = mpoe_isend(ep, buffer, strlen(buffer) + 1,
+  ret = mpoe_isend(ep, buffer, length,
 		   0x1234567887654321ULL, dest_addr, EP,
 		   NULL, &request);
   if (ret != MPOE_SUCCESS) {
@@ -92,6 +95,26 @@ send_small(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
   }
 
   fprintf(stderr, "Successfully waited for send completion\n");
+
+  ret = mpoe_irecv(ep, buffer2, length,
+		   0, 0,
+		   NULL, &request);
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to send a small message (%s)\n",
+	    mpoe_strerror(ret));
+    return ret;
+  }
+
+  do {
+    ret = mpoe_test(ep, &request, &status, &result);
+    if (ret != MPOE_SUCCESS) {
+      fprintf(stderr, "Failed to wait for completion (%s)\n",
+	      mpoe_strerror(ret));
+      return ret;
+    }
+  } while (!result);
+
+  fprintf(stderr, "Successfully received small with mpoe_test loop \"%s\"\n", (char*) buffer2);
 
   return MPOE_SUCCESS;
 }
