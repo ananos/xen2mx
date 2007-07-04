@@ -1,5 +1,3 @@
-* send routines return 1 when endpoint ref has to be kept, used for mediums
-
 * unexpected medium
 
 * mark unexp as done once entirely received, pending before

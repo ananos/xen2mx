@@ -57,6 +57,9 @@ mpoe_medium_frag_skb_destructor(struct sk_buff *skb)
 	printk("destructor called\n");
 
 	memcpy(&evt->send_done, &defevent->evt, sizeof(struct mpoe_evt_send_done));
+
+	/* release objects now */
+	mpoe_endpoint_release(endpoint);
 	kfree(defevent);
 }
 
@@ -320,7 +323,10 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 
 	dev_queue_xmit(skb);
 
-	return 0;
+	/* return>0 to tell the caller to not release the endpoint,
+	 * we will do it when releasing the skb in the destructor
+	 */
+	return 1;
 
  out_with_event:
 	kfree(event);

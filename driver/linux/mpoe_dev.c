@@ -264,6 +264,11 @@ mpoe_miscdev_release(struct inode * inode, struct file * file)
 	return 0;
 }
 
+/*
+ * Common command handlers
+ * returns 0 on success, <0 on error,
+ * 1 when success and does not want to release the reference on the endpoint
+ */
 static int (*mpoe_cmd_with_endpoint_handlers[])(struct mpoe_endpoint * endpoint, void __user * uparam) = {
 	[MPOE_CMD_SEND_TINY]		= mpoe_send_tiny,
 	[MPOE_CMD_SEND_SMALL]		= mpoe_send_small,
@@ -357,7 +362,9 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 
 		ret = mpoe_cmd_with_endpoint_handlers[cmd](endpoint, (void __user *) arg);
 
-		mpoe_endpoint_release(endpoint);
+		/* if ret > 0, the caller wants to keep a reference on the endpoint */
+		if (ret <= 0)
+			mpoe_endpoint_release(endpoint);
 
 		break;
 	}
