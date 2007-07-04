@@ -19,4 +19,5 @@ clean-tests:
 wc:
 	wc -cl \
 		driver/linux/*.[ch] \
-		tests/*.c
+		common/*.h \
+		tests/*.[ch]
