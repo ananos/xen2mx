@@ -283,7 +283,6 @@ mpoe_progress(struct mpoe_endpoint * ep)
     } else {
       req = mpoe_queue_first_request(&ep->recv_req_q);
       mpoe_dequeue_request(&ep->recv_req_q, req);
-      req->generic.state = MPOE_REQUEST_STATE_DONE;
 
       mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
       req->generic.status.ep = event->src_endpoint;
@@ -295,6 +294,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
       req->generic.status.xfer_length = length;
       memcpy(req->recv.buffer, (void *) evt->recv_tiny.data, length);
 
+      req->generic.state = MPOE_REQUEST_STATE_DONE;
       mpoe_enqueue_request(&ep->done_req_q, req);
     }
     break;
@@ -338,7 +338,6 @@ mpoe_progress(struct mpoe_endpoint * ep)
     } else {
       req = mpoe_queue_first_request(&ep->recv_req_q);
       mpoe_dequeue_request(&ep->recv_req_q, req);
-      req->generic.state = MPOE_REQUEST_STATE_DONE;
 
       mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
       req->generic.status.ep = event->src_endpoint;
@@ -350,6 +349,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
       req->generic.status.xfer_length = length;
       memcpy(req->recv.buffer, recvq_buffer, length);
 
+      req->generic.state = MPOE_REQUEST_STATE_DONE;
       mpoe_enqueue_request(&ep->done_req_q, req);
     }
     break;
@@ -385,8 +385,8 @@ mpoe_progress(struct mpoe_endpoint * ep)
       req->recv.type.medium.accumulated_length += chunk;
 
       if (req->recv.type.medium.accumulated_length == msg_length) {
-	req->generic.state = MPOE_REQUEST_STATE_DONE;
 	mpoe_dequeue_request(&ep->multifraq_medium_recv_req_q, req);
+	req->generic.state = MPOE_REQUEST_STATE_DONE;
 	mpoe_enqueue_request(&ep->done_req_q, req);
       }
 
