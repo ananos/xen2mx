@@ -42,7 +42,7 @@ send_tiny(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 		   0, 0,
 		   NULL, &request);
   if (ret != MPOE_SUCCESS) {
-    fprintf(stderr, "Failed to send a tiny message (%s)\n",
+    fprintf(stderr, "Failed to post a recv for a tiny message (%s)\n",
 	    mpoe_strerror(ret));
     return ret;
   }
@@ -110,7 +110,7 @@ send_small(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 		   0, 0,
 		   NULL, &request);
   if (ret != MPOE_SUCCESS) {
-    fprintf(stderr, "Failed to send a small message (%s)\n",
+    fprintf(stderr, "Failed to post a recv for a small message (%s)\n",
 	    mpoe_strerror(ret));
     return ret;
   }
@@ -131,17 +131,33 @@ send_small(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 
 static int
 send_medium(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
-	  int i)
+	    int i)
 {
-  union mpoe_request * request;
+  union mpoe_request * request, * request2;
   struct mpoe_status status;
-  char buffer[4096];
+  char buffer[8192], buffer2[8192];
   mpoe_return_t ret;
   uint32_t result;
+  unsigned long length;
+  int j;
 
-  sprintf(buffer, "message %d is much longer than in a tiny buffer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", i);
+  sprintf(buffer, "message %d is much longer than in a tiny buffer !", i);
+  length = strlen(buffer);
+  for(j=0;j<4096;j++)
+    buffer[length+j] = '!';
+  buffer[length+4096] = '\0';
+  length = strlen(buffer) + 1;
 
-  ret = mpoe_isend(ep, buffer, strlen(buffer) + 1,
+  ret = mpoe_irecv(ep, buffer2, length,
+		   0, 0,
+		   NULL, &request2);
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to post a recv for a medium message (%s)\n",
+	    mpoe_strerror(ret));
+    return ret;
+  }
+
+  ret = mpoe_isend(ep, buffer, length,
 		   0x1234567887654321ULL, dest_addr, EP,
 		   NULL, &request);
   if (ret != MPOE_SUCCESS) {
@@ -160,6 +176,17 @@ send_medium(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
   }
 
   fprintf(stderr, "Successfully waited for send completion\n");
+
+  do {
+    ret = mpoe_test(ep, &request2, &status, &result);
+    if (ret != MPOE_SUCCESS) {
+      fprintf(stderr, "Failed to wait for completion (%s)\n",
+	      mpoe_strerror(ret));
+      return ret;
+    }
+  } while (!result);
+
+  fprintf(stderr, "Successfully received medium with mpoe_test loop \"%s\"\n", (char*) buffer2);
 
   return MPOE_SUCCESS;
 }
