@@ -1,3 +1,5 @@
+* send routines return 1 when endpoint ref has to be kept, used for mediums
+
 * unexpected medium
 
 * mark unexp as done once entirely received, pending before
@@ -8,9 +10,10 @@
 * add a macro to set match_a/b in the driver send functions
 
 * drop tiny/small/... send events since they are synchronous
-* add a skb destructor with the event attached for medium
 * nice cookies, using the sendq offset?
 * improve lib_cookie -> req association
+
+* single medium send done event by using a refcount in the deferred event? how to factorize them on post?
 
 * check length of packets before copying to the recvq
 

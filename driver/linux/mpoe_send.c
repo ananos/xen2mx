@@ -27,8 +27,37 @@ mpoe_new_skb(struct net_device *ifp, unsigned long len)
 		 * or to get the NIC to do it
 		 */
 		skb->ip_summed = CHECKSUM_NONE;
+
+		/* skb->sk is used as a pointer to a private data, initialize it */
+		skb->sk = NULL;
 	}
 	return skb;
+}
+
+struct mpoe_deferred_event {
+	struct mpoe_endpoint *endpoint;
+	union mpoe_evt evt;
+};
+
+static void
+mpoe_medium_frag_skb_destructor(struct sk_buff *skb)
+{
+	struct mpoe_deferred_event * defevent = (void *) skb->sk;
+	struct mpoe_endpoint * endpoint = defevent->endpoint;
+	union mpoe_evt * evt;
+
+	/* FIXME: need to acquire the endpoint */
+
+	evt = mpoe_find_next_eventq_slot(endpoint);
+	if (!evt) {
+		printk(KERN_INFO "MPoE: Failed to complete send of MEDIUM packet because of event queue full\n");
+		/* FIXME: the application sucks, it should take care of events sooner, queue it? */
+		return;
+	}
+	printk("destructor called\n");
+
+	memcpy(&evt->send_done, &defevent->evt, sizeof(struct mpoe_evt_send_done));
+	kfree(defevent);
 }
 
 int
@@ -220,8 +249,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	struct mpoe_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	struct page * page;
-	union mpoe_evt * evt;
-	struct mpoe_evt_send_done * event;
+	struct mpoe_deferred_event * event;
 	int ret;
 	uint32_t length;
 
@@ -240,20 +268,18 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
-	evt = mpoe_find_next_eventq_slot(endpoint);
-	if (!evt) {
-		printk(KERN_INFO "MPoE: Failed to send MEDIUM packet because of event queue full\n");
-		ret = -EBUSY;
+	event = kmalloc(sizeof(*event), GFP_KERNEL);
+	if (!event) {
+		printk(KERN_INFO "MPoE: Failed to allocate event\n");
+		ret = -ENOMEM;
 		goto out;
 	}
-	event = &evt->send_done;
 
 	skb = mpoe_new_skb(ifp, sizeof(*mh));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create medium skb\n");
 		ret = -ENOMEM;
-		/* FIXME: restore the event in the queue */
-		goto out;
+		goto out_with_event;
 	}
 
 	/* locate headers */
@@ -285,15 +311,19 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	skb->len += length;
 	skb->data_len = length;
 
-	dev_queue_xmit(skb);
+	/* prepare the deferred event */
+	event->endpoint = endpoint;
+	event->evt.send_done.lib_cookie = cmd.lib_cookie;
+	event->evt.generic.type = MPOE_EVT_SEND_DONE;
+	skb->sk = (void *) event;
+	skb->destructor = mpoe_medium_frag_skb_destructor;
 
-	/* return the event */
-	event->lib_cookie = cmd.lib_cookie;
-	/* set the type at the end so that user-space does not find the slot on error */
-	event->type = MPOE_EVT_SEND_DONE;
+	dev_queue_xmit(skb);
 
 	return 0;
 
+ out_with_event:
+	kfree(event);
  out:
 	return ret;
 }

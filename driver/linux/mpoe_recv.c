@@ -11,6 +11,7 @@
 union mpoe_evt *
 mpoe_find_next_eventq_slot(struct mpoe_endpoint *endpoint)
 {
+	/* FIXME: need locking */
 	union mpoe_evt *slot = endpoint->next_eventq_slot;
 	if (slot->generic.type != MPOE_EVT_NONE) {
 		printk(KERN_INFO "MPoE: Event queue full, no event slot available for endpoint %d\n",
