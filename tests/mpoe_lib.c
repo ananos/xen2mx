@@ -274,7 +274,6 @@ mpoe_progress(struct mpoe_endpoint * ep)
       req->generic.status.ep = event->src_endpoint;
       req->generic.status.match_info = event->match_info;
       req->generic.status.msg_length = length;
-      req->generic.status.xfer_length = length;
       req->recv.buffer = unexp_buffer;
 
       memcpy(unexp_buffer, (void *) evt->recv_tiny.data, length);
@@ -330,7 +329,6 @@ mpoe_progress(struct mpoe_endpoint * ep)
       req->generic.status.ep = event->src_endpoint;
       req->generic.status.match_info = event->match_info;
       req->generic.status.msg_length = length;
-      req->generic.status.xfer_length = length;
       req->recv.buffer = unexp_buffer;
 
       memcpy(unexp_buffer, recvq_buffer, length);
@@ -595,15 +593,16 @@ mpoe_irecv(struct mpoe_endpoint *ep,
     req = mpoe_queue_first_request(&ep->unexp_req_q);
     mpoe_dequeue_request(&ep->sent_req_q, req);
 
-    if (length > req->recv.length)
-      length = req->recv.length;
+    /* compute xfer length */
+    if (length > req->generic.status.msg_length)
+      length = req->generic.status.msg_length;
+    req->generic.status.xfer_length = length;
+
+    /* copy data from the unexpected buffer */
     memcpy(buffer, req->recv.buffer, length);
     free(req->recv.buffer);
-    req->recv.buffer = buffer;
 
-    req->generic.status.xfer_length = length;
     req->generic.state = MPOE_REQUEST_STATE_DONE;
-
     mpoe_enqueue_request(&ep->done_req_q, req);
 
   } else {
