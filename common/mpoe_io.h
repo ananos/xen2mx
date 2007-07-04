@@ -131,8 +131,10 @@ struct mpoe_cmd_send_medium {
 	uint8_t dest_endpoint;
 	uint8_t sendq_page_offset;
 	/* 8 */
-	uint32_t length;
-	uint32_t offset;
+	uint32_t msg_length;
+	uint16_t length;
+	uint8_t seqnum;
+	uint8_t pipeline;
 	/* 16 */
 	uint64_t match_info;
 	/* 24 */
@@ -254,8 +256,10 @@ union mpoe_evt {
 		uint8_t src_endpoint;
 		uint8_t pad1;
 		/* 8 */
-		uint32_t length;
-		uint32_t offset;
+		uint32_t msg_length;
+		uint16_t length;
+		uint8_t seqnum;
+		uint8_t pipeline;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */

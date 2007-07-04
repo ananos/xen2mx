@@ -16,6 +16,7 @@ struct mpoe_endpoint {
   struct list_head sent_req_q;
   struct list_head unexp_req_q;
   struct list_head recv_req_q;
+  struct list_head multifraq_medium_recv_req_q;
   struct list_head done_req_q;
 };
 
@@ -68,14 +69,27 @@ struct mpoe__generic_request {
 
 union mpoe_request {
   struct mpoe__generic_request generic;
+
   struct {
     struct mpoe__generic_request generic;
     uint32_t lib_cookie;
+    union {
+      struct {
+	uint32_t frames_pending_nr;
+      } medium;
+    } type;
   } send;
+
   struct {
     struct mpoe__generic_request generic;
     void * buffer;
     unsigned long length;
+    union {
+      struct {
+	uint32_t frames_received_mask;
+	uint32_t accumulated_length;
+      } medium;
+    } type;
   } recv;
 };
 

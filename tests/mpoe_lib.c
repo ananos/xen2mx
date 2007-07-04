@@ -151,6 +151,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
   INIT_LIST_HEAD(&ep->sent_req_q);
   INIT_LIST_HEAD(&ep->unexp_req_q);
   INIT_LIST_HEAD(&ep->recv_req_q);
+  INIT_LIST_HEAD(&ep->multifraq_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->done_req_q);
 
   *epp = ep;
@@ -357,34 +358,77 @@ mpoe_progress(struct mpoe_endpoint * ep)
   }
 
   case MPOE_EVT_RECV_MEDIUM: {
+    struct mpoe_evt_recv_medium * event = &((union mpoe_evt *)evt)->recv_medium;
     union mpoe_request * req;
+    int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
+    char * buffer = ep->recvq + evt_index*4096; /* FIXME: get pagesize somehow */
+    unsigned long msg_length = event->msg_length;
+    unsigned long chunk = event->length;
+    unsigned long seqnum = event->seqnum;
+    unsigned long offset = seqnum << (10 + event->pipeline); /* FIXME */
 
-    if (mpoe_queue_empty(&ep->recv_req_q)) {
-      printf("missed a medium unexpected\n");
-      /* FIXME */
-    } else {
-      struct mpoe_evt_recv_medium * event = &((union mpoe_evt *)evt)->recv_medium;
-      int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
-      char * buffer = ep->recvq + evt_index*4096; /* FIXME: get pagesize somehow */
-      unsigned long length;
+    printf("got a medium seqnum %d pipeline %d length %d offset %d of total %d\n",
+	   seqnum, event->pipeline, chunk, offset, msg_length);
+
+    if (!mpoe_queue_empty(&ep->multifraq_medium_recv_req_q)) {
+      /* message already partially received */
+
+      req = mpoe_queue_first_request(&ep->multifraq_medium_recv_req_q);
+
+      if (req->recv.type.medium.frames_received_mask & (1 << seqnum))
+	/* already received this frame */
+	break;
+
+      /* take care of the data chunk */
+      if (offset + chunk > msg_length)
+	chunk = msg_length - offset;
+      memcpy(req->recv.buffer + offset, buffer, chunk);
+      req->recv.type.medium.frames_received_mask |= 1 << seqnum;
+      req->recv.type.medium.accumulated_length += chunk;
+
+      if (req->recv.type.medium.accumulated_length == msg_length) {
+	req->generic.state = MPOE_REQUEST_STATE_DONE;
+	mpoe_dequeue_request(&ep->multifraq_medium_recv_req_q, req);
+	mpoe_enqueue_request(&ep->done_req_q, req);
+      }
+
+      /* FIXME: do not duplicate all the code like this */
+
+    } else if (!mpoe_queue_empty(&ep->recv_req_q)) {
+      /* first fragment of a new message */
 
       req = mpoe_queue_first_request(&ep->recv_req_q);
       mpoe_dequeue_request(&ep->recv_req_q, req);
-      req->generic.state = MPOE_REQUEST_STATE_DONE;
 
-      /* FIXME: support multiple frames */
-
+      /* set basic fields */
       mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
       req->generic.status.ep = event->src_endpoint;
       req->generic.status.match_info = event->match_info;
 
-      length = event->length > req->recv.length
-	? req->recv.length : event->length;
-      req->generic.status.msg_length = event->length;
-      req->generic.status.xfer_length = length;
-      memcpy(req->recv.buffer, buffer, length);
+      /* compute message length */
+      req->generic.status.msg_length = msg_length;
+      if (msg_length > req->recv.length)
+	msg_length = req->recv.length;
+      req->generic.status.xfer_length = msg_length;
 
-      mpoe_enqueue_request(&ep->done_req_q, req);
+      /* take care of the data chunk */
+      if (offset + chunk > msg_length)
+	chunk = msg_length - offset;
+      memcpy(req->recv.buffer + offset, buffer, chunk);
+      req->recv.type.medium.frames_received_mask = 1 << seqnum;
+      req->recv.type.medium.accumulated_length = chunk;
+
+      if (chunk == msg_length) {
+	req->generic.state = MPOE_REQUEST_STATE_DONE;
+	mpoe_enqueue_request(&ep->done_req_q, req);
+      } else {
+	mpoe_enqueue_request(&ep->multifraq_medium_recv_req_q, req);
+      }
+
+    } else {
+
+      printf("missed a medium unexpected\n");
+      /* FIXME */
     }
     break;
   }
@@ -394,6 +438,12 @@ mpoe_progress(struct mpoe_endpoint * ep)
     union mpoe_request * req;
     printf("send done, cookie %ld\n", (unsigned long) lib_cookie);
     req = mpoe_find_request_by_cookie(ep, lib_cookie);
+
+    /* if medium not done, do nothing */
+    if (req->generic.type == MPOE_REQUEST_TYPE_SEND_MEDIUM
+	&& --req->send.type.medium.frames_pending_nr)
+      break;
+
     mpoe_dequeue_request(&ep->sent_req_q, req);
     mpoe_lib_cookie_free(ep, lib_cookie);
     req->generic.state = MPOE_REQUEST_STATE_DONE;
@@ -477,21 +527,38 @@ mpoe_isend(struct mpoe_endpoint *ep,
 
   } else {
     struct mpoe_cmd_send_medium medium_param;
+    uint32_t remaining = length;
+    uint32_t offset = 0;
+    int frames;
+    int i;
 
+    frames = (length + 4095) >> 12; /* FIXME */
     mpoe_mac_addr_copy(&medium_param.dest_addr, dest_addr);
     medium_param.dest_endpoint = dest_endpoint;
     medium_param.match_info = match_info;
-    medium_param.length = length;
+    medium_param.pipeline = 2; /* always send full pages */
     medium_param.lib_cookie = lib_cookie;
-    memcpy(ep->sendq + 23 * 4096, buffer, length);
-    medium_param.sendq_page_offset = 23;
+    medium_param.msg_length = length;
 
-    err = ioctl(ep->fd, MPOE_CMD_SEND_MEDIUM, &medium_param);
-    if (err < 0) {
-      ret = mpoe_errno_to_return(errno, "ioctl send/medium");
-      goto out_with_cookie;
+    for(i=0; i<frames; i++) {
+      unsigned long chunk = remaining > 4096 ? 4096 : remaining;
+      medium_param.length = chunk;
+      medium_param.seqnum = i;
+      medium_param.sendq_page_offset = i;
+      printf("sending medium seqnum %d pipeline 2 length %d of total %d\n", i, chunk, length);
+      memcpy(ep->sendq + i * 4096, buffer + offset, length);
+
+      err = ioctl(ep->fd, MPOE_CMD_SEND_MEDIUM, &medium_param);
+      if (err < 0) {
+	ret = mpoe_errno_to_return(errno, "ioctl send/medium");
+	goto out_with_cookie;
+      }
+
+      remaining -= chunk;
+      offset += chunk;
     }
 
+    req->send.type.medium.frames_pending_nr = frames;
     req->generic.type = MPOE_REQUEST_TYPE_SEND_MEDIUM;
 
   }

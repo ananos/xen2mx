@@ -1,7 +1,16 @@
-* factorize mpoe_basic send functions once unexpected small and medium are ready
+* unexpected medium
 
-* nice cookies
-* drop send events sincethey are synchronous
+* mark unexp as done once entirely received, pending before
+
+* factorize mpoe_basic send functions once unexpected medium are ready
+* check data instead of displaying
+
+* add a macro to set match_a/b in the driver send functions
+
+* drop tiny/small/... send events since they are synchronous
+* add a skb destructor with the event attached for medium
+* nice cookies, using the sendq offset?
+* improve lib_cookie -> req association
 
 * check length of packets before copying to the recvq
 
@@ -18,13 +27,9 @@
 
 * true sleeping in the kernel
   - always wakeup on event?
-* nice request queues
 * hide internals from the application
 * medium level helpers for tools accessing small part of internals
-* unexpected medium
-* multiple frame mediums
 * matching
-* improve lib_cookie -> req association
 * seqnum for in-order matching, associated with lib_cookie
 
 * truc messages

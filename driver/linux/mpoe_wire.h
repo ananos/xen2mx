@@ -42,9 +42,9 @@ struct mpoe_pkt_msg {
 
 struct mpoe_pkt_medium_frag {
 	struct mpoe_pkt_msg msg;
-	uint16_t length; /* FIXME: unused ? */
-	uint8_t seqnum; /* FIXME: unused ? */
-	uint8_t pipeline; /* FIXME: unused ? */
+	uint16_t length;
+	uint8_t seqnum;
+	uint8_t pipeline;
 	uint32_t pad;
 };
 

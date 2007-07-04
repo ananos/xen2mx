@@ -186,8 +186,11 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	/* fill event */
 	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
 	event->src_endpoint = medium->msg.src_endpoint;
-	event->length = medium->msg.length;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(&medium->msg);
+	event->msg_length = medium->msg.length;
+	event->length = medium->length;
+	event->seqnum = medium->seqnum;
+	event->pipeline = medium->pipeline;
 
 	/* copy data in recvq slot */
 	recvq_slot = mpoe_find_next_recvq_slot(endpoint);

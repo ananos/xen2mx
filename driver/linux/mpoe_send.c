@@ -270,9 +270,12 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	mh->body.medium.msg.src_endpoint = endpoint->endpoint_index;
 	mh->body.medium.msg.dst_endpoint = cmd.dest_endpoint;
 	mh->body.medium.msg.ptype = MPOE_PKT_MEDIUM;
-	mh->body.medium.msg.length = length;
 	mh->body.medium.msg.match_a = cmd.match_info >> 32;
 	mh->body.medium.msg.match_b = cmd.match_info & 0xffffffff;
+	mh->body.medium.msg.length = cmd.msg_length;
+	mh->body.medium.length = length;
+	mh->body.medium.seqnum = cmd.seqnum;
+	mh->body.medium.pipeline = cmd.pipeline;
 
 	/* attach the sendq page */
 	page = vmalloc_to_page(endpoint->sendq + (cmd.sendq_page_offset << PAGE_SHIFT));
