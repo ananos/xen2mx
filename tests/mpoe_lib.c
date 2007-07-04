@@ -475,7 +475,6 @@ mpoe_isend(struct mpoe_endpoint *ep,
 {
   union mpoe_request * req;
   mpoe_return_t ret;
-  uint32_t lib_cookie;
   int err;
 
   req = malloc(sizeof(union mpoe_request));
@@ -483,9 +482,6 @@ mpoe_isend(struct mpoe_endpoint *ep,
     ret = mpoe_errno_to_return(ENOMEM, "isend request malloc");
     goto out;
   }
-
-  lib_cookie = mpoe_lib_cookie_alloc(ep, req);
-  /* FIXME: check failed */
 
   if (length <= MPOE_TINY_MAX) {
     struct mpoe_cmd_send_tiny tiny_param;
@@ -502,8 +498,12 @@ mpoe_isend(struct mpoe_endpoint *ep,
       ret = mpoe_errno_to_return(errno, "ioctl send/tiny");
       goto out_with_cookie;
     }
+    /* no need to wait for a done event, tiny is synchronous */
 
     req->generic.type = MPOE_REQUEST_TYPE_SEND_TINY;
+    req->generic.status.context = context;
+    req->generic.state = MPOE_REQUEST_STATE_DONE;
+    mpoe_enqueue_request(&ep->done_req_q, req);
 
   } else if (length <= MPOE_SMALL_MAX) {
     struct mpoe_cmd_send_small small_param;
@@ -520,15 +520,23 @@ mpoe_isend(struct mpoe_endpoint *ep,
       ret = mpoe_errno_to_return(errno, "ioctl send/small");
       goto out_with_cookie;
     }
+    /* no need to wait for a done event, small is synchronous */
 
     req->generic.type = MPOE_REQUEST_TYPE_SEND_SMALL;
+    req->generic.status.context = context;
+    req->generic.state = MPOE_REQUEST_STATE_DONE;
+    mpoe_enqueue_request(&ep->done_req_q, req);
 
   } else {
     struct mpoe_cmd_send_medium medium_param;
     uint32_t remaining = length;
     uint32_t offset = 0;
+    uint32_t lib_cookie;
     int frames;
     int i;
+
+    lib_cookie = mpoe_lib_cookie_alloc(ep, req);
+    /* FIXME: check failed */
 
     frames = (length + 4095) >> 12; /* FIXME */
     mpoe_mac_addr_copy(&medium_param.dest_addr, dest_addr);
@@ -556,15 +564,15 @@ mpoe_isend(struct mpoe_endpoint *ep,
       offset += chunk;
     }
 
+    /* need to wait for a done event, since the sendq pages
+     * might still be in use
+     */
     req->send.type.medium.frames_pending_nr = frames;
     req->generic.type = MPOE_REQUEST_TYPE_SEND_MEDIUM;
-
+    req->generic.status.context = context;
+    req->generic.state = MPOE_REQUEST_STATE_PENDING;
+    mpoe_enqueue_request(&ep->sent_req_q, req);
   }
-
-  req->generic.state = MPOE_REQUEST_STATE_PENDING;
-  req->generic.status.context = context;
-
-  mpoe_enqueue_request(&ep->sent_req_q, req);
 
   mpoe_progress(ep);
 
