@@ -1,0 +1,24 @@
+CC	=	gcc
+
+CFLAGS	=	-Wall
+CFLAGS	+=	-g -O2
+CFLAGS	+=	-I@top_srcdir@/common
+
+SRC	=	mpoe_lib.c
+OBJ	=	$(subst .c,.o,$(SRC))
+LIB	=	mpoe_lib.a
+
+.PHONY: all clean
+
+all: $(LIB) assertions
+
+$(LIB): $(OBJ)
+	ar cr $(LIB) $(OBJ)
+
+assertions: mpoe_assertions.o
+
+%.o: @srcdir@/%.c @srcdir@/mpoe_lib.h @srcdir@/mpoe_internals.h
+	$(CC) -c $(CFLAGS) $< -o $@
+
+clean:
+	$(RM) $(LIB) *.o

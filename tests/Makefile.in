@@ -8,23 +8,21 @@ CC	=	gcc
 
 CFLAGS	=	-Wall
 CFLAGS	+=	-g -O2
-CFLAGS	+=	-I@top_srcdir@/common
+CFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libmpoe
 
 LD	=	gcc
 
-LIB	=	mpoe_lib.o
+LIB	=	@top_builddir@/libmpoe/mpoe_lib.a
 
 .PHONY: all clean $(TESTS)
 
-all: $(TESTS) assertions
+all: $(TESTS)
 
-$(TESTS): %: %.o $(LIB)
-	$(LD) $^ -o $@
+$(TESTS): %: %.o
+	$(LD) $^ $(LIB) -o $@
 
-assertions: mpoe_assertions.o
-
-%.o: @srcdir@/%.c @srcdir@/mpoe_lib.h
+%.o: @srcdir@/%.c @top_srcdir@/libmpoe/mpoe_lib.h @top_srcdir@/libmpoe/mpoe_internals.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	$(RM) $(TESTS) $(LIB) *.o
+	$(RM) $(TESTS) *.o

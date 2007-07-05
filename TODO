@@ -33,6 +33,7 @@
 * retransmission
 
 * nice #define for recvq/sendq "page" sizes
+* nice #define for pipeline
 
 * no need to pad event to 64 ? no need to put the type at the end, but write it after the rest
 * ntoh[sl] fields

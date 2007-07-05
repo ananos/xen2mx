@@ -88,4 +88,4 @@ echo "" >> ${CHECKS_OUTPUT}
 echo "#endif /* __mpoe_checks_h__ */" >> ${CHECKS_OUTPUT}
 
 
-AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild tests/Makefile)
+AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild libmpoe/Makefile tests/Makefile)

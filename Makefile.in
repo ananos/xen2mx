@@ -2,7 +2,7 @@
 
 all: driver tests
 
-clean: clean-driver clean-tests
+clean: clean-driver clean-lib clean-tests
 
 driver:
 	$(MAKE) -C driver/linux
@@ -10,7 +10,13 @@ driver:
 clean-driver:
 	$(MAKE) -C driver/linux clean
 
-tests:
+lib:
+	$(MAKE) -C libmpoe
+
+clean-lib:
+	$(MAKE) -C libmpoe clean
+
+tests: lib
 	$(MAKE) -C tests 
 
 clean-tests:
@@ -20,4 +26,5 @@ wc:
 	wc -cl \
 		driver/linux/*.[ch] \
 		common/*.h \
-		tests/*.[ch]
+		libmpoe/*.[ch] \
+		tests/*.c
