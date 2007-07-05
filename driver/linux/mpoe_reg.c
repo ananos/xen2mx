@@ -79,26 +79,26 @@ int
 mpoe_register_user_region(struct mpoe_endpoint * endpoint,
 			  void __user * uparam)
 {
-	struct mpoe_cmd_register_region cmd_hdr;
+	struct mpoe_cmd_register_region cmd;
 	struct mpoe_user_region * region;
 	struct mpoe_cmd_region_segment * usegs;
 	int ret, i;
 
-	ret = copy_from_user(&cmd_hdr, uparam, sizeof(cmd_hdr));
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (ret) {
-		printk(KERN_ERR "MPoE: Failed to read register region cmd hdr\n");
+		printk(KERN_ERR "MPoE: Failed to read register region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
-	if (cmd_hdr.id >= MPOE_USER_REGION_MAX) {
-		printk(KERN_ERR "MPoE: Cannot register invalid region %d\n", cmd_hdr.id);
+	if (cmd.id >= MPOE_USER_REGION_MAX) {
+		printk(KERN_ERR "MPoE: Cannot register invalid region %d\n", cmd.id);
 		ret = -EINVAL;
 		goto out;
 	}
 
 	/* get the list of segments */
-	usegs = kmalloc(sizeof(struct mpoe_cmd_region_segment) * cmd_hdr.nr_segments,
+	usegs = kmalloc(sizeof(struct mpoe_cmd_region_segment) * cmd.nr_segments,
 			GFP_KERNEL);
 	if (!usegs) {
 		printk(KERN_ERR "MPoE: Failed to allocate segments for user region\n");
@@ -106,17 +106,17 @@ mpoe_register_user_region(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
-	ret = copy_from_user(usegs, (void __user *)(unsigned long) cmd_hdr.segments,
-			     sizeof(struct mpoe_cmd_region_segment) * cmd_hdr.nr_segments);
+	ret = copy_from_user(usegs, (void __user *)(unsigned long) cmd.segments,
+			     sizeof(struct mpoe_cmd_region_segment) * cmd.nr_segments);
 	if (ret) {
-		printk(KERN_ERR "MPoE: Failed to read register region cmd hdr\n");
+		printk(KERN_ERR "MPoE: Failed to read register region cmd\n");
 		ret = -EFAULT;
 		goto out_with_usegs;
 	}
 
 	/* allocate the region */
 	region = kzalloc(sizeof(struct mpoe_user_region)
-			 + cmd_hdr.nr_segments * sizeof(struct mpoe_user_region_segment),
+			 + cmd.nr_segments * sizeof(struct mpoe_user_region_segment),
 			 GFP_KERNEL);
 	if (!region) {
 		printk(KERN_ERR "MPoE: failed to allocate user region\n");
@@ -129,7 +129,7 @@ mpoe_register_user_region(struct mpoe_endpoint * endpoint,
 
 	down_write(&current->mm->mmap_sem);
 
-	for(i=0; i<cmd_hdr.nr_segments; i++) {
+	for(i=0; i<cmd.nr_segments; i++) {
 		ret = mpoe_register_user_region_segment(&usegs[i], &region->segments[i]);
 		if (ret < 0) {
 			up_write(&current->mm->mmap_sem);
@@ -142,13 +142,13 @@ mpoe_register_user_region(struct mpoe_endpoint * endpoint,
 
 	spin_lock(&endpoint->user_regions_lock);
 
-	if (endpoint->user_regions[cmd_hdr.id]) {
-		printk(KERN_ERR "MPoE: Cannot register busy region %d\n", cmd_hdr.id);
+	if (endpoint->user_regions[cmd.id]) {
+		printk(KERN_ERR "MPoE: Cannot register busy region %d\n", cmd.id);
 		ret = -EBUSY;
 		spin_unlock(&endpoint->user_regions_lock);
 		goto out_with_region;
 	}
-	endpoint->user_regions[cmd_hdr.id] = region;
+	endpoint->user_regions[cmd.id] = region;
 
 	spin_unlock(&endpoint->user_regions_lock);
 
@@ -167,35 +167,35 @@ int
 mpoe_deregister_user_region(struct mpoe_endpoint * endpoint,
 			    void __user * uparam)
 {
-	struct mpoe_cmd_deregister_region cmd_hdr;
+	struct mpoe_cmd_deregister_region cmd;
 	struct mpoe_user_region * region;
 	int ret;
 
-	ret = copy_from_user(&cmd_hdr, uparam, sizeof(cmd_hdr));
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (ret) {
-		printk(KERN_ERR "MPoE: Failed to read deregister region cmd hdr\n");
+		printk(KERN_ERR "MPoE: Failed to read deregister region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
-	if (cmd_hdr.id >= MPOE_USER_REGION_MAX) {
-		printk(KERN_ERR "MPoE: Cannot deregister invalid region %d\n", cmd_hdr.id);
+	if (cmd.id >= MPOE_USER_REGION_MAX) {
+		printk(KERN_ERR "MPoE: Cannot deregister invalid region %d\n", cmd.id);
 		ret = -EINVAL;
 		goto out;
 	}
 
 	spin_lock(&endpoint->user_regions_lock);
 
-	region = endpoint->user_regions[cmd_hdr.id];
+	region = endpoint->user_regions[cmd.id];
 	if (!region) {
-		printk(KERN_ERR "MPoE: Cannot register unexisting region %d\n", cmd_hdr.id);
+		printk(KERN_ERR "MPoE: Cannot register unexisting region %d\n", cmd.id);
 		ret = -EINVAL;
 		spin_unlock(&endpoint->user_regions_lock);
 		goto out;
 	}
 
 	mpoe__deregister_user_region(region);
-	endpoint->user_regions[cmd_hdr.id] = NULL;
+	endpoint->user_regions[cmd.id] = NULL;
 
 	spin_unlock(&endpoint->user_regions_lock);
 
