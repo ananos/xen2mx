@@ -1,3 +1,5 @@
+* use frag instead of frame everywhere
+
 * unexpected medium
 
 * factorize mpoe_basic send functions once unexpected medium are ready
@@ -28,8 +30,6 @@
 * notify messages
 * connect messages
 * retransmission
-
-* nice #define for pipeline
 
 * no need to pad event to 64 ? no need to put the type at the end, but write it after the rest
 * ntoh[sl] fields

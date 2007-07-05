@@ -443,7 +443,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
     unsigned long msg_length = event->msg_length;
     unsigned long chunk = event->length;
     unsigned long seqnum = event->seqnum;
-    unsigned long offset = seqnum << (10 + event->pipeline); /* FIXME */
+    unsigned long offset = seqnum << (MPOE_MEDIUM_FRAG_PIPELINE_BASE + event->pipeline);
 
     printf("got a medium seqnum %d pipeline %d length %d offset %d of total %d\n",
 	   seqnum, event->pipeline, chunk, offset, msg_length);
@@ -613,7 +613,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     int frames;
     int i;
 
-    frames = (length + 4095) >> 12; /* FIXME */
+    frames = MPOE_MEDIUM_FRAGS_NR(length);
     mpoe_debug_assert(frames <= 8); /* for the sendq_index array above */
 
     if (mpoe_endpoint_sendq_map_get(ep, frames, req, sendq_index) < 0)
@@ -623,17 +623,18 @@ mpoe_isend(struct mpoe_endpoint *ep,
     mpoe_mac_addr_copy(&medium_param.dest_addr, dest_addr);
     medium_param.dest_endpoint = dest_endpoint;
     medium_param.match_info = match_info;
-    medium_param.pipeline = 2; /* always send full pages */
+    medium_param.pipeline = MPOE_MEDIUM_FRAG_PIPELINE;
     /* FIXME: medium_param.lib_cookie = lib_cookie; */
     medium_param.msg_length = length;
 
     for(i=0; i<frames; i++) {
-      unsigned long chunk = remaining > 4096 ? 4096 : remaining;
+      unsigned long chunk = remaining > MPOE_MEDIUM_FRAG_LENGTH_MAX
+	? MPOE_MEDIUM_FRAG_LENGTH_MAX : remaining;
       medium_param.length = chunk;
       medium_param.seqnum = i;
       medium_param.sendq_page_offset = sendq_index[i];
       printf("sending medium seqnum %d pipeline 2 length %d of total %d\n", i, chunk, length);
-      memcpy(ep->sendq + sendq_index[i] * 4096, buffer + offset, length);
+      memcpy(ep->sendq + (sendq_index[i] << MPOE_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, length);
 
       err = ioctl(ep->fd, MPOE_CMD_SEND_MEDIUM, &medium_param);
       if (err < 0) {
