@@ -1,4 +1,5 @@
 #include "mpoe_types.h"
+#include "mpoe_io.h"
 
 #include <linux/if.h>
 
@@ -14,4 +15,7 @@ assertions(void)
   CHECK(MPOE_IF_NAMESIZE == IFNAMSIZ);
   CHECK(sizeof(struct mpoe_mac_addr) == sizeof(((struct ethhdr *)NULL)->h_dest));
   CHECK(sizeof(struct mpoe_mac_addr) == sizeof(((struct ethhdr *)NULL)->h_source));
+  CHECK(PAGE_SIZE%MPOE_SENDQ_ENTRY_SIZE == 0);
+  CHECK(PAGE_SIZE%MPOE_RECVQ_ENTRY_SIZE == 0);
+  CHECK(sizeof(union mpoe_evt) == MPOE_EVENTQ_ENTRY_SIZE);
 }
