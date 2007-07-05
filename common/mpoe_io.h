@@ -16,7 +16,7 @@
 #define MPOE_EVENTQ_SIZE	(64*1024)
 #define MPOE_EVENTQ_OFFSET	(2*4096)
 
-#define MPOE_TINY_MAX           32 /* check that sizeof(mpoe_evt_recv_tiny) is 64 */
+#define MPOE_TINY_MAX           32
 #define MPOE_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
 
 #define MPOE_USER_REGION_MAX		255

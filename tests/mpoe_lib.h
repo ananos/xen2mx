@@ -8,8 +8,6 @@
 #include "mpoe_io.h"
 #include "mpoe_list.h"
 
-/* FIXME: assertion to check MPOE_IF_NAMESIZE == IF_NAMESIZE */
-
 struct mpoe_endpoint {
   int fd;
   void * recvq, * sendq, * eventq;

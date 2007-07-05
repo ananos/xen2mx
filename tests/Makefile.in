@@ -16,10 +16,12 @@ LIB	=	mpoe_lib.o
 
 .PHONY: all clean $(TESTS)
 
-all: $(TESTS)
+all: $(TESTS) assertions
 
 $(TESTS): %: %.o $(LIB)
 	$(LD) $^ -o $@
+
+assertions: mpoe_assertions.o
 
 %.o: @srcdir@/%.c @srcdir@/mpoe_lib.h
 	$(CC) -c $(CFLAGS) $< -o $@
