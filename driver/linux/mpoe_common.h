@@ -62,7 +62,6 @@ mpoe_mac_addr_of_netdevice(struct net_device * ifp,
 	memcpy(mpoe_addr, ifp->dev_addr, sizeof(struct mpoe_mac_addr));
 }
 
-/* FIXME: assert sizes are equal */
 static inline void
 mpoe_ethhdr_src_to_mac_addr(struct mpoe_mac_addr * mpoe_addr,
 			    struct ethhdr * eh)

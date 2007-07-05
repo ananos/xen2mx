@@ -12,4 +12,6 @@ void
 assertions(void)
 {
   CHECK(MPOE_IF_NAMESIZE == IFNAMSIZ);
+  CHECK(sizeof(struct mpoe_mac_addr) == sizeof(((struct ethhdr *)NULL)->h_dest));
+  CHECK(sizeof(struct mpoe_mac_addr) == sizeof(((struct ethhdr *)NULL)->h_source));
 }
