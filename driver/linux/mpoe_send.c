@@ -56,7 +56,7 @@ mpoe_medium_frag_skb_destructor(struct sk_buff *skb)
 	}
 	printk("destructor called\n");
 
-	memcpy(&evt->send_done, &defevent->evt, sizeof(struct mpoe_evt_send_done));
+	memcpy(&evt->send_medium_frag_done, &defevent->evt, sizeof(struct mpoe_evt_send_medium_frag_done));
 
 	/* release objects now */
 	mpoe_endpoint_release(endpoint);
@@ -279,8 +279,8 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 
 	/* prepare the deferred event */
 	event->endpoint = endpoint;
-	event->evt.send_done.lib_cookie = cmd.lib_cookie;
-	event->evt.generic.type = MPOE_EVT_SEND_DONE;
+	event->evt.send_medium_frag_done.sendq_page_offset = cmd.sendq_page_offset;
+	event->evt.generic.type = MPOE_EVT_SEND_MEDIUM_FRAG_DONE;
 	skb->sk = (void *) event;
 	skb->destructor = mpoe_medium_frag_skb_destructor;
 

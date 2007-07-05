@@ -1,10 +1,9 @@
+* debug options
+
 * unexpected medium
 
 * factorize mpoe_basic send functions once unexpected medium are ready
 * check data instead of displaying
-
-* nice cookies, using the sendq offset?
-* improve lib_cookie -> req association
 
 * single medium send done event by using a refcount in the deferred event? how to factorize them on post?
 

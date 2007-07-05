@@ -97,6 +97,95 @@ mpoe_get_board_count(uint32_t * count)
 
 /* FIXME: get board id */
 
+static inline int
+mpoe_endpoint_sendq_map_init(struct mpoe_endpoint * ep)
+{
+  int nr_sendq_entries = MPOE_SENDQ_SIZE/4096; /* FIXME */
+  struct mpoe_sendq_entry * array;
+  int i;
+
+  array = malloc(nr_sendq_entries * sizeof(struct mpoe_sendq_entry));
+  if (!array)
+    return -ENOMEM;
+
+  ep->sendq_map.array = array;
+
+  for(i=0; i<nr_sendq_entries; i++) {
+    array[i].user = NULL;
+    array[i].next_free = i+1;
+  }
+  array[nr_sendq_entries-1].next_free = -1;
+  ep->sendq_map.first_free = 0;
+  ep->sendq_map.nr_free = nr_sendq_entries;
+
+  return 0;
+}
+
+static inline void
+mpoe_endpoint_sendq_map_exit(struct mpoe_endpoint * ep)
+{
+  free(ep->sendq_map.array);
+}
+
+static inline int
+mpoe_endpoint_sendq_map_get(struct mpoe_endpoint * ep,
+			    int nr, void * user, int * founds)
+{
+  struct mpoe_sendq_entry * array = ep->sendq_map.array;
+  int index, i;
+
+#if 0 /* FIXME debug */
+  assert((ep->sendq_map.first_free == -1) == (ep->sendq_map.nr_free == 0));
+#endif
+
+  if (ep->sendq_map.nr_free < nr)
+    return -1;
+
+  index = ep->sendq_map.first_free;
+  for(i=0; i<nr; i++) {
+    int next_free;
+
+#if 0 /* FIXME: debug */
+    assert(index >= 0);
+#endif
+
+    next_free = array[index].next_free;
+
+#if 0 /* FIXME: debug */
+    assert(array[index].user == NULL);
+    array[index].next_free = -1;
+#endif
+
+    array[index].user = user;
+    founds[i] = index;
+    index = next_free;
+  }
+  ep->sendq_map.first_free = index;
+  ep->sendq_map.nr_free -= nr;
+
+  return 0;
+}
+
+static inline void *
+mpoe_endpoint_sendq_map_put(struct mpoe_endpoint * ep,
+			    int index)
+{
+  struct mpoe_sendq_entry * array = ep->sendq_map.array;
+  void * user = array[index].user;
+
+#if 0 /* FIXME: debug */
+  assert(user != NULL);
+  assert(array[index].next_free == -1);
+#endif
+
+  array[index].user = NULL;
+  array[index].next_free = ep->sendq_map.first_free;
+  ep->sendq_map.first_free = index;
+  ep->sendq_map.nr_free++;
+
+  return user;
+}
+
 mpoe_return_t
 mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 		   struct mpoe_endpoint **epp)
@@ -131,6 +220,13 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
   }
   fprintf(stderr, "Successfully attached endpoint %d/%d\n", 0, 34);
 
+  /* prepare the sendq */
+  err = mpoe_endpoint_sendq_map_init(ep);
+  if (err < 0) {
+    ret = mpoe_errno_to_return(-err, "sendq_map init");
+    goto out_with_attached;
+  }
+
   /* mmap */
   sendq = mmap(0, MPOE_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_SENDQ_OFFSET);
   recvq = mmap(0, MPOE_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_RECVQ_OFFSET);
@@ -139,7 +235,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
       || recvq == (void *) -1
       || eventq == (void *) -1) {
     ret = mpoe_errno_to_return(errno, "mmap");
-    goto out_with_attached;
+    goto out_with_sendq_map;
   }
   printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
 
@@ -158,6 +254,8 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 
   return MPOE_SUCCESS;
 
+ out_with_sendq_map:
+  mpoe_endpoint_sendq_map_exit(ep);
  out_with_attached:
   /* could detach here, but close will do it */
  out_with_fd:
@@ -205,34 +303,6 @@ static inline int
 mpoe_queue_empty(struct list_head *head)
 {
   return list_empty(head);
-}
-
-static int lib_cookie = 0;
-static union mpoe_request * cookie_req;
-
-static inline uint32_t
-mpoe_lib_cookie_alloc(struct mpoe_endpoint *ep,
-		      union mpoe_request *req)
-{
-  /* FIXME */
-  cookie_req = req;
-  req->send.lib_cookie = lib_cookie;
-  return lib_cookie++;
-}
-
-static inline union mpoe_request *
-mpoe_find_request_by_cookie(struct mpoe_endpoint *ep,
-			    uint32_t cookie)
-{
-  /* FIXME */
-  return cookie_req;
-}
-
-static inline void
-mpoe_lib_cookie_free(struct mpoe_endpoint *ep,
-		     uint32_t cookie)
-{
-  /* FIXME */
 }
 
 static mpoe_return_t
@@ -431,19 +501,17 @@ mpoe_progress(struct mpoe_endpoint * ep)
     break;
   }
 
-  case MPOE_EVT_SEND_DONE: {
-    uint32_t lib_cookie = evt->send_done.lib_cookie;
-    union mpoe_request * req;
-    printf("send done, cookie %ld\n", (unsigned long) lib_cookie);
-    req = mpoe_find_request_by_cookie(ep, lib_cookie);
+  case MPOE_EVT_SEND_MEDIUM_FRAG_DONE: {
+    uint16_t sendq_page_offset = evt->send_medium_frag_done.sendq_page_offset;
+    union mpoe_request * req = mpoe_endpoint_sendq_map_put(ep, sendq_page_offset);
+    assert(req
+	   && req->generic.type == MPOE_REQUEST_TYPE_SEND_MEDIUM);
 
-    /* if medium not done, do nothing */
-    if (req->generic.type == MPOE_REQUEST_TYPE_SEND_MEDIUM
-	&& --req->send.type.medium.frames_pending_nr)
+    /* message is not done */
+    if (--req->send.type.medium.frames_pending_nr)
       break;
 
     mpoe_dequeue_request(&ep->sent_req_q, req);
-    mpoe_lib_cookie_free(ep, lib_cookie);
     req->generic.state = MPOE_REQUEST_STATE_DONE;
     mpoe_enqueue_request(&ep->done_req_q, req);
     break;
@@ -490,13 +558,13 @@ mpoe_isend(struct mpoe_endpoint *ep,
     tiny_param.hdr.dest_endpoint = dest_endpoint;
     tiny_param.hdr.match_info = match_info;
     tiny_param.hdr.length = length;
-    tiny_param.hdr.lib_cookie = lib_cookie;
+    /* FIXME: tiny_param.hdr.lib_cookie = lib_cookie; */
     memcpy(tiny_param.data, buffer, length);
 
     err = ioctl(ep->fd, MPOE_CMD_SEND_TINY, &tiny_param);
     if (err < 0) {
       ret = mpoe_errno_to_return(errno, "ioctl send/tiny");
-      goto out_with_cookie;
+      goto out_with_req;
     }
     /* no need to wait for a done event, tiny is synchronous */
 
@@ -512,13 +580,13 @@ mpoe_isend(struct mpoe_endpoint *ep,
     small_param.dest_endpoint = dest_endpoint;
     small_param.match_info = match_info;
     small_param.length = length;
-    small_param.lib_cookie = lib_cookie;
+    /* FIXME: small_param.lib_cookie = lib_cookie; */
     small_param.vaddr = (uintptr_t) buffer;
 
     err = ioctl(ep->fd, MPOE_CMD_SEND_SMALL, &small_param);
     if (err < 0) {
       ret = mpoe_errno_to_return(errno, "ioctl send/small");
-      goto out_with_cookie;
+      goto out_with_req;
     }
     /* no need to wait for a done event, small is synchronous */
 
@@ -531,33 +599,36 @@ mpoe_isend(struct mpoe_endpoint *ep,
     struct mpoe_cmd_send_medium medium_param;
     uint32_t remaining = length;
     uint32_t offset = 0;
-    uint32_t lib_cookie;
+    int sendq_index[8];
     int frames;
     int i;
 
-    lib_cookie = mpoe_lib_cookie_alloc(ep, req);
-    /* FIXME: check failed */
-
     frames = (length + 4095) >> 12; /* FIXME */
+    /* FIXME: debug assert frames <= 8 for the sendq_index array */
+
+    if (mpoe_endpoint_sendq_map_get(ep, frames, req, sendq_index) < 0)
+      /* FIXME: queue */
+      assert(0);
+
     mpoe_mac_addr_copy(&medium_param.dest_addr, dest_addr);
     medium_param.dest_endpoint = dest_endpoint;
     medium_param.match_info = match_info;
     medium_param.pipeline = 2; /* always send full pages */
-    medium_param.lib_cookie = lib_cookie;
+    /* FIXME: medium_param.lib_cookie = lib_cookie; */
     medium_param.msg_length = length;
 
     for(i=0; i<frames; i++) {
       unsigned long chunk = remaining > 4096 ? 4096 : remaining;
       medium_param.length = chunk;
       medium_param.seqnum = i;
-      medium_param.sendq_page_offset = i;
+      medium_param.sendq_page_offset = sendq_index[i];
       printf("sending medium seqnum %d pipeline 2 length %d of total %d\n", i, chunk, length);
-      memcpy(ep->sendq + i * 4096, buffer + offset, length);
+      memcpy(ep->sendq + sendq_index[i] * 4096, buffer + offset, length);
 
       err = ioctl(ep->fd, MPOE_CMD_SEND_MEDIUM, &medium_param);
       if (err < 0) {
 	ret = mpoe_errno_to_return(errno, "ioctl send/medium");
-	goto out_with_cookie;
+	goto out_with_req;
       }
 
       remaining -= chunk;
@@ -580,8 +651,6 @@ mpoe_isend(struct mpoe_endpoint *ep,
 
   return MPOE_SUCCESS;
 
- out_with_cookie:
-  mpoe_lib_cookie_free(ep, lib_cookie);
  out_with_req:
   free(req);
  out:

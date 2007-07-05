@@ -128,17 +128,19 @@ struct mpoe_cmd_send_small {
 struct mpoe_cmd_send_medium {
 	struct mpoe_mac_addr dest_addr;
 	uint8_t dest_endpoint;
-	uint8_t sendq_page_offset;
+	uint8_t pad1;
 	/* 8 */
 	uint32_t msg_length;
 	uint16_t length;
 	uint8_t seqnum;
 	uint8_t pipeline;
 	/* 16 */
-	uint64_t match_info;
-	/* 24 */
 	uint32_t lib_cookie;
-	/* 28 */
+	uint16_t sendq_page_offset;
+	uint16_t pad2;
+	/* 24 */
+	uint64_t match_info;
+	/* 32 */
 };
 
 struct mpoe_cmd_send_pull {
@@ -173,11 +175,11 @@ struct mpoe_cmd_deregister_region {
  * Event types
  */
 
-#define MPOE_EVT_NONE		0x00
-#define MPOE_EVT_SEND_DONE	0x01
-#define MPOE_EVT_RECV_TINY	0x02
-#define MPOE_EVT_RECV_SMALL	0x03
-#define MPOE_EVT_RECV_MEDIUM	0x04
+#define MPOE_EVT_NONE			0x00
+#define MPOE_EVT_SEND_MEDIUM_FRAG_DONE	0x01
+#define MPOE_EVT_RECV_TINY		0x12
+#define MPOE_EVT_RECV_SMALL		0x13
+#define MPOE_EVT_RECV_MEDIUM		0x14
 
 static inline const char *
 mpoe_strevt(unsigned int type)
@@ -185,8 +187,8 @@ mpoe_strevt(unsigned int type)
 	switch (type) {
 	case MPOE_EVT_NONE:
 		return "None";
-	case MPOE_EVT_SEND_DONE:
-		return "Send Tiny";
+	case MPOE_EVT_SEND_MEDIUM_FRAG_DONE:
+		return "Send Medium Fragment Done";
 	case MPOE_EVT_RECV_TINY:
 		return "Receive Tiny";
 	case MPOE_EVT_RECV_SMALL:
@@ -210,13 +212,13 @@ union mpoe_evt {
 		/* 64 */
 	} generic;
 
-	/* send tiny */
-	struct mpoe_evt_send_done {
-		uint32_t lib_cookie;
-		char pad[59];
+	/* send medium frag done */
+	struct mpoe_evt_send_medium_frag_done {
+		uint16_t sendq_page_offset;
+		char pad[61];
 		uint8_t type;
 		/* 64 */
-	} send_done;
+	} send_medium_frag_done;
 
 	/* recv tiny */
 	struct mpoe_evt_recv_tiny {

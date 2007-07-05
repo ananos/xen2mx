@@ -8,6 +8,15 @@
 #include "mpoe_io.h"
 #include "mpoe_list.h"
 
+struct mpoe_sendq_map {
+  int first_free;
+  int nr_free;
+  struct mpoe_sendq_entry {
+    int next_free;
+    void * user;
+  } * array;
+};
+
 struct mpoe_endpoint {
   int fd;
   void * recvq, * sendq, * eventq;
@@ -17,6 +26,7 @@ struct mpoe_endpoint {
   struct list_head recv_req_q;
   struct list_head multifraq_medium_recv_req_q;
   struct list_head done_req_q;
+  struct mpoe_sendq_map sendq_map;
 };
 
 enum mpoe__request_type {
