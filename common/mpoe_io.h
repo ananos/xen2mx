@@ -16,7 +16,7 @@
 #define MPOE_EVENTQ_SIZE	(64*1024)
 #define MPOE_EVENTQ_OFFSET	(2*4096)
 
-#define MPOE_TINY_MAX           32
+#define MPOE_TINY_MAX           32 /* check that sizeof(mpoe_evt_recv_tiny) is 64 */
 #define MPOE_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
 
 #define MPOE_USER_REGION_MAX		255
@@ -213,7 +213,7 @@ union mpoe_evt {
 	/* send tiny */
 	struct mpoe_evt_send_done {
 		uint32_t lib_cookie;
-		char data[59];
+		char pad[59];
 		uint8_t type;
 		/* 64 */
 	} send_done;
@@ -225,7 +225,9 @@ union mpoe_evt {
 		uint8_t length;
 		uint64_t match_info;
 		/* 16 */
-		char data[47];
+		char data[MPOE_TINY_MAX];
+		/* 48 */
+		uint8_t pad[15];
 		uint8_t type;
 		/* 64 */
 	} recv_tiny;
@@ -241,7 +243,7 @@ union mpoe_evt {
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
-		char data[39];
+		uint8_t pad3[39];
 		uint8_t type;
 		/* 64 */
 	} recv_small;
@@ -259,7 +261,7 @@ union mpoe_evt {
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
-		char data[39];
+		uint8_t pad2[39];
 		uint8_t type;
 		/* 64 */
 	} recv_medium;
