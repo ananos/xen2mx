@@ -270,7 +270,6 @@ mpoe_progress(struct mpoe_endpoint * ep)
       }
 
       mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
-      /* FIXME: set state and status.code? */
       req->generic.status.ep = event->src_endpoint;
       req->generic.status.match_info = event->match_info;
       req->generic.status.msg_length = length;
@@ -278,6 +277,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
 
       memcpy(unexp_buffer, (void *) evt->recv_tiny.data, length);
 
+      req->generic.state = MPOE_REQUEST_STATE_DONE;
       mpoe_enqueue_request(&ep->unexp_req_q, req);
 
     } else {
@@ -325,7 +325,6 @@ mpoe_progress(struct mpoe_endpoint * ep)
       }
 
       mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
-      /* FIXME: set state and status.code? */
       req->generic.status.ep = event->src_endpoint;
       req->generic.status.match_info = event->match_info;
       req->generic.status.msg_length = length;
@@ -333,6 +332,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
 
       memcpy(unexp_buffer, recvq_buffer, length);
 
+      req->generic.state = MPOE_REQUEST_STATE_DONE;
       mpoe_enqueue_request(&ep->unexp_req_q, req);
 
     } else {
