@@ -19,6 +19,8 @@ enum mpoe_pkt_type {
 	MPOE_PKT_TYPE_MAX
 };
 
+#include <linux/if_ether.h>
+
 struct mpoe_pkt_head {
 	struct ethhdr eth;
 	uint16_t sender_peer_index; /* FIXME: unused */
