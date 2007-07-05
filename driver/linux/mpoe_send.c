@@ -226,7 +226,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	}
 
 	length = cmd.length;
-	if (length > PAGE_SIZE) { /* FIXME */
+	if (length > MPOE_SENDQ_ENTRY_SIZE) {
 		printk(KERN_ERR "MPoE: Cannot send more than %ld as a medium (tried %ld)\n",
 		       PAGE_SIZE * 1UL, (unsigned long) length);
 		ret = -EINVAL;

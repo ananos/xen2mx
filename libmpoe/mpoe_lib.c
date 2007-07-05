@@ -111,23 +111,22 @@ mpoe_get_board_count(uint32_t * count)
 static inline int
 mpoe_endpoint_sendq_map_init(struct mpoe_endpoint * ep)
 {
-  int nr_sendq_entries = MPOE_SENDQ_SIZE/4096; /* FIXME */
   struct mpoe_sendq_entry * array;
   int i;
 
-  array = malloc(nr_sendq_entries * sizeof(struct mpoe_sendq_entry));
+  array = malloc(MPOE_SENDQ_ENTRY_NR * sizeof(struct mpoe_sendq_entry));
   if (!array)
     return -ENOMEM;
 
   ep->sendq_map.array = array;
 
-  for(i=0; i<nr_sendq_entries; i++) {
+  for(i=0; i<MPOE_SENDQ_ENTRY_NR; i++) {
     array[i].user = NULL;
     array[i].next_free = i+1;
   }
-  array[nr_sendq_entries-1].next_free = -1;
+  array[MPOE_SENDQ_ENTRY_NR-1].next_free = -1;
   ep->sendq_map.first_free = 0;
-  ep->sendq_map.nr_free = nr_sendq_entries;
+  ep->sendq_map.nr_free = MPOE_SENDQ_ENTRY_NR;
 
   return 0;
 }
@@ -384,7 +383,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
   case MPOE_EVT_RECV_SMALL: {
     struct mpoe_evt_recv_small * event = &((union mpoe_evt *)evt)->recv_small;
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
-    char * recvq_buffer = ep->recvq + evt_index*4096; /* FIXME: get pagesize somehow */
+    char * recvq_buffer = ep->recvq + evt_index * MPOE_RECVQ_ENTRY_SIZE;
     union mpoe_request *req;
     unsigned long length;
 
@@ -440,7 +439,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
     struct mpoe_evt_recv_medium * event = &((union mpoe_evt *)evt)->recv_medium;
     union mpoe_request * req;
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
-    char * buffer = ep->recvq + evt_index*4096; /* FIXME: get pagesize somehow */
+    char * buffer = ep->recvq + evt_index * MPOE_RECVQ_ENTRY_SIZE;
     unsigned long msg_length = event->msg_length;
     unsigned long chunk = event->length;
     unsigned long seqnum = event->seqnum;

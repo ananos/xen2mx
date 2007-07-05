@@ -128,7 +128,7 @@ int main(void)
       break;
 
     case MPOE_EVT_RECV_MEDIUM: {
-      char * buf = recvq + ((char *) evt - (char *) eventq)/sizeof(*evt)*4096; /* FIXME: get pagesize somehow */
+      char * buf = recvq + ((char *) evt - (char *) eventq)/sizeof(*evt) * MPOE_RECVQ_ENTRY_SIZE;
       printf("medium length %d contains \"%s\"\n", evt->medium.length, buf);
       break;
    }

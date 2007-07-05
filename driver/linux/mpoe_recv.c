@@ -198,7 +198,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	int err;
 
 	/* check packet length */
-	if (length > 4096) { /* FIXME: MPOE_RECVQ_ENTRY_SIZE? */
+	if (length > MPOE_RECVQ_ENTRY_SIZE) {
 		printk(KERN_DEBUG "MPoE: Dropping too long MEDIUM fragment packet (length %d)\n",
 		       (unsigned) length);
 		err = -EINVAL;
