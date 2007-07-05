@@ -106,7 +106,7 @@ struct mpoe_cmd_send_tiny {
 		uint32_t lib_cookie;
 		/* 20 */
 	} hdr;
-	char data[64-sizeof(struct mpoe_cmd_send_tiny_hdr)];
+	char data[64-sizeof(struct mpoe_cmd_send_tiny_hdr)]; /* FIXME: use MPOE_TINY_MAX? or a [0] for variable size? */
 	/* 64 */
 };
 
@@ -122,8 +122,6 @@ struct mpoe_cmd_send_small {
 	uint64_t vaddr;
 	uint64_t match_info;
 	/* 32 */
-	uint64_t pad3[4];
-	/* 64 */
 };
 
 struct mpoe_cmd_send_medium {
@@ -140,8 +138,6 @@ struct mpoe_cmd_send_medium {
 	/* 24 */
 	uint32_t lib_cookie;
 	/* 28 */
-	uint32_t pad3[9];
-	/* 64 */
 };
 
 struct mpoe_cmd_send_pull {
@@ -156,8 +152,7 @@ struct mpoe_cmd_send_pull {
 	uint32_t remote_rdma_id;
 	/* 24 */
 	uint32_t remote_offset; /* FIXME: 64bits ? */
-	uint32_t pad2[9];
-	/* 64 */
+	/* 28 */
 };
 
 struct mpoe_cmd_register_region {
