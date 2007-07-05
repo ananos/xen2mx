@@ -1,7 +1,6 @@
 #include "mpoe_io.h"
 #include "mpoe_lib.h"
 #include "mpoe_internals.h"
-#include "mpoe_list.h"
 
 #include <net/if.h>
 
