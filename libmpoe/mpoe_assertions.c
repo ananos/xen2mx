@@ -14,6 +14,7 @@
 void
 assertions(void)
 {
-  CHECK(sizeof(struct mpoe_evt_recv_tiny) == 64);
+  CHECK(sizeof(struct mpoe_evt_recv_tiny) == MPOE_EVENTQ_ENTRY_SIZE);
+  CHECK(sizeof(union mpoe_evt) == MPOE_EVENTQ_ENTRY_SIZE);
   CHECK(MPOE_IF_NAMESIZE == IF_NAMESIZE);
 }
