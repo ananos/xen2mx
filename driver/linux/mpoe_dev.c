@@ -388,11 +388,11 @@ mpoe_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 	if (endpoint == NULL)
 		return -EINVAL;
 
-	if (offset == MPOE_SENDQ_OFFSET && size == MPOE_SENDQ_SIZE)
+	if (offset == MPOE_SENDQ_FILE_OFFSET && size == MPOE_SENDQ_SIZE)
 		return mpoe_remap_vmalloc_range(vma, endpoint->sendq, 0);
-	else if (offset == MPOE_RECVQ_OFFSET && size == MPOE_RECVQ_SIZE)
+	else if (offset == MPOE_RECVQ_FILE_OFFSET && size == MPOE_RECVQ_SIZE)
 		return mpoe_remap_vmalloc_range(vma, endpoint->sendq, MPOE_SENDQ_SIZE >> PAGE_SHIFT);
-	else if (offset == MPOE_EVENTQ_OFFSET && size == MPOE_EVENTQ_SIZE)
+	else if (offset == MPOE_EVENTQ_FILE_OFFSET && size == MPOE_EVENTQ_SIZE)
 		return mpoe_remap_vmalloc_range(vma, endpoint->sendq, (MPOE_SENDQ_SIZE + MPOE_RECVQ_SIZE) >> PAGE_SHIFT);
 	else {
 		printk(KERN_ERR "MPoE: Cannot mmap %lx at %lx\n", size, offset);
