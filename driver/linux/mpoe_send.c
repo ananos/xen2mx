@@ -265,7 +265,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	mh->body.medium.msg.ptype = MPOE_PKT_MEDIUM;
 	MPOE_PKT_FROM_MATCH_INFO(& mh->body.medium.msg, cmd.match_info);
 	mh->body.medium.msg.length = cmd.msg_length;
-	mh->body.medium.length = length;
+	mh->body.medium.frag_length = length;
 	mh->body.medium.seqnum = cmd.seqnum;
 	mh->body.medium.pipeline = cmd.pipeline;
 

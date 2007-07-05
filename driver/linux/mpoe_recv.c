@@ -187,7 +187,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	event->src_endpoint = medium->msg.src_endpoint;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(&medium->msg);
 	event->msg_length = medium->msg.length;
-	event->length = medium->length;
+	event->length = medium->frag_length;
 	event->seqnum = medium->seqnum;
 	event->pipeline = medium->pipeline;
 
