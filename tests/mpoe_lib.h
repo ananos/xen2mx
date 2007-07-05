@@ -2,6 +2,7 @@
 #define __mpoe_lib_h__
 
 #include <string.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #include "mpoe_io.h"
