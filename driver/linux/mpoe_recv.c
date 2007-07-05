@@ -39,8 +39,6 @@ mpoe_find_next_recvq_slot(struct mpoe_endpoint *endpoint)
  * Event reporting routines
  */
 
-#define MPOE_MATCH_INFO_FROM_PKT(_pkt) (((uint64_t) (_pkt)->match_a) << 32) | ((uint64_t) (_pkt)->match_b)
-
 static int
 mpoe_recv_tiny(struct mpoe_iface * iface,
 	       struct mpoe_hdr * mh,

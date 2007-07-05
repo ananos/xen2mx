@@ -114,8 +114,7 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	mh->body.tiny.dst_endpoint = cmd.dest_endpoint;
 	mh->body.tiny.ptype = MPOE_PKT_TINY;
 	mh->body.tiny.length = length;
-	mh->body.tiny.match_a = cmd.match_info >> 32;
-	mh->body.tiny.match_b = cmd.match_info & 0xffffffff;
+	MPOE_PKT_FROM_MATCH_INFO(& mh->body.tiny, cmd.match_info);
 
 	/* copy the data right after the header */
 	ret = copy_from_user(mh+1, &((struct mpoe_cmd_send_tiny __user *) uparam)->data, length);
@@ -186,8 +185,7 @@ mpoe_send_small(struct mpoe_endpoint * endpoint,
 	mh->body.small.dst_endpoint = cmd.dest_endpoint;
 	mh->body.small.ptype = MPOE_PKT_SMALL;
 	mh->body.small.length = length;
-	mh->body.small.match_a = cmd.match_info >> 32;
-	mh->body.small.match_b = cmd.match_info & 0xffffffff;
+	MPOE_PKT_FROM_MATCH_INFO(& mh->body.small, cmd.match_info);
 
 	/* copy the data right after the header */
 	ret = copy_from_user(mh+1, (void *)(unsigned long) cmd.vaddr, length);
@@ -265,8 +263,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	mh->body.medium.msg.src_endpoint = endpoint->endpoint_index;
 	mh->body.medium.msg.dst_endpoint = cmd.dest_endpoint;
 	mh->body.medium.msg.ptype = MPOE_PKT_MEDIUM;
-	mh->body.medium.msg.match_a = cmd.match_info >> 32;
-	mh->body.medium.msg.match_b = cmd.match_info & 0xffffffff;
+	MPOE_PKT_FROM_MATCH_INFO(& mh->body.medium.msg, cmd.match_info);
 	mh->body.medium.msg.length = cmd.msg_length;
 	mh->body.medium.length = length;
 	mh->body.medium.seqnum = cmd.seqnum;

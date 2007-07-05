@@ -3,8 +3,6 @@
 * factorize mpoe_basic send functions once unexpected medium are ready
 * check data instead of displaying
 
-* add a macro to set match_a/b in the driver send functions
-
 * nice cookies, using the sendq offset?
 * improve lib_cookie -> req association
 

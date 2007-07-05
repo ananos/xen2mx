@@ -100,6 +100,14 @@ struct mpoe_hdr {
 	} body;
 };
 
+#define MPOE_PKT_FROM_MATCH_INFO(_pkt, _match_info)			\
+do {									\
+	(_pkt)->match_a = (uint32_t) (_match_info >> 32);		\
+	(_pkt)->match_b = (uint32_t) (_match_info & 0xffffffff);	\
+} while (0)
+
+#define MPOE_MATCH_INFO_FROM_PKT(_pkt) (((uint64_t) (_pkt)->match_a) << 32) | ((uint64_t) (_pkt)->match_b)
+
 #endif /* __mpoe_wire_h__ */
 
 /*
