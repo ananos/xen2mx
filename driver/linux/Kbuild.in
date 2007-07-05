@@ -4,3 +4,5 @@ obj-m	+=	mpoe.o
 mpoe-objs	:=	mpoe_main.o mpoe_dev.o \
 			mpoe_net.o mpoe_send.o mpoe_recv.o \
 			mpoe_reg.o mpoe_pull.o
+
+obj-m	+=	mpoe_assertions.o

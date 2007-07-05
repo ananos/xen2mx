@@ -8,7 +8,6 @@
 
 #include "mpoe_wire.h"
 #include "mpoe_io.h"
-/* FIXME: assertion to check MPOE_IF_NAMESIZE == IFNAMSIZ */
 
 enum mpoe_iface_status {
 	/* iface is ready to be used */
