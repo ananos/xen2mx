@@ -453,15 +453,15 @@ mpoe_progress(struct mpoe_endpoint * ep)
 
       req = mpoe_queue_first_request(&ep->multifraq_medium_recv_req_q);
 
-      if (req->recv.type.medium.frames_received_mask & (1 << seqnum))
-	/* already received this frame */
+      if (req->recv.type.medium.frags_received_mask & (1 << seqnum))
+	/* already received this frag */
 	break;
 
       /* take care of the data chunk */
       if (offset + chunk > msg_length)
 	chunk = msg_length - offset;
       memcpy(req->recv.buffer + offset, buffer, chunk);
-      req->recv.type.medium.frames_received_mask |= 1 << seqnum;
+      req->recv.type.medium.frags_received_mask |= 1 << seqnum;
       req->recv.type.medium.accumulated_length += chunk;
 
       if (req->recv.type.medium.accumulated_length == msg_length) {
@@ -493,7 +493,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
       if (offset + chunk > msg_length)
 	chunk = msg_length - offset;
       memcpy(req->recv.buffer + offset, buffer, chunk);
-      req->recv.type.medium.frames_received_mask = 1 << seqnum;
+      req->recv.type.medium.frags_received_mask = 1 << seqnum;
       req->recv.type.medium.accumulated_length = chunk;
 
       if (chunk == msg_length) {
@@ -518,7 +518,7 @@ mpoe_progress(struct mpoe_endpoint * ep)
 	   && req->generic.type == MPOE_REQUEST_TYPE_SEND_MEDIUM);
 
     /* message is not done */
-    if (--req->send.type.medium.frames_pending_nr)
+    if (--req->send.type.medium.frags_pending_nr)
       break;
 
     mpoe_dequeue_request(&ep->sent_req_q, req);
@@ -610,13 +610,13 @@ mpoe_isend(struct mpoe_endpoint *ep,
     uint32_t remaining = length;
     uint32_t offset = 0;
     int sendq_index[8];
-    int frames;
+    int frags;
     int i;
 
-    frames = MPOE_MEDIUM_FRAGS_NR(length);
-    mpoe_debug_assert(frames <= 8); /* for the sendq_index array above */
+    frags = MPOE_MEDIUM_FRAGS_NR(length);
+    mpoe_debug_assert(frags <= 8); /* for the sendq_index array above */
 
-    if (mpoe_endpoint_sendq_map_get(ep, frames, req, sendq_index) < 0)
+    if (mpoe_endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0)
       /* FIXME: queue */
       assert(0);
 
@@ -627,7 +627,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     /* FIXME: medium_param.lib_cookie = lib_cookie; */
     medium_param.msg_length = length;
 
-    for(i=0; i<frames; i++) {
+    for(i=0; i<frags; i++) {
       unsigned long chunk = remaining > MPOE_MEDIUM_FRAG_LENGTH_MAX
 	? MPOE_MEDIUM_FRAG_LENGTH_MAX : remaining;
       medium_param.length = chunk;
@@ -649,7 +649,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     /* need to wait for a done event, since the sendq pages
      * might still be in use
      */
-    req->send.type.medium.frames_pending_nr = frames;
+    req->send.type.medium.frags_pending_nr = frags;
     req->generic.type = MPOE_REQUEST_TYPE_SEND_MEDIUM;
     req->generic.status.context = context;
     req->generic.state = MPOE_REQUEST_STATE_PENDING;

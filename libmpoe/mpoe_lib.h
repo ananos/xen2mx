@@ -84,7 +84,7 @@ union mpoe_request {
     uint32_t lib_cookie;
     union {
       struct {
-	uint32_t frames_pending_nr;
+	uint32_t frags_pending_nr;
       } medium;
     } type;
   } send;
@@ -95,7 +95,7 @@ union mpoe_request {
     unsigned long length;
     union {
       struct {
-	uint32_t frames_received_mask;
+	uint32_t frags_received_mask;
 	uint32_t accumulated_length;
       } medium;
     } type;
