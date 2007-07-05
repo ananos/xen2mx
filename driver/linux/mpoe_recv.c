@@ -47,9 +47,26 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_msg *tiny = &mh->body.tiny;
+	uint16_t length = tiny->length;
 	union mpoe_evt *evt;
 	struct mpoe_evt_recv_tiny *event;
 	int err = 0;
+
+	/* check packet length */
+	if (length > MPOE_TINY_MAX) {
+		printk(KERN_DEBUG "MPoE: Dropping too long TINY packet (length %d)\n",
+		       (unsigned) length);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* check actual data length */
+	if (length != skb->len - sizeof(struct mpoe_hdr)) {
+		printk(KERN_DEBUG "MPoE: Dropping TINY packet with %d bytes instead of %d\n",
+		       skb->len - sizeof(struct mpoe_hdr), length);
+		err = -EINVAL;
+		goto out;
+	}
 
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, tiny->dst_endpoint);
@@ -72,12 +89,11 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	/* fill event */
 	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
 	event->src_endpoint = tiny->src_endpoint;
-	event->length = tiny->length;
+	event->length = length;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(tiny);
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), event->data,
-			    tiny->length);
+	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), event->data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
@@ -102,10 +118,27 @@ mpoe_recv_small(struct mpoe_iface * iface,
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_msg *small = &mh->body.small;
+	uint16_t length = small->length;
 	union mpoe_evt *evt;
 	struct mpoe_evt_recv_small *event;
 	char *recvq_slot;
 	int err;
+
+	/* check packet length */
+	if (length > MPOE_SMALL_MAX) {
+		printk(KERN_DEBUG "MPoE: Dropping too long SMALL packet (length %d)\n",
+		       (unsigned) length);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* check actual data length */
+	if (length != skb->len - sizeof(struct mpoe_hdr)) {
+		printk(KERN_DEBUG "MPoE: Dropping SMALL packet with %d bytes instead of %d\n",
+		       skb->len - sizeof(struct mpoe_hdr), length);
+		err = -EINVAL;
+		goto out;
+	}
 
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, small->dst_endpoint);
@@ -128,13 +161,12 @@ mpoe_recv_small(struct mpoe_iface * iface,
 	/* fill event */
 	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
 	event->src_endpoint = small->src_endpoint;
-	event->length = small->length;
+	event->length = length;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(small);
 
 	/* copy data in recvq slot */
 	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
-	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot,
-			    skb->len - sizeof(struct mpoe_hdr));
+	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
@@ -159,10 +191,27 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_medium_frag *medium = &mh->body.medium;
+	uint16_t length = medium->frag_length;
 	union mpoe_evt *evt;
 	struct mpoe_evt_recv_medium *event;
 	char *recvq_slot;
 	int err;
+
+	/* check packet length */
+	if (length > 4096) { /* FIXME: MPOE_RECVQ_ENTRY_SIZE? */
+		printk(KERN_DEBUG "MPoE: Dropping too long MEDIUM fragment packet (length %d)\n",
+		       (unsigned) length);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* check actual data length */
+	if (length != skb->len - sizeof(struct mpoe_hdr)) {
+		printk(KERN_DEBUG "MPoE: Dropping MEDIUM fragment with %d bytes instead of %d\n",
+		       skb->len - sizeof(struct mpoe_hdr), length);
+		err = -EINVAL;
+		goto out;
+	}
 
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, medium->msg.dst_endpoint);
@@ -187,14 +236,13 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	event->src_endpoint = medium->msg.src_endpoint;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(&medium->msg);
 	event->msg_length = medium->msg.length;
-	event->length = medium->frag_length;
+	event->length = length;
 	event->seqnum = medium->seqnum;
 	event->pipeline = medium->pipeline;
 
 	/* copy data in recvq slot */
 	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
-	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot,
-			    skb->len - sizeof(struct mpoe_hdr));
+	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 

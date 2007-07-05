@@ -8,8 +8,6 @@
 
 * single medium send done event by using a refcount in the deferred event? how to factorize them on post?
 
-* check length of packets before copying to the recvq
-
 * true pull support
   - events on both sides
   - multiple frames per pull
