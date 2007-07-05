@@ -46,8 +46,6 @@ mpoe_medium_frag_skb_destructor(struct sk_buff *skb)
 	struct mpoe_endpoint * endpoint = defevent->endpoint;
 	union mpoe_evt * evt;
 
-	/* FIXME: need to acquire the endpoint */
-
 	evt = mpoe_find_next_eventq_slot(endpoint);
 	if (!evt) {
 		printk(KERN_INFO "MPoE: Failed to complete send of MEDIUM packet because of event queue full\n");
