@@ -13,6 +13,17 @@
 #include "mpoe_internals.h"
 #include "mpoe_list.h"
 
+#undef MPOE_DEBUG
+//#define MPOE_DEBUG 1
+
+#ifdef MPOE_DEBUG
+#define mpoe_debug_assert(x) assert(x)
+#define mpoe_debug_instr(x) do { x; } while (0)
+#else
+#define mpoe_debug_assert(x) /* nothing */
+#define mpoe_debug_instr(x) /* nothing */
+#endif
+
 static mpoe_return_t
 mpoe_errno_to_return(int error, char * caller)
 {
@@ -134,9 +145,7 @@ mpoe_endpoint_sendq_map_get(struct mpoe_endpoint * ep,
   struct mpoe_sendq_entry * array = ep->sendq_map.array;
   int index, i;
 
-#if 0 /* FIXME debug */
-  assert((ep->sendq_map.first_free == -1) == (ep->sendq_map.nr_free == 0));
-#endif
+  mpoe_debug_assert((ep->sendq_map.first_free == -1) == (ep->sendq_map.nr_free == 0));
 
   if (ep->sendq_map.nr_free < nr)
     return -1;
@@ -145,16 +154,12 @@ mpoe_endpoint_sendq_map_get(struct mpoe_endpoint * ep,
   for(i=0; i<nr; i++) {
     int next_free;
 
-#if 0 /* FIXME: debug */
-    assert(index >= 0);
-#endif
+    mpoe_debug_assert(index >= 0);
 
     next_free = array[index].next_free;
 
-#if 0 /* FIXME: debug */
-    assert(array[index].user == NULL);
-    array[index].next_free = -1;
-#endif
+    mpoe_debug_assert(array[index].user == NULL);
+    mpoe_debug_instr(array[index].next_free = -1);
 
     array[index].user = user;
     founds[i] = index;
@@ -173,10 +178,8 @@ mpoe_endpoint_sendq_map_put(struct mpoe_endpoint * ep,
   struct mpoe_sendq_entry * array = ep->sendq_map.array;
   void * user = array[index].user;
 
-#if 0 /* FIXME: debug */
-  assert(user != NULL);
-  assert(array[index].next_free == -1);
-#endif
+  mpoe_debug_assert(user != NULL);
+  mpoe_debug_assert(array[index].next_free == -1);
 
   array[index].user = NULL;
   array[index].next_free = ep->sendq_map.first_free;
@@ -289,7 +292,15 @@ static inline void
 mpoe_dequeue_request(struct list_head *head,
 		     union mpoe_request *req)
 {
-  /* FIXME: under debug, check that req was in the list */
+#ifdef MPOE_DEBUG
+  struct list_head *e;
+  list_for_each(e, head)
+    if (req == list_entry(e, union mpoe_request, generic.queue_elt))
+      goto found;
+  assert(0);
+
+ found:
+#endif /* MPOE_DEBUG */
   list_del(&req->generic.queue_elt);
 }
 
@@ -604,7 +615,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     int i;
 
     frames = (length + 4095) >> 12; /* FIXME */
-    /* FIXME: debug assert frames <= 8 for the sendq_index array */
+    mpoe_debug_assert(frames <= 8); /* for the sendq_index array above */
 
     if (mpoe_endpoint_sendq_map_get(ep, frames, req, sendq_index) < 0)
       /* FIXME: queue */
