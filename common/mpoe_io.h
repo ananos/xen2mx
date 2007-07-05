@@ -16,7 +16,7 @@
 #define MPOE_EVENTQ_SIZE	(64*1024)
 #define MPOE_EVENTQ_OFFSET	(2*4096)
 
-#define MPOE_TINY_MAX           32 /* at most 48. FIXME: check that it fits in the data field in the request and event below */
+#define MPOE_TINY_MAX           32
 #define MPOE_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
 
 #define MPOE_USER_REGION_MAX		255
@@ -101,13 +101,14 @@ struct mpoe_cmd_send_tiny {
 		struct mpoe_mac_addr dest_addr;
 		uint8_t dest_endpoint;
 		uint8_t length;
+		/* 8 */
 		uint64_t match_info;
 		/* 16 */
 		uint32_t lib_cookie;
 		/* 20 */
 	} hdr;
-	char data[64-sizeof(struct mpoe_cmd_send_tiny_hdr)]; /* FIXME: use MPOE_TINY_MAX? or a [0] for variable size? */
-	/* 64 */
+	char data[MPOE_TINY_MAX];
+	/* 52 */
 };
 
 struct mpoe_cmd_send_small {
