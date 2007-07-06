@@ -326,203 +326,244 @@ mpoe_queue_empty(struct list_head *head)
   return list_empty(head);
 }
 
-static mpoe_return_t
-mpoe_progress(struct mpoe_endpoint * ep)
-{
-  volatile union mpoe_evt * evt;
+typedef mpoe_return_t (*mpoe_process_recv_func_t) (struct mpoe_endpoint *ep,
+						   union mpoe_evt *evt,
+						   void *data);
 
-  evt = ep->next_event;
-  if (evt->generic.type == MPOE_EVT_NONE)
-    return MPOE_SUCCESS;
+static mpoe_return_t
+mpoe_process_recv_tiny(struct mpoe_endpoint *ep,
+		       union mpoe_evt *evt, void *data)
+{
+  struct mpoe_evt_recv_tiny *event = &evt->recv_tiny;
+  union mpoe_request *req;
+  unsigned long length;
+
+  if (mpoe_queue_empty(&ep->recv_req_q)) {
+    void *unexp_buffer;
+
+    req = malloc(sizeof(*req));
+    if (!req) {
+      fprintf(stderr, "Failed to allocate request for unexpected tiny messages, dropping\n");
+      return MPOE_NO_RESOURCES;
+    }
+
+    length = event->length;
+    unexp_buffer = malloc(length);
+    if (!unexp_buffer) {
+      fprintf(stderr, "Failed to allocate buffer for unexpected tiny messages, dropping\n");
+      free(req);
+      return MPOE_NO_RESOURCES;
+    }
+
+    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.ep = event->src_endpoint;
+    req->generic.status.match_info = event->match_info;
+    req->generic.status.msg_length = length;
+    req->recv.buffer = unexp_buffer;
+
+    memcpy(unexp_buffer, data, length);
+
+    req->generic.state = MPOE_REQUEST_STATE_DONE;
+    mpoe_enqueue_request(&ep->unexp_req_q, req);
+
+  } else {
+    req = mpoe_queue_first_request(&ep->recv_req_q);
+    mpoe_dequeue_request(&ep->recv_req_q, req);
+
+    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.ep = event->src_endpoint;
+    req->generic.status.match_info = event->match_info;
+
+    length = event->length > req->recv.length
+      ? req->recv.length : event->length;
+    req->generic.status.msg_length = event->length;
+    req->generic.status.xfer_length = length;
+    memcpy(req->recv.buffer, data, length);
+
+    req->generic.state = MPOE_REQUEST_STATE_DONE;
+    mpoe_enqueue_request(&ep->done_req_q, req);
+  }
+
+  return MPOE_SUCCESS;
+}
+
+static mpoe_return_t
+mpoe_process_recv_small(struct mpoe_endpoint *ep,
+			union mpoe_evt *evt, void *data)
+{
+  struct mpoe_evt_recv_small * event = &evt->recv_small;
+  union mpoe_request *req;
+  unsigned long length;
+
+  if (mpoe_queue_empty(&ep->recv_req_q)) {
+    void *unexp_buffer;
+
+    req = malloc(sizeof(*req));
+    if (!req) {
+      fprintf(stderr, "Failed to allocate request for unexpected small messages, dropping\n");
+      return MPOE_NO_RESOURCES;
+    }
+
+    length = event->length;
+    unexp_buffer = malloc(length);
+    if (!unexp_buffer) {
+      fprintf(stderr, "Failed to allocate buffer for unexpected small messages, dropping\n");
+      free(req);
+      return MPOE_NO_RESOURCES;
+    }
+
+    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.ep = event->src_endpoint;
+    req->generic.status.match_info = event->match_info;
+    req->generic.status.msg_length = length;
+    req->recv.buffer = unexp_buffer;
+
+    memcpy(unexp_buffer, data, length);
+
+    req->generic.state = MPOE_REQUEST_STATE_DONE;
+    mpoe_enqueue_request(&ep->unexp_req_q, req);
+
+  } else {
+    req = mpoe_queue_first_request(&ep->recv_req_q);
+    mpoe_dequeue_request(&ep->recv_req_q, req);
+
+    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.ep = event->src_endpoint;
+    req->generic.status.match_info = event->match_info;
+
+    length = event->length > req->recv.length
+      ? req->recv.length : event->length;
+    req->generic.status.msg_length = event->length;
+    req->generic.status.xfer_length = length;
+    memcpy(req->recv.buffer, data, length);
+
+    req->generic.state = MPOE_REQUEST_STATE_DONE;
+    mpoe_enqueue_request(&ep->done_req_q, req);
+  }
+
+  return MPOE_SUCCESS;
+}
+
+static mpoe_return_t
+mpoe_process_recv_medium(struct mpoe_endpoint *ep,
+			 union mpoe_evt *evt, void *data)
+{
+  struct mpoe_evt_recv_medium * event = &evt->recv_medium;
+  union mpoe_request * req;
+  unsigned long msg_length = event->msg_length;
+  unsigned long chunk = event->frag_length;
+  unsigned long seqnum = event->frag_seqnum;
+  unsigned long offset = seqnum << (MPOE_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
+
+  printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
+	 seqnum, event->frag_pipeline, chunk, offset, msg_length);
+
+  if (!mpoe_queue_empty(&ep->multifraq_medium_recv_req_q)) {
+    /* message already partially received */
+
+    req = mpoe_queue_first_request(&ep->multifraq_medium_recv_req_q);
+
+    if (req->recv.type.medium.frags_received_mask & (1 << seqnum))
+      /* already received this frag */
+      return MPOE_SUCCESS;
+
+    /* take care of the data chunk */
+    if (offset + chunk > msg_length)
+      chunk = msg_length - offset;
+    memcpy(req->recv.buffer + offset, data, chunk);
+    req->recv.type.medium.frags_received_mask |= 1 << seqnum;
+    req->recv.type.medium.accumulated_length += chunk;
+
+    if (req->recv.type.medium.accumulated_length == msg_length) {
+      mpoe_dequeue_request(&ep->multifraq_medium_recv_req_q, req);
+      req->generic.state = MPOE_REQUEST_STATE_DONE;
+      mpoe_enqueue_request(&ep->done_req_q, req);
+    }
+
+    /* FIXME: do not duplicate all the code like this */
+
+  } else if (!mpoe_queue_empty(&ep->recv_req_q)) {
+    /* first fragment of a new message */
+
+    req = mpoe_queue_first_request(&ep->recv_req_q);
+    mpoe_dequeue_request(&ep->recv_req_q, req);
+
+    /* set basic fields */
+    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.ep = event->src_endpoint;
+    req->generic.status.match_info = event->match_info;
+
+    /* compute message length */
+    req->generic.status.msg_length = msg_length;
+    if (msg_length > req->recv.length)
+      msg_length = req->recv.length;
+    req->generic.status.xfer_length = msg_length;
+
+    /* take care of the data chunk */
+    if (offset + chunk > msg_length)
+      chunk = msg_length - offset;
+    memcpy(req->recv.buffer + offset, data, chunk);
+    req->recv.type.medium.frags_received_mask = 1 << seqnum;
+    req->recv.type.medium.accumulated_length = chunk;
+
+    if (chunk == msg_length) {
+      req->generic.state = MPOE_REQUEST_STATE_DONE;
+      mpoe_enqueue_request(&ep->done_req_q, req);
+    } else {
+      mpoe_enqueue_request(&ep->multifraq_medium_recv_req_q, req);
+    }
+
+  } else {
+
+    printf("missed a medium unexpected\n");
+    /* FIXME */
+  }
+
+  return MPOE_SUCCESS;
+}
+
+static mpoe_return_t
+mpoe_process_recv(struct mpoe_endpoint *ep,
+		  union mpoe_evt *evt, mpoe_seqnum_t seqnum, void *data,
+		  mpoe_process_recv_func_t recv_func)
+{
+  printf("got seqnum %d\n", seqnum);
+
+  /* FIXME: check order, do matching, handle unexpected and early */
+
+  return recv_func(ep, evt, data);
+}
+
+static mpoe_return_t
+mpoe_process_event(struct mpoe_endpoint * ep, union mpoe_evt * evt)
+{
+  mpoe_return_t ret = MPOE_SUCCESS;
 
   printf("received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
 
   case MPOE_EVT_RECV_TINY: {
-    struct mpoe_evt_recv_tiny * event = &((union mpoe_evt *)evt)->recv_tiny;
-    union mpoe_request *req;
-    unsigned long length;
-
-    printf("got tiny seqnum %d\n", event->seqnum);
-
-    if (mpoe_queue_empty(&ep->recv_req_q)) {
-      void *unexp_buffer;
-
-      req = malloc(sizeof(*req));
-      if (!req) {
-	fprintf(stderr, "Failed to allocate request for unexpected tiny messages, dropping\n");
-	break;
-      }
-
-      length = event->length;
-      unexp_buffer = malloc(length);
-      if (!unexp_buffer) {
-	fprintf(stderr, "Failed to allocate buffer for unexpected tiny messages, dropping\n");
-	free(req);
-	break;
-      }
-
-      mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
-      req->generic.status.ep = event->src_endpoint;
-      req->generic.status.match_info = event->match_info;
-      req->generic.status.msg_length = length;
-      req->recv.buffer = unexp_buffer;
-
-      memcpy(unexp_buffer, (void *) evt->recv_tiny.data, length);
-
-      req->generic.state = MPOE_REQUEST_STATE_DONE;
-      mpoe_enqueue_request(&ep->unexp_req_q, req);
-
-    } else {
-      req = mpoe_queue_first_request(&ep->recv_req_q);
-      mpoe_dequeue_request(&ep->recv_req_q, req);
-
-      mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
-      req->generic.status.ep = event->src_endpoint;
-      req->generic.status.match_info = event->match_info;
-
-      length = event->length > req->recv.length
-	? req->recv.length : event->length;
-      req->generic.status.msg_length = event->length;
-      req->generic.status.xfer_length = length;
-      memcpy(req->recv.buffer, (void *) evt->recv_tiny.data, length);
-
-      req->generic.state = MPOE_REQUEST_STATE_DONE;
-      mpoe_enqueue_request(&ep->done_req_q, req);
-    }
+    ret = mpoe_process_recv(ep,
+			    evt, evt->recv_tiny.seqnum, evt->recv_tiny.data,
+			    mpoe_process_recv_tiny);
     break;
   }
 
   case MPOE_EVT_RECV_SMALL: {
-    struct mpoe_evt_recv_small * event = &((union mpoe_evt *)evt)->recv_small;
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
     char * recvq_buffer = ep->recvq + evt_index * MPOE_RECVQ_ENTRY_SIZE;
-    union mpoe_request *req;
-    unsigned long length;
-
-    printf("got small seqnum %d\n", event->seqnum);
-
-    if (mpoe_queue_empty(&ep->recv_req_q)) {
-      void *unexp_buffer;
-
-      req = malloc(sizeof(*req));
-      if (!req) {
-	fprintf(stderr, "Failed to allocate request for unexpected small messages, dropping\n");
-	break;
-      }
-
-      length = event->length;
-      unexp_buffer = malloc(length);
-      if (!unexp_buffer) {
-	fprintf(stderr, "Failed to allocate buffer for unexpected small messages, dropping\n");
-	free(req);
-	break;
-      }
-
-      mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
-      req->generic.status.ep = event->src_endpoint;
-      req->generic.status.match_info = event->match_info;
-      req->generic.status.msg_length = length;
-      req->recv.buffer = unexp_buffer;
-
-      memcpy(unexp_buffer, recvq_buffer, length);
-
-      req->generic.state = MPOE_REQUEST_STATE_DONE;
-      mpoe_enqueue_request(&ep->unexp_req_q, req);
-
-    } else {
-      req = mpoe_queue_first_request(&ep->recv_req_q);
-      mpoe_dequeue_request(&ep->recv_req_q, req);
-
-      mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
-      req->generic.status.ep = event->src_endpoint;
-      req->generic.status.match_info = event->match_info;
-
-      length = event->length > req->recv.length
-	? req->recv.length : event->length;
-      req->generic.status.msg_length = event->length;
-      req->generic.status.xfer_length = length;
-      memcpy(req->recv.buffer, recvq_buffer, length);
-
-      req->generic.state = MPOE_REQUEST_STATE_DONE;
-      mpoe_enqueue_request(&ep->done_req_q, req);
-    }
+    ret = mpoe_process_recv(ep,
+			    evt, evt->recv_small.seqnum, recvq_buffer,
+			    mpoe_process_recv_small);
     break;
   }
 
   case MPOE_EVT_RECV_MEDIUM: {
-    struct mpoe_evt_recv_medium * event = &((union mpoe_evt *)evt)->recv_medium;
-    union mpoe_request * req;
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
-    char * buffer = ep->recvq + evt_index * MPOE_RECVQ_ENTRY_SIZE;
-    unsigned long msg_length = event->msg_length;
-    unsigned long chunk = event->frag_length;
-    unsigned long seqnum = event->frag_seqnum;
-    unsigned long offset = seqnum << (MPOE_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
-
-    printf("got a medium seqnum %d frag seqnum %d pipeline %d length %d offset %d of total %d\n",
-	   event->seqnum, seqnum, event->frag_pipeline, chunk, offset, msg_length);
-
-    if (!mpoe_queue_empty(&ep->multifraq_medium_recv_req_q)) {
-      /* message already partially received */
-
-      req = mpoe_queue_first_request(&ep->multifraq_medium_recv_req_q);
-
-      if (req->recv.type.medium.frags_received_mask & (1 << seqnum))
-	/* already received this frag */
-	break;
-
-      /* take care of the data chunk */
-      if (offset + chunk > msg_length)
-	chunk = msg_length - offset;
-      memcpy(req->recv.buffer + offset, buffer, chunk);
-      req->recv.type.medium.frags_received_mask |= 1 << seqnum;
-      req->recv.type.medium.accumulated_length += chunk;
-
-      if (req->recv.type.medium.accumulated_length == msg_length) {
-	mpoe_dequeue_request(&ep->multifraq_medium_recv_req_q, req);
-	req->generic.state = MPOE_REQUEST_STATE_DONE;
-	mpoe_enqueue_request(&ep->done_req_q, req);
-      }
-
-      /* FIXME: do not duplicate all the code like this */
-
-    } else if (!mpoe_queue_empty(&ep->recv_req_q)) {
-      /* first fragment of a new message */
-
-      req = mpoe_queue_first_request(&ep->recv_req_q);
-      mpoe_dequeue_request(&ep->recv_req_q, req);
-
-      /* set basic fields */
-      mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
-      req->generic.status.ep = event->src_endpoint;
-      req->generic.status.match_info = event->match_info;
-
-      /* compute message length */
-      req->generic.status.msg_length = msg_length;
-      if (msg_length > req->recv.length)
-	msg_length = req->recv.length;
-      req->generic.status.xfer_length = msg_length;
-
-      /* take care of the data chunk */
-      if (offset + chunk > msg_length)
-	chunk = msg_length - offset;
-      memcpy(req->recv.buffer + offset, buffer, chunk);
-      req->recv.type.medium.frags_received_mask = 1 << seqnum;
-      req->recv.type.medium.accumulated_length = chunk;
-
-      if (chunk == msg_length) {
-	req->generic.state = MPOE_REQUEST_STATE_DONE;
-	mpoe_enqueue_request(&ep->done_req_q, req);
-      } else {
-	mpoe_enqueue_request(&ep->multifraq_medium_recv_req_q, req);
-      }
-
-    } else {
-
-      printf("missed a medium unexpected\n");
-      /* FIXME */
-    }
+    char * recvq_buffer = ep->recvq + evt_index * MPOE_RECVQ_ENTRY_SIZE;
+    ret = mpoe_process_recv(ep,
+			    evt, evt->recv_medium.seqnum, recvq_buffer,
+			    mpoe_process_recv_medium);
     break;
   }
 
@@ -547,14 +588,30 @@ mpoe_progress(struct mpoe_endpoint * ep)
     assert(0);
   }
 
-  /* mark event as done */
-  evt->generic.type = MPOE_EVT_NONE;
+  return ret;
+}
 
-  /* next event */
-  evt++;
-  if ((void *) evt >= ep->eventq + MPOE_EVENTQ_SIZE)
-    evt = ep->eventq;
-  ep->next_event = (void *) evt;
+static mpoe_return_t
+mpoe_progress(struct mpoe_endpoint * ep)
+{
+  /* process events */
+  while (1) {
+    volatile union mpoe_evt * evt = ep->next_event;
+
+    if (evt->generic.type == MPOE_EVT_NONE)
+      break;
+
+    mpoe_process_event(ep, (union mpoe_evt *) evt);
+
+    /* mark event as done */
+    evt->generic.type = MPOE_EVT_NONE;
+
+    /* next event */
+    evt++;
+    if ((void *) evt >= ep->eventq + MPOE_EVENTQ_SIZE)
+      evt = ep->eventq;
+    ep->next_event = (void *) evt;
+  }
 
   return MPOE_SUCCESS;
 }
