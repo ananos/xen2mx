@@ -284,7 +284,7 @@ static int (*mpoe_cmd_with_endpoint_handlers[])(struct mpoe_endpoint * endpoint,
  */
 static int
 mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
-		   unsigned int cmd, unsigned long arg)
+		   unsigned cmd, unsigned long arg)
 {
 	int ret = 0;
 

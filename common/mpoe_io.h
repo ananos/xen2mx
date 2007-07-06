@@ -59,7 +59,7 @@ struct mpoe_cmd_region_segment {
 #define MPOE_CMD_DEREGISTER_REGION	0x89
 
 static inline const char *
-mpoe_strcmd(unsigned int cmd)
+mpoe_strcmd(unsigned cmd)
 {
 	switch (cmd) {
 	case MPOE_CMD_GET_BOARD_COUNT:
@@ -191,7 +191,7 @@ struct mpoe_cmd_deregister_region {
 #define MPOE_EVT_RECV_MEDIUM		0x14
 
 static inline const char *
-mpoe_strevt(unsigned int type)
+mpoe_strevt(unsigned type)
 {
 	switch (type) {
 	case MPOE_EVT_NONE:

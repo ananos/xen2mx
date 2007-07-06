@@ -94,9 +94,9 @@ struct mpoe_endpoint {
 
 
 struct mpoe_user_region {
-	unsigned int nr_segments;
+	unsigned nr_segments;
 	struct mpoe_user_region_segment {
-		unsigned int offset;
+		unsigned offset;
 		unsigned long length;
 		unsigned long nr_pages;
 		struct page ** pages;

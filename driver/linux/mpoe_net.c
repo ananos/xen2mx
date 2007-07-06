@@ -36,7 +36,7 @@ dev_hold_by_name(const char * ifname)
  * Array, number and lock for the list of ifaces
  */
 static struct mpoe_iface ** mpoe_ifaces;
-static unsigned int mpoe_iface_nr = 0;
+static unsigned mpoe_iface_nr = 0;
 static spinlock_t mpoe_iface_lock = SPIN_LOCK_UNLOCKED;
 
 /*

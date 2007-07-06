@@ -19,7 +19,7 @@ mpoe_register_user_region_segment(struct mpoe_cmd_region_segment * useg,
 				  struct mpoe_user_region_segment * segment)
 {
 	struct page ** pages;
-	unsigned int offset;
+	unsigned offset;
 	unsigned long aligned_vaddr;
 	unsigned long aligned_len;
 	unsigned long nr_pages;
