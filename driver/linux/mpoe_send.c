@@ -52,8 +52,10 @@ mpoe_medium_frag_skb_destructor(struct sk_buff *skb)
 		/* FIXME: the application sucks, it should take care of events sooner, queue it? */
 		return;
 	}
-	printk("destructor called\n");
 
+	/* report the event to user-space (fortunately memcpy will write the ending type after everything
+	 * else so that the application detects the event once it is fully copied)
+	 */
 	memcpy(&evt->send_medium_frag_done, &defevent->evt, sizeof(struct mpoe_evt_send_medium_frag_done));
 
 	/* release objects now */
