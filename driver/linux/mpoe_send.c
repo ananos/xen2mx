@@ -121,6 +121,14 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
+#ifdef MPOE_DEBUG
+	printk("MPoE: sending TINY %d from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x\n",
+	       length,
+	       eh->h_source[0], eh->h_source[1], eh->h_source[2],
+	       eh->h_source[3], eh->h_source[4], eh->h_source[5],
+	       eh->h_dest[0], eh->h_dest[1], eh->h_dest[2],
+	       eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+#endif
 	/* fill mpoe header */
 	mh->body.tiny.src_endpoint = endpoint->endpoint_index;
 	mh->body.tiny.dst_endpoint = cmd.dest_endpoint;
@@ -192,6 +200,15 @@ mpoe_send_small(struct mpoe_endpoint * endpoint,
 	mpoe_mac_addr_to_ethhdr_dst(&cmd.dest_addr, eh);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
+
+#ifdef MPOE_DEBUG
+	printk("MPoE: sending SMALL %d from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x\n",
+	       length,
+	       eh->h_source[0], eh->h_source[1], eh->h_source[2],
+	       eh->h_source[3], eh->h_source[4], eh->h_source[5],
+	       eh->h_dest[0], eh->h_dest[1], eh->h_dest[2],
+	       eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+#endif
 
 	/* fill mpoe header */
 	mh->body.small.src_endpoint = endpoint->endpoint_index;
@@ -273,6 +290,14 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
+#ifdef MPOE_DEBUG
+	printk("MPoE: sending MEDIUM_FRAG %d from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x\n",
+	       frag_length,
+	       eh->h_source[0], eh->h_source[1], eh->h_source[2],
+	       eh->h_source[3], eh->h_source[4], eh->h_source[5],
+	       eh->h_dest[0], eh->h_dest[1], eh->h_dest[2],
+	       eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+#endif
 	/* fill mpoe header */
 	mh->body.medium.msg.src_endpoint = endpoint->endpoint_index;
 	mh->body.medium.msg.dst_endpoint = cmd.dest_endpoint;

@@ -93,6 +93,14 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(tiny);
 	event->seqnum = tiny->lib_seqnum;
 
+#ifdef MPOE_DEBUG
+	printk("MPoE: received TINY %d from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x\n",
+	       length,
+	       eh->h_source[0], eh->h_source[1], eh->h_source[2],
+	       eh->h_source[3], eh->h_source[4], eh->h_source[5],
+	       eh->h_dest[0], eh->h_dest[1], eh->h_dest[2],
+	       eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+#endif
 	/* copy data in event data */
 	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), event->data, length);
 	/* cannot fail since pages are allocated by us */
@@ -165,6 +173,15 @@ mpoe_recv_small(struct mpoe_iface * iface,
 	event->length = length;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(small);
 	event->seqnum = small->lib_seqnum;
+
+#ifdef MPOE_DEBUG
+	printk("MPoE: received SMALL %d from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x\n",
+	       length,
+	       eh->h_source[0], eh->h_source[1], eh->h_source[2],
+	       eh->h_source[3], eh->h_source[4], eh->h_source[5],
+	       eh->h_dest[0], eh->h_dest[1], eh->h_dest[2],
+	       eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+#endif
 
 	/* copy data in recvq slot */
 	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
@@ -243,6 +260,14 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	event->frag_seqnum = medium->frag_seqnum;
 	event->frag_pipeline = medium->frag_pipeline;
 
+#ifdef MPOE_DEBUG
+	printk("MPoE: received MEDIUM FRAG %d from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x\n",
+	       frag_length,
+	       eh->h_source[0], eh->h_source[1], eh->h_source[2],
+	       eh->h_source[3], eh->h_source[4], eh->h_source[5],
+	       eh->h_dest[0], eh->h_dest[1], eh->h_dest[2],
+	       eh->h_dest[3], eh->h_dest[4], eh->h_dest[5]);
+#endif
 	/* copy data in recvq slot */
 	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
 	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot, frag_length);
