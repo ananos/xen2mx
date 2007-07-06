@@ -456,7 +456,8 @@ mpoe_process_recv_medium(struct mpoe_endpoint *ep,
   unsigned long offset = seqnum << (MPOE_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
 
   printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
-	 seqnum, event->frag_pipeline, chunk, offset, msg_length);
+	 (unsigned int) seqnum, (unsigned int) event->frag_pipeline, (unsigned int) chunk,
+	 (unsigned int) offset, (unsigned int) msg_length);
 
   if (!mpoe_queue_empty(&ep->multifraq_medium_recv_req_q)) {
     /* message already partially received */
@@ -707,7 +708,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     medium_param.seqnum = seqnum;
 
     for(i=0; i<frags; i++) {
-      unsigned long chunk = remaining > MPOE_MEDIUM_FRAG_LENGTH_MAX
+      unsigned int chunk = remaining > MPOE_MEDIUM_FRAG_LENGTH_MAX
 	? MPOE_MEDIUM_FRAG_LENGTH_MAX : remaining;
       medium_param.frag_length = chunk;
       medium_param.frag_seqnum = i;
