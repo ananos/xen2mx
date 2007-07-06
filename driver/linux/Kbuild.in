@@ -1,3 +1,4 @@
+EXTRA_CFLAGS	+=	-imacros @abs_top_builddir@/common/mpoe_config.h
 EXTRA_CFLAGS	+=	-I@abs_top_srcdir@/common/
 
 obj-m	+=	mpoe.o

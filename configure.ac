@@ -3,6 +3,9 @@ AC_PREREQ(2.53)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/mpoe)
 
+########################
+# Kernel related config
+
 LINUX_SRC="/lib/modules/"`uname -r`"/source"
 LINUX_BUILD="/lib/modules/"`uname -r`"/build"
 # If the user changes the source, use it as build by default
@@ -87,5 +90,18 @@ grep "sk_buff_data_t.*mac_header;" ${LINUX_HDR}/include/linux/skbuff.h > /dev/nu
 echo "" >> ${CHECKS_OUTPUT}
 echo "#endif /* __mpoe_checks_h__ */" >> ${CHECKS_OUTPUT}
 
+###############
+# Other config
 
+AC_ARG_ENABLE(debug, [  --enable-debug		enable debugging features],
+	      enable_debug=$enableval, enable_debug=no)
+AC_MSG_CHECKING(if debug is enabled)
+if test x$enable_debug = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(MPOE_DEBUG, [1], [Define to enable debug features])
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_CONFIG_HEADER(common/mpoe_config.h)
 AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild libmpoe/Makefile tests/Makefile)

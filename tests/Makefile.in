@@ -8,6 +8,7 @@ CC	=	gcc
 
 CFLAGS	=	-Wall
 CFLAGS	+=	-g -O2
+CFLAGS	+=	-imacros @top_builddir@/common/mpoe_config.h
 CFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libmpoe
 
 LD	=	gcc
