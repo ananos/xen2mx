@@ -9,7 +9,7 @@ MPOE_DIR	=	@abs_builddir@
 
 all:
 	@echo Linking kernel module source files to local directory
-	@for file in $(wildcard @srcdir@/*.[ch]) ; do ln -sf $$file ; done
+	@for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || ln -sf $$file ; done
 	@echo Building kernel module
 	make -C $(LINUX_DIR) M=$(MPOE_DIR)
 
