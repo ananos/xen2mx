@@ -253,7 +253,8 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
     ret = mpoe_errno_to_return(errno, "ioctl OPEN_ENDPOINT");
     goto out_with_fd;
   }
-  fprintf(stderr, "Successfully attached endpoint %d/%d\n", 0, 34);
+  fprintf(stderr, "Successfully attached endpoint %d/%d\n",
+	  index, board_index);
 
   /* prepare the sendq */
   err = mpoe_endpoint_sendq_map_init(ep);
