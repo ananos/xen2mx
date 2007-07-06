@@ -7,10 +7,10 @@
 static char * mpoe_ifnames = NULL;
 module_param(mpoe_ifnames, charp, 0); /* unreadable, since modifiable by the attached sysfs file */
 
-int mpoe_iface_max = 4;
+int mpoe_iface_max = 32;
 module_param(mpoe_iface_max, uint, S_IRUGO);
 
-int mpoe_endpoint_max = 4;
+int mpoe_endpoint_max = 8;
 module_param(mpoe_endpoint_max, uint, S_IRUGO);
 
 static __init int
