@@ -441,12 +441,12 @@ mpoe_progress(struct mpoe_endpoint * ep)
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
     char * buffer = ep->recvq + evt_index * MPOE_RECVQ_ENTRY_SIZE;
     unsigned long msg_length = event->msg_length;
-    unsigned long chunk = event->length;
-    unsigned long seqnum = event->seqnum;
-    unsigned long offset = seqnum << (MPOE_MEDIUM_FRAG_PIPELINE_BASE + event->pipeline);
+    unsigned long chunk = event->frag_length;
+    unsigned long seqnum = event->frag_seqnum;
+    unsigned long offset = seqnum << (MPOE_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
 
     printf("got a medium seqnum %d pipeline %d length %d offset %d of total %d\n",
-	   seqnum, event->pipeline, chunk, offset, msg_length);
+	   seqnum, event->frag_pipeline, chunk, offset, msg_length);
 
     if (!mpoe_queue_empty(&ep->multifraq_medium_recv_req_q)) {
       /* message already partially received */
@@ -623,15 +623,15 @@ mpoe_isend(struct mpoe_endpoint *ep,
     mpoe_mac_addr_copy(&medium_param.dest_addr, dest_addr);
     medium_param.dest_endpoint = dest_endpoint;
     medium_param.match_info = match_info;
-    medium_param.pipeline = MPOE_MEDIUM_FRAG_PIPELINE;
+    medium_param.frag_pipeline = MPOE_MEDIUM_FRAG_PIPELINE;
     /* FIXME: medium_param.lib_cookie = lib_cookie; */
     medium_param.msg_length = length;
 
     for(i=0; i<frags; i++) {
       unsigned long chunk = remaining > MPOE_MEDIUM_FRAG_LENGTH_MAX
 	? MPOE_MEDIUM_FRAG_LENGTH_MAX : remaining;
-      medium_param.length = chunk;
-      medium_param.seqnum = i;
+      medium_param.frag_length = chunk;
+      medium_param.frag_seqnum = i;
       medium_param.sendq_page_offset = sendq_index[i];
       printf("sending medium seqnum %d pipeline 2 length %d of total %d\n", i, chunk, length);
       memcpy(ep->sendq + (sendq_index[i] << MPOE_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, length);

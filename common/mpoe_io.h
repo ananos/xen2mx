@@ -139,9 +139,9 @@ struct mpoe_cmd_send_medium {
 	uint8_t pad1;
 	/* 8 */
 	uint32_t msg_length;
-	uint16_t length;
-	uint8_t seqnum;
-	uint8_t pipeline;
+	uint16_t frag_length;
+	uint8_t frag_seqnum;
+	uint8_t frag_pipeline;
 	/* 16 */
 	uint32_t lib_cookie;
 	uint16_t sendq_page_offset;
@@ -265,9 +265,9 @@ union mpoe_evt {
 		uint8_t pad1;
 		/* 8 */
 		uint32_t msg_length;
-		uint16_t length;
-		uint8_t seqnum;
-		uint8_t pipeline;
+		uint16_t frag_length;
+		uint8_t frag_seqnum;
+		uint8_t frag_pipeline;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */

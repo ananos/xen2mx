@@ -191,24 +191,24 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	struct mpoe_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_medium_frag *medium = &mh->body.medium;
-	uint16_t length = medium->frag_length;
+	uint16_t frag_length = medium->frag_length;
 	union mpoe_evt *evt;
 	struct mpoe_evt_recv_medium *event;
 	char *recvq_slot;
 	int err;
 
 	/* check packet length */
-	if (length > MPOE_RECVQ_ENTRY_SIZE) {
+	if (frag_length > MPOE_RECVQ_ENTRY_SIZE) {
 		printk(KERN_DEBUG "MPoE: Dropping too long MEDIUM fragment packet (length %d)\n",
-		       (unsigned) length);
+		       (unsigned) frag_length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check actual data length */
-	if (length != skb->len - sizeof(struct mpoe_hdr)) {
+	if (frag_length != skb->len - sizeof(struct mpoe_hdr)) {
 		printk(KERN_DEBUG "MPoE: Dropping MEDIUM fragment with %d bytes instead of %d\n",
-		       skb->len - sizeof(struct mpoe_hdr), length);
+		       skb->len - sizeof(struct mpoe_hdr), frag_length);
 		err = -EINVAL;
 		goto out;
 	}
@@ -236,13 +236,13 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	event->src_endpoint = medium->msg.src_endpoint;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(&medium->msg);
 	event->msg_length = medium->msg.length;
-	event->length = length;
-	event->seqnum = medium->seqnum;
-	event->pipeline = medium->pipeline;
+	event->frag_length = frag_length;
+	event->frag_seqnum = medium->frag_seqnum;
+	event->frag_pipeline = medium->frag_pipeline;
 
 	/* copy data in recvq slot */
 	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
-	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot, length);
+	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot, frag_length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 

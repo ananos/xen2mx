@@ -216,7 +216,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	struct page * page;
 	struct mpoe_deferred_event * event;
 	int ret;
-	uint32_t length;
+	uint32_t frag_length;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (ret) {
@@ -225,10 +225,10 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
-	length = cmd.length;
-	if (length > MPOE_SENDQ_ENTRY_SIZE) {
+	frag_length = cmd.frag_length;
+	if (frag_length > MPOE_SENDQ_ENTRY_SIZE) {
 		printk(KERN_ERR "MPoE: Cannot send more than %ld as a medium (tried %ld)\n",
-		       PAGE_SIZE * 1UL, (unsigned long) length);
+		       PAGE_SIZE * 1UL, (unsigned long) frag_length);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -263,17 +263,17 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	mh->body.medium.msg.ptype = MPOE_PKT_MEDIUM;
 	MPOE_PKT_FROM_MATCH_INFO(& mh->body.medium.msg, cmd.match_info);
 	mh->body.medium.msg.length = cmd.msg_length;
-	mh->body.medium.frag_length = length;
-	mh->body.medium.seqnum = cmd.seqnum;
-	mh->body.medium.pipeline = cmd.pipeline;
+	mh->body.medium.frag_length = frag_length;
+	mh->body.medium.frag_seqnum = cmd.frag_seqnum;
+	mh->body.medium.frag_pipeline = cmd.frag_pipeline;
 
 	/* attach the sendq page */
 	page = vmalloc_to_page(endpoint->sendq + (cmd.sendq_page_offset << PAGE_SHIFT));
 	BUG_ON(page == NULL);
 	get_page(page);
-	skb_fill_page_desc(skb, 0, page, 0, length);
-	skb->len += length;
-	skb->data_len = length;
+	skb_fill_page_desc(skb, 0, page, 0, frag_length);
+	skb->len += frag_length;
+	skb->data_len = frag_length;
 
 	/* prepare the deferred event */
 	event->endpoint = endpoint;

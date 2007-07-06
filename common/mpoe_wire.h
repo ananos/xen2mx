@@ -45,8 +45,8 @@ struct mpoe_pkt_msg {
 struct mpoe_pkt_medium_frag {
 	struct mpoe_pkt_msg msg;
 	uint16_t frag_length;
-	uint8_t seqnum;
-	uint8_t pipeline;
+	uint8_t frag_seqnum;
+	uint8_t frag_pipeline;
 	uint32_t pad;
 };
 
