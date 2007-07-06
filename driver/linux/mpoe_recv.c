@@ -62,8 +62,8 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 
 	/* check actual data length */
 	if (length != skb->len - sizeof(struct mpoe_hdr)) {
-		printk(KERN_DEBUG "MPoE: Dropping TINY packet with %d bytes instead of %d\n",
-		       skb->len - sizeof(struct mpoe_hdr), length);
+		printk(KERN_DEBUG "MPoE: Dropping TINY packet with %ld bytes instead of %d\n",
+		       (unsigned long) skb->len - sizeof(struct mpoe_hdr), (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
@@ -135,8 +135,8 @@ mpoe_recv_small(struct mpoe_iface * iface,
 
 	/* check actual data length */
 	if (length != skb->len - sizeof(struct mpoe_hdr)) {
-		printk(KERN_DEBUG "MPoE: Dropping SMALL packet with %d bytes instead of %d\n",
-		       skb->len - sizeof(struct mpoe_hdr), length);
+		printk(KERN_DEBUG "MPoE: Dropping SMALL packet with %ld bytes instead of %d\n",
+		       (unsigned long) skb->len - sizeof(struct mpoe_hdr), (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
@@ -209,8 +209,8 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 
 	/* check actual data length */
 	if (frag_length != skb->len - sizeof(struct mpoe_hdr)) {
-		printk(KERN_DEBUG "MPoE: Dropping MEDIUM fragment with %d bytes instead of %d\n",
-		       skb->len - sizeof(struct mpoe_hdr), frag_length);
+		printk(KERN_DEBUG "MPoE: Dropping MEDIUM fragment with %ld bytes instead of %d\n",
+		       (unsigned long) skb->len - sizeof(struct mpoe_hdr), (unsigned) frag_length);
 		err = -EINVAL;
 		goto out;
 	}
