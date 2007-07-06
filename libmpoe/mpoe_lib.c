@@ -17,15 +17,14 @@
  * Debugging
  */
 
-#undef MPOE_DEBUG
-//#define MPOE_DEBUG 1
-
 #ifdef MPOE_DEBUG
 #define mpoe_debug_assert(x) assert(x)
 #define mpoe_debug_instr(x) do { x; } while (0)
+#define mpoe_debug_printf(args...) fprintf(stderr, args) 
 #else
 #define mpoe_debug_assert(x) /* nothing */
 #define mpoe_debug_instr(x) /* nothing */
+#define mpoe_debug_printf(args...) /* nothing */
 #endif
 
 /***********************
@@ -565,7 +564,7 @@ mpoe_process_recv(struct mpoe_endpoint *ep,
 		  union mpoe_evt *evt, mpoe_seqnum_t seqnum, void *data,
 		  mpoe_process_recv_func_t recv_func)
 {
-  printf("got seqnum %d\n", seqnum);
+  mpoe_debug_printf("got seqnum %d\n", seqnum);
 
   /* FIXME: check order, do matching, handle unexpected and early */
 
@@ -577,7 +576,7 @@ mpoe_process_event(struct mpoe_endpoint * ep, union mpoe_evt * evt)
 {
   mpoe_return_t ret = MPOE_SUCCESS;
 
-  printf("received type %d\n", evt->generic.type);
+  mpoe_debug_printf("received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
 
   case MPOE_EVT_RECV_TINY: {
