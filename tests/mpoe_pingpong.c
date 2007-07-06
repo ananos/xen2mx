@@ -14,7 +14,22 @@
 #define BID 0
 #define EID 0
 #define RID 0
-#define ITER 100
+#define ITER 1000
+#define MIN 0
+#define MAX 129
+#define MULTIPLIER 2
+#define INCREMENT 0
+
+static int
+next_length(int length, int multiplier, int increment)
+{
+  if (length)
+    return length*multiplier+increment;
+  else if (increment)
+    return increment;
+  else
+    return 1;
+}
 
 static void
 usage(void)
@@ -31,6 +46,7 @@ usage(void)
 
 struct param {
   uint32_t iter;
+  uint32_t length;
 };
 
 int main(int argc, char *argv[])
@@ -43,6 +59,10 @@ int main(int argc, char *argv[])
   int eid = EID;
   int rid = RID;
   int iter = ITER;
+  int min = MIN;
+  int max = MAX;
+  int multiplier = MULTIPLIER;
+  int increment = INCREMENT;
   struct mpoe_mac_addr dest;
   int sender = 0;
   int verbose = 0;
@@ -90,52 +110,20 @@ int main(int argc, char *argv[])
     uint32_t result;
     struct param param;
     char dest_str[MPOE_MAC_ADDR_STRLEN];
+    int length;
     int i;
 
     mpoe_mac_addr_sprintf(dest_str, &dest);
     printf("Starting sender to %s...\n", dest_str);
 
-    /* sending the param message */
-    param.iter = iter;
-    ret = mpoe_isend(ep, &param, sizeof(param),
-		     0x1234567887654321ULL, &dest, rid,
-		     NULL, &req);
-    if (ret != MPOE_SUCCESS) {
-      fprintf(stderr, "Failed to isend (%s)\n",
-	      mpoe_strerror(ret));
-      goto out_with_ep;
-    }
-    ret = mpoe_wait(ep, &req, &status, &result);
-    if (ret != MPOE_SUCCESS || !result) {
-      fprintf(stderr, "Failed to wait (%s)\n",
-	      mpoe_strerror(ret));
-      goto out_with_ep;
-    }
+    for(length = min;
+	length < max;
+	length = next_length(length, multiplier, increment)) {
 
-    printf("Sent parameters (iter=%d)\n", iter);
-
-    for(i=0; i<iter; i++) {
-      if (verbose)
-	printf("Iteration %d/%d\n", i, iter);
-
-      /* wait for an incoming message */
-      ret = mpoe_irecv(ep, NULL, 0,
-		       0, 0,
-		       NULL, &req);
-      if (ret != MPOE_SUCCESS) {
-	fprintf(stderr, "Failed to irecv (%s)\n",
-		mpoe_strerror(ret));
-	goto out_with_ep;
-      }
-      ret = mpoe_wait(ep, &req, &status, &result);
-      if (ret != MPOE_SUCCESS || !result) {
-	fprintf(stderr, "Failed to wait (%s)\n",
-		mpoe_strerror(ret));
-	goto out_with_ep;
-      }
-
-      /* sending the param message */
-      ret = mpoe_isend(ep, NULL, 0,
+      /* send the param message */
+      param.iter = iter;
+      param.length = length;
+      ret = mpoe_isend(ep, &param, sizeof(param),
 		       0x1234567887654321ULL, &dest, rid,
 		       NULL, &req);
       if (ret != MPOE_SUCCESS) {
@@ -149,9 +137,49 @@ int main(int argc, char *argv[])
 		mpoe_strerror(ret));
 	goto out_with_ep;
       }
+
+      if (verbose)
+	printf("Sent parameters (iter=%d, length=%d)\n", iter, length);
+
+      for(i=0; i<iter; i++) {
+	if (verbose)
+	  printf("Iteration %d/%d\n", i, iter);
+
+	/* wait for an incoming message */
+	ret = mpoe_irecv(ep, NULL, 0,
+			 0, 0,
+			 NULL, &req);
+	if (ret != MPOE_SUCCESS) {
+	  fprintf(stderr, "Failed to irecv (%s)\n",
+		  mpoe_strerror(ret));
+	  goto out_with_ep;
+	}
+	ret = mpoe_wait(ep, &req, &status, &result);
+	if (ret != MPOE_SUCCESS || !result) {
+	  fprintf(stderr, "Failed to wait (%s)\n",
+		  mpoe_strerror(ret));
+	  goto out_with_ep;
+	}
+
+	/* sending a message */
+	ret = mpoe_isend(ep, NULL, 0,
+			 0x1234567887654321ULL, &dest, rid,
+			 NULL, &req);
+	if (ret != MPOE_SUCCESS) {
+	  fprintf(stderr, "Failed to isend (%s)\n",
+		  mpoe_strerror(ret));
+	  goto out_with_ep;
+	}
+	ret = mpoe_wait(ep, &req, &status, &result);
+	if (ret != MPOE_SUCCESS || !result) {
+	  fprintf(stderr, "Failed to wait (%s)\n",
+		  mpoe_strerror(ret));
+	  goto out_with_ep;
+	}
+      }
+      if (verbose)
+	printf("Iteration %d/%d\n", i, iter);
     }
-    if (verbose)
-      printf("Iteration %d/%d\n", i, iter);
 
   } else {
     /* receiver */
@@ -162,64 +190,24 @@ int main(int argc, char *argv[])
     struct param param;
     struct timeval tv1, tv2;
     unsigned long long us;
+    int length;
     int i;
 
     printf("Starting receiver...\n");
 
-    printf("Waiting for parameters...\n");
-
-    /* wait for theparam  message */
-    ret = mpoe_irecv(ep, &param, sizeof(param),
-		     0, 0,
-		     NULL, &req);
-    if (ret != MPOE_SUCCESS) {
-      fprintf(stderr, "Failed to irecv (%s)\n",
-	      mpoe_strerror(ret));
-      goto out_with_ep;
-    }
-    ret = mpoe_wait(ep, &req, &status, &result);
-    if (ret != MPOE_SUCCESS || !result) {
-      fprintf(stderr, "Failed to wait (%s)\n",
-	      mpoe_strerror(ret));
-      goto out_with_ep;
-    }
-
-    /* retrieve parameters */
-    iter = param.iter;
-
-    printf("Got parameters (iter=%d)\n", iter);
-
-    gettimeofday(&tv1, NULL);
-
-    for(i=0; i<iter; i++) {
+    while (1) {
       if (verbose)
-	printf("Iteration %d/%d\n", i, iter);
+	printf("Waiting for parameters...\n");
 
-      /* sending the param message */
-      ret = mpoe_isend(ep, NULL, 0,
-		       0x1234567887654321ULL, &status.mac, status.ep,
-		       NULL, &req);
-      if (ret != MPOE_SUCCESS) {
-	fprintf(stderr, "Failed to isend (%s)\n",
-		mpoe_strerror(ret));
-	goto out_with_ep;
-      }
-      ret = mpoe_wait(ep, &req, &status, &result);
-      if (ret != MPOE_SUCCESS || !result) {
-	fprintf(stderr, "Failed to wait (%s)\n",
-		mpoe_strerror(ret));
-	goto out_with_ep;
-      }
-
-      /* wait for an incoming message */
-      ret = mpoe_irecv(ep, NULL, 0,
+      /* wait for theparam  message */
+      ret = mpoe_irecv(ep, &param, sizeof(param),
 		       0, 0,
 		       NULL, &req);
       if (ret != MPOE_SUCCESS) {
 	fprintf(stderr, "Failed to irecv (%s)\n",
 		mpoe_strerror(ret));
 	goto out_with_ep;
-      }
+    }
       ret = mpoe_wait(ep, &req, &status, &result);
       if (ret != MPOE_SUCCESS || !result) {
 	fprintf(stderr, "Failed to wait (%s)\n",
@@ -227,14 +215,61 @@ int main(int argc, char *argv[])
 	goto out_with_ep;
       }
 
-    }
-    if (verbose)
-      printf("Iteration %d/%d\n", i, iter);
+      /* retrieve parameters */
+      iter = param.iter;
+      length = param.length;
 
-    gettimeofday(&tv2, NULL);
-    us = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
-    printf("Total Duration: %lld us\n", us);
-    printf("Latency: %f us\n", ((float) us)/2./iter);
+      if (verbose)
+	printf("Got parameters (iter=%d,length=%d)\n", iter, length);
+
+      gettimeofday(&tv1, NULL);
+
+      for(i=0; i<iter; i++) {
+	if (verbose)
+	  printf("Iteration %d/%d\n", i, iter);
+
+	/* sending a message */
+	ret = mpoe_isend(ep, NULL, 0,
+			 0x1234567887654321ULL, &status.mac, status.ep,
+			 NULL, &req);
+	if (ret != MPOE_SUCCESS) {
+	  fprintf(stderr, "Failed to isend (%s)\n",
+		  mpoe_strerror(ret));
+	  goto out_with_ep;
+	}
+	ret = mpoe_wait(ep, &req, &status, &result);
+	if (ret != MPOE_SUCCESS || !result) {
+	  fprintf(stderr, "Failed to wait (%s)\n",
+		  mpoe_strerror(ret));
+	  goto out_with_ep;
+	}
+
+	/* wait for an incoming message */
+	ret = mpoe_irecv(ep, NULL, 0,
+			 0, 0,
+		       NULL, &req);
+	if (ret != MPOE_SUCCESS) {
+	  fprintf(stderr, "Failed to irecv (%s)\n",
+		  mpoe_strerror(ret));
+	  goto out_with_ep;
+	}
+	ret = mpoe_wait(ep, &req, &status, &result);
+	if (ret != MPOE_SUCCESS || !result) {
+	  fprintf(stderr, "Failed to wait (%s)\n",
+		  mpoe_strerror(ret));
+	  goto out_with_ep;
+	}
+
+      }
+      if (verbose)
+	printf("Iteration %d/%d\n", i, iter);
+
+      gettimeofday(&tv2, NULL);
+      us = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
+      if (verbose)
+	printf("Total Duration: %lld us\n", us);
+      printf("length % 9d: %f us\n", length, ((float) us)/2./iter);
+    }
   }
 
   return 0;
