@@ -91,6 +91,7 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	event->src_endpoint = tiny->src_endpoint;
 	event->length = length;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(tiny);
+	event->seqnum = tiny->lib_seqnum;
 
 	/* copy data in event data */
 	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), event->data, length);
@@ -163,6 +164,7 @@ mpoe_recv_small(struct mpoe_iface * iface,
 	event->src_endpoint = small->src_endpoint;
 	event->length = length;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(small);
+	event->seqnum = small->lib_seqnum;
 
 	/* copy data in recvq slot */
 	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
@@ -236,6 +238,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	event->src_endpoint = medium->msg.src_endpoint;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(&medium->msg);
 	event->msg_length = medium->msg.length;
+	event->seqnum = medium->msg.lib_seqnum;
 	event->frag_length = frag_length;
 	event->frag_seqnum = medium->frag_seqnum;
 	event->frag_pipeline = medium->frag_pipeline;

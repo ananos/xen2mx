@@ -17,6 +17,43 @@ struct mpoe_sendq_map {
   } * array;
 };
 
+typedef uint16_t mpoe_seqnum_t; /* FIXME: assert same size on the wire */
+
+struct mpoe_partner {
+  /* list of request matched but not entirely received */
+  struct list_head partialq;
+
+  /* seqnum of the next send */
+  mpoe_seqnum_t next_send_seq;
+
+  /* seqnum of the next entire message to match
+   * used to know to accumulate/match/defer a fragment
+   */
+  mpoe_seqnum_t next_match_recv_seq;
+
+  /* seqnum of the next fragment to recv
+   * next_frag_recv_seq < next_match_recv_seq in case of partially received medium
+   * used to ack back to the partner
+   * (all seqnum < next_frag_recv_seq have been entirely received)
+   */
+  mpoe_seqnum_t next_frag_recv_seq;
+
+
+  /*
+   * when matching, increase recv_seq
+   * when event, compare message seqnum with next_match_recv_seq:
+   * - if == , matching
+   * - if < , find partial receive in partner's queue
+   * - if < , queue as a early fragment
+   *
+   * when completing an event, recompute next_frag_recv_seq
+   * - if partial receive (ordered), use its seqnum
+   * - if no partial receive, use next_match_recv_seq
+   * if changing next_frag_recv_seq, ack all the previous seqnums
+   */
+
+};
+
 struct mpoe_endpoint {
   int fd;
   void * recvq, * sendq, * eventq;
@@ -27,6 +64,7 @@ struct mpoe_endpoint {
   struct list_head multifraq_medium_recv_req_q;
   struct list_head done_req_q;
   struct mpoe_sendq_map sendq_map;
+  struct mpoe_partner partner;
 };
 
 enum mpoe__request_type {
@@ -81,7 +119,7 @@ union mpoe_request {
 
   struct {
     struct mpoe__generic_request generic;
-    uint32_t lib_cookie;
+    uint16_t seqnum;
     union {
       struct {
 	uint32_t frags_pending_nr;

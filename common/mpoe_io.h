@@ -112,7 +112,8 @@ struct mpoe_cmd_send_tiny {
 		/* 8 */
 		uint64_t match_info;
 		/* 16 */
-		uint32_t lib_cookie;
+		uint16_t seqnum;
+		uint16_t pad;
 		/* 20 */
 	} hdr;
 	char data[MPOE_TINY_MAX];
@@ -125,8 +126,8 @@ struct mpoe_cmd_send_small {
 	uint8_t pad1;
 	/* 8 */
 	uint16_t length;
-	uint16_t pad2;
-	uint32_t lib_cookie;
+	uint16_t seqnum;
+	uint32_t pad2;
 	/* 16 */
 	uint64_t vaddr;
 	uint64_t match_info;
@@ -143,9 +144,9 @@ struct mpoe_cmd_send_medium {
 	uint8_t frag_seqnum;
 	uint8_t frag_pipeline;
 	/* 16 */
-	uint32_t lib_cookie;
+	uint16_t seqnum;
 	uint16_t sendq_page_offset;
-	uint16_t pad2;
+	uint32_t pad2;
 	/* 24 */
 	uint64_t match_info;
 	/* 32 */
@@ -233,11 +234,15 @@ union mpoe_evt {
 		struct mpoe_mac_addr src_addr;
 		uint8_t src_endpoint;
 		uint8_t length;
-		uint64_t match_info;
+		/* 8 */
+		uint16_t seqnum;
+		uint16_t pad1[3];
 		/* 16 */
+		uint64_t match_info;
+		/* 24 */
 		char data[MPOE_TINY_MAX];
-		/* 48 */
-		uint8_t pad[15];
+		/* 56 */
+		uint8_t pad2[7];
 		uint8_t type;
 		/* 64 */
 	} recv_tiny;
@@ -249,7 +254,8 @@ union mpoe_evt {
 		uint8_t pad1;
 		/* 8 */
 		uint16_t length;
-		uint16_t pad2[3];
+		uint16_t seqnum;
+		uint32_t pad2;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
@@ -269,9 +275,12 @@ union mpoe_evt {
 		uint8_t frag_seqnum;
 		uint8_t frag_pipeline;
 		/* 16 */
-		uint64_t match_info;
+		uint16_t seqnum;
+		uint16_t pad2[3];
 		/* 24 */
-		uint8_t pad2[39];
+		uint64_t match_info;
+		/* 32 */
+		uint8_t pad3[31];
 		uint8_t type;
 		/* 64 */
 	} recv_medium;

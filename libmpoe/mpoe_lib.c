@@ -188,6 +188,15 @@ mpoe_endpoint_sendq_map_put(struct mpoe_endpoint * ep,
   return user;
 }
 
+static inline void
+mpoe_partner_init(struct mpoe_partner *partner)
+{
+  INIT_LIST_HEAD(&partner->partialq);
+  partner->next_send_seq = 0;
+  partner->next_match_recv_seq = 0;
+  partner->next_frag_recv_seq = 0;
+}
+
 mpoe_return_t
 mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 		   struct mpoe_endpoint **epp)
@@ -251,6 +260,8 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
   INIT_LIST_HEAD(&ep->recv_req_q);
   INIT_LIST_HEAD(&ep->multifraq_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->done_req_q);
+
+  mpoe_partner_init(&ep->partner);
 
   *epp = ep;
 
@@ -332,6 +343,8 @@ mpoe_progress(struct mpoe_endpoint * ep)
     union mpoe_request *req;
     unsigned long length;
 
+    printf("got tiny seqnum %d\n", event->seqnum);
+
     if (mpoe_queue_empty(&ep->recv_req_q)) {
       void *unexp_buffer;
 
@@ -386,6 +399,8 @@ mpoe_progress(struct mpoe_endpoint * ep)
     char * recvq_buffer = ep->recvq + evt_index * MPOE_RECVQ_ENTRY_SIZE;
     union mpoe_request *req;
     unsigned long length;
+
+    printf("got small seqnum %d\n", event->seqnum);
 
     if (mpoe_queue_empty(&ep->recv_req_q)) {
       void *unexp_buffer;
@@ -445,8 +460,8 @@ mpoe_progress(struct mpoe_endpoint * ep)
     unsigned long seqnum = event->frag_seqnum;
     unsigned long offset = seqnum << (MPOE_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
 
-    printf("got a medium seqnum %d pipeline %d length %d offset %d of total %d\n",
-	   seqnum, event->frag_pipeline, chunk, offset, msg_length);
+    printf("got a medium seqnum %d frag seqnum %d pipeline %d length %d offset %d of total %d\n",
+	   event->seqnum, seqnum, event->frag_pipeline, chunk, offset, msg_length);
 
     if (!mpoe_queue_empty(&ep->multifraq_medium_recv_req_q)) {
       /* message already partially received */
@@ -552,6 +567,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
 	   void *context, union mpoe_request **requestp)
 {
   union mpoe_request * req;
+  mpoe_seqnum_t seqnum;
   mpoe_return_t ret;
   int err;
 
@@ -561,6 +577,9 @@ mpoe_isend(struct mpoe_endpoint *ep,
     goto out;
   }
 
+  seqnum = ep->partner.next_send_seq++; /* FIXME: increater at the end, in case of error */
+  req->send.seqnum = seqnum;
+
   if (length <= MPOE_TINY_MAX) {
     struct mpoe_cmd_send_tiny tiny_param;
 
@@ -568,6 +587,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     tiny_param.hdr.dest_endpoint = dest_endpoint;
     tiny_param.hdr.match_info = match_info;
     tiny_param.hdr.length = length;
+    tiny_param.hdr.seqnum = seqnum;
     /* FIXME: tiny_param.hdr.lib_cookie = lib_cookie; */
     memcpy(tiny_param.data, buffer, length);
 
@@ -592,6 +612,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     small_param.length = length;
     /* FIXME: small_param.lib_cookie = lib_cookie; */
     small_param.vaddr = (uintptr_t) buffer;
+    small_param.seqnum = seqnum;
 
     err = ioctl(ep->fd, MPOE_CMD_SEND_SMALL, &small_param);
     if (err < 0) {
@@ -626,6 +647,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     medium_param.frag_pipeline = MPOE_MEDIUM_FRAG_PIPELINE;
     /* FIXME: medium_param.lib_cookie = lib_cookie; */
     medium_param.msg_length = length;
+    medium_param.seqnum = seqnum;
 
     for(i=0; i<frags; i++) {
       unsigned long chunk = remaining > MPOE_MEDIUM_FRAG_LENGTH_MAX

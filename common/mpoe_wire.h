@@ -34,7 +34,7 @@ struct mpoe_pkt_msg {
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint16_t length;
 	uint16_t pad2;
-	uint16_t lib_seqnum; /* FIXME: unused ? */
+	uint16_t lib_seqnum;
 	uint16_t lib_piggyack; /* FIXME: unused ? */
 	uint32_t match_a;
 	uint32_t match_b;
