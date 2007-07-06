@@ -8,6 +8,10 @@
 #include "mpoe_io.h"
 #include "mpoe_list.h"
 
+/********
+ * Types
+ */
+
 struct mpoe_sendq_map {
   int first_free;
   int nr_free;
@@ -140,6 +144,10 @@ union mpoe_request {
   } recv;
 };
 
+/************
+ * Functions
+ */
+
 const char *
 mpoe_strerror(mpoe_return_t ret);
 
@@ -212,6 +220,5 @@ mpoe_mac_addr_sscanf(char * buffer, struct mpoe_mac_addr * addr)
 		      &addr->hex[0], &addr->hex[1], &addr->hex[2],
 		      &addr->hex[3], &addr->hex[4], &addr->hex[5]);
 }
-
 
 #endif /* __mpoe_lib_h__ */

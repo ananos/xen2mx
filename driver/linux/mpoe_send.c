@@ -5,7 +5,7 @@
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
 
-/*
+/*************************************
  * Allocate and initialize a MPOE skb
  */
 struct sk_buff *
@@ -34,11 +34,19 @@ mpoe_new_skb(struct net_device *ifp, unsigned long len)
 	return skb;
 }
 
+/******************************
+ * Deferred event notification
+ *
+ * When we need to wait for the skb to be completely sent before releasing
+ * the resources, we use a skb destructor callback.
+ */
+
 struct mpoe_deferred_event {
 	struct mpoe_endpoint *endpoint;
 	union mpoe_evt evt;
 };
 
+/* medium frag skb destructor to release sendq pages */
 static void
 mpoe_medium_frag_skb_destructor(struct sk_buff *skb)
 {
@@ -62,6 +70,10 @@ mpoe_medium_frag_skb_destructor(struct sk_buff *skb)
 	mpoe_endpoint_release(endpoint);
 	kfree(defevent);
 }
+
+/*********************
+ * Main send routines
+ */
 
 int
 mpoe_send_tiny(struct mpoe_endpoint * endpoint,

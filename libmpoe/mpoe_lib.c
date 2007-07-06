@@ -13,6 +13,10 @@
 #include "mpoe_internals.h"
 #include "mpoe_list.h"
 
+/************
+ * Debugging
+ */
+
 #undef MPOE_DEBUG
 //#define MPOE_DEBUG 1
 
@@ -23,6 +27,10 @@
 #define mpoe_debug_assert(x) /* nothing */
 #define mpoe_debug_instr(x) /* nothing */
 #endif
+
+/***********************
+ * Management of errors
+ */
 
 static mpoe_return_t
 mpoe_errno_to_return(int error, char * caller)
@@ -81,6 +89,10 @@ mpoe_strstatus(mpoe_status_code_t code)
   assert(0);
 }
 
+/*************************************
+ * Miscellaneous information routines
+ */
+
 mpoe_return_t
 mpoe_get_board_count(uint32_t * count)
 {
@@ -107,6 +119,10 @@ mpoe_get_board_count(uint32_t * count)
 }
 
 /* FIXME: get board id */
+
+/************************
+ * Send queue management
+ */
 
 static inline int
 mpoe_endpoint_sendq_map_init(struct mpoe_endpoint * ep)
@@ -188,6 +204,10 @@ mpoe_endpoint_sendq_map_put(struct mpoe_endpoint * ep,
   return user;
 }
 
+/*********************
+ * Partner management
+ */
+
 static inline void
 mpoe_partner_init(struct mpoe_partner *partner)
 {
@@ -196,6 +216,10 @@ mpoe_partner_init(struct mpoe_partner *partner)
   partner->next_match_recv_seq = 0;
   partner->next_frag_recv_seq = 0;
 }
+
+/**********************
+ * Endpoint management
+ */
 
 mpoe_return_t
 mpoe_open_endpoint(uint32_t board_index, uint32_t index,
@@ -291,6 +315,10 @@ mpoe_close_endpoint(struct mpoe_endpoint *ep)
   return MPOE_SUCCESS;
 }
 
+/***************************
+ * Request queue management
+ */
+
 static inline void
 mpoe_enqueue_request(struct list_head *head,
 		     union mpoe_request *req)
@@ -325,6 +353,10 @@ mpoe_queue_empty(struct list_head *head)
 {
   return list_empty(head);
 }
+
+/*******************
+ * Receive callback
+ */
 
 typedef mpoe_return_t (*mpoe_process_recv_func_t) (struct mpoe_endpoint *ep,
 						   union mpoe_evt *evt,
@@ -523,6 +555,10 @@ mpoe_process_recv_medium(struct mpoe_endpoint *ep,
   return MPOE_SUCCESS;
 }
 
+/*******************
+ * Event processing
+ */
+
 static mpoe_return_t
 mpoe_process_recv(struct mpoe_endpoint *ep,
 		  union mpoe_evt *evt, mpoe_seqnum_t seqnum, void *data,
@@ -592,6 +628,10 @@ mpoe_process_event(struct mpoe_endpoint * ep, union mpoe_evt * evt)
   return ret;
 }
 
+/*******************
+ * Main progression
+ */
+
 static mpoe_return_t
 mpoe_progress(struct mpoe_endpoint * ep)
 {
@@ -616,6 +656,10 @@ mpoe_progress(struct mpoe_endpoint * ep)
 
   return MPOE_SUCCESS;
 }
+
+/**************************
+ * Main send/recv routines
+ */
 
 mpoe_return_t
 mpoe_isend(struct mpoe_endpoint *ep,
@@ -798,6 +842,10 @@ mpoe_irecv(struct mpoe_endpoint *ep,
  out:
   return ret;
 }
+
+/********************************
+ * Main completion test routines
+ */
 
 mpoe_return_t
 mpoe_test(struct mpoe_endpoint *ep, union mpoe_request **requestp,
