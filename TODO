@@ -1,5 +1,4 @@
 * mac address in drop warning
-* pingpong actually sends more than 0
 * pad everything to ETH_ZLEN
 * choosing boards in open_endpoint
 * dependencies against mpoe_config.h

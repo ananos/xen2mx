@@ -15,10 +15,12 @@
 #define EID 0
 #define RID 0
 #define ITER 1000
-#define MIN 0
+#define MIN 60
 #define MAX 129
-#define MULTIPLIER 2
-#define INCREMENT 0
+#define MULTIPLIER 1
+#define INCREMENT 1
+
+char buffer[MAX];
 
 static int
 next_length(int length, int multiplier, int increment)
@@ -47,6 +49,7 @@ usage(void)
 struct param {
   uint32_t iter;
   uint32_t length;
+  char pad[60];
 };
 
 int main(int argc, char *argv[])
@@ -146,7 +149,7 @@ int main(int argc, char *argv[])
 	  printf("Iteration %d/%d\n", i, iter);
 
 	/* wait for an incoming message */
-	ret = mpoe_irecv(ep, NULL, 0,
+	ret = mpoe_irecv(ep, buffer, length,
 			 0, 0,
 			 NULL, &req);
 	if (ret != MPOE_SUCCESS) {
@@ -162,7 +165,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* sending a message */
-	ret = mpoe_isend(ep, NULL, 0,
+	ret = mpoe_isend(ep, buffer, length,
 			 0x1234567887654321ULL, &dest, rid,
 			 NULL, &req);
 	if (ret != MPOE_SUCCESS) {
@@ -229,7 +232,7 @@ int main(int argc, char *argv[])
 	  printf("Iteration %d/%d\n", i, iter);
 
 	/* sending a message */
-	ret = mpoe_isend(ep, NULL, 0,
+	ret = mpoe_isend(ep, buffer, length,
 			 0x1234567887654321ULL, &status.mac, status.ep,
 			 NULL, &req);
 	if (ret != MPOE_SUCCESS) {
@@ -245,7 +248,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* wait for an incoming message */
-	ret = mpoe_irecv(ep, NULL, 0,
+	ret = mpoe_irecv(ep, buffer, length,
 			 0, 0,
 		       NULL, &req);
 	if (ret != MPOE_SUCCESS) {
