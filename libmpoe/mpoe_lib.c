@@ -803,7 +803,7 @@ mpoe_irecv(struct mpoe_endpoint *ep,
 
   if (!mpoe_queue_empty(&ep->unexp_req_q)) {
     req = mpoe_queue_first_request(&ep->unexp_req_q);
-    mpoe_dequeue_request(&ep->sent_req_q, req);
+    mpoe_dequeue_request(&ep->unexp_req_q, req);
 
     /* compute xfer length */
     if (length > req->generic.status.msg_length)
