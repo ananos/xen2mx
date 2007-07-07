@@ -1,7 +1,12 @@
 * mac address in drop warning
 * pad everything to ETH_ZLEN
+  - no padding in pingpong
 * choosing boards in open_endpoint
 * dependencies against mpoe_config.h
+
+* warmup in pingpong
+* missing command line options
+* check contents
 
 * unexpected medium
 
