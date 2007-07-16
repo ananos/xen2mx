@@ -315,7 +315,7 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	pull = &mh->body.pull;
 	pull->src_endpoint = endpoint->endpoint_index;
 	pull->dst_endpoint = cmd.dest_endpoint;
-	pull->ptype = MPOE_PKT_PULL;
+	pull->ptype = MPOE_PKT_TYPE_PULL;
 	pull->length = cmd.length;
 	pull->puller_rdma_id = cmd.local_rdma_id;
 	pull->puller_offset = cmd.local_offset;
@@ -401,7 +401,7 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 	pull_reply = &reply_mh->body.pull_reply;
 	pull_reply->puller_rdma_id = pull_request->puller_rdma_id;
 	pull_reply->puller_offset = pull_request->puller_offset;
-	pull_reply->ptype = MPOE_PKT_PULL_REPLY;
+	pull_reply->ptype = MPOE_PKT_TYPE_PULL_REPLY;
 	pull_reply->dst_pull_handle = pull_request->src_pull_handle;
 	pull_reply->dst_magic = pull_request->src_magic;
 

@@ -522,6 +522,8 @@ mpoe_net_init(const char * ifnames)
 {
 	int ret = 0;
 
+	mpoe_pkt_type_handlers_init();
+
 	dev_add_pack(&mpoe_pt);
 
 	ret = register_netdevice_notifier(&mpoe_netdevice_notifier);

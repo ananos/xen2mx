@@ -36,6 +36,7 @@ extern int mpoe_send_rendez_vous(struct mpoe_endpoint * endpoint, void __user * 
 extern int mpoe_send_pull(struct mpoe_endpoint * endpoint, void __user * uparam);
 
 /* receiving */
+extern void mpoe_pkt_type_handlers_init(void);
 extern struct packet_type mpoe_pt;
 extern int mpoe_recv_pull(struct mpoe_iface * iface, struct mpoe_hdr * mh, struct sk_buff * skb);
 extern int mpoe_recv_pull_reply(struct mpoe_iface * iface, struct mpoe_hdr * mh, struct sk_buff * skb);

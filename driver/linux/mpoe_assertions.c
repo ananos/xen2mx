@@ -18,4 +18,5 @@ assertions(void)
   CHECK(PAGE_SIZE%MPOE_SENDQ_ENTRY_SIZE == 0);
   CHECK(PAGE_SIZE%MPOE_RECVQ_ENTRY_SIZE == 0);
   CHECK(sizeof(union mpoe_evt) == MPOE_EVENTQ_ENTRY_SIZE);
+  CHECK((unsigned) MPOE_PKT_TYPE_MAX == (1<<(sizeof(((struct mpoe_pkt_msg*)NULL)->ptype)*8)) - 1);
 }

@@ -132,7 +132,7 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	/* fill mpoe header */
 	mh->body.tiny.src_endpoint = endpoint->endpoint_index;
 	mh->body.tiny.dst_endpoint = cmd.dest_endpoint;
-	mh->body.tiny.ptype = MPOE_PKT_TINY;
+	mh->body.tiny.ptype = MPOE_PKT_TYPE_TINY;
 	mh->body.tiny.length = length;
 	mh->body.tiny.lib_seqnum = cmd.seqnum;
 	MPOE_PKT_FROM_MATCH_INFO(& mh->body.tiny, cmd.match_info);
@@ -213,7 +213,7 @@ mpoe_send_small(struct mpoe_endpoint * endpoint,
 	/* fill mpoe header */
 	mh->body.small.src_endpoint = endpoint->endpoint_index;
 	mh->body.small.dst_endpoint = cmd.dest_endpoint;
-	mh->body.small.ptype = MPOE_PKT_SMALL;
+	mh->body.small.ptype = MPOE_PKT_TYPE_SMALL;
 	mh->body.small.length = length;
 	mh->body.small.lib_seqnum = cmd.seqnum;
 	MPOE_PKT_FROM_MATCH_INFO(& mh->body.small, cmd.match_info);
@@ -301,7 +301,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	/* fill mpoe header */
 	mh->body.medium.msg.src_endpoint = endpoint->endpoint_index;
 	mh->body.medium.msg.dst_endpoint = cmd.dest_endpoint;
-	mh->body.medium.msg.ptype = MPOE_PKT_MEDIUM;
+	mh->body.medium.msg.ptype = MPOE_PKT_TYPE_MEDIUM;
 	mh->body.medium.msg.length = cmd.msg_length;
 	mh->body.medium.msg.lib_seqnum = cmd.seqnum;
 	MPOE_PKT_FROM_MATCH_INFO(& mh->body.medium.msg, cmd.match_info);

@@ -330,18 +330,65 @@ mpoe_recv_rndv(struct mpoe_iface * iface,
 	return 0;
 }
 
+static int
+mpoe_recv_nosys(struct mpoe_iface * iface,
+		struct mpoe_hdr * mh,
+		struct sk_buff * skb)
+{
+	printk(KERN_DEBUG "MPoE: Dropping packing with unsupported type %d\n",
+	       mh->body.generic.ptype);
+
+	return 0;
+}
+
+static int
+mpoe_recv_error(struct mpoe_iface * iface,
+		struct mpoe_hdr * mh,
+		struct sk_buff * skb)
+{
+	printk(KERN_DEBUG "MPoE: Dropping packing with unrecognized type %d\n",
+	       mh->body.generic.ptype);
+
+	return 0;
+}
+
+/***********************
+ * Packet type handlers
+ */
+
+static int (*mpoe_pkt_type_handlers[MPOE_PKT_TYPE_MAX+1])(struct mpoe_iface * iface, struct mpoe_hdr * mh, struct sk_buff * skb);
+
+void
+mpoe_pkt_type_handlers_init(void)
+{
+	int i;
+
+	for(i=0; i<=MPOE_PKT_TYPE_MAX; i++)
+		mpoe_pkt_type_handlers[i] = mpoe_recv_error;
+
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_RAW] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_MFM_NIC_REPLY] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_HOST_QUERY] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_HOST_REPLY] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_ETHER_UNICAST] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_ETHER_MULTICAST] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_ETHER_NATIVE] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_TRUC] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_CONNECT] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_TINY] = mpoe_recv_tiny;
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_SMALL] = mpoe_recv_small;
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_MEDIUM] = mpoe_recv_medium_frag;
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_RENDEZ_VOUS] = mpoe_recv_rndv;
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_PULL] = mpoe_recv_pull;
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_PULL_REPLY] = mpoe_recv_pull_reply;
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_NOTIFY] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_NACK_LIB] = mpoe_recv_nosys; /* FIXME */
+	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_NACK_MCP] = mpoe_recv_nosys; /* FIXME */
+}
+
 /***********************
  * Main receive routine
  */
-
-static int (*mpoe_pkt_handlers[])(struct mpoe_iface * iface, struct mpoe_hdr * mh, struct sk_buff * skb) = {
-	[MPOE_PKT_TINY]		= mpoe_recv_tiny,
-	[MPOE_PKT_SMALL]	= mpoe_recv_small,
-	[MPOE_PKT_MEDIUM]	= mpoe_recv_medium_frag,
-	[MPOE_PKT_RENDEZ_VOUS]	= mpoe_recv_rndv,
-	[MPOE_PKT_PULL]		= mpoe_recv_pull,
-	[MPOE_PKT_PULL_REPLY]	= mpoe_recv_pull_reply,
-};
 
 static int
 mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
@@ -350,7 +397,6 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	struct mpoe_iface *iface;
 	struct mpoe_hdr linear_header;
 	struct mpoe_hdr *mh;
-	uint8_t ptype;
 
 	skb = skb_share_check(skb, GFP_ATOMIC);
 	if (skb == NULL)
@@ -377,14 +423,10 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 		mh = mpoe_hdr(skb);
 	}
 
-	ptype = mh->body.generic.ptype;
-	if (ptype > MPOE_PKT_NONE && ptype < MPOE_PKT_TYPE_MAX) {
-		mpoe_pkt_handlers[ptype](iface, mh, skb);
-	} else {
-		printk(KERN_DEBUG "MPoE: Dropping packing with unrecognized type %d\n",
-		       ptype);
-		goto out;
-	}
+	/* no need to check ptype since there is a default error handler
+	 * for all erroneous values
+	 */
+	mpoe_pkt_type_handlers[mh->body.generic.ptype](iface, mh, skb);
 
  out:
 	/* FIXME: send nack */
