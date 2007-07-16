@@ -1,8 +1,6 @@
 * likely/unlikely
 * mac address in drop warning
-* pad everything to ETH_ZLEN
-  - no padding in pingpong
-* choosing boards in open_endpoint
+* no padding in pingpong
 * dependencies against mpoe_config.h
 
 * warmup in pingpong

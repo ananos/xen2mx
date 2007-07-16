@@ -294,7 +294,9 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
-	skb = mpoe_new_skb(ifp, sizeof(*mh));
+	skb = mpoe_new_skb(ifp,
+			   /* pad to ETH_ZLEN */
+			   max_t(unsigned long, sizeof(*mh), ETH_ZLEN));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create pull skb\n");
 		ret = -ENOMEM;
@@ -380,7 +382,11 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 
 	printk("got a pull length %d\n", pull_request->length);
 
-	skb = mpoe_new_skb(ifp, sizeof(*reply_mh));
+	skb = mpoe_new_skb(ifp,
+			   /* only allocate space for the header now,
+			    * we'll attach pages and pad to ETH_ZLEN later
+			    */
+			   sizeof(*reply_mh));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create pull reply skb\n");
 		err = -ENOMEM;
@@ -435,6 +441,16 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 	spin_unlock(&endpoint->user_regions_lock);
 
 	pull_reply->length = queued;
+
+ 	if (unlikely(skb->len < ETH_ZLEN)) {
+		/* pad to ETH_ZLEN */
+		err = skb_pad(skb, ETH_ZLEN);
+		if (err < 0)
+			/* skb has been freed in skb_pad */
+			/* FIXME: release region */
+			goto out_with_endpoint;
+		skb->len = ETH_ZLEN;
+	}
 
 	dev_queue_xmit(skb);
 

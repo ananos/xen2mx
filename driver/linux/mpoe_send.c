@@ -104,7 +104,8 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	}
 
 	skb = mpoe_new_skb(ifp,
-			   sizeof(struct mpoe_hdr) + length);
+			   /* pad to ETH_ZLEN */
+			   max_t(unsigned long, sizeof(struct mpoe_hdr) + length, ETH_ZLEN));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create tiny skb\n");
 		ret = -ENOMEM;
@@ -184,7 +185,8 @@ mpoe_send_small(struct mpoe_endpoint * endpoint,
 	}
 
 	skb = mpoe_new_skb(ifp,
-			   sizeof(struct mpoe_hdr) + length);
+			   /* pad to ETH_ZLEN */
+			   max_t(unsigned long, sizeof(struct mpoe_hdr) + length, ETH_ZLEN));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create small skb\n");
 		ret = -ENOMEM;
@@ -273,7 +275,11 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 		goto out;
 	}
 
-	skb = mpoe_new_skb(ifp, sizeof(*mh));
+	skb = mpoe_new_skb(ifp,
+			   /* only allocate space for the header now,
+			    * we'll attach pages and pad to ETH_ZLEN later
+			    */
+			   sizeof(*mh));
 	if (skb == NULL) {
 		printk(KERN_INFO "MPoE: Failed to create medium skb\n");
 		ret = -ENOMEM;
@@ -317,7 +323,16 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	skb->len += frag_length;
 	skb->data_len = frag_length;
 
-	/* prepare the deferred event */
+ 	if (unlikely(skb->len < ETH_ZLEN)) {
+		/* pad to ETH_ZLEN */
+		ret = skb_pad(skb, ETH_ZLEN);
+		if (ret < 0)
+			/* skb has been freed in skb_pad */
+			goto out_with_event;
+		skb->len = ETH_ZLEN;
+	}
+
+	/* prepare the deferred event now that we cannot fail anymore */
 	event->endpoint = endpoint;
 	event->evt.send_medium_frag_done.sendq_page_offset = cmd.sendq_page_offset;
 	event->evt.generic.type = MPOE_EVT_SEND_MEDIUM_FRAG_DONE;
