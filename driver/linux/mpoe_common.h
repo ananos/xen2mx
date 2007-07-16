@@ -77,6 +77,28 @@ mpoe_mac_addr_to_ethhdr_dst(struct mpoe_mac_addr * mpoe_addr,
 	memcpy(eh->h_dest, mpoe_addr, sizeof(eh->h_dest));
 }
 
+#ifdef MPOE_DEBUG
+#define dprintk(x...) printk(KERN_INFO x)
+#else
+#define dprintk(x...) do { /* nothing */ } while (0)
+#endif
+
+#define mpoe_send_dprintk(_eh, _format, _args...) \
+dprintk("MPoE: sending from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
+	(_eh)->h_source[0], (_eh)->h_source[1], (_eh)->h_source[2], \
+	(_eh)->h_source[3], (_eh)->h_source[4], (_eh)->h_source[5], \
+	(_eh)->h_dest[0], (_eh)->h_dest[1], (_eh)->h_dest[2], \
+	(_eh)->h_dest[3], (_eh)->h_dest[4], (_eh)->h_dest[5], \
+	_args)
+
+#define mpoe_recv_dprintk(_eh, _format, _args...) \
+dprintk("MPoE: received from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
+	(_eh)->h_source[0], (_eh)->h_source[1], (_eh)->h_source[2], \
+	(_eh)->h_source[3], (_eh)->h_source[4], (_eh)->h_source[5], \
+	(_eh)->h_dest[0], (_eh)->h_dest[1], (_eh)->h_dest[2], \
+	(_eh)->h_dest[3], (_eh)->h_dest[4], (_eh)->h_dest[5], \
+	_args);
+
 #endif /* __mpoe_common_h__ */
 
 /*

@@ -1,3 +1,4 @@
+* strpkttype
 * likely/unlikely
 * mac address in drop warning
 * no padding in pingpong

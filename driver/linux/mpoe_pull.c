@@ -325,8 +325,11 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	pull->pulled_offset = cmd.remote_offset;
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = mpoe_endpoint_pull_magic(endpoint);
-	printk("sending pull with handle %d magic %d\n",
-	       pull->src_pull_handle, pull->src_magic);
+
+	mpoe_send_dprintk(eh, "PULL handle %lx magic %lx length %ld",
+			  (unsigned long) pull->src_pull_handle,
+			  (unsigned long) pull->src_magic,
+			  (unsigned long) pull->length);
 
 	/* mark the frames as missing and release the handle */
 	handle->frame_missing = 1;
@@ -380,8 +383,6 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 		goto out;
 	}
 
-	printk("got a pull length %d\n", pull_request->length);
-
 	skb = mpoe_new_skb(ifp,
 			   /* only allocate space for the header now,
 			    * we'll attach pages and pad to ETH_ZLEN later
@@ -392,6 +393,11 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 		err = -ENOMEM;
 		goto out_with_endpoint;
 	}
+
+	mpoe_recv_dprintk(pull_eh, "PULL handle %lx magic %lx length %ld",
+			  (unsigned long) pull_request->src_pull_handle,
+			  (unsigned long) pull_request->src_magic,
+			  (unsigned long) pull_request->length);
 
 	/* locate headers */
 	reply_mh = mpoe_hdr(skb);
@@ -410,6 +416,10 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 	pull_reply->ptype = MPOE_PKT_TYPE_PULL_REPLY;
 	pull_reply->dst_pull_handle = pull_request->src_pull_handle;
 	pull_reply->dst_magic = pull_request->src_magic;
+
+	mpoe_send_dprintk(reply_eh, "PULL REPLY handle %ld magic %ld",
+			  (unsigned long) pull_reply->dst_pull_handle,
+			  (unsigned long) pull_reply->dst_magic);
 
 	/* get the rdma window */
 	rdma_id = pull_request->pulled_rdma_id;
@@ -478,13 +488,14 @@ mpoe_recv_pull_reply(struct mpoe_iface * iface,
 		     struct mpoe_hdr * mh,
 		     struct sk_buff * skb)
 {
-//	struct ethhdr *eh = &mh->head.eth;
 	struct mpoe_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
 	struct mpoe_pull_handle * handle;
 	int err = 0;
 
-	printk("got a pull reply with handle %d magic %d\n",
-	       pull_reply->dst_pull_handle, pull_reply->dst_magic);
+	mpoe_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld",
+			  (unsigned long) pull_reply->dst_pull_handle,
+			  (unsigned long) pull_reply->dst_magic);
+
 	/* FIXME */
 
 	handle = mpoe_pull_handle_acquire_by_wire(iface, pull_reply->dst_magic,
