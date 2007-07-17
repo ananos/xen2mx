@@ -330,7 +330,8 @@ int main(int argc, char *argv[])
       us = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
       if (verbose)
 	printf("Total Duration: %lld us\n", us);
-      printf("length % 9d: %f us\n", length, ((float) us)/2./iter);
+      printf("length % 9d:\t%.3f us\t%.2f MB/s\t %.2f MiB/s\n",
+	     length, ((float) us)/2./iter, 2.*iter*length/us, 2.*iter*length/us/1.048576);
 
       free(buffer);
     }
