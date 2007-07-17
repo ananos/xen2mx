@@ -15,6 +15,7 @@
 #define EID 0
 #define RID 0
 #define ITER 1000
+#define WARMUP 10
 #define MIN 0
 #define MAX 129
 #define MULTIPLIER 2
@@ -44,10 +45,12 @@ usage(void)
   fprintf(stderr, " -d <mac>\tset remote board mac address and switch to sender mode\n");
   fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
   fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
+  fprintf(stderr, " -W <n>\tchange number of warmup iterations [%d]\n", WARMUP);
 }
 
 struct param {
   uint32_t iter;
+  uint32_t warmup;
   uint32_t length;
 };
 
@@ -61,6 +64,7 @@ int main(int argc, char *argv[])
   int eid = EID;
   int rid = RID;
   int iter = ITER;
+  int warmup = WARMUP;
   int min = MIN;
   int max = MAX;
   int multiplier = MULTIPLIER;
@@ -69,7 +73,7 @@ int main(int argc, char *argv[])
   int sender = 0;
   int verbose = 0;
 
-  while ((c = getopt(argc, argv, "e:r:d:b:N:v")) != EOF)
+  while ((c = getopt(argc, argv, "e:r:d:b:N:W:v")) != EOF)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -86,6 +90,9 @@ int main(int argc, char *argv[])
       break;
     case 'N':
       iter = atoi(optarg);
+      break;
+    case 'W':
+      warmup = atoi(optarg);
       break;
     case 'v':
       verbose = 1;
@@ -124,6 +131,7 @@ int main(int argc, char *argv[])
 
       /* send the param message */
       param.iter = iter;
+      param.warmup = warmup;
       param.length = length;
       ret = mpoe_isend(ep, &param, sizeof(param),
 		       0x1234567887654321ULL, &dest, rid,
@@ -141,11 +149,11 @@ int main(int argc, char *argv[])
       }
 
       if (verbose)
-	printf("Sent parameters (iter=%d, length=%d)\n", iter, length);
+	printf("Sent parameters (iter=%d, warmup=%d, length=%d)\n", iter, warmup, length);
 
-      for(i=0; i<iter; i++) {
+      for(i=0; i<iter+warmup; i++) {
 	if (verbose)
-	  printf("Iteration %d/%d\n", i, iter);
+	  printf("Iteration %d/%d\n", i-warmup, iter);
 
 	/* wait for an incoming message */
 	ret = mpoe_irecv(ep, buffer, length,
@@ -180,7 +188,7 @@ int main(int argc, char *argv[])
 	}
       }
       if (verbose)
-	printf("Iteration %d/%d\n", i, iter);
+	printf("Iteration %d/%d\n", i-warmup, iter);
     }
 
   } else {
@@ -219,16 +227,18 @@ int main(int argc, char *argv[])
 
       /* retrieve parameters */
       iter = param.iter;
+      warmup = param.warmup;
       length = param.length;
 
       if (verbose)
-	printf("Got parameters (iter=%d,length=%d)\n", iter, length);
+	printf("Got parameters (iter=%d, warmup=%d, length=%d)\n", iter, warmup, length);
 
-      gettimeofday(&tv1, NULL);
-
-      for(i=0; i<iter; i++) {
+      for(i=0; i<iter+warmup; i++) {
 	if (verbose)
-	  printf("Iteration %d/%d\n", i, iter);
+	  printf("Iteration %d/%d\n", i-warmup, iter);
+
+	if (i == warmup)
+	  gettimeofday(&tv1, NULL);
 
 	/* sending a message */
 	ret = mpoe_isend(ep, buffer, length,
@@ -264,7 +274,7 @@ int main(int argc, char *argv[])
 
       }
       if (verbose)
-	printf("Iteration %d/%d\n", i, iter);
+	printf("Iteration %d/%d\n", i-warmup, iter);
 
       gettimeofday(&tv2, NULL);
       us = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);

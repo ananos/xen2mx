@@ -2,9 +2,10 @@
 * likely/unlikely
 * dependencies against mpoe_config.h
 
-* warmup in pingpong
 * missing command line options
+* dynamic buffer alloc
 * check contents
+* terminate server
 
 * unexpected medium
 
