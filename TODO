@@ -2,7 +2,6 @@
 * likely/unlikely
 * dependencies against mpoe_config.h
 
-* no padding in pingpong once ETH_ZLEN padding tested on a real network
 * warmup in pingpong
 * missing command line options
 * check contents

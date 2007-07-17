@@ -15,10 +15,10 @@
 #define EID 0
 #define RID 0
 #define ITER 1000
-#define MIN 60
+#define MIN 0
 #define MAX 129
-#define MULTIPLIER 1
-#define INCREMENT 1
+#define MULTIPLIER 2
+#define INCREMENT 0
 
 char buffer[MAX];
 
@@ -49,7 +49,6 @@ usage(void)
 struct param {
   uint32_t iter;
   uint32_t length;
-  char pad[60];
 };
 
 int main(int argc, char *argv[])
