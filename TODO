@@ -35,6 +35,8 @@
 * connect messages
 * retransmission
 
+* split tests/tools
+* add install target in Makefiles
 * valgrind hooks
 * rename to open-mx
 * mapper (omxd)
