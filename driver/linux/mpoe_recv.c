@@ -14,8 +14,8 @@ mpoe_find_next_eventq_slot(struct mpoe_endpoint *endpoint)
 	/* FIXME: need locking */
 	union mpoe_evt *slot = endpoint->next_eventq_slot;
 	if (slot->generic.type != MPOE_EVT_NONE) {
-		printk(KERN_INFO "MPoE: Event queue full, no event slot available for endpoint %d\n",
-		       endpoint->endpoint_index);
+		dprintk("MPoE: Event queue full, no event slot available for endpoint %d\n",
+			endpoint->endpoint_index);
 		return NULL;
 	}
 
@@ -54,16 +54,17 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 
 	/* check packet length */
 	if (length > MPOE_TINY_MAX) {
-		printk(KERN_DEBUG "MPoE: Dropping too long TINY packet (length %d)\n",
-		       (unsigned) length);
+		mpoe_drop_dprintk(eh, "TINY packet too long (length %d)",
+				  (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check actual data length */
 	if (length > skb->len - sizeof(struct mpoe_hdr)) {
-		printk(KERN_DEBUG "MPoE: Dropping TINY packet with %ld bytes instead of %d\n",
-		       (unsigned long) skb->len - sizeof(struct mpoe_hdr), (unsigned) length);
+		mpoe_drop_dprintk(eh, "TINY packet with %ld bytes instead of %d",
+				  (unsigned long) skb->len - sizeof(struct mpoe_hdr),
+				  (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
@@ -71,8 +72,8 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, tiny->dst_endpoint);
 	if (!endpoint) {
-		printk(KERN_DEBUG "MPoE: Dropping TINY packet for unknown endpoint %d\n",
-		       tiny->dst_endpoint);
+		mpoe_drop_dprintk(eh, "TINY packet for unknown endpoint %d",
+				  tiny->dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
@@ -80,7 +81,7 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	/* get the eventq slot */
 	evt = mpoe_find_next_eventq_slot(endpoint);
 	if (!evt) {
-		printk(KERN_INFO "MPoE: Dropping TINY packet because of event queue full\n");
+		mpoe_drop_dprintk(eh, "TINY packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -129,16 +130,17 @@ mpoe_recv_small(struct mpoe_iface * iface,
 
 	/* check packet length */
 	if (length > MPOE_SMALL_MAX) {
-		printk(KERN_DEBUG "MPoE: Dropping too long SMALL packet (length %d)\n",
-		       (unsigned) length);
+		mpoe_drop_dprintk(eh, "SMALL packet too long (length %d)",
+				  (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check actual data length */
 	if (length > skb->len - sizeof(struct mpoe_hdr)) {
-		printk(KERN_DEBUG "MPoE: Dropping SMALL packet with %ld bytes instead of %d\n",
-		       (unsigned long) skb->len - sizeof(struct mpoe_hdr), (unsigned) length);
+		mpoe_drop_dprintk(eh, "SMALL packet with %ld bytes instead of %d",
+				  (unsigned long) skb->len - sizeof(struct mpoe_hdr),
+				  (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
@@ -146,8 +148,8 @@ mpoe_recv_small(struct mpoe_iface * iface,
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, small->dst_endpoint);
 	if (!endpoint) {
-		printk(KERN_DEBUG "MPoE: Dropping SMALL packet for unknown endpoint %d\n",
-		       small->dst_endpoint);
+		mpoe_drop_dprintk(eh, "SMALL packet for unknown endpoint %d",
+				  small->dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
@@ -155,7 +157,7 @@ mpoe_recv_small(struct mpoe_iface * iface,
 	/* get the eventq slot */
 	evt = mpoe_find_next_eventq_slot(endpoint);
 	if (!evt) {
-		printk(KERN_INFO "MPoE: Dropping SMALL packet because of event queue full\n");
+		mpoe_drop_dprintk(eh, "SMALL packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -205,16 +207,17 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 
 	/* check packet length */
 	if (frag_length > MPOE_RECVQ_ENTRY_SIZE) {
-		printk(KERN_DEBUG "MPoE: Dropping too long MEDIUM fragment packet (length %d)\n",
-		       (unsigned) frag_length);
+		mpoe_drop_dprintk(eh, "MEDIUM fragment packet too long (length %d)",
+				  (unsigned) frag_length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check actual data length */
 	if (frag_length > skb->len - sizeof(struct mpoe_hdr)) {
-		printk(KERN_DEBUG "MPoE: Dropping MEDIUM fragment with %ld bytes instead of %d\n",
-		       (unsigned long) skb->len - sizeof(struct mpoe_hdr), (unsigned) frag_length);
+		mpoe_drop_dprintk(eh, "MEDIUM fragment with %ld bytes instead of %d",
+				  (unsigned long) skb->len - sizeof(struct mpoe_hdr),
+				  (unsigned) frag_length);
 		err = -EINVAL;
 		goto out;
 	}
@@ -222,8 +225,8 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, medium->msg.dst_endpoint);
 	if (!endpoint) {
-		printk(KERN_DEBUG "MPoE: Dropping MEDIUM packet for unknown endpoint %d\n",
-		       medium->msg.dst_endpoint);
+		mpoe_drop_dprintk(eh, "MEDIUM packet for unknown endpoint %d",
+				  medium->msg.dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
@@ -231,7 +234,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	/* get the eventq slot */
 	evt = mpoe_find_next_eventq_slot(endpoint);
 	if (!evt) {
-		printk(KERN_INFO "MPoE: Dropping MEDIUM packet because of event queue full\n");
+		mpoe_drop_dprintk(eh, "MEDIUM packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -281,8 +284,8 @@ mpoe_recv_rndv(struct mpoe_iface * iface,
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, rndv->dst_endpoint);
 	if (!endpoint) {
-		printk(KERN_DEBUG "MPoE: Dropping RNDV packet for unknown endpoint %d\n",
-		       rndv->dst_endpoint);
+		mpoe_drop_dprintk(eh, "RNDV packet for unknown endpoint %d",
+				  rndv->dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
@@ -290,7 +293,7 @@ mpoe_recv_rndv(struct mpoe_iface * iface,
 	/* get the eventq slot */
 	evt = mpoe_find_next_eventq_slot(endpoint);
 	if (!evt) {
-		printk(KERN_INFO "MPoE: Dropping RNDV packet because of event queue full\n");
+		mpoe_drop_dprintk(eh, "RNDV packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -316,8 +319,8 @@ mpoe_recv_nosys(struct mpoe_iface * iface,
 		struct mpoe_hdr * mh,
 		struct sk_buff * skb)
 {
-	printk(KERN_DEBUG "MPoE: Dropping packing with unsupported type %d\n",
-	       mh->body.generic.ptype);
+	mpoe_drop_dprintk(&mh->head.eth, "packet with unsupported type %d",
+			  mh->body.generic.ptype);
 
 	return 0;
 }
@@ -327,8 +330,8 @@ mpoe_recv_error(struct mpoe_iface * iface,
 		struct mpoe_hdr * mh,
 		struct sk_buff * skb)
 {
-	printk(KERN_DEBUG "MPoE: Dropping packing with unrecognized type %d\n",
-	       mh->body.generic.ptype);
+	mpoe_drop_dprintk(&mh->head.eth, "packet with unrecognized type %d",
+			  mh->body.generic.ptype);
 
 	return 0;
 }
@@ -388,7 +391,9 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 
 	iface = mpoe_iface_find_by_ifp(ifp);
 	if (!iface) {
-		printk(KERN_DEBUG "MPoE: Dropping packets on non MPoE interface\n");
+		/* at least the ethhdr is linear in the skb */
+		mpoe_drop_dprintk(&mpoe_hdr(skb)->head.eth, "packet on non-MPoE interface %s",
+				  ifp->name);
 		goto out;
 	}
 

@@ -377,8 +377,8 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, pull_request->dst_endpoint);
 	if (!endpoint) {
-		printk(KERN_DEBUG "MPoE: Dropping PULL packet for unknown endpoint %d\n",
-		       pull_request->dst_endpoint);
+		mpoe_drop_dprintk(pull_eh, "PULL packet for unknown endpoint %d",
+				  pull_request->dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
@@ -389,7 +389,7 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 			    */
 			   sizeof(*reply_mh));
 	if (skb == NULL) {
-		printk(KERN_INFO "MPoE: Failed to create pull reply skb\n");
+		mpoe_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
 		err = -ENOMEM;
 		goto out_with_endpoint;
 	}
@@ -501,8 +501,8 @@ mpoe_recv_pull_reply(struct mpoe_iface * iface,
 	handle = mpoe_pull_handle_acquire_by_wire(iface, pull_reply->dst_magic,
 						  pull_reply->dst_pull_handle);
 	if (!handle) {
-		printk(KERN_DEBUG "MPoE: Dropping PULL REPLY packet unknown handle %d magic %d\n",
-		       pull_reply->dst_pull_handle, pull_reply->dst_magic);
+		mpoe_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown handle %d magic %d",
+				  pull_reply->dst_pull_handle, pull_reply->dst_magic);
 		err = -EINVAL;
 		goto out;
 	}
