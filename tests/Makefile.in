@@ -13,7 +13,7 @@ CFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libmpoe
 
 LD	=	gcc
 
-LIB	=	@top_builddir@/libmpoe/mpoe_lib.a
+LIB	=	@top_builddir@/libmpoe/libmpoe.a
 
 .PHONY: all clean $(TESTS)
 

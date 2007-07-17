@@ -7,7 +7,7 @@ CFLAGS	+=	-I@top_srcdir@/common
 
 SRC	=	mpoe_lib.c
 OBJ	=	$(subst .c,.o,$(SRC))
-LIB	=	mpoe_lib.a
+LIB	=	libmpoe.a
 
 .PHONY: all clean
 
