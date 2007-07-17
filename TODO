@@ -5,7 +5,6 @@
 * missing command line options
 * dynamic buffer alloc
 * check contents
-* terminate server
 
 * unexpected medium
 

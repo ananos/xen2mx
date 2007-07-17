@@ -191,6 +191,23 @@ int main(int argc, char *argv[])
 	printf("Iteration %d/%d\n", i-warmup, iter);
     }
 
+    /* send a param message with iter = 0 to stop the receiver */
+    param.iter = 0;
+    ret = mpoe_isend(ep, &param, sizeof(param),
+		     0x1234567887654321ULL, &dest, rid,
+		     NULL, &req);
+    if (ret != MPOE_SUCCESS) {
+      fprintf(stderr, "Failed to isend (%s)\n",
+	      mpoe_strerror(ret));
+      goto out_with_ep;
+    }
+    ret = mpoe_wait(ep, &req, &status, &result);
+    if (ret != MPOE_SUCCESS || !result) {
+      fprintf(stderr, "Failed to wait (%s)\n",
+	      mpoe_strerror(ret));
+      goto out_with_ep;
+    }
+
   } else {
     /* receiver */
 
@@ -217,7 +234,7 @@ int main(int argc, char *argv[])
 	fprintf(stderr, "Failed to irecv (%s)\n",
 		mpoe_strerror(ret));
 	goto out_with_ep;
-    }
+      }
       ret = mpoe_wait(ep, &req, &status, &result);
       if (ret != MPOE_SUCCESS || !result) {
 	fprintf(stderr, "Failed to wait (%s)\n",
@@ -232,6 +249,10 @@ int main(int argc, char *argv[])
 
       if (verbose)
 	printf("Got parameters (iter=%d, warmup=%d, length=%d)\n", iter, warmup, length);
+
+      if (!iter)
+	/* the sender wants us to stop */
+	goto out_receiver;
 
       for(i=0; i<iter+warmup; i++) {
 	if (verbose)
@@ -282,7 +303,9 @@ int main(int argc, char *argv[])
 	printf("Total Duration: %lld us\n", us);
       printf("length % 9d: %f us\n", length, ((float) us)/2./iter);
     }
+
   }
+ out_receiver:
 
   return 0;
 
