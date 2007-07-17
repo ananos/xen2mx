@@ -757,7 +757,8 @@ mpoe_isend(struct mpoe_endpoint *ep,
       medium_param.frag_length = chunk;
       medium_param.frag_seqnum = i;
       medium_param.sendq_page_offset = sendq_index[i];
-      printf("sending medium seqnum %d pipeline 2 length %d of total %d\n", i, chunk, length);
+      printf("sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+	     i, chunk, (unsigned long) length);
       memcpy(ep->sendq + (sendq_index[i] << MPOE_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, length);
 
       err = ioctl(ep->fd, MPOE_CMD_SEND_MEDIUM, &medium_param);
