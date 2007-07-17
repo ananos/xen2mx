@@ -33,6 +33,53 @@ enum mpoe_pkt_type {
 	MPOE_PKT_TYPE_MAX=255,
 };
 
+static inline const char*
+mpoe_strpkttype(enum mpoe_pkt_type ptype)
+{
+	switch (ptype) {
+	case MPOE_PKT_TYPE_NONE:
+		return "None";
+	case MPOE_PKT_TYPE_RAW:
+		return "Raw";
+	case MPOE_PKT_TYPE_MFM_NIC_REPLY:
+		return "MFM Nic Reply";
+	case MPOE_PKT_TYPE_HOST_QUERY:
+		return "Host Query";
+	case MPOE_PKT_TYPE_HOST_REPLY:
+		return "Host Reply";
+	case MPOE_PKT_TYPE_ETHER_UNICAST:
+		return "Ether Unicast";
+	case MPOE_PKT_TYPE_ETHER_MULTICAST:
+		return "Ether Multicast";
+	case MPOE_PKT_TYPE_ETHER_NATIVE:
+		return "Ether Native";
+	case MPOE_PKT_TYPE_TRUC:
+		return "Truc";
+	case MPOE_PKT_TYPE_CONNECT:
+		return "Connect";
+	case MPOE_PKT_TYPE_TINY:
+		return "Tiny";
+	case MPOE_PKT_TYPE_SMALL:
+		return "Small";
+	case MPOE_PKT_TYPE_MEDIUM:
+		return "Medium";
+	case MPOE_PKT_TYPE_RENDEZ_VOUS:
+		return "Rendez Vous";
+	case MPOE_PKT_TYPE_PULL:
+		return "Pull";
+	case MPOE_PKT_TYPE_PULL_REPLY:
+		return "Pull Reply";
+	case MPOE_PKT_TYPE_NOTIFY:
+		return "Notify";
+	case MPOE_PKT_TYPE_NACK_LIB:
+		return "Nack Lib";
+	case MPOE_PKT_TYPE_NACK_MCP:
+		return "Nack MCP";
+	default:
+		return "** Unknown **";
+	}
+}
+
 #include <linux/if_ether.h>
 
 struct mpoe_pkt_head {

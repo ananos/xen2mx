@@ -1,8 +1,8 @@
-* strpkttype
+* command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely
-* no padding in pingpong
 * dependencies against mpoe_config.h
 
+* no padding in pingpong once ETH_ZLEN padding tested on a real network
 * warmup in pingpong
 * missing command line options
 * check contents
