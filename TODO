@@ -2,8 +2,7 @@
 * likely/unlikely
 * dependencies against mpoe_config.h
 
-* missing command line options
-* check contents
+* check mpoe_pingpong contents
 
 * unexpected medium
 

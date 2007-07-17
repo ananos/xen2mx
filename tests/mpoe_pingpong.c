@@ -42,6 +42,10 @@ usage(void)
   fprintf(stderr, "Sender options:\n");
   fprintf(stderr, " -d <mac>\tset remote board mac address and switch to sender mode\n");
   fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
+  fprintf(stderr, " -S <n>\tchange the start length [%d]\n", MIN);
+  fprintf(stderr, " -E <n>\tchange the end length [%d]\n", MAX);
+  fprintf(stderr, " -M <n>\tchange the length multiplier [%d]\n", MULTIPLIER);
+  fprintf(stderr, " -I <n>\tchange the length increment [%d]\n", INCREMENT);
   fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
   fprintf(stderr, " -W <n>\tchange number of warmup iterations [%d]\n", WARMUP);
 }
@@ -72,7 +76,7 @@ int main(int argc, char *argv[])
   int verbose = 0;
   char * buffer;
 
-  while ((c = getopt(argc, argv, "e:r:d:b:N:W:v")) != EOF)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:v")) != EOF)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -86,6 +90,18 @@ int main(int argc, char *argv[])
       break;
     case 'r':
       rid = atoi(optarg);
+      break;
+    case 'S':
+      min = atoi(optarg);
+      break;
+    case 'E':
+      max = atoi(optarg);
+      break;
+    case 'M':
+      multiplier = atoi(optarg);
+      break;
+    case 'I':
+      increment = atoi(optarg);
       break;
     case 'N':
       iter = atoi(optarg);
