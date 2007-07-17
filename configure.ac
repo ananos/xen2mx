@@ -86,6 +86,13 @@ grep "sk_buff_data_t.*mac_header;" ${LINUX_HDR}/include/linux/skbuff.h > /dev/nu
   && echo "#define MPOE_HAVE_SKB_HEADERS 1" >> ${CHECKS_OUTPUT} \
   && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
 
+# skb_pad returned a new skb up to 2.6.17
+AC_MSG_CHECKING(skb_pad return type)
+grep "struct sk_buff *\*[[ 	]]*skb_pad(.*, .*);" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null \
+  && echo "#define MPOE_SKB_PAD_RETURNS_NEW_SKB 1" >> ${CHECKS_OUTPUT} \
+  && AC_MSG_RESULT(struct sk_buff *) || AC_MSG_RESULT(int)
+
+
 # add the footer
 echo "" >> ${CHECKS_OUTPUT}
 echo "#endif /* __mpoe_checks_h__ */" >> ${CHECKS_OUTPUT}

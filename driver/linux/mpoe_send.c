@@ -306,8 +306,8 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 
  	if (unlikely(skb->len < ETH_ZLEN)) {
 		/* pad to ETH_ZLEN */
-		ret = skb_pad(skb, ETH_ZLEN);
-		if (ret < 0)
+		ret = mpoe_skb_pad(skb, ETH_ZLEN);
+		if (ret)
 			/* skb has been freed in skb_pad */
 			goto out_with_event;
 		skb->len = ETH_ZLEN;

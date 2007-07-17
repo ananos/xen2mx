@@ -454,8 +454,8 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 
  	if (unlikely(skb->len < ETH_ZLEN)) {
 		/* pad to ETH_ZLEN */
-		err = skb_pad(skb, ETH_ZLEN);
-		if (err < 0)
+		err = mpoe_skb_pad(skb, ETH_ZLEN);
+		if (err)
 			/* skb has been freed in skb_pad */
 			/* FIXME: release region */
 			goto out_with_endpoint;

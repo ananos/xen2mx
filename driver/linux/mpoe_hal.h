@@ -79,6 +79,12 @@ mpoe_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long p
 #define mpoe_hdr(skb) ((struct mpoe_hdr *) skb->mac.raw)
 #endif /* MPOE_HAVE_SKB_HEADERS */
 
+#ifdef MPOE_SKB_PAD_RETURNS_NEW_SKB
+#define mpoe_skb_pad(skb, pad) ({ skb = skb_pad(skb, pad); skb == NULL ? -ENOMEM : 0; })
+#else
+#define mpoe_skb_pad skb_pad
+#endif
+
 #endif /* __mpoe_hal_h__ */
 
 /*
