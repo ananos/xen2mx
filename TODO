@@ -3,7 +3,6 @@
 * dependencies against mpoe_config.h
 
 * missing command line options
-* dynamic buffer alloc
 * check contents
 
 * unexpected medium

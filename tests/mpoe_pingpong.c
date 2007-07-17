@@ -21,8 +21,6 @@
 #define MULTIPLIER 2
 #define INCREMENT 0
 
-char buffer[MAX];
-
 static int
 next_length(int length, int multiplier, int increment)
 {
@@ -72,6 +70,7 @@ int main(int argc, char *argv[])
   struct mpoe_mac_addr dest;
   int sender = 0;
   int verbose = 0;
+  char * buffer;
 
   while ((c = getopt(argc, argv, "e:r:d:b:N:W:v")) != EOF)
     switch (c) {
@@ -151,6 +150,12 @@ int main(int argc, char *argv[])
       if (verbose)
 	printf("Sent parameters (iter=%d, warmup=%d, length=%d)\n", iter, warmup, length);
 
+      buffer = malloc(length);
+      if (!buffer) {
+	perror("buffer malloc");
+	goto out_with_ep;
+      }
+
       for(i=0; i<iter+warmup; i++) {
 	if (verbose)
 	  printf("Iteration %d/%d\n", i-warmup, iter);
@@ -189,6 +194,8 @@ int main(int argc, char *argv[])
       }
       if (verbose)
 	printf("Iteration %d/%d\n", i-warmup, iter);
+
+      free(buffer);
     }
 
     /* send a param message with iter = 0 to stop the receiver */
@@ -254,6 +261,12 @@ int main(int argc, char *argv[])
 	/* the sender wants us to stop */
 	goto out_receiver;
 
+      buffer = malloc(length);
+      if (!buffer) {
+	perror("buffer malloc");
+	goto out_with_ep;
+      }
+
       for(i=0; i<iter+warmup; i++) {
 	if (verbose)
 	  printf("Iteration %d/%d\n", i-warmup, iter);
@@ -302,6 +315,8 @@ int main(int argc, char *argv[])
       if (verbose)
 	printf("Total Duration: %lld us\n", us);
       printf("length % 9d: %f us\n", length, ((float) us)/2./iter);
+
+      free(buffer);
     }
 
   }
