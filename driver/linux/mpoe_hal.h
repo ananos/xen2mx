@@ -72,11 +72,11 @@ mpoe_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long p
 #ifdef MPOE_HAVE_SKB_HEADERS
 #define mpoe_skb_reset_mac_header skb_reset_mac_header
 #define mpoe_skb_reset_network_header skb_reset_network_header
-#define mpoe_hdr(skb) (struct mpoe_hdr *) skb_mac_header(skb)
+#define mpoe_hdr(skb) ((struct mpoe_hdr *) skb_mac_header(skb))
 #else /* MPOE_HAVE_SKB_HEADERS */
 #define mpoe_skb_reset_mac_header(skb) skb->mac.raw = skb->data
 #define mpoe_skb_reset_network_header(skb) skb->nh.raw = skb->mac.raw
-#define mpoe_hdr(skb) (struct mpoe_hdr *) skb->mac.raw
+#define mpoe_hdr(skb) ((struct mpoe_hdr *) skb->mac.raw)
 #endif /* MPOE_HAVE_SKB_HEADERS */
 
 #endif /* __mpoe_hal_h__ */
