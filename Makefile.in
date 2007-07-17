@@ -28,3 +28,11 @@ wc:
 		common/*.h \
 		libmpoe/*.[ch] \
 		tests/*.c
+
+dist:
+	olddir=$$(basename $$PWD) && newdir=mpoe-svn.$$(date +%Y%m%d.%H%M%S) && cd .. \
+	 && cp -a $$olddir $$newdir && find $$newdir -type d | grep '\.svn$$' | xargs rm -rf \; \
+	 && cd $$newdir && autoreconf -f && rm -rf autom4te.cache/ && cd .. \
+	 && tar cfz $${newdir}.tar.gz $$newdir \
+	 && rm -rf $$newdir \
+	 && cd $$olddir
