@@ -20,12 +20,8 @@ all: $(LIB) assertions
 # dependencies
 
 # create a dependency file when it doesn't exist (called by the include line below)
-$(DEPS): %.d: @srcdir@/%.c
-	@test -e $@ || ( \
-		echo "Creating dependency file $@" ; \
-		echo "$(CC) $(CFLAGS) -MM $<" ; \
-		$(CC) $(CFLAGS) -MM $< \
-	)
+$(DEPS): %.d:
+	$(CC) $(CFLAGS) -MM @srcdir@/`basename $@ .d`.c
 
 # include dependencies, except when cleaning (so that we don't re-create for nothing)
 ifeq ($(filter ${MAKECMDGOALS},clean distclean),)
