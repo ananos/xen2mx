@@ -9,7 +9,7 @@ SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 LIBOBJS	=	$(filter-out mpoe_assertions.o,$(OBJS))
 LIB	=	@top_builddir@/@LIBMPOE_A@
-DEPS	=	$(patsubst @srcdir@/%.c,%.d,$(SRCS))
+DEPS	=	$(subst .o,.d,$(OBJS))
 
 .PHONY: all assertions depend clean distclean
 
