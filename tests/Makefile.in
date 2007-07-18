@@ -15,7 +15,7 @@ LD	=	gcc
 
 LIB	=	@top_builddir@/@LIBMPOE_A@
 
-.PHONY: all clean $(TESTS)
+.PHONY: all clean distclean $(TESTS)
 
 all: $(TESTS)
 
@@ -27,3 +27,5 @@ $(TESTS): %: %.o
 
 clean:
 	$(RM) $(TESTS) *.o
+
+distclean: clean

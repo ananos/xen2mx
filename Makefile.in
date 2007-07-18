@@ -1,8 +1,13 @@
-.PHONY: all driver tests clean clean-driver clean-tests
+.PHONY: all clean distcleqn
+.PHONY: driver clean-driver distclean-driver
+.PHONY: lib clean-lib distclean-lib
+.PHONY: tests clean-tests distclean-tests
 
-all: driver tests
+all: driver lib tests
 
 clean: clean-driver clean-lib clean-tests
+
+distclean: distclean-driver distclean-lib distclean-tests
 
 driver:
 	$(MAKE) -C driver/linux
@@ -10,17 +15,26 @@ driver:
 clean-driver:
 	$(MAKE) -C driver/linux clean
 
+distclean-driver:
+	$(MAKE) -C driver/linux distclean
+
 lib:
 	$(MAKE) -C libmpoe
 
 clean-lib:
 	$(MAKE) -C libmpoe clean
 
+distclean-lib:
+	$(MAKE) -C libmpoe distclean
+
 tests: lib
 	$(MAKE) -C tests 
 
 clean-tests:
 	$(MAKE) -C tests clean
+
+distclean-tests:
+	$(MAKE) -C tests distclean
 
 wc:
 	wc -cl \

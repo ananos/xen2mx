@@ -1,7 +1,7 @@
 LINUX_DIR	=	@LINUX_BUILD@
 MPOE_DIR	=	@abs_builddir@
 
-.PHONY: all clean wc
+.PHONY: all clean distclean wc
 
 # Cannot avoid symlinking source files here and using O=builddir M=srcdir
 # since configure would have to generate Kbuild and mpoe_checks.h in srcdir
@@ -18,6 +18,9 @@ clean:
 	make -C $(LINUX_DIR) M=$(MPOE_DIR) clean
 	@echo Removing links to kernel module source files in local directory
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do rm -f $$(basename $$file) ; done
+
+# nothing special needed for distclean here
+distclean: clean
 
 wc:
 	wc -cl *.[ch]
