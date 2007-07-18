@@ -2,6 +2,7 @@ CC	=	gcc
 
 CFLAGS	=	-Wall
 CFLAGS	+=	-g -O2
+CFLAGS	+=	-MMD
 CFLAGS	+=	-imacros @top_builddir@/common/mpoe_config.h
 CFLAGS	+=	-I@top_srcdir@/common
 
@@ -9,10 +10,27 @@ SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 LIBOBJS	=	$(filter-out mpoe_assertions.o,$(OBJS))
 LIB	=	libmpoe.a
+DEPS	=	$(patsubst @srcdir@/%.c,%.d,$(SRCS))
 
-.PHONY: all assertions clean distclean
+.PHONY: all assertions depend clean distclean
 
 all: $(LIB) assertions
+
+###############
+# dependencies
+
+# create a dependency file when it doesn't exist (called by the include line below)
+$(DEPS): %.d: @srcdir@/%.c
+	@test -e $@ || ( \
+		echo "Creating dependency file $@" ; \
+		echo "$(CC) $(CFLAGS) -MM $<" ; \
+		$(CC) $(CFLAGS) -MM $< \
+	)
+
+# include dependencies, except when cleaning (so that we don't re-create for nothing)
+ifeq ($(filter ${MAKECMDGOALS},clean distclean),)
+include $(DEPS)
+endif
 
 ########
 # build
@@ -22,7 +40,8 @@ $(LIB): $(LIBOBJS)
 
 assertions: mpoe_assertions.o
 
-$(OBJS): %.o: @srcdir@/%.c @srcdir@/mpoe_lib.h @srcdir@/mpoe_internals.h
+# build and create dependency file
+$(OBJS): %.o: @srcdir@/%.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
 ########
@@ -32,3 +51,4 @@ clean:
 	$(RM) $(LIB) $(OBJS)
 
 distclean: clean
+	$(RM) $(DEPS)

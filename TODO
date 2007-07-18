@@ -1,6 +1,5 @@
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely
-* dependencies against mpoe_config.h
 
 * check mpoe_pingpong contents
 
