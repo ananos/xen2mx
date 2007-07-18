@@ -14,7 +14,8 @@ DEPS	=	$(patsubst @srcdir@/%.c,%.d,$(SRCS))
 
 .PHONY: all assertions depend clean distclean
 
-all: $(LIB) assertions
+# build assertions first, then the actual lib
+all: assertions $(LIB)
 
 ###############
 # dependencies
