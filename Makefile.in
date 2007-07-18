@@ -1,40 +1,25 @@
 .PHONY: all clean distcleqn
-.PHONY: driver clean-driver distclean-driver
-.PHONY: lib clean-lib distclean-lib
-.PHONY: tests clean-tests distclean-tests
+.PHONY: driver driver-clean driver-distclean
+.PHONY: lib lib-clean lib-distclean
+.PHONY: tests tests-clean tests-distclean
 
 all: driver lib tests
 
-clean: clean-driver clean-lib clean-tests
+clean: driver-clean lib-clean tests-clean
 
-distclean: distclean-driver distclean-lib distclean-tests
+distclean: driver-distclean lib-distclean tests-distclean
 
-driver:
-	$(MAKE) -C driver/linux
+driver driver-clean driver-distclean:
+	$(MAKE) -C driver/linux $(shell echo $@ | cut -s -d- -f2)
 
-clean-driver:
-	$(MAKE) -C driver/linux clean
+lib lib-clean lib-distclean:
+	$(MAKE) -C libmpoe $(shell echo $@ | cut -s -d- -f2)
 
-distclean-driver:
-	$(MAKE) -C driver/linux distclean
-
-lib:
-	$(MAKE) -C libmpoe
-
-clean-lib:
-	$(MAKE) -C libmpoe clean
-
-distclean-lib:
-	$(MAKE) -C libmpoe distclean
-
+# the lib is required before linking the tests
 tests: lib
-	$(MAKE) -C tests 
 
-clean-tests:
-	$(MAKE) -C tests clean
-
-distclean-tests:
-	$(MAKE) -C tests distclean
+tests tests-clean tests-distclean:
+	$(MAKE) -C tests $(shell echo $@ | cut -s -d- -f2)
 
 wc:
 	wc -cl \
