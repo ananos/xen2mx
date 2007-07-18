@@ -110,5 +110,10 @@ else
   AC_MSG_RESULT(no)
 fi
 
+##########
+# Globals
+
+AC_SUBST(LIBMPOE_A, libmpoe/libmpoe.a)
+
 AC_CONFIG_HEADER(common/mpoe_config.h)
 AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild libmpoe/Makefile tests/Makefile)
