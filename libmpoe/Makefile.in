@@ -5,21 +5,22 @@ CFLAGS	+=	-g -O2
 CFLAGS	+=	-imacros @top_builddir@/common/mpoe_config.h
 CFLAGS	+=	-I@top_srcdir@/common
 
-SRC	=	mpoe_lib.c
-OBJ	=	$(subst .c,.o,$(SRC))
+SRCS	=	$(wildcard @srcdir@/*.c)
+OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
+LIBOBJS	=	$(filter-out mpoe_assertions.o,$(OBJS))
 LIB	=	libmpoe.a
 
 .PHONY: all clean
 
 all: $(LIB) assertions
 
-$(LIB): $(OBJ)
-	ar cr $(LIB) $(OBJ)
+$(LIB): $(LIBOBJS)
+	ar cr $@ $<
 
 assertions: mpoe_assertions.o
 
-%.o: @srcdir@/%.c @srcdir@/mpoe_lib.h @srcdir@/mpoe_internals.h
+$(OBJS): %.o: @srcdir@/%.c @srcdir@/mpoe_lib.h @srcdir@/mpoe_internals.h
 	$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	$(RM) $(LIB) *.o
+	$(RM) $(LIB) $(OBJS)
