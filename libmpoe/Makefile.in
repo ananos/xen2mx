@@ -2,7 +2,6 @@ CC	=	gcc
 
 CFLAGS	=	-Wall
 CFLAGS	+=	-g -O2
-CFLAGS	+=	-MMD
 CFLAGS	+=	-imacros @top_builddir@/common/mpoe_config.h
 CFLAGS	+=	-I@top_srcdir@/common
 
@@ -20,9 +19,14 @@ all: assertions $(LIB)
 ###############
 # dependencies
 
+# output dependency file in .d while building .c -o .o
+BUILDDEPFLAGS	=	-MMD
+# output dependency file in .d for .c
+ONLYDEPFLAGS	=	-MMD -MM
+
 # create a dependency file when it doesn't exist (called by the include line below)
 $(DEPS): %.d:
-	$(CC) $(CFLAGS) -MM @srcdir@/`basename $@ .d`.c
+	$(CC) $(CFLAGS) $(ONLYDEPFLAGS) @srcdir@/`basename $@ .d`.c
 
 # include dependencies, except when cleaning (so that we don't re-create for nothing)
 ifeq ($(filter ${MAKECMDGOALS},clean distclean),)
@@ -39,7 +43,7 @@ assertions: mpoe_assertions.o
 
 # build and create dependency file
 $(OBJS): %.o: @srcdir@/%.c
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
 
 ########
 # clean
