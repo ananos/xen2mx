@@ -17,13 +17,28 @@ LIB	=	@top_builddir@/@LIBMPOE_A@
 
 all: $(TESTS)
 
+###############
+# dependencies
+
+DEPS	=	$(subst .o,.d,$(OBJS))
+DEPSRCDIR	=	@srcdir@
+include @top_srcdir@/depend.mk
+
+########
+# build
+
 $(TESTS): %: %.o $(LIB)
 	$(LD) $^ -o $@
 
-$(OBJS): %.o: @srcdir@/%.c @top_srcdir@/libmpoe/mpoe_lib.h @top_srcdir@/libmpoe/mpoe_internals.h
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $< -o $@
+# build and create dependency file
+$(OBJS): %.o: @srcdir@/%.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+
+########
+# clean
 
 clean:
 	$(RM) $(TESTS) $(OBJS)
 
 distclean: clean
+	$(RM) $(DEPS)

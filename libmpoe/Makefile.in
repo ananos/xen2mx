@@ -9,7 +9,6 @@ SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 LIBOBJS	=	$(filter-out mpoe_assertions.o,$(OBJS))
 LIB	=	@top_builddir@/@LIBMPOE_A@
-DEPS	=	$(subst .o,.d,$(OBJS))
 
 .PHONY: all assertions depend clean distclean
 
@@ -19,19 +18,9 @@ all: assertions $(LIB)
 ###############
 # dependencies
 
-# output dependency file in .d while building .c -o .o
-BUILDDEPFLAGS	=	-MMD
-# output dependency file in .d for .c
-ONLYDEPFLAGS	=	-MMD -MM
-
-# create a dependency file when it doesn't exist (called by the include line below)
-$(DEPS): %.d:
-	$(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) @srcdir@/$(shell basename $@ .d).c
-
-# include dependencies, except when cleaning (so that we don't re-create for nothing)
-ifeq ($(filter ${MAKECMDGOALS},clean distclean),)
-include $(DEPS)
-endif
+DEPS	=	$(patsubst @srcdir@/%.c,%.d,$(SRCS))
+DEPSRCDIR	=	@srcdir@
+include @top_srcdir@/depend.mk
 
 ########
 # build
