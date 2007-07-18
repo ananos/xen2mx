@@ -1,15 +1,13 @@
-TESTS	=	mpoe_basic \
-		mpoe_info \
-		mpoe_large \
-		mpoe_pingpong \
-		mpoe_reg
+SRCS	=	$(wildcard @srcdir@/*.c)
+OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
+TESTS	=	$(subst .o,,$(OBJS))
 
 CC	=	gcc
 
-CFLAGS	=	-Wall
+CPPFLAGS	+=	-imacros @top_builddir@/common/mpoe_config.h
+CPPFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libmpoe
+CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2
-CFLAGS	+=	-imacros @top_builddir@/common/mpoe_config.h
-CFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libmpoe
 
 LD	=	gcc
 
@@ -19,13 +17,13 @@ LIB	=	@top_builddir@/@LIBMPOE_A@
 
 all: $(TESTS)
 
-$(TESTS): %: %.o
-	$(LD) $^ $(LIB) -o $@
+$(TESTS): %: %.o $(LIB)
+	$(LD) $^ -o $@
 
 %.o: @srcdir@/%.c @top_srcdir@/libmpoe/mpoe_lib.h @top_srcdir@/libmpoe/mpoe_internals.h
-	$(CC) -c $(CFLAGS) $< -o $@
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $< -o $@
 
 clean:
-	$(RM) $(TESTS) *.o
+	$(RM) $(TESTS) $(OBJS)
 
 distclean: clean
