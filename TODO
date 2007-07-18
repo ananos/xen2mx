@@ -51,6 +51,10 @@
 * pass the user-address of contig small/tiny buffer instead of copying ?
 * optimize shared comms between boards from within the driver
 
+* rename everything to open-mx and omx_ prefix
+* add licence with GPL + LGPL + funded by Myricom + Copyright INRIA Brice Goglin
+* move to gforge.inria.fr
+
 * non MXoE compatible extensions:
   + rdma in both direction with optional notification containing the target window id ?
   + no notify message, report event on rdma get completion ?
