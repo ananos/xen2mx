@@ -13,14 +13,14 @@ LD	=	gcc
 
 LIB	=	@top_builddir@/@LIBMPOE_A@
 
-.PHONY: all clean distclean $(TESTS)
+.PHONY: all clean distclean
 
 all: $(TESTS)
 
 $(TESTS): %: %.o $(LIB)
 	$(LD) $^ -o $@
 
-%.o: @srcdir@/%.c @top_srcdir@/libmpoe/mpoe_lib.h @top_srcdir@/libmpoe/mpoe_internals.h
+$(OBJS): %.o: @srcdir@/%.c @top_srcdir@/libmpoe/mpoe_lib.h @top_srcdir@/libmpoe/mpoe_internals.h
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $< -o $@
 
 clean:
