@@ -7,7 +7,9 @@
 #include "mpoe_lib.h"
 #include "mpoe_internals.h"
 
-/* returns the max amount of boards */
+/*
+ * Returns the max amount of boards supported by the driver
+ */
 mpoe_return_t
 mpoe__get_board_max(uint32_t * max)
 {
@@ -33,7 +35,9 @@ mpoe__get_board_max(uint32_t * max)
   return ret;
 }
 
-/* returns the current amount of boards */
+/*
+ * Returns the current amount of boards attached to the driver
+ */
 mpoe_return_t
 mpoe__get_board_count(uint32_t * count)
 {
@@ -59,7 +63,10 @@ mpoe__get_board_count(uint32_t * count)
   return ret;
 }
 
-/* returns the board id of the endpoint, or the current one of the index */
+/*
+ * Returns the board id of the endpoint is non NULL,
+ * or the current board corresponding to the index
+ */
 mpoe_return_t
 mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
 		   char * name, struct mpoe_mac_addr * addr)
@@ -100,7 +107,9 @@ mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
   return ret;
 }
 
-/* returns the current index of a board given by its name */
+/*
+ * Returns the current index of a board given by its name
+ */
 mpoe_return_t
 mpoe__get_board_index_by_name(const char * name, uint8_t * index)
 {
