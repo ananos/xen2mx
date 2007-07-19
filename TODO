@@ -21,9 +21,11 @@
 * rdma_get
 * rdma_put
 
+* hide internals from the application
+* mpoe__ for internal types
+
 * true sleeping in the kernel
   - always wakeup on event?
-* hide internals from the application
 * medium level helpers for tools accessing small part of internals
 * matching
 * seqnum for in-order matching, associated with lib_cookie
