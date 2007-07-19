@@ -7,7 +7,7 @@
 int main(void)
 {
   mpoe_return_t ret;
-  uint32_t max, count;
+  uint32_t max, emax, count;
   int found, i;
 
   /* get board max */
@@ -17,13 +17,21 @@ int main(void)
     goto out;
   }
 
+  /* get endpoint max */
+  ret = mpoe__get_endpoint_max(&emax);
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to read endpoint max, %s\n", mpoe_strerror(ret));
+    goto out;
+  }
+
   /* get board count */
   ret = mpoe__get_board_count(&count);
   if (ret != MPOE_SUCCESS) {
     fprintf(stderr, "Failed to read board count, %s\n", mpoe_strerror(ret));
     goto out;
   }
-  printf("Found %ld boards (%ld max)\n", (unsigned long) count, (unsigned long) max);
+  printf("Found %ld boards (%ld max) supporting %ld endpoints each\n",
+	 (unsigned long) count, (unsigned long) max, (unsigned long) emax);
 
   for(i=0, found=0; i<max && found<count; i++) {
     uint8_t board_index = i;

@@ -36,6 +36,34 @@ mpoe__get_board_max(uint32_t * max)
 }
 
 /*
+ * Returns the max amount of endpoints per board supported by the driver
+ */
+mpoe_return_t
+mpoe__get_endpoint_max(uint32_t * max)
+{
+  mpoe_return_t ret = MPOE_SUCCESS;
+  int err, fd;
+
+  err = open(MPOE_DEVNAME, O_RDONLY);
+  if (err < 0) {
+    ret = mpoe__errno_to_return(errno, "open");
+    goto out;
+  }
+  fd = err;
+
+  err = ioctl(fd, MPOE_CMD_GET_ENDPOINT_MAX, max);
+  if (err < 0) {
+    ret = mpoe__errno_to_return(errno, "ioctl GET_ENDPOINT_MAX");
+    goto out_with_fd;
+  }
+
+ out_with_fd:
+  close(fd);
+ out:
+  return ret;
+}
+
+/*
  * Returns the current amount of boards attached to the driver
  */
 mpoe_return_t
