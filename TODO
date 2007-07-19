@@ -1,3 +1,5 @@
+* change mac_addr into a uint64_t
+
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
 
