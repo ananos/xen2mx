@@ -46,8 +46,9 @@ struct mpoe_cmd_region_segment {
  * IOCTL commands
  */
 
-#define MPOE_CMD_GET_BOARD_COUNT	0x01
-#define MPOE_CMD_GET_BOARD_ID		0x02
+#define MPOE_CMD_GET_BOARD_MAX		0x01
+#define MPOE_CMD_GET_BOARD_COUNT	0x02
+#define MPOE_CMD_GET_BOARD_ID		0x03
 #define MPOE_CMD_OPEN_ENDPOINT		0x81
 #define MPOE_CMD_CLOSE_ENDPOINT		0x82
 #define MPOE_CMD_SEND_TINY		0x83
@@ -62,6 +63,8 @@ static inline const char *
 mpoe_strcmd(unsigned cmd)
 {
 	switch (cmd) {
+	case MPOE_CMD_GET_BOARD_MAX:
+		return "Get Board Max";
 	case MPOE_CMD_GET_BOARD_COUNT:
 		return "Get Board Count";
 	case MPOE_CMD_GET_BOARD_ID:

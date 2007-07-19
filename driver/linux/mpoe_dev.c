@@ -293,6 +293,17 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 
 	switch (cmd) {
 
+	case MPOE_CMD_GET_BOARD_MAX: {
+		uint32_t max = mpoe_iface_max;
+
+		ret = copy_to_user((void __user *) arg, &max,
+				   sizeof(max));
+		if (ret < 0)
+			printk(KERN_ERR "MPoE: Failed to write get_board_max command result, error %d\n", ret);
+
+		break;
+	}
+
 	case MPOE_CMD_GET_BOARD_COUNT: {
 		uint32_t count = mpoe_ifaces_get_count();
 
