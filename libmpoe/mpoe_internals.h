@@ -14,4 +14,8 @@
 
 extern mpoe_return_t mpoe__errno_to_return(int error, char * caller);
 
+extern mpoe_return_t mpoe__get_board_max(uint32_t * max);
+extern mpoe_return_t mpoe__get_board_count(uint32_t * count);
+extern mpoe_return_t mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index, char * name, struct mpoe_mac_addr * addr);
+
 #endif /* __mpoe_internals_h__ */

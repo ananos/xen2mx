@@ -88,37 +88,6 @@ mpoe_strstatus(mpoe_status_code_t code)
   assert(0);
 }
 
-/*************************************
- * Miscellaneous information routines
- */
-
-mpoe_return_t
-mpoe_get_board_count(uint32_t * count)
-{
-  mpoe_return_t ret = MPOE_SUCCESS;
-  int err, fd;
-
-  err = open(MPOE_DEVNAME, O_RDWR);
-  if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "open");
-    goto out;
-  }
-  fd = err;
-
-  err = ioctl(fd, MPOE_CMD_GET_BOARD_COUNT, &count);
-  if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_COUNT");
-    goto out_with_fd;
-  }
-
- out_with_fd:
-  close(fd);
- out:
-  return ret;
-}
-
-/* FIXME: get board id */
-
 /************************
  * Send queue management
  */
