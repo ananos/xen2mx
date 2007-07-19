@@ -37,7 +37,7 @@
 * retransmission
 
 * mpoe_endpoint_info
-* get_board_info by endpoint
+* finish get_info
 
 * add install target in Makefiles
 * valgrind hooks

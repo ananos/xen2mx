@@ -190,6 +190,26 @@ mpoe_return_t
 mpoe_peek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
 	  uint32_t *result);
 
+enum mpoe_info_key {
+  /* return the maximum number of boards */
+  MPOE_INFO_BOARD_MAX,
+  /* return the maximum number of endpoints per board */
+  MPOE_INFO_ENDPOINT_MAX,
+  /* return the current number of boards */
+  MPOE_INFO_BOARD_COUNT,
+  /* return the board name of an endpoint or index */
+  MPOE_INFO_BOARD_NAME,
+  /* return the board addr of an endpoint or index */
+  MPOE_INFO_BOARD_ADDR,
+  /* return the board number of an endpoint or name or addr */
+  MPOE_INFO_BOARD_INDEX,
+};
+
+mpoe_return_t
+mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
+	      const void * in_val, uint32_t in_len,
+	      void * out_val, uint32_t out_len);
+
 static inline void
 mpoe_mac_addr_copy(struct mpoe_mac_addr * dst,
 		   struct mpoe_mac_addr * src)

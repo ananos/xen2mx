@@ -187,3 +187,40 @@ mpoe__get_board_index_by_name(const char * name, uint8_t * index)
  out:
   return ret;
 }
+
+/* returns various info */
+mpoe_return_t
+mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
+	      const void * in_val, uint32_t in_len,
+	      void * out_val, uint32_t out_len)
+{
+  mpoe_return_t ret;
+
+  switch (key) {
+  case MPOE_INFO_BOARD_MAX:
+    if (out_len < sizeof(uint32_t))
+      return MPOE_INVALID_PARAMETER;
+    return mpoe__get_board_max((uint32_t *) out_val);
+
+  case MPOE_INFO_ENDPOINT_MAX:
+    if (out_len < sizeof(uint32_t))
+      return MPOE_INVALID_PARAMETER;
+    return mpoe__get_endpoint_max((uint32_t *) out_val);
+
+  case MPOE_INFO_BOARD_COUNT:
+    if (out_len < sizeof(uint32_t))
+      return MPOE_INVALID_PARAMETER;
+    return mpoe__get_board_count((uint32_t *) out_val);
+
+  case MPOE_INFO_BOARD_INDEX:
+    /* FIXME: by endpoint, name or mac addr */
+  case MPOE_INFO_BOARD_NAME:
+    /* FIXME: by endpoint or index */
+  case MPOE_INFO_BOARD_ADDR:
+    /* FIXME: by endpoint or index */
+  default:
+    return MPOE_INVALID_PARAMETER;
+  }
+
+  return MPOE_SUCCESS;
+}
