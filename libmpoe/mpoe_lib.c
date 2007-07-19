@@ -31,7 +31,7 @@
  * Management of errors
  */
 
-static mpoe_return_t
+mpoe_return_t
 mpoe__errno_to_return(int error, char * caller)
 {
   switch (error) {
