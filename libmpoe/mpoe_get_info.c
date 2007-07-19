@@ -194,8 +194,6 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 	      const void * in_val, uint32_t in_len,
 	      void * out_val, uint32_t out_len)
 {
-  mpoe_return_t ret;
-
   switch (key) {
   case MPOE_INFO_BOARD_MAX:
     if (out_len < sizeof(uint32_t))
@@ -218,6 +216,8 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
     /* FIXME: by endpoint or index */
   case MPOE_INFO_BOARD_ADDR:
     /* FIXME: by endpoint or index */
+    return MPOE_NOT_IMPLEMENTED;
+
   default:
     return MPOE_INVALID_PARAMETER;
   }

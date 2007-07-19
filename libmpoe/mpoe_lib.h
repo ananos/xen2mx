@@ -92,6 +92,7 @@ enum mpoe_return {
   MPOE_NO_RESOURCES,
   MPOE_NO_SYSTEM_RESOURCES,
   MPOE_INVALID_PARAMETER,
+  MPOE_NOT_IMPLEMENTED,
 };
 typedef enum mpoe_return mpoe_return_t;
 

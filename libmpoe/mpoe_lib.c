@@ -72,6 +72,8 @@ mpoe_strerror(mpoe_return_t ret)
     return "No resources available in the system";
   case MPOE_INVALID_PARAMETER:
     return "Invalid parameter";
+  case MPOE_NOT_IMPLEMENTED:
+    return "Not implemented";
   }
   assert(0);
 }
