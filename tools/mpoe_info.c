@@ -1,55 +1,54 @@
 #include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include "mpoe_internals.h"
-#include "mpoe_lib.h"
-#include "mpoe_io.h"
 
 int main(void)
 {
-  int fd, ret;
-  uint32_t count;
-  int i;
+  mpoe_return_t ret;
+  uint32_t max, count;
+  int found, i;
 
-  fd = open(MPOE_DEVNAME, O_RDWR);
-  if (fd < 0) {
-    perror("open");
+  /* get board max */
+  ret = mpoe__get_board_max(&max);
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to read board max, %s\n", mpoe_strerror(ret));
     goto out;
   }
 
   /* get board count */
-  ret = ioctl(fd, MPOE_CMD_GET_BOARD_COUNT, &count);
-  if (ret < 0) {
-    perror("get board count");
-    goto out_with_fd;
+  ret = mpoe__get_board_count(&count);
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to read board count, %s\n", mpoe_strerror(ret));
+    goto out;
   }
+  printf("Found %ld boards (%ld max)\n", (unsigned long) count, (unsigned long) max);
 
-  for(i=0; i<count; i++) {
-    struct mpoe_cmd_get_board_id board_id;
-    char addr_str[MPOE_MAC_ADDR_STRLEN];
+  for(i=0, found=0; i<max && found<count; i++) {
+    uint8_t board_index = i;
+    char board_name[MPOE_IF_NAMESIZE];
+    struct mpoe_mac_addr board_addr;
+    char board_addr_str[MPOE_MAC_ADDR_STRLEN];
 
-    /* get mac addr */
-    board_id.board_index = i;
-    ret = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &board_id);
-    if (ret < 0) {
-      perror("get board id");
-      goto out_with_fd;
+    ret = mpoe__get_board_id(NULL, &board_index, board_name, &board_addr);
+    if (ret == MPOE_INVALID_PARAMETER)
+      continue;
+    if (ret != MPOE_SUCCESS) {
+      fprintf(stderr, "Failed to read board #%d id, %s\n", i, mpoe_strerror(ret));
+      goto out;
     }
 
-    mpoe_mac_addr_sprintf(addr_str, &board_id.board_addr);
-    fprintf(stderr, "board #%d name %s addr %s\n",
-	    i, board_id.board_name, addr_str);
-  }
+    assert(i == board_index);
+    found++;
 
-  close(fd);
+    mpoe_mac_addr_sprintf(board_addr_str, &board_addr);
+    printf("board #%d name %s addr %s\n",
+	   i, board_name, board_addr_str);
+  }
 
   return 0;
 
- out_with_fd:
-  close(fd);
  out:
   return -1;
 }
