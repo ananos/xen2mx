@@ -26,7 +26,7 @@ include @top_srcdir@/depend.mk
 # build
 
 $(LIB): $(LIBOBJS)
-	ar cr $@ $<
+	ar cr $@ $^
 
 assertions: mpoe_assertions.o
 
