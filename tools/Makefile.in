@@ -1,0 +1,44 @@
+SRCS	=	$(wildcard @srcdir@/*.c)
+OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
+TOOLS	=	$(subst .o,,$(OBJS))
+
+CC	=	gcc
+
+CPPFLAGS	+=	-imacros @top_builddir@/common/mpoe_config.h
+CPPFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libmpoe
+CFLAGS	+=	-Wall
+CFLAGS	+=	-g -O2
+
+LD	=	gcc
+
+LIB	=	@top_builddir@/@LIBMPOE_A@
+
+.PHONY: all clean distclean
+
+all: $(TOOLS)
+
+###############
+# dependencies
+
+DEPS	=	$(subst .o,.d,$(OBJS))
+DEPSRCDIR	=	@srcdir@
+include @top_srcdir@/depend.mk
+
+########
+# build
+
+$(TOOLS): %: %.o $(LIB)
+	$(LD) $^ -o $@
+
+# build and create dependency file
+$(OBJS): %.o: @srcdir@/%.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+
+########
+# clean
+
+clean:
+	$(RM) $(TOOLS) $(OBJS)
+
+distclean: clean
+	$(RM) $(DEPS)

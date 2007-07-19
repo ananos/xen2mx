@@ -1,13 +1,14 @@
 .PHONY: all clean distcleqn
 .PHONY: driver driver-clean driver-distclean
 .PHONY: lib lib-clean lib-distclean
+.PHONY: tools tools-clean tools-distclean
 .PHONY: tests tests-clean tests-distclean
 
-all: driver lib tests
+all: driver lib tools tests
 
-clean: driver-clean lib-clean tests-clean
+clean: driver-clean lib-clean tools-clean tests-clean
 
-distclean: driver-distclean lib-distclean tests-distclean
+distclean: driver-distclean lib-distclean tools-distclean tests-distclean
 
 driver driver-clean driver-distclean:
 	$(MAKE) -C driver/linux $(shell echo $@ | cut -s -d- -f2)
@@ -15,8 +16,11 @@ driver driver-clean driver-distclean:
 lib lib-clean lib-distclean:
 	$(MAKE) -C libmpoe $(shell echo $@ | cut -s -d- -f2)
 
-# the lib is required before linking the tests
-tests: lib
+# the lib is required before linking the tools or tests
+tools tests: lib
+
+tools tools-clean tools-distclean:
+	$(MAKE) -C tools $(shell echo $@ | cut -s -d- -f2)
 
 tests tests-clean tests-distclean:
 	$(MAKE) -C tests $(shell echo $@ | cut -s -d- -f2)
@@ -26,6 +30,7 @@ wc:
 		driver/linux/*.[ch] \
 		common/*.h \
 		libmpoe/*.[ch] \
+		tools/*.c \
 		tests/*.c
 
 dist:
