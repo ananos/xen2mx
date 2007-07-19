@@ -192,14 +192,12 @@ mpoe__partner_init(struct mpoe_partner *partner)
  */
 
 mpoe_return_t
-mpoe_open_endpoint(uint32_t board_index, uint32_t index,
+mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
 		   struct mpoe_endpoint **epp)
 {
   /* FIXME: add parameters to choose the board name? */
   struct mpoe_cmd_open_endpoint open_param;
   struct mpoe_endpoint * ep;
-  char board_name[MPOE_IF_NAMESIZE];
-  struct mpoe_mac_addr board_addr;
   char board_addr_str[MPOE_MAC_ADDR_STRLEN];
   void * recvq, * sendq, * eventq;
   mpoe_return_t ret = MPOE_SUCCESS;
@@ -220,7 +218,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 
   /* ok */
   open_param.board_index = board_index;
-  open_param.endpoint_index = index;
+  open_param.endpoint_index = endpoint_index;
   err = ioctl(fd, MPOE_CMD_OPEN_ENDPOINT, &open_param);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl OPEN_ENDPOINT");
@@ -251,16 +249,19 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t index,
   ep->sendq = sendq;
   ep->recvq = recvq;
   ep->eventq = ep->next_event = eventq;
+  ep->board_index = board_index;
+  ep->endpoint_index = endpoint_index;
 
   /* get some info */
-  ret = mpoe__get_board_id(ep, NULL, board_name, &board_addr);
+  ret = mpoe__get_board_id(ep, NULL, ep->board_name, &ep->board_addr);
   if (ret != MPOE_SUCCESS) {
     ret = MPOE_BAD_ERROR;
     goto out_with_attached;
   }
-  mpoe_mac_addr_sprintf(board_addr_str, &board_addr);
+  mpoe_mac_addr_sprintf(board_addr_str, &ep->board_addr);
   printf("Successfully attached endpoint #%ld on board #%ld (%s, %s)\n",
-	 (unsigned long) index, (unsigned long) board_index, board_name, board_addr_str);
+	 (unsigned long) endpoint_index, (unsigned long) board_index,
+	 ep->board_name, board_addr_str);
 
   /* init lib specific fieds */
   INIT_LIST_HEAD(&ep->sent_req_q);

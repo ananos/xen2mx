@@ -210,13 +210,50 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
       return MPOE_INVALID_PARAMETER;
     return mpoe__get_board_count((uint32_t *) out_val);
 
-  case MPOE_INFO_BOARD_INDEX:
-    /* FIXME: by endpoint, name or mac addr */
   case MPOE_INFO_BOARD_NAME:
-    /* FIXME: by endpoint or index */
   case MPOE_INFO_BOARD_ADDR:
-    /* FIXME: by endpoint or index */
-    return MPOE_NOT_IMPLEMENTED;
+    if (ep) {
+      /* use the info stored in the endpoint */
+      if (key == MPOE_INFO_BOARD_NAME)
+	strncpy(out_val, ep->board_name, out_len);
+      else
+	memcpy(out_val, &ep->board_addr, out_len > sizeof(ep->board_addr) ? sizeof(ep->board_addr) : out_len);
+      return MPOE_SUCCESS;
+
+    } else {
+      /* if no endpoint given, ask the driver about the index given in in_val */
+      struct mpoe_mac_addr addr;
+      char name[MPOE_IF_NAMESIZE];
+      uint8_t index;
+      mpoe_return_t ret;
+
+      if (!in_val || !in_len)
+	return MPOE_INVALID_PARAMETER;
+      index = *(uint8_t*)in_val;
+
+      ret = mpoe__get_board_id(ep, &index, name, &addr);
+      if (ret != MPOE_SUCCESS)
+	return ret;
+
+      if (key == MPOE_INFO_BOARD_NAME)
+	strncpy(out_val, name, out_len);
+      else
+	memcpy(out_val, &addr, out_len > sizeof(addr) ? sizeof(addr) : out_len);
+    }
+
+  case MPOE_INFO_BOARD_INDEX_BY_ADDR:
+  case MPOE_INFO_BOARD_INDEX_BY_NAME:
+    if (ep) {
+      /* use the info stored in the endpoint */
+      if (!out_val || !out_len)
+	return MPOE_INVALID_PARAMETER;
+      *(uint8_t*) out_val = ep->board_index;
+      return MPOE_SUCCESS;
+
+    } else {
+
+      return MPOE_NOT_IMPLEMENTED;
+    }
 
   default:
     return MPOE_INVALID_PARAMETER;

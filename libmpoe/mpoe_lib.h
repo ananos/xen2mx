@@ -60,6 +60,9 @@ struct mpoe_partner {
 
 struct mpoe_endpoint {
   int fd;
+  int endpoint_index, board_index;
+  char board_name[MPOE_IF_NAMESIZE];
+  struct mpoe_mac_addr board_addr;
   void * recvq, * sendq, * eventq;
   void * next_event;
   struct list_head sent_req_q;
@@ -198,12 +201,14 @@ enum mpoe_info_key {
   MPOE_INFO_ENDPOINT_MAX,
   /* return the current number of boards */
   MPOE_INFO_BOARD_COUNT,
-  /* return the board name of an endpoint or index */
+  /* return the board name of an endpoint or index (given as uint8_t) */
   MPOE_INFO_BOARD_NAME,
-  /* return the board addr of an endpoint or index */
+  /* return the board addr of an endpoint or index (given as uint8_t) */
   MPOE_INFO_BOARD_ADDR,
-  /* return the board number of an endpoint or name or addr */
-  MPOE_INFO_BOARD_INDEX,
+  /* return the board number of an endpoint or name */
+  MPOE_INFO_BOARD_INDEX_BY_NAME,
+  /* return the board number of an endpoint or addr */
+  MPOE_INFO_BOARD_INDEX_BY_ADDR,
 };
 
 mpoe_return_t
