@@ -206,8 +206,6 @@ int main(void)
     goto out;
   }
 
-  fprintf(stderr, "Successfully open endpoint %d/%d\n", 0, EP);
-
   mpoe_mac_addr_set_bcast(&dest_addr);
 
   gettimeofday(&tv1, NULL);
