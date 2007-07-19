@@ -306,7 +306,7 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
       } else {
 	if (in_len < sizeof(uint64_t))
 	  return MPOE_INVALID_PARAMETER;
-	return mpoe__get_board_index_by_addr(in_val, *(uint64_t *) out_val);
+	return mpoe__get_board_index_by_addr(*(uint64_t *) in_val, out_val);
       }
     }
 
