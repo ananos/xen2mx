@@ -196,10 +196,20 @@ int main(void)
   struct mpoe_endpoint * ep;
   uint64_t dest_addr;
   struct timeval tv1, tv2;
+  uint8_t board_index;
   int i;
   mpoe_return_t ret;
 
-  ret = mpoe_open_endpoint(0, EP, &ep);
+  ret = mpoe_get_info(NULL, MPOE_INFO_BOARD_INDEX_BY_NAME,
+		      IFNAME, strlen(IFNAME)+1,
+		      &board_index, sizeof(board_index));
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to find iface %s (%s)\n",
+	    IFNAME, mpoe_strerror(ret));
+    goto out;
+  }
+
+  ret = mpoe_open_endpoint(board_index, EP, &ep);
   if (ret != MPOE_SUCCESS) {
     fprintf(stderr, "Failed to open endpoint (%s)\n",
 	    mpoe_strerror(ret));
