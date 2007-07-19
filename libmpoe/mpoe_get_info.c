@@ -188,7 +188,57 @@ mpoe__get_board_index_by_name(const char * name, uint8_t * index)
   return ret;
 }
 
-/* returns various info */
+/*
+ * Returns the current index of a board given by its addr
+ */
+mpoe_return_t
+mpoe__get_board_index_by_addr(uint64_t addr, uint8_t * index)
+{
+  mpoe_return_t ret = MPOE_SUCCESS;
+  uint32_t max;
+  int err, fd, i;
+
+  err = open(MPOE_DEVNAME, O_RDONLY);
+  if (err < 0) {
+    ret = mpoe__errno_to_return(errno, "open");
+    goto out;
+  }
+  fd = err;
+
+  err = ioctl(fd, MPOE_CMD_GET_BOARD_MAX, &max);
+  if (err < 0) {
+    ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_MAX");
+    goto out_with_fd;
+  }
+
+  ret = MPOE_INVALID_PARAMETER;
+  for(i=0; i<max; i++) {
+    struct mpoe_cmd_get_board_id board_id;
+
+    board_id.board_index = i;
+    err = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &board_id);
+    if (err < 0) {
+      ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_ID");
+      if (ret != MPOE_INVALID_PARAMETER)
+	goto out_with_fd;
+    }
+
+    if (addr == board_id.board_addr) {
+      ret = MPOE_SUCCESS;
+      *index = i;
+      break;
+    }
+  }
+
+ out_with_fd:
+  close(fd);
+ out:
+  return ret;
+}
+
+/*
+ * Returns various info
+ */
 mpoe_return_t
 mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 	      const void * in_val, uint32_t in_len,
@@ -243,16 +293,21 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 
   case MPOE_INFO_BOARD_INDEX_BY_ADDR:
   case MPOE_INFO_BOARD_INDEX_BY_NAME:
+    if (!out_val || !out_len)
+      return MPOE_INVALID_PARAMETER;
     if (ep) {
       /* use the info stored in the endpoint */
-      if (!out_val || !out_len)
-	return MPOE_INVALID_PARAMETER;
       *(uint8_t*) out_val = ep->board_index;
       return MPOE_SUCCESS;
 
     } else {
-
-      return MPOE_NOT_IMPLEMENTED;
+      if (key == MPOE_INFO_BOARD_INDEX_BY_NAME) {
+	return mpoe__get_board_index_by_name(in_val, out_val);
+      } else {
+	if (in_len < sizeof(uint64_t))
+	  return MPOE_INVALID_PARAMETER;
+	return mpoe__get_board_index_by_addr(in_val, *(uint64_t *) out_val);
+      }
     }
 
   default:
