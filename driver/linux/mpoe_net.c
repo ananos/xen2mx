@@ -53,7 +53,7 @@ mpoe_iface_find_by_ifp(struct net_device *ifp)
 	 */
 	for (i=0; i<mpoe_iface_max; i++) {
 		struct mpoe_iface * iface = mpoe_ifaces[i];
-		if (iface && iface->eth_ifp == ifp)
+		if (likely(iface && iface->eth_ifp == ifp))
 			return iface;
 	}
 

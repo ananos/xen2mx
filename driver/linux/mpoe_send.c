@@ -14,7 +14,7 @@ mpoe_new_skb(struct net_device *ifp, unsigned long len)
 	struct sk_buff *skb;
 
 	skb = mpoe_netdev_alloc_skb(ifp, len);
-	if (skb) {
+	if (likely(skb != NULL)) {
 		mpoe_skb_reset_mac_header(skb);
 		mpoe_skb_reset_network_header(skb);
 		skb->protocol = __constant_htons(ETH_P_MPOE);
@@ -55,7 +55,7 @@ mpoe_medium_frag_skb_destructor(struct sk_buff *skb)
 	union mpoe_evt * evt;
 
 	evt = mpoe_find_next_eventq_slot(endpoint);
-	if (!evt) {
+	if (unlikely(!evt) ){
 		printk(KERN_INFO "MPoE: Failed to complete send of MEDIUM packet because of event queue full\n");
 		/* FIXME: the application sucks, it should take care of events sooner, queue it? */
 		return;
@@ -89,14 +89,14 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	uint8_t length;
 
 	ret = copy_from_user(&cmd, &((struct mpoe_cmd_send_tiny __user *) uparam)->hdr, sizeof(cmd));
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "MPoE: Failed to read send tiny cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	length = cmd.length;
-	if (length > MPOE_TINY_MAX) {
+	if (unlikely(length > MPOE_TINY_MAX)) {
 		printk(KERN_ERR "MPoE: Cannot send more than %d as a tiny (tried %d)\n",
 		       MPOE_TINY_MAX, length);
 		ret = -EINVAL;
@@ -106,7 +106,7 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 	skb = mpoe_new_skb(ifp,
 			   /* pad to ETH_ZLEN */
 			   max_t(unsigned long, sizeof(struct mpoe_hdr) + length, ETH_ZLEN));
-	if (skb == NULL) {
+	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "MPoE: Failed to create tiny skb\n");
 		ret = -ENOMEM;
 		goto out;
@@ -134,7 +134,7 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 
 	/* copy the data right after the header */
 	ret = copy_from_user(mh+1, &((struct mpoe_cmd_send_tiny __user *) uparam)->data, length);
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "MPoE: Failed to read send tiny cmd data\n");
 		ret = -EFAULT;
 		goto out_with_skb;
@@ -164,14 +164,14 @@ mpoe_send_small(struct mpoe_endpoint * endpoint,
 	uint32_t length;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "MPoE: Failed to read send small cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	length = cmd.length;
-	if (length > MPOE_SMALL_MAX) {
+	if (unlikely(length > MPOE_SMALL_MAX)) {
 		printk(KERN_ERR "MPoE: Cannot send more than %d as a small (tried %d)\n",
 		       MPOE_SMALL_MAX, length);
 		ret = -EINVAL;
@@ -181,7 +181,7 @@ mpoe_send_small(struct mpoe_endpoint * endpoint,
 	skb = mpoe_new_skb(ifp,
 			   /* pad to ETH_ZLEN */
 			   max_t(unsigned long, sizeof(struct mpoe_hdr) + length, ETH_ZLEN));
-	if (skb == NULL) {
+	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "MPoE: Failed to create small skb\n");
 		ret = -ENOMEM;
 		goto out;
@@ -209,7 +209,7 @@ mpoe_send_small(struct mpoe_endpoint * endpoint,
 
 	/* copy the data right after the header */
 	ret = copy_from_user(mh+1, (void *)(unsigned long) cmd.vaddr, length);
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "MPoE: Failed to read send small cmd data\n");
 		ret = -EFAULT;
 		goto out_with_skb;
@@ -241,14 +241,14 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	uint32_t frag_length;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "MPoE: Failed to read send medium cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	frag_length = cmd.frag_length;
-	if (frag_length > MPOE_SENDQ_ENTRY_SIZE) {
+	if (unlikely(frag_length > MPOE_SENDQ_ENTRY_SIZE)) {
 		printk(KERN_ERR "MPoE: Cannot send more than %ld as a medium (tried %ld)\n",
 		       PAGE_SIZE * 1UL, (unsigned long) frag_length);
 		ret = -EINVAL;
@@ -256,7 +256,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 	}
 
 	event = kmalloc(sizeof(*event), GFP_KERNEL);
-	if (!event) {
+	if (unlikely(!event)) {
 		printk(KERN_INFO "MPoE: Failed to allocate event\n");
 		ret = -ENOMEM;
 		goto out;
@@ -267,7 +267,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 			    * we'll attach pages and pad to ETH_ZLEN later
 			    */
 			   sizeof(*mh));
-	if (skb == NULL) {
+	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "MPoE: Failed to create medium skb\n");
 		ret = -ENOMEM;
 		goto out_with_event;

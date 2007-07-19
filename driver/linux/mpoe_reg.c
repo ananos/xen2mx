@@ -7,6 +7,8 @@
 #include "mpoe_io.h"
 #include "mpoe_common.h"
 
+/* FIXME: likely/unlikely */
+
 void
 mpoe_endpoint_user_regions_init(struct mpoe_endpoint * endpoint)
 {

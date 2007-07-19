@@ -13,14 +13,14 @@ mpoe_find_next_eventq_slot(struct mpoe_endpoint *endpoint)
 {
 	/* FIXME: need locking */
 	union mpoe_evt *slot = endpoint->next_eventq_slot;
-	if (slot->generic.type != MPOE_EVT_NONE) {
+	if (unlikely(slot->generic.type != MPOE_EVT_NONE)) {
 		dprintk("MPoE: Event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
 		return NULL;
 	}
 
 	endpoint->next_eventq_slot = slot + 1;
-	if ((void *) endpoint->next_eventq_slot >= endpoint->eventq + MPOE_EVENTQ_SIZE)
+	if (unlikely((void *) endpoint->next_eventq_slot >= endpoint->eventq + MPOE_EVENTQ_SIZE))
 		endpoint->next_eventq_slot = endpoint->eventq;
 
 	/* recvq slot is at same index for now */
@@ -53,7 +53,7 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	int err = 0;
 
 	/* check packet length */
-	if (length > MPOE_TINY_MAX) {
+	if (unlikely(length > MPOE_TINY_MAX)) {
 		mpoe_drop_dprintk(eh, "TINY packet too long (length %d)",
 				  (unsigned) length);
 		err = -EINVAL;
@@ -61,7 +61,7 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	}
 
 	/* check actual data length */
-	if (length > skb->len - sizeof(struct mpoe_hdr)) {
+	if (unlikely(length > skb->len - sizeof(struct mpoe_hdr))) {
 		mpoe_drop_dprintk(eh, "TINY packet with %ld bytes instead of %d",
 				  (unsigned long) skb->len - sizeof(struct mpoe_hdr),
 				  (unsigned) length);
@@ -71,7 +71,7 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, tiny->dst_endpoint);
-	if (!endpoint) {
+	if (unlikely(!endpoint)) {
 		mpoe_drop_dprintk(eh, "TINY packet for unknown endpoint %d",
 				  tiny->dst_endpoint);
 		err = -EINVAL;
@@ -80,7 +80,7 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 
 	/* get the eventq slot */
 	evt = mpoe_find_next_eventq_slot(endpoint);
-	if (!evt) {
+	if (unlikely(!evt)) {
 		mpoe_drop_dprintk(eh, "TINY packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
@@ -129,7 +129,7 @@ mpoe_recv_small(struct mpoe_iface * iface,
 	int err;
 
 	/* check packet length */
-	if (length > MPOE_SMALL_MAX) {
+	if (unlikely(length > MPOE_SMALL_MAX)) {
 		mpoe_drop_dprintk(eh, "SMALL packet too long (length %d)",
 				  (unsigned) length);
 		err = -EINVAL;
@@ -137,7 +137,7 @@ mpoe_recv_small(struct mpoe_iface * iface,
 	}
 
 	/* check actual data length */
-	if (length > skb->len - sizeof(struct mpoe_hdr)) {
+	if (unlikely(length > skb->len - sizeof(struct mpoe_hdr))) {
 		mpoe_drop_dprintk(eh, "SMALL packet with %ld bytes instead of %d",
 				  (unsigned long) skb->len - sizeof(struct mpoe_hdr),
 				  (unsigned) length);
@@ -147,7 +147,7 @@ mpoe_recv_small(struct mpoe_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, small->dst_endpoint);
-	if (!endpoint) {
+	if (unlikely(!endpoint)) {
 		mpoe_drop_dprintk(eh, "SMALL packet for unknown endpoint %d",
 				  small->dst_endpoint);
 		err = -EINVAL;
@@ -156,7 +156,7 @@ mpoe_recv_small(struct mpoe_iface * iface,
 
 	/* get the eventq slot */
 	evt = mpoe_find_next_eventq_slot(endpoint);
-	if (!evt) {
+	if (unlikely(!evt)) {
 		mpoe_drop_dprintk(eh, "SMALL packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
@@ -206,7 +206,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	int err;
 
 	/* check packet length */
-	if (frag_length > MPOE_RECVQ_ENTRY_SIZE) {
+	if (unlikely(frag_length > MPOE_RECVQ_ENTRY_SIZE)) {
 		mpoe_drop_dprintk(eh, "MEDIUM fragment packet too long (length %d)",
 				  (unsigned) frag_length);
 		err = -EINVAL;
@@ -214,7 +214,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	}
 
 	/* check actual data length */
-	if (frag_length > skb->len - sizeof(struct mpoe_hdr)) {
+	if (unlikely(frag_length > skb->len - sizeof(struct mpoe_hdr))) {
 		mpoe_drop_dprintk(eh, "MEDIUM fragment with %ld bytes instead of %d",
 				  (unsigned long) skb->len - sizeof(struct mpoe_hdr),
 				  (unsigned) frag_length);
@@ -224,7 +224,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, medium->msg.dst_endpoint);
-	if (!endpoint) {
+	if (unlikely(!endpoint)) {
 		mpoe_drop_dprintk(eh, "MEDIUM packet for unknown endpoint %d",
 				  medium->msg.dst_endpoint);
 		err = -EINVAL;
@@ -233,7 +233,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 
 	/* get the eventq slot */
 	evt = mpoe_find_next_eventq_slot(endpoint);
-	if (!evt) {
+	if (unlikely(!evt)) {
 		mpoe_drop_dprintk(eh, "MEDIUM packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
@@ -283,7 +283,7 @@ mpoe_recv_rndv(struct mpoe_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, rndv->dst_endpoint);
-	if (!endpoint) {
+	if (unlikely(!endpoint)) {
 		mpoe_drop_dprintk(eh, "RNDV packet for unknown endpoint %d",
 				  rndv->dst_endpoint);
 		err = -EINVAL;
@@ -292,7 +292,7 @@ mpoe_recv_rndv(struct mpoe_iface * iface,
 
 	/* get the eventq slot */
 	evt = mpoe_find_next_eventq_slot(endpoint);
-	if (!evt) {
+	if (unlikely(!evt)) {
 		mpoe_drop_dprintk(eh, "RNDV packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
@@ -383,14 +383,14 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	struct mpoe_hdr *mh;
 
 	skb = skb_share_check(skb, GFP_ATOMIC);
-	if (skb == NULL)
+	if (unlikely(skb == NULL))
 		return 0;
 
 	/* len doesn't include header */
 	skb_push(skb, ETH_HLEN);
 
 	iface = mpoe_iface_find_by_ifp(ifp);
-	if (!iface) {
+	if (unlikely(!iface)) {
 		/* at least the ethhdr is linear in the skb */
 		mpoe_drop_dprintk(&mpoe_hdr(skb)->head.eth, "packet on non-MPoE interface %s",
 				  ifp->name);
@@ -399,7 +399,7 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 
 	/* no need to linearize the whole skb,
 	 * but at least the header to make things simple */
-	if (skb_headlen(skb) < sizeof(struct mpoe_hdr)) {
+	if (unlikely(skb_headlen(skb) < sizeof(struct mpoe_hdr))) {
 		skb_copy_bits(skb, 0, &linear_header,
 			      sizeof(struct mpoe_hdr));
 		/* check for EFAULT */

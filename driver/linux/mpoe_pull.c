@@ -94,7 +94,7 @@ mpoe_endpoint_acquire_by_pull_magic(struct mpoe_iface * iface, uint32_t magic)
 	uint8_t index;
 
 	full_index = (magic ^ MPOE_ENDPOINT_PULL_MAGIC_XOR) >> MPOE_ENDPOINT_PULL_MAGIC_SHIFT;
-	if (full_index & (~0xff))
+	if (unlikely(full_index & (~0xff)))
 		/* index does not fit in 8 bits, drop the packet */
 		return NULL;
 	index = full_index;
@@ -118,12 +118,12 @@ mpoe_pull_handle_create(struct mpoe_endpoint * endpoint)
 
 	/* take a reference on the endpoint since we will return the pull_handle as acquired */
 	err = mpoe_endpoint_acquire(endpoint);
-	if (err < 0)
+	if (unlikely(err < 0))
 		goto out;
 
 	/* alloc the pull handle */
 	handle = kmalloc(sizeof(struct mpoe_pull_handle), GFP_KERNEL);
-	if (!handle) {
+	if (unlikely(!handle)) {
 		printk(KERN_INFO "MPoE: Failed to allocate a pull handle\n");
 		goto out_with_endpoint;
 	}
@@ -131,7 +131,7 @@ mpoe_pull_handle_create(struct mpoe_endpoint * endpoint)
 	/* while failed, realloc and retry */
  idr_try_alloc:
 	err = idr_pre_get(&endpoint->pull_handle_idr, GFP_KERNEL);
-	if (!err) {
+	if (unlikely(!err)) {
 		printk(KERN_ERR "MPoE: Failed to allocate idr space for pull handles\n");
 		err = -ENOMEM; /* unused for now */
 		goto out_with_endpoint;
@@ -140,7 +140,7 @@ mpoe_pull_handle_create(struct mpoe_endpoint * endpoint)
 	spin_lock(&endpoint->pull_handle_lock);
 
 	err = idr_get_new(&endpoint->pull_handle_idr, handle, &handle->idr_index);
-	if (err == -EAGAIN) {
+	if (unlikely(err == -EAGAIN)) {
 		spin_unlock(&endpoint->pull_handle_lock);
 		printk("mpoe_pull_handle_create try again\n");
 		goto idr_try_alloc;
@@ -180,7 +180,7 @@ mpoe_pull_handle_acquire_by_wire(struct mpoe_iface * iface,
 	struct mpoe_endpoint * endpoint;
 
 	endpoint = mpoe_endpoint_acquire_by_pull_magic(iface, magic);
-	if (!endpoint)
+	if (unlikely(!endpoint))
 		return NULL;
 
 	spin_lock(&endpoint->pull_handle_lock);
@@ -220,6 +220,7 @@ mpoe_pull_handle_release(struct mpoe_pull_handle * handle)
 
 	printk("releasing pull handle %p\n", handle);
 
+	/* FIXME: add likely/unlikely */
 	if (handle->frame_transferring != handle->frame_missing) {
 		/* some transfer are pending,
 		 * release the handle but keep the reference on the endpoint
@@ -281,14 +282,14 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	int ret;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "MPoE: Failed to read send pull cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	handle = mpoe_pull_handle_create(endpoint);
-	if (!handle) {
+	if (unlikely(!handle)) {
 		printk(KERN_INFO "MPoE: Failed to allocate a pull handle\n");
 		ret = -ENOMEM;
 		goto out;
@@ -297,7 +298,7 @@ mpoe_send_pull(struct mpoe_endpoint * endpoint,
 	skb = mpoe_new_skb(ifp,
 			   /* pad to ETH_ZLEN */
 			   max_t(unsigned long, sizeof(*mh), ETH_ZLEN));
-	if (skb == NULL) {
+	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "MPoE: Failed to create pull skb\n");
 		ret = -ENOMEM;
 		goto out_with_handle;
@@ -376,7 +377,7 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, pull_request->dst_endpoint);
-	if (!endpoint) {
+	if (unlikely(!endpoint)) {
 		mpoe_drop_dprintk(pull_eh, "PULL packet for unknown endpoint %d",
 				  pull_request->dst_endpoint);
 		err = -EINVAL;
@@ -388,7 +389,7 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 			    * we'll attach pages and pad to ETH_ZLEN later
 			    */
 			   sizeof(*reply_mh));
-	if (skb == NULL) {
+	if (unlikely(skb == NULL)) {
 		mpoe_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
 		err = -ENOMEM;
 		goto out_with_endpoint;
@@ -423,7 +424,7 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 
 	/* get the rdma window */
 	rdma_id = pull_request->pulled_rdma_id;
-	if (rdma_id >= MPOE_USER_REGION_MAX) {
+	if (unlikely(rdma_id >= MPOE_USER_REGION_MAX)) {
 		printk(KERN_ERR "MPoE: got pull request for invalid window %d\n", rdma_id);
 		/* FIXME: send nack */
 		goto out_with_skb;
@@ -440,7 +441,7 @@ mpoe_recv_pull(struct mpoe_iface * iface,
 		struct mpoe_user_region_segment *segment = &region->segments[iseg];
 		uint32_t append;
 		append = mpoe_pull_reply_append_user_region_segment(skb, segment);
-		if (append < 0) {
+		if (unlikely(append < 0)) {
 			printk(KERN_ERR "MPoE: failed to queue segment to skb, error %d\n", append);
 			/* FIXME: release pages */
 			goto out_with_region;
@@ -500,7 +501,7 @@ mpoe_recv_pull_reply(struct mpoe_iface * iface,
 
 	handle = mpoe_pull_handle_acquire_by_wire(iface, pull_reply->dst_magic,
 						  pull_reply->dst_pull_handle);
-	if (!handle) {
+	if (unlikely(!handle)) {
 		mpoe_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown handle %d magic %d",
 				  pull_reply->dst_pull_handle, pull_reply->dst_magic);
 		err = -EINVAL;

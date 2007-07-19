@@ -181,7 +181,7 @@ mpoe_endpoint_acquire(struct mpoe_endpoint * endpoint)
 	int ret = -EINVAL;
 
 	spin_lock(&endpoint->lock);
-	if (endpoint->status != MPOE_ENDPOINT_STATUS_OK)
+	if (unlikely(endpoint->status != MPOE_ENDPOINT_STATUS_OK))
 		goto out_with_lock;
 
 	atomic_inc(&endpoint->refcount);
@@ -200,12 +200,15 @@ mpoe_endpoint_acquire_by_iface_index(struct mpoe_iface * iface, uint8_t index)
 	struct mpoe_endpoint * endpoint;
 
 	spin_lock(&iface->endpoint_lock);
-	if (index >= mpoe_endpoint_max
-	    || (endpoint = iface->endpoints[index]) == NULL)
+	if (unlikely(index >= mpoe_endpoint_max))
+		goto out_with_iface_lock;
+
+	endpoint = iface->endpoints[index];
+	if (unlikely(!endpoint))
 		goto out_with_iface_lock;
 
 	spin_lock(&endpoint->lock);
-	if (endpoint->status != MPOE_ENDPOINT_STATUS_OK)
+	if (unlikely(endpoint->status != MPOE_ENDPOINT_STATUS_OK))
 		goto out_with_endpoint_lock;
 
 	atomic_inc(&endpoint->refcount);
@@ -225,7 +228,7 @@ void
 mpoe_endpoint_release(struct mpoe_endpoint * endpoint)
 {
 	/* decrement refcount and wake up the closer */
-	if (atomic_dec_and_test(&endpoint->refcount))
+	if (unlikely(atomic_dec_and_test(&endpoint->refcount)))
 		wake_up(&endpoint->noref_queue);
 }
 
@@ -357,13 +360,13 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 		BUG_ON(mpoe_cmd_with_endpoint_handlers[cmd] == NULL);
 
 		ret = mpoe_endpoint_acquire(endpoint);
-		if (ret < 0)
+		if (unlikely(ret < 0))
 			goto out;
 
 		ret = mpoe_cmd_with_endpoint_handlers[cmd](endpoint, (void __user *) arg);
 
 		/* if ret > 0, the caller wants to keep a reference on the endpoint */
-		if (ret <= 0)
+		if (likely(ret <= 0))
 			mpoe_endpoint_release(endpoint);
 
 		break;
