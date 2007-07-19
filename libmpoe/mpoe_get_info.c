@@ -65,7 +65,9 @@ mpoe__get_board_count(uint32_t * count)
 
 /*
  * Returns the board id of the endpoint is non NULL,
- * or the current board corresponding to the index
+ * or the current board corresponding to the index.
+ *
+ * index, name and addr pointers may be NULL is unused.
  */
 mpoe_return_t
 mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
@@ -96,9 +98,12 @@ mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
     goto out_with_fd;
   }
 
-  strncpy(name, board_id.board_name, MPOE_IF_NAMESIZE);
-  *index = board_id.board_index;
-  mpoe_mac_addr_copy(addr, &board_id.board_addr);
+  if (name)
+    strncpy(name, board_id.board_name, MPOE_IF_NAMESIZE);
+  if (index)
+    *index = board_id.board_index;
+  if (addr)
+    mpoe_mac_addr_copy(addr, &board_id.board_addr);
 
  out_with_fd:
   if (!ep)
