@@ -316,18 +316,34 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 	}
 
 	case MPOE_CMD_GET_BOARD_ID: {
+		struct mpoe_endpoint * endpoint = file->private_data;
 		struct mpoe_cmd_get_board_id get_board_id;
+		int use_endpoint = 0;
 
-		ret = copy_from_user(&get_board_id, (void __user *) arg,
-				     sizeof(get_board_id));
+		/* try to acquire the endpoint */
+		ret = mpoe_endpoint_acquire(endpoint);
 		if (ret < 0) {
-			printk(KERN_ERR "MPoE: Failed to read get_board_id command argument, error %d\n", ret);
-			goto out;
+			/* the endpoint is not open, get the command parameter and use its board_index */
+			ret = copy_from_user(&get_board_id, (void __user *) arg,
+					     sizeof(get_board_id));
+			if (ret < 0) {
+				printk(KERN_ERR "MPoE: Failed to read get_board_id command argument, error %d\n", ret);
+				goto out;
+			}
+		} else {
+			/* endpoint acquired, use its board index */
+			get_board_id.board_index = endpoint->board_index;
+			use_endpoint = 1;
 		}
 
 		ret = mpoe_iface_get_id(get_board_id.board_index,
 					&get_board_id.board_addr,
 					get_board_id.board_name);
+
+		/* release the endpoint if we used it */
+		if (use_endpoint)
+			mpoe_endpoint_release(endpoint);
+
 		if (ret < 0)
 			goto out;
 
