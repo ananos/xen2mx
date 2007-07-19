@@ -82,7 +82,7 @@ mpoe_ifaces_get_count(void)
  * Return the address and name of an iface.
  */
 int
-mpoe_iface_get_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name)
+mpoe_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
 {
 	struct net_device * ifp;
 	int ret;
@@ -97,7 +97,7 @@ mpoe_iface_get_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char *
 
 	ifp = mpoe_ifaces[board_index]->eth_ifp;
 
-	mpoe_mac_addr_of_netdevice(ifp, board_addr);
+	*board_addr = mpoe_board_addr_from_netdevice(ifp);
 	strncpy(board_name, ifp->name, MPOE_IF_NAMESIZE);
 
 	spin_unlock(&mpoe_iface_lock);

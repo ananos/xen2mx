@@ -36,7 +36,7 @@ int main(void)
   for(i=0, found=0; i<max && found<count; i++) {
     uint8_t board_index = i;
     char board_name[MPOE_IF_NAMESIZE];
-    struct mpoe_mac_addr board_addr;
+    uint64_t board_addr;
     char board_addr_str[MPOE_MAC_ADDR_STRLEN];
 
     ret = mpoe__get_board_id(NULL, &board_index, board_name, &board_addr);
@@ -50,7 +50,7 @@ int main(void)
     assert(i == board_index);
     found++;
 
-    mpoe_mac_addr_sprintf(board_addr_str, &board_addr);
+    mpoe_board_addr_sprintf(board_addr_str, board_addr);
     printf("board #%d name %s addr %s\n",
 	   i, board_name, board_addr_str);
   }

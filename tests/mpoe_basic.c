@@ -8,7 +8,7 @@
 #define ITER 10
 
 static mpoe_return_t
-send_tiny(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
+send_tiny(struct mpoe_endpoint * ep, uint64_t dest_addr,
 	  int i)
 {
   union mpoe_request * request, * request2;
@@ -72,7 +72,7 @@ send_tiny(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 }
 
 static int
-send_small(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
+send_small(struct mpoe_endpoint * ep, uint64_t dest_addr,
 	   int i)
 {
   union mpoe_request * request;
@@ -130,7 +130,7 @@ send_small(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 }
 
 static int
-send_medium(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
+send_medium(struct mpoe_endpoint * ep, uint64_t dest_addr,
 	    int i)
 {
   union mpoe_request * request, * request2;
@@ -194,7 +194,7 @@ send_medium(struct mpoe_endpoint * ep, struct mpoe_mac_addr * dest_addr,
 int main(void)
 {
   struct mpoe_endpoint * ep;
-  struct mpoe_mac_addr dest_addr;
+  uint64_t dest_addr;
   struct timeval tv1, tv2;
   int i;
   mpoe_return_t ret;
@@ -206,12 +206,12 @@ int main(void)
     goto out;
   }
 
-  mpoe_mac_addr_set_bcast(&dest_addr);
+  dest_addr = -1; /* broadcast */
 
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a tiny message */
-    ret = send_tiny(ep, &dest_addr, i);
+    ret = send_tiny(ep, dest_addr, i);
     if (ret != MPOE_SUCCESS)
       goto out_with_ep;
   }
@@ -222,7 +222,7 @@ int main(void)
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a small message */
-    ret = send_small(ep, &dest_addr, i);
+    ret = send_small(ep, dest_addr, i);
     if (ret != MPOE_SUCCESS)
       goto out_with_ep;
   }
@@ -233,7 +233,7 @@ int main(void)
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a medium message */
-    ret = send_medium(ep, &dest_addr, i);
+    ret = send_medium(ep, dest_addr, i);
     if (ret != MPOE_SUCCESS)
       goto out_with_ep;
   }

@@ -32,10 +32,6 @@ typedef uint8_t mpoe_user_region_id_t;
 
 #define MPOE_IF_NAMESIZE	16
 
-struct mpoe_mac_addr {
-	uint8_t hex[6];
-};
-
 struct mpoe_cmd_region_segment {
 	uint64_t vaddr;
 	uint32_t len;
@@ -101,7 +97,7 @@ mpoe_strcmd(unsigned cmd)
 
 struct mpoe_cmd_get_board_id {
 	uint8_t board_index;
-	struct mpoe_mac_addr board_addr;
+	uint64_t board_addr;
 	char board_name[MPOE_IF_NAMESIZE];
 };
 
@@ -112,7 +108,7 @@ struct mpoe_cmd_open_endpoint {
 
 struct mpoe_cmd_send_tiny {
 	struct mpoe_cmd_send_tiny_hdr {
-		struct mpoe_mac_addr dest_addr;
+		uint64_t dest_addr;
 		uint8_t dest_endpoint;
 		uint8_t length;
 		/* 8 */
@@ -127,7 +123,7 @@ struct mpoe_cmd_send_tiny {
 };
 
 struct mpoe_cmd_send_small {
-	struct mpoe_mac_addr dest_addr;
+	uint64_t dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t pad1;
 	/* 8 */
@@ -141,7 +137,7 @@ struct mpoe_cmd_send_small {
 };
 
 struct mpoe_cmd_send_medium {
-	struct mpoe_mac_addr dest_addr;
+	uint64_t dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t pad1;
 	/* 8 */
@@ -159,7 +155,7 @@ struct mpoe_cmd_send_medium {
 };
 
 struct mpoe_cmd_send_pull {
-	struct mpoe_mac_addr dest_addr;
+	uint64_t dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t pad;
 	/* 8 */
@@ -237,12 +233,12 @@ union mpoe_evt {
 
 	/* recv tiny */
 	struct mpoe_evt_recv_tiny {
-		struct mpoe_mac_addr src_addr;
+		uint64_t src_addr;
+		/* 8 */
 		uint8_t src_endpoint;
 		uint8_t length;
-		/* 8 */
 		uint16_t seqnum;
-		uint16_t pad1[3];
+		uint32_t pad1;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
@@ -255,13 +251,13 @@ union mpoe_evt {
 
 	/* recv small */
 	struct mpoe_evt_recv_small {
-		struct mpoe_mac_addr src_addr;
+		uint64_t src_addr;
+		/* 8 */
 		uint8_t src_endpoint;
 		uint8_t pad1;
-		/* 8 */
 		uint16_t length;
 		uint16_t seqnum;
-		uint32_t pad2;
+		uint16_t pad2;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
@@ -272,17 +268,17 @@ union mpoe_evt {
 
 	/* recv medium */
 	struct mpoe_evt_recv_medium {
-		struct mpoe_mac_addr src_addr;
+		uint64_t src_addr;
+		/* 8 */
 		uint8_t src_endpoint;
 		uint8_t pad1;
-		/* 8 */
+		uint16_t seqnum;
 		uint32_t msg_length;
+		/* 16 */
 		uint16_t frag_length;
 		uint8_t frag_seqnum;
 		uint8_t frag_pipeline;
-		/* 16 */
-		uint16_t seqnum;
-		uint16_t pad2[3];
+		uint32_t pad2;
 		/* 24 */
 		uint64_t match_info;
 		/* 32 */

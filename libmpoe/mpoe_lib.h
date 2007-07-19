@@ -62,7 +62,7 @@ struct mpoe_endpoint {
   int fd;
   int endpoint_index, board_index;
   char board_name[MPOE_IF_NAMESIZE];
-  struct mpoe_mac_addr board_addr;
+  uint64_t board_addr;
   void * recvq, * sendq, * eventq;
   void * next_event;
   struct list_head sent_req_q;
@@ -107,7 +107,7 @@ typedef enum mpoe_status_code mpoe_status_code_t;
 
 struct mpoe_status {
   enum mpoe_status_code code;
-  struct mpoe_mac_addr mac;
+  uint64_t board_addr;
   uint32_t ep;
   unsigned long msg_length;
   unsigned long xfer_length;
@@ -169,7 +169,7 @@ extern mpoe_return_t
 mpoe_isend(struct mpoe_endpoint *ep,
 	   void *buffer, size_t length,
 	   uint64_t match_info,
-	   struct mpoe_mac_addr * dest_addr, uint32_t dest_endpoint,
+	   uint64_t dest_addr, uint32_t dest_endpoint,
 	   void * context, union mpoe_request ** request);
 
 extern mpoe_return_t
@@ -216,35 +216,39 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 	      const void * in_val, uint32_t in_len,
 	      void * out_val, uint32_t out_len);
 
-static inline void
-mpoe_mac_addr_copy(struct mpoe_mac_addr * dst,
-		   struct mpoe_mac_addr * src)
-{
-	memcpy(dst, src, sizeof(struct mpoe_mac_addr));
-}
-
-static inline void
-mpoe_mac_addr_set_bcast(struct mpoe_mac_addr * addr)
-{
-	memset(addr, 0xff, sizeof (struct mpoe_mac_addr));
-}
-
 #define MPOE_MAC_ADDR_STRLEN 18
 
 static inline int
-mpoe_mac_addr_sprintf(char * buffer, struct mpoe_mac_addr * addr)
+mpoe_board_addr_sprintf(char * buffer, uint64_t addr)
 {
 	return sprintf(buffer, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
-		       addr->hex[0], addr->hex[1], addr->hex[2],
-		       addr->hex[3], addr->hex[4], addr->hex[5]);
+		       (uint8_t)(addr >> 40),
+		       (uint8_t)(addr >> 32),
+		       (uint8_t)(addr >> 24),
+		       (uint8_t)(addr >> 16),
+		       (uint8_t)(addr >> 8),
+		       (uint8_t)(addr >> 0));
 }
 
 static inline int
-mpoe_mac_addr_sscanf(char * buffer, struct mpoe_mac_addr * addr)
+mpoe_board_addr_sscanf(char * buffer, uint64_t * addr)
 {
-	return sscanf(buffer, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
-		      &addr->hex[0], &addr->hex[1], &addr->hex[2],
-		      &addr->hex[3], &addr->hex[4], &addr->hex[5]);
+	uint8_t bytes[6];
+	int err;
+
+        err = sscanf(buffer, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+		     &bytes[0], &bytes[1], &bytes[2],
+		     &bytes[3], &bytes[4], &bytes[5]);
+
+	if (err == 6)
+		*addr = (((uint64_t) bytes[0]) << 40)
+		      + (((uint64_t) bytes[1]) << 32)
+		      + (((uint64_t) bytes[2]) << 24)
+		      + (((uint64_t) bytes[3]) << 16)
+		      + (((uint64_t) bytes[4]) << 8)
+		      + (((uint64_t) bytes[5]) << 0);
+
+	return err;
 }
 
 #endif /* __mpoe_lib_h__ */

@@ -24,7 +24,7 @@ extern void mpoe_endpoint_release(struct mpoe_endpoint * endpoint);
 extern int mpoe_ifaces_show(char *buf);
 extern int mpoe_ifaces_store(const char *buf, size_t size);
 extern int mpoe_ifaces_get_count(void);
-extern int mpoe_iface_get_id(uint8_t board_index, struct mpoe_mac_addr * board_addr, char * board_name);
+extern int mpoe_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name);
 extern struct mpoe_iface * mpoe_iface_find_by_ifp(struct net_device *ifp);
 
 /* sending */
@@ -56,25 +56,37 @@ extern int mpoe_dev_init(void);
 extern void mpoe_dev_exit(void);
 
 /* manage addresses */
-static inline void
-mpoe_mac_addr_of_netdevice(struct net_device * ifp,
-			   struct mpoe_mac_addr * mpoe_addr)
+static inline uint64_t
+mpoe_board_addr_from_netdevice(struct net_device * ifp)
 {
-	memcpy(mpoe_addr, ifp->dev_addr, sizeof(struct mpoe_mac_addr));
+	return (((uint64_t) ifp->dev_addr[0]) << 40)
+	     + (((uint64_t) ifp->dev_addr[1]) << 32)
+	     + (((uint64_t) ifp->dev_addr[2]) << 24)
+	     + (((uint64_t) ifp->dev_addr[3]) << 16)
+	     + (((uint64_t) ifp->dev_addr[4]) << 8)
+	     + (((uint64_t) ifp->dev_addr[5]) << 0);
+}
+
+static inline uint64_t
+mpoe_board_addr_from_ethhdr_src(struct ethhdr * eh)
+{
+	return (((uint64_t) eh->h_source[0]) << 40)
+	     + (((uint64_t) eh->h_source[1]) << 32)
+	     + (((uint64_t) eh->h_source[2]) << 24)
+	     + (((uint64_t) eh->h_source[3]) << 16)
+	     + (((uint64_t) eh->h_source[4]) << 8)
+	     + (((uint64_t) eh->h_source[5]) << 0);
 }
 
 static inline void
-mpoe_ethhdr_src_to_mac_addr(struct mpoe_mac_addr * mpoe_addr,
-			    struct ethhdr * eh)
+mpoe_board_addr_to_ethhdr_dst(struct ethhdr * eh, uint64_t board_addr)
 {
-	memcpy(mpoe_addr, eh->h_source, sizeof(eh->h_source));
-}
-
-static inline void
-mpoe_mac_addr_to_ethhdr_dst(struct mpoe_mac_addr * mpoe_addr,
-			    struct ethhdr * eh)
-{
-	memcpy(eh->h_dest, mpoe_addr, sizeof(eh->h_dest));
+	eh->h_dest[0] = (uint8_t)(board_addr >> 40);
+	eh->h_dest[1] = (uint8_t)(board_addr >> 32);
+	eh->h_dest[2] = (uint8_t)(board_addr >> 24);
+	eh->h_dest[3] = (uint8_t)(board_addr >> 16);
+	eh->h_dest[4] = (uint8_t)(board_addr >> 8);
+	eh->h_dest[5] = (uint8_t)(board_addr >> 0);
 }
 
 #ifdef MPOE_DEBUG

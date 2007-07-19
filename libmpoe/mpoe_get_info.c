@@ -99,7 +99,7 @@ mpoe__get_board_count(uint32_t * count)
  */
 mpoe_return_t
 mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
-		   char * name, struct mpoe_mac_addr * addr)
+		   char * name, uint64_t * addr)
 {
   mpoe_return_t ret = MPOE_SUCCESS;
   struct mpoe_cmd_get_board_id board_id;
@@ -131,7 +131,7 @@ mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
   if (index)
     *index = board_id.board_index;
   if (addr)
-    mpoe_mac_addr_copy(addr, &board_id.board_addr);
+    *addr = board_id.board_addr;
 
  out_with_fd:
   if (!ep)
@@ -222,7 +222,7 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 
     } else {
       /* if no endpoint given, ask the driver about the index given in in_val */
-      struct mpoe_mac_addr addr;
+      uint64_t addr;
       char name[MPOE_IF_NAMESIZE];
       uint8_t index;
       mpoe_return_t ret;

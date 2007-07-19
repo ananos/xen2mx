@@ -88,7 +88,7 @@ mpoe_recv_tiny(struct mpoe_iface * iface,
 	event = &evt->recv_tiny;
 
 	/* fill event */
-	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
+	event->src_addr = mpoe_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = tiny->src_endpoint;
 	event->length = length;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(tiny);
@@ -164,7 +164,7 @@ mpoe_recv_small(struct mpoe_iface * iface,
 	event = &evt->recv_small;
 
 	/* fill event */
-	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
+	event->src_addr = mpoe_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = small->src_endpoint;
 	event->length = length;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(small);
@@ -241,7 +241,7 @@ mpoe_recv_medium_frag(struct mpoe_iface * iface,
 	event = &evt->recv_medium;
 
 	/* fill event */
-	mpoe_ethhdr_src_to_mac_addr(&event->src_addr, eh);
+	event->src_addr = mpoe_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = medium->msg.src_endpoint;
 	event->match_info = MPOE_MATCH_INFO_FROM_PKT(&medium->msg);
 	event->msg_length = medium->msg.length;

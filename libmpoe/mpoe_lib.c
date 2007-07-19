@@ -258,7 +258,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
     ret = MPOE_BAD_ERROR;
     goto out_with_attached;
   }
-  mpoe_mac_addr_sprintf(board_addr_str, &ep->board_addr);
+  mpoe_board_addr_sprintf(board_addr_str, ep->board_addr);
   printf("Successfully attached endpoint #%ld on board #%ld (%s, %s)\n",
 	 (unsigned long) endpoint_index, (unsigned long) board_index,
 	 ep->board_name, board_addr_str);
@@ -372,7 +372,7 @@ mpoe__process_recv_tiny(struct mpoe_endpoint *ep,
       return MPOE_NO_RESOURCES;
     }
 
-    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.board_addr = event->src_addr;
     req->generic.status.ep = event->src_endpoint;
     req->generic.status.match_info = event->match_info;
     req->generic.status.msg_length = length;
@@ -387,7 +387,7 @@ mpoe__process_recv_tiny(struct mpoe_endpoint *ep,
     req = mpoe__queue_first_request(&ep->recv_req_q);
     mpoe__dequeue_request(&ep->recv_req_q, req);
 
-    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.board_addr = event->src_addr;
     req->generic.status.ep = event->src_endpoint;
     req->generic.status.match_info = event->match_info;
 
@@ -429,7 +429,7 @@ mpoe__process_recv_small(struct mpoe_endpoint *ep,
       return MPOE_NO_RESOURCES;
     }
 
-    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.board_addr = event->src_addr;
     req->generic.status.ep = event->src_endpoint;
     req->generic.status.match_info = event->match_info;
     req->generic.status.msg_length = length;
@@ -444,7 +444,7 @@ mpoe__process_recv_small(struct mpoe_endpoint *ep,
     req = mpoe__queue_first_request(&ep->recv_req_q);
     mpoe__dequeue_request(&ep->recv_req_q, req);
 
-    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.board_addr = event->src_addr;
     req->generic.status.ep = event->src_endpoint;
     req->generic.status.match_info = event->match_info;
 
@@ -507,7 +507,7 @@ mpoe__process_recv_medium(struct mpoe_endpoint *ep,
     mpoe__dequeue_request(&ep->recv_req_q, req);
 
     /* set basic fields */
-    mpoe_mac_addr_copy(&req->generic.status.mac, &event->src_addr);
+    req->generic.status.board_addr = event->src_addr;
     req->generic.status.ep = event->src_endpoint;
     req->generic.status.match_info = event->match_info;
 
@@ -650,7 +650,7 @@ mpoe_return_t
 mpoe_isend(struct mpoe_endpoint *ep,
 	   void *buffer, size_t length,
 	   uint64_t match_info,
-	   struct mpoe_mac_addr *dest_addr, uint32_t dest_endpoint,
+	   uint64_t dest_addr, uint32_t dest_endpoint,
 	   void *context, union mpoe_request **requestp)
 {
   union mpoe_request * req;
@@ -670,7 +670,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
   if (length <= MPOE_TINY_MAX) {
     struct mpoe_cmd_send_tiny tiny_param;
 
-    mpoe_mac_addr_copy(&tiny_param.hdr.dest_addr, dest_addr);
+    tiny_param.hdr.dest_addr = dest_addr;
     tiny_param.hdr.dest_endpoint = dest_endpoint;
     tiny_param.hdr.match_info = match_info;
     tiny_param.hdr.length = length;
@@ -693,7 +693,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
   } else if (length <= MPOE_SMALL_MAX) {
     struct mpoe_cmd_send_small small_param;
 
-    mpoe_mac_addr_copy(&small_param.dest_addr, dest_addr);
+    small_param.dest_addr = dest_addr;
     small_param.dest_endpoint = dest_endpoint;
     small_param.match_info = match_info;
     small_param.length = length;
@@ -728,7 +728,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
       /* FIXME: queue */
       assert(0);
 
-    mpoe_mac_addr_copy(&medium_param.dest_addr, dest_addr);
+    medium_param.dest_addr = dest_addr;
     medium_param.dest_endpoint = dest_endpoint;
     medium_param.match_info = match_info;
     medium_param.frag_pipeline = MPOE_MEDIUM_FRAG_PIPELINE;

@@ -118,7 +118,7 @@ mpoe_send_tiny(struct mpoe_endpoint * endpoint,
 
 	/* fill ethernet header */
 	memset(eh, 0, sizeof(*eh));
-	mpoe_mac_addr_to_ethhdr_dst(&cmd.dest_addr, eh);
+	mpoe_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
@@ -193,7 +193,7 @@ mpoe_send_small(struct mpoe_endpoint * endpoint,
 
 	/* fill ethernet header */
 	memset(eh, 0, sizeof(*eh));
-	mpoe_mac_addr_to_ethhdr_dst(&cmd.dest_addr, eh);
+	mpoe_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 
@@ -279,7 +279,7 @@ mpoe_send_medium(struct mpoe_endpoint * endpoint,
 
 	/* fill ethernet header */
 	memset(eh, 0, sizeof(*eh));
-	mpoe_mac_addr_to_ethhdr_dst(&cmd.dest_addr, eh);
+	mpoe_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_MPOE);
 

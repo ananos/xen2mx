@@ -71,10 +71,12 @@ int main(int argc, char *argv[])
   int max = MAX;
   int multiplier = MULTIPLIER;
   int increment = INCREMENT;
-  struct mpoe_mac_addr dest;
+  uint64_t dest;
   int sender = 0;
   int verbose = 0;
   char * buffer;
+
+  dest = 0; /* compiler warning */
 
   while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:v")) != EOF)
     switch (c) {
@@ -85,7 +87,7 @@ int main(int argc, char *argv[])
       eid = atoi(optarg);
       break;
     case 'd':
-      mpoe_mac_addr_sscanf(optarg, &dest);
+      mpoe_board_addr_sscanf(optarg, &dest);
       sender = 1;
       break;
     case 'r':
@@ -137,7 +139,7 @@ int main(int argc, char *argv[])
     int length;
     int i;
 
-    mpoe_mac_addr_sprintf(dest_str, &dest);
+    mpoe_board_addr_sprintf(dest_str, dest);
     printf("Starting sender to %s...\n", dest_str);
 
     for(length = min;
@@ -149,7 +151,7 @@ int main(int argc, char *argv[])
       param.warmup = warmup;
       param.length = length;
       ret = mpoe_isend(ep, &param, sizeof(param),
-		       0x1234567887654321ULL, &dest, rid,
+		       0x1234567887654321ULL, dest, rid,
 		       NULL, &req);
       if (ret != MPOE_SUCCESS) {
 	fprintf(stderr, "Failed to isend (%s)\n",
@@ -194,7 +196,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = mpoe_isend(ep, buffer, length,
-			 0x1234567887654321ULL, &dest, rid,
+			 0x1234567887654321ULL, dest, rid,
 			 NULL, &req);
 	if (ret != MPOE_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",
@@ -217,7 +219,7 @@ int main(int argc, char *argv[])
     /* send a param message with iter = 0 to stop the receiver */
     param.iter = 0;
     ret = mpoe_isend(ep, &param, sizeof(param),
-		     0x1234567887654321ULL, &dest, rid,
+		     0x1234567887654321ULL, dest, rid,
 		     NULL, &req);
     if (ret != MPOE_SUCCESS) {
       fprintf(stderr, "Failed to isend (%s)\n",
@@ -292,7 +294,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = mpoe_isend(ep, buffer, length,
-			 0x1234567887654321ULL, &status.mac, status.ep,
+			 0x1234567887654321ULL, status.board_addr, status.ep,
 			 NULL, &req);
 	if (ret != MPOE_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",
