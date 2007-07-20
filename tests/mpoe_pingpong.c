@@ -121,6 +121,13 @@ int main(int argc, char *argv[])
       break;
     }
 
+  ret = mpoe_init(); 
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+            mpoe_strerror(ret));
+    goto out;
+  }
+
   ret = mpoe_open_endpoint(bid, eid, &ep);
   if (ret != MPOE_SUCCESS) {
     fprintf(stderr, "Failed to open endpoint (%s)\n",

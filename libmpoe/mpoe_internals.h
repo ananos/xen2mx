@@ -20,4 +20,6 @@ extern mpoe_return_t mpoe__get_board_count(uint32_t * count);
 extern mpoe_return_t mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index, char * name, uint64_t * addr);
 extern mpoe_return_t mpoe__get_board_index_by_name(const char * name, uint8_t * index);
 
+extern int mpoe_initialized;
+
 #endif /* __mpoe_internals_h__ */

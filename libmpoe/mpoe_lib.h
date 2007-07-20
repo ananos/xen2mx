@@ -91,6 +91,8 @@ enum mpoe__request_state {
 enum mpoe_return {
   MPOE_SUCCESS=0,
   MPOE_BAD_ERROR,
+  MPOE_ALREADY_INITIALIZED,
+  MPOE_NOT_INITIALIZED,
   MPOE_NO_DEVICE,
   MPOE_ACCESS_DENIED,
   MPOE_NO_RESOURCES,
@@ -152,6 +154,13 @@ union mpoe_request {
 /************
  * Functions
  */
+
+#define MPOE_API 0x0
+
+extern mpoe_return_t
+mpoe__init_api(int api);
+
+static inline mpoe_return_t mpoe_init(void) { return mpoe__init_api(MPOE_API); }
 
 const char *
 mpoe_strerror(mpoe_return_t ret);

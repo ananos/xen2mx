@@ -200,6 +200,13 @@ int main(void)
   int i;
   mpoe_return_t ret;
 
+  ret = mpoe_init();
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+	    mpoe_strerror(ret));
+    goto out;
+  }
+
   ret = mpoe_get_info(NULL, MPOE_INFO_BOARD_INDEX_BY_NAME,
 		      IFNAME, strlen(IFNAME)+1,
 		      &board_index, sizeof(board_index));

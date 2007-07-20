@@ -62,6 +62,10 @@ mpoe_strerror(mpoe_return_t ret)
     return "Success";
   case MPOE_BAD_ERROR:
     return "Bad (internal?) error";
+  case MPOE_ALREADY_INITIALIZED:
+    return "Already initialized";
+  case MPOE_NOT_INITIALIZED:
+    return "Not initialized";
   case MPOE_NO_DEVICE:
     return "No device";
   case MPOE_ACCESS_DENIED:
@@ -202,6 +206,11 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   void * recvq, * sendq, * eventq;
   mpoe_return_t ret = MPOE_SUCCESS;
   int err, fd;
+
+  if (!mpoe_initialized) {
+    ret = MPOE_NOT_INITIALIZED;
+    goto out;
+  }
 
   ep = malloc(sizeof(struct mpoe_endpoint));
   if (!ep) {
