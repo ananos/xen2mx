@@ -6,6 +6,7 @@
 /* globals */
 extern int mpoe_iface_max;
 extern int mpoe_endpoint_max;
+extern int mpoe_peer_max;
 
 /* main net */
 extern int mpoe_net_init(const char * ifnames);

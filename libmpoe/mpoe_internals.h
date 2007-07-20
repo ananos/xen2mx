@@ -23,6 +23,7 @@ struct mpoe_globals {
   int control_fd;
   uint32_t board_max;
   uint32_t endpoint_max;
+  uint32_t peer_max;
 };
 
 extern struct mpoe_globals mpoe_globals;

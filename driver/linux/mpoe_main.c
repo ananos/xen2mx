@@ -13,6 +13,9 @@ module_param(mpoe_iface_max, uint, S_IRUGO);
 int mpoe_endpoint_max = 8;
 module_param(mpoe_endpoint_max, uint, S_IRUGO);
 
+int mpoe_peer_max = 1024;
+module_param(mpoe_peer_max, uint, S_IRUGO);
+
 static __init int
 mpoe_init(void)
 {

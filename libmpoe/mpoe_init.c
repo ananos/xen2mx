@@ -35,6 +35,12 @@ mpoe__init_api(int api)
     goto out_with_fd;
   }
 
+  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_PEER_MAX, &mpoe_globals.peer_max);
+  if (err < 0) {
+    ret = mpoe__errno_to_return(errno, "ioctl GET_PEER_MAX");
+    goto out_with_fd;
+  }
+
   mpoe_globals.initialized = 1;
   return MPOE_SUCCESS;
 

@@ -44,8 +44,9 @@ struct mpoe_cmd_region_segment {
 
 #define MPOE_CMD_GET_BOARD_MAX		0x01
 #define MPOE_CMD_GET_ENDPOINT_MAX	0x02
-#define MPOE_CMD_GET_BOARD_COUNT	0x03
-#define MPOE_CMD_GET_BOARD_ID		0x04
+#define MPOE_CMD_GET_PEER_MAX		0x03
+#define MPOE_CMD_GET_BOARD_COUNT	0x04
+#define MPOE_CMD_GET_BOARD_ID		0x05
 #define MPOE_CMD_OPEN_ENDPOINT		0x81
 #define MPOE_CMD_CLOSE_ENDPOINT		0x82
 #define MPOE_CMD_SEND_TINY		0x83
@@ -64,6 +65,8 @@ mpoe_strcmd(unsigned cmd)
 		return "Get Board Max";
 	case MPOE_CMD_GET_ENDPOINT_MAX:
 		return "Get Endpoint Max";
+	case MPOE_CMD_GET_PEER_MAX:
+		return "Get Peer Max";
 	case MPOE_CMD_GET_BOARD_COUNT:
 		return "Get Board Count";
 	case MPOE_CMD_GET_BOARD_ID:
