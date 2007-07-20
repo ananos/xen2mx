@@ -124,6 +124,19 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_ARG_ENABLE(valgrind, [ --enable-valgrind	enable Valgrind hooks in the library ],
+	      enable_valgrind=$enableval, enable_valgrind=maybe)
+AC_MSG_CHECKING(if valgrind hooks are enabled)
+if test x$enable_valgrind != xno -a x$enable_debug = xyes; then
+  AC_PREPROC_IFELSE([#include <valgrind/memcheck.h>], enable_valgrind=yes)
+fi
+if test x$enable_valgrind = xyes ; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(MPOE_VALGRIND_DEBUG, 1, [Enable memory allocation debugging with Valgrind])
+else
+  AC_MSG_RESULT(no)
+fi
+
 ##########
 # Globals
 

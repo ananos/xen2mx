@@ -7,6 +7,7 @@
 
 #include "mpoe_io.h"
 #include "mpoe_list.h"
+#include "mpoe__valgrind.h"
 
 /********
  * Types
