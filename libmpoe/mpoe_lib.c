@@ -207,7 +207,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   mpoe_return_t ret = MPOE_SUCCESS;
   int err, fd;
 
-  if (!mpoe_initialized) {
+  if (!mpoe_globals.initialized) {
     ret = MPOE_NOT_INITIALIZED;
     goto out;
   }

@@ -1,14 +1,15 @@
 #include "mpoe_lib.h"
+#include "mpoe_internals.h"
 
-int mpoe_initialized = 0;
+struct mpoe_globals mpoe_globals = { 0 };
 
 mpoe_return_t
 mpoe__init_api(int api)
 {
-  if (mpoe_initialized)
+  if (mpoe_globals.initialized)
     return MPOE_ALREADY_INITIALIZED;
 
-  mpoe_initialized = 1;
+  mpoe_globals.initialized = 1;
   return MPOE_SUCCESS;
 }
 
@@ -17,6 +18,6 @@ mpoe_finalize(void)
 {
   /* FIXME: check that no endpoint is still open */
 
-  mpoe_initialized = 0;
+  mpoe_globals.initialized = 0;
   return MPOE_SUCCESS;
 }
