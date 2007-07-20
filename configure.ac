@@ -3,6 +3,9 @@ AC_PREREQ(2.53)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/mpoe)
 
+AC_PROG_CPP
+AC_PROG_CC
+
 ########################
 # Kernel related config
 
