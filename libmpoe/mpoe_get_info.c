@@ -6,54 +6,6 @@
 #include "mpoe_internals.h"
 
 /*
- * Returns the max amount of boards supported by the driver
- */
-mpoe_return_t
-mpoe__get_board_max(uint32_t * max)
-{
-  mpoe_return_t ret = MPOE_SUCCESS;
-  int err;
-
-  if (!mpoe_globals.initialized) {
-    ret = MPOE_NOT_INITIALIZED;
-    goto out;
-  }
-
-  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_MAX, max);
-  if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_MAX");
-    goto out;
-  }
-
- out:
-  return ret;
-}
-
-/*
- * Returns the max amount of endpoints per board supported by the driver
- */
-mpoe_return_t
-mpoe__get_endpoint_max(uint32_t * max)
-{
-  mpoe_return_t ret = MPOE_SUCCESS;
-  int err;
-
-  if (!mpoe_globals.initialized) {
-    ret = MPOE_NOT_INITIALIZED;
-    goto out;
-  }
-
-  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_ENDPOINT_MAX, max);
-  if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "ioctl GET_ENDPOINT_MAX");
-    goto out;
-  }
-
- out:
-  return ret;
-}
-
-/*
  * Returns the current amount of boards attached to the driver
  */
 mpoe_return_t
@@ -220,14 +172,20 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 {
   switch (key) {
   case MPOE_INFO_BOARD_MAX:
+    if (!mpoe_globals.initialized)
+      return MPOE_NOT_INITIALIZED;
     if (out_len < sizeof(uint32_t))
       return MPOE_INVALID_PARAMETER;
-    return mpoe__get_board_max((uint32_t *) out_val);
+    *(uint32_t *) out_val = mpoe_globals.board_max;
+    return MPOE_SUCCESS;
 
   case MPOE_INFO_ENDPOINT_MAX:
+    if (!mpoe_globals.initialized)
+      return MPOE_NOT_INITIALIZED;
     if (out_len < sizeof(uint32_t))
       return MPOE_INVALID_PARAMETER;
-    return mpoe__get_endpoint_max((uint32_t *) out_val);
+    *(uint32_t *) out_val = mpoe_globals.endpoint_max;
+    return MPOE_SUCCESS;
 
   case MPOE_INFO_BOARD_COUNT:
     if (out_len < sizeof(uint32_t))

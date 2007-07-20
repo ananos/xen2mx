@@ -17,19 +17,9 @@ int main(void)
     goto out;
   }
 
-  /* get board max */
-  ret = mpoe__get_board_max(&max);
-  if (ret != MPOE_SUCCESS) {
-    fprintf(stderr, "Failed to read board max, %s\n", mpoe_strerror(ret));
-    goto out;
-  }
-
-  /* get endpoint max */
-  ret = mpoe__get_endpoint_max(&emax);
-  if (ret != MPOE_SUCCESS) {
-    fprintf(stderr, "Failed to read endpoint max, %s\n", mpoe_strerror(ret));
-    goto out;
-  }
+  /* get board and endpoint max */
+  max = mpoe_globals.board_max;
+  emax = mpoe_globals.endpoint_max;
 
   /* get board count */
   ret = mpoe__get_board_count(&count);

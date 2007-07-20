@@ -1,5 +1,6 @@
 #include <fcntl.h>
 #include <unistd.h>
+#include <sys/ioctl.h>
 #include <errno.h>
 
 #include "mpoe_lib.h"
@@ -10,6 +11,7 @@ struct mpoe_globals mpoe_globals = { 0 };
 mpoe_return_t
 mpoe__init_api(int api)
 {
+  mpoe_return_t ret;
   int err;
 
   if (mpoe_globals.initialized)
@@ -21,8 +23,24 @@ mpoe__init_api(int api)
 
   mpoe_globals.control_fd = err;
 
+  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_MAX, &mpoe_globals.board_max);
+  if (err < 0) {
+    ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_MAX");
+    goto out_with_fd;
+  }
+
+  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_ENDPOINT_MAX, &mpoe_globals.endpoint_max);
+  if (err < 0) {
+    ret = mpoe__errno_to_return(errno, "ioctl GET_ENDPOINT_MAX");
+    goto out_with_fd;
+  }
+
   mpoe_globals.initialized = 1;
   return MPOE_SUCCESS;
+
+ out_with_fd:
+  close(mpoe_globals.control_fd);
+  return ret;
 }
 
 mpoe_return_t

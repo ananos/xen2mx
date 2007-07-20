@@ -14,8 +14,6 @@
 
 extern mpoe_return_t mpoe__errno_to_return(int error, char * caller);
 
-extern mpoe_return_t mpoe__get_board_max(uint32_t * max);
-extern mpoe_return_t mpoe__get_endpoint_max(uint32_t * max);
 extern mpoe_return_t mpoe__get_board_count(uint32_t * count);
 extern mpoe_return_t mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index, char * name, uint64_t * addr);
 extern mpoe_return_t mpoe__get_board_index_by_name(const char * name, uint8_t * index);
@@ -23,6 +21,8 @@ extern mpoe_return_t mpoe__get_board_index_by_name(const char * name, uint8_t * 
 struct mpoe_globals {
   int initialized;
   int control_fd;
+  uint32_t board_max;
+  uint32_t endpoint_max;
 };
 
 extern struct mpoe_globals mpoe_globals;
