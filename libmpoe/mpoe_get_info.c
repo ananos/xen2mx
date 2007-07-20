@@ -1,7 +1,5 @@
-#include <fcntl.h>
 #include <errno.h>
 #include <sys/ioctl.h>
-#include <unistd.h>
 
 #include "mpoe_io.h"
 #include "mpoe_lib.h"
@@ -14,23 +12,19 @@ mpoe_return_t
 mpoe__get_board_max(uint32_t * max)
 {
   mpoe_return_t ret = MPOE_SUCCESS;
-  int err, fd;
+  int err;
 
-  err = open(MPOE_DEVNAME, O_RDONLY);
-  if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "open");
+  if (!mpoe_globals.initialized) {
+    ret = MPOE_NOT_INITIALIZED;
     goto out;
   }
-  fd = err;
 
-  err = ioctl(fd, MPOE_CMD_GET_BOARD_MAX, max);
+  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_MAX, max);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_MAX");
-    goto out_with_fd;
+    goto out;
   }
 
- out_with_fd:
-  close(fd);
  out:
   return ret;
 }
@@ -42,23 +36,19 @@ mpoe_return_t
 mpoe__get_endpoint_max(uint32_t * max)
 {
   mpoe_return_t ret = MPOE_SUCCESS;
-  int err, fd;
+  int err;
 
-  err = open(MPOE_DEVNAME, O_RDONLY);
-  if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "open");
+  if (!mpoe_globals.initialized) {
+    ret = MPOE_NOT_INITIALIZED;
     goto out;
   }
-  fd = err;
 
-  err = ioctl(fd, MPOE_CMD_GET_ENDPOINT_MAX, max);
+  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_ENDPOINT_MAX, max);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_ENDPOINT_MAX");
-    goto out_with_fd;
+    goto out;
   }
 
- out_with_fd:
-  close(fd);
  out:
   return ret;
 }
@@ -70,23 +60,19 @@ mpoe_return_t
 mpoe__get_board_count(uint32_t * count)
 {
   mpoe_return_t ret = MPOE_SUCCESS;
-  int err, fd;
+  int err;
 
-  err = open(MPOE_DEVNAME, O_RDONLY);
-  if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "open");
+  if (!mpoe_globals.initialized) {
+    ret = MPOE_NOT_INITIALIZED;
     goto out;
   }
-  fd = err;
 
-  err = ioctl(fd, MPOE_CMD_GET_BOARD_COUNT, count);
+  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_COUNT, count);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_COUNT");
-    goto out_with_fd;
+    goto out;
   }
 
- out_with_fd:
-  close(fd);
  out:
   return ret;
 }
@@ -105,25 +91,24 @@ mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
   struct mpoe_cmd_get_board_id board_id;
   int err, fd;
 
+  if (!mpoe_globals.initialized) {
+    ret = MPOE_NOT_INITIALIZED;
+    goto out;
+  }
+
   if (ep) {
-    /* use the endpoint */
+    /* use the endpoint fd */
     fd = ep->fd;
   } else {
-    /* use a dummy endpoint and the index */
-    err = open(MPOE_DEVNAME, O_RDONLY);
-    if (err < 0) {
-      ret = mpoe__errno_to_return(errno, "open");
-      goto out;
-    }
-    fd = err;
-
+    /* use the control fd and the index */
+    fd = mpoe_globals.control_fd;
     board_id.board_index = *index;
   }
 
   err = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &board_id);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_ID");
-    goto out_with_fd;
+    goto out;
   }
 
   if (name)
@@ -133,9 +118,6 @@ mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
   if (addr)
     *addr = board_id.board_addr;
 
- out_with_fd:
-  if (!ep)
-    close(fd);
  out:
   return ret;
 }
@@ -148,19 +130,17 @@ mpoe__get_board_index_by_name(const char * name, uint8_t * index)
 {
   mpoe_return_t ret = MPOE_SUCCESS;
   uint32_t max;
-  int err, fd, i;
+  int err, i;
 
-  err = open(MPOE_DEVNAME, O_RDONLY);
-  if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "open");
+  if (!mpoe_globals.initialized) {
+    ret = MPOE_NOT_INITIALIZED;
     goto out;
   }
-  fd = err;
 
-  err = ioctl(fd, MPOE_CMD_GET_BOARD_MAX, &max);
+  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_MAX, &max);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_MAX");
-    goto out_with_fd;
+    goto out;
   }
 
   ret = MPOE_INVALID_PARAMETER;
@@ -168,11 +148,11 @@ mpoe__get_board_index_by_name(const char * name, uint8_t * index)
     struct mpoe_cmd_get_board_id board_id;
 
     board_id.board_index = i;
-    err = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &board_id);
+    err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_ID, &board_id);
     if (err < 0) {
       ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_ID");
       if (ret != MPOE_INVALID_PARAMETER)
-	goto out_with_fd;
+	goto out;
     }
 
     if (!strncmp(name, board_id.board_name, MPOE_IF_NAMESIZE)) {
@@ -182,8 +162,6 @@ mpoe__get_board_index_by_name(const char * name, uint8_t * index)
     }
   }
 
- out_with_fd:
-  close(fd);
  out:
   return ret;
 }
@@ -196,19 +174,17 @@ mpoe__get_board_index_by_addr(uint64_t addr, uint8_t * index)
 {
   mpoe_return_t ret = MPOE_SUCCESS;
   uint32_t max;
-  int err, fd, i;
+  int err, i;
 
-  err = open(MPOE_DEVNAME, O_RDONLY);
-  if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "open");
+  if (!mpoe_globals.initialized) {
+    ret = MPOE_NOT_INITIALIZED;
     goto out;
   }
-  fd = err;
 
-  err = ioctl(fd, MPOE_CMD_GET_BOARD_MAX, &max);
+  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_MAX, &max);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_MAX");
-    goto out_with_fd;
+    goto out;
   }
 
   ret = MPOE_INVALID_PARAMETER;
@@ -216,11 +192,11 @@ mpoe__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     struct mpoe_cmd_get_board_id board_id;
 
     board_id.board_index = i;
-    err = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &board_id);
+    err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_ID, &board_id);
     if (err < 0) {
       ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_ID");
       if (ret != MPOE_INVALID_PARAMETER)
-	goto out_with_fd;
+	goto out;
     }
 
     if (addr == board_id.board_addr) {
@@ -230,8 +206,6 @@ mpoe__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     }
   }
 
- out_with_fd:
-  close(fd);
  out:
   return ret;
 }

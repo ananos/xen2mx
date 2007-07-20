@@ -10,6 +10,13 @@ int main(void)
   uint32_t max, emax, count;
   int found, i;
 
+  ret = mpoe_init();
+  if (ret != MPOE_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+            mpoe_strerror(ret));
+    goto out;
+  }
+
   /* get board max */
   ret = mpoe__get_board_max(&max);
   if (ret != MPOE_SUCCESS) {

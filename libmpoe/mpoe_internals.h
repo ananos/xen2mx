@@ -22,6 +22,7 @@ extern mpoe_return_t mpoe__get_board_index_by_name(const char * name, uint8_t * 
 
 struct mpoe_globals {
   int initialized;
+  int control_fd;
 };
 
 extern struct mpoe_globals mpoe_globals;
