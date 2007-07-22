@@ -169,6 +169,14 @@ const char *
 mpoe_strstatus(mpoe_status_code_t code);
 
 extern mpoe_return_t
+mpoe_board_number_to_nic_id(uint32_t board_number,
+			    uint64_t *nic_id);
+
+extern mpoe_return_t
+mpoe_nic_id_to_board_number(uint64_t nic_id,
+			    uint32_t *board_number);
+
+extern mpoe_return_t
 mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 		   struct mpoe_endpoint **epp);
 

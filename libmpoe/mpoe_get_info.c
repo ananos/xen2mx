@@ -248,3 +248,28 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 
   return MPOE_SUCCESS;
 }
+
+/*
+ * Translate local board number/addr
+ */
+
+mpoe_return_t
+mpoe_board_number_to_nic_id(uint32_t board_number,
+			    uint64_t *nic_id)
+{
+  uint8_t index = board_number;
+  return mpoe__get_board_id(NULL, &index, nic_id, NULL);
+}
+
+mpoe_return_t
+mpoe_nic_id_to_board_number(uint64_t nic_id,
+			    uint32_t *board_number)
+{
+  mpoe_return_t ret;
+  uint8_t index;
+
+  ret = mpoe__get_board_index_by_addr(nic_id, &index);
+  if (ret == MPOE_SUCCESS)
+    *board_number = index;
+  return ret;
+}
