@@ -98,6 +98,12 @@ grep "struct sk_buff *\*[[ 	]]*skb_pad(.*, .*);" ${LINUX_HDR}/include/linux/skbu
   && echo "#define MPOE_SKB_PAD_RETURNS_NEW_SKB 1" >> ${TMP_CHECKS_PATH} \
   && AC_MSG_RESULT(struct sk_buff *) || AC_MSG_RESULT(int)
 
+# uts namespace arrived in 2.6.19
+AC_MSG_CHECKING(uts namespace availabilty)
+grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null \
+  && echo "#define MPOE_HAVE_UTS_NAMESPACE 1" >> ${TMP_CHECKS_PATH} \
+  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+
 # add the footer
 echo "" >> ${TMP_CHECKS_PATH}
 echo "#endif /* __mpoe_checks_h__ */" >> ${TMP_CHECKS_PATH}

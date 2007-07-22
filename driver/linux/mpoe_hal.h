@@ -85,6 +85,13 @@ mpoe_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long p
 #define mpoe_skb_pad skb_pad
 #endif
 
+#ifdef MPOE_HAVE_UTS_NAMESPACE
+/* uts namespace introduced in 2.6.19 */
+#define mpoe_current_utsname current->nsproxy->uts_ns->name
+#else
+#define mpoe_current_utsname system_utsname
+#endif
+
 #endif /* __mpoe_hal_h__ */
 
 /*

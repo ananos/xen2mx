@@ -1,5 +1,6 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/utsname.h>
 
 #include "mpoe_common.h"
 #include "mpoe_hal.h"
@@ -122,6 +123,7 @@ static int
 mpoe_iface_attach(struct net_device * ifp)
 {
 	struct mpoe_iface * iface;
+	char *board_name;
 	int ret;
 	int i;
 
@@ -150,13 +152,23 @@ mpoe_iface_attach(struct net_device * ifp)
 
 	printk(KERN_INFO "MPoE: Attaching interface '%s' as #%i\n", ifp->name, i);
 
+	board_name = kmalloc(strlen(mpoe_current_utsname.nodename) + 1 + strlen(ifp->name) + 1, GFP_KERNEL);
+	if (!board_name) {
+		printk(KERN_ERR "MPoE: Failed to allocate interface board name\n");
+		ret = -ENOMEM;
+		goto out_with_iface;
+	}
+
+	sprintf(board_name, "%s.%s", mpoe_current_utsname.nodename, ifp->name);
+	iface->board_name = board_name;
+
 	iface->eth_ifp = ifp;
 	iface->endpoint_nr = 0;
 	iface->endpoints = kzalloc(mpoe_endpoint_max * sizeof(struct mpoe_endpoint *), GFP_KERNEL);
 	if (!iface->endpoints) {
 		printk(KERN_ERR "MPoE: Failed to allocate interface endpoint pointers\n");
 		ret = -ENOMEM;
-		goto out_with_iface;
+		goto out_with_iface_board_name;
 	}
 
 	init_waitqueue_head(&iface->noendpoint_queue);
@@ -167,6 +179,8 @@ mpoe_iface_attach(struct net_device * ifp)
 
 	return 0;
 
+ out_with_iface_board_name:
+	kfree(board_name);
  out_with_iface:
 	kfree(iface);
  out_with_ifp_hold:
@@ -244,6 +258,7 @@ __mpoe_iface_detach(struct mpoe_iface * iface, int force)
 	mpoe_ifaces[iface->index] = NULL;
 	mpoe_iface_nr--;
 	kfree(iface->endpoints);
+	kfree(iface->board_name);
 	kfree(iface);
 
 	return 0;

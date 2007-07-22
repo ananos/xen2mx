@@ -20,6 +20,7 @@ struct mpoe_iface {
 	int index;
 
 	struct net_device * eth_ifp;
+	char * board_name;
 
 	spinlock_t endpoint_lock;
 	int endpoint_nr;
