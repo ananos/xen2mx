@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
       break;
     }
 
-  ret = mpoe_init(); 
+  ret = mpoe_init();
   if (ret != MPOE_SUCCESS) {
     fprintf(stderr, "Failed to initialize (%s)\n",
             mpoe_strerror(ret));
