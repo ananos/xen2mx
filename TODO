@@ -1,5 +1,3 @@
-* uniformize externs or not in api
-
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
 

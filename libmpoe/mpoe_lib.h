@@ -157,7 +157,7 @@ union mpoe_request {
 
 #define MPOE_API 0x0
 
-extern mpoe_return_t
+mpoe_return_t
 mpoe__init_api(int api);
 
 static inline mpoe_return_t mpoe_init(void) { return mpoe__init_api(MPOE_API); }
@@ -168,29 +168,29 @@ mpoe_strerror(mpoe_return_t ret);
 const char *
 mpoe_strstatus(mpoe_status_code_t code);
 
-extern mpoe_return_t
+mpoe_return_t
 mpoe_board_number_to_nic_id(uint32_t board_number,
 			    uint64_t *nic_id);
 
-extern mpoe_return_t
+mpoe_return_t
 mpoe_nic_id_to_board_number(uint64_t nic_id,
 			    uint32_t *board_number);
 
-extern mpoe_return_t
+mpoe_return_t
 mpoe_open_endpoint(uint32_t board_index, uint32_t index,
 		   struct mpoe_endpoint **epp);
 
-extern mpoe_return_t
+mpoe_return_t
 mpoe_close_endpoint(struct mpoe_endpoint *ep);
 
-extern mpoe_return_t
+mpoe_return_t
 mpoe_isend(struct mpoe_endpoint *ep,
 	   void *buffer, size_t length,
 	   uint64_t match_info,
 	   uint64_t dest_addr, uint32_t dest_endpoint,
 	   void * context, union mpoe_request ** request);
 
-extern mpoe_return_t
+mpoe_return_t
 mpoe_irecv(struct mpoe_endpoint *ep,
 	   void *buffer, size_t length,
 	   uint64_t match_info, uint64_t match_mask,
@@ -200,7 +200,7 @@ mpoe_return_t
 mpoe_test(struct mpoe_endpoint *ep, union mpoe_request **requestp,
 	  struct mpoe_status *status, uint32_t * result);
 
-extern mpoe_return_t
+mpoe_return_t
 mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
 	  struct mpoe_status *status, uint32_t * result);
 
