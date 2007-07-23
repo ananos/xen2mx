@@ -1,0 +1,2 @@
+Linux kernel from 2.6.17 to 2.6.23 are supported.
+Tested on i386 (with and without xen) and x86_64.

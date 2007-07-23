@@ -1,0 +1,10 @@
+$ ./configure
+$ make
+
+It build against the currently running kernel, using headers and build tree
+in /lib/modules/`uname -r`/{source,build}.
+
+To build for another kernel, use
+$ ./configure --with-linux=/path/to/kernel/headers/
+To build using another kernel build tree, use
+$ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
