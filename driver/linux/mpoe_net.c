@@ -102,6 +102,7 @@ mpoe_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
 
 	*board_addr = mpoe_board_addr_from_netdevice(ifp);
 	strncpy(board_name, iface->board_name, MPOE_HOSTNAMELEN_MAX);
+	board_name[MPOE_HOSTNAMELEN_MAX-1] = '\0';
 
 	spin_unlock(&mpoe_iface_lock);
 
