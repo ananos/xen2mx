@@ -258,7 +258,7 @@ mpoe_board_number_to_nic_id(uint32_t board_number,
 			    uint64_t *nic_id)
 {
   uint8_t index = board_number;
-  return mpoe__get_board_id(NULL, &index, nic_id, NULL);
+  return mpoe__get_board_id(NULL, &index, NULL, nic_id);
 }
 
 mpoe_return_t
