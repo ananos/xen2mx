@@ -27,10 +27,10 @@
 #define MPOE_TINY_MAX           32
 #define MPOE_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
 
+#define MPOE_HOSTNAMELEN_MAX	80
+
 #define MPOE_USER_REGION_MAX		255
 typedef uint8_t mpoe_user_region_id_t;
-
-#define MPOE_IF_NAMESIZE	16
 
 struct mpoe_cmd_region_segment {
 	uint64_t vaddr;
@@ -101,7 +101,7 @@ mpoe_strcmd(unsigned cmd)
 struct mpoe_cmd_get_board_id {
 	uint8_t board_index;
 	uint64_t board_addr;
-	char board_name[MPOE_IF_NAMESIZE];
+	char board_name[MPOE_HOSTNAMELEN_MAX];
 };
 
 struct mpoe_cmd_open_endpoint {

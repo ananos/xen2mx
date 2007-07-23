@@ -85,6 +85,7 @@ mpoe_ifaces_get_count(void)
 int
 mpoe_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
 {
+	struct mpoe_iface * iface;
 	struct net_device * ifp;
 	int ret;
 
@@ -96,10 +97,11 @@ mpoe_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
 	    || mpoe_ifaces[board_index] == NULL)
 		goto out_with_lock;
 
-	ifp = mpoe_ifaces[board_index]->eth_ifp;
+	iface = mpoe_ifaces[board_index];
+	ifp = iface->eth_ifp;
 
 	*board_addr = mpoe_board_addr_from_netdevice(ifp);
-	strncpy(board_name, ifp->name, MPOE_IF_NAMESIZE);
+	strncpy(board_name, iface->board_name, MPOE_HOSTNAMELEN_MAX);
 
 	spin_unlock(&mpoe_iface_lock);
 

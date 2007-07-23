@@ -62,7 +62,7 @@ struct mpoe_partner {
 struct mpoe_endpoint {
   int fd;
   int endpoint_index, board_index;
-  char board_name[MPOE_IF_NAMESIZE];
+  char board_name[MPOE_HOSTNAMELEN_MAX];
   uint64_t board_addr;
   void * recvq, * sendq, * eventq;
   void * next_event;
@@ -233,6 +233,8 @@ mpoe_return_t
 mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 	      const void * in_val, uint32_t in_len,
 	      void * out_val, uint32_t out_len);
+
+#define MPOE_HOSTNAMELEN_MAX 80
 
 #define MPOE_BOARD_ADDR_STRLEN 18
 

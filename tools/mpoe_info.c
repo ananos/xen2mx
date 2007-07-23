@@ -32,7 +32,7 @@ int main(void)
 
   for(i=0, found=0; i<max && found<count; i++) {
     uint8_t board_index = i;
-    char board_name[MPOE_IF_NAMESIZE];
+    char board_name[MPOE_HOSTNAMELEN_MAX];
     uint64_t board_addr;
     char board_addr_str[MPOE_BOARD_ADDR_STRLEN];
 

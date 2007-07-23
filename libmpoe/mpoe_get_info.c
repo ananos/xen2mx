@@ -64,7 +64,7 @@ mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
   }
 
   if (name)
-    strncpy(name, board_id.board_name, MPOE_IF_NAMESIZE);
+    strncpy(name, board_id.board_name, MPOE_HOSTNAMELEN_MAX);
   if (index)
     *index = board_id.board_index;
   if (addr)
@@ -107,7 +107,7 @@ mpoe__get_board_index_by_name(const char * name, uint8_t * index)
 	goto out;
     }
 
-    if (!strncmp(name, board_id.board_name, MPOE_IF_NAMESIZE)) {
+    if (!strncmp(name, board_id.board_name, MPOE_HOSTNAMELEN_MAX)) {
       ret = MPOE_SUCCESS;
       *index = i;
       break;
@@ -205,7 +205,7 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
     } else {
       /* if no endpoint given, ask the driver about the index given in in_val */
       uint64_t addr;
-      char name[MPOE_IF_NAMESIZE];
+      char name[MPOE_HOSTNAMELEN_MAX];
       uint8_t index;
       mpoe_return_t ret;
 

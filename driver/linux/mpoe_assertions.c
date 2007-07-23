@@ -12,7 +12,6 @@
 void
 assertions(void)
 {
-  CHECK(MPOE_IF_NAMESIZE == IFNAMSIZ);
   CHECK(sizeof(uint64_t) >= sizeof(((struct ethhdr *)NULL)->h_dest));
   CHECK(sizeof(uint64_t) >= sizeof(((struct ethhdr *)NULL)->h_source));
   CHECK(PAGE_SIZE%MPOE_SENDQ_ENTRY_SIZE == 0);
