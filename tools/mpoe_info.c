@@ -34,7 +34,7 @@ int main(void)
     uint8_t board_index = i;
     char board_name[MPOE_IF_NAMESIZE];
     uint64_t board_addr;
-    char board_addr_str[MPOE_MAC_ADDR_STRLEN];
+    char board_addr_str[MPOE_BOARD_ADDR_STRLEN];
 
     ret = mpoe__get_board_id(NULL, &board_index, board_name, &board_addr);
     if (ret == MPOE_INVALID_PARAMETER)

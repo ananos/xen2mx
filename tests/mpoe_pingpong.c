@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
     struct mpoe_status status;
     uint32_t result;
     struct param param;
-    char dest_str[MPOE_MAC_ADDR_STRLEN];
+    char dest_str[MPOE_BOARD_ADDR_STRLEN];
     int length;
     int i;
 

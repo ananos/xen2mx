@@ -234,7 +234,7 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 	      const void * in_val, uint32_t in_len,
 	      void * out_val, uint32_t out_len);
 
-#define MPOE_MAC_ADDR_STRLEN 18
+#define MPOE_BOARD_ADDR_STRLEN 18
 
 static inline int
 mpoe_board_addr_sprintf(char * buffer, uint64_t addr)

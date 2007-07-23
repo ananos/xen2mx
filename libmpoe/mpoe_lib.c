@@ -202,7 +202,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   /* FIXME: add parameters to choose the board name? */
   struct mpoe_cmd_open_endpoint open_param;
   struct mpoe_endpoint * ep;
-  char board_addr_str[MPOE_MAC_ADDR_STRLEN];
+  char board_addr_str[MPOE_BOARD_ADDR_STRLEN];
   void * recvq, * sendq, * eventq;
   mpoe_return_t ret = MPOE_SUCCESS;
   int err, fd;
