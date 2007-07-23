@@ -11,11 +11,11 @@ all:
 	@echo Linking kernel module source files to local directory
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || ln -sf $$file ; done
 	@echo Building kernel module
-	make -C $(LINUX_DIR) M=$(MPOE_DIR)
+	+make -C $(LINUX_DIR) M=$(MPOE_DIR)
 
 clean:
 	@echo Cleaning kernel module build
-	make -C $(LINUX_DIR) M=$(MPOE_DIR) clean
+	+make -C $(LINUX_DIR) M=$(MPOE_DIR) clean
 	@echo Removing links to kernel module source files in local directory
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do rm -f $$(basename $$file) ; done
 
