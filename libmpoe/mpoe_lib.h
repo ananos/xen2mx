@@ -238,6 +238,14 @@ mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
 
 #define MPOE_BOARD_ADDR_STRLEN 18
 
+mpoe_return_t
+mpoe_hostname_to_nic_id(char *hostname,
+			uint64_t *board_addr);
+
+mpoe_return_t
+mpoe_nic_id_to_hostname(uint64_t board_addr,
+			char *hostname);
+
 static inline int
 mpoe_board_addr_sprintf(char * buffer, uint64_t addr)
 {

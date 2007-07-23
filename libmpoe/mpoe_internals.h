@@ -28,4 +28,9 @@ struct mpoe_globals {
 
 extern struct mpoe_globals mpoe_globals;
 
+extern mpoe_return_t mpoe__peers_init(void);
+extern mpoe_return_t mpoe__peers_dump(const char * format);
+
+extern mpoe_return_t mpoe__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname);
+
 #endif /* __mpoe_internals_h__ */

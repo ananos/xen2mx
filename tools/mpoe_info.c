@@ -30,6 +30,11 @@ int main(void)
   printf("Found %ld boards (%ld max) supporting %ld endpoints each\n",
 	 (unsigned long) count, (unsigned long) max, (unsigned long) emax);
 
+  /* read global peers */
+  ret = mpoe__peers_init();
+  if (ret != MPOE_SUCCESS)
+    goto out;
+
   for(i=0, found=0; i<max && found<count; i++) {
     uint8_t board_index = i;
     char board_name[MPOE_HOSTNAMELEN_MAX];
@@ -47,9 +52,13 @@ int main(void)
     assert(i == board_index);
     found++;
 
+    printf("\n");
     mpoe_board_addr_sprintf(board_addr_str, board_addr);
-    printf("board #%d name %s addr %s\n",
+    printf("Board #%d name %s addr %s\n",
 	   i, board_name, board_addr_str);
+    printf("==============================================\n");
+
+    mpoe__peers_dump("  %d) %s %s\n");
   }
 
   return 0;
