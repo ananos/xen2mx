@@ -55,6 +55,14 @@ echo "#ifndef __mpoe_checks_h__" >> ${TMP_CHECKS_PATH}
 echo "#define __mpoe_checks_h__ 1" >> ${TMP_CHECKS_PATH}
 echo "" >> ${TMP_CHECKS_PATH}
 
+# what command line was used to generate with file
+echo "/*" >> ${TMP_CHECKS_PATH}
+echo " * This file has been generated with on "`date` >> ${TMP_CHECKS_PATH}
+echo " * The configure line was: $ac_configure $ac_configure_args" >> ${TMP_CHECKS_PATH}
+echo " * It checked kernel headers in ${LINUX_HDR}/include/" >> ${TMP_CHECKS_PATH}
+echo " */" >> ${TMP_CHECKS_PATH}
+echo "" >> ${TMP_CHECKS_PATH}
+
 # skb_linearize had a gfp argument before 2.6.18
 #AC_MSG_CHECKING(skb_linearize gfp argument)
 #grep "skb_linearize *(.*, .* gfp)" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null \
