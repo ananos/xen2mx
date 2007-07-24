@@ -3,8 +3,8 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 
-#include "mpoe_lib.h"
-#include "mpoe_internals.h"
+#include "omx__lib.h"
+#include "omx__internals.h"
 
 struct mpoe_globals mpoe_globals = { 0 };
 

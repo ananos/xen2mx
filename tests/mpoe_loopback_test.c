@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-#include "mpoe_lib.h"
+#include "omx__lib.h"
 
 #define IFNAME "lo"
 #define EP 3

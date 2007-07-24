@@ -9,8 +9,8 @@
 #include <assert.h>
 
 #include "omx_io.h"
-#include "mpoe_lib.h"
-#include "mpoe_internals.h"
+#include "omx__lib.h"
+#include "omx__internals.h"
 #include "omx_list.h"
 
 /************

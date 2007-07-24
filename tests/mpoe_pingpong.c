@@ -9,7 +9,7 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "mpoe_lib.h"
+#include "omx__lib.h"
 
 #define BID 0
 #define EID 0

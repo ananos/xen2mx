@@ -1,7 +1,7 @@
-#ifndef __mpoe_internals_h__
-#define __mpoe_internals_h__
+#ifndef __omx_internals_h__
+#define __omx_internals_h__
 
-#include "mpoe_lib.h"
+#include "omx__lib.h"
 
 #define MPOE_DEVNAME "/dev/mpoe"
 /* FIXME: envvar to configure? */
@@ -33,4 +33,4 @@ extern mpoe_return_t mpoe__peers_dump(const char * format);
 
 extern mpoe_return_t mpoe__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname);
 
-#endif /* __mpoe_internals_h__ */
+#endif /* __omx_internals_h__ */

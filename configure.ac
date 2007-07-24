@@ -154,7 +154,7 @@ fi
 ##########
 # Globals
 
-AC_SUBST(LIBMPOE_A, libopenmx/libmpoe.a)
+AC_SUBST(LIBOPENMX_A, libopenmx/libopenmx.a)
 
 AC_CONFIG_HEADER(common/omx_config.h)
 AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild libopenmx/Makefile tools/Makefile tests/Makefile)

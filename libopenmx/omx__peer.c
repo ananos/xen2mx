@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 
-#include "mpoe_lib.h"
+#include "omx__lib.h"
 
 #define MPOE_PEERS_DEFAULT_FILENAME "mpoe.peers"
 #define MPOE_PEERS_FILENAME_ENVVAR "MPOE_PEERS_FILENAME"

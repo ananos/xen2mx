@@ -1,5 +1,5 @@
-#ifndef __mpoe_lib_h__
-#define __mpoe_lib_h__
+#ifndef __omx_lib_h__
+#define __omx_lib_h__
 
 #include <string.h>
 #include <stdio.h>
@@ -7,7 +7,7 @@
 
 #include "omx_io.h"
 #include "omx_list.h"
-#include "mpoe__valgrind.h"
+#include "omx__valgrind.h"
 
 /********
  * Types
@@ -279,4 +279,4 @@ mpoe_board_addr_sscanf(char * buffer, uint64_t * addr)
 	return err;
 }
 
-#endif /* __mpoe_lib_h__ */
+#endif /* __omx_lib_h__ */

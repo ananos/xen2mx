@@ -1,5 +1,5 @@
-#ifndef __mpoe__valgrind_h__
-#define __mpoe__valgrind_h__
+#ifndef __omx__valgrind_h__
+#define __omx__valgrind_h__
 
 #ifdef MPOE_VALGRIND_DEBUG
 
@@ -27,4 +27,4 @@
 
 #endif /* !MPOE_VALGRIND_DEBUG */
 
-#endif /* __mpoe__valgrind_h__ */
+#endif /* __omx__valgrind_h__ */

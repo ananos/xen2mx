@@ -11,7 +11,7 @@ CFLAGS	+=	-g -O2
 
 LD	=	gcc
 
-LIB	=	@top_builddir@/@LIBMPOE_A@
+LIB	=	@top_builddir@/@LIBOPENMX_A@
 
 .PHONY: all clean distclean
 

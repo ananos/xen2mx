@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include "mpoe_internals.h"
+#include "omx__internals.h"
 
 int main(void)
 {
