@@ -22,7 +22,6 @@
 * rdma_put
 
 * fix loopback test interface name now that the hostname is included
-* omx__ for internal types
 
 * true sleeping in the kernel
   - always wakeup on event?

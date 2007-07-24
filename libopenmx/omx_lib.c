@@ -100,10 +100,10 @@ omx_strstatus(omx_status_code_t code)
 static inline int
 omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
 {
-  struct omx_sendq_entry * array;
+  struct omx__sendq_entry * array;
   int i;
 
-  array = malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct omx_sendq_entry));
+  array = malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct omx__sendq_entry));
   if (!array)
     return -ENOMEM;
 
@@ -130,7 +130,7 @@ static inline int
 omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
 			    int nr, void * user, int * founds)
 {
-  struct omx_sendq_entry * array = ep->sendq_map.array;
+  struct omx__sendq_entry * array = ep->sendq_map.array;
   int index, i;
 
   omx__debug_assert((ep->sendq_map.first_free == -1) == (ep->sendq_map.nr_free == 0));
@@ -163,7 +163,7 @@ static inline void *
 omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
 			    int index)
 {
-  struct omx_sendq_entry * array = ep->sendq_map.array;
+  struct omx__sendq_entry * array = ep->sendq_map.array;
   void * user = array[index].user;
 
   omx__debug_assert(user != NULL);
@@ -182,7 +182,7 @@ omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
  */
 
 static inline void
-omx__partner_init(struct omx_partner *partner)
+omx__partner_init(struct omx__partner *partner)
 {
   INIT_LIST_HEAD(&partner->partialq);
   partner->next_send_seq = 0;
@@ -206,7 +206,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   omx_return_t ret = OMX_SUCCESS;
   int err, fd;
 
-  if (!omx_globals.initialized) {
+  if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
     goto out;
   }
@@ -266,7 +266,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
     ret = OMX_BAD_ERROR;
     goto out_with_attached;
   }
-  omx_board_addr_sprintf(board_addr_str, ep->board_addr);
+  omx__board_addr_sprintf(board_addr_str, ep->board_addr);
   printf("Successfully attached endpoint #%ld on board #%ld (%s, %s)\n",
 	 (unsigned long) endpoint_index, (unsigned long) board_index,
 	 ep->board_name, board_addr_str);
@@ -554,7 +554,7 @@ omx__process_recv_medium(struct omx_endpoint *ep,
 
 static omx_return_t
 omx__process_recv(struct omx_endpoint *ep,
-		  union omx_evt *evt, omx_seqnum_t seqnum, void *data,
+		  union omx_evt *evt, omx__seqnum_t seqnum, void *data,
 		  omx__process_recv_func_t recv_func)
 {
   omx__debug_printf("got seqnum %d\n", seqnum);
@@ -662,7 +662,7 @@ omx_isend(struct omx_endpoint *ep,
 	  void *context, union omx_request **requestp)
 {
   union omx_request * req;
-  omx_seqnum_t seqnum;
+  omx__seqnum_t seqnum;
   omx_return_t ret;
   int err;
 

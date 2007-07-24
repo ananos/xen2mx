@@ -27,35 +27,35 @@
  * Internal types
  */
 
-struct omx_sendq_map {
+struct omx__sendq_map {
   int first_free;
   int nr_free;
-  struct omx_sendq_entry {
+  struct omx__sendq_entry {
     int next_free;
     void * user;
   } * array;
 };
 
-typedef uint16_t omx_seqnum_t; /* FIXME: assert same size on the wire */
+typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
 
-struct omx_partner {
+struct omx__partner {
   /* list of request matched but not entirely received */
   struct list_head partialq;
 
   /* seqnum of the next send */
-  omx_seqnum_t next_send_seq;
+  omx__seqnum_t next_send_seq;
 
   /* seqnum of the next entire message to match
    * used to know to accumulate/match/defer a fragment
    */
-  omx_seqnum_t next_match_recv_seq;
+  omx__seqnum_t next_match_recv_seq;
 
   /* seqnum of the next fragment to recv
    * next_frag_recv_seq < next_match_recv_seq in case of partially received medium
    * used to ack back to the partner
    * (all seqnum < next_frag_recv_seq have been entirely received)
    */
-  omx_seqnum_t next_frag_recv_seq;
+  omx__seqnum_t next_frag_recv_seq;
 
 
   /*
@@ -85,8 +85,8 @@ struct omx_endpoint {
   struct list_head recv_req_q;
   struct list_head multifraq_medium_recv_req_q;
   struct list_head done_req_q;
-  struct omx_sendq_map sendq_map;
-  struct omx_partner partner;
+  struct omx__sendq_map sendq_map;
+  struct omx__partner partner;
 };
 
 enum omx__request_type {
@@ -114,7 +114,7 @@ union omx_request {
 
   struct {
     struct omx__generic_request generic;
-    uint16_t seqnum;
+    omx__seqnum_t seqnum;
     union {
       struct {
 	uint32_t frags_pending_nr;
@@ -135,7 +135,7 @@ union omx_request {
   } recv;
 };
 
-struct omx_globals {
+struct omx__globals {
   int initialized;
   int control_fd;
   uint32_t board_max;
@@ -143,14 +143,14 @@ struct omx_globals {
   uint32_t peer_max;
 };
 
-extern struct omx_globals omx_globals;
+extern struct omx__globals omx__globals;
 
 /*********************
  * Internal functions
  */
 
 static inline int
-omx_board_addr_sprintf(char * buffer, uint64_t addr)
+omx__board_addr_sprintf(char * buffer, uint64_t addr)
 {
 	return sprintf(buffer, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
 		       (uint8_t)(addr >> 40),
@@ -162,7 +162,7 @@ omx_board_addr_sprintf(char * buffer, uint64_t addr)
 }
 
 static inline int
-omx_board_addr_sscanf(char * buffer, uint64_t * addr)
+omx__board_addr_sscanf(char * buffer, uint64_t * addr)
 {
 	uint8_t bytes[6];
 	int err;

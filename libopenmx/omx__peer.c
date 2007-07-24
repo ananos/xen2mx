@@ -139,7 +139,7 @@ omx__peers_dump(const char * format)
     if (omx_peers[i].valid) {
       char addr_str[OMX_BOARD_ADDR_STRLEN];
 
-      omx_board_addr_sprintf(addr_str, omx_peers[i].board_addr);
+      omx__board_addr_sprintf(addr_str, omx_peers[i].board_addr);
       printf(format, i, addr_str, omx_peers[i].hostname);
     }
 

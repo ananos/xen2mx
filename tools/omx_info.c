@@ -18,8 +18,8 @@ int main(void)
   }
 
   /* get board and endpoint max */
-  max = omx_globals.board_max;
-  emax = omx_globals.endpoint_max;
+  max = omx__globals.board_max;
+  emax = omx__globals.endpoint_max;
 
   /* get board count */
   ret = omx__get_board_count(&count);
@@ -48,7 +48,7 @@ int main(void)
     found++;
 
     printf("\n");
-    omx_board_addr_sprintf(board_addr_str, board_addr);
+    omx__board_addr_sprintf(board_addr_str, board_addr);
     printf("Board #%d name %s addr %s\n",
 	   i, board_name, board_addr_str);
     printf("==============================================\n");
