@@ -41,6 +41,10 @@ omx__init_api(int api)
     goto out_with_fd;
   }
 
+  ret = omx__peers_init();
+  if (ret != OMX_SUCCESS)
+    goto out_with_fd;
+
   omx_globals.initialized = 1;
   return OMX_SUCCESS;
 

@@ -30,11 +30,6 @@ int main(void)
   printf("Found %ld boards (%ld max) supporting %ld endpoints each\n",
 	 (unsigned long) count, (unsigned long) max, (unsigned long) emax);
 
-  /* read global peers */
-  ret = omx__peers_init();
-  if (ret != OMX_SUCCESS)
-    goto out;
-
   for(i=0, found=0; i<max && found<count; i++) {
     uint8_t board_index = i;
     char board_name[OMX_HOSTNAMELEN_MAX];
