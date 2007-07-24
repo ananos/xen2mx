@@ -392,7 +392,7 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	iface = omx_iface_find_by_ifp(ifp);
 	if (unlikely(!iface)) {
 		/* at least the ethhdr is linear in the skb */
-		omx_drop_dprintk(&omx_hdr(skb)->head.eth, "packet on non-MPoE interface %s",
+		omx_drop_dprintk(&omx_hdr(skb)->head.eth, "packet on non-OpenMX interface %s",
 				 ifp->name);
 		goto out;
 	}
