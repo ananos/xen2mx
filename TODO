@@ -21,7 +21,7 @@
 * rdma_get
 * rdma_put
 
-* tests/ should not need omx_config.h or lib internals
+* fix loopback test interface name now that the hostname is included
 * omx__ for internal types
 
 * true sleeping in the kernel
