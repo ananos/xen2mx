@@ -1,21 +1,21 @@
 LINUX_DIR	=	@LINUX_BUILD@
-MPOE_DIR	=	@abs_builddir@
+OPENMX_DIR	=	@abs_builddir@
 
 .PHONY: all clean distclean wc
 
 # Cannot avoid symlinking source files here and using O=builddir M=srcdir
-# since configure would have to generate Kbuild and mpoe_checks.h in srcdir
+# since configure would have to generate Kbuild and omx_checks.h in srcdir
 # instead of builddir
 
 all:
 	@echo Linking kernel module source files to local directory
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || ln -sf $$file ; done
 	@echo Building kernel module
-	+make -C $(LINUX_DIR) M=$(MPOE_DIR)
+	+make -C $(LINUX_DIR) M=$(OPENMX_DIR)
 
 clean:
 	@echo Cleaning kernel module build
-	+make -C $(LINUX_DIR) M=$(MPOE_DIR) clean
+	+make -C $(LINUX_DIR) M=$(OPENMX_DIR) clean
 	@echo Removing links to kernel module source files in local directory
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do rm -f $$(basename $$file) ; done
 

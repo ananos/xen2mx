@@ -7,9 +7,9 @@
 #include <linux/mm.h>
 #include <asm/uaccess.h>
 
-#include "mpoe_hal.h"
+#include "omx_hal.h"
 #include "mpoe_io.h"
-#include "mpoe_common.h"
+#include "omx_common.h"
 
 /******************************
  * Alloc/Release internal endpoint fields once everything is setup/locked

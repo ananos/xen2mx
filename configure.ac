@@ -44,15 +44,15 @@ fi
 AC_MSG_RESULT(found in ${LINUX_BUILD})
 
 # create the output file
-CHECKS_NAME=driver/linux/mpoe_checks.h
+CHECKS_NAME=driver/linux/omx_checks.h
 CHECKS_PATH=`pwd`/${CHECKS_NAME}
 TMP_CHECKS_PATH=${CHECKS_PATH}.tmp
 rm -f ${TMP_CHECKS_PATH}
 mkdir -p $(dirname ${TMP_CHECKS_PATH})
 
 # add the header
-echo "#ifndef __mpoe_checks_h__" >> ${TMP_CHECKS_PATH}
-echo "#define __mpoe_checks_h__ 1" >> ${TMP_CHECKS_PATH}
+echo "#ifndef __omx_checks_h__" >> ${TMP_CHECKS_PATH}
+echo "#define __omx_checks_h__ 1" >> ${TMP_CHECKS_PATH}
 echo "" >> ${TMP_CHECKS_PATH}
 
 # what command line was used to generate with file
@@ -114,7 +114,7 @@ grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null \
 
 # add the footer
 echo "" >> ${TMP_CHECKS_PATH}
-echo "#endif /* __mpoe_checks_h__ */" >> ${TMP_CHECKS_PATH}
+echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_PATH}
 
 # install final file
 if diff -q ${CHECKS_PATH} ${TMP_CHECKS_PATH} >/dev/null 2>&1; then

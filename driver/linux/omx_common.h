@@ -1,7 +1,7 @@
-#ifndef __mpoe_common_h__
-#define __mpoe_common_h__
+#ifndef __omx_common_h__
+#define __omx_common_h__
 
-#include "mpoe_types.h"
+#include "omx_types.h"
 
 /* globals */
 extern int mpoe_iface_max;
@@ -118,7 +118,7 @@ dprintk("MPoE: dropping pkt from %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", 
 	(_eh)->h_source[3], (_eh)->h_source[4], (_eh)->h_source[5], \
 	##__VA_ARGS__);
 
-#endif /* __mpoe_common_h__ */
+#endif /* __omx_common_h__ */
 
 /*
  * Local variables:

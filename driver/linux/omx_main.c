@@ -2,7 +2,7 @@
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 
-#include "mpoe_common.h"
+#include "omx_common.h"
 
 static char * mpoe_ifnames = NULL;
 module_param(mpoe_ifnames, charp, 0); /* unreadable, since modifiable by the attached sysfs file */

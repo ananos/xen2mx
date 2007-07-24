@@ -1,9 +1,9 @@
 EXTRA_CFLAGS	+=	-imacros @abs_top_builddir@/common/mpoe_config.h
 EXTRA_CFLAGS	+=	-I@abs_top_srcdir@/common/
 
-obj-m	+=	mpoe.o
-mpoe-objs	:=	mpoe_main.o mpoe_dev.o \
-			mpoe_net.o mpoe_send.o mpoe_recv.o \
-			mpoe_reg.o mpoe_pull.o
+obj-m	+=	openmx.o
+openmx-objs	:=	omx_main.o omx_dev.o \
+			omx_net.o omx_send.o omx_recv.o \
+			omx_reg.o omx_pull.o
 
-obj-m	+=	mpoe_assertions.o
+obj-m	+=	omx_assertions.o

@@ -2,8 +2,8 @@
 #include <linux/module.h>
 #include <linux/mm.h>
 
-#include "mpoe_common.h"
-#include "mpoe_hal.h"
+#include "omx_common.h"
+#include "omx_hal.h"
 
 /*************************************
  * Allocate and initialize a MPOE skb

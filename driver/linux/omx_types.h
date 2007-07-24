@@ -1,5 +1,5 @@
-#ifndef __mpoe_types_h__
-#define __mpoe_types_h__
+#ifndef __omx_types_h__
+#define __omx_types_h__
 
 #include <linux/fs.h>
 #include <linux/netdevice.h>
@@ -104,7 +104,7 @@ struct mpoe_user_region {
 	} segments[0];
 };
 
-#endif /* __mpoe_types_h__ */
+#endif /* __omx_types_h__ */
 
 /*
  * Local variables:

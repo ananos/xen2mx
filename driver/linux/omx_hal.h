@@ -1,7 +1,7 @@
-#ifndef __mpoe_hal_h__
-#define __mpoe_hal_h__
+#ifndef __omx_hal_h__
+#define __omx_hal_h__
 
-#include "mpoe_checks.h"
+#include "omx_checks.h"
 
 #include <linux/skbuff.h>
 #include <linux/netdevice.h>
@@ -92,7 +92,7 @@ mpoe_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long p
 #define mpoe_current_utsname system_utsname
 #endif
 
-#endif /* __mpoe_hal_h__ */
+#endif /* __omx_hal_h__ */
 
 /*
  * Local variables:

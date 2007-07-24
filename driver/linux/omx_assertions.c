@@ -1,4 +1,4 @@
-#include "mpoe_types.h"
+#include "omx_types.h"
 #include "mpoe_io.h"
 
 #include <linux/if.h>

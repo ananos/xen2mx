@@ -2,8 +2,8 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 
-#include "mpoe_common.h"
-#include "mpoe_hal.h"
+#include "omx_common.h"
+#include "omx_hal.h"
 
 struct mpoe_pull_handle {
 	struct mpoe_endpoint * endpoint;

@@ -3,9 +3,9 @@
 #include <linux/mm.h>
 #include <linux/spinlock.h>
 
-#include "mpoe_hal.h"
+#include "omx_hal.h"
 #include "mpoe_io.h"
-#include "mpoe_common.h"
+#include "omx_common.h"
 
 /* FIXME: likely/unlikely */
 

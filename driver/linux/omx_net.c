@@ -2,8 +2,8 @@
 #include <linux/module.h>
 #include <linux/utsname.h>
 
-#include "mpoe_common.h"
-#include "mpoe_hal.h"
+#include "omx_common.h"
+#include "omx_hal.h"
 
 /*
  * Scan the list of physical interfaces and return the

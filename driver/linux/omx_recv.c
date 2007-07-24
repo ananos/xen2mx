@@ -1,8 +1,8 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
-#include "mpoe_common.h"
-#include "mpoe_hal.h"
+#include "omx_common.h"
+#include "omx_hal.h"
 
 /******************************
  * Manage event and data slots
