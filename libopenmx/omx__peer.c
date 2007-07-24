@@ -5,7 +5,11 @@
 
 #include "omx__lib.h"
 
+#ifndef OMX_PEERS_DEFAULT_FILENAME
+/* might be set by configure */
 #define OMX_PEERS_DEFAULT_FILENAME "openmx.peers"
+#endif
+
 #define OMX_PEERS_FILENAME_ENVVAR "OMX_PEERS_FILENAME"
 
 #define OMX_PEERS_MAX_DEFAULT 1

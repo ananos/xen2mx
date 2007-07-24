@@ -151,6 +151,13 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_ARG_WITH(peers-file, [ --with-peers-file	use argument as a static peers file],
+	    with_peers_file=$withval)
+if test x$with_peers_file != x; then
+  AC_MSG_NOTICE(using static peers file in $with_peers_file)
+  AC_DEFINE_UNQUOTED(OMX_PEERS_DEFAULT_FILENAME, ["$with_peers_file"], [Define to choose the static peers file])
+fi
+
 ##########
 # Globals
 

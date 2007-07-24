@@ -1,5 +1,3 @@
-* configure option to set peer file path
-
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
 
