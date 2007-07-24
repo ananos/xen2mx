@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include "omx__internals.h"
+#include "omx__lib.h"
 
 int main(void)
 {

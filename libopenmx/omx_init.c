@@ -4,7 +4,6 @@
 #include <errno.h>
 
 #include "omx__lib.h"
-#include "omx__internals.h"
 
 struct omx_globals omx_globals = { 0 };
 

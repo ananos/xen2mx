@@ -5,12 +5,26 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include "openmx.h"
 #include "omx_io.h"
 #include "omx_list.h"
 #include "omx__valgrind.h"
 
-/********
- * Types
+/*****************
+ * Various macros
+ */
+
+#define OMX_DEVNAME "/dev/openmx"
+/* FIXME: envvar to configure? */
+
+#define OMX_MEDIUM_FRAG_PIPELINE_BASE 10  /* pipeline is encoded -10 on the wire */
+#define OMX_MEDIUM_FRAG_PIPELINE 2 /* always send 4k pages (1<<(10+2)) */
+#define OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT (OMX_MEDIUM_FRAG_PIPELINE_BASE+OMX_MEDIUM_FRAG_PIPELINE)
+#define OMX_MEDIUM_FRAG_LENGTH_MAX (1<<OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT)
+#define OMX_MEDIUM_FRAGS_NR(len) ((len+OMX_MEDIUM_FRAG_LENGTH_MAX-1)>>OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT)
+
+/*****************
+ * Internal types
  */
 
 struct omx_sendq_map {
@@ -88,36 +102,6 @@ enum omx__request_state {
   OMX_REQUEST_STATE_DONE,
 };
 
-enum omx_return {
-  OMX_SUCCESS=0,
-  OMX_BAD_ERROR,
-  OMX_ALREADY_INITIALIZED,
-  OMX_NOT_INITIALIZED,
-  OMX_NO_DEVICE,
-  OMX_ACCESS_DENIED,
-  OMX_NO_RESOURCES,
-  OMX_NO_SYSTEM_RESOURCES,
-  OMX_INVALID_PARAMETER,
-  OMX_NOT_IMPLEMENTED,
-};
-typedef enum omx_return omx_return_t;
-
-enum omx_status_code {
-  OMX_STATUS_SUCCESS=0,
-  OMX_STATUS_FAILED,
-};
-typedef enum omx_status_code omx_status_code_t;
-
-struct omx_status {
-  enum omx_status_code code;
-  uint64_t board_addr;
-  uint32_t ep;
-  unsigned long msg_length;
-  unsigned long xfer_length;
-  uint64_t match_info;
-  void *context;
-};
-
 struct omx__generic_request {
   struct list_head queue_elt;
   enum omx__request_type type;
@@ -151,100 +135,19 @@ union omx_request {
   } recv;
 };
 
-/************
- * Functions
- */
-
-#define OMX_API 0x0
-
-omx_return_t
-omx__init_api(int api);
-
-static inline omx_return_t omx_init(void) { return omx__init_api(OMX_API); }
-
-const char *
-omx_strerror(omx_return_t ret);
-
-const char *
-omx_strstatus(omx_status_code_t code);
-
-omx_return_t
-omx_board_number_to_nic_id(uint32_t board_number,
-			   uint64_t *nic_id);
-
-omx_return_t
-omx_nic_id_to_board_number(uint64_t nic_id,
-			   uint32_t *board_number);
-
-omx_return_t
-omx_open_endpoint(uint32_t board_index, uint32_t index,
-		  struct omx_endpoint **epp);
-
-omx_return_t
-omx_close_endpoint(struct omx_endpoint *ep);
-
-omx_return_t
-omx_isend(struct omx_endpoint *ep,
-	  void *buffer, size_t length,
-	  uint64_t match_info,
-	  uint64_t dest_addr, uint32_t dest_endpoint,
-	  void * context, union omx_request ** request);
-
-omx_return_t
-omx_irecv(struct omx_endpoint *ep,
-	  void *buffer, size_t length,
-	  uint64_t match_info, uint64_t match_mask,
-	  void *context, union omx_request **requestp);
-
-omx_return_t
-omx_test(struct omx_endpoint *ep, union omx_request **requestp,
-	 struct omx_status *status, uint32_t * result);
-
-omx_return_t
-omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
-	 struct omx_status *status, uint32_t * result);
-
-omx_return_t
-omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
-	  uint32_t *result);
-
-omx_return_t
-omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
-	 uint32_t *result);
-
-enum omx_info_key {
-  /* return the maximum number of boards */
-  OMX_INFO_BOARD_MAX,
-  /* return the maximum number of endpoints per board */
-  OMX_INFO_ENDPOINT_MAX,
-  /* return the current number of boards */
-  OMX_INFO_BOARD_COUNT,
-  /* return the board name of an endpoint or index (given as uint8_t) */
-  OMX_INFO_BOARD_NAME,
-  /* return the board addr of an endpoint or index (given as uint8_t) */
-  OMX_INFO_BOARD_ADDR,
-  /* return the board number of an endpoint or name */
-  OMX_INFO_BOARD_INDEX_BY_NAME,
-  /* return the board number of an endpoint or addr */
-  OMX_INFO_BOARD_INDEX_BY_ADDR,
+struct omx_globals {
+  int initialized;
+  int control_fd;
+  uint32_t board_max;
+  uint32_t endpoint_max;
+  uint32_t peer_max;
 };
 
-omx_return_t
-omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
-	     const void * in_val, uint32_t in_len,
-	     void * out_val, uint32_t out_len);
+extern struct omx_globals omx_globals;
 
-#define OMX_HOSTNAMELEN_MAX 80
-
-#define OMX_BOARD_ADDR_STRLEN 18
-
-omx_return_t
-omx_hostname_to_nic_id(char *hostname,
-		       uint64_t *board_addr);
-
-omx_return_t
-omx_nic_id_to_hostname(uint64_t board_addr,
-		       char *hostname);
+/*********************
+ * Internal functions
+ */
 
 static inline int
 omx_board_addr_sprintf(char * buffer, uint64_t addr)
@@ -278,5 +181,15 @@ omx_board_addr_sscanf(char * buffer, uint64_t * addr)
 
 	return err;
 }
+
+extern omx_return_t omx__errno_to_return(int error, char * caller);
+
+extern omx_return_t omx__get_board_count(uint32_t * count);
+extern omx_return_t omx__get_board_id(struct omx_endpoint * ep, uint8_t * index, char * name, uint64_t * addr);
+extern omx_return_t omx__get_board_index_by_name(const char * name, uint8_t * index);
+
+extern omx_return_t omx__peers_init(void);
+extern omx_return_t omx__peers_dump(const char * format);
+extern omx_return_t omx__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname);
 
 #endif /* __omx_lib_h__ */

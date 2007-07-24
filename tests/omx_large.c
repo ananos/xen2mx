@@ -7,7 +7,6 @@
 #include <sys/time.h>
 
 #include "omx__lib.h"
-#include "omx__internals.h"
 
 #define EP 3
 #define ITER 10

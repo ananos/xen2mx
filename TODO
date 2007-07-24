@@ -1,5 +1,3 @@
-* tests/ should not need omx_config.h or lib internals
-
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
 
@@ -23,7 +21,7 @@
 * rdma_get
 * rdma_put
 
-* hide internals from the application
+* tests/ should not need omx_config.h or lib internals
 * omx__ for internal types
 
 * true sleeping in the kernel

@@ -9,7 +9,7 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "omx__lib.h"
+#include "openmx.h"
 
 #define BID 0
 #define EID 0
@@ -58,7 +58,7 @@ struct param {
 
 int main(int argc, char *argv[])
 {
-  struct omx_endpoint * ep;
+  omx_endpoint_t ep;
   omx_return_t ret;
   char c;
 
@@ -143,8 +143,8 @@ int main(int argc, char *argv[])
   if (sender) {
     /* sender */
 
-    union omx_request * req;
-    struct omx_status status;
+    omx_request_t req;
+    omx_status_t status;
     uint32_t result;
     struct param param;
     int length;
@@ -246,8 +246,8 @@ int main(int argc, char *argv[])
   } else {
     /* receiver */
 
-    union omx_request * req;
-    struct omx_status status;
+    omx_request_t req;
+    omx_status_t status;
     uint32_t result;
     struct param param;
     struct timeval tv1, tv2;

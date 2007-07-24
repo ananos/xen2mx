@@ -1,18 +1,19 @@
 #include <stdio.h>
+#include <string.h>
 #include <sys/time.h>
 
-#include "omx__lib.h"
+#include "openmx.h"
 
 #define IFNAME "lo"
 #define EP 3
 #define ITER 10
 
 static omx_return_t
-send_tiny(struct omx_endpoint * ep, uint64_t dest_addr,
+send_tiny(omx_endpoint_t ep, uint64_t dest_addr,
 	  int i)
 {
-  union omx_request * request, * request2;
-  struct omx_status status;
+  omx_request_t request, request2;
+  omx_status_t status;
   char buffer[12], buffer2[12];
   unsigned long length;
   omx_return_t ret;
@@ -72,11 +73,11 @@ send_tiny(struct omx_endpoint * ep, uint64_t dest_addr,
 }
 
 static int
-send_small(struct omx_endpoint * ep, uint64_t dest_addr,
+send_small(omx_endpoint_t ep, uint64_t dest_addr,
 	   int i)
 {
-  union omx_request * request;
-  struct omx_status status;
+  omx_request_t request;
+  omx_status_t status;
   char buffer[4096];
   char buffer2[4096];
   unsigned long length;
@@ -130,11 +131,11 @@ send_small(struct omx_endpoint * ep, uint64_t dest_addr,
 }
 
 static int
-send_medium(struct omx_endpoint * ep, uint64_t dest_addr,
+send_medium(omx_endpoint_t ep, uint64_t dest_addr,
 	    int i)
 {
-  union omx_request * request, * request2;
-  struct omx_status status;
+  omx_request_t request, request2;
+  omx_status_t status;
   char buffer[8192], buffer2[8192];
   omx_return_t ret;
   uint32_t result;
@@ -193,7 +194,7 @@ send_medium(struct omx_endpoint * ep, uint64_t dest_addr,
 
 int main(void)
 {
-  struct omx_endpoint * ep;
+  omx_endpoint_t ep;
   uint64_t dest_addr;
   struct timeval tv1, tv2;
   uint8_t board_index;
