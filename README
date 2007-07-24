@@ -1,2 +1,11 @@
 Linux kernel from 2.6.17 to 2.6.23 are supported.
 Tested on i386 (with and without xen) and x86_64.
+
+A file listing peers must be provided, either in the current directory,
+or at a location given in the environment variable OMX_PEERS_FILENAME
+or with the --with-peers-file=<path> configure option.
+The contents of the file is one line per peer, each containing
+3 tabulation-separated fields:
+* a unique peer index
+* a mac address (6 colon-separated numbers)
+* a board name (<hostname>.<ifacename>)
