@@ -40,7 +40,7 @@ usage(void)
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
   fprintf(stderr, " -v\tverbose\n");
   fprintf(stderr, "Sender options:\n");
-  fprintf(stderr, " -d <mac>\tset remote board mac address and switch to sender mode\n");
+  fprintf(stderr, " -d <hostname>\tset remote peer name and switch to sender mode\n");
   fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
   fprintf(stderr, " -S <n>\tchange the start length [%d]\n", MIN);
   fprintf(stderr, " -E <n>\tchange the end length [%d]\n", MAX);
@@ -71,12 +71,18 @@ int main(int argc, char *argv[])
   int max = MAX;
   int multiplier = MULTIPLIER;
   int increment = INCREMENT;
-  uint64_t dest;
+  char dest_name[OMX_HOSTNAMELEN_MAX];
+  uint64_t dest_addr;
   int sender = 0;
   int verbose = 0;
   char * buffer;
 
-  dest = 0; /* compiler warning */
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+            omx_strerror(ret));
+    goto out;
+  }
 
   while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:v")) != EOF)
     switch (c) {
@@ -87,7 +93,13 @@ int main(int argc, char *argv[])
       eid = atoi(optarg);
       break;
     case 'd':
-      omx_board_addr_sscanf(optarg, &dest);
+      strncpy(dest_name, optarg, OMX_HOSTNAMELEN_MAX);
+      dest_name[OMX_HOSTNAMELEN_MAX-1] = '\0';
+      ret = omx_hostname_to_nic_id(dest_name, &dest_addr);
+      if (ret != OMX_SUCCESS) {
+	fprintf(stderr, "Cannot find peer name %s\n", dest_name);
+	goto out;
+      }
       sender = 1;
       break;
     case 'r':
@@ -121,13 +133,6 @@ int main(int argc, char *argv[])
       break;
     }
 
-  ret = omx_init();
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to initialize (%s)\n",
-            omx_strerror(ret));
-    goto out;
-  }
-
   ret = omx_open_endpoint(bid, eid, &ep);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to open endpoint (%s)\n",
@@ -142,12 +147,10 @@ int main(int argc, char *argv[])
     struct omx_status status;
     uint32_t result;
     struct param param;
-    char dest_str[OMX_BOARD_ADDR_STRLEN];
     int length;
     int i;
 
-    omx_board_addr_sprintf(dest_str, dest);
-    printf("Starting sender to %s...\n", dest_str);
+    printf("Starting sender to %s...\n", dest_name);
 
     for(length = min;
 	length < max;
@@ -158,7 +161,7 @@ int main(int argc, char *argv[])
       param.warmup = warmup;
       param.length = length;
       ret = omx_isend(ep, &param, sizeof(param),
-		      0x1234567887654321ULL, dest, rid,
+		      0x1234567887654321ULL, dest_addr, rid,
 		      NULL, &req);
       if (ret != OMX_SUCCESS) {
 	fprintf(stderr, "Failed to isend (%s)\n",
@@ -203,7 +206,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = omx_isend(ep, buffer, length,
-			0x1234567887654321ULL, dest, rid,
+			0x1234567887654321ULL, dest_addr, rid,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",
@@ -226,7 +229,7 @@ int main(int argc, char *argv[])
     /* send a param message with iter = 0 to stop the receiver */
     param.iter = 0;
     ret = omx_isend(ep, &param, sizeof(param),
-		    0x1234567887654321ULL, dest, rid,
+		    0x1234567887654321ULL, dest_addr, rid,
 		    NULL, &req);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to isend (%s)\n",
@@ -279,8 +282,14 @@ int main(int argc, char *argv[])
       warmup = param.warmup;
       length = param.length;
 
+      ret = omx_nic_id_to_hostname(status.board_addr,
+				   dest_name);
+      if (ret != OMX_SUCCESS)
+	strcpy(dest_name, "<unknown peer>");
+
       if (verbose)
-	printf("Got parameters (iter=%d, warmup=%d, length=%d)\n", iter, warmup, length);
+	printf("Got parameters (iter=%d, warmup=%d, length=%d) from peer %s\n",
+	       iter, warmup, length, dest_name);
 
       if (!iter)
 	/* the sender wants us to stop */
