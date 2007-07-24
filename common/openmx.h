@@ -104,8 +104,6 @@ enum omx_info_key {
   OMX_INFO_BOARD_COUNT,
   /* return the board name of an endpoint or index (given as uint8_t) */
   OMX_INFO_BOARD_NAME,
-  /* return the board number of an endpoint or name */
-  OMX_INFO_BOARD_INDEX_BY_NAME,
 };
 typedef enum omx_info_key omx_info_key_t;
 

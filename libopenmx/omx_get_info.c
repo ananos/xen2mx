@@ -215,18 +215,6 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       strncpy(out_val, name, out_len);
     }
 
-  case OMX_INFO_BOARD_INDEX_BY_NAME:
-    if (!out_val || !out_len)
-      return OMX_INVALID_PARAMETER;
-    if (ep) {
-      /* use the info stored in the endpoint */
-      *(uint8_t*) out_val = ep->board_index;
-      return OMX_SUCCESS;
-
-    } else {
-      return omx__get_board_index_by_name(in_val, out_val);
-    }
-
   default:
     return OMX_INVALID_PARAMETER;
   }

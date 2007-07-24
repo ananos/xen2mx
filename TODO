@@ -1,3 +1,5 @@
+* configure option to set peer file path
+
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
 
@@ -20,8 +22,6 @@
   - use it for shared memory ?
 * rdma_get
 * rdma_put
-
-* fix loopback test interface name now that the hostname is included
 
 * true sleeping in the kernel
   - always wakeup on event?
