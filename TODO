@@ -51,8 +51,7 @@
 * pass the user-address of contig small/tiny buffer instead of copying ?
 * optimize shared comms between boards from within the driver
 
-* rename everything to open-mx and omx_ prefix
-* add licence with GPL + LGPL + funded by Myricom + Copyright INRIA Brice Goglin
+* add copyright/license headers to all files
 * move to gforge.inria.fr
 
 * non MXoE compatible extensions:

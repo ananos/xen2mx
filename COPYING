@@ -1,0 +1,14 @@
+Copyright © INRIA 2007
+Author: Brice Goglin
+
+OpenMX v0.0
+
+The development of this software has been funded by Myricom, Inc.
+
+All the code is GPL licensed, except the code under libopenmx/ and the
+corresponding header file common/openmx.h which are LGPL licensed.
+Each source code file contains a header that describes the license for
+the code in that specific file.
+
+For more information about these licenses, see COPYING.GPL and
+COPYING.LGPL.
