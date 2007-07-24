@@ -192,13 +192,9 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     return omx__get_board_count((uint32_t *) out_val);
 
   case OMX_INFO_BOARD_NAME:
-  case OMX_INFO_BOARD_ADDR:
     if (ep) {
       /* use the info stored in the endpoint */
-      if (key == OMX_INFO_BOARD_NAME)
-	strncpy(out_val, ep->board_name, out_len);
-      else
-	memcpy(out_val, &ep->board_addr, out_len > sizeof(ep->board_addr) ? sizeof(ep->board_addr) : out_len);
+      strncpy(out_val, ep->board_name, out_len);
       return OMX_SUCCESS;
 
     } else {
@@ -216,13 +212,9 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       if (ret != OMX_SUCCESS)
 	return ret;
 
-      if (key == OMX_INFO_BOARD_NAME)
-	strncpy(out_val, name, out_len);
-      else
-	memcpy(out_val, &addr, out_len > sizeof(addr) ? sizeof(addr) : out_len);
+      strncpy(out_val, name, out_len);
     }
 
-  case OMX_INFO_BOARD_INDEX_BY_ADDR:
   case OMX_INFO_BOARD_INDEX_BY_NAME:
     if (!out_val || !out_len)
       return OMX_INVALID_PARAMETER;
@@ -232,13 +224,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       return OMX_SUCCESS;
 
     } else {
-      if (key == OMX_INFO_BOARD_INDEX_BY_NAME) {
-	return omx__get_board_index_by_name(in_val, out_val);
-      } else {
-	if (in_len < sizeof(uint64_t))
-	  return OMX_INVALID_PARAMETER;
-	return omx__get_board_index_by_addr(*(uint64_t *) in_val, out_val);
-      }
+      return omx__get_board_index_by_name(in_val, out_val);
     }
 
   default:
