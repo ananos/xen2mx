@@ -138,7 +138,7 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_ARG_ENABLE(valgrind, [ --enable-valgrind	enable Valgrind hooks in the library ],
+AC_ARG_ENABLE(valgrind, [  --enable-valgrind	enable Valgrind hooks in the library ],
 	      enable_valgrind=$enableval, enable_valgrind=maybe)
 AC_MSG_CHECKING(if valgrind hooks are enabled)
 if test x$enable_valgrind != xno -a x$enable_debug = xyes; then
@@ -151,7 +151,7 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_ARG_WITH(peers-file, [ --with-peers-file	use argument as a static peers file],
+AC_ARG_WITH(peers-file, [  --with-peers-file	use argument as a static peers file],
 	    with_peers_file=$withval)
 if test x$with_peers_file != x; then
   AC_MSG_NOTICE(using static peers file in $with_peers_file)
