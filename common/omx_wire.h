@@ -1,79 +1,79 @@
-#ifndef __mpoe_wire_h__
-#define __mpoe_wire_h__
+#ifndef __omx_wire_h__
+#define __omx_wire_h__
 
 /******************************
  * Packet definition
  */
 
-#define ETH_P_MPOE 0x86DF
+#define ETH_P_OMX 0x86DF
 
-enum mpoe_pkt_type {
+enum omx_pkt_type {
 	/* must start with NONE and end with MAX */
-	MPOE_PKT_TYPE_NONE=0,
-	MPOE_PKT_TYPE_RAW, /* FIXME: todo */
-	MPOE_PKT_TYPE_MFM_NIC_REPLY, /* FIXME: todo */
-	MPOE_PKT_TYPE_HOST_QUERY, /* FIXME: todo */
-	MPOE_PKT_TYPE_HOST_REPLY, /* FIXME: todo */
+	OMX_PKT_TYPE_NONE=0,
+	OMX_PKT_TYPE_RAW, /* FIXME: todo */
+	OMX_PKT_TYPE_MFM_NIC_REPLY, /* FIXME: todo */
+	OMX_PKT_TYPE_HOST_QUERY, /* FIXME: todo */
+	OMX_PKT_TYPE_HOST_REPLY, /* FIXME: todo */
 
-	MPOE_PKT_TYPE_ETHER_UNICAST = 32, /* FIXME: todo */
-	MPOE_PKT_TYPE_ETHER_MULTICAST, /* FIXME: todo */
-	MPOE_PKT_TYPE_ETHER_NATIVE, /* FIXME: todo */
-	MPOE_PKT_TYPE_TRUC, /* FIXME: todo */
-	MPOE_PKT_TYPE_CONNECT, /* FIXME: todo */
-	MPOE_PKT_TYPE_TINY,
-	MPOE_PKT_TYPE_SMALL,
-	MPOE_PKT_TYPE_MEDIUM,
-	MPOE_PKT_TYPE_RENDEZ_VOUS,
-	MPOE_PKT_TYPE_PULL,
-	MPOE_PKT_TYPE_PULL_REPLY,
-	MPOE_PKT_TYPE_NOTIFY, /* FIXME: todo */
-	MPOE_PKT_TYPE_NACK_LIB, /* FIXME: todo */
-	MPOE_PKT_TYPE_NACK_MCP, /* FIXME: todo */
+	OMX_PKT_TYPE_ETHER_UNICAST = 32, /* FIXME: todo */
+	OMX_PKT_TYPE_ETHER_MULTICAST, /* FIXME: todo */
+	OMX_PKT_TYPE_ETHER_NATIVE, /* FIXME: todo */
+	OMX_PKT_TYPE_TRUC, /* FIXME: todo */
+	OMX_PKT_TYPE_CONNECT, /* FIXME: todo */
+	OMX_PKT_TYPE_TINY,
+	OMX_PKT_TYPE_SMALL,
+	OMX_PKT_TYPE_MEDIUM,
+	OMX_PKT_TYPE_RENDEZ_VOUS,
+	OMX_PKT_TYPE_PULL,
+	OMX_PKT_TYPE_PULL_REPLY,
+	OMX_PKT_TYPE_NOTIFY, /* FIXME: todo */
+	OMX_PKT_TYPE_NACK_LIB, /* FIXME: todo */
+	OMX_PKT_TYPE_NACK_MCP, /* FIXME: todo */
 
-	MPOE_PKT_TYPE_MAX=255,
+	OMX_PKT_TYPE_MAX=255,
 };
 
 static inline const char*
-mpoe_strpkttype(enum mpoe_pkt_type ptype)
+omx_strpkttype(enum omx_pkt_type ptype)
 {
 	switch (ptype) {
-	case MPOE_PKT_TYPE_NONE:
+	case OMX_PKT_TYPE_NONE:
 		return "None";
-	case MPOE_PKT_TYPE_RAW:
+	case OMX_PKT_TYPE_RAW:
 		return "Raw";
-	case MPOE_PKT_TYPE_MFM_NIC_REPLY:
+	case OMX_PKT_TYPE_MFM_NIC_REPLY:
 		return "MFM Nic Reply";
-	case MPOE_PKT_TYPE_HOST_QUERY:
+	case OMX_PKT_TYPE_HOST_QUERY:
 		return "Host Query";
-	case MPOE_PKT_TYPE_HOST_REPLY:
+	case OMX_PKT_TYPE_HOST_REPLY:
 		return "Host Reply";
-	case MPOE_PKT_TYPE_ETHER_UNICAST:
+	case OMX_PKT_TYPE_ETHER_UNICAST:
 		return "Ether Unicast";
-	case MPOE_PKT_TYPE_ETHER_MULTICAST:
+	case OMX_PKT_TYPE_ETHER_MULTICAST:
 		return "Ether Multicast";
-	case MPOE_PKT_TYPE_ETHER_NATIVE:
+	case OMX_PKT_TYPE_ETHER_NATIVE:
 		return "Ether Native";
-	case MPOE_PKT_TYPE_TRUC:
+	case OMX_PKT_TYPE_TRUC:
 		return "Truc";
-	case MPOE_PKT_TYPE_CONNECT:
+	case OMX_PKT_TYPE_CONNECT:
 		return "Connect";
-	case MPOE_PKT_TYPE_TINY:
+	case OMX_PKT_TYPE_TINY:
 		return "Tiny";
-	case MPOE_PKT_TYPE_SMALL:
+	case OMX_PKT_TYPE_SMALL:
 		return "Small";
-	case MPOE_PKT_TYPE_MEDIUM:
+	case OMX_PKT_TYPE_MEDIUM:
 		return "Medium";
-	case MPOE_PKT_TYPE_RENDEZ_VOUS:
+	case OMX_PKT_TYPE_RENDEZ_VOUS:
 		return "Rendez Vous";
-	case MPOE_PKT_TYPE_PULL:
+	case OMX_PKT_TYPE_PULL:
 		return "Pull";
-	case MPOE_PKT_TYPE_PULL_REPLY:
+	case OMX_PKT_TYPE_PULL_REPLY:
 		return "Pull Reply";
-	case MPOE_PKT_TYPE_NOTIFY:
+	case OMX_PKT_TYPE_NOTIFY:
 		return "Notify";
-	case MPOE_PKT_TYPE_NACK_LIB:
+	case OMX_PKT_TYPE_NACK_LIB:
 		return "Nack Lib";
-	case MPOE_PKT_TYPE_NACK_MCP:
+	case OMX_PKT_TYPE_NACK_MCP:
 		return "Nack MCP";
 	default:
 		return "** Unknown **";
@@ -82,13 +82,13 @@ mpoe_strpkttype(enum mpoe_pkt_type ptype)
 
 #include <linux/if_ether.h>
 
-struct mpoe_pkt_head {
+struct omx_pkt_head {
 	struct ethhdr eth;
 	uint16_t sender_peer_index; /* FIXME: unused */
 	/* 16 */
 };
 
-struct mpoe_pkt_msg {
+struct omx_pkt_msg {
 	uint8_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
@@ -103,15 +103,15 @@ struct mpoe_pkt_msg {
 	/* 24 */
 };
 
-struct mpoe_pkt_medium_frag {
-	struct mpoe_pkt_msg msg;
+struct omx_pkt_medium_frag {
+	struct omx_pkt_msg msg;
 	uint16_t frag_length;
 	uint8_t frag_seqnum;
 	uint8_t frag_pipeline;
 	uint32_t pad;
 };
 
-struct mpoe_pkt_pull_request {
+struct omx_pkt_pull_request {
 	uint8_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
@@ -135,7 +135,7 @@ struct mpoe_pkt_pull_request {
 #endif
 };
 
-struct mpoe_pkt_pull_reply {
+struct omx_pkt_pull_reply {
 	uint8_t ptype;
 	uint8_t pad[3];
 	uint32_t length; /* FIXME: 64bits ? */
@@ -150,28 +150,28 @@ struct mpoe_pkt_pull_reply {
 #endif
 };
 
-struct mpoe_hdr {
-	struct mpoe_pkt_head head;
+struct omx_hdr {
+	struct omx_pkt_head head;
 	/* 32 */
 	union {
-		struct mpoe_pkt_msg generic;
-		struct mpoe_pkt_msg tiny;
-		struct mpoe_pkt_msg small;
-		struct mpoe_pkt_medium_frag medium;
-		struct mpoe_pkt_pull_request pull;
-		struct mpoe_pkt_pull_reply pull_reply;
+		struct omx_pkt_msg generic;
+		struct omx_pkt_msg tiny;
+		struct omx_pkt_msg small;
+		struct omx_pkt_medium_frag medium;
+		struct omx_pkt_pull_request pull;
+		struct omx_pkt_pull_reply pull_reply;
 	} body;
 };
 
-#define MPOE_PKT_FROM_MATCH_INFO(_pkt, _match_info)			\
+#define OMX_PKT_FROM_MATCH_INFO(_pkt, _match_info)			\
 do {									\
 	(_pkt)->match_a = (uint32_t) (_match_info >> 32);		\
 	(_pkt)->match_b = (uint32_t) (_match_info & 0xffffffff);	\
 } while (0)
 
-#define MPOE_MATCH_INFO_FROM_PKT(_pkt) (((uint64_t) (_pkt)->match_a) << 32) | ((uint64_t) (_pkt)->match_b)
+#define OMX_MATCH_INFO_FROM_PKT(_pkt) (((uint64_t) (_pkt)->match_a) << 32) | ((uint64_t) (_pkt)->match_b)
 
-#endif /* __mpoe_wire_h__ */
+#endif /* __omx_wire_h__ */
 
 /*
  * Local variables:

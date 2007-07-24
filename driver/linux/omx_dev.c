@@ -16,35 +16,35 @@
  */
 
 static int
-mpoe_endpoint_alloc_resources(struct mpoe_endpoint * endpoint)
+omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 {
-	union mpoe_evt * evt;
+	union omx_evt * evt;
 	char * buffer;
 	int ret;
 
 	/* alloc and init user queues */
 	ret = -ENOMEM;
-	buffer = mpoe_vmalloc_user(MPOE_SENDQ_SIZE + MPOE_RECVQ_SIZE + MPOE_EVENTQ_SIZE);
+	buffer = omx_vmalloc_user(OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EVENTQ_SIZE);
 	if (!buffer) {
-		printk(KERN_ERR "MPoE: failed to allocate queues\n");
+		printk(KERN_ERR "OpenMX: failed to allocate queues\n");
 		goto out;
 	}
 	endpoint->sendq = buffer;
-	endpoint->recvq = buffer + MPOE_SENDQ_SIZE;
-	endpoint->eventq = buffer + MPOE_SENDQ_SIZE + MPOE_RECVQ_SIZE;
+	endpoint->recvq = buffer + OMX_SENDQ_SIZE;
+	endpoint->eventq = buffer + OMX_SENDQ_SIZE + OMX_RECVQ_SIZE;
 
 	for(evt = endpoint->eventq;
-	    (void *) evt < endpoint->eventq + MPOE_EVENTQ_SIZE;
+	    (void *) evt < endpoint->eventq + OMX_EVENTQ_SIZE;
 	    evt++)
-		evt->generic.type = MPOE_EVT_NONE;
+		evt->generic.type = OMX_EVT_NONE;
 	endpoint->next_eventq_slot = endpoint->eventq;
 	endpoint->next_recvq_slot = endpoint->recvq;
 
 	/* initialize user regions */
-	mpoe_endpoint_user_regions_init(endpoint);
+	omx_endpoint_user_regions_init(endpoint);
 
 	/* initialize pull handles */
-	mpoe_endpoint_pull_handles_init(endpoint);
+	omx_endpoint_pull_handles_init(endpoint);
 
 	return 0;
 
@@ -53,10 +53,10 @@ mpoe_endpoint_alloc_resources(struct mpoe_endpoint * endpoint)
 }
 
 static void
-mpoe_endpoint_free_resources(struct mpoe_endpoint * endpoint)
+omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 {
-	mpoe_endpoint_pull_handles_exit(endpoint);
-	mpoe_endpoint_user_regions_exit(endpoint);
+	omx_endpoint_pull_handles_exit(endpoint);
+	omx_endpoint_user_regions_exit(endpoint);
 	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
 }
 
@@ -65,14 +65,14 @@ mpoe_endpoint_free_resources(struct mpoe_endpoint * endpoint)
  */
 
 static int
-mpoe_endpoint_open(struct mpoe_endpoint * endpoint, void __user * uparam)
+omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 {
-	struct mpoe_cmd_open_endpoint param;
+	struct omx_cmd_open_endpoint param;
 	int ret;
 
 	ret = copy_from_user(&param, uparam, sizeof(param));
 	if (ret < 0) {
-		printk(KERN_ERR "MPoE: Failed to read open endpoint command argument, error %d\n", ret);
+		printk(KERN_ERR "OpenMX: Failed to read open endpoint command argument, error %d\n", ret);
 		goto out;
 	}
 	endpoint->board_index = param.board_index;
@@ -82,34 +82,34 @@ mpoe_endpoint_open(struct mpoe_endpoint * endpoint, void __user * uparam)
 	 * and mark it as initializing */
 	spin_lock(&endpoint->lock);
 	ret = -EINVAL;
-	if (endpoint->status != MPOE_ENDPOINT_STATUS_FREE) {
+	if (endpoint->status != OMX_ENDPOINT_STATUS_FREE) {
 		spin_unlock(&endpoint->lock);
 		goto out;
 	}
-	endpoint->status = MPOE_ENDPOINT_STATUS_INITIALIZING;
+	endpoint->status = OMX_ENDPOINT_STATUS_INITIALIZING;
 	atomic_inc(&endpoint->refcount);
 	spin_unlock(&endpoint->lock);
 
 	/* alloc internal fields */
-	ret = mpoe_endpoint_alloc_resources(endpoint);
+	ret = omx_endpoint_alloc_resources(endpoint);
 	if (ret < 0)
 		goto out_with_init;
 
 	/* attach the endpoint to the iface */
-	ret = mpoe_iface_attach_endpoint(endpoint);
+	ret = omx_iface_attach_endpoint(endpoint);
 	if (ret < 0)
 		goto out_with_resources;
 
-	printk(KERN_INFO "MPoE: Successfully open board %d endpoint %d\n",
+	printk(KERN_INFO "OpenMX: Successfully open board %d endpoint %d\n",
 	       endpoint->board_index, endpoint->endpoint_index);
 
 	return 0;
 
  out_with_resources:
-	mpoe_endpoint_free_resources(endpoint);
+	omx_endpoint_free_resources(endpoint);
  out_with_init:
 	atomic_dec(&endpoint->refcount);
-	endpoint->status = MPOE_ENDPOINT_STATUS_FREE;
+	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
  out:
 	return ret;
 }
@@ -118,8 +118,8 @@ mpoe_endpoint_open(struct mpoe_endpoint * endpoint, void __user * uparam)
  * If already closing, return -EBUSY.
  */
 int
-__mpoe_endpoint_close(struct mpoe_endpoint * endpoint,
-		      int ifacelocked)
+__omx_endpoint_close(struct omx_endpoint * endpoint,
+		     int ifacelocked)
 {
 	DECLARE_WAITQUEUE(wq, current);
 	int ret;
@@ -127,14 +127,14 @@ __mpoe_endpoint_close(struct mpoe_endpoint * endpoint,
 	/* test whether the endpoint is ok to be closed */
 	spin_lock(&endpoint->lock);
 	ret = -EBUSY;
-	if (endpoint->status != MPOE_ENDPOINT_STATUS_OK) {
+	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
 		/* only CLOSING and OK endpoints may be attached to the iface */
-		BUG_ON(endpoint->status != MPOE_ENDPOINT_STATUS_CLOSING);
+		BUG_ON(endpoint->status != OMX_ENDPOINT_STATUS_CLOSING);
 		spin_unlock(&endpoint->lock);
 		goto out;
 	}
 	/* mark it as closing so that nobody may use it again */
-	endpoint->status = MPOE_ENDPOINT_STATUS_CLOSING;
+	endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;
 	/* release our refcount now that other users cannot use again */
 	atomic_dec(&endpoint->refcount);
 	spin_unlock(&endpoint->lock);
@@ -151,13 +151,13 @@ __mpoe_endpoint_close(struct mpoe_endpoint * endpoint,
 	remove_wait_queue(&endpoint->noref_queue, &wq);
 
 	/* release resources */
-	mpoe_endpoint_free_resources(endpoint);
+	omx_endpoint_free_resources(endpoint);
 
 	/* detach */
-	mpoe_iface_detach_endpoint(endpoint, ifacelocked);
+	omx_iface_detach_endpoint(endpoint, ifacelocked);
 
 	/* mark as free now */
-	endpoint->status = MPOE_ENDPOINT_STATUS_FREE;
+	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
 
 	return 0;
 
@@ -166,9 +166,9 @@ __mpoe_endpoint_close(struct mpoe_endpoint * endpoint,
 }
 
 static inline int
-mpoe_endpoint_close(struct mpoe_endpoint * endpoint)
+omx_endpoint_close(struct omx_endpoint * endpoint)
 {
-	return __mpoe_endpoint_close(endpoint, 0); /* we don't hold the iface lock */
+	return __omx_endpoint_close(endpoint, 0); /* we don't hold the iface lock */
 }
 
 /******************************
@@ -176,12 +176,12 @@ mpoe_endpoint_close(struct mpoe_endpoint * endpoint)
  */
 
 int
-mpoe_endpoint_acquire(struct mpoe_endpoint * endpoint)
+omx_endpoint_acquire(struct omx_endpoint * endpoint)
 {
 	int ret = -EINVAL;
 
 	spin_lock(&endpoint->lock);
-	if (unlikely(endpoint->status != MPOE_ENDPOINT_STATUS_OK))
+	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
 		goto out_with_lock;
 
 	atomic_inc(&endpoint->refcount);
@@ -194,13 +194,13 @@ mpoe_endpoint_acquire(struct mpoe_endpoint * endpoint)
 	return ret;
 }
 
-struct mpoe_endpoint *
-mpoe_endpoint_acquire_by_iface_index(struct mpoe_iface * iface, uint8_t index)
+struct omx_endpoint *
+omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 {
-	struct mpoe_endpoint * endpoint;
+	struct omx_endpoint * endpoint;
 
 	spin_lock(&iface->endpoint_lock);
-	if (unlikely(index >= mpoe_endpoint_max))
+	if (unlikely(index >= omx_endpoint_max))
 		goto out_with_iface_lock;
 
 	endpoint = iface->endpoints[index];
@@ -208,7 +208,7 @@ mpoe_endpoint_acquire_by_iface_index(struct mpoe_iface * iface, uint8_t index)
 		goto out_with_iface_lock;
 
 	spin_lock(&endpoint->lock);
-	if (unlikely(endpoint->status != MPOE_ENDPOINT_STATUS_OK))
+	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
 		goto out_with_endpoint_lock;
 
 	atomic_inc(&endpoint->refcount);
@@ -225,7 +225,7 @@ mpoe_endpoint_acquire_by_iface_index(struct mpoe_iface * iface, uint8_t index)
 }
 
 void
-mpoe_endpoint_release(struct mpoe_endpoint * endpoint)
+omx_endpoint_release(struct omx_endpoint * endpoint)
 {
 	/* decrement refcount and wake up the closer */
 	if (unlikely(atomic_dec_and_test(&endpoint->refcount)))
@@ -237,16 +237,16 @@ mpoe_endpoint_release(struct mpoe_endpoint * endpoint)
  */
 
 static int
-mpoe_miscdev_open(struct inode * inode, struct file * file)
+omx_miscdev_open(struct inode * inode, struct file * file)
 {
-	struct mpoe_endpoint * endpoint;
+	struct omx_endpoint * endpoint;
 
-	endpoint = kmalloc(sizeof(struct mpoe_endpoint), GFP_KERNEL);
+	endpoint = kmalloc(sizeof(struct omx_endpoint), GFP_KERNEL);
 	if (!endpoint)
 		return -ENOMEM;
 
 	spin_lock_init(&endpoint->lock);
-	endpoint->status = MPOE_ENDPOINT_STATUS_FREE;
+	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
 	atomic_set(&endpoint->refcount, 0);
 	init_waitqueue_head(&endpoint->noref_queue);
 
@@ -255,14 +255,14 @@ mpoe_miscdev_open(struct inode * inode, struct file * file)
 }
 
 static int
-mpoe_miscdev_release(struct inode * inode, struct file * file)
+omx_miscdev_release(struct inode * inode, struct file * file)
 {
-	struct mpoe_endpoint * endpoint = file->private_data;
+	struct omx_endpoint * endpoint = file->private_data;
 
 	BUG_ON(!endpoint);
 
-	if (endpoint->status != MPOE_ENDPOINT_STATUS_FREE)
-		mpoe_endpoint_close(endpoint);
+	if (endpoint->status != OMX_ENDPOINT_STATUS_FREE)
+		omx_endpoint_close(endpoint);
 
 	return 0;
 }
@@ -272,84 +272,84 @@ mpoe_miscdev_release(struct inode * inode, struct file * file)
  * returns 0 on success, <0 on error,
  * 1 when success and does not want to release the reference on the endpoint
  */
-static int (*mpoe_cmd_with_endpoint_handlers[])(struct mpoe_endpoint * endpoint, void __user * uparam) = {
-	[MPOE_CMD_SEND_TINY]		= mpoe_send_tiny,
-	[MPOE_CMD_SEND_SMALL]		= mpoe_send_small,
-	[MPOE_CMD_SEND_MEDIUM]		= mpoe_send_medium,
-	[MPOE_CMD_SEND_RENDEZ_VOUS]	= mpoe_send_rendez_vous,
-	[MPOE_CMD_SEND_PULL]		= mpoe_send_pull,
-	[MPOE_CMD_REGISTER_REGION]	= mpoe_register_user_region,
-	[MPOE_CMD_DEREGISTER_REGION]	= mpoe_deregister_user_region,
+static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
+	[OMX_CMD_SEND_TINY]		= omx_send_tiny,
+	[OMX_CMD_SEND_SMALL]		= omx_send_small,
+	[OMX_CMD_SEND_MEDIUM]		= omx_send_medium,
+	[OMX_CMD_SEND_RENDEZ_VOUS]	= omx_send_rendez_vous,
+	[OMX_CMD_SEND_PULL]		= omx_send_pull,
+	[OMX_CMD_REGISTER_REGION]	= omx_register_user_region,
+	[OMX_CMD_DEREGISTER_REGION]	= omx_deregister_user_region,
 };
 
 /*
  * Main ioctl switch where all application ioctls arrive
  */
 static int
-mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
-		   unsigned cmd, unsigned long arg)
+omx_miscdev_ioctl(struct inode *inode, struct file *file,
+		  unsigned cmd, unsigned long arg)
 {
 	int ret = 0;
 
 	switch (cmd) {
 
-	case MPOE_CMD_GET_BOARD_MAX: {
-		uint32_t max = mpoe_iface_max;
+	case OMX_CMD_GET_BOARD_MAX: {
+		uint32_t max = omx_iface_max;
 
 		ret = copy_to_user((void __user *) arg, &max,
 				   sizeof(max));
 		if (ret < 0)
-			printk(KERN_ERR "MPoE: Failed to write get_board_max command result, error %d\n", ret);
+			printk(KERN_ERR "OpenMX: Failed to write get_board_max command result, error %d\n", ret);
 
 		break;
 	}
 
-	case MPOE_CMD_GET_ENDPOINT_MAX: {
-		uint32_t max = mpoe_endpoint_max;
+	case OMX_CMD_GET_ENDPOINT_MAX: {
+		uint32_t max = omx_endpoint_max;
 
 		ret = copy_to_user((void __user *) arg, &max,
 				   sizeof(max));
 		if (ret < 0)
-			printk(KERN_ERR "MPoE: Failed to write get_endpoint_max command result, error %d\n", ret);
+			printk(KERN_ERR "OpenMX: Failed to write get_endpoint_max command result, error %d\n", ret);
 
 		break;
 	}
 
-	case MPOE_CMD_GET_PEER_MAX: {
-		uint32_t max = mpoe_peer_max;
+	case OMX_CMD_GET_PEER_MAX: {
+		uint32_t max = omx_peer_max;
 
 		ret = copy_to_user((void __user *) arg, &max,
 				   sizeof(max));
 		if (ret < 0)
-			printk(KERN_ERR "MPoE: Failed to write get_peer_max command result, error %d\n", ret);
+			printk(KERN_ERR "OpenMX: Failed to write get_peer_max command result, error %d\n", ret);
 
 		break;
 	}
 
-	case MPOE_CMD_GET_BOARD_COUNT: {
-		uint32_t count = mpoe_ifaces_get_count();
+	case OMX_CMD_GET_BOARD_COUNT: {
+		uint32_t count = omx_ifaces_get_count();
 
 		ret = copy_to_user((void __user *) arg, &count,
 				   sizeof(count));
 		if (ret < 0)
-			printk(KERN_ERR "MPoE: Failed to write get_board_count command result, error %d\n", ret);
+			printk(KERN_ERR "OpenMX: Failed to write get_board_count command result, error %d\n", ret);
 
 		break;
 	}
 
-	case MPOE_CMD_GET_BOARD_ID: {
-		struct mpoe_endpoint * endpoint = file->private_data;
-		struct mpoe_cmd_get_board_id get_board_id;
+	case OMX_CMD_GET_BOARD_ID: {
+		struct omx_endpoint * endpoint = file->private_data;
+		struct omx_cmd_get_board_id get_board_id;
 		int use_endpoint = 0;
 
 		/* try to acquire the endpoint */
-		ret = mpoe_endpoint_acquire(endpoint);
+		ret = omx_endpoint_acquire(endpoint);
 		if (ret < 0) {
 			/* the endpoint is not open, get the command parameter and use its board_index */
 			ret = copy_from_user(&get_board_id, (void __user *) arg,
 					     sizeof(get_board_id));
 			if (ret < 0) {
-				printk(KERN_ERR "MPoE: Failed to read get_board_id command argument, error %d\n", ret);
+				printk(KERN_ERR "OpenMX: Failed to read get_board_id command argument, error %d\n", ret);
 				goto out;
 			}
 		} else {
@@ -358,13 +358,13 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 			use_endpoint = 1;
 		}
 
-		ret = mpoe_iface_get_id(get_board_id.board_index,
-					&get_board_id.board_addr,
-					get_board_id.board_name);
+		ret = omx_iface_get_id(get_board_id.board_index,
+				       &get_board_id.board_addr,
+				       get_board_id.board_name);
 
 		/* release the endpoint if we used it */
 		if (use_endpoint)
-			mpoe_endpoint_release(endpoint);
+			omx_endpoint_release(endpoint);
 
 		if (ret < 0)
 			goto out;
@@ -372,51 +372,51 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 		ret = copy_to_user((void __user *) arg, &get_board_id,
 				   sizeof(get_board_id));
 		if (ret < 0)
-			printk(KERN_ERR "MPoE: Failed to write get_board_id command result, error %d\n", ret);
+			printk(KERN_ERR "OpenMX: Failed to write get_board_id command result, error %d\n", ret);
 
 		break;
 	}
 
-	case MPOE_CMD_OPEN_ENDPOINT: {
-		struct mpoe_endpoint * endpoint = file->private_data;
+	case OMX_CMD_OPEN_ENDPOINT: {
+		struct omx_endpoint * endpoint = file->private_data;
 		BUG_ON(!endpoint);
 
-		ret = mpoe_endpoint_open(endpoint, (void __user *) arg);
+		ret = omx_endpoint_open(endpoint, (void __user *) arg);
 
 		break;
 	}
 
-	case MPOE_CMD_CLOSE_ENDPOINT: {
-		struct mpoe_endpoint * endpoint = file->private_data;
+	case OMX_CMD_CLOSE_ENDPOINT: {
+		struct omx_endpoint * endpoint = file->private_data;
 		BUG_ON(!endpoint);
 
-		ret = mpoe_endpoint_close(endpoint);
+		ret = omx_endpoint_close(endpoint);
 
 		break;
 	}
 
-	case MPOE_CMD_SEND_TINY:
-	case MPOE_CMD_SEND_SMALL:
-	case MPOE_CMD_SEND_MEDIUM:
-	case MPOE_CMD_SEND_RENDEZ_VOUS:
-	case MPOE_CMD_SEND_PULL:
-	case MPOE_CMD_REGISTER_REGION:
-	case MPOE_CMD_DEREGISTER_REGION:
+	case OMX_CMD_SEND_TINY:
+	case OMX_CMD_SEND_SMALL:
+	case OMX_CMD_SEND_MEDIUM:
+	case OMX_CMD_SEND_RENDEZ_VOUS:
+	case OMX_CMD_SEND_PULL:
+	case OMX_CMD_REGISTER_REGION:
+	case OMX_CMD_DEREGISTER_REGION:
 	{
-		struct mpoe_endpoint * endpoint = file->private_data;
+		struct omx_endpoint * endpoint = file->private_data;
 
-		BUG_ON(cmd >= ARRAY_SIZE(mpoe_cmd_with_endpoint_handlers));
-		BUG_ON(mpoe_cmd_with_endpoint_handlers[cmd] == NULL);
+		BUG_ON(cmd >= ARRAY_SIZE(omx_cmd_with_endpoint_handlers));
+		BUG_ON(omx_cmd_with_endpoint_handlers[cmd] == NULL);
 
-		ret = mpoe_endpoint_acquire(endpoint);
+		ret = omx_endpoint_acquire(endpoint);
 		if (unlikely(ret < 0))
 			goto out;
 
-		ret = mpoe_cmd_with_endpoint_handlers[cmd](endpoint, (void __user *) arg);
+		ret = omx_cmd_with_endpoint_handlers[cmd](endpoint, (void __user *) arg);
 
 		/* if ret > 0, the caller wants to keep a reference on the endpoint */
 		if (likely(ret <= 0))
-			mpoe_endpoint_release(endpoint);
+			omx_endpoint_release(endpoint);
 
 		break;
 	}
@@ -431,104 +431,104 @@ mpoe_miscdev_ioctl(struct inode *inode, struct file *file,
 }
 
 static int
-mpoe_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
+omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 {
-	struct mpoe_endpoint * endpoint = file->private_data;
+	struct omx_endpoint * endpoint = file->private_data;
 	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
 	unsigned long size = vma->vm_end - vma->vm_start;
 
 	if (endpoint == NULL)
 		return -EINVAL;
 
-	if (offset == MPOE_SENDQ_FILE_OFFSET && size == MPOE_SENDQ_SIZE)
-		return mpoe_remap_vmalloc_range(vma, endpoint->sendq, 0);
-	else if (offset == MPOE_RECVQ_FILE_OFFSET && size == MPOE_RECVQ_SIZE)
-		return mpoe_remap_vmalloc_range(vma, endpoint->sendq, MPOE_SENDQ_SIZE >> PAGE_SHIFT);
-	else if (offset == MPOE_EVENTQ_FILE_OFFSET && size == MPOE_EVENTQ_SIZE)
-		return mpoe_remap_vmalloc_range(vma, endpoint->sendq, (MPOE_SENDQ_SIZE + MPOE_RECVQ_SIZE) >> PAGE_SHIFT);
+	if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
+		return omx_remap_vmalloc_range(vma, endpoint->sendq, 0);
+	else if (offset == OMX_RECVQ_FILE_OFFSET && size == OMX_RECVQ_SIZE)
+		return omx_remap_vmalloc_range(vma, endpoint->sendq, OMX_SENDQ_SIZE >> PAGE_SHIFT);
+	else if (offset == OMX_EVENTQ_FILE_OFFSET && size == OMX_EVENTQ_SIZE)
+		return omx_remap_vmalloc_range(vma, endpoint->sendq, (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE) >> PAGE_SHIFT);
 	else {
-		printk(KERN_ERR "MPoE: Cannot mmap %lx at %lx\n", size, offset);
+		printk(KERN_ERR "OpenMX: Cannot mmap %lx at %lx\n", size, offset);
 		return -EINVAL;
 	}
 }
 
 static struct file_operations
-mpoe_miscdev_fops = {
+omx_miscdev_fops = {
 	.owner = THIS_MODULE,
-	.open = mpoe_miscdev_open,
-	.release = mpoe_miscdev_release,
-	.mmap = mpoe_miscdev_mmap,
-	.ioctl = mpoe_miscdev_ioctl,
+	.open = omx_miscdev_open,
+	.release = omx_miscdev_release,
+	.mmap = omx_miscdev_mmap,
+	.ioctl = omx_miscdev_ioctl,
 };
 
 static struct miscdevice
-mpoe_miscdev = {
+omx_miscdev = {
 	.minor = MISC_DYNAMIC_MINOR,
-	.name = "mpoe",
-	.fops = &mpoe_miscdev_fops,
+	.name = "openmx",
+	.fops = &omx_miscdev_fops,
 };
 
 /******************************
  * Device attributes
  */
 
-#ifdef MPOE_MISCDEV_HAVE_CLASS_DEVICE
+#ifdef OMX_MISCDEV_HAVE_CLASS_DEVICE
 
 static ssize_t
-mpoe_ifaces_attr_show(struct class_device *dev, char *buf)
+omx_ifaces_attr_show(struct class_device *dev, char *buf)
 {
-	return mpoe_ifaces_show(buf);
+	return omx_ifaces_show(buf);
 }
 
 static ssize_t
-mpoe_ifaces_attr_store(struct class_device *dev, const char *buf, size_t size)
+omx_ifaces_attr_store(struct class_device *dev, const char *buf, size_t size)
 {
-	return mpoe_ifaces_store(buf, size);
+	return omx_ifaces_store(buf, size);
 }
 
-static CLASS_DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, mpoe_ifaces_attr_show, mpoe_ifaces_attr_store);
+static CLASS_DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, omx_ifaces_attr_show, omx_ifaces_attr_store);
 
 static int
-mpoe_init_attributes(void)
+omx_init_attributes(void)
 {
-	return class_device_create_file(mpoe_miscdev.class, &class_device_attr_ifaces);
+	return class_device_create_file(omx_miscdev.class, &class_device_attr_ifaces);
 }
 
 static void
-mpoe_exit_attributes(void)
+omx_exit_attributes(void)
 {
-	class_device_remove_file(mpoe_miscdev.class, &class_device_attr_ifaces);
+	class_device_remove_file(omx_miscdev.class, &class_device_attr_ifaces);
 }
 
-#else /* !MPOE_MISCDEV_HAVE_CLASS_DEVICE */
+#else /* !OMX_MISCDEV_HAVE_CLASS_DEVICE */
 
 static ssize_t
-mpoe_ifaces_attr_show(struct device *dev, struct device_attribute *attr, char *buf)
+omx_ifaces_attr_show(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	return mpoe_ifaces_show(buf);
+	return omx_ifaces_show(buf);
 }
 
 static ssize_t
-mpoe_ifaces_attr_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
+omx_ifaces_attr_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
-	return mpoe_ifaces_store(buf, size);
+	return omx_ifaces_store(buf, size);
 }
 
-static DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, mpoe_ifaces_attr_show, mpoe_ifaces_attr_store);
+static DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, omx_ifaces_attr_show, omx_ifaces_attr_store);
 
 static int
-mpoe_init_attributes(void)
+omx_init_attributes(void)
 {
-	return device_create_file(mpoe_miscdev.this_device, &dev_attr_ifaces);
+	return device_create_file(omx_miscdev.this_device, &dev_attr_ifaces);
 }
 
 static void
-mpoe_exit_attributes(void)
+omx_exit_attributes(void)
 {
-	device_remove_file(mpoe_miscdev.this_device, &dev_attr_ifaces);
+	device_remove_file(omx_miscdev.this_device, &dev_attr_ifaces);
 }
 
-#endif /* !MPOE_MISCDEV_HAVE_CLASS_DEVICE */
+#endif /* !OMX_MISCDEV_HAVE_CLASS_DEVICE */
 
 
 /******************************
@@ -536,35 +536,35 @@ mpoe_exit_attributes(void)
  */
 
 int
-mpoe_dev_init(void)
+omx_dev_init(void)
 {
 	int ret;
 
-	ret = misc_register(&mpoe_miscdev);
+	ret = misc_register(&omx_miscdev);
 	if (ret < 0) {
-		printk(KERN_ERR "MPoE: Failed to register misc device, error %d\n", ret);
+		printk(KERN_ERR "OpenMX: Failed to register misc device, error %d\n", ret);
 		goto out;
 	}
 
-	ret = mpoe_init_attributes();
+	ret = omx_init_attributes();
 	if (ret < 0) {
-		printk(KERN_ERR "MPoE: failed to create misc device attributes, error %d\n", ret);
+		printk(KERN_ERR "OpenMX: failed to create misc device attributes, error %d\n", ret);
 		goto out_with_device;
 	}
 
 	return 0;
 
  out_with_device:
-	misc_deregister(&mpoe_miscdev);
+	misc_deregister(&omx_miscdev);
  out:
 	return ret;
 }
 
 void
-mpoe_dev_exit(void)
+omx_dev_exit(void)
 {
-	mpoe_exit_attributes();
-	misc_deregister(&mpoe_miscdev);
+	omx_exit_attributes();
+	misc_deregister(&omx_miscdev);
 }
 
 /*

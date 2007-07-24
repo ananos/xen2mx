@@ -16,7 +16,7 @@
 static int
 send_pull(int fd, int id, int from, int to, int len)
 {
-  struct mpoe_cmd_send_pull pull_param;
+  struct omx_cmd_send_pull pull_param;
   int ret;
 
   pull_param.dest_addr = -1; /* broadcast */
@@ -27,7 +27,7 @@ send_pull(int fd, int id, int from, int to, int len)
   pull_param.remote_offset = to;
   pull_param.length = len;
 
-  ret = ioctl(fd, MPOE_CMD_SEND_PULL, &pull_param);
+  ret = ioctl(fd, OMX_CMD_SEND_PULL, &pull_param);
   if (ret < 0) {
     perror("ioctl/send/pull");
     return ret;
@@ -41,8 +41,8 @@ static inline int
 do_register(int fd, int id,
 	    void * buffer, unsigned long len)
 {
-  struct mpoe_cmd_region_segment seg;
-  struct mpoe_cmd_register_region reg;
+  struct omx_cmd_region_segment seg;
+  struct omx_cmd_register_region reg;
 
   seg.vaddr = (uintptr_t) buffer;
   seg.len = len;
@@ -52,20 +52,20 @@ do_register(int fd, int id,
   reg.memory_context = 0ULL; /* unused for now */
   reg.segments = (uintptr_t) &seg;
 
-  return ioctl(fd, MPOE_CMD_REGISTER_REGION, &reg);
+  return ioctl(fd, OMX_CMD_REGISTER_REGION, &reg);
 }
 
 int main(void)
 {
   int fd, ret;
-  struct mpoe_cmd_open_endpoint open_param;
-  //  volatile union mpoe_evt * evt;
+  struct omx_cmd_open_endpoint open_param;
+  //  volatile union omx_evt * evt;
   void * recvq, * sendq, * eventq;
   void * buffer;
   //  int i;
   //  struct timeval tv1, tv2;
 
-  fd = open(MPOE_DEVNAME, O_RDWR);
+  fd = open(OMX_DEVNAME, O_RDWR);
   if (fd < 0) {
     perror("open");
     goto out;
@@ -74,7 +74,7 @@ int main(void)
   /* ok */
   open_param.board_index = 0;
   open_param.endpoint_index = EP;
-  ret = ioctl(fd, MPOE_CMD_OPEN_ENDPOINT, &open_param);
+  ret = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
   if (ret < 0) {
     perror("attach endpoint");
     goto out_with_fd;
@@ -82,9 +82,9 @@ int main(void)
   fprintf(stderr, "Successfully attached endpoint %d/%d\n", 0, 34);
 
   /* mmap */
-  sendq = mmap(0, MPOE_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_SENDQ_FILE_OFFSET);
-  recvq = mmap(0, MPOE_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_RECVQ_FILE_OFFSET);
-  eventq = mmap(0, MPOE_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_EVENTQ_FILE_OFFSET);
+  sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
+  recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
+  eventq = mmap(0, OMX_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EVENTQ_FILE_OFFSET);
   printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
 
   /* allocate buffer */
@@ -119,16 +119,16 @@ int main(void)
       goto out_with_fd;
 
     /* wait for the message */
-    while (evt->generic.type == MPOE_EVT_NONE) ;
+    while (evt->generic.type == OMX_EVT_NONE) ;
 
     printf("received type %d\n", evt->generic.type);
     switch (evt->generic.type) {
-    case MPOE_EVT_RECV_TINY:
+    case OMX_EVT_RECV_TINY:
       printf("tiny contains \"%s\"\n", evt->tiny.data);
       break;
 
-    case MPOE_EVT_RECV_MEDIUM: {
-      char * buf = recvq + ((char *) evt - (char *) eventq)/sizeof(*evt) * MPOE_RECVQ_ENTRY_SIZE;
+    case OMX_EVT_RECV_MEDIUM: {
+      char * buf = recvq + ((char *) evt - (char *) eventq)/sizeof(*evt) * OMX_RECVQ_ENTRY_SIZE;
       printf("medium length %d contains \"%s\"\n", evt->medium.length, buf);
       break;
    }
@@ -139,11 +139,11 @@ int main(void)
     }
 
     /* mark event as done */
-    evt->generic.type = MPOE_EVT_NONE;
+    evt->generic.type = OMX_EVT_NONE;
 
     /* next event */
     evt++;
-    if ((void *) evt >= eventq + MPOE_EVENTQ_SIZE)
+    if ((void *) evt >= eventq + OMX_EVENTQ_SIZE)
       evt = eventq;
   }
   gettimeofday(&tv2, NULL);

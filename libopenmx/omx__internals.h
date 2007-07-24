@@ -3,7 +3,7 @@
 
 #include "omx__lib.h"
 
-#define MPOE_DEVNAME "/dev/mpoe"
+#define OMX_DEVNAME "/dev/openmx"
 /* FIXME: envvar to configure? */
 
 #define MPOE_MEDIUM_FRAG_PIPELINE_BASE 10  /* pipeline is encoded -10 on the wire */

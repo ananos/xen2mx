@@ -17,7 +17,7 @@
  * Debugging
  */
 
-#ifdef MPOE_DEBUG
+#ifdef OMX_DEBUG
 #define mpoe__debug_assert(x) assert(x)
 #define mpoe__debug_instr(x) do { x; } while (0)
 #define mpoe__debug_printf(args...) fprintf(stderr, args)
@@ -104,19 +104,19 @@ mpoe__endpoint_sendq_map_init(struct mpoe_endpoint * ep)
   struct mpoe_sendq_entry * array;
   int i;
 
-  array = malloc(MPOE_SENDQ_ENTRY_NR * sizeof(struct mpoe_sendq_entry));
+  array = malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct mpoe_sendq_entry));
   if (!array)
     return -ENOMEM;
 
   ep->sendq_map.array = array;
 
-  for(i=0; i<MPOE_SENDQ_ENTRY_NR; i++) {
+  for(i=0; i<OMX_SENDQ_ENTRY_NR; i++) {
     array[i].user = NULL;
     array[i].next_free = i+1;
   }
-  array[MPOE_SENDQ_ENTRY_NR-1].next_free = -1;
+  array[OMX_SENDQ_ENTRY_NR-1].next_free = -1;
   ep->sendq_map.first_free = 0;
-  ep->sendq_map.nr_free = MPOE_SENDQ_ENTRY_NR;
+  ep->sendq_map.nr_free = OMX_SENDQ_ENTRY_NR;
 
   return 0;
 }
@@ -200,7 +200,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
 		   struct mpoe_endpoint **epp)
 {
   /* FIXME: add parameters to choose the board name? */
-  struct mpoe_cmd_open_endpoint open_param;
+  struct omx_cmd_open_endpoint open_param;
   struct mpoe_endpoint * ep;
   char board_addr_str[MPOE_BOARD_ADDR_STRLEN];
   void * recvq, * sendq, * eventq;
@@ -218,7 +218,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
     goto out;
   }
 
-  err = open(MPOE_DEVNAME, O_RDWR);
+  err = open(OMX_DEVNAME, O_RDWR);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "open");
     goto out_with_ep;
@@ -228,7 +228,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   /* ok */
   open_param.board_index = board_index;
   open_param.endpoint_index = endpoint_index;
-  err = ioctl(fd, MPOE_CMD_OPEN_ENDPOINT, &open_param);
+  err = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl OPEN_ENDPOINT");
     goto out_with_fd;
@@ -242,9 +242,9 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   }
 
   /* mmap */
-  sendq = mmap(0, MPOE_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_SENDQ_FILE_OFFSET);
-  recvq = mmap(0, MPOE_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_RECVQ_FILE_OFFSET);
-  eventq = mmap(0, MPOE_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, MPOE_EVENTQ_FILE_OFFSET);
+  sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
+  recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
+  eventq = mmap(0, OMX_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EVENTQ_FILE_OFFSET);
   if (sendq == (void *) -1
       || recvq == (void *) -1
       || eventq == (void *) -1) {
@@ -300,9 +300,9 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
 mpoe_return_t
 mpoe_close_endpoint(struct mpoe_endpoint *ep)
 {
-  munmap(ep->sendq, MPOE_SENDQ_SIZE);
-  munmap(ep->recvq, MPOE_RECVQ_SIZE);
-  munmap(ep->eventq, MPOE_EVENTQ_SIZE);
+  munmap(ep->sendq, OMX_SENDQ_SIZE);
+  munmap(ep->recvq, OMX_RECVQ_SIZE);
+  munmap(ep->eventq, OMX_EVENTQ_SIZE);
   close(ep->fd);
   free(ep);
 
@@ -353,14 +353,14 @@ mpoe__queue_empty(struct list_head *head)
  */
 
 typedef mpoe_return_t (*mpoe__process_recv_func_t) (struct mpoe_endpoint *ep,
-						    union mpoe_evt *evt,
+						    union omx_evt *evt,
 						    void *data);
 
 static mpoe_return_t
 mpoe__process_recv_tiny(struct mpoe_endpoint *ep,
-			union mpoe_evt *evt, void *data)
+			union omx_evt *evt, void *data)
 {
-  struct mpoe_evt_recv_tiny *event = &evt->recv_tiny;
+  struct omx_evt_recv_tiny *event = &evt->recv_tiny;
   union mpoe_request *req;
   unsigned long length;
 
@@ -415,9 +415,9 @@ mpoe__process_recv_tiny(struct mpoe_endpoint *ep,
 
 static mpoe_return_t
 mpoe__process_recv_small(struct mpoe_endpoint *ep,
-			 union mpoe_evt *evt, void *data)
+			 union omx_evt *evt, void *data)
 {
-  struct mpoe_evt_recv_small * event = &evt->recv_small;
+  struct omx_evt_recv_small * event = &evt->recv_small;
   union mpoe_request *req;
   unsigned long length;
 
@@ -472,9 +472,9 @@ mpoe__process_recv_small(struct mpoe_endpoint *ep,
 
 static mpoe_return_t
 mpoe__process_recv_medium(struct mpoe_endpoint *ep,
-			  union mpoe_evt *evt, void *data)
+			  union omx_evt *evt, void *data)
 {
-  struct mpoe_evt_recv_medium * event = &evt->recv_medium;
+  struct omx_evt_recv_medium * event = &evt->recv_medium;
   union mpoe_request * req;
   unsigned long msg_length = event->msg_length;
   unsigned long chunk = event->frag_length;
@@ -555,7 +555,7 @@ mpoe__process_recv_medium(struct mpoe_endpoint *ep,
 
 static mpoe_return_t
 mpoe__process_recv(struct mpoe_endpoint *ep,
-		   union mpoe_evt *evt, mpoe_seqnum_t seqnum, void *data,
+		   union omx_evt *evt, mpoe_seqnum_t seqnum, void *data,
 		   mpoe__process_recv_func_t recv_func)
 {
   mpoe__debug_printf("got seqnum %d\n", seqnum);
@@ -566,39 +566,39 @@ mpoe__process_recv(struct mpoe_endpoint *ep,
 }
 
 static mpoe_return_t
-mpoe__process_event(struct mpoe_endpoint * ep, union mpoe_evt * evt)
+mpoe__process_event(struct mpoe_endpoint * ep, union omx_evt * evt)
 {
   mpoe_return_t ret = MPOE_SUCCESS;
 
   mpoe__debug_printf("received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
 
-  case MPOE_EVT_RECV_TINY: {
+  case OMX_EVT_RECV_TINY: {
     ret = mpoe__process_recv(ep,
 			     evt, evt->recv_tiny.seqnum, evt->recv_tiny.data,
 			     mpoe__process_recv_tiny);
     break;
   }
 
-  case MPOE_EVT_RECV_SMALL: {
+  case OMX_EVT_RECV_SMALL: {
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
-    char * recvq_buffer = ep->recvq + evt_index * MPOE_RECVQ_ENTRY_SIZE;
+    char * recvq_buffer = ep->recvq + evt_index * OMX_RECVQ_ENTRY_SIZE;
     ret = mpoe__process_recv(ep,
 			     evt, evt->recv_small.seqnum, recvq_buffer,
 			     mpoe__process_recv_small);
     break;
   }
 
-  case MPOE_EVT_RECV_MEDIUM: {
+  case OMX_EVT_RECV_MEDIUM: {
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
-    char * recvq_buffer = ep->recvq + evt_index * MPOE_RECVQ_ENTRY_SIZE;
+    char * recvq_buffer = ep->recvq + evt_index * OMX_RECVQ_ENTRY_SIZE;
     ret = mpoe__process_recv(ep,
 			     evt, evt->recv_medium.seqnum, recvq_buffer,
 			     mpoe__process_recv_medium);
     break;
   }
 
-  case MPOE_EVT_SEND_MEDIUM_FRAG_DONE: {
+  case OMX_EVT_SEND_MEDIUM_FRAG_DONE: {
     uint16_t sendq_page_offset = evt->send_medium_frag_done.sendq_page_offset;
     union mpoe_request * req = mpoe__endpoint_sendq_map_put(ep, sendq_page_offset);
     assert(req
@@ -631,19 +631,19 @@ mpoe__progress(struct mpoe_endpoint * ep)
 {
   /* process events */
   while (1) {
-    volatile union mpoe_evt * evt = ep->next_event;
+    volatile union omx_evt * evt = ep->next_event;
 
-    if (evt->generic.type == MPOE_EVT_NONE)
+    if (evt->generic.type == OMX_EVT_NONE)
       break;
 
-    mpoe__process_event(ep, (union mpoe_evt *) evt);
+    mpoe__process_event(ep, (union omx_evt *) evt);
 
     /* mark event as done */
-    evt->generic.type = MPOE_EVT_NONE;
+    evt->generic.type = OMX_EVT_NONE;
 
     /* next event */
     evt++;
-    if ((void *) evt >= ep->eventq + MPOE_EVENTQ_SIZE)
+    if ((void *) evt >= ep->eventq + OMX_EVENTQ_SIZE)
       evt = ep->eventq;
     ep->next_event = (void *) evt;
   }
@@ -676,8 +676,8 @@ mpoe_isend(struct mpoe_endpoint *ep,
   seqnum = ep->partner.next_send_seq++; /* FIXME: increater at the end, in case of error */
   req->send.seqnum = seqnum;
 
-  if (length <= MPOE_TINY_MAX) {
-    struct mpoe_cmd_send_tiny tiny_param;
+  if (length <= OMX_TINY_MAX) {
+    struct omx_cmd_send_tiny tiny_param;
 
     tiny_param.hdr.dest_addr = dest_addr;
     tiny_param.hdr.dest_endpoint = dest_endpoint;
@@ -687,7 +687,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     /* FIXME: tiny_param.hdr.lib_cookie = lib_cookie; */
     memcpy(tiny_param.data, buffer, length);
 
-    err = ioctl(ep->fd, MPOE_CMD_SEND_TINY, &tiny_param);
+    err = ioctl(ep->fd, OMX_CMD_SEND_TINY, &tiny_param);
     if (err < 0) {
       ret = mpoe__errno_to_return(errno, "ioctl send/tiny");
       goto out_with_req;
@@ -699,8 +699,8 @@ mpoe_isend(struct mpoe_endpoint *ep,
     req->generic.state = MPOE_REQUEST_STATE_DONE;
     mpoe__enqueue_request(&ep->done_req_q, req);
 
-  } else if (length <= MPOE_SMALL_MAX) {
-    struct mpoe_cmd_send_small small_param;
+  } else if (length <= OMX_SMALL_MAX) {
+    struct omx_cmd_send_small small_param;
 
     small_param.dest_addr = dest_addr;
     small_param.dest_endpoint = dest_endpoint;
@@ -710,7 +710,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     small_param.vaddr = (uintptr_t) buffer;
     small_param.seqnum = seqnum;
 
-    err = ioctl(ep->fd, MPOE_CMD_SEND_SMALL, &small_param);
+    err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &small_param);
     if (err < 0) {
       ret = mpoe__errno_to_return(errno, "ioctl send/small");
       goto out_with_req;
@@ -723,7 +723,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
     mpoe__enqueue_request(&ep->done_req_q, req);
 
   } else {
-    struct mpoe_cmd_send_medium medium_param;
+    struct omx_cmd_send_medium medium_param;
     uint32_t remaining = length;
     uint32_t offset = 0;
     int sendq_index[8];
@@ -755,7 +755,7 @@ mpoe_isend(struct mpoe_endpoint *ep,
 	     i, chunk, (unsigned long) length);
       memcpy(ep->sendq + (sendq_index[i] << MPOE_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, length);
 
-      err = ioctl(ep->fd, MPOE_CMD_SEND_MEDIUM, &medium_param);
+      err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, &medium_param);
       if (err < 0) {
 	ret = mpoe__errno_to_return(errno, "ioctl send/medium");
 	goto out_with_req;

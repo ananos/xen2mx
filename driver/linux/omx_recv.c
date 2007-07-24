@@ -8,29 +8,29 @@
  * Manage event and data slots
  */
 
-union mpoe_evt *
-mpoe_find_next_eventq_slot(struct mpoe_endpoint *endpoint)
+union omx_evt *
+omx_find_next_eventq_slot(struct omx_endpoint *endpoint)
 {
 	/* FIXME: need locking */
-	union mpoe_evt *slot = endpoint->next_eventq_slot;
-	if (unlikely(slot->generic.type != MPOE_EVT_NONE)) {
-		dprintk("MPoE: Event queue full, no event slot available for endpoint %d\n",
+	union omx_evt *slot = endpoint->next_eventq_slot;
+	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
+		dprintk("OpenMX: Event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
 		return NULL;
 	}
 
 	endpoint->next_eventq_slot = slot + 1;
-	if (unlikely((void *) endpoint->next_eventq_slot >= endpoint->eventq + MPOE_EVENTQ_SIZE))
+	if (unlikely((void *) endpoint->next_eventq_slot >= endpoint->eventq + OMX_EVENTQ_SIZE))
 		endpoint->next_eventq_slot = endpoint->eventq;
 
 	/* recvq slot is at same index for now */
-	endpoint->next_recvq_slot = endpoint->recvq + ((void *) slot - endpoint->eventq)/sizeof(union mpoe_evt)*PAGE_SIZE;
+	endpoint->next_recvq_slot = endpoint->recvq + ((void *) slot - endpoint->eventq)/sizeof(union omx_evt)*PAGE_SIZE;
 
 	return slot;
 }
 
 static inline char *
-mpoe_find_next_recvq_slot(struct mpoe_endpoint *endpoint)
+omx_find_next_recvq_slot(struct omx_endpoint *endpoint)
 {
 	return endpoint->next_recvq_slot;
 }
@@ -40,271 +40,271 @@ mpoe_find_next_recvq_slot(struct mpoe_endpoint *endpoint)
  */
 
 static int
-mpoe_recv_tiny(struct mpoe_iface * iface,
-	       struct mpoe_hdr * mh,
-	       struct sk_buff * skb)
+omx_recv_tiny(struct omx_iface * iface,
+	      struct omx_hdr * mh,
+	      struct sk_buff * skb)
 {
-	struct mpoe_endpoint * endpoint;
+	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	struct mpoe_pkt_msg *tiny = &mh->body.tiny;
+	struct omx_pkt_msg *tiny = &mh->body.tiny;
 	uint16_t length = tiny->length;
-	union mpoe_evt *evt;
-	struct mpoe_evt_recv_tiny *event;
+	union omx_evt *evt;
+	struct omx_evt_recv_tiny *event;
 	int err = 0;
 
 	/* check packet length */
-	if (unlikely(length > MPOE_TINY_MAX)) {
-		mpoe_drop_dprintk(eh, "TINY packet too long (length %d)",
-				  (unsigned) length);
+	if (unlikely(length > OMX_TINY_MAX)) {
+		omx_drop_dprintk(eh, "TINY packet too long (length %d)",
+				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check actual data length */
-	if (unlikely(length > skb->len - sizeof(struct mpoe_hdr))) {
-		mpoe_drop_dprintk(eh, "TINY packet with %ld bytes instead of %d",
-				  (unsigned long) skb->len - sizeof(struct mpoe_hdr),
-				  (unsigned) length);
+	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
+		omx_drop_dprintk(eh, "TINY packet with %ld bytes instead of %d",
+				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* get the destination endpoint */
-	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, tiny->dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, tiny->dst_endpoint);
 	if (unlikely(!endpoint)) {
-		mpoe_drop_dprintk(eh, "TINY packet for unknown endpoint %d",
-				  tiny->dst_endpoint);
+		omx_drop_dprintk(eh, "TINY packet for unknown endpoint %d",
+				 tiny->dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* get the eventq slot */
-	evt = mpoe_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		mpoe_drop_dprintk(eh, "TINY packet because of event queue full");
+		omx_drop_dprintk(eh, "TINY packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
 	event = &evt->recv_tiny;
 
 	/* fill event */
-	event->src_addr = mpoe_board_addr_from_ethhdr_src(eh);
+	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = tiny->src_endpoint;
 	event->length = length;
-	event->match_info = MPOE_MATCH_INFO_FROM_PKT(tiny);
+	event->match_info = OMX_MATCH_INFO_FROM_PKT(tiny);
 	event->seqnum = tiny->lib_seqnum;
 
-	mpoe_recv_dprintk(eh, "TINY length %ld", (unsigned long) length);
+	omx_recv_dprintk(eh, "TINY length %ld", (unsigned long) length);
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), event->data, length);
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event->data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
 	/* set the type at the end so that user-space does not find the slot on error */
-	event->type = MPOE_EVT_RECV_TINY;
+	event->type = OMX_EVT_RECV_TINY;
 
-	mpoe_endpoint_release(endpoint);
+	omx_endpoint_release(endpoint);
 
 	return 0;
 
  out_with_endpoint:
-	mpoe_endpoint_release(endpoint);
+	omx_endpoint_release(endpoint);
  out:
 	return err;
 }
 
 static int
-mpoe_recv_small(struct mpoe_iface * iface,
-		struct mpoe_hdr * mh,
-		struct sk_buff * skb)
+omx_recv_small(struct omx_iface * iface,
+	       struct omx_hdr * mh,
+	       struct sk_buff * skb)
 {
-	struct mpoe_endpoint * endpoint;
+	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	struct mpoe_pkt_msg *small = &mh->body.small;
+	struct omx_pkt_msg *small = &mh->body.small;
 	uint16_t length = small->length;
-	union mpoe_evt *evt;
-	struct mpoe_evt_recv_small *event;
+	union omx_evt *evt;
+	struct omx_evt_recv_small *event;
 	char *recvq_slot;
 	int err;
 
 	/* check packet length */
-	if (unlikely(length > MPOE_SMALL_MAX)) {
-		mpoe_drop_dprintk(eh, "SMALL packet too long (length %d)",
-				  (unsigned) length);
+	if (unlikely(length > OMX_SMALL_MAX)) {
+		omx_drop_dprintk(eh, "SMALL packet too long (length %d)",
+				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check actual data length */
-	if (unlikely(length > skb->len - sizeof(struct mpoe_hdr))) {
-		mpoe_drop_dprintk(eh, "SMALL packet with %ld bytes instead of %d",
-				  (unsigned long) skb->len - sizeof(struct mpoe_hdr),
-				  (unsigned) length);
+	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
+		omx_drop_dprintk(eh, "SMALL packet with %ld bytes instead of %d",
+				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* get the destination endpoint */
-	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, small->dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, small->dst_endpoint);
 	if (unlikely(!endpoint)) {
-		mpoe_drop_dprintk(eh, "SMALL packet for unknown endpoint %d",
-				  small->dst_endpoint);
+		omx_drop_dprintk(eh, "SMALL packet for unknown endpoint %d",
+				 small->dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* get the eventq slot */
-	evt = mpoe_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		mpoe_drop_dprintk(eh, "SMALL packet because of event queue full");
+		omx_drop_dprintk(eh, "SMALL packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
 	event = &evt->recv_small;
 
 	/* fill event */
-	event->src_addr = mpoe_board_addr_from_ethhdr_src(eh);
+	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = small->src_endpoint;
 	event->length = length;
-	event->match_info = MPOE_MATCH_INFO_FROM_PKT(small);
+	event->match_info = OMX_MATCH_INFO_FROM_PKT(small);
 	event->seqnum = small->lib_seqnum;
 
-	mpoe_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
+	omx_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
 	/* copy data in recvq slot */
-	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
-	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot, length);
+	recvq_slot = omx_find_next_recvq_slot(endpoint);
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), recvq_slot, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
 	/* set the type at the end so that user-space does not find the slot on error */
-	event->type = MPOE_EVT_RECV_SMALL;
+	event->type = OMX_EVT_RECV_SMALL;
 
-	mpoe_endpoint_release(endpoint);
+	omx_endpoint_release(endpoint);
 
 	return 0;
 
  out_with_endpoint:
-	mpoe_endpoint_release(endpoint);
+	omx_endpoint_release(endpoint);
  out:
 	return err;
 }
 
 static int
-mpoe_recv_medium_frag(struct mpoe_iface * iface,
-		      struct mpoe_hdr * mh,
-		      struct sk_buff * skb)
+omx_recv_medium_frag(struct omx_iface * iface,
+		     struct omx_hdr * mh,
+		     struct sk_buff * skb)
 {
-	struct mpoe_endpoint * endpoint;
+	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	struct mpoe_pkt_medium_frag *medium = &mh->body.medium;
+	struct omx_pkt_medium_frag *medium = &mh->body.medium;
 	uint16_t frag_length = medium->frag_length;
-	union mpoe_evt *evt;
-	struct mpoe_evt_recv_medium *event;
+	union omx_evt *evt;
+	struct omx_evt_recv_medium *event;
 	char *recvq_slot;
 	int err;
 
 	/* check packet length */
-	if (unlikely(frag_length > MPOE_RECVQ_ENTRY_SIZE)) {
-		mpoe_drop_dprintk(eh, "MEDIUM fragment packet too long (length %d)",
-				  (unsigned) frag_length);
+	if (unlikely(frag_length > OMX_RECVQ_ENTRY_SIZE)) {
+		omx_drop_dprintk(eh, "MEDIUM fragment packet too long (length %d)",
+				 (unsigned) frag_length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check actual data length */
-	if (unlikely(frag_length > skb->len - sizeof(struct mpoe_hdr))) {
-		mpoe_drop_dprintk(eh, "MEDIUM fragment with %ld bytes instead of %d",
-				  (unsigned long) skb->len - sizeof(struct mpoe_hdr),
-				  (unsigned) frag_length);
+	if (unlikely(frag_length > skb->len - sizeof(struct omx_hdr))) {
+		omx_drop_dprintk(eh, "MEDIUM fragment with %ld bytes instead of %d",
+				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned) frag_length);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* get the destination endpoint */
-	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, medium->msg.dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, medium->msg.dst_endpoint);
 	if (unlikely(!endpoint)) {
-		mpoe_drop_dprintk(eh, "MEDIUM packet for unknown endpoint %d",
-				  medium->msg.dst_endpoint);
+		omx_drop_dprintk(eh, "MEDIUM packet for unknown endpoint %d",
+				 medium->msg.dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* get the eventq slot */
-	evt = mpoe_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		mpoe_drop_dprintk(eh, "MEDIUM packet because of event queue full");
+		omx_drop_dprintk(eh, "MEDIUM packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
 	event = &evt->recv_medium;
 
 	/* fill event */
-	event->src_addr = mpoe_board_addr_from_ethhdr_src(eh);
+	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = medium->msg.src_endpoint;
-	event->match_info = MPOE_MATCH_INFO_FROM_PKT(&medium->msg);
+	event->match_info = OMX_MATCH_INFO_FROM_PKT(&medium->msg);
 	event->msg_length = medium->msg.length;
 	event->seqnum = medium->msg.lib_seqnum;
 	event->frag_length = frag_length;
 	event->frag_seqnum = medium->frag_seqnum;
 	event->frag_pipeline = medium->frag_pipeline;
 
-	mpoe_recv_dprintk(eh, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
+	omx_recv_dprintk(eh, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
 	/* copy data in recvq slot */
-	recvq_slot = mpoe_find_next_recvq_slot(endpoint);
-	err = skb_copy_bits(skb, sizeof(struct mpoe_hdr), recvq_slot, frag_length);
+	recvq_slot = omx_find_next_recvq_slot(endpoint);
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), recvq_slot, frag_length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
 	/* set the type at the end so that user-space does not find the slot on error */
-	event->type = MPOE_EVT_RECV_MEDIUM;
+	event->type = OMX_EVT_RECV_MEDIUM;
 
-	mpoe_endpoint_release(endpoint);
+	omx_endpoint_release(endpoint);
 
 	return 0;
 
  out_with_endpoint:
-	mpoe_endpoint_release(endpoint);
+	omx_endpoint_release(endpoint);
  out:
 	return err;
 }
 
 static int
-mpoe_recv_rndv(struct mpoe_iface * iface,
-	       struct mpoe_hdr * mh,
-	       struct sk_buff * skb)
+omx_recv_rndv(struct omx_iface * iface,
+	      struct omx_hdr * mh,
+	      struct sk_buff * skb)
 {
 #if 0
-	struct mpoe_endpoint * endpoint;
+	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	struct mpoe_pkt_rndv *rndv = &mh->body.rndv;
+	struct omx_pkt_rndv *rndv = &mh->body.rndv;
 
 	/* get the destination endpoint */
-	endpoint = mpoe_endpoint_acquire_by_iface_index(iface, rndv->dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, rndv->dst_endpoint);
 	if (unlikely(!endpoint)) {
-		mpoe_drop_dprintk(eh, "RNDV packet for unknown endpoint %d",
-				  rndv->dst_endpoint);
+		omx_drop_dprintk(eh, "RNDV packet for unknown endpoint %d",
+				 rndv->dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* get the eventq slot */
-	evt = mpoe_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		mpoe_drop_dprintk(eh, "RNDV packet because of event queue full");
+		omx_drop_dprintk(eh, "RNDV packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
 	event = &evt->rndv;
 
-	mpoe_endpoint_release(endpoint);
+	omx_endpoint_release(endpoint);
 
 	return 0;
 
  out_with_endpoint:
-	mpoe_endpoint_release(endpoint);
+	omx_endpoint_release(endpoint);
  out:
 	return err;
 #endif
@@ -315,23 +315,23 @@ mpoe_recv_rndv(struct mpoe_iface * iface,
 }
 
 static int
-mpoe_recv_nosys(struct mpoe_iface * iface,
-		struct mpoe_hdr * mh,
+omx_recv_nosys(struct omx_iface * iface,
+		struct omx_hdr * mh,
 		struct sk_buff * skb)
 {
-	mpoe_drop_dprintk(&mh->head.eth, "packet with unsupported type %d",
-			  mh->body.generic.ptype);
+	omx_drop_dprintk(&mh->head.eth, "packet with unsupported type %d",
+			 mh->body.generic.ptype);
 
 	return 0;
 }
 
 static int
-mpoe_recv_error(struct mpoe_iface * iface,
-		struct mpoe_hdr * mh,
+omx_recv_error(struct omx_iface * iface,
+		struct omx_hdr * mh,
 		struct sk_buff * skb)
 {
-	mpoe_drop_dprintk(&mh->head.eth, "packet with unrecognized type %d",
-			  mh->body.generic.ptype);
+	omx_drop_dprintk(&mh->head.eth, "packet with unrecognized type %d",
+			 mh->body.generic.ptype);
 
 	return 0;
 }
@@ -340,34 +340,34 @@ mpoe_recv_error(struct mpoe_iface * iface,
  * Packet type handlers
  */
 
-static int (*mpoe_pkt_type_handlers[MPOE_PKT_TYPE_MAX+1])(struct mpoe_iface * iface, struct mpoe_hdr * mh, struct sk_buff * skb);
+static int (*omx_pkt_type_handlers[OMX_PKT_TYPE_MAX+1])(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 
 void
-mpoe_pkt_type_handlers_init(void)
+omx_pkt_type_handlers_init(void)
 {
 	int i;
 
-	for(i=0; i<=MPOE_PKT_TYPE_MAX; i++)
-		mpoe_pkt_type_handlers[i] = mpoe_recv_error;
+	for(i=0; i<=OMX_PKT_TYPE_MAX; i++)
+		omx_pkt_type_handlers[i] = omx_recv_error;
 
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_RAW] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_MFM_NIC_REPLY] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_HOST_QUERY] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_HOST_REPLY] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_ETHER_UNICAST] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_ETHER_MULTICAST] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_ETHER_NATIVE] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_TRUC] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_CONNECT] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_TINY] = mpoe_recv_tiny;
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_SMALL] = mpoe_recv_small;
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_MEDIUM] = mpoe_recv_medium_frag;
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_RENDEZ_VOUS] = mpoe_recv_rndv;
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_PULL] = mpoe_recv_pull;
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_PULL_REPLY] = mpoe_recv_pull_reply;
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_NOTIFY] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_NACK_LIB] = mpoe_recv_nosys; /* FIXME */
-	mpoe_pkt_type_handlers[MPOE_PKT_TYPE_NACK_MCP] = mpoe_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_RAW] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_MFM_NIC_REPLY] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_HOST_QUERY] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_HOST_REPLY] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_ETHER_UNICAST] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_ETHER_MULTICAST] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_ETHER_NATIVE] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_TRUC] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_CONNECT] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_TINY] = omx_recv_tiny;
+	omx_pkt_type_handlers[OMX_PKT_TYPE_SMALL] = omx_recv_small;
+	omx_pkt_type_handlers[OMX_PKT_TYPE_MEDIUM] = omx_recv_medium_frag;
+	omx_pkt_type_handlers[OMX_PKT_TYPE_RENDEZ_VOUS] = omx_recv_rndv;
+	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL] = omx_recv_pull;
+	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL_REPLY] = omx_recv_pull_reply;
+	omx_pkt_type_handlers[OMX_PKT_TYPE_NOTIFY] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_LIB] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_MCP] = omx_recv_nosys; /* FIXME */
 }
 
 /***********************
@@ -375,12 +375,12 @@ mpoe_pkt_type_handlers_init(void)
  */
 
 static int
-mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
+omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	  struct net_device *orig_dev)
 {
-	struct mpoe_iface *iface;
-	struct mpoe_hdr linear_header;
-	struct mpoe_hdr *mh;
+	struct omx_iface *iface;
+	struct omx_hdr linear_header;
+	struct omx_hdr *mh;
 
 	skb = skb_share_check(skb, GFP_ATOMIC);
 	if (unlikely(skb == NULL))
@@ -389,30 +389,30 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	/* len doesn't include header */
 	skb_push(skb, ETH_HLEN);
 
-	iface = mpoe_iface_find_by_ifp(ifp);
+	iface = omx_iface_find_by_ifp(ifp);
 	if (unlikely(!iface)) {
 		/* at least the ethhdr is linear in the skb */
-		mpoe_drop_dprintk(&mpoe_hdr(skb)->head.eth, "packet on non-MPoE interface %s",
-				  ifp->name);
+		omx_drop_dprintk(&omx_hdr(skb)->head.eth, "packet on non-MPoE interface %s",
+				 ifp->name);
 		goto out;
 	}
 
 	/* no need to linearize the whole skb,
 	 * but at least the header to make things simple */
-	if (unlikely(skb_headlen(skb) < sizeof(struct mpoe_hdr))) {
+	if (unlikely(skb_headlen(skb) < sizeof(struct omx_hdr))) {
 		skb_copy_bits(skb, 0, &linear_header,
-			      sizeof(struct mpoe_hdr));
+			      sizeof(struct omx_hdr));
 		/* check for EFAULT */
 		mh = &linear_header;
 	} else {
 		/* no need to linearize the header */
-		mh = mpoe_hdr(skb);
+		mh = omx_hdr(skb);
 	}
 
 	/* no need to check ptype since there is a default error handler
 	 * for all erroneous values
 	 */
-	mpoe_pkt_type_handlers[mh->body.generic.ptype](iface, mh, skb);
+	omx_pkt_type_handlers[mh->body.generic.ptype](iface, mh, skb);
 
  out:
 	/* FIXME: send nack */
@@ -420,9 +420,9 @@ mpoe_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	return 0;
 }
 
-struct packet_type mpoe_pt = {
-	.type = __constant_htons(ETH_P_MPOE),
-	.func = mpoe_recv,
+struct packet_type omx_pt = {
+	.type = __constant_htons(ETH_P_OMX),
+	.func = omx_recv,
 };
 
 /*

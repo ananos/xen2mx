@@ -4,58 +4,58 @@
 
 #include "omx_common.h"
 
-static char * mpoe_ifnames = NULL;
-module_param(mpoe_ifnames, charp, 0); /* unreadable, since modifiable by the attached sysfs file */
+static char * omx_ifnames = NULL;
+module_param(omx_ifnames, charp, 0); /* unreadable, since modifiable by the attached sysfs file */
 
-int mpoe_iface_max = 32;
-module_param(mpoe_iface_max, uint, S_IRUGO);
+int omx_iface_max = 32;
+module_param(omx_iface_max, uint, S_IRUGO);
 
-int mpoe_endpoint_max = 8;
-module_param(mpoe_endpoint_max, uint, S_IRUGO);
+int omx_endpoint_max = 8;
+module_param(omx_endpoint_max, uint, S_IRUGO);
 
-int mpoe_peer_max = 1024;
-module_param(mpoe_peer_max, uint, S_IRUGO);
+int omx_peer_max = 1024;
+module_param(omx_peer_max, uint, S_IRUGO);
 
 static __init int
-mpoe_init(void)
+omx_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "MPoE initializing...\n");
+	printk(KERN_INFO "OpenMX initializing...\n");
 
-	ret = mpoe_net_init((const char *) mpoe_ifnames);
+	ret = omx_net_init((const char *) omx_ifnames);
 	if (ret < 0)
 		goto out;
 
-	ret = mpoe_dev_init();
+	ret = omx_dev_init();
 	if (ret < 0)
 		goto out_with_net;
 
-	printk(KERN_INFO "MPoE initialized\n");
+	printk(KERN_INFO "OpenMX initialized\n");
 	return 0;
 
  out_with_net:
-	mpoe_net_exit();
+	omx_net_exit();
  out:
-	printk(KERN_ERR "Failed to initialize MPoE\n");
+	printk(KERN_ERR "Failed to initialize OpenMX\n");
 	return ret;
 }
-module_init(mpoe_init);
+module_init(omx_init);
 
 static __exit void
-mpoe_exit(void)
+omx_exit(void)
 {
-	printk(KERN_INFO "MPoE terminating...\n");
-	mpoe_dev_exit();
-	mpoe_net_exit();
-	printk(KERN_INFO "MPoE terminated\n");
+	printk(KERN_INFO "OpenMX terminating...\n");
+	omx_dev_exit();
+	omx_net_exit();
+	printk(KERN_INFO "OpenMX terminated\n");
 }
-module_exit(mpoe_exit);
+module_exit(omx_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Brice Goglin <Brice.Goglin@inria.fr>");
 MODULE_VERSION("0.0.1");
-MODULE_DESCRIPTION("Ethernet implementation of Message-Passing Over Everything");
+MODULE_DESCRIPTION("OpenMX: Myrinet Express over generic Ethernet");
 
 /*
  * Local variables:

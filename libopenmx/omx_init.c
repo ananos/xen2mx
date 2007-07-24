@@ -17,25 +17,25 @@ mpoe__init_api(int api)
   if (mpoe_globals.initialized)
     return MPOE_ALREADY_INITIALIZED;
 
-  err = open(MPOE_DEVNAME, O_RDONLY);
+  err = open(OMX_DEVNAME, O_RDONLY);
   if (err < 0)
     return mpoe__errno_to_return(errno, "init open control fd");
 
   mpoe_globals.control_fd = err;
 
-  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_MAX, &mpoe_globals.board_max);
+  err = ioctl(mpoe_globals.control_fd, OMX_CMD_GET_BOARD_MAX, &mpoe_globals.board_max);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_MAX");
     goto out_with_fd;
   }
 
-  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_ENDPOINT_MAX, &mpoe_globals.endpoint_max);
+  err = ioctl(mpoe_globals.control_fd, OMX_CMD_GET_ENDPOINT_MAX, &mpoe_globals.endpoint_max);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_ENDPOINT_MAX");
     goto out_with_fd;
   }
 
-  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_PEER_MAX, &mpoe_globals.peer_max);
+  err = ioctl(mpoe_globals.control_fd, OMX_CMD_GET_PEER_MAX, &mpoe_globals.peer_max);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_PEER_MAX");
     goto out_with_fd;

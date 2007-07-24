@@ -1,7 +1,7 @@
 #ifndef __omx__valgrind_h__
 #define __omx__valgrind_h__
 
-#ifdef MPOE_VALGRIND_DEBUG
+#ifdef OMX_VALGRIND_DEBUG
 
 /*
  * Valgrind support to check memory access and allocation.
@@ -19,12 +19,12 @@
 
 /* FIXME: ioctl pre/post hooks */
 
-#else /* MPOE_VALGRIND_DEBUG */
+#else /* !OMX_VALGRIND_DEBUG */
 
 #define MPOE_VALGRIND_MEMORY_MAKE_NOACCESS(p, s) /* nothing */
 #define MPOE_VALGRIND_MEMORY_MAKE_WRITABLE(p, s) /* nothing */
 #define MPOE_VALGRIND_MEMORY_MAKE_READABLE(p, s) /* nothing */
 
-#endif /* !MPOE_VALGRIND_DEBUG */
+#endif /* !OMX_VALGRIND_DEBUG */
 
 #endif /* __omx__valgrind_h__ */

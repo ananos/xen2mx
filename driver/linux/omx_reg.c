@@ -10,15 +10,15 @@
 /* FIXME: likely/unlikely */
 
 void
-mpoe_endpoint_user_regions_init(struct mpoe_endpoint * endpoint)
+omx_endpoint_user_regions_init(struct omx_endpoint * endpoint)
 {
 	memset(endpoint->user_regions, 0, sizeof(endpoint->user_regions));
 	spin_lock_init(&endpoint->user_regions_lock);
 }
 
 static int
-mpoe_register_user_region_segment(struct mpoe_cmd_region_segment * useg,
-				  struct mpoe_user_region_segment * segment)
+omx_register_user_region_segment(struct omx_cmd_region_segment * useg,
+				 struct omx_user_region_segment * segment)
 {
 	struct page ** pages;
 	unsigned offset;
@@ -34,14 +34,14 @@ mpoe_register_user_region_segment(struct mpoe_cmd_region_segment * useg,
 
 	pages = kmalloc(nr_pages * sizeof(struct page *), GFP_KERNEL);
 	if (!pages) {
-		printk(KERN_ERR "MPoE: Failed to allocate user region segment page array\n");
+		printk(KERN_ERR "OpenMX: Failed to allocate user region segment page array\n");
 		ret = -ENOMEM;
 		goto out;
 	}
 
 	ret = get_user_pages(current, current->mm, aligned_vaddr, nr_pages, 1, 0, pages, NULL);
 	if (ret < 0) {
-		printk(KERN_ERR "MPoE: get_user_pages failed (error %d)\n", ret);
+		printk(KERN_ERR "OpenMX: get_user_pages failed (error %d)\n", ret);
 		goto out_with_pages;
 	}
 	BUG_ON(ret != nr_pages);
@@ -60,7 +60,7 @@ mpoe_register_user_region_segment(struct mpoe_cmd_region_segment * useg,
 }
 
 static void
-mpoe_deregister_user_region_segment(struct mpoe_user_region_segment * segment)
+omx_deregister_user_region_segment(struct omx_user_region_segment * segment)
 {
 	unsigned long i;
 	for(i=0; i<segment->nr_pages; i++)
@@ -69,70 +69,70 @@ mpoe_deregister_user_region_segment(struct mpoe_user_region_segment * segment)
 }
 
 static void
-mpoe__deregister_user_region(struct mpoe_user_region * region)
+omx__deregister_user_region(struct omx_user_region * region)
 {
 	int i;
 	for(i=0; i<region->nr_segments; i++)
-		mpoe_deregister_user_region_segment(&region->segments[i]);
+		omx_deregister_user_region_segment(&region->segments[i]);
 	kfree(region);
 }
 
 int
-mpoe_register_user_region(struct mpoe_endpoint * endpoint,
-			  void __user * uparam)
+omx_register_user_region(struct omx_endpoint * endpoint,
+			 void __user * uparam)
 {
-	struct mpoe_cmd_register_region cmd;
-	struct mpoe_user_region * region;
-	struct mpoe_cmd_region_segment * usegs;
+	struct omx_cmd_register_region cmd;
+	struct omx_user_region * region;
+	struct omx_cmd_region_segment * usegs;
 	int ret, i;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (ret) {
-		printk(KERN_ERR "MPoE: Failed to read register region cmd\n");
+		printk(KERN_ERR "OpenMX: Failed to read register region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
-	if (cmd.id >= MPOE_USER_REGION_MAX) {
-		printk(KERN_ERR "MPoE: Cannot register invalid region %d\n", cmd.id);
+	if (cmd.id >= OMX_USER_REGION_MAX) {
+		printk(KERN_ERR "OpenMX: Cannot register invalid region %d\n", cmd.id);
 		ret = -EINVAL;
 		goto out;
 	}
 
 	/* get the list of segments */
-	usegs = kmalloc(sizeof(struct mpoe_cmd_region_segment) * cmd.nr_segments,
+	usegs = kmalloc(sizeof(struct omx_cmd_region_segment) * cmd.nr_segments,
 			GFP_KERNEL);
 	if (!usegs) {
-		printk(KERN_ERR "MPoE: Failed to allocate segments for user region\n");
+		printk(KERN_ERR "OpenMX: Failed to allocate segments for user region\n");
 		ret = -ENOMEM;
 		goto out;
 	}
 
 	ret = copy_from_user(usegs, (void __user *)(unsigned long) cmd.segments,
-			     sizeof(struct mpoe_cmd_region_segment) * cmd.nr_segments);
+			     sizeof(struct omx_cmd_region_segment) * cmd.nr_segments);
 	if (ret) {
-		printk(KERN_ERR "MPoE: Failed to read register region cmd\n");
+		printk(KERN_ERR "OpenMX: Failed to read register region cmd\n");
 		ret = -EFAULT;
 		goto out_with_usegs;
 	}
 
 	/* allocate the region */
-	region = kzalloc(sizeof(struct mpoe_user_region)
-			 + cmd.nr_segments * sizeof(struct mpoe_user_region_segment),
+	region = kzalloc(sizeof(struct omx_user_region)
+			 + cmd.nr_segments * sizeof(struct omx_user_region_segment),
 			 GFP_KERNEL);
 	if (!region) {
-		printk(KERN_ERR "MPoE: failed to allocate user region\n");
+		printk(KERN_ERR "OpenMX: failed to allocate user region\n");
 		ret = -ENOMEM;
 		goto out_with_usegs;
 	}
 
-	/* keep nr_segments exact so that we may call mpoe__deregister_user_region safely */
+	/* keep nr_segments exact so that we may call omx__deregister_user_region safely */
 	region->nr_segments = 0;
 
 	down_write(&current->mm->mmap_sem);
 
 	for(i=0; i<cmd.nr_segments; i++) {
-		ret = mpoe_register_user_region_segment(&usegs[i], &region->segments[i]);
+		ret = omx_register_user_region_segment(&usegs[i], &region->segments[i]);
 		if (ret < 0) {
 			up_write(&current->mm->mmap_sem);
 			goto out_with_region;
@@ -145,7 +145,7 @@ mpoe_register_user_region(struct mpoe_endpoint * endpoint,
 	spin_lock(&endpoint->user_regions_lock);
 
 	if (endpoint->user_regions[cmd.id]) {
-		printk(KERN_ERR "MPoE: Cannot register busy region %d\n", cmd.id);
+		printk(KERN_ERR "OpenMX: Cannot register busy region %d\n", cmd.id);
 		ret = -EBUSY;
 		spin_unlock(&endpoint->user_regions_lock);
 		goto out_with_region;
@@ -158,7 +158,7 @@ mpoe_register_user_region(struct mpoe_endpoint * endpoint,
 	return 0;
 
  out_with_region:
-	mpoe__deregister_user_region(region);
+	omx__deregister_user_region(region);
  out_with_usegs:
 	kfree(usegs);
  out:
@@ -166,22 +166,22 @@ mpoe_register_user_region(struct mpoe_endpoint * endpoint,
 }
 
 int
-mpoe_deregister_user_region(struct mpoe_endpoint * endpoint,
-			    void __user * uparam)
+omx_deregister_user_region(struct omx_endpoint * endpoint,
+			   void __user * uparam)
 {
-	struct mpoe_cmd_deregister_region cmd;
-	struct mpoe_user_region * region;
+	struct omx_cmd_deregister_region cmd;
+	struct omx_user_region * region;
 	int ret;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (ret) {
-		printk(KERN_ERR "MPoE: Failed to read deregister region cmd\n");
+		printk(KERN_ERR "OpenMX: Failed to read deregister region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
-	if (cmd.id >= MPOE_USER_REGION_MAX) {
-		printk(KERN_ERR "MPoE: Cannot deregister invalid region %d\n", cmd.id);
+	if (cmd.id >= OMX_USER_REGION_MAX) {
+		printk(KERN_ERR "OpenMX: Cannot deregister invalid region %d\n", cmd.id);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -190,13 +190,13 @@ mpoe_deregister_user_region(struct mpoe_endpoint * endpoint,
 
 	region = endpoint->user_regions[cmd.id];
 	if (!region) {
-		printk(KERN_ERR "MPoE: Cannot register unexisting region %d\n", cmd.id);
+		printk(KERN_ERR "OpenMX: Cannot register unexisting region %d\n", cmd.id);
 		ret = -EINVAL;
 		spin_unlock(&endpoint->user_regions_lock);
 		goto out;
 	}
 
-	mpoe__deregister_user_region(region);
+	omx__deregister_user_region(region);
 	endpoint->user_regions[cmd.id] = NULL;
 
 	spin_unlock(&endpoint->user_regions_lock);
@@ -208,19 +208,19 @@ mpoe_deregister_user_region(struct mpoe_endpoint * endpoint,
 }
 
 void
-mpoe_endpoint_user_regions_exit(struct mpoe_endpoint * endpoint)
+omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 {
-	struct mpoe_user_region * region;
+	struct omx_user_region * region;
 	int i;
 
-	for(i=0; i<MPOE_USER_REGION_MAX; i++) {
+	for(i=0; i<OMX_USER_REGION_MAX; i++) {
 		region = endpoint->user_regions[i];
 		if (!region)
 			continue;
 
-		printk(KERN_INFO "MPoE: Forcing deregister of window %d on endpoint %d board %d\n",
+		printk(KERN_INFO "OpenMX: Forcing deregister of window %d on endpoint %d board %d\n",
 		       i, endpoint->endpoint_index, endpoint->iface->index);
-		mpoe__deregister_user_region(region);
+		omx__deregister_user_region(region);
 		endpoint->user_regions[i] = NULL;
 	}
 }

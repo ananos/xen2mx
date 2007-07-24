@@ -1,5 +1,5 @@
-#ifndef __mpoe_io_h__
-#define __mpoe_io_h__
+#ifndef __omx_io_h__
+#define __omx_io_h__
 
 #ifndef __KERNEL__
 #include <stdint.h>
@@ -9,30 +9,30 @@
  * Common parameters or IOCTL subtypes
  */
 
-#define MPOE_SENDQ_ENTRY_SIZE	4096
-#define MPOE_SENDQ_ENTRY_NR	1024
-#define MPOE_SENDQ_SIZE		(MPOE_SENDQ_ENTRY_SIZE*MPOE_SENDQ_ENTRY_NR)
-#define MPOE_SENDQ_FILE_OFFSET	0
+#define OMX_SENDQ_ENTRY_SIZE	4096
+#define OMX_SENDQ_ENTRY_NR	1024
+#define OMX_SENDQ_SIZE		(OMX_SENDQ_ENTRY_SIZE*OMX_SENDQ_ENTRY_NR)
+#define OMX_SENDQ_FILE_OFFSET	0
 
-#define MPOE_RECVQ_ENTRY_SIZE	4096
-#define MPOE_RECVQ_ENTRY_NR	1024
-#define MPOE_RECVQ_SIZE		(MPOE_RECVQ_ENTRY_SIZE*MPOE_RECVQ_ENTRY_NR)
-#define MPOE_RECVQ_FILE_OFFSET	4096
+#define OMX_RECVQ_ENTRY_SIZE	4096
+#define OMX_RECVQ_ENTRY_NR	1024
+#define OMX_RECVQ_SIZE		(OMX_RECVQ_ENTRY_SIZE*OMX_RECVQ_ENTRY_NR)
+#define OMX_RECVQ_FILE_OFFSET	4096
 
-#define MPOE_EVENTQ_ENTRY_SIZE	64
-#define MPOE_EVENTQ_ENTRY_NR	1024
-#define MPOE_EVENTQ_SIZE	(MPOE_EVENTQ_ENTRY_SIZE*MPOE_EVENTQ_ENTRY_NR)
-#define MPOE_EVENTQ_FILE_OFFSET	(2*4096)
+#define OMX_EVENTQ_ENTRY_SIZE	64
+#define OMX_EVENTQ_ENTRY_NR	1024
+#define OMX_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE*OMX_EVENTQ_ENTRY_NR)
+#define OMX_EVENTQ_FILE_OFFSET	(2*4096)
 
-#define MPOE_TINY_MAX           32
-#define MPOE_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
+#define OMX_TINY_MAX		32
+#define OMX_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
 
-#define MPOE_HOSTNAMELEN_MAX	80
+#define OMX_HOSTNAMELEN_MAX	80
 
-#define MPOE_USER_REGION_MAX		255
-typedef uint8_t mpoe_user_region_id_t;
+#define OMX_USER_REGION_MAX	255
+typedef uint8_t omx_user_region_id_t;
 
-struct mpoe_cmd_region_segment {
+struct omx_cmd_region_segment {
 	uint64_t vaddr;
 	uint32_t len;
 	uint32_t pad;
@@ -42,52 +42,52 @@ struct mpoe_cmd_region_segment {
  * IOCTL commands
  */
 
-#define MPOE_CMD_GET_BOARD_MAX		0x01
-#define MPOE_CMD_GET_ENDPOINT_MAX	0x02
-#define MPOE_CMD_GET_PEER_MAX		0x03
-#define MPOE_CMD_GET_BOARD_COUNT	0x04
-#define MPOE_CMD_GET_BOARD_ID		0x05
-#define MPOE_CMD_OPEN_ENDPOINT		0x81
-#define MPOE_CMD_CLOSE_ENDPOINT		0x82
-#define MPOE_CMD_SEND_TINY		0x83
-#define MPOE_CMD_SEND_SMALL		0x84
-#define MPOE_CMD_SEND_MEDIUM		0x85
-#define MPOE_CMD_SEND_RENDEZ_VOUS	0x86
-#define MPOE_CMD_SEND_PULL		0x87
-#define MPOE_CMD_REGISTER_REGION	0x88
-#define MPOE_CMD_DEREGISTER_REGION	0x89
+#define OMX_CMD_GET_BOARD_MAX		0x01
+#define OMX_CMD_GET_ENDPOINT_MAX	0x02
+#define OMX_CMD_GET_PEER_MAX		0x03
+#define OMX_CMD_GET_BOARD_COUNT		0x04
+#define OMX_CMD_GET_BOARD_ID		0x05
+#define OMX_CMD_OPEN_ENDPOINT		0x81
+#define OMX_CMD_CLOSE_ENDPOINT		0x82
+#define OMX_CMD_SEND_TINY		0x83
+#define OMX_CMD_SEND_SMALL		0x84
+#define OMX_CMD_SEND_MEDIUM		0x85
+#define OMX_CMD_SEND_RENDEZ_VOUS	0x86
+#define OMX_CMD_SEND_PULL		0x87
+#define OMX_CMD_REGISTER_REGION		0x88
+#define OMX_CMD_DEREGISTER_REGION	0x89
 
 static inline const char *
-mpoe_strcmd(unsigned cmd)
+omx_strcmd(unsigned cmd)
 {
 	switch (cmd) {
-	case MPOE_CMD_GET_BOARD_MAX:
+	case OMX_CMD_GET_BOARD_MAX:
 		return "Get Board Max";
-	case MPOE_CMD_GET_ENDPOINT_MAX:
+	case OMX_CMD_GET_ENDPOINT_MAX:
 		return "Get Endpoint Max";
-	case MPOE_CMD_GET_PEER_MAX:
+	case OMX_CMD_GET_PEER_MAX:
 		return "Get Peer Max";
-	case MPOE_CMD_GET_BOARD_COUNT:
+	case OMX_CMD_GET_BOARD_COUNT:
 		return "Get Board Count";
-	case MPOE_CMD_GET_BOARD_ID:
+	case OMX_CMD_GET_BOARD_ID:
 		return "Get Board ID";
-	case MPOE_CMD_OPEN_ENDPOINT:
+	case OMX_CMD_OPEN_ENDPOINT:
 		return "Open Endpoint";
-	case MPOE_CMD_CLOSE_ENDPOINT:
+	case OMX_CMD_CLOSE_ENDPOINT:
 		return "Close Endpoint";
-	case MPOE_CMD_SEND_TINY:
+	case OMX_CMD_SEND_TINY:
 		return "Send Tiny";
-	case MPOE_CMD_SEND_SMALL:
+	case OMX_CMD_SEND_SMALL:
 		return "Send Small";
-	case MPOE_CMD_SEND_MEDIUM:
+	case OMX_CMD_SEND_MEDIUM:
 		return "Send Medium";
-	case MPOE_CMD_SEND_RENDEZ_VOUS:
+	case OMX_CMD_SEND_RENDEZ_VOUS:
 		return "Send Rendez-vous";
-	case MPOE_CMD_SEND_PULL:
+	case OMX_CMD_SEND_PULL:
 		return "Send Pull";
-	case MPOE_CMD_REGISTER_REGION:
+	case OMX_CMD_REGISTER_REGION:
 		return "Register Region";
-	case MPOE_CMD_DEREGISTER_REGION:
+	case OMX_CMD_DEREGISTER_REGION:
 		return "Deregister Region";
 	default:
 		return "** Unknown **";
@@ -98,19 +98,19 @@ mpoe_strcmd(unsigned cmd)
  * IOCTL parameter types
  */
 
-struct mpoe_cmd_get_board_id {
+struct omx_cmd_get_board_id {
 	uint8_t board_index;
 	uint64_t board_addr;
-	char board_name[MPOE_HOSTNAMELEN_MAX];
+	char board_name[OMX_HOSTNAMELEN_MAX];
 };
 
-struct mpoe_cmd_open_endpoint {
+struct omx_cmd_open_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
 };
 
-struct mpoe_cmd_send_tiny {
-	struct mpoe_cmd_send_tiny_hdr {
+struct omx_cmd_send_tiny {
+	struct omx_cmd_send_tiny_hdr {
 		uint64_t dest_addr;
 		uint8_t dest_endpoint;
 		uint8_t length;
@@ -121,11 +121,11 @@ struct mpoe_cmd_send_tiny {
 		uint16_t pad;
 		/* 20 */
 	} hdr;
-	char data[MPOE_TINY_MAX];
+	char data[OMX_TINY_MAX];
 	/* 52 */
 };
 
-struct mpoe_cmd_send_small {
+struct omx_cmd_send_small {
 	uint64_t dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t pad1;
@@ -139,7 +139,7 @@ struct mpoe_cmd_send_small {
 	/* 32 */
 };
 
-struct mpoe_cmd_send_medium {
+struct omx_cmd_send_medium {
 	uint64_t dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t pad1;
@@ -157,7 +157,7 @@ struct mpoe_cmd_send_medium {
 	/* 32 */
 };
 
-struct mpoe_cmd_send_pull {
+struct omx_cmd_send_pull {
 	uint64_t dest_addr;
 	uint8_t dest_endpoint;
 	uint8_t pad;
@@ -172,7 +172,7 @@ struct mpoe_cmd_send_pull {
 	/* 28 */
 };
 
-struct mpoe_cmd_register_region {
+struct omx_cmd_register_region {
 	uint32_t nr_segments;
 	uint32_t id;
 	uint32_t seqnum;
@@ -181,7 +181,7 @@ struct mpoe_cmd_register_region {
 	uint64_t segments;
 };
 
-struct mpoe_cmd_deregister_region {
+struct omx_cmd_deregister_region {
 	uint32_t id;
 };
 
@@ -189,25 +189,25 @@ struct mpoe_cmd_deregister_region {
  * Event types
  */
 
-#define MPOE_EVT_NONE			0x00
-#define MPOE_EVT_SEND_MEDIUM_FRAG_DONE	0x01
-#define MPOE_EVT_RECV_TINY		0x12
-#define MPOE_EVT_RECV_SMALL		0x13
-#define MPOE_EVT_RECV_MEDIUM		0x14
+#define OMX_EVT_NONE			0x00
+#define OMX_EVT_SEND_MEDIUM_FRAG_DONE	0x01
+#define OMX_EVT_RECV_TINY		0x12
+#define OMX_EVT_RECV_SMALL		0x13
+#define OMX_EVT_RECV_MEDIUM		0x14
 
 static inline const char *
-mpoe_strevt(unsigned type)
+omx_strevt(unsigned type)
 {
 	switch (type) {
-	case MPOE_EVT_NONE:
+	case OMX_EVT_NONE:
 		return "None";
-	case MPOE_EVT_SEND_MEDIUM_FRAG_DONE:
+	case OMX_EVT_SEND_MEDIUM_FRAG_DONE:
 		return "Send Medium Fragment Done";
-	case MPOE_EVT_RECV_TINY:
+	case OMX_EVT_RECV_TINY:
 		return "Receive Tiny";
-	case MPOE_EVT_RECV_SMALL:
+	case OMX_EVT_RECV_SMALL:
 		return "Receive Small";
-	case MPOE_EVT_RECV_MEDIUM:
+	case OMX_EVT_RECV_MEDIUM:
 		return "Receive Medium Fragment";
 	default:
 		return "** Unknown **";
@@ -218,16 +218,16 @@ mpoe_strevt(unsigned type)
  * Event parameter types
  */
 
-union mpoe_evt {
+union omx_evt {
 	/* generic event */
-	struct mpoe_evt_generic {
+	struct omx_evt_generic {
 		char pad[63];
 		uint8_t type;
 		/* 64 */
 	} generic;
 
 	/* send medium frag done */
-	struct mpoe_evt_send_medium_frag_done {
+	struct omx_evt_send_medium_frag_done {
 		uint16_t sendq_page_offset;
 		char pad[61];
 		uint8_t type;
@@ -235,7 +235,7 @@ union mpoe_evt {
 	} send_medium_frag_done;
 
 	/* recv tiny */
-	struct mpoe_evt_recv_tiny {
+	struct omx_evt_recv_tiny {
 		uint64_t src_addr;
 		/* 8 */
 		uint8_t src_endpoint;
@@ -245,7 +245,7 @@ union mpoe_evt {
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
-		char data[MPOE_TINY_MAX];
+		char data[OMX_TINY_MAX];
 		/* 56 */
 		uint8_t pad2[7];
 		uint8_t type;
@@ -253,7 +253,7 @@ union mpoe_evt {
 	} recv_tiny;
 
 	/* recv small */
-	struct mpoe_evt_recv_small {
+	struct omx_evt_recv_small {
 		uint64_t src_addr;
 		/* 8 */
 		uint8_t src_endpoint;
@@ -270,7 +270,7 @@ union mpoe_evt {
 	} recv_small;
 
 	/* recv medium */
-	struct mpoe_evt_recv_medium {
+	struct omx_evt_recv_medium {
 		uint64_t src_addr;
 		/* 8 */
 		uint8_t src_endpoint;
@@ -291,7 +291,7 @@ union mpoe_evt {
 	} recv_medium;
 };
 
-#endif /* __mpoe_io_h__ */
+#endif /* __omx_io_h__ */
 
 /*
  * Local variables:

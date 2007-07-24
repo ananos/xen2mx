@@ -19,7 +19,7 @@ mpoe__get_board_count(uint32_t * count)
     goto out;
   }
 
-  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_COUNT, count);
+  err = ioctl(mpoe_globals.control_fd, OMX_CMD_GET_BOARD_COUNT, count);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_COUNT");
     goto out;
@@ -40,7 +40,7 @@ mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
 		   char * name, uint64_t * addr)
 {
   mpoe_return_t ret = MPOE_SUCCESS;
-  struct mpoe_cmd_get_board_id board_id;
+  struct omx_cmd_get_board_id board_id;
   int err, fd;
 
   if (!mpoe_globals.initialized) {
@@ -57,7 +57,7 @@ mpoe__get_board_id(struct mpoe_endpoint * ep, uint8_t * index,
     board_id.board_index = *index;
   }
 
-  err = ioctl(fd, MPOE_CMD_GET_BOARD_ID, &board_id);
+  err = ioctl(fd, OMX_CMD_GET_BOARD_ID, &board_id);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_ID");
     goto out;
@@ -89,7 +89,7 @@ mpoe__get_board_index_by_name(const char * name, uint8_t * index)
     goto out;
   }
 
-  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_MAX, &max);
+  err = ioctl(mpoe_globals.control_fd, OMX_CMD_GET_BOARD_MAX, &max);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_MAX");
     goto out;
@@ -97,10 +97,10 @@ mpoe__get_board_index_by_name(const char * name, uint8_t * index)
 
   ret = MPOE_INVALID_PARAMETER;
   for(i=0; i<max; i++) {
-    struct mpoe_cmd_get_board_id board_id;
+    struct omx_cmd_get_board_id board_id;
 
     board_id.board_index = i;
-    err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_ID, &board_id);
+    err = ioctl(mpoe_globals.control_fd, OMX_CMD_GET_BOARD_ID, &board_id);
     if (err < 0) {
       ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_ID");
       if (ret != MPOE_INVALID_PARAMETER)
@@ -133,7 +133,7 @@ mpoe__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     goto out;
   }
 
-  err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_MAX, &max);
+  err = ioctl(mpoe_globals.control_fd, OMX_CMD_GET_BOARD_MAX, &max);
   if (err < 0) {
     ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_MAX");
     goto out;
@@ -141,10 +141,10 @@ mpoe__get_board_index_by_addr(uint64_t addr, uint8_t * index)
 
   ret = MPOE_INVALID_PARAMETER;
   for(i=0; i<max; i++) {
-    struct mpoe_cmd_get_board_id board_id;
+    struct omx_cmd_get_board_id board_id;
 
     board_id.board_index = i;
-    err = ioctl(mpoe_globals.control_fd, MPOE_CMD_GET_BOARD_ID, &board_id);
+    err = ioctl(mpoe_globals.control_fd, OMX_CMD_GET_BOARD_ID, &board_id);
     if (err < 0) {
       ret = mpoe__errno_to_return(errno, "ioctl GET_BOARD_ID");
       if (ret != MPOE_INVALID_PARAMETER)

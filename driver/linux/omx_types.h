@@ -9,14 +9,14 @@
 #include "omx_wire.h"
 #include "omx_io.h"
 
-enum mpoe_iface_status {
+enum omx_iface_status {
 	/* iface is ready to be used */
-	MPOE_IFACE_STATUS_OK,
+	OMX_IFACE_STATUS_OK,
 	/* iface is being closed by somebody else, no new endpoint may be open */
-	MPOE_IFACE_STATUS_CLOSING,
+	OMX_IFACE_STATUS_CLOSING,
 };
 
-struct mpoe_iface {
+struct omx_iface {
 	int index;
 
 	struct net_device * eth_ifp;
@@ -24,40 +24,40 @@ struct mpoe_iface {
 
 	spinlock_t endpoint_lock;
 	int endpoint_nr;
-	struct mpoe_endpoint ** endpoints;
+	struct omx_endpoint ** endpoints;
 	wait_queue_head_t noendpoint_queue;
 
-	enum mpoe_iface_status status;
+	enum omx_iface_status status;
 };
 
-enum mpoe_endpoint_status {
+enum omx_endpoint_status {
 	/* endpoint is free and may be open */
-	MPOE_ENDPOINT_STATUS_FREE,
+	OMX_ENDPOINT_STATUS_FREE,
 	/* endpoint is already being open by somebody else */
-	MPOE_ENDPOINT_STATUS_INITIALIZING,
+	OMX_ENDPOINT_STATUS_INITIALIZING,
 	/* endpoint is ready to be used */
-	MPOE_ENDPOINT_STATUS_OK,
+	OMX_ENDPOINT_STATUS_OK,
 	/* endpoint is being closed by somebody else */
-	MPOE_ENDPOINT_STATUS_CLOSING,
+	OMX_ENDPOINT_STATUS_CLOSING,
 };
 
-struct mpoe_endpoint {
+struct omx_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
 
 	spinlock_t lock;
-	enum mpoe_endpoint_status status;
+	enum omx_endpoint_status status;
 	atomic_t refcount;
 	wait_queue_head_t noref_queue;
 
-	struct mpoe_iface * iface;
+	struct omx_iface * iface;
 
 	void * sendq, * recvq, * eventq;
-	union mpoe_evt * next_eventq_slot;
+	union omx_evt * next_eventq_slot;
 	char * next_recvq_slot;
 
 	spinlock_t user_regions_lock;
-	struct mpoe_user_region * user_regions[MPOE_USER_REGION_MAX];
+	struct omx_user_region * user_regions[OMX_USER_REGION_MAX];
 
 	spinlock_t pull_handle_lock;
 	struct idr pull_handle_idr;
@@ -90,13 +90,13 @@ struct mpoe_endpoint {
  * we don't need locking and no need hold a reference on the iface either.
  *
  * The locks are always taken in this priority order:
- * mpoe_iface_lock, iface->endpoint_lock, endpoint->lock
+ * omx_iface_lock, iface->endpoint_lock, endpoint->lock
  */
 
 
-struct mpoe_user_region {
+struct omx_user_region {
 	unsigned nr_segments;
-	struct mpoe_user_region_segment {
+	struct omx_user_region_segment {
 		unsigned offset;
 		unsigned long length;
 		unsigned long nr_pages;

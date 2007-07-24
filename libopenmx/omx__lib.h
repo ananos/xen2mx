@@ -62,7 +62,7 @@ struct mpoe_partner {
 struct mpoe_endpoint {
   int fd;
   int endpoint_index, board_index;
-  char board_name[MPOE_HOSTNAMELEN_MAX];
+  char board_name[OMX_HOSTNAMELEN_MAX];
   uint64_t board_addr;
   void * recvq, * sendq, * eventq;
   void * next_event;

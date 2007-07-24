@@ -1,5 +1,5 @@
-#ifndef __mpoe_list_h__
-#define __mpoe_list_h__
+#ifndef __omx_list_h__
+#define __omx_list_h__
 
 /* This file comes from linux/list.h in the Linux kernel 2.6.22
  * (under GPLv2 license), slightly modified to not need kernel
@@ -601,4 +601,4 @@ static inline void hlist_add_after(struct hlist_node *n,
 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
 	     pos = n)
 
-#endif /* __mpoe_list_h__ */
+#endif /* __omx_list_h__ */
