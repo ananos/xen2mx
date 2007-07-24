@@ -88,7 +88,8 @@ omx__peers_read(void)
 	goto out_with_file;
       }
       for(i=omx_peers_max; i<new_peers_max; i++)
-	omx_peers[i].valid = 0;
+	new_peers[i].valid = 0;
+
       omx_peers = new_peers;
       omx_peers_max = new_peers_max;
     }
