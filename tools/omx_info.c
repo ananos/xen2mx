@@ -6,46 +6,46 @@
 
 int main(void)
 {
-  mpoe_return_t ret;
+  omx_return_t ret;
   uint32_t max, emax, count;
   int found, i;
 
-  ret = mpoe_init();
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to initialize (%s)\n",
-            mpoe_strerror(ret));
+            omx_strerror(ret));
     goto out;
   }
 
   /* get board and endpoint max */
-  max = mpoe_globals.board_max;
-  emax = mpoe_globals.endpoint_max;
+  max = omx_globals.board_max;
+  emax = omx_globals.endpoint_max;
 
   /* get board count */
-  ret = mpoe__get_board_count(&count);
-  if (ret != MPOE_SUCCESS) {
-    fprintf(stderr, "Failed to read board count, %s\n", mpoe_strerror(ret));
+  ret = omx__get_board_count(&count);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to read board count, %s\n", omx_strerror(ret));
     goto out;
   }
   printf("Found %ld boards (%ld max) supporting %ld endpoints each\n",
 	 (unsigned long) count, (unsigned long) max, (unsigned long) emax);
 
   /* read global peers */
-  ret = mpoe__peers_init();
-  if (ret != MPOE_SUCCESS)
+  ret = omx__peers_init();
+  if (ret != OMX_SUCCESS)
     goto out;
 
   for(i=0, found=0; i<max && found<count; i++) {
     uint8_t board_index = i;
-    char board_name[MPOE_HOSTNAMELEN_MAX];
+    char board_name[OMX_HOSTNAMELEN_MAX];
     uint64_t board_addr;
-    char board_addr_str[MPOE_BOARD_ADDR_STRLEN];
+    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 
-    ret = mpoe__get_board_id(NULL, &board_index, board_name, &board_addr);
-    if (ret == MPOE_INVALID_PARAMETER)
+    ret = omx__get_board_id(NULL, &board_index, board_name, &board_addr);
+    if (ret == OMX_INVALID_PARAMETER)
       continue;
-    if (ret != MPOE_SUCCESS) {
-      fprintf(stderr, "Failed to read board #%d id, %s\n", i, mpoe_strerror(ret));
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Failed to read board #%d id, %s\n", i, omx_strerror(ret));
       goto out;
     }
 
@@ -53,12 +53,12 @@ int main(void)
     found++;
 
     printf("\n");
-    mpoe_board_addr_sprintf(board_addr_str, board_addr);
+    omx_board_addr_sprintf(board_addr_str, board_addr);
     printf("Board #%d name %s addr %s\n",
 	   i, board_name, board_addr_str);
     printf("==============================================\n");
 
-    mpoe__peers_dump("  %d) %s %s\n");
+    omx__peers_dump("  %d) %s %s\n");
   }
 
   return 0;

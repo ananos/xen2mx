@@ -7,136 +7,136 @@
 #define EP 3
 #define ITER 10
 
-static mpoe_return_t
-send_tiny(struct mpoe_endpoint * ep, uint64_t dest_addr,
+static omx_return_t
+send_tiny(struct omx_endpoint * ep, uint64_t dest_addr,
 	  int i)
 {
-  union mpoe_request * request, * request2;
-  struct mpoe_status status;
+  union omx_request * request, * request2;
+  struct omx_status status;
   char buffer[12], buffer2[12];
   unsigned long length;
-  mpoe_return_t ret;
+  omx_return_t ret;
   uint32_t result;
 
   sprintf(buffer, "message %d", i);
   length = strlen(buffer) + 1;
 
-  ret = mpoe_isend(ep, buffer, length,
-		   0x1234567887654321ULL, dest_addr, EP,
-		   NULL, &request);
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_isend(ep, buffer, length,
+		  0x1234567887654321ULL, dest_addr, EP,
+		  NULL, &request);
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to send a tiny message (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
   fprintf(stderr, "Successfully sent tiny \"%s\"\n", (char*) buffer);
 
-  ret = mpoe_wait(ep, &request, &status, &result);
-  if (ret != MPOE_SUCCESS || !result) {
+  ret = omx_wait(ep, &request, &status, &result);
+  if (ret != OMX_SUCCESS || !result) {
     fprintf(stderr, "Failed to wait for completion (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
 
-  ret = mpoe_irecv(ep, buffer2, length,
-		   0, 0,
-		   NULL, &request);
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_irecv(ep, buffer2, length,
+		  0, 0,
+		  NULL, &request);
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to post a recv for a tiny message (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
 
-  ret = mpoe_peek(ep, &request2, &result);
-  if (ret != MPOE_SUCCESS || !result) {
+  ret = omx_peek(ep, &request2, &result);
+  if (ret != OMX_SUCCESS || !result) {
     fprintf(stderr, "Failed to peek (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
   if (request != request2) {
     fprintf(stderr, "Peek got request %p instead of %p\n",
 	    request2, request);
-    return MPOE_BAD_ERROR;
+    return OMX_BAD_ERROR;
   }
 
-  ret = mpoe_test(ep, &request, &status, &result);
-  if (ret != MPOE_SUCCESS || !result) {
+  ret = omx_test(ep, &request, &status, &result);
+  if (ret != OMX_SUCCESS || !result) {
     fprintf(stderr, "Failed to wait for completion (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
 
-  fprintf(stderr, "Successfully received tiny with mpoe_test loop \"%s\"\n", (char*) buffer2);
+  fprintf(stderr, "Successfully received tiny with omx_test loop \"%s\"\n", (char*) buffer2);
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 }
 
 static int
-send_small(struct mpoe_endpoint * ep, uint64_t dest_addr,
+send_small(struct omx_endpoint * ep, uint64_t dest_addr,
 	   int i)
 {
-  union mpoe_request * request;
-  struct mpoe_status status;
+  union omx_request * request;
+  struct omx_status status;
   char buffer[4096];
   char buffer2[4096];
   unsigned long length;
-  mpoe_return_t ret;
+  omx_return_t ret;
   uint32_t result;
 
   sprintf(buffer, "message %d is much longer than in a tiny buffer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", i);
   length = strlen(buffer) + 1;
 
-  ret = mpoe_isend(ep, buffer, length,
-		   0x1234567887654321ULL, dest_addr, EP,
-		   NULL, &request);
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_isend(ep, buffer, length,
+		  0x1234567887654321ULL, dest_addr, EP,
+		  NULL, &request);
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to send a small message (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
 
   fprintf(stderr, "Successfully sent small \"%s\"\n", (char*) buffer);
 
-  ret = mpoe_wait(ep, &request, &status, &result);
-  if (ret != MPOE_SUCCESS || !result) {
+  ret = omx_wait(ep, &request, &status, &result);
+  if (ret != OMX_SUCCESS || !result) {
     fprintf(stderr, "Failed to wait for completion (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
 
   fprintf(stderr, "Successfully waited for send completion\n");
 
-  ret = mpoe_irecv(ep, buffer2, length,
-		   0, 0,
-		   NULL, &request);
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_irecv(ep, buffer2, length,
+		  0, 0,
+		  NULL, &request);
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to post a recv for a small message (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
 
   do {
-    ret = mpoe_test(ep, &request, &status, &result);
-    if (ret != MPOE_SUCCESS) {
+    ret = omx_test(ep, &request, &status, &result);
+    if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to wait for completion (%s)\n",
-	      mpoe_strerror(ret));
+	      omx_strerror(ret));
       return ret;
     }
   } while (!result);
 
-  fprintf(stderr, "Successfully received small with mpoe_test loop \"%s\"\n", (char*) buffer2);
+  fprintf(stderr, "Successfully received small with omx_test loop \"%s\"\n", (char*) buffer2);
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 }
 
 static int
-send_medium(struct mpoe_endpoint * ep, uint64_t dest_addr,
+send_medium(struct omx_endpoint * ep, uint64_t dest_addr,
 	    int i)
 {
-  union mpoe_request * request, * request2;
-  struct mpoe_status status;
+  union omx_request * request, * request2;
+  struct omx_status status;
   char buffer[8192], buffer2[8192];
-  mpoe_return_t ret;
+  omx_return_t ret;
   uint32_t result;
   unsigned long length;
   int j;
@@ -148,78 +148,78 @@ send_medium(struct mpoe_endpoint * ep, uint64_t dest_addr,
   buffer[length+4096] = '\0';
   length = strlen(buffer) + 1;
 
-  ret = mpoe_irecv(ep, buffer2, length,
-		   0, 0,
-		   NULL, &request2);
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_irecv(ep, buffer2, length,
+		  0, 0,
+		  NULL, &request2);
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to post a recv for a medium message (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
 
-  ret = mpoe_isend(ep, buffer, length,
-		   0x1234567887654321ULL, dest_addr, EP,
-		   NULL, &request);
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_isend(ep, buffer, length,
+		  0x1234567887654321ULL, dest_addr, EP,
+		  NULL, &request);
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to send a medium message (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
 
   fprintf(stderr, "Successfully sent medium \"%s\"\n", (char*) buffer);
 
-  ret = mpoe_wait(ep, &request, &status, &result);
-  if (ret != MPOE_SUCCESS || !result) {
+  ret = omx_wait(ep, &request, &status, &result);
+  if (ret != OMX_SUCCESS || !result) {
     fprintf(stderr, "Failed to wait for completion (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     return ret;
   }
 
   fprintf(stderr, "Successfully waited for send completion\n");
 
   do {
-    ret = mpoe_test(ep, &request2, &status, &result);
-    if (ret != MPOE_SUCCESS) {
+    ret = omx_test(ep, &request2, &status, &result);
+    if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to wait for completion (%s)\n",
-	      mpoe_strerror(ret));
+	      omx_strerror(ret));
       return ret;
     }
   } while (!result);
 
-  fprintf(stderr, "Successfully received medium with mpoe_test loop \"%s\"\n", (char*) buffer2);
+  fprintf(stderr, "Successfully received medium with omx_test loop \"%s\"\n", (char*) buffer2);
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 }
 
 int main(void)
 {
-  struct mpoe_endpoint * ep;
+  struct omx_endpoint * ep;
   uint64_t dest_addr;
   struct timeval tv1, tv2;
   uint8_t board_index;
   int i;
-  mpoe_return_t ret;
+  omx_return_t ret;
 
-  ret = mpoe_init();
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to initialize (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     goto out;
   }
 
-  ret = mpoe_get_info(NULL, MPOE_INFO_BOARD_INDEX_BY_NAME,
-		      IFNAME, strlen(IFNAME)+1,
-		      &board_index, sizeof(board_index));
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_get_info(NULL, OMX_INFO_BOARD_INDEX_BY_NAME,
+		     IFNAME, strlen(IFNAME)+1,
+		     &board_index, sizeof(board_index));
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to find iface %s (%s)\n",
-	    IFNAME, mpoe_strerror(ret));
+	    IFNAME, omx_strerror(ret));
     goto out;
   }
 
-  ret = mpoe_open_endpoint(board_index, EP, &ep);
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_open_endpoint(board_index, EP, &ep);
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to open endpoint (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     goto out;
   }
 
@@ -229,7 +229,7 @@ int main(void)
   for(i=0; i<ITER; i++) {
     /* send a tiny message */
     ret = send_tiny(ep, dest_addr, i);
-    if (ret != MPOE_SUCCESS)
+    if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }
   gettimeofday(&tv2, NULL);
@@ -240,7 +240,7 @@ int main(void)
   for(i=0; i<ITER; i++) {
     /* send a small message */
     ret = send_small(ep, dest_addr, i);
-    if (ret != MPOE_SUCCESS)
+    if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }
   gettimeofday(&tv2, NULL);
@@ -251,7 +251,7 @@ int main(void)
   for(i=0; i<ITER; i++) {
     /* send a medium message */
     ret = send_medium(ep, dest_addr, i);
-    if (ret != MPOE_SUCCESS)
+    if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }
   gettimeofday(&tv2, NULL);
@@ -261,7 +261,7 @@ int main(void)
   return 0;
 
  out_with_ep:
-  mpoe_close_endpoint(ep);
+  omx_close_endpoint(ep);
  out:
   return -1;
 }

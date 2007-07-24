@@ -18,77 +18,77 @@
  */
 
 #ifdef OMX_DEBUG
-#define mpoe__debug_assert(x) assert(x)
-#define mpoe__debug_instr(x) do { x; } while (0)
-#define mpoe__debug_printf(args...) fprintf(stderr, args)
+#define omx__debug_assert(x) assert(x)
+#define omx__debug_instr(x) do { x; } while (0)
+#define omx__debug_printf(args...) fprintf(stderr, args)
 #else
-#define mpoe__debug_assert(x) /* nothing */
-#define mpoe__debug_instr(x) /* nothing */
-#define mpoe__debug_printf(args...) /* nothing */
+#define omx__debug_assert(x) /* nothing */
+#define omx__debug_instr(x) /* nothing */
+#define omx__debug_printf(args...) /* nothing */
 #endif
 
 /***********************
  * Management of errors
  */
 
-mpoe_return_t
-mpoe__errno_to_return(int error, char * caller)
+omx_return_t
+omx__errno_to_return(int error, char * caller)
 {
   switch (error) {
   case EINVAL:
-    return MPOE_INVALID_PARAMETER;
+    return OMX_INVALID_PARAMETER;
   case EACCES:
   case EPERM:
-    return MPOE_ACCESS_DENIED;
+    return OMX_ACCESS_DENIED;
   case EMFILE:
   case ENFILE:
   case ENOMEM:
-    return MPOE_NO_SYSTEM_RESOURCES;
+    return OMX_NO_SYSTEM_RESOURCES;
   case ENODEV:
   case ENOENT:
-    return MPOE_NO_DEVICE;
+    return OMX_NO_DEVICE;
   default:
-    fprintf(stderr, "MPoE: %s got unexpected errno %d (%s)\n",
+    fprintf(stderr, "OpenMX: %s got unexpected errno %d (%s)\n",
 	    caller, error, strerror(error));
-    return MPOE_BAD_ERROR;
+    return OMX_BAD_ERROR;
   }
 }
 
 const char *
-mpoe_strerror(mpoe_return_t ret)
+omx_strerror(omx_return_t ret)
 {
   switch (ret) {
-  case MPOE_SUCCESS:
+  case OMX_SUCCESS:
     return "Success";
-  case MPOE_BAD_ERROR:
+  case OMX_BAD_ERROR:
     return "Bad (internal?) error";
-  case MPOE_ALREADY_INITIALIZED:
+  case OMX_ALREADY_INITIALIZED:
     return "Already initialized";
-  case MPOE_NOT_INITIALIZED:
+  case OMX_NOT_INITIALIZED:
     return "Not initialized";
-  case MPOE_NO_DEVICE:
+  case OMX_NO_DEVICE:
     return "No device";
-  case MPOE_ACCESS_DENIED:
+  case OMX_ACCESS_DENIED:
     return "Access denied";
-  case MPOE_NO_RESOURCES:
+  case OMX_NO_RESOURCES:
     return "No resources available";
-  case MPOE_NO_SYSTEM_RESOURCES:
+  case OMX_NO_SYSTEM_RESOURCES:
     return "No resources available in the system";
-  case MPOE_INVALID_PARAMETER:
+  case OMX_INVALID_PARAMETER:
     return "Invalid parameter";
-  case MPOE_NOT_IMPLEMENTED:
+  case OMX_NOT_IMPLEMENTED:
     return "Not implemented";
   }
   assert(0);
 }
 
 const char *
-mpoe_strstatus(mpoe_status_code_t code)
+omx_strstatus(omx_status_code_t code)
 {
   switch (code) {
-  case MPOE_STATUS_SUCCESS:
+  case OMX_STATUS_SUCCESS:
     return "Success";
-  case MPOE_STATUS_FAILED:
+  case OMX_STATUS_FAILED:
     return "Failed";
   }
   assert(0);
@@ -99,12 +99,12 @@ mpoe_strstatus(mpoe_status_code_t code)
  */
 
 static inline int
-mpoe__endpoint_sendq_map_init(struct mpoe_endpoint * ep)
+omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
 {
-  struct mpoe_sendq_entry * array;
+  struct omx_sendq_entry * array;
   int i;
 
-  array = malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct mpoe_sendq_entry));
+  array = malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct omx_sendq_entry));
   if (!array)
     return -ENOMEM;
 
@@ -122,19 +122,19 @@ mpoe__endpoint_sendq_map_init(struct mpoe_endpoint * ep)
 }
 
 static inline void
-mpoe__endpoint_sendq_map_exit(struct mpoe_endpoint * ep)
+omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
 {
   free(ep->sendq_map.array);
 }
 
 static inline int
-mpoe__endpoint_sendq_map_get(struct mpoe_endpoint * ep,
-			     int nr, void * user, int * founds)
+omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
+			    int nr, void * user, int * founds)
 {
-  struct mpoe_sendq_entry * array = ep->sendq_map.array;
+  struct omx_sendq_entry * array = ep->sendq_map.array;
   int index, i;
 
-  mpoe__debug_assert((ep->sendq_map.first_free == -1) == (ep->sendq_map.nr_free == 0));
+  omx__debug_assert((ep->sendq_map.first_free == -1) == (ep->sendq_map.nr_free == 0));
 
   if (ep->sendq_map.nr_free < nr)
     return -1;
@@ -143,12 +143,12 @@ mpoe__endpoint_sendq_map_get(struct mpoe_endpoint * ep,
   for(i=0; i<nr; i++) {
     int next_free;
 
-    mpoe__debug_assert(index >= 0);
+    omx__debug_assert(index >= 0);
 
     next_free = array[index].next_free;
 
-    mpoe__debug_assert(array[index].user == NULL);
-    mpoe__debug_instr(array[index].next_free = -1);
+    omx__debug_assert(array[index].user == NULL);
+    omx__debug_instr(array[index].next_free = -1);
 
     array[index].user = user;
     founds[i] = index;
@@ -161,14 +161,14 @@ mpoe__endpoint_sendq_map_get(struct mpoe_endpoint * ep,
 }
 
 static inline void *
-mpoe__endpoint_sendq_map_put(struct mpoe_endpoint * ep,
-			     int index)
+omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
+			    int index)
 {
-  struct mpoe_sendq_entry * array = ep->sendq_map.array;
+  struct omx_sendq_entry * array = ep->sendq_map.array;
   void * user = array[index].user;
 
-  mpoe__debug_assert(user != NULL);
-  mpoe__debug_assert(array[index].next_free == -1);
+  omx__debug_assert(user != NULL);
+  omx__debug_assert(array[index].next_free == -1);
 
   array[index].user = NULL;
   array[index].next_free = ep->sendq_map.first_free;
@@ -183,7 +183,7 @@ mpoe__endpoint_sendq_map_put(struct mpoe_endpoint * ep,
  */
 
 static inline void
-mpoe__partner_init(struct mpoe_partner *partner)
+omx__partner_init(struct omx_partner *partner)
 {
   INIT_LIST_HEAD(&partner->partialq);
   partner->next_send_seq = 0;
@@ -195,32 +195,32 @@ mpoe__partner_init(struct mpoe_partner *partner)
  * Endpoint management
  */
 
-mpoe_return_t
-mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
-		   struct mpoe_endpoint **epp)
+omx_return_t
+omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
+		  struct omx_endpoint **epp)
 {
   /* FIXME: add parameters to choose the board name? */
   struct omx_cmd_open_endpoint open_param;
-  struct mpoe_endpoint * ep;
-  char board_addr_str[MPOE_BOARD_ADDR_STRLEN];
+  struct omx_endpoint * ep;
+  char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   void * recvq, * sendq, * eventq;
-  mpoe_return_t ret = MPOE_SUCCESS;
+  omx_return_t ret = OMX_SUCCESS;
   int err, fd;
 
-  if (!mpoe_globals.initialized) {
-    ret = MPOE_NOT_INITIALIZED;
+  if (!omx_globals.initialized) {
+    ret = OMX_NOT_INITIALIZED;
     goto out;
   }
 
-  ep = malloc(sizeof(struct mpoe_endpoint));
+  ep = malloc(sizeof(struct omx_endpoint));
   if (!ep) {
-    ret = mpoe__errno_to_return(ENOMEM, "endpoint malloc");
+    ret = omx__errno_to_return(ENOMEM, "endpoint malloc");
     goto out;
   }
 
   err = open(OMX_DEVNAME, O_RDWR);
   if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "open");
+    ret = omx__errno_to_return(errno, "open");
     goto out_with_ep;
   }
   fd = err;
@@ -230,14 +230,14 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   open_param.endpoint_index = endpoint_index;
   err = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
   if (err < 0) {
-    ret = mpoe__errno_to_return(errno, "ioctl OPEN_ENDPOINT");
+    ret = omx__errno_to_return(errno, "ioctl OPEN_ENDPOINT");
     goto out_with_fd;
   }
 
   /* prepare the sendq */
-  err = mpoe__endpoint_sendq_map_init(ep);
+  err = omx__endpoint_sendq_map_init(ep);
   if (err < 0) {
-    ret = mpoe__errno_to_return(-err, "sendq_map init");
+    ret = omx__errno_to_return(-err, "sendq_map init");
     goto out_with_attached;
   }
 
@@ -248,7 +248,7 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   if (sendq == (void *) -1
       || recvq == (void *) -1
       || eventq == (void *) -1) {
-    ret = mpoe__errno_to_return(errno, "mmap");
+    ret = omx__errno_to_return(errno, "mmap");
     goto out_with_sendq_map;
   }
   printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
@@ -262,12 +262,12 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   ep->endpoint_index = endpoint_index;
 
   /* get some info */
-  ret = mpoe__get_board_id(ep, NULL, ep->board_name, &ep->board_addr);
-  if (ret != MPOE_SUCCESS) {
-    ret = MPOE_BAD_ERROR;
+  ret = omx__get_board_id(ep, NULL, ep->board_name, &ep->board_addr);
+  if (ret != OMX_SUCCESS) {
+    ret = OMX_BAD_ERROR;
     goto out_with_attached;
   }
-  mpoe_board_addr_sprintf(board_addr_str, ep->board_addr);
+  omx_board_addr_sprintf(board_addr_str, ep->board_addr);
   printf("Successfully attached endpoint #%ld on board #%ld (%s, %s)\n",
 	 (unsigned long) endpoint_index, (unsigned long) board_index,
 	 ep->board_name, board_addr_str);
@@ -279,14 +279,14 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   INIT_LIST_HEAD(&ep->multifraq_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->done_req_q);
 
-  mpoe__partner_init(&ep->partner);
+  omx__partner_init(&ep->partner);
 
   *epp = ep;
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 
  out_with_sendq_map:
-  mpoe__endpoint_sendq_map_exit(ep);
+  omx__endpoint_sendq_map_exit(ep);
  out_with_attached:
   /* could detach here, but close will do it */
  out_with_fd:
@@ -297,8 +297,8 @@ mpoe_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   return ret;
 }
 
-mpoe_return_t
-mpoe_close_endpoint(struct mpoe_endpoint *ep)
+omx_return_t
+omx_close_endpoint(struct omx_endpoint *ep)
 {
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->recvq, OMX_RECVQ_SIZE);
@@ -306,7 +306,7 @@ mpoe_close_endpoint(struct mpoe_endpoint *ep)
   close(ep->fd);
   free(ep);
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 }
 
 /***************************
@@ -314,36 +314,36 @@ mpoe_close_endpoint(struct mpoe_endpoint *ep)
  */
 
 static inline void
-mpoe__enqueue_request(struct list_head *head,
-		      union mpoe_request *req)
+omx__enqueue_request(struct list_head *head,
+		     union omx_request *req)
 {
   list_add_tail(&req->generic.queue_elt, head);
 }
 
 static inline void
-mpoe__dequeue_request(struct list_head *head,
-		      union mpoe_request *req)
+omx__dequeue_request(struct list_head *head,
+		     union omx_request *req)
 {
-#ifdef MPOE_DEBUG
+#ifdef OMX_DEBUG
   struct list_head *e;
   list_for_each(e, head)
-    if (req == list_entry(e, union mpoe_request, generic.queue_elt))
+    if (req == list_entry(e, union omx_request, generic.queue_elt))
       goto found;
   assert(0);
 
  found:
-#endif /* MPOE_DEBUG */
+#endif /* OMX_DEBUG */
   list_del(&req->generic.queue_elt);
 }
 
-static inline union mpoe_request *
-mpoe__queue_first_request(struct list_head *head)
+static inline union omx_request *
+omx__queue_first_request(struct list_head *head)
 {
-  return list_first_entry(head, union mpoe_request, generic.queue_elt);
+  return list_first_entry(head, union omx_request, generic.queue_elt);
 }
 
 static inline int
-mpoe__queue_empty(struct list_head *head)
+omx__queue_empty(struct list_head *head)
 {
   return list_empty(head);
 }
@@ -352,25 +352,25 @@ mpoe__queue_empty(struct list_head *head)
  * Receive callback
  */
 
-typedef mpoe_return_t (*mpoe__process_recv_func_t) (struct mpoe_endpoint *ep,
-						    union omx_evt *evt,
-						    void *data);
+typedef omx_return_t (*omx__process_recv_func_t) (struct omx_endpoint *ep,
+						  union omx_evt *evt,
+						  void *data);
 
-static mpoe_return_t
-mpoe__process_recv_tiny(struct mpoe_endpoint *ep,
-			union omx_evt *evt, void *data)
+static omx_return_t
+omx__process_recv_tiny(struct omx_endpoint *ep,
+		       union omx_evt *evt, void *data)
 {
   struct omx_evt_recv_tiny *event = &evt->recv_tiny;
-  union mpoe_request *req;
+  union omx_request *req;
   unsigned long length;
 
-  if (mpoe__queue_empty(&ep->recv_req_q)) {
+  if (omx__queue_empty(&ep->recv_req_q)) {
     void *unexp_buffer;
 
     req = malloc(sizeof(*req));
     if (!req) {
       fprintf(stderr, "Failed to allocate request for unexpected tiny messages, dropping\n");
-      return MPOE_NO_RESOURCES;
+      return OMX_NO_RESOURCES;
     }
 
     length = event->length;
@@ -378,7 +378,7 @@ mpoe__process_recv_tiny(struct mpoe_endpoint *ep,
     if (!unexp_buffer) {
       fprintf(stderr, "Failed to allocate buffer for unexpected tiny messages, dropping\n");
       free(req);
-      return MPOE_NO_RESOURCES;
+      return OMX_NO_RESOURCES;
     }
 
     req->generic.status.board_addr = event->src_addr;
@@ -389,12 +389,12 @@ mpoe__process_recv_tiny(struct mpoe_endpoint *ep,
 
     memcpy(unexp_buffer, data, length);
 
-    req->generic.state = MPOE_REQUEST_STATE_DONE;
-    mpoe__enqueue_request(&ep->unexp_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_DONE;
+    omx__enqueue_request(&ep->unexp_req_q, req);
 
   } else {
-    req = mpoe__queue_first_request(&ep->recv_req_q);
-    mpoe__dequeue_request(&ep->recv_req_q, req);
+    req = omx__queue_first_request(&ep->recv_req_q);
+    omx__dequeue_request(&ep->recv_req_q, req);
 
     req->generic.status.board_addr = event->src_addr;
     req->generic.status.ep = event->src_endpoint;
@@ -406,28 +406,28 @@ mpoe__process_recv_tiny(struct mpoe_endpoint *ep,
     req->generic.status.xfer_length = length;
     memcpy(req->recv.buffer, data, length);
 
-    req->generic.state = MPOE_REQUEST_STATE_DONE;
-    mpoe__enqueue_request(&ep->done_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_DONE;
+    omx__enqueue_request(&ep->done_req_q, req);
   }
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 }
 
-static mpoe_return_t
-mpoe__process_recv_small(struct mpoe_endpoint *ep,
-			 union omx_evt *evt, void *data)
+static omx_return_t
+omx__process_recv_small(struct omx_endpoint *ep,
+			union omx_evt *evt, void *data)
 {
   struct omx_evt_recv_small * event = &evt->recv_small;
-  union mpoe_request *req;
+  union omx_request *req;
   unsigned long length;
 
-  if (mpoe__queue_empty(&ep->recv_req_q)) {
+  if (omx__queue_empty(&ep->recv_req_q)) {
     void *unexp_buffer;
 
     req = malloc(sizeof(*req));
     if (!req) {
       fprintf(stderr, "Failed to allocate request for unexpected small messages, dropping\n");
-      return MPOE_NO_RESOURCES;
+      return OMX_NO_RESOURCES;
     }
 
     length = event->length;
@@ -435,7 +435,7 @@ mpoe__process_recv_small(struct mpoe_endpoint *ep,
     if (!unexp_buffer) {
       fprintf(stderr, "Failed to allocate buffer for unexpected small messages, dropping\n");
       free(req);
-      return MPOE_NO_RESOURCES;
+      return OMX_NO_RESOURCES;
     }
 
     req->generic.status.board_addr = event->src_addr;
@@ -446,12 +446,12 @@ mpoe__process_recv_small(struct mpoe_endpoint *ep,
 
     memcpy(unexp_buffer, data, length);
 
-    req->generic.state = MPOE_REQUEST_STATE_DONE;
-    mpoe__enqueue_request(&ep->unexp_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_DONE;
+    omx__enqueue_request(&ep->unexp_req_q, req);
 
   } else {
-    req = mpoe__queue_first_request(&ep->recv_req_q);
-    mpoe__dequeue_request(&ep->recv_req_q, req);
+    req = omx__queue_first_request(&ep->recv_req_q);
+    omx__dequeue_request(&ep->recv_req_q, req);
 
     req->generic.status.board_addr = event->src_addr;
     req->generic.status.ep = event->src_endpoint;
@@ -463,36 +463,36 @@ mpoe__process_recv_small(struct mpoe_endpoint *ep,
     req->generic.status.xfer_length = length;
     memcpy(req->recv.buffer, data, length);
 
-    req->generic.state = MPOE_REQUEST_STATE_DONE;
-    mpoe__enqueue_request(&ep->done_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_DONE;
+    omx__enqueue_request(&ep->done_req_q, req);
   }
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 }
 
-static mpoe_return_t
-mpoe__process_recv_medium(struct mpoe_endpoint *ep,
-			  union omx_evt *evt, void *data)
+static omx_return_t
+omx__process_recv_medium(struct omx_endpoint *ep,
+			 union omx_evt *evt, void *data)
 {
   struct omx_evt_recv_medium * event = &evt->recv_medium;
-  union mpoe_request * req;
+  union omx_request * req;
   unsigned long msg_length = event->msg_length;
   unsigned long chunk = event->frag_length;
   unsigned long seqnum = event->frag_seqnum;
-  unsigned long offset = seqnum << (MPOE_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
+  unsigned long offset = seqnum << (OMX_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
 
   printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
 	 (unsigned) seqnum, (unsigned) event->frag_pipeline, (unsigned) chunk,
 	 (unsigned) offset, (unsigned) msg_length);
 
-  if (!mpoe__queue_empty(&ep->multifraq_medium_recv_req_q)) {
+  if (!omx__queue_empty(&ep->multifraq_medium_recv_req_q)) {
     /* message already partially received */
 
-    req = mpoe__queue_first_request(&ep->multifraq_medium_recv_req_q);
+    req = omx__queue_first_request(&ep->multifraq_medium_recv_req_q);
 
     if (req->recv.type.medium.frags_received_mask & (1 << seqnum))
       /* already received this frag */
-      return MPOE_SUCCESS;
+      return OMX_SUCCESS;
 
     /* take care of the data chunk */
     if (offset + chunk > msg_length)
@@ -502,18 +502,18 @@ mpoe__process_recv_medium(struct mpoe_endpoint *ep,
     req->recv.type.medium.accumulated_length += chunk;
 
     if (req->recv.type.medium.accumulated_length == msg_length) {
-      mpoe__dequeue_request(&ep->multifraq_medium_recv_req_q, req);
-      req->generic.state = MPOE_REQUEST_STATE_DONE;
-      mpoe__enqueue_request(&ep->done_req_q, req);
+      omx__dequeue_request(&ep->multifraq_medium_recv_req_q, req);
+      req->generic.state = OMX_REQUEST_STATE_DONE;
+      omx__enqueue_request(&ep->done_req_q, req);
     }
 
     /* FIXME: do not duplicate all the code like this */
 
-  } else if (!mpoe__queue_empty(&ep->recv_req_q)) {
+  } else if (!omx__queue_empty(&ep->recv_req_q)) {
     /* first fragment of a new message */
 
-    req = mpoe__queue_first_request(&ep->recv_req_q);
-    mpoe__dequeue_request(&ep->recv_req_q, req);
+    req = omx__queue_first_request(&ep->recv_req_q);
+    omx__dequeue_request(&ep->recv_req_q, req);
 
     /* set basic fields */
     req->generic.status.board_addr = event->src_addr;
@@ -534,10 +534,10 @@ mpoe__process_recv_medium(struct mpoe_endpoint *ep,
     req->recv.type.medium.accumulated_length = chunk;
 
     if (chunk == msg_length) {
-      req->generic.state = MPOE_REQUEST_STATE_DONE;
-      mpoe__enqueue_request(&ep->done_req_q, req);
+      req->generic.state = OMX_REQUEST_STATE_DONE;
+      omx__enqueue_request(&ep->done_req_q, req);
     } else {
-      mpoe__enqueue_request(&ep->multifraq_medium_recv_req_q, req);
+      omx__enqueue_request(&ep->multifraq_medium_recv_req_q, req);
     }
 
   } else {
@@ -546,71 +546,71 @@ mpoe__process_recv_medium(struct mpoe_endpoint *ep,
     /* FIXME */
   }
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 }
 
 /*******************
  * Event processing
  */
 
-static mpoe_return_t
-mpoe__process_recv(struct mpoe_endpoint *ep,
-		   union omx_evt *evt, mpoe_seqnum_t seqnum, void *data,
-		   mpoe__process_recv_func_t recv_func)
+static omx_return_t
+omx__process_recv(struct omx_endpoint *ep,
+		  union omx_evt *evt, omx_seqnum_t seqnum, void *data,
+		  omx__process_recv_func_t recv_func)
 {
-  mpoe__debug_printf("got seqnum %d\n", seqnum);
+  omx__debug_printf("got seqnum %d\n", seqnum);
 
   /* FIXME: check order, do matching, handle unexpected and early */
 
   return recv_func(ep, evt, data);
 }
 
-static mpoe_return_t
-mpoe__process_event(struct mpoe_endpoint * ep, union omx_evt * evt)
+static omx_return_t
+omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 {
-  mpoe_return_t ret = MPOE_SUCCESS;
+  omx_return_t ret = OMX_SUCCESS;
 
-  mpoe__debug_printf("received type %d\n", evt->generic.type);
+  omx__debug_printf("received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
 
   case OMX_EVT_RECV_TINY: {
-    ret = mpoe__process_recv(ep,
-			     evt, evt->recv_tiny.seqnum, evt->recv_tiny.data,
-			     mpoe__process_recv_tiny);
+    ret = omx__process_recv(ep,
+			    evt, evt->recv_tiny.seqnum, evt->recv_tiny.data,
+			    omx__process_recv_tiny);
     break;
   }
 
   case OMX_EVT_RECV_SMALL: {
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
     char * recvq_buffer = ep->recvq + evt_index * OMX_RECVQ_ENTRY_SIZE;
-    ret = mpoe__process_recv(ep,
-			     evt, evt->recv_small.seqnum, recvq_buffer,
-			     mpoe__process_recv_small);
+    ret = omx__process_recv(ep,
+			    evt, evt->recv_small.seqnum, recvq_buffer,
+			    omx__process_recv_small);
     break;
   }
 
   case OMX_EVT_RECV_MEDIUM: {
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
     char * recvq_buffer = ep->recvq + evt_index * OMX_RECVQ_ENTRY_SIZE;
-    ret = mpoe__process_recv(ep,
-			     evt, evt->recv_medium.seqnum, recvq_buffer,
-			     mpoe__process_recv_medium);
+    ret = omx__process_recv(ep,
+			    evt, evt->recv_medium.seqnum, recvq_buffer,
+			    omx__process_recv_medium);
     break;
   }
 
   case OMX_EVT_SEND_MEDIUM_FRAG_DONE: {
     uint16_t sendq_page_offset = evt->send_medium_frag_done.sendq_page_offset;
-    union mpoe_request * req = mpoe__endpoint_sendq_map_put(ep, sendq_page_offset);
+    union omx_request * req = omx__endpoint_sendq_map_put(ep, sendq_page_offset);
     assert(req
-	   && req->generic.type == MPOE_REQUEST_TYPE_SEND_MEDIUM);
+	   && req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM);
 
     /* message is not done */
     if (--req->send.type.medium.frags_pending_nr)
       break;
 
-    mpoe__dequeue_request(&ep->sent_req_q, req);
-    req->generic.state = MPOE_REQUEST_STATE_DONE;
-    mpoe__enqueue_request(&ep->done_req_q, req);
+    omx__dequeue_request(&ep->sent_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_DONE;
+    omx__enqueue_request(&ep->done_req_q, req);
     break;
   }
 
@@ -626,8 +626,8 @@ mpoe__process_event(struct mpoe_endpoint * ep, union omx_evt * evt)
  * Main progression
  */
 
-static mpoe_return_t
-mpoe__progress(struct mpoe_endpoint * ep)
+static omx_return_t
+omx__progress(struct omx_endpoint * ep)
 {
   /* process events */
   while (1) {
@@ -636,7 +636,7 @@ mpoe__progress(struct mpoe_endpoint * ep)
     if (evt->generic.type == OMX_EVT_NONE)
       break;
 
-    mpoe__process_event(ep, (union omx_evt *) evt);
+    omx__process_event(ep, (union omx_evt *) evt);
 
     /* mark event as done */
     evt->generic.type = OMX_EVT_NONE;
@@ -648,28 +648,28 @@ mpoe__progress(struct mpoe_endpoint * ep)
     ep->next_event = (void *) evt;
   }
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 }
 
 /**************************
  * Main send/recv routines
  */
 
-mpoe_return_t
-mpoe_isend(struct mpoe_endpoint *ep,
-	   void *buffer, size_t length,
-	   uint64_t match_info,
-	   uint64_t dest_addr, uint32_t dest_endpoint,
-	   void *context, union mpoe_request **requestp)
+omx_return_t
+omx_isend(struct omx_endpoint *ep,
+	  void *buffer, size_t length,
+	  uint64_t match_info,
+	  uint64_t dest_addr, uint32_t dest_endpoint,
+	  void *context, union omx_request **requestp)
 {
-  union mpoe_request * req;
-  mpoe_seqnum_t seqnum;
-  mpoe_return_t ret;
+  union omx_request * req;
+  omx_seqnum_t seqnum;
+  omx_return_t ret;
   int err;
 
-  req = malloc(sizeof(union mpoe_request));
+  req = malloc(sizeof(union omx_request));
   if (!req) {
-    ret = mpoe__errno_to_return(ENOMEM, "isend request malloc");
+    ret = omx__errno_to_return(ENOMEM, "isend request malloc");
     goto out;
   }
 
@@ -689,15 +689,15 @@ mpoe_isend(struct mpoe_endpoint *ep,
 
     err = ioctl(ep->fd, OMX_CMD_SEND_TINY, &tiny_param);
     if (err < 0) {
-      ret = mpoe__errno_to_return(errno, "ioctl send/tiny");
+      ret = omx__errno_to_return(errno, "ioctl send/tiny");
       goto out_with_req;
     }
     /* no need to wait for a done event, tiny is synchronous */
 
-    req->generic.type = MPOE_REQUEST_TYPE_SEND_TINY;
+    req->generic.type = OMX_REQUEST_TYPE_SEND_TINY;
     req->generic.status.context = context;
-    req->generic.state = MPOE_REQUEST_STATE_DONE;
-    mpoe__enqueue_request(&ep->done_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_DONE;
+    omx__enqueue_request(&ep->done_req_q, req);
 
   } else if (length <= OMX_SMALL_MAX) {
     struct omx_cmd_send_small small_param;
@@ -712,15 +712,15 @@ mpoe_isend(struct mpoe_endpoint *ep,
 
     err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &small_param);
     if (err < 0) {
-      ret = mpoe__errno_to_return(errno, "ioctl send/small");
+      ret = omx__errno_to_return(errno, "ioctl send/small");
       goto out_with_req;
     }
     /* no need to wait for a done event, small is synchronous */
 
-    req->generic.type = MPOE_REQUEST_TYPE_SEND_SMALL;
+    req->generic.type = OMX_REQUEST_TYPE_SEND_SMALL;
     req->generic.status.context = context;
-    req->generic.state = MPOE_REQUEST_STATE_DONE;
-    mpoe__enqueue_request(&ep->done_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_DONE;
+    omx__enqueue_request(&ep->done_req_q, req);
 
   } else {
     struct omx_cmd_send_medium medium_param;
@@ -730,34 +730,34 @@ mpoe_isend(struct mpoe_endpoint *ep,
     int frags;
     int i;
 
-    frags = MPOE_MEDIUM_FRAGS_NR(length);
-    mpoe__debug_assert(frags <= 8); /* for the sendq_index array above */
+    frags = OMX_MEDIUM_FRAGS_NR(length);
+    omx__debug_assert(frags <= 8); /* for the sendq_index array above */
 
-    if (mpoe__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0)
+    if (omx__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0)
       /* FIXME: queue */
       assert(0);
 
     medium_param.dest_addr = dest_addr;
     medium_param.dest_endpoint = dest_endpoint;
     medium_param.match_info = match_info;
-    medium_param.frag_pipeline = MPOE_MEDIUM_FRAG_PIPELINE;
+    medium_param.frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
     /* FIXME: medium_param.lib_cookie = lib_cookie; */
     medium_param.msg_length = length;
     medium_param.seqnum = seqnum;
 
     for(i=0; i<frags; i++) {
-      unsigned chunk = remaining > MPOE_MEDIUM_FRAG_LENGTH_MAX
-	? MPOE_MEDIUM_FRAG_LENGTH_MAX : remaining;
+      unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
+	? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
       medium_param.frag_length = chunk;
       medium_param.frag_seqnum = i;
       medium_param.sendq_page_offset = sendq_index[i];
       printf("sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 	     i, chunk, (unsigned long) length);
-      memcpy(ep->sendq + (sendq_index[i] << MPOE_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, length);
+      memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, length);
 
       err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, &medium_param);
       if (err < 0) {
-	ret = mpoe__errno_to_return(errno, "ioctl send/medium");
+	ret = omx__errno_to_return(errno, "ioctl send/medium");
 	goto out_with_req;
       }
 
@@ -769,17 +769,17 @@ mpoe_isend(struct mpoe_endpoint *ep,
      * might still be in use
      */
     req->send.type.medium.frags_pending_nr = frags;
-    req->generic.type = MPOE_REQUEST_TYPE_SEND_MEDIUM;
+    req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
     req->generic.status.context = context;
-    req->generic.state = MPOE_REQUEST_STATE_PENDING;
-    mpoe__enqueue_request(&ep->sent_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_PENDING;
+    omx__enqueue_request(&ep->sent_req_q, req);
   }
 
-  mpoe__progress(ep);
+  omx__progress(ep);
 
   *requestp = req;
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 
  out_with_req:
   free(req);
@@ -787,18 +787,18 @@ mpoe_isend(struct mpoe_endpoint *ep,
   return ret;
 }
 
-mpoe_return_t
-mpoe_irecv(struct mpoe_endpoint *ep,
-	   void *buffer, size_t length,
-	   uint64_t match_info, uint64_t match_mask,
-	   void *context, union mpoe_request **requestp)
+omx_return_t
+omx_irecv(struct omx_endpoint *ep,
+	  void *buffer, size_t length,
+	  uint64_t match_info, uint64_t match_mask,
+	  void *context, union omx_request **requestp)
 {
-  union mpoe_request * req;
-  mpoe_return_t ret;
+  union omx_request * req;
+  omx_return_t ret;
 
-  if (!mpoe__queue_empty(&ep->unexp_req_q)) {
-    req = mpoe__queue_first_request(&ep->unexp_req_q);
-    mpoe__dequeue_request(&ep->unexp_req_q, req);
+  if (!omx__queue_empty(&ep->unexp_req_q)) {
+    req = omx__queue_first_request(&ep->unexp_req_q);
+    omx__dequeue_request(&ep->unexp_req_q, req);
 
     /* compute xfer length */
     if (length > req->generic.status.msg_length)
@@ -809,30 +809,30 @@ mpoe_irecv(struct mpoe_endpoint *ep,
     memcpy(buffer, req->recv.buffer, length);
     free(req->recv.buffer);
 
-    req->generic.state = MPOE_REQUEST_STATE_DONE;
-    mpoe__enqueue_request(&ep->done_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_DONE;
+    omx__enqueue_request(&ep->done_req_q, req);
 
   } else {
-    req = malloc(sizeof(union mpoe_request));
+    req = malloc(sizeof(union omx_request));
     if (!req) {
-      ret = mpoe__errno_to_return(ENOMEM, "irecv request malloc");
+      ret = omx__errno_to_return(ENOMEM, "irecv request malloc");
       goto out;
     }
 
-    req->generic.type = MPOE_REQUEST_TYPE_RECV;
-    req->generic.state = MPOE_REQUEST_STATE_PENDING;
+    req->generic.type = OMX_REQUEST_TYPE_RECV;
+    req->generic.state = OMX_REQUEST_STATE_PENDING;
     req->generic.status.context = context;
     req->recv.buffer = buffer;
     req->recv.length = length;
 
-    mpoe__enqueue_request(&ep->recv_req_q, req);
+    omx__enqueue_request(&ep->recv_req_q, req);
   }
 
-  mpoe__progress(ep);
+  omx__progress(ep);
 
   *requestp = req;
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 
  out:
   return ret;
@@ -842,21 +842,21 @@ mpoe_irecv(struct mpoe_endpoint *ep,
  * Main completion test routines
  */
 
-mpoe_return_t
-mpoe_test(struct mpoe_endpoint *ep, union mpoe_request **requestp,
-	  struct mpoe_status *status, uint32_t * result)
+omx_return_t
+omx_test(struct omx_endpoint *ep, union omx_request **requestp,
+	 struct omx_status *status, uint32_t * result)
 {
-  union mpoe_request * req = *requestp;
-  mpoe_return_t ret = MPOE_SUCCESS;
+  union omx_request * req = *requestp;
+  omx_return_t ret = OMX_SUCCESS;
 
-  ret = mpoe__progress(ep);
-  if (ret != MPOE_SUCCESS)
+  ret = omx__progress(ep);
+  if (ret != OMX_SUCCESS)
     goto out;
 
-  if (req->generic.state != MPOE_REQUEST_STATE_DONE) {
+  if (req->generic.state != OMX_REQUEST_STATE_DONE) {
     *result = 0;
   } else {
-    mpoe__dequeue_request(&ep->done_req_q, req);
+    omx__dequeue_request(&ep->done_req_q, req);
     memcpy(status, &req->generic.status, sizeof(*status));
 
     free(req);
@@ -868,21 +868,21 @@ mpoe_test(struct mpoe_endpoint *ep, union mpoe_request **requestp,
   return ret;
 }
 
-mpoe_return_t
-mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
-	  struct mpoe_status *status, uint32_t * result)
+omx_return_t
+omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
+	 struct omx_status *status, uint32_t * result)
 {
-  union mpoe_request * req = *requestp;
-  mpoe_return_t ret = MPOE_SUCCESS;
+  union omx_request * req = *requestp;
+  omx_return_t ret = OMX_SUCCESS;
 
-  while (req->generic.state != MPOE_REQUEST_STATE_DONE) {
-    ret = mpoe__progress(ep);
-    if (ret != MPOE_SUCCESS)
+  while (req->generic.state != OMX_REQUEST_STATE_DONE) {
+    ret = omx__progress(ep);
+    if (ret != OMX_SUCCESS)
       goto out;
     /* FIXME: sleep */
   }
 
-  mpoe__dequeue_request(&ep->done_req_q, req);
+  omx__dequeue_request(&ep->done_req_q, req);
   memcpy(status, &req->generic.status, sizeof(*status));
 
   free(req);
@@ -893,20 +893,20 @@ mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
   return ret;
 }
 
-mpoe_return_t
-mpoe_ipeek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
-	   uint32_t *result)
+omx_return_t
+omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
+	  uint32_t *result)
 {
-  mpoe_return_t ret = MPOE_SUCCESS;
+  omx_return_t ret = OMX_SUCCESS;
 
-  ret = mpoe__progress(ep);
-  if (ret != MPOE_SUCCESS)
+  ret = omx__progress(ep);
+  if (ret != OMX_SUCCESS)
     goto out;
 
-  if (mpoe__queue_empty(&ep->done_req_q)) {
+  if (omx__queue_empty(&ep->done_req_q)) {
     *result = 0;
   } else {
-    *requestp = mpoe__queue_first_request(&ep->done_req_q);
+    *requestp = omx__queue_first_request(&ep->done_req_q);
     *result = 1;
   }
 
@@ -914,20 +914,20 @@ mpoe_ipeek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
   return ret;
 }
 
-mpoe_return_t
-mpoe_peek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
-	  uint32_t *result)
+omx_return_t
+omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
+	 uint32_t *result)
 {
-  mpoe_return_t ret = MPOE_SUCCESS;
+  omx_return_t ret = OMX_SUCCESS;
 
-  while (mpoe__queue_empty(&ep->done_req_q)) {
-    ret = mpoe__progress(ep);
-    if (ret != MPOE_SUCCESS)
+  while (omx__queue_empty(&ep->done_req_q)) {
+    ret = omx__progress(ep);
+    if (ret != OMX_SUCCESS)
       goto out;
     /* FIXME: sleep */
   }
 
-  *requestp = mpoe__queue_first_request(&ep->done_req_q);
+  *requestp = omx__queue_first_request(&ep->done_req_q);
   *result = 1;
 
  out:

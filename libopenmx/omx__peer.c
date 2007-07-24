@@ -5,58 +5,58 @@
 
 #include "omx__lib.h"
 
-#define MPOE_PEERS_DEFAULT_FILENAME "mpoe.peers"
-#define MPOE_PEERS_FILENAME_ENVVAR "MPOE_PEERS_FILENAME"
+#define OMX_PEERS_DEFAULT_FILENAME "openmx.peers"
+#define OMX_PEERS_FILENAME_ENVVAR "OMX_PEERS_FILENAME"
 
-#define MPOE_PEERS_MAX_DEFAULT 1
+#define OMX_PEERS_MAX_DEFAULT 1
 
-struct mpoe_peer {
+struct omx_peer {
   int valid;
   char *hostname;
   uint64_t board_addr;
 };
 
-#define MPOE_PEERS_FILELINELEN_MAX (10 + 1 + MPOE_HOSTNAMELEN_MAX + MPOE_BOARD_ADDR_STRLEN + 1)
+#define OMX_PEERS_FILELINELEN_MAX (10 + 1 + OMX_HOSTNAMELEN_MAX + OMX_BOARD_ADDR_STRLEN + 1)
 
-static struct mpoe_peer * mpoe_peers = NULL;
-static int mpoe_peers_max;
+static struct omx_peer * omx_peers = NULL;
+static int omx_peers_max;
 
-mpoe_return_t
-mpoe__peers_read(void)
+omx_return_t
+omx__peers_read(void)
 {
-  char * mpoe_peers_filename = MPOE_PEERS_DEFAULT_FILENAME;
-  char line[MPOE_PEERS_FILELINELEN_MAX];
+  char * omx_peers_filename = OMX_PEERS_DEFAULT_FILENAME;
+  char line[OMX_PEERS_FILELINELEN_MAX];
   char *envvar;
   FILE *file;
-  mpoe_return_t ret;
+  omx_return_t ret;
   int i;
 
-  envvar = getenv(MPOE_PEERS_FILENAME_ENVVAR);
+  envvar = getenv(OMX_PEERS_FILENAME_ENVVAR);
   if (envvar != NULL) {
     printf("Using peers file '%s'\n", envvar);
-    mpoe_peers_filename = envvar;
+    omx_peers_filename = envvar;
   }
 
-  file = fopen(mpoe_peers_filename, "r");
+  file = fopen(omx_peers_filename, "r");
   if (!file) {
     fprintf(stderr, "Provide a peers file '%s' (or update '%s' environment variable)\n",
-	    mpoe_peers_filename, MPOE_PEERS_FILENAME_ENVVAR);
-    return MPOE_BAD_ERROR;
+	    omx_peers_filename, OMX_PEERS_FILENAME_ENVVAR);
+    return OMX_BAD_ERROR;
   }
 
-  if (mpoe_peers)
-    free(mpoe_peers);
-  mpoe_peers_max = MPOE_PEERS_MAX_DEFAULT;
-  mpoe_peers = malloc(sizeof(struct mpoe_peer));
-  if (!mpoe_peers) {
-    ret = MPOE_NO_RESOURCES;
+  if (omx_peers)
+    free(omx_peers);
+  omx_peers_max = OMX_PEERS_MAX_DEFAULT;
+  omx_peers = malloc(sizeof(struct omx_peer));
+  if (!omx_peers) {
+    ret = OMX_NO_RESOURCES;
     goto out_with_file;
   }
-  for(i=0; i<mpoe_peers_max; i++)
-    mpoe_peers[i].valid = 0;
+  for(i=0; i<omx_peers_max; i++)
+    omx_peers[i].valid = 0;
 
-  while (fgets(line, MPOE_PEERS_FILELINELEN_MAX, file)) {
-    char hostname[MPOE_HOSTNAMELEN_MAX];
+  while (fgets(line, OMX_PEERS_FILELINELEN_MAX, file)) {
+    char hostname[OMX_HOSTNAMELEN_MAX];
     int index;
     int addr_bytes[6];
 
@@ -72,116 +72,116 @@ mpoe__peers_read(void)
 	       hostname)
 	!= 8) {
       fprintf(stderr, "Unrecognized peer line '%s'\n", line);
-      ret = MPOE_INVALID_PARAMETER;
+      ret = OMX_INVALID_PARAMETER;
       goto out_with_file;
     }
 
-    if (index >= mpoe_peers_max) {
+    if (index >= omx_peers_max) {
       /* increasing peers array */
-      struct mpoe_peer * new_peers;
-      int new_peers_max = mpoe_peers_max;
+      struct omx_peer * new_peers;
+      int new_peers_max = omx_peers_max;
       while (index >= new_peers_max)
 	new_peers_max *= 2;
-      new_peers = realloc(mpoe_peers, new_peers_max * sizeof(struct mpoe_peer));
+      new_peers = realloc(omx_peers, new_peers_max * sizeof(struct omx_peer));
       if (!new_peers) {
-	ret = MPOE_NO_RESOURCES;
+	ret = OMX_NO_RESOURCES;
 	goto out_with_file;
       }
-      for(i=mpoe_peers_max; i<new_peers_max; i++)
-	mpoe_peers[i].valid = 0;
-      mpoe_peers = new_peers;
-      mpoe_peers_max = new_peers_max;
+      for(i=omx_peers_max; i<new_peers_max; i++)
+	omx_peers[i].valid = 0;
+      omx_peers = new_peers;
+      omx_peers_max = new_peers_max;
     }
 
     /* is this peer index already in use? */
-    if (mpoe_peers[index].valid) {
+    if (omx_peers[index].valid) {
       fprintf(stderr, "Overriding host #%d %s with %s\n",
-	      index, mpoe_peers[index].hostname, hostname);
+	      index, omx_peers[index].hostname, hostname);
     }
 
     /* add the new peer */
-    mpoe_peers[index].valid = 1;
-    mpoe_peers[index].hostname = strdup(hostname);
-    mpoe_peers[index].board_addr = ((((uint64_t) addr_bytes[0]) << 40)
-				    + (((uint64_t) addr_bytes[1]) << 32)
-				    + (((uint64_t) addr_bytes[2]) << 24)
-				    + (((uint64_t) addr_bytes[3]) << 16)
-				    + (((uint64_t) addr_bytes[4]) << 8)
-				    + (((uint64_t) addr_bytes[5]) << 0));
+    omx_peers[index].valid = 1;
+    omx_peers[index].hostname = strdup(hostname);
+    omx_peers[index].board_addr = ((((uint64_t) addr_bytes[0]) << 40)
+				   + (((uint64_t) addr_bytes[1]) << 32)
+				   + (((uint64_t) addr_bytes[2]) << 24)
+				   + (((uint64_t) addr_bytes[3]) << 16)
+				   + (((uint64_t) addr_bytes[4]) << 8)
+				   + (((uint64_t) addr_bytes[5]) << 0));
   }
 
   fclose(file);
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 
  out_with_file:
   fclose(file);
   return ret;
 }
 
-mpoe_return_t
-mpoe__peers_init(void)
+omx_return_t
+omx__peers_init(void)
 {
-  mpoe_return_t ret;
+  omx_return_t ret;
 
-  ret = mpoe__peers_read();
+  ret = omx__peers_read();
 
   return ret;
 }
 
-mpoe_return_t
-mpoe__peers_dump(const char * format)
+omx_return_t
+omx__peers_dump(const char * format)
 {
   int i;
 
-  for(i=0; i<mpoe_peers_max; i++)
-    if (mpoe_peers[i].valid) {
-      char addr_str[MPOE_BOARD_ADDR_STRLEN];
+  for(i=0; i<omx_peers_max; i++)
+    if (omx_peers[i].valid) {
+      char addr_str[OMX_BOARD_ADDR_STRLEN];
 
-      mpoe_board_addr_sprintf(addr_str, mpoe_peers[i].board_addr);
-      printf(format, i, addr_str, mpoe_peers[i].hostname);
+      omx_board_addr_sprintf(addr_str, omx_peers[i].board_addr);
+      printf(format, i, addr_str, omx_peers[i].hostname);
     }
 
-  return MPOE_SUCCESS;
+  return OMX_SUCCESS;
 }
 
-mpoe_return_t
-mpoe__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname)
+omx_return_t
+omx__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname)
 {
-  if (index >= mpoe_peers_max || !mpoe_peers[index].valid)
-    return MPOE_INVALID_PARAMETER;
+  if (index >= omx_peers_max || !omx_peers[index].valid)
+    return OMX_INVALID_PARAMETER;
 
-  *board_addr = mpoe_peers[index].board_addr;
-  *hostname = mpoe_peers[index].hostname;
-  return MPOE_SUCCESS;
+  *board_addr = omx_peers[index].board_addr;
+  *hostname = omx_peers[index].hostname;
+  return OMX_SUCCESS;
 }
 
-mpoe_return_t
-mpoe_hostname_to_nic_id(char *hostname,
-			uint64_t *board_addr)
-{
-  int i;
-
-  for(i=0; i<mpoe_peers_max; i++)
-    if (!strcmp(hostname, mpoe_peers[i].hostname)) {
-      *board_addr = mpoe_peers[i].board_addr;
-      return MPOE_SUCCESS;
-    }
-
-  return MPOE_INVALID_PARAMETER;
-}
-
-mpoe_return_t
-mpoe_nic_id_to_hostname(uint64_t board_addr,
-			char *hostname)
+omx_return_t
+omx_hostname_to_nic_id(char *hostname,
+		       uint64_t *board_addr)
 {
   int i;
 
-  for(i=0; i<mpoe_peers_max; i++)
-    if (board_addr == mpoe_peers[i].board_addr) {
-      strcpy(hostname, mpoe_peers[i].hostname);
-      return MPOE_SUCCESS;
+  for(i=0; i<omx_peers_max; i++)
+    if (!strcmp(hostname, omx_peers[i].hostname)) {
+      *board_addr = omx_peers[i].board_addr;
+      return OMX_SUCCESS;
     }
 
-  return MPOE_INVALID_PARAMETER;
+  return OMX_INVALID_PARAMETER;
+}
+
+omx_return_t
+omx_nic_id_to_hostname(uint64_t board_addr,
+		       char *hostname)
+{
+  int i;
+
+  for(i=0; i<omx_peers_max; i++)
+    if (board_addr == omx_peers[i].board_addr) {
+      strcpy(hostname, omx_peers[i].hostname);
+      return OMX_SUCCESS;
+    }
+
+  return OMX_INVALID_PARAMETER;
 }

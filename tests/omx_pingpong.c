@@ -58,8 +58,8 @@ struct param {
 
 int main(int argc, char *argv[])
 {
-  struct mpoe_endpoint * ep;
-  mpoe_return_t ret;
+  struct omx_endpoint * ep;
+  omx_return_t ret;
   char c;
 
   int bid = BID;
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
       eid = atoi(optarg);
       break;
     case 'd':
-      mpoe_board_addr_sscanf(optarg, &dest);
+      omx_board_addr_sscanf(optarg, &dest);
       sender = 1;
       break;
     case 'r':
@@ -121,32 +121,32 @@ int main(int argc, char *argv[])
       break;
     }
 
-  ret = mpoe_init();
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to initialize (%s)\n",
-            mpoe_strerror(ret));
+            omx_strerror(ret));
     goto out;
   }
 
-  ret = mpoe_open_endpoint(bid, eid, &ep);
-  if (ret != MPOE_SUCCESS) {
+  ret = omx_open_endpoint(bid, eid, &ep);
+  if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to open endpoint (%s)\n",
-	    mpoe_strerror(ret));
+	    omx_strerror(ret));
     goto out;
   }
 
   if (sender) {
     /* sender */
 
-    union mpoe_request * req;
-    struct mpoe_status status;
+    union omx_request * req;
+    struct omx_status status;
     uint32_t result;
     struct param param;
-    char dest_str[MPOE_BOARD_ADDR_STRLEN];
+    char dest_str[OMX_BOARD_ADDR_STRLEN];
     int length;
     int i;
 
-    mpoe_board_addr_sprintf(dest_str, dest);
+    omx_board_addr_sprintf(dest_str, dest);
     printf("Starting sender to %s...\n", dest_str);
 
     for(length = min;
@@ -157,18 +157,18 @@ int main(int argc, char *argv[])
       param.iter = iter;
       param.warmup = warmup;
       param.length = length;
-      ret = mpoe_isend(ep, &param, sizeof(param),
-		       0x1234567887654321ULL, dest, rid,
-		       NULL, &req);
-      if (ret != MPOE_SUCCESS) {
+      ret = omx_isend(ep, &param, sizeof(param),
+		      0x1234567887654321ULL, dest, rid,
+		      NULL, &req);
+      if (ret != OMX_SUCCESS) {
 	fprintf(stderr, "Failed to isend (%s)\n",
-		mpoe_strerror(ret));
+		omx_strerror(ret));
 	goto out_with_ep;
       }
-      ret = mpoe_wait(ep, &req, &status, &result);
-      if (ret != MPOE_SUCCESS || !result) {
+      ret = omx_wait(ep, &req, &status, &result);
+      if (ret != OMX_SUCCESS || !result) {
 	fprintf(stderr, "Failed to wait (%s)\n",
-		mpoe_strerror(ret));
+		omx_strerror(ret));
 	goto out_with_ep;
       }
 
@@ -186,34 +186,34 @@ int main(int argc, char *argv[])
 	  printf("Iteration %d/%d\n", i-warmup, iter);
 
 	/* wait for an incoming message */
-	ret = mpoe_irecv(ep, buffer, length,
-			 0, 0,
-			 NULL, &req);
-	if (ret != MPOE_SUCCESS) {
+	ret = omx_irecv(ep, buffer, length,
+			0, 0,
+			NULL, &req);
+	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to irecv (%s)\n",
-		  mpoe_strerror(ret));
+		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = mpoe_wait(ep, &req, &status, &result);
-	if (ret != MPOE_SUCCESS || !result) {
+	ret = omx_wait(ep, &req, &status, &result);
+	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
-		  mpoe_strerror(ret));
+		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
 
 	/* sending a message */
-	ret = mpoe_isend(ep, buffer, length,
-			 0x1234567887654321ULL, dest, rid,
-			 NULL, &req);
-	if (ret != MPOE_SUCCESS) {
+	ret = omx_isend(ep, buffer, length,
+			0x1234567887654321ULL, dest, rid,
+			NULL, &req);
+	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",
-		  mpoe_strerror(ret));
+		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = mpoe_wait(ep, &req, &status, &result);
-	if (ret != MPOE_SUCCESS || !result) {
+	ret = omx_wait(ep, &req, &status, &result);
+	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
-		  mpoe_strerror(ret));
+		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
       }
@@ -225,26 +225,26 @@ int main(int argc, char *argv[])
 
     /* send a param message with iter = 0 to stop the receiver */
     param.iter = 0;
-    ret = mpoe_isend(ep, &param, sizeof(param),
-		     0x1234567887654321ULL, dest, rid,
-		     NULL, &req);
-    if (ret != MPOE_SUCCESS) {
+    ret = omx_isend(ep, &param, sizeof(param),
+		    0x1234567887654321ULL, dest, rid,
+		    NULL, &req);
+    if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to isend (%s)\n",
-	      mpoe_strerror(ret));
+	      omx_strerror(ret));
       goto out_with_ep;
     }
-    ret = mpoe_wait(ep, &req, &status, &result);
-    if (ret != MPOE_SUCCESS || !result) {
+    ret = omx_wait(ep, &req, &status, &result);
+    if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait (%s)\n",
-	      mpoe_strerror(ret));
+	      omx_strerror(ret));
       goto out_with_ep;
     }
 
   } else {
     /* receiver */
 
-    union mpoe_request * req;
-    struct mpoe_status status;
+    union omx_request * req;
+    struct omx_status status;
     uint32_t result;
     struct param param;
     struct timeval tv1, tv2;
@@ -259,18 +259,18 @@ int main(int argc, char *argv[])
 	printf("Waiting for parameters...\n");
 
       /* wait for theparam  message */
-      ret = mpoe_irecv(ep, &param, sizeof(param),
-		       0, 0,
-		       NULL, &req);
-      if (ret != MPOE_SUCCESS) {
+      ret = omx_irecv(ep, &param, sizeof(param),
+		      0, 0,
+		      NULL, &req);
+      if (ret != OMX_SUCCESS) {
 	fprintf(stderr, "Failed to irecv (%s)\n",
-		mpoe_strerror(ret));
+		omx_strerror(ret));
 	goto out_with_ep;
       }
-      ret = mpoe_wait(ep, &req, &status, &result);
-      if (ret != MPOE_SUCCESS || !result) {
+      ret = omx_wait(ep, &req, &status, &result);
+      if (ret != OMX_SUCCESS || !result) {
 	fprintf(stderr, "Failed to wait (%s)\n",
-		mpoe_strerror(ret));
+		omx_strerror(ret));
 	goto out_with_ep;
       }
 
@@ -300,34 +300,34 @@ int main(int argc, char *argv[])
 	  gettimeofday(&tv1, NULL);
 
 	/* sending a message */
-	ret = mpoe_isend(ep, buffer, length,
-			 0x1234567887654321ULL, status.board_addr, status.ep,
-			 NULL, &req);
-	if (ret != MPOE_SUCCESS) {
+	ret = omx_isend(ep, buffer, length,
+			0x1234567887654321ULL, status.board_addr, status.ep,
+			NULL, &req);
+	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",
-		  mpoe_strerror(ret));
+		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = mpoe_wait(ep, &req, &status, &result);
-	if (ret != MPOE_SUCCESS || !result) {
+	ret = omx_wait(ep, &req, &status, &result);
+	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
-		  mpoe_strerror(ret));
+		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
 
 	/* wait for an incoming message */
-	ret = mpoe_irecv(ep, buffer, length,
-			 0, 0,
-		       NULL, &req);
-	if (ret != MPOE_SUCCESS) {
+	ret = omx_irecv(ep, buffer, length,
+			0, 0,
+			NULL, &req);
+	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to irecv (%s)\n",
-		  mpoe_strerror(ret));
+		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = mpoe_wait(ep, &req, &status, &result);
-	if (ret != MPOE_SUCCESS || !result) {
+	ret = omx_wait(ep, &req, &status, &result);
+	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
-		  mpoe_strerror(ret));
+		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
 
@@ -351,7 +351,7 @@ int main(int argc, char *argv[])
   return 0;
 
  out_with_ep:
-  mpoe_close_endpoint(ep);
+  omx_close_endpoint(ep);
  out:
   return -1;
 }

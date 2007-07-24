@@ -13,35 +13,35 @@
  * Types
  */
 
-struct mpoe_sendq_map {
+struct omx_sendq_map {
   int first_free;
   int nr_free;
-  struct mpoe_sendq_entry {
+  struct omx_sendq_entry {
     int next_free;
     void * user;
   } * array;
 };
 
-typedef uint16_t mpoe_seqnum_t; /* FIXME: assert same size on the wire */
+typedef uint16_t omx_seqnum_t; /* FIXME: assert same size on the wire */
 
-struct mpoe_partner {
+struct omx_partner {
   /* list of request matched but not entirely received */
   struct list_head partialq;
 
   /* seqnum of the next send */
-  mpoe_seqnum_t next_send_seq;
+  omx_seqnum_t next_send_seq;
 
   /* seqnum of the next entire message to match
    * used to know to accumulate/match/defer a fragment
    */
-  mpoe_seqnum_t next_match_recv_seq;
+  omx_seqnum_t next_match_recv_seq;
 
   /* seqnum of the next fragment to recv
    * next_frag_recv_seq < next_match_recv_seq in case of partially received medium
    * used to ack back to the partner
    * (all seqnum < next_frag_recv_seq have been entirely received)
    */
-  mpoe_seqnum_t next_frag_recv_seq;
+  omx_seqnum_t next_frag_recv_seq;
 
 
   /*
@@ -59,7 +59,7 @@ struct mpoe_partner {
 
 };
 
-struct mpoe_endpoint {
+struct omx_endpoint {
   int fd;
   int endpoint_index, board_index;
   char board_name[OMX_HOSTNAMELEN_MAX];
@@ -71,45 +71,45 @@ struct mpoe_endpoint {
   struct list_head recv_req_q;
   struct list_head multifraq_medium_recv_req_q;
   struct list_head done_req_q;
-  struct mpoe_sendq_map sendq_map;
-  struct mpoe_partner partner;
+  struct omx_sendq_map sendq_map;
+  struct omx_partner partner;
 };
 
-enum mpoe__request_type {
-  MPOE_REQUEST_TYPE_NONE=0,
-  MPOE_REQUEST_TYPE_SEND_TINY,
-  MPOE_REQUEST_TYPE_SEND_SMALL,
-  MPOE_REQUEST_TYPE_SEND_MEDIUM,
-  MPOE_REQUEST_TYPE_RECV,
+enum omx__request_type {
+  OMX_REQUEST_TYPE_NONE=0,
+  OMX_REQUEST_TYPE_SEND_TINY,
+  OMX_REQUEST_TYPE_SEND_SMALL,
+  OMX_REQUEST_TYPE_SEND_MEDIUM,
+  OMX_REQUEST_TYPE_RECV,
 };
 
-enum mpoe__request_state {
-  MPOE_REQUEST_STATE_PENDING=0,
-  MPOE_REQUEST_STATE_DONE,
+enum omx__request_state {
+  OMX_REQUEST_STATE_PENDING=0,
+  OMX_REQUEST_STATE_DONE,
 };
 
-enum mpoe_return {
-  MPOE_SUCCESS=0,
-  MPOE_BAD_ERROR,
-  MPOE_ALREADY_INITIALIZED,
-  MPOE_NOT_INITIALIZED,
-  MPOE_NO_DEVICE,
-  MPOE_ACCESS_DENIED,
-  MPOE_NO_RESOURCES,
-  MPOE_NO_SYSTEM_RESOURCES,
-  MPOE_INVALID_PARAMETER,
-  MPOE_NOT_IMPLEMENTED,
+enum omx_return {
+  OMX_SUCCESS=0,
+  OMX_BAD_ERROR,
+  OMX_ALREADY_INITIALIZED,
+  OMX_NOT_INITIALIZED,
+  OMX_NO_DEVICE,
+  OMX_ACCESS_DENIED,
+  OMX_NO_RESOURCES,
+  OMX_NO_SYSTEM_RESOURCES,
+  OMX_INVALID_PARAMETER,
+  OMX_NOT_IMPLEMENTED,
 };
-typedef enum mpoe_return mpoe_return_t;
+typedef enum omx_return omx_return_t;
 
-enum mpoe_status_code {
-  MPOE_STATUS_SUCCESS=0,
-  MPOE_STATUS_FAILED,
+enum omx_status_code {
+  OMX_STATUS_SUCCESS=0,
+  OMX_STATUS_FAILED,
 };
-typedef enum mpoe_status_code mpoe_status_code_t;
+typedef enum omx_status_code omx_status_code_t;
 
-struct mpoe_status {
-  enum mpoe_status_code code;
+struct omx_status {
+  enum omx_status_code code;
   uint64_t board_addr;
   uint32_t ep;
   unsigned long msg_length;
@@ -118,18 +118,18 @@ struct mpoe_status {
   void *context;
 };
 
-struct mpoe__generic_request {
+struct omx__generic_request {
   struct list_head queue_elt;
-  enum mpoe__request_type type;
-  enum mpoe__request_state state;
-  struct mpoe_status status;
+  enum omx__request_type type;
+  enum omx__request_state state;
+  struct omx_status status;
 };
 
-union mpoe_request {
-  struct mpoe__generic_request generic;
+union omx_request {
+  struct omx__generic_request generic;
 
   struct {
-    struct mpoe__generic_request generic;
+    struct omx__generic_request generic;
     uint16_t seqnum;
     union {
       struct {
@@ -139,7 +139,7 @@ union mpoe_request {
   } send;
 
   struct {
-    struct mpoe__generic_request generic;
+    struct omx__generic_request generic;
     void * buffer;
     unsigned long length;
     union {
@@ -155,99 +155,99 @@ union mpoe_request {
  * Functions
  */
 
-#define MPOE_API 0x0
+#define OMX_API 0x0
 
-mpoe_return_t
-mpoe__init_api(int api);
+omx_return_t
+omx__init_api(int api);
 
-static inline mpoe_return_t mpoe_init(void) { return mpoe__init_api(MPOE_API); }
-
-const char *
-mpoe_strerror(mpoe_return_t ret);
+static inline omx_return_t omx_init(void) { return omx__init_api(OMX_API); }
 
 const char *
-mpoe_strstatus(mpoe_status_code_t code);
+omx_strerror(omx_return_t ret);
 
-mpoe_return_t
-mpoe_board_number_to_nic_id(uint32_t board_number,
-			    uint64_t *nic_id);
+const char *
+omx_strstatus(omx_status_code_t code);
 
-mpoe_return_t
-mpoe_nic_id_to_board_number(uint64_t nic_id,
-			    uint32_t *board_number);
+omx_return_t
+omx_board_number_to_nic_id(uint32_t board_number,
+			   uint64_t *nic_id);
 
-mpoe_return_t
-mpoe_open_endpoint(uint32_t board_index, uint32_t index,
-		   struct mpoe_endpoint **epp);
+omx_return_t
+omx_nic_id_to_board_number(uint64_t nic_id,
+			   uint32_t *board_number);
 
-mpoe_return_t
-mpoe_close_endpoint(struct mpoe_endpoint *ep);
+omx_return_t
+omx_open_endpoint(uint32_t board_index, uint32_t index,
+		  struct omx_endpoint **epp);
 
-mpoe_return_t
-mpoe_isend(struct mpoe_endpoint *ep,
-	   void *buffer, size_t length,
-	   uint64_t match_info,
-	   uint64_t dest_addr, uint32_t dest_endpoint,
-	   void * context, union mpoe_request ** request);
+omx_return_t
+omx_close_endpoint(struct omx_endpoint *ep);
 
-mpoe_return_t
-mpoe_irecv(struct mpoe_endpoint *ep,
-	   void *buffer, size_t length,
-	   uint64_t match_info, uint64_t match_mask,
-	   void *context, union mpoe_request **requestp);
+omx_return_t
+omx_isend(struct omx_endpoint *ep,
+	  void *buffer, size_t length,
+	  uint64_t match_info,
+	  uint64_t dest_addr, uint32_t dest_endpoint,
+	  void * context, union omx_request ** request);
 
-mpoe_return_t
-mpoe_test(struct mpoe_endpoint *ep, union mpoe_request **requestp,
-	  struct mpoe_status *status, uint32_t * result);
+omx_return_t
+omx_irecv(struct omx_endpoint *ep,
+	  void *buffer, size_t length,
+	  uint64_t match_info, uint64_t match_mask,
+	  void *context, union omx_request **requestp);
 
-mpoe_return_t
-mpoe_wait(struct mpoe_endpoint *ep, union mpoe_request **requestp,
-	  struct mpoe_status *status, uint32_t * result);
+omx_return_t
+omx_test(struct omx_endpoint *ep, union omx_request **requestp,
+	 struct omx_status *status, uint32_t * result);
 
-mpoe_return_t
-mpoe_ipeek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
-	   uint32_t *result);
+omx_return_t
+omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
+	 struct omx_status *status, uint32_t * result);
 
-mpoe_return_t
-mpoe_peek(struct mpoe_endpoint *ep, union mpoe_request **requestp,
+omx_return_t
+omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
 	  uint32_t *result);
 
-enum mpoe_info_key {
+omx_return_t
+omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
+	 uint32_t *result);
+
+enum omx_info_key {
   /* return the maximum number of boards */
-  MPOE_INFO_BOARD_MAX,
+  OMX_INFO_BOARD_MAX,
   /* return the maximum number of endpoints per board */
-  MPOE_INFO_ENDPOINT_MAX,
+  OMX_INFO_ENDPOINT_MAX,
   /* return the current number of boards */
-  MPOE_INFO_BOARD_COUNT,
+  OMX_INFO_BOARD_COUNT,
   /* return the board name of an endpoint or index (given as uint8_t) */
-  MPOE_INFO_BOARD_NAME,
+  OMX_INFO_BOARD_NAME,
   /* return the board addr of an endpoint or index (given as uint8_t) */
-  MPOE_INFO_BOARD_ADDR,
+  OMX_INFO_BOARD_ADDR,
   /* return the board number of an endpoint or name */
-  MPOE_INFO_BOARD_INDEX_BY_NAME,
+  OMX_INFO_BOARD_INDEX_BY_NAME,
   /* return the board number of an endpoint or addr */
-  MPOE_INFO_BOARD_INDEX_BY_ADDR,
+  OMX_INFO_BOARD_INDEX_BY_ADDR,
 };
 
-mpoe_return_t
-mpoe_get_info(struct mpoe_endpoint * ep, enum mpoe_info_key key,
-	      const void * in_val, uint32_t in_len,
-	      void * out_val, uint32_t out_len);
+omx_return_t
+omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
+	     const void * in_val, uint32_t in_len,
+	     void * out_val, uint32_t out_len);
 
-#define MPOE_HOSTNAMELEN_MAX 80
+#define OMX_HOSTNAMELEN_MAX 80
 
-#define MPOE_BOARD_ADDR_STRLEN 18
+#define OMX_BOARD_ADDR_STRLEN 18
 
-mpoe_return_t
-mpoe_hostname_to_nic_id(char *hostname,
-			uint64_t *board_addr);
+omx_return_t
+omx_hostname_to_nic_id(char *hostname,
+		       uint64_t *board_addr);
 
-mpoe_return_t
-mpoe_nic_id_to_hostname(uint64_t board_addr,
-			char *hostname);
+omx_return_t
+omx_nic_id_to_hostname(uint64_t board_addr,
+		       char *hostname);
 
 static inline int
-mpoe_board_addr_sprintf(char * buffer, uint64_t addr)
+omx_board_addr_sprintf(char * buffer, uint64_t addr)
 {
 	return sprintf(buffer, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
 		       (uint8_t)(addr >> 40),
@@ -259,7 +259,7 @@ mpoe_board_addr_sprintf(char * buffer, uint64_t addr)
 }
 
 static inline int
-mpoe_board_addr_sscanf(char * buffer, uint64_t * addr)
+omx_board_addr_sscanf(char * buffer, uint64_t * addr)
 {
 	uint8_t bytes[6];
 	int err;

@@ -13,17 +13,17 @@
 #include <valgrind/memcheck.h>
 
 /* Mark a memory buffer as non-accessible, accessible or accessible+initialized */
-#define MPOE_VALGRIND_MEMORY_MAKE_NOACCESS(p, s) VALGRIND_MAKE_NOACCESS(p, s)
-#define MPOE_VALGRIND_MEMORY_MAKE_WRITABLE(p, s) VALGRIND_MAKE_WRITABLE(p, s)
-#define MPOE_VALGRIND_MEMORY_MAKE_READABLE(p, s) VALGRIND_MAKE_READABLE(p, s)
+#define OMX_VALGRIND_MEMORY_MAKE_NOACCESS(p, s) VALGRIND_MAKE_NOACCESS(p, s)
+#define OMX_VALGRIND_MEMORY_MAKE_WRITABLE(p, s) VALGRIND_MAKE_WRITABLE(p, s)
+#define OMX_VALGRIND_MEMORY_MAKE_READABLE(p, s) VALGRIND_MAKE_READABLE(p, s)
 
 /* FIXME: ioctl pre/post hooks */
 
 #else /* !OMX_VALGRIND_DEBUG */
 
-#define MPOE_VALGRIND_MEMORY_MAKE_NOACCESS(p, s) /* nothing */
-#define MPOE_VALGRIND_MEMORY_MAKE_WRITABLE(p, s) /* nothing */
-#define MPOE_VALGRIND_MEMORY_MAKE_READABLE(p, s) /* nothing */
+#define OMX_VALGRIND_MEMORY_MAKE_NOACCESS(p, s) /* nothing */
+#define OMX_VALGRIND_MEMORY_MAKE_WRITABLE(p, s) /* nothing */
+#define OMX_VALGRIND_MEMORY_MAKE_READABLE(p, s) /* nothing */
 
 #endif /* !OMX_VALGRIND_DEBUG */
 
