@@ -1,3 +1,7 @@
+bindir = @bindir@
+exec_prefix = @exec_prefix@
+prefix = @prefix@
+
 SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 TESTS	=	$(subst .o,,$(OBJS))
@@ -12,7 +16,7 @@ LD	=	gcc
 
 LIB	=	@top_builddir@/@LIBOPENMX_A@
 
-.PHONY: all clean distclean
+.PHONY: all installonly install clean distclean
 
 all: $(TESTS)
 
@@ -32,6 +36,19 @@ $(TESTS): %: %.o $(LIB)
 # build and create dependency file
 $(OBJS): %.o: @srcdir@/%.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+
+##########
+# install
+
+installonly:
+	@echo "Installing tests to $(DESTDIR)$(bindir)/"
+	@if test ! -d $(DESTDIR)$(bindir); then \
+		echo "'$(DESTDIR)$(bindir)' didn't exist, creating it" ; \
+		mkdir -p $(DESTDIR)$(bindir) ; \
+	fi
+	install -m 0755 $(TESTS) $(DESTDIR)$(bindir)/
+
+install: all installonly
 
 ########
 # clean

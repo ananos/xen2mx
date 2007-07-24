@@ -1,3 +1,7 @@
+exec_prefix	=	@exec_prefix@
+libdir	=	@libdir@
+prefix	=	@prefix@
+
 CC	=	gcc
 
 CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
@@ -10,7 +14,7 @@ OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 LIBOBJS	=	$(filter-out omx__assertions.o,$(OBJS))
 LIB	=	@top_builddir@/@LIBOPENMX_A@
 
-.PHONY: all assertions depend clean distclean
+.PHONY: all installonly install assertions depend clean distclean
 
 # build assertions first, then the actual lib
 all: assertions $(LIB)
@@ -33,6 +37,19 @@ assertions: omx__assertions.o
 # build and create dependency file
 $(OBJS): %.o: @srcdir@/%.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+
+##########
+# install
+
+installonly:
+	@echo "Installing lib to $(DESTDIR)$(libdir)/"
+	@if test ! -d $(DESTDIR)$(libdir); then \
+		echo "Directory didn't exist, creating it" ; \
+		mkdir -p $(DESTDIR)$(libdir) ; \
+	fi
+	install -m 0644 $(LIB) $(DESTDIR)$(libdir)/
+
+install: all installonly
 
 ########
 # clean

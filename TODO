@@ -35,7 +35,6 @@
 
 * omx_endpoint_info
 
-* add install target in Makefiles
 * mapper (openmxd)
 * /dev/openmxd ?
 

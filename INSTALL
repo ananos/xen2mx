@@ -1,5 +1,6 @@
 $ ./configure
 $ make
+$ make install
 
 It build against the currently running kernel, using headers and build tree
 in /lib/modules/`uname -r`/{source,build}.
@@ -8,3 +9,11 @@ To build for another kernel, use
 $ ./configure --with-linux=/path/to/kernel/headers/
 To build using another kernel build tree, use
 $ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
+
+You might experience some problems when running 'make install' as root
+over NFS because some Makefiles might modify some files before actually
+installing anything. To work this, assuming everything has been built
+as non-root before, you may use
+$ make installonly
+so that it really only installs things without checking whether the build
+is up-to-date.

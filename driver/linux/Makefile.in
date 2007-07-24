@@ -1,7 +1,7 @@
 LINUX_DIR	=	@LINUX_BUILD@
 OPENMX_DIR	=	@abs_builddir@
 
-.PHONY: all clean distclean wc
+.PHONY: all installonly install clean distclean wc
 
 # Cannot avoid symlinking source files here and using O=builddir M=srcdir
 # since configure would have to generate Kbuild and omx_checks.h in srcdir
@@ -12,6 +12,12 @@ all:
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || ln -sf $$file ; done
 	@echo Building kernel module
 	+make -C $(LINUX_DIR) M=$(OPENMX_DIR)
+
+installonly:
+	@echo "Installing kernel module for kernel $(LINUX_DIR)"
+	+make -C $(LINUX_DIR) M=$(OPENMX_DIR) modules_install
+
+install: all installonly
 
 clean:
 	@echo Cleaning kernel module build
