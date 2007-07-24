@@ -156,5 +156,5 @@ fi
 
 AC_SUBST(LIBMPOE_A, libmpoe/libmpoe.a)
 
-AC_CONFIG_HEADER(common/mpoe_config.h)
+AC_CONFIG_HEADER(common/omx_config.h)
 AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild libmpoe/Makefile tools/Makefile tests/Makefile)

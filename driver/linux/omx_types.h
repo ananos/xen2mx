@@ -6,8 +6,8 @@
 #include <linux/list.h>
 #include <linux/idr.h>
 
-#include "mpoe_wire.h"
-#include "mpoe_io.h"
+#include "omx_wire.h"
+#include "omx_io.h"
 
 enum mpoe_iface_status {
 	/* iface is ready to be used */

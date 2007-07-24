@@ -1,6 +1,6 @@
 CC	=	gcc
 
-CPPFLAGS	+=	-imacros @top_builddir@/common/mpoe_config.h
+CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
 CPPFLAGS	+=	-I@top_srcdir@/common
 CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2

@@ -4,7 +4,7 @@
 #include <linux/spinlock.h>
 
 #include "omx_hal.h"
-#include "mpoe_io.h"
+#include "omx_io.h"
 #include "omx_common.h"
 
 /* FIXME: likely/unlikely */

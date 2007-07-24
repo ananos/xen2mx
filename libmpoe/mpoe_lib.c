@@ -8,10 +8,10 @@
 #include <errno.h>
 #include <assert.h>
 
-#include "mpoe_io.h"
+#include "omx_io.h"
 #include "mpoe_lib.h"
 #include "mpoe_internals.h"
-#include "mpoe_list.h"
+#include "omx_list.h"
 
 /************
  * Debugging

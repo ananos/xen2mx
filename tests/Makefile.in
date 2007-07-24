@@ -4,7 +4,7 @@ TESTS	=	$(subst .o,,$(OBJS))
 
 CC	=	gcc
 
-CPPFLAGS	+=	-imacros @top_builddir@/common/mpoe_config.h
+CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
 CPPFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libmpoe
 CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2
