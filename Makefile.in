@@ -14,7 +14,7 @@ driver driver-clean driver-distclean:
 	$(MAKE) -C driver/linux $(shell echo $@ | cut -s -d- -f2)
 
 lib lib-clean lib-distclean:
-	$(MAKE) -C libmpoe $(shell echo $@ | cut -s -d- -f2)
+	$(MAKE) -C libopenmx $(shell echo $@ | cut -s -d- -f2)
 
 # the lib is required before linking the tools or tests
 tools tests: lib
@@ -29,7 +29,7 @@ wc:
 	wc -cl \
 		driver/linux/*.[ch] \
 		common/*.h \
-		libmpoe/*.[ch] \
+		libopenmx/*.[ch] \
 		tools/*.c \
 		tests/*.c
 

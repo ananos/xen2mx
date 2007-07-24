@@ -5,7 +5,7 @@ TESTS	=	$(subst .o,,$(OBJS))
 CC	=	gcc
 
 CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
-CPPFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libmpoe
+CPPFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libopenmx
 CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2
 
