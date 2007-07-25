@@ -12,20 +12,6 @@
 #include "omx__lib.h"
 #include "omx_list.h"
 
-/************
- * Debugging
- */
-
-#ifdef OMX_DEBUG
-#define omx__debug_assert(x) assert(x)
-#define omx__debug_instr(x) do { x; } while (0)
-#define omx__debug_printf(args...) fprintf(stderr, args)
-#else
-#define omx__debug_assert(x) /* nothing */
-#define omx__debug_instr(x) /* nothing */
-#define omx__debug_printf(args...) /* nothing */
-#endif
-
 /***********************
  * Management of errors
  */
