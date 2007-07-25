@@ -1,5 +1,6 @@
 exec_prefix	=	@exec_prefix@
 prefix	=	@prefix@
+bindir	=	@bindir@
 includedir	=	@includedir@
 srcdir	=	@srcdir@
 
@@ -11,21 +12,19 @@ srcdir	=	@srcdir@
 
 all: driver lib tools tests
 
+installonly: other-installonly driver-installonly lib-installonly tools-installonly tests-installonly
+
+install: other-install driver-install lib-install tools-install tests-install
+
 other-installonly:
-	@echo "Installing to $(DESTDIR)$(prefix)"
-	@if test ! -d $(DESTDIR)$(prefix); then \
-		echo "'$(DESTDIR)$(prefix) didn't exist, creating it" ; \
-		mkdir -p $(DESTDIR)$(prefix) ; \
-	fi
+	@echo "Installing headers to $(DESTDIR)$(includedir)"
 	@if test ! -d $(DESTDIR)$(includedir); then \
 		echo "$(DESTDIR)$(includedir) didn't exist, creating it" ; \
 		mkdir -p $(DESTDIR)$(includedir) ; \
 	fi
 	install -m 0644 $(srcdir)/common/openmx.h $(DESTDIR)$(includedir)
 
-installonly: driver-installonly lib-installonly tools-installonly tests-installonly other-installonly
-
-install: driver-install lib-install tools-install tests-install other-installonly
+other-install: other-installonly
 
 clean: driver-clean lib-clean tools-clean tests-clean
 
