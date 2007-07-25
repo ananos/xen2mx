@@ -95,7 +95,6 @@ struct omx_endpoint {
   int fd;
   int endpoint_index, board_index;
   char board_name[OMX_HOSTNAMELEN_MAX];
-  uint64_t board_addr;
   void * recvq, * sendq, * eventq;
   void * next_event;
   struct list_head sent_req_q;
