@@ -230,4 +230,55 @@ extern omx_return_t omx__peers_dump(const char * format);
 extern omx_return_t omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index);
 extern omx_return_t omx__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname);
 
+static inline int
+omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
+			    int nr, void * user, int * founds)
+{
+  struct omx__sendq_entry * array = ep->sendq_map.array;
+  int index, i;
+
+  omx__debug_assert((ep->sendq_map.first_free == -1) == (ep->sendq_map.nr_free == 0));
+
+  if (ep->sendq_map.nr_free < nr)
+    return -1;
+
+  index = ep->sendq_map.first_free;
+  for(i=0; i<nr; i++) {
+    int next_free;
+
+    omx__debug_assert(index >= 0);
+
+    next_free = array[index].next_free;
+
+    omx__debug_assert(array[index].user == NULL);
+    omx__debug_instr(array[index].next_free = -1);
+
+    array[index].user = user;
+    founds[i] = index;
+    index = next_free;
+  }
+  ep->sendq_map.first_free = index;
+  ep->sendq_map.nr_free -= nr;
+
+  return 0;
+}
+
+static inline void *
+omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
+			    int index)
+{
+  struct omx__sendq_entry * array = ep->sendq_map.array;
+  void * user = array[index].user;
+
+  omx__debug_assert(user != NULL);
+  omx__debug_assert(array[index].next_free == -1);
+
+  array[index].user = NULL;
+  array[index].next_free = ep->sendq_map.first_free;
+  ep->sendq_map.first_free = index;
+  ep->sendq_map.nr_free++;
+
+  return user;
+}
+
 #endif /* __omx_lib_h__ */
