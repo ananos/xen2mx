@@ -29,23 +29,12 @@ omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
  */
 
 omx_return_t
-omx__partner_create(struct omx_endpoint *ep,
+omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
 		    uint64_t board_addr, uint8_t endpoint_index,
 		    struct omx__partner ** partnerp)
 {
   struct omx__partner * partner;
-  uint16_t peer_index;
   uint32_t partner_index;
-  omx_return_t ret;
-
-  ret = omx__peer_addr_to_index(board_addr, &peer_index);
-  if (ret != OMX_SUCCESS) {
-    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-    omx__board_addr_sprintf(board_addr_str, board_addr);
-    fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
-	    board_addr_str, omx_strerror(ret));
-    return ret;
-  }
 
   partner = malloc(sizeof(*partner));
   if (!partner) {

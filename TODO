@@ -1,3 +1,5 @@
+* drop board_addr from the endpoint, ep->myself->board_addr is enough
+
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
 
