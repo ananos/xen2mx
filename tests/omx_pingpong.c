@@ -252,6 +252,8 @@ int main(int argc, char *argv[])
     struct param param;
     struct timeval tv1, tv2;
     unsigned long long us;
+    uint64_t board_addr;
+    uint32_t endpoint_index;
     int length;
     int i;
 
@@ -282,8 +284,14 @@ int main(int argc, char *argv[])
       warmup = param.warmup;
       length = param.length;
 
-      ret = omx_nic_id_to_hostname(status.board_addr,
-				   dest_name);
+      omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
+      if (ret != OMX_SUCCESS) {
+	fprintf(stderr, "Failed to decompose sender's address (%s)\n",
+		omx_strerror(ret));
+	goto out_with_ep;
+      }
+
+      ret = omx_nic_id_to_hostname(board_addr, dest_name);
       if (ret != OMX_SUCCESS)
 	strcpy(dest_name, "<unknown peer>");
 
@@ -310,7 +318,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = omx_isend(ep, buffer, length,
-			0x1234567887654321ULL, status.board_addr, status.ep,
+			0x1234567887654321ULL, board_addr, endpoint_index,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",

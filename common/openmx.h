@@ -27,23 +27,22 @@ enum omx_status_code {
 };
 typedef enum omx_status_code omx_status_code_t;
 
-struct omx_status {
-  enum omx_status_code code;
-  uint64_t board_addr;
-  uint32_t ep;
-  unsigned long msg_length;
-  unsigned long xfer_length;
-  uint64_t match_info;
-  void *context;
-};
-typedef struct omx_status omx_status_t;
-
 #define OMX_SIZEOF_ADDR 16
 
 struct omx_endpoint_addr {
   char data[OMX_SIZEOF_ADDR];
 };
 typedef struct omx_endpoint_addr omx_endpoint_addr_t;
+
+struct omx_status {
+  enum omx_status_code code;
+  omx_endpoint_addr_t addr;
+  unsigned long msg_length;
+  unsigned long xfer_length;
+  uint64_t match_info;
+  void *context;
+};
+typedef struct omx_status omx_status_t;
 
 #define OMX_API 0x0
 

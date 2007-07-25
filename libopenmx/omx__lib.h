@@ -185,6 +185,11 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
 		    uint64_t board_addr, uint8_t endpoint_index,
 		    struct omx__partner ** partnerp);
 
+extern omx_return_t
+omx__partner_lookup(struct omx_endpoint *ep,
+		    uint64_t board_addr, uint8_t endpoint_index,
+		    struct omx__partner ** partnerp);
+
 static inline int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)
 {

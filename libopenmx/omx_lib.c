@@ -128,8 +128,26 @@ omx__process_recv_tiny(struct omx_endpoint *ep,
 		       union omx_evt *evt, void *data)
 {
   struct omx_evt_recv_tiny *event = &evt->recv_tiny;
+  struct omx__partner * partner;
   union omx_request *req;
   unsigned long length;
+  uint16_t peer_index;
+  omx_return_t ret;
+
+  /* FIXME: use the src_peer_index with omx_connect */
+  ret = omx__peer_addr_to_index(event->src_addr, &peer_index);
+  if (ret != OMX_SUCCESS) {
+    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+    omx__board_addr_sprintf(board_addr_str, event->src_addr);
+    fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
+	    board_addr_str, omx_strerror(ret));
+    return ret;
+  }
+
+  ret = omx__partner_lookup(ep, peer_index, event->src_endpoint,
+			    &partner);
+  if (ret != OMX_SUCCESS)
+    return ret;
 
   if (omx__queue_empty(&ep->recv_req_q)) {
     void *unexp_buffer;
@@ -148,8 +166,7 @@ omx__process_recv_tiny(struct omx_endpoint *ep,
       return OMX_NO_RESOURCES;
     }
 
-    req->generic.status.board_addr = event->src_addr;
-    req->generic.status.ep = event->src_endpoint;
+    omx__partner_to_addr(partner, &req->generic.status.addr);
     req->generic.status.match_info = event->match_info;
     req->generic.status.msg_length = length;
     req->recv.buffer = unexp_buffer;
@@ -163,8 +180,7 @@ omx__process_recv_tiny(struct omx_endpoint *ep,
     req = omx__queue_first_request(&ep->recv_req_q);
     omx__dequeue_request(&ep->recv_req_q, req);
 
-    req->generic.status.board_addr = event->src_addr;
-    req->generic.status.ep = event->src_endpoint;
+    omx__partner_to_addr(partner, &req->generic.status.addr);
     req->generic.status.match_info = event->match_info;
 
     length = event->length > req->recv.length
@@ -185,8 +201,26 @@ omx__process_recv_small(struct omx_endpoint *ep,
 			union omx_evt *evt, void *data)
 {
   struct omx_evt_recv_small * event = &evt->recv_small;
+  struct omx__partner * partner;
   union omx_request *req;
   unsigned long length;
+  uint16_t peer_index;
+  omx_return_t ret;
+
+  /* FIXME: use the src_peer_index with omx_connect */
+  ret = omx__peer_addr_to_index(event->src_addr, &peer_index);
+  if (ret != OMX_SUCCESS) {
+    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+    omx__board_addr_sprintf(board_addr_str, event->src_addr);
+    fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
+	    board_addr_str, omx_strerror(ret));
+    return ret;
+  }
+
+  ret = omx__partner_lookup(ep, peer_index, event->src_endpoint,
+			    &partner);
+  if (ret != OMX_SUCCESS)
+    return ret;
 
   if (omx__queue_empty(&ep->recv_req_q)) {
     void *unexp_buffer;
@@ -205,8 +239,7 @@ omx__process_recv_small(struct omx_endpoint *ep,
       return OMX_NO_RESOURCES;
     }
 
-    req->generic.status.board_addr = event->src_addr;
-    req->generic.status.ep = event->src_endpoint;
+    omx__partner_to_addr(partner, &req->generic.status.addr);
     req->generic.status.match_info = event->match_info;
     req->generic.status.msg_length = length;
     req->recv.buffer = unexp_buffer;
@@ -220,8 +253,7 @@ omx__process_recv_small(struct omx_endpoint *ep,
     req = omx__queue_first_request(&ep->recv_req_q);
     omx__dequeue_request(&ep->recv_req_q, req);
 
-    req->generic.status.board_addr = event->src_addr;
-    req->generic.status.ep = event->src_endpoint;
+    omx__partner_to_addr(partner, &req->generic.status.addr);
     req->generic.status.match_info = event->match_info;
 
     length = event->length > req->recv.length
@@ -247,10 +279,28 @@ omx__process_recv_medium(struct omx_endpoint *ep,
   unsigned long chunk = event->frag_length;
   unsigned long seqnum = event->frag_seqnum;
   unsigned long offset = seqnum << (OMX_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
+  struct omx__partner * partner;
+  uint16_t peer_index;
+  omx_return_t ret;
 
   printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
 	 (unsigned) seqnum, (unsigned) event->frag_pipeline, (unsigned) chunk,
 	 (unsigned) offset, (unsigned) msg_length);
+
+  /* FIXME: use the src_peer_index with omx_connect */
+  ret = omx__peer_addr_to_index(event->src_addr, &peer_index);
+  if (ret != OMX_SUCCESS) {
+    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+    omx__board_addr_sprintf(board_addr_str, event->src_addr);
+    fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
+	    board_addr_str, omx_strerror(ret));
+    return ret;
+  }
+
+  ret = omx__partner_lookup(ep, peer_index, event->src_endpoint,
+			    &partner);
+  if (ret != OMX_SUCCESS)
+    return ret;
 
   if (!omx__queue_empty(&ep->multifraq_medium_recv_req_q)) {
     /* message already partially received */
@@ -283,8 +333,7 @@ omx__process_recv_medium(struct omx_endpoint *ep,
     omx__dequeue_request(&ep->recv_req_q, req);
 
     /* set basic fields */
-    req->generic.status.board_addr = event->src_addr;
-    req->generic.status.ep = event->src_endpoint;
+    omx__partner_to_addr(partner, &req->generic.status.addr);
     req->generic.status.match_info = event->match_info;
 
     /* compute message length */
