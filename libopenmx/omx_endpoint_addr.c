@@ -8,7 +8,7 @@ omx_return_t
 omx_get_endpoint_addr(omx_endpoint_t endpoint,
 		      omx_endpoint_addr_t *endpoint_addr)
 {
-  omx__partner_to_addr(&endpoint->myself, endpoint_addr);
+  omx__partner_to_addr(endpoint->myself, endpoint_addr);
   return OMX_SUCCESS;
 }
 
