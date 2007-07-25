@@ -269,7 +269,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   ret = omx__get_board_id(ep, NULL, ep->board_name, &ep->board_addr);
   if (ret != OMX_SUCCESS) {
     ret = OMX_BAD_ERROR;
-    goto out_with_sendq_map;
+    goto out_with_userq_mmap;
   }
   omx__board_addr_sprintf(board_addr_str, ep->board_addr);
   printf("Successfully attached endpoint #%ld on board #%ld (%s, %s)\n",
@@ -289,6 +289,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
 
   return OMX_SUCCESS;
 
+ out_with_userq_mmap:
+  /* could munmap here, but close will do it */
  out_with_sendq_map:
   omx__endpoint_sendq_map_exit(ep);
  out_with_attached:
