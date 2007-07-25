@@ -11,7 +11,7 @@
  * Send queue management
  */
 
-static inline int
+static inline omx_return_t
 omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
 {
   struct omx__sendq_entry * array;
@@ -19,7 +19,7 @@ omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
 
   array = malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct omx__sendq_entry));
   if (!array)
-    return -ENOMEM;
+    return omx__errno_to_return(ENOMEM, "sendq_map malloc");
 
   ep->sendq_map.array = array;
 
@@ -31,7 +31,7 @@ omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
   ep->sendq_map.first_free = 0;
   ep->sendq_map.nr_free = OMX_SENDQ_ENTRY_NR;
 
-  return 0;
+  return OMX_SUCCESS;
 }
 
 static inline void
@@ -86,11 +86,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   }
 
   /* prepare the sendq */
-  err = omx__endpoint_sendq_map_init(ep);
-  if (err < 0) {
-    ret = omx__errno_to_return(-err, "sendq_map init");
+  ret = omx__endpoint_sendq_map_init(ep);
+  if (ret != OMX_SUCCESS)
     goto out_with_attached;
-  }
 
   /* mmap */
   sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
@@ -114,9 +112,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
 
   /* get some info */
   ret = omx__get_board_id(ep, NULL, ep->board_name, &board_addr);
-  if (ret != OMX_SUCCESS) {
+  if (ret != OMX_SUCCESS)
     goto out_with_userq_mmap;
-  }
+
   omx__board_addr_sprintf(board_addr_str, board_addr);
   printf("Successfully attached endpoint #%ld on board #%ld (%s, %s)\n",
 	 (unsigned long) endpoint_index, (unsigned long) board_index,
