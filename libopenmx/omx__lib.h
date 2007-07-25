@@ -167,6 +167,11 @@ omx__partner_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
   OMX_VALGRIND_MEMORY_MAKE_READABLE(addr, sizeof(*addr));
 }
 
+extern omx_return_t
+omx__partner_create(struct omx_endpoint *ep,
+		    uint64_t board_addr, uint8_t endpoint_index,
+		    struct omx__partner ** partnerp);
+
 static inline int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)
 {
