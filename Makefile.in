@@ -1,3 +1,8 @@
+exec_prefix	=	@exec_prefix@
+prefix	=	@prefix@
+includedir	=	@includedir@
+srcdir	=	@srcdir@
+
 .PHONY: all install clean distcleqn
 .PHONY: driver driver-installonly driver-install driver-clean driver-distclean
 .PHONY: lib lib-installonly lib-install lib-clean lib-distclean
@@ -6,9 +11,21 @@
 
 all: driver lib tools tests
 
-installonly: driver-installonly lib-installonly tools-installonly tests-installonly
+other-installonly:
+	@echo "Installing to $(DESTDIR)$(prefix)"
+	@if test ! -d $(DESTDIR)$(prefix); then \
+		echo "'$(DESTDIR)$(prefix) didn't exist, creating it" ; \
+		mkdir -p $(DESTDIR)$(prefix) ; \
+	fi
+	@if test ! -d $(DESTDIR)$(includedir); then \
+		echo "$(DESTDIR)$(includedir) didn't exist, creating it" ; \
+		mkdir -p $(DESTDIR)$(includedir) ; \
+	fi
+	install -m 0644 $(srcdir)/common/openmx.h $(DESTDIR)$(includedir)
 
-install: driver-install lib-install tools-install tests-install
+installonly: driver-installonly lib-installonly tools-installonly tests-installonly other-installonly
+
+install: driver-install lib-install tools-install tests-install other-installonly
 
 clean: driver-clean lib-clean tools-clean tests-clean
 
