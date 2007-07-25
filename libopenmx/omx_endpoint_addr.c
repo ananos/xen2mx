@@ -1,3 +1,5 @@
+#include "errno.h"
+
 #include "omx__lib.h"
 
 /******************************
