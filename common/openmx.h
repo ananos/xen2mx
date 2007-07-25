@@ -38,6 +38,13 @@ struct omx_status {
 };
 typedef struct omx_status omx_status_t;
 
+#define OMX_SIZEOF_ADDR 16
+
+struct omx_endpoint_addr {
+  char data[OMX_SIZEOF_ADDR];
+};
+typedef struct omx_endpoint_addr omx_endpoint_addr_t;
+
 #define OMX_API 0x0
 
 omx_return_t
@@ -65,6 +72,14 @@ omx_open_endpoint(uint32_t board_index, uint32_t index,
 
 omx_return_t
 omx_close_endpoint(omx_endpoint_t ep);
+
+omx_return_t
+omx_get_endpoint_addr(omx_endpoint_t endpoint,
+		      omx_endpoint_addr_t *endpoint_addr);
+
+omx_return_t
+omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
+			    uint64_t *nic_id, uint32_t *endpoint_id);
 
 omx_return_t
 omx_isend(omx_endpoint_t ep,

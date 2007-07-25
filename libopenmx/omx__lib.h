@@ -39,6 +39,10 @@ struct omx__sendq_map {
 typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
 
 struct omx__partner {
+  uint64_t board_addr;
+  uint16_t peer_index;
+  uint8_t endpoint_index;
+
   /* list of request matched but not entirely received */
   struct list_head partialq;
 
@@ -148,6 +152,19 @@ extern struct omx__globals omx__globals;
 /*********************
  * Internal functions
  */
+
+static inline struct omx__partner *
+omx__partner_from_addr(omx_endpoint_addr_t * addr)
+{
+  return *(struct omx__partner **) addr;
+}
+
+static inline void
+omx__partner_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
+{
+  *(struct omx__partner **) addr = partner;
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(addr, sizeof(*addr));
+}
 
 static inline int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)

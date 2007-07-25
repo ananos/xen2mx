@@ -182,8 +182,13 @@ omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
  */
 
 static inline void
-omx__partner_init(struct omx__partner *partner)
+omx__partner_init(struct omx__partner *partner,
+		  uint64_t board_addr, uint8_t endpoint_index,
+		  uint16_t peer_index)
 {
+  partner->board_addr = board_addr;
+  partner->peer_index = peer_index;
+  partner->endpoint_index = endpoint_index;
   INIT_LIST_HEAD(&partner->partialq);
   partner->next_send_seq = 0;
   partner->next_match_recv_seq = 0;
@@ -271,14 +276,14 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
 	 (unsigned long) endpoint_index, (unsigned long) board_index,
 	 ep->board_name, board_addr_str);
 
+  omx__partner_init(&ep->partner, ep->board_addr, endpoint_index, 123);
+
   /* init lib specific fieds */
   INIT_LIST_HEAD(&ep->sent_req_q);
   INIT_LIST_HEAD(&ep->unexp_req_q);
   INIT_LIST_HEAD(&ep->recv_req_q);
   INIT_LIST_HEAD(&ep->multifraq_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->done_req_q);
-
-  omx__partner_init(&ep->partner);
 
   *epp = ep;
 
