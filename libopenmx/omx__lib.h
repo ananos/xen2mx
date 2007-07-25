@@ -132,6 +132,7 @@ union omx_request {
 
   struct {
     struct omx__generic_request generic;
+    struct omx__partner * partner;
     omx__seqnum_t seqnum;
     union {
       struct {

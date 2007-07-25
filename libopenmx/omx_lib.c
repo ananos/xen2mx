@@ -475,10 +475,11 @@ omx_return_t
 omx_isend(struct omx_endpoint *ep,
 	  void *buffer, size_t length,
 	  uint64_t match_info,
-	  uint64_t dest_addr, uint32_t dest_endpoint,
+	  omx_endpoint_addr_t dest_endpoint,
 	  void *context, union omx_request **requestp)
 {
   union omx_request * req;
+  struct omx__partner * partner;
   omx__seqnum_t seqnum;
   omx_return_t ret;
   int err;
@@ -489,14 +490,18 @@ omx_isend(struct omx_endpoint *ep,
     goto out;
   }
 
+  partner = omx__partner_from_addr(&dest_endpoint);
+  req->send.partner = partner;
+  omx__partner_to_addr(partner, &req->generic.status.addr);
+
   seqnum = ep->myself->next_send_seq++; /* FIXME: increater at the end, in case of error */
   req->send.seqnum = seqnum;
 
   if (length <= OMX_TINY_MAX) {
     struct omx_cmd_send_tiny tiny_param;
 
-    tiny_param.hdr.dest_addr = dest_addr;
-    tiny_param.hdr.dest_endpoint = dest_endpoint;
+    tiny_param.hdr.dest_addr = partner->board_addr;
+    tiny_param.hdr.dest_endpoint = partner->endpoint_index;
     tiny_param.hdr.match_info = match_info;
     tiny_param.hdr.length = length;
     tiny_param.hdr.seqnum = seqnum;
@@ -518,8 +523,8 @@ omx_isend(struct omx_endpoint *ep,
   } else if (length <= OMX_SMALL_MAX) {
     struct omx_cmd_send_small small_param;
 
-    small_param.dest_addr = dest_addr;
-    small_param.dest_endpoint = dest_endpoint;
+    small_param.dest_addr = partner->board_addr;
+    small_param.dest_endpoint = partner->endpoint_index;
     small_param.match_info = match_info;
     small_param.length = length;
     /* FIXME: small_param.lib_cookie = lib_cookie; */
@@ -553,8 +558,8 @@ omx_isend(struct omx_endpoint *ep,
       /* FIXME: queue */
       assert(0);
 
-    medium_param.dest_addr = dest_addr;
-    medium_param.dest_endpoint = dest_endpoint;
+    medium_param.dest_addr = partner->board_addr;
+    medium_param.dest_endpoint = partner->endpoint_index;
     medium_param.match_info = match_info;
     medium_param.frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
     /* FIXME: medium_param.lib_cookie = lib_cookie; */

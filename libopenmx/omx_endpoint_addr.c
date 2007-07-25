@@ -86,3 +86,27 @@ omx__partner_lookup(struct omx_endpoint *ep,
   *partnerp = ep->partners[partner_index];
   return OMX_SUCCESS;
 }
+
+/*************
+ * Connection
+ */
+
+omx_return_t
+omx_connect(omx_endpoint_t ep,
+	    uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
+	    uint32_t timeout,
+	    omx_endpoint_addr_t *addr)
+{
+  /* FIXME: do a real roundtrip to check the key, exchange session
+   * and src_peer_index and initialize receiver's seqnums
+   */
+  struct omx__partner * partner;
+  omx_return_t ret;
+
+  ret = omx__partner_lookup(ep, nic_id, endpoint_id, &partner);
+  if (ret != OMX_SUCCESS)
+    return ret;
+
+  omx__partner_to_addr(partner, addr);
+  return OMX_SUCCESS;
+}

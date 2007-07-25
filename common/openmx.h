@@ -77,6 +77,12 @@ omx_get_endpoint_addr(omx_endpoint_t endpoint,
 		      omx_endpoint_addr_t *endpoint_addr);
 
 omx_return_t
+omx_connect(omx_endpoint_t endpoint,
+	    uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
+	    uint32_t timeout,
+	    omx_endpoint_addr_t *addr);
+
+omx_return_t
 omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
 			    uint64_t *nic_id, uint32_t *endpoint_id);
 
@@ -84,7 +90,7 @@ omx_return_t
 omx_isend(omx_endpoint_t ep,
 	  void *buffer, size_t length,
 	  uint64_t match_info,
-	  uint64_t dest_addr, uint32_t dest_endpoint,
+	  omx_endpoint_addr_t dest_endpoint,
 	  void * context, omx_request_t * request);
 
 omx_return_t

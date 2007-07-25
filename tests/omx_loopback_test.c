@@ -11,7 +11,7 @@
 #define ITER 10
 
 static omx_return_t
-send_tiny(omx_endpoint_t ep, uint64_t dest_addr, int eid,
+send_tiny(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 	  int i)
 {
   omx_request_t request, request2;
@@ -25,7 +25,7 @@ send_tiny(omx_endpoint_t ep, uint64_t dest_addr, int eid,
   length = strlen(buffer) + 1;
 
   ret = omx_isend(ep, buffer, length,
-		  0x1234567887654321ULL, dest_addr, eid,
+		  0x1234567887654321ULL, addr,
 		  NULL, &request);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to send a tiny message (%s)\n",
@@ -75,7 +75,7 @@ send_tiny(omx_endpoint_t ep, uint64_t dest_addr, int eid,
 }
 
 static int
-send_small(omx_endpoint_t ep, uint64_t dest_addr, int eid,
+send_small(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 	   int i)
 {
   omx_request_t request;
@@ -90,7 +90,7 @@ send_small(omx_endpoint_t ep, uint64_t dest_addr, int eid,
   length = strlen(buffer) + 1;
 
   ret = omx_isend(ep, buffer, length,
-		  0x1234567887654321ULL, dest_addr, eid,
+		  0x1234567887654321ULL, addr,
 		  NULL, &request);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to send a small message (%s)\n",
@@ -133,7 +133,7 @@ send_small(omx_endpoint_t ep, uint64_t dest_addr, int eid,
 }
 
 static int
-send_medium(omx_endpoint_t ep, uint64_t dest_addr, int eid,
+send_medium(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 	    int i)
 {
   omx_request_t request, request2;
@@ -161,7 +161,7 @@ send_medium(omx_endpoint_t ep, uint64_t dest_addr, int eid,
   }
 
   ret = omx_isend(ep, buffer, length,
-		  0x1234567887654321ULL, dest_addr, eid,
+		  0x1234567887654321ULL, addr,
 		  NULL, &request);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to send a medium message (%s)\n",
@@ -205,11 +205,12 @@ usage(void)
 int main(int argc, char *argv[])
 {
   omx_endpoint_t ep;
-  uint64_t dest_addr;
+  uint64_t dest_board_addr;
   struct timeval tv1, tv2;
   int board_index = BID;
   int endpoint_index = EID;
   char board_name[OMX_HOSTNAMELEN_MAX];
+  omx_endpoint_addr_t addr;
   char c;
   int i;
   omx_return_t ret;
@@ -236,7 +237,7 @@ int main(int argc, char *argv[])
       break;
     }
 
-  ret = omx_board_number_to_nic_id(board_index, &dest_addr);
+  ret = omx_board_number_to_nic_id(board_index, &dest_board_addr);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to find board %d nic id (%s)\n",
 	    board_index, omx_strerror(ret));
@@ -260,10 +261,17 @@ int main(int argc, char *argv[])
 
   printf("Using board #%d name %s\n", board_index, board_name);
 
+  ret = omx_get_endpoint_addr(ep, &addr);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to find endpoint address (%s)\n",
+	    omx_strerror(ret));
+    goto out_with_ep;
+  }
+
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a tiny message */
-    ret = send_tiny(ep, dest_addr, endpoint_index, i);
+    ret = send_tiny(ep, addr, i);
     if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }
@@ -274,7 +282,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a small message */
-    ret = send_small(ep, dest_addr, endpoint_index, i);
+    ret = send_small(ep, addr, i);
     if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }
@@ -285,7 +293,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a medium message */
-    ret = send_medium(ep, dest_addr, endpoint_index, i);
+    ret = send_medium(ep, addr, i);
     if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }

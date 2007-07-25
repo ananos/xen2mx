@@ -146,11 +146,19 @@ int main(int argc, char *argv[])
     omx_request_t req;
     omx_status_t status;
     uint32_t result;
+    omx_endpoint_addr_t addr;
     struct param param;
     int length;
     int i;
 
     printf("Starting sender to %s...\n", dest_name);
+
+    ret = omx_connect(ep, dest_addr, rid, 0, 0, &addr);
+    if (ret != OMX_SUCCESS) {
+	fprintf(stderr, "Failed to connect (%s)\n",
+		omx_strerror(ret));
+	goto out_with_ep;
+      }
 
     for(length = min;
 	length < max;
@@ -161,7 +169,7 @@ int main(int argc, char *argv[])
       param.warmup = warmup;
       param.length = length;
       ret = omx_isend(ep, &param, sizeof(param),
-		      0x1234567887654321ULL, dest_addr, rid,
+		      0x1234567887654321ULL, addr,
 		      NULL, &req);
       if (ret != OMX_SUCCESS) {
 	fprintf(stderr, "Failed to isend (%s)\n",
@@ -206,7 +214,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = omx_isend(ep, buffer, length,
-			0x1234567887654321ULL, dest_addr, rid,
+			0x1234567887654321ULL, addr,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",
@@ -229,7 +237,7 @@ int main(int argc, char *argv[])
     /* send a param message with iter = 0 to stop the receiver */
     param.iter = 0;
     ret = omx_isend(ep, &param, sizeof(param),
-		    0x1234567887654321ULL, dest_addr, rid,
+		    0x1234567887654321ULL, addr,
 		    NULL, &req);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to isend (%s)\n",
@@ -318,7 +326,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = omx_isend(ep, buffer, length,
-			0x1234567887654321ULL, board_addr, endpoint_index,
+			0x1234567887654321ULL, status.addr,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",
