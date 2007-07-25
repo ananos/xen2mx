@@ -181,18 +181,45 @@ omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
  * Partner management
  */
 
-static inline void
-omx__partner_init(struct omx__partner *partner,
-		  uint64_t board_addr, uint8_t endpoint_index,
-		  uint16_t peer_index)
+static omx_return_t
+omx__partner_create(struct omx_endpoint *ep,
+		    uint64_t board_addr, uint8_t endpoint_index,
+		    struct omx__partner ** partnerp)
 {
+  struct omx__partner * partner;
+  uint16_t peer_index;
+  uint32_t partner_index;
+  omx_return_t ret;
+
+  ret = omx__peer_addr_to_index(board_addr, &peer_index);
+  if (ret != OMX_SUCCESS) {
+    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+    omx__board_addr_sprintf(board_addr_str, board_addr);
+    fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
+	    board_addr_str, omx_strerror(ret));
+    return ret;
+  }
+
+  partner = malloc(sizeof(*partner));
+  if (!partner) {
+    return omx__errno_to_return(ENOMEM, "partner malloc");
+  }
+
   partner->board_addr = board_addr;
-  partner->peer_index = peer_index;
   partner->endpoint_index = endpoint_index;
+  partner->peer_index = peer_index;
   INIT_LIST_HEAD(&partner->partialq);
   partner->next_send_seq = 0;
   partner->next_match_recv_seq = 0;
   partner->next_frag_recv_seq = 0;
+
+  partner_index = ((uint32_t) endpoint_index)
+    + ((uint32_t) peer_index) * omx__globals.endpoint_max;
+  ep->partners[partner_index] = partner;
+
+  *partnerp = partner;
+
+  return OMX_SUCCESS;
 }
 
 /**********************
@@ -268,7 +295,6 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   /* get some info */
   ret = omx__get_board_id(ep, NULL, ep->board_name, &ep->board_addr);
   if (ret != OMX_SUCCESS) {
-    ret = OMX_BAD_ERROR;
     goto out_with_userq_mmap;
   }
   omx__board_addr_sprintf(board_addr_str, ep->board_addr);
@@ -276,7 +302,19 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
 	 (unsigned long) endpoint_index, (unsigned long) board_index,
 	 ep->board_name, board_addr_str);
 
-  omx__partner_init(&ep->partner, ep->board_addr, endpoint_index, 123);
+  /* allocate partners */
+  ep->partners = calloc(omx__globals.peer_max * omx__globals.endpoint_max,
+			sizeof(*ep->partners));
+  if (!ep->partners) {
+    ret = omx__errno_to_return(ENOMEM, "endpoint partners calloc");
+    goto out_with_userq_mmap;
+  }
+
+  /* link me to myself */
+  ret = omx__partner_create(ep, ep->board_addr, endpoint_index,
+			    &ep->myself);
+  if (ret != OMX_SUCCESS)
+    goto out_with_partners;
 
   /* init lib specific fieds */
   INIT_LIST_HEAD(&ep->sent_req_q);
@@ -289,6 +327,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
 
   return OMX_SUCCESS;
 
+ out_with_partners:
+  free(ep->partners);
  out_with_userq_mmap:
   /* could munmap here, but close will do it */
  out_with_sendq_map:
@@ -679,7 +719,7 @@ omx_isend(struct omx_endpoint *ep,
     goto out;
   }
 
-  seqnum = ep->partner.next_send_seq++; /* FIXME: increater at the end, in case of error */
+  seqnum = ep->myself->next_send_seq++; /* FIXME: increater at the end, in case of error */
   req->send.seqnum = seqnum;
 
   if (length <= OMX_TINY_MAX) {

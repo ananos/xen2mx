@@ -90,7 +90,8 @@ struct omx_endpoint {
   struct list_head multifraq_medium_recv_req_q;
   struct list_head done_req_q;
   struct omx__sendq_map sendq_map;
-  struct omx__partner partner;
+  struct omx__partner ** partners;
+  struct omx__partner * myself;
 };
 
 enum omx__request_type {
@@ -207,6 +208,7 @@ extern omx_return_t omx__get_board_index_by_name(const char * name, uint8_t * in
 
 extern omx_return_t omx__peers_init(void);
 extern omx_return_t omx__peers_dump(const char * format);
+extern omx_return_t omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index);
 extern omx_return_t omx__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname);
 
 #endif /* __omx_lib_h__ */

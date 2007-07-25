@@ -162,6 +162,20 @@ omx__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname)
 }
 
 omx_return_t
+omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index)
+{
+  int i;
+
+  for(i=0; i<omx_peers_max; i++)
+    if (omx_peers[i].valid && omx_peers[i].board_addr == board_addr) {
+      *index = i;
+      return OMX_SUCCESS;
+    }
+
+  return OMX_INVALID_PARAMETER;
+}
+
+omx_return_t
 omx_hostname_to_nic_id(char *hostname,
 		       uint64_t *board_addr)
 {
