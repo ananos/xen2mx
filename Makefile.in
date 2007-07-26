@@ -34,7 +34,7 @@ driver driver-installonly driver-install driver-clean driver-distclean:
 	$(MAKE) -C driver/linux $(shell echo $@ | cut -s -d- -f2)
 
 lib lib-installonly lib-install lib-clean lib-distclean:
-	$(MAKE) -C libopenmx $(shell echo $@ | cut -s -d- -f2)
+	$(MAKE) -C libopen-mx $(shell echo $@ | cut -s -d- -f2)
 
 # the lib is required before linking the tools or tests
 tools tests: lib
@@ -49,7 +49,7 @@ wc:
 	wc -cl \
 		driver/linux/*.[ch] \
 		common/*.h \
-		libopenmx/*.[ch] \
+		libopen-mx/*.[ch] \
 		tools/*.c \
 		tests/*.c
 
