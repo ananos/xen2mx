@@ -56,7 +56,7 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 
 	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt) ){
-		printk(KERN_INFO "OpenMX: Failed to complete send of MEDIUM packet because of event queue full\n");
+		printk(KERN_INFO "Open-MX: Failed to complete send of MEDIUM packet because of event queue full\n");
 		/* FIXME: the application sucks, it should take care of events sooner, queue it? */
 		return;
 	}
@@ -90,14 +90,14 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 
 	ret = copy_from_user(&cmd, &((struct omx_cmd_send_tiny __user *) uparam)->hdr, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "OpenMX: Failed to read send tiny cmd hdr\n");
+		printk(KERN_ERR "Open-MX: Failed to read send tiny cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	length = cmd.length;
 	if (unlikely(length > OMX_TINY_MAX)) {
-		printk(KERN_ERR "OpenMX: Cannot send more than %d as a tiny (tried %d)\n",
+		printk(KERN_ERR "Open-MX: Cannot send more than %d as a tiny (tried %d)\n",
 		       OMX_TINY_MAX, length);
 		ret = -EINVAL;
 		goto out;
@@ -107,7 +107,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 			  /* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		printk(KERN_INFO "OpenMX: Failed to create tiny skb\n");
+		printk(KERN_INFO "Open-MX: Failed to create tiny skb\n");
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -135,7 +135,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	/* copy the data right after the header */
 	ret = copy_from_user(mh+1, &((struct omx_cmd_send_tiny __user *) uparam)->data, length);
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "OpenMX: Failed to read send tiny cmd data\n");
+		printk(KERN_ERR "Open-MX: Failed to read send tiny cmd data\n");
 		ret = -EFAULT;
 		goto out_with_skb;
 	}
@@ -165,14 +165,14 @@ omx_send_small(struct omx_endpoint * endpoint,
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "OpenMX: Failed to read send small cmd hdr\n");
+		printk(KERN_ERR "Open-MX: Failed to read send small cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	length = cmd.length;
 	if (unlikely(length > OMX_SMALL_MAX)) {
-		printk(KERN_ERR "OpenMX: Cannot send more than %d as a small (tried %d)\n",
+		printk(KERN_ERR "Open-MX: Cannot send more than %d as a small (tried %d)\n",
 		       OMX_SMALL_MAX, length);
 		ret = -EINVAL;
 		goto out;
@@ -182,7 +182,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 			  /* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		printk(KERN_INFO "OpenMX: Failed to create small skb\n");
+		printk(KERN_INFO "Open-MX: Failed to create small skb\n");
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -210,7 +210,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 	/* copy the data right after the header */
 	ret = copy_from_user(mh+1, (void *)(unsigned long) cmd.vaddr, length);
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "OpenMX: Failed to read send small cmd data\n");
+		printk(KERN_ERR "Open-MX: Failed to read send small cmd data\n");
 		ret = -EFAULT;
 		goto out_with_skb;
 	}
@@ -242,14 +242,14 @@ omx_send_medium(struct omx_endpoint * endpoint,
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "OpenMX: Failed to read send medium cmd hdr\n");
+		printk(KERN_ERR "Open-MX: Failed to read send medium cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	frag_length = cmd.frag_length;
 	if (unlikely(frag_length > OMX_SENDQ_ENTRY_SIZE)) {
-		printk(KERN_ERR "OpenMX: Cannot send more than %ld as a medium (tried %ld)\n",
+		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a medium (tried %ld)\n",
 		       PAGE_SIZE * 1UL, (unsigned long) frag_length);
 		ret = -EINVAL;
 		goto out;
@@ -257,7 +257,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 
 	event = kmalloc(sizeof(*event), GFP_KERNEL);
 	if (unlikely(!event)) {
-		printk(KERN_INFO "OpenMX: Failed to allocate event\n");
+		printk(KERN_INFO "Open-MX: Failed to allocate event\n");
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -268,7 +268,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 			   */
 			   sizeof(*mh));
 	if (unlikely(skb == NULL)) {
-		printk(KERN_INFO "OpenMX: Failed to create medium skb\n");
+		printk(KERN_INFO "Open-MX: Failed to create medium skb\n");
 		ret = -ENOMEM;
 		goto out_with_event;
 	}

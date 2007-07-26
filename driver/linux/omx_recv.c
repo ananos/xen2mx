@@ -14,7 +14,7 @@ omx_find_next_eventq_slot(struct omx_endpoint *endpoint)
 	/* FIXME: need locking */
 	union omx_evt *slot = endpoint->next_eventq_slot;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
-		dprintk("OpenMX: Event queue full, no event slot available for endpoint %d\n",
+		dprintk("Open-MX: Event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
 		return NULL;
 	}
@@ -392,7 +392,7 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	iface = omx_iface_find_by_ifp(ifp);
 	if (unlikely(!iface)) {
 		/* at least the ethhdr is linear in the skb */
-		omx_drop_dprintk(&omx_hdr(skb)->head.eth, "packet on non-OpenMX interface %s",
+		omx_drop_dprintk(&omx_hdr(skb)->head.eth, "packet on non-Open-MX interface %s",
 				 ifp->name);
 		goto out;
 	}

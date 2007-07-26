@@ -25,7 +25,7 @@ dev_hold_by_name(const char * ifname)
 	}
 	read_unlock(&dev_base_lock);
 
-	printk(KERN_ERR "OpenMX: Failed to find interface '%s'\n", ifname);
+	printk(KERN_ERR "Open-MX: Failed to find interface '%s'\n", ifname);
 	return NULL;
 }
 
@@ -131,13 +131,13 @@ omx_iface_attach(struct net_device * ifp)
 	int i;
 
 	if (omx_iface_nr == omx_iface_max) {
-		printk(KERN_ERR "OpenMX: Too many interfaces already attached\n");
+		printk(KERN_ERR "Open-MX: Too many interfaces already attached\n");
 		ret = -EBUSY;
 		goto out_with_ifp_hold;
 	}
 
 	if (omx_iface_find_by_ifp(ifp)) {
-		printk(KERN_ERR "OpenMX: Interface %s already attached\n", ifp->name);
+		printk(KERN_ERR "Open-MX: Interface %s already attached\n", ifp->name);
 		ret = -EBUSY;
 		goto out_with_ifp_hold;
 	}
@@ -148,16 +148,16 @@ omx_iface_attach(struct net_device * ifp)
 
 	iface = kzalloc(sizeof(struct omx_iface), GFP_KERNEL);
 	if (!iface) {
-		printk(KERN_ERR "OpenMX: Failed to allocate interface as board %d\n", i);
+		printk(KERN_ERR "Open-MX: Failed to allocate interface as board %d\n", i);
 		ret = -ENOMEM;
 		goto out_with_ifp_hold;
 	}
 
-	printk(KERN_INFO "OpenMX: Attaching interface '%s' as #%i\n", ifp->name, i);
+	printk(KERN_INFO "Open-MX: Attaching interface '%s' as #%i\n", ifp->name, i);
 
 	board_name = kmalloc(strlen(omx_current_utsname.nodename) + 1 + strlen(ifp->name) + 1, GFP_KERNEL);
 	if (!board_name) {
-		printk(KERN_ERR "OpenMX: Failed to allocate interface board name\n");
+		printk(KERN_ERR "Open-MX: Failed to allocate interface board name\n");
 		ret = -ENOMEM;
 		goto out_with_iface;
 	}
@@ -169,7 +169,7 @@ omx_iface_attach(struct net_device * ifp)
 	iface->endpoint_nr = 0;
 	iface->endpoints = kzalloc(omx_endpoint_max * sizeof(struct omx_endpoint *), GFP_KERNEL);
 	if (!iface->endpoints) {
-		printk(KERN_ERR "OpenMX: Failed to allocate interface endpoint pointers\n");
+		printk(KERN_ERR "Open-MX: Failed to allocate interface endpoint pointers\n");
 		ret = -ENOMEM;
 		goto out_with_iface_board_name;
 	}
@@ -218,7 +218,7 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 	spin_lock(&iface->endpoint_lock);
 	ret = -EBUSY;
 	if (!force && iface->endpoint_nr) {
-		printk(KERN_INFO "OpenMX: cannot detach interface #%d '%s', still %d endpoints open\n",
+		printk(KERN_INFO "Open-MX: cannot detach interface #%d '%s', still %d endpoints open\n",
 		       iface->index, iface->eth_ifp->name, iface->endpoint_nr);
 		spin_unlock(&iface->endpoint_lock);
 		goto out;
@@ -229,7 +229,7 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 		if (!endpoint)
 			continue;
 
-		printk(KERN_INFO "OpenMX: forcing close of endpoint #%d attached to iface #%d '%s'\n",
+		printk(KERN_INFO "Open-MX: forcing close of endpoint #%d attached to iface #%d '%s'\n",
 		       i, iface->index, iface->eth_ifp->name);
 
 		/* close the endpoint, with the iface lock hold */
@@ -256,7 +256,7 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 	remove_wait_queue(&iface->noendpoint_queue, &wq);
 	spin_unlock(&iface->endpoint_lock);
 
-	printk(KERN_INFO "OpenMX: detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
+	printk(KERN_INFO "Open-MX: detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
 
 	omx_ifaces[iface->index] = NULL;
 	omx_iface_nr--;
@@ -369,7 +369,7 @@ omx_ifaces_store(const char *buf, size_t size)
 		spin_unlock(&omx_iface_lock);
 
 		if (ret == -EINVAL) {
-			printk(KERN_ERR "OpenMX: Cannot find any attached interface '%s' to detach\n", copy);
+			printk(KERN_ERR "Open-MX: Cannot find any attached interface '%s' to detach\n", copy);
 			return -EINVAL;
 		}
 		return size;
@@ -393,7 +393,7 @@ omx_ifaces_store(const char *buf, size_t size)
 		return size;
 
 	} else {
-		printk(KERN_ERR "OpenMX: Unrecognized command passed in the ifaces file, need either +name or -name\n");
+		printk(KERN_ERR "Open-MX: Unrecognized command passed in the ifaces file, need either +name or -name\n");
 		return -EINVAL;
 	}
 }
@@ -425,7 +425,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	if (endpoint->board_index >= omx_iface_max
 	    || (iface = omx_ifaces[endpoint->board_index]) == NULL
 	    || iface->status != OMX_IFACE_STATUS_OK) {
-		printk(KERN_ERR "OpenMX: Cannot open endpoint on unexisting board %d\n",
+		printk(KERN_ERR "Open-MX: Cannot open endpoint on unexisting board %d\n",
 		       endpoint->board_index);
 		goto out_with_ifaces_locked;
 	}
@@ -436,7 +436,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 
 	/* add the endpoint */
 	if (iface->endpoints[endpoint->endpoint_index] != NULL) {
-		printk(KERN_ERR "OpenMX: endpoint already open\n");
+		printk(KERN_ERR "Open-MX: endpoint already open\n");
 		goto out_with_endpoints_locked;
 	}
 
@@ -512,7 +512,7 @@ omx_netdevice_notifier_cb(struct notifier_block *unused,
 		iface = omx_iface_find_by_ifp(ifp);
 		if (iface) {
 			int ret;
-			printk(KERN_INFO "OpenMX: interface '%s' being unregistered, forcing closing of endpoints...\n",
+			printk(KERN_INFO "Open-MX: interface '%s' being unregistered, forcing closing of endpoints...\n",
 			       ifp->name);
 			/* there is no need to disable incoming packets since
 			 * the ethernet ifp is already disabled before the notifier is called
@@ -546,13 +546,13 @@ omx_net_init(const char * ifnames)
 
 	ret = register_netdevice_notifier(&omx_netdevice_notifier);
 	if (ret < 0) {
-		printk(KERN_ERR "OpenMX: failed to register netdevice notifier\n");
+		printk(KERN_ERR "Open-MX: failed to register netdevice notifier\n");
 		goto out_with_pack;
 	}
 
 	omx_ifaces = kzalloc(omx_iface_max * sizeof(struct omx_iface *), GFP_KERNEL);
 	if (!omx_ifaces) {
-		printk(KERN_ERR "OpenMX: failed to allocate interface array\n");
+		printk(KERN_ERR "Open-MX: failed to allocate interface array\n");
 		ret = -ENOMEM;
 		goto out_with_notifier;
 	}
@@ -589,7 +589,7 @@ omx_net_init(const char * ifnames)
 		read_unlock(&dev_base_lock);
 	}
 
-	printk(KERN_INFO "OpenMX: attached %d interfaces\n", omx_iface_nr);
+	printk(KERN_INFO "Open-MX: attached %d interfaces\n", omx_iface_nr);
 	return 0;
 
  out_with_notifier:
@@ -628,7 +628,7 @@ omx_net_exit(void)
 			nr++;
 		}
 	}
-	printk(KERN_INFO "OpenMX: detached %d interfaces\n", nr);
+	printk(KERN_INFO "Open-MX: detached %d interfaces\n", nr);
 
 	/* release the lock to let omx_netdevice_notifier finish
 	 * in case it has been invoked during our loop

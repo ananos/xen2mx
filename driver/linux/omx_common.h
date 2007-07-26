@@ -97,7 +97,7 @@ omx_board_addr_to_ethhdr_dst(struct ethhdr * eh, uint64_t board_addr)
 #endif
 
 #define omx_send_dprintk(_eh, _format, ...) \
-dprintk("OpenMX: sending from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
+dprintk("Open-MX: sending from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
 	(_eh)->h_source[0], (_eh)->h_source[1], (_eh)->h_source[2], \
 	(_eh)->h_source[3], (_eh)->h_source[4], (_eh)->h_source[5], \
 	(_eh)->h_dest[0], (_eh)->h_dest[1], (_eh)->h_dest[2], \
@@ -105,7 +105,7 @@ dprintk("OpenMX: sending from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%0
 	##__VA_ARGS__)
 
 #define omx_recv_dprintk(_eh, _format, ...) \
-dprintk("OpenMX: received from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
+dprintk("Open-MX: received from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
 	(_eh)->h_source[0], (_eh)->h_source[1], (_eh)->h_source[2], \
 	(_eh)->h_source[3], (_eh)->h_source[4], (_eh)->h_source[5], \
 	(_eh)->h_dest[0], (_eh)->h_dest[1], (_eh)->h_dest[2], \
@@ -113,7 +113,7 @@ dprintk("OpenMX: received from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%
 	##__VA_ARGS__);
 
 #define omx_drop_dprintk(_eh, _format, ...) \
-dprintk("OpenMX: dropping pkt from %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
+dprintk("Open-MX: dropping pkt from %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
 	(_eh)->h_source[0], (_eh)->h_source[1], (_eh)->h_source[2], \
 	(_eh)->h_source[3], (_eh)->h_source[4], (_eh)->h_source[5], \
 	##__VA_ARGS__);

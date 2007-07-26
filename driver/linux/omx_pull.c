@@ -124,7 +124,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint)
 	/* alloc the pull handle */
 	handle = kmalloc(sizeof(struct omx_pull_handle), GFP_KERNEL);
 	if (unlikely(!handle)) {
-		printk(KERN_INFO "OpenMX: Failed to allocate a pull handle\n");
+		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		goto out_with_endpoint;
 	}
 
@@ -132,7 +132,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint)
  idr_try_alloc:
 	err = idr_pre_get(&endpoint->pull_handle_idr, GFP_KERNEL);
 	if (unlikely(!err)) {
-		printk(KERN_ERR "OpenMX: Failed to allocate idr space for pull handles\n");
+		printk(KERN_ERR "Open-MX: Failed to allocate idr space for pull handles\n");
 		err = -ENOMEM; /* unused for now */
 		goto out_with_endpoint;
 	}
@@ -283,14 +283,14 @@ omx_send_pull(struct omx_endpoint * endpoint,
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "OpenMX: Failed to read send pull cmd hdr\n");
+		printk(KERN_ERR "Open-MX: Failed to read send pull cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	handle = omx_pull_handle_create(endpoint);
 	if (unlikely(!handle)) {
-		printk(KERN_INFO "OpenMX: Failed to allocate a pull handle\n");
+		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -299,7 +299,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 			  /* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(*mh), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		printk(KERN_INFO "OpenMX: Failed to create pull skb\n");
+		printk(KERN_INFO "Open-MX: Failed to create pull skb\n");
 		ret = -ENOMEM;
 		goto out_with_handle;
 	}
@@ -339,7 +339,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 
 	dev_queue_xmit(skb);
 
-//	printk(KERN_INFO "OpenMX: sent a pull message from endpoint %d\n",
+//	printk(KERN_INFO "Open-MX: sent a pull message from endpoint %d\n",
 //	       endpoint->endpoint_index);
 
 	return 0;
@@ -425,7 +425,7 @@ omx_recv_pull(struct omx_iface * iface,
 	/* get the rdma window */
 	rdma_id = pull_request->pulled_rdma_id;
 	if (unlikely(rdma_id >= OMX_USER_REGION_MAX)) {
-		printk(KERN_ERR "OpenMX: got pull request for invalid window %d\n", rdma_id);
+		printk(KERN_ERR "Open-MX: got pull request for invalid window %d\n", rdma_id);
 		/* FIXME: send nack */
 		goto out_with_skb;
 	}
@@ -442,7 +442,7 @@ omx_recv_pull(struct omx_iface * iface,
 		uint32_t append;
 		append = omx_pull_reply_append_user_region_segment(skb, segment);
 		if (unlikely(append < 0)) {
-			printk(KERN_ERR "OpenMX: failed to queue segment to skb, error %d\n", append);
+			printk(KERN_ERR "Open-MX: failed to queue segment to skb, error %d\n", append);
 			/* FIXME: release pages */
 			goto out_with_region;
 		}
@@ -467,7 +467,7 @@ omx_recv_pull(struct omx_iface * iface,
 
 	omx_endpoint_release(endpoint);
 
-//	printk(KERN_INFO "OpenMX: sent a pull reply from endpoint %d\n",
+//	printk(KERN_INFO "Open-MX: sent a pull reply from endpoint %d\n",
 //	       endpoint->endpoint_index);
 
 	return 0;

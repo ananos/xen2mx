@@ -26,7 +26,7 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	ret = -ENOMEM;
 	buffer = omx_vmalloc_user(OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EVENTQ_SIZE);
 	if (!buffer) {
-		printk(KERN_ERR "OpenMX: failed to allocate queues\n");
+		printk(KERN_ERR "Open-MX: failed to allocate queues\n");
 		goto out;
 	}
 	endpoint->sendq = buffer;
@@ -72,7 +72,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 
 	ret = copy_from_user(&param, uparam, sizeof(param));
 	if (ret < 0) {
-		printk(KERN_ERR "OpenMX: Failed to read open endpoint command argument, error %d\n", ret);
+		printk(KERN_ERR "Open-MX: Failed to read open endpoint command argument, error %d\n", ret);
 		goto out;
 	}
 	endpoint->board_index = param.board_index;
@@ -100,7 +100,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 	if (ret < 0)
 		goto out_with_resources;
 
-	printk(KERN_INFO "OpenMX: Successfully open board %d endpoint %d\n",
+	printk(KERN_INFO "Open-MX: Successfully open board %d endpoint %d\n",
 	       endpoint->board_index, endpoint->endpoint_index);
 
 	return 0;
@@ -299,7 +299,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		ret = copy_to_user((void __user *) arg, &max,
 				   sizeof(max));
 		if (ret < 0)
-			printk(KERN_ERR "OpenMX: Failed to write get_board_max command result, error %d\n", ret);
+			printk(KERN_ERR "Open-MX: Failed to write get_board_max command result, error %d\n", ret);
 
 		break;
 	}
@@ -310,7 +310,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		ret = copy_to_user((void __user *) arg, &max,
 				   sizeof(max));
 		if (ret < 0)
-			printk(KERN_ERR "OpenMX: Failed to write get_endpoint_max command result, error %d\n", ret);
+			printk(KERN_ERR "Open-MX: Failed to write get_endpoint_max command result, error %d\n", ret);
 
 		break;
 	}
@@ -321,7 +321,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		ret = copy_to_user((void __user *) arg, &max,
 				   sizeof(max));
 		if (ret < 0)
-			printk(KERN_ERR "OpenMX: Failed to write get_peer_max command result, error %d\n", ret);
+			printk(KERN_ERR "Open-MX: Failed to write get_peer_max command result, error %d\n", ret);
 
 		break;
 	}
@@ -332,7 +332,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		ret = copy_to_user((void __user *) arg, &count,
 				   sizeof(count));
 		if (ret < 0)
-			printk(KERN_ERR "OpenMX: Failed to write get_board_count command result, error %d\n", ret);
+			printk(KERN_ERR "Open-MX: Failed to write get_board_count command result, error %d\n", ret);
 
 		break;
 	}
@@ -349,7 +349,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 			ret = copy_from_user(&get_board_id, (void __user *) arg,
 					     sizeof(get_board_id));
 			if (ret < 0) {
-				printk(KERN_ERR "OpenMX: Failed to read get_board_id command argument, error %d\n", ret);
+				printk(KERN_ERR "Open-MX: Failed to read get_board_id command argument, error %d\n", ret);
 				goto out;
 			}
 		} else {
@@ -372,7 +372,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		ret = copy_to_user((void __user *) arg, &get_board_id,
 				   sizeof(get_board_id));
 		if (ret < 0)
-			printk(KERN_ERR "OpenMX: Failed to write get_board_id command result, error %d\n", ret);
+			printk(KERN_ERR "Open-MX: Failed to write get_board_id command result, error %d\n", ret);
 
 		break;
 	}
@@ -447,7 +447,7 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 	else if (offset == OMX_EVENTQ_FILE_OFFSET && size == OMX_EVENTQ_SIZE)
 		return omx_remap_vmalloc_range(vma, endpoint->sendq, (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE) >> PAGE_SHIFT);
 	else {
-		printk(KERN_ERR "OpenMX: Cannot mmap %lx at %lx\n", size, offset);
+		printk(KERN_ERR "Open-MX: Cannot mmap %lx at %lx\n", size, offset);
 		return -EINVAL;
 	}
 }
@@ -542,13 +542,13 @@ omx_dev_init(void)
 
 	ret = misc_register(&omx_miscdev);
 	if (ret < 0) {
-		printk(KERN_ERR "OpenMX: Failed to register misc device, error %d\n", ret);
+		printk(KERN_ERR "Open-MX: Failed to register misc device, error %d\n", ret);
 		goto out;
 	}
 
 	ret = omx_init_attributes();
 	if (ret < 0) {
-		printk(KERN_ERR "OpenMX: failed to create misc device attributes, error %d\n", ret);
+		printk(KERN_ERR "Open-MX: failed to create misc device attributes, error %d\n", ret);
 		goto out_with_device;
 	}
 

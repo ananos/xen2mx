@@ -34,14 +34,14 @@ omx_register_user_region_segment(struct omx_cmd_region_segment * useg,
 
 	pages = kmalloc(nr_pages * sizeof(struct page *), GFP_KERNEL);
 	if (!pages) {
-		printk(KERN_ERR "OpenMX: Failed to allocate user region segment page array\n");
+		printk(KERN_ERR "Open-MX: Failed to allocate user region segment page array\n");
 		ret = -ENOMEM;
 		goto out;
 	}
 
 	ret = get_user_pages(current, current->mm, aligned_vaddr, nr_pages, 1, 0, pages, NULL);
 	if (ret < 0) {
-		printk(KERN_ERR "OpenMX: get_user_pages failed (error %d)\n", ret);
+		printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
 		goto out_with_pages;
 	}
 	BUG_ON(ret != nr_pages);
@@ -88,13 +88,13 @@ omx_register_user_region(struct omx_endpoint * endpoint,
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (ret) {
-		printk(KERN_ERR "OpenMX: Failed to read register region cmd\n");
+		printk(KERN_ERR "Open-MX: Failed to read register region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	if (cmd.id >= OMX_USER_REGION_MAX) {
-		printk(KERN_ERR "OpenMX: Cannot register invalid region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot register invalid region %d\n", cmd.id);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -103,7 +103,7 @@ omx_register_user_region(struct omx_endpoint * endpoint,
 	usegs = kmalloc(sizeof(struct omx_cmd_region_segment) * cmd.nr_segments,
 			GFP_KERNEL);
 	if (!usegs) {
-		printk(KERN_ERR "OpenMX: Failed to allocate segments for user region\n");
+		printk(KERN_ERR "Open-MX: Failed to allocate segments for user region\n");
 		ret = -ENOMEM;
 		goto out;
 	}
@@ -111,7 +111,7 @@ omx_register_user_region(struct omx_endpoint * endpoint,
 	ret = copy_from_user(usegs, (void __user *)(unsigned long) cmd.segments,
 			     sizeof(struct omx_cmd_region_segment) * cmd.nr_segments);
 	if (ret) {
-		printk(KERN_ERR "OpenMX: Failed to read register region cmd\n");
+		printk(KERN_ERR "Open-MX: Failed to read register region cmd\n");
 		ret = -EFAULT;
 		goto out_with_usegs;
 	}
@@ -121,7 +121,7 @@ omx_register_user_region(struct omx_endpoint * endpoint,
 			 + cmd.nr_segments * sizeof(struct omx_user_region_segment),
 			 GFP_KERNEL);
 	if (!region) {
-		printk(KERN_ERR "OpenMX: failed to allocate user region\n");
+		printk(KERN_ERR "Open-MX: failed to allocate user region\n");
 		ret = -ENOMEM;
 		goto out_with_usegs;
 	}
@@ -145,7 +145,7 @@ omx_register_user_region(struct omx_endpoint * endpoint,
 	spin_lock(&endpoint->user_regions_lock);
 
 	if (endpoint->user_regions[cmd.id]) {
-		printk(KERN_ERR "OpenMX: Cannot register busy region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot register busy region %d\n", cmd.id);
 		ret = -EBUSY;
 		spin_unlock(&endpoint->user_regions_lock);
 		goto out_with_region;
@@ -175,13 +175,13 @@ omx_deregister_user_region(struct omx_endpoint * endpoint,
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (ret) {
-		printk(KERN_ERR "OpenMX: Failed to read deregister region cmd\n");
+		printk(KERN_ERR "Open-MX: Failed to read deregister region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	if (cmd.id >= OMX_USER_REGION_MAX) {
-		printk(KERN_ERR "OpenMX: Cannot deregister invalid region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot deregister invalid region %d\n", cmd.id);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -190,7 +190,7 @@ omx_deregister_user_region(struct omx_endpoint * endpoint,
 
 	region = endpoint->user_regions[cmd.id];
 	if (!region) {
-		printk(KERN_ERR "OpenMX: Cannot register unexisting region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot register unexisting region %d\n", cmd.id);
 		ret = -EINVAL;
 		spin_unlock(&endpoint->user_regions_lock);
 		goto out;
@@ -218,7 +218,7 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 		if (!region)
 			continue;
 
-		printk(KERN_INFO "OpenMX: Forcing deregister of window %d on endpoint %d board %d\n",
+		printk(KERN_INFO "Open-MX: Forcing deregister of window %d on endpoint %d board %d\n",
 		       i, endpoint->endpoint_index, endpoint->iface->index);
 		omx__deregister_user_region(region);
 		endpoint->user_regions[i] = NULL;
