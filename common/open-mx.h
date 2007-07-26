@@ -1,5 +1,5 @@
-#ifndef __openmx_h__
-#define __openmx_h__
+#ifndef __open_mx_h__
+#define __open_mx_h__
 
 #include <stdint.h>
 
@@ -144,4 +144,4 @@ omx_return_t
 omx_nic_id_to_hostname(uint64_t board_addr,
 		       char *hostname);
 
-#endif /* __openmx_h__ */
+#endif /* __open_mx_h__ */

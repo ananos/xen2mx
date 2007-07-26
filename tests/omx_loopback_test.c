@@ -4,7 +4,7 @@
 #include <getopt.h>
 #include <sys/time.h>
 
-#include "openmx.h"
+#include "open-mx.h"
 
 #define BID 0
 #define EID 3

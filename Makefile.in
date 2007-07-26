@@ -22,7 +22,7 @@ other-installonly:
 		echo "$(DESTDIR)$(includedir) didn't exist, creating it" ; \
 		mkdir -p $(DESTDIR)$(includedir) ; \
 	fi
-	install -m 0644 $(srcdir)/common/openmx.h $(DESTDIR)$(includedir)
+	install -m 0644 $(srcdir)/common/open-mx.h $(DESTDIR)$(includedir)
 
 other-install: other-installonly
 

@@ -9,7 +9,7 @@
 #include <getopt.h>
 #include <assert.h>
 
-#include "openmx.h"
+#include "open-mx.h"
 
 #define BID 0
 #define EID 0

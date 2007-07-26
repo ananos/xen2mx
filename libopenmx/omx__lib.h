@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "openmx.h"
+#include "open-mx.h"
 #include "omx_io.h"
 #include "omx_list.h"
 #include "omx__valgrind.h"
