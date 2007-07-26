@@ -51,7 +51,6 @@
 * pass the user-address of contig small/tiny buffer instead of copying ?
 * optimize shared comms between boards from within the driver
 
-* add copyright/license headers to all files
 * move to gforge.inria.fr
 
 * add a VERSION file and a script to update MODULE_VERSION, COPYING and file headers ?
