@@ -1,5 +1,5 @@
 LINUX_DIR	=	@LINUX_BUILD@
-OPENMX_DIR	=	@abs_builddir@
+OPEN_MX_DIR	=	@abs_builddir@
 
 .PHONY: all installonly install clean distclean wc
 
@@ -11,19 +11,19 @@ all:
 	@echo Linking kernel module source files to local directory
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || ln -sf $$file ; done
 	@echo Running compile-time assertions
-	+make -C $(LINUX_DIR) M=$(OPENMX_DIR) omx__assertions.o
+	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) omx__assertions.o
 	@echo Building kernel module
-	+make -C $(LINUX_DIR) M=$(OPENMX_DIR)
+	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR)
 
 installonly:
 	@echo "Installing kernel module for kernel $(LINUX_DIR)"
-	+make -C $(LINUX_DIR) M=$(OPENMX_DIR) modules_install
+	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) modules_install
 
 install: all installonly
 
 clean:
 	@echo Cleaning kernel module build
-	+make -C $(LINUX_DIR) M=$(OPENMX_DIR) clean
+	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) clean
 	@echo Removing links to kernel module source files in local directory
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do rm -f $$(basename $$file) ; done
 
