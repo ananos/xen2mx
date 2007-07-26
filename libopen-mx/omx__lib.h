@@ -28,7 +28,7 @@
  * Various macros
  */
 
-#define OMX_DEVNAME "/dev/openmx"
+#define OMX_DEVNAME "/dev/open-mx"
 /* FIXME: envvar to configure? */
 
 #define OMX_MEDIUM_FRAG_PIPELINE_BASE 10  /* pipeline is encoded -10 on the wire */
