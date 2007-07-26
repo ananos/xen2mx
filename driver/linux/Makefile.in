@@ -11,7 +11,7 @@ all:
 	@echo Linking kernel module source files to local directory
 	@for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || ln -sf $$file ; done
 	@echo Running compile-time assertions
-	+make -C $(LINUX_DIR) M=$(OPENMX_DIR) omx_assertions.o
+	+make -C $(LINUX_DIR) M=$(OPENMX_DIR) omx__assertions.o
 	@echo Building kernel module
 	+make -C $(LINUX_DIR) M=$(OPENMX_DIR)
 
