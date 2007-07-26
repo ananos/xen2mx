@@ -1,7 +1,7 @@
 AC_INIT(configure.ac)
 AC_PREREQ(2.53)
 AC_CANONICAL_SYSTEM
-AC_PREFIX_DEFAULT(/opt/openmx)
+AC_PREFIX_DEFAULT(/opt/open-mx)
 
 AC_PROG_CPP
 AC_PROG_CC
@@ -161,7 +161,7 @@ fi
 ##########
 # Globals
 
-AC_SUBST(LIBOPENMX_A, libopenmx/libopenmx.a)
+AC_SUBST(LIBOPENMX_A, libopenmx/libopen-mx.a)
 
 AC_CONFIG_HEADER(common/omx_config.h)
 AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild libopenmx/Makefile tools/Makefile tests/Makefile)

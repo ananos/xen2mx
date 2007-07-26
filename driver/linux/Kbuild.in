@@ -1,7 +1,7 @@
 EXTRA_CFLAGS	+=	-imacros @abs_top_builddir@/common/omx_config.h
 EXTRA_CFLAGS	+=	-I@abs_top_srcdir@/common/
 
-obj-m	+=	openmx.o
-openmx-objs	:=	omx_main.o omx_dev.o \
+obj-m	+=	open-mx.o
+open-mx-objs	:=	omx_main.o omx_dev.o \
 			omx_net.o omx_send.o omx_recv.o \
 			omx_reg.o omx_pull.o
