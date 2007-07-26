@@ -1,5 +1,42 @@
-Linux kernel from 2.6.17 to 2.6.23 are supported.
-Tested on i386 (with and without xen) and x86_64.
++---------------+
+| Kernel Module |
++---------------+
+
+The 'open-mx' kernel module should be loaded prior to any user-space
+usage of Open-MX. If not loaded, a "No device" error will be returned.
+$ modprobe open-mx
+
+This module works at least on Linux kernels 2.6.17 to 2.6.23 on i386
+and x86_64 architectures.
+
+Once loaded, it creates a /dev/open-mx file which is used by user-space
+libraries and programs. Write access to this file is required when using
+Open-MX, so you might want to adjust your udev configuration to change
+the default mode of this file, for instance by adding the following line
+in a udev rules file:
+KERNEL=="open-mx", MODE="0666", GROUP="users"
+
++----------------------+
+| Attaching interfaces |
++----------------------+
+
+By default, all existing network interfaces in the system will be
+attached to Open-MX (except those above 8 by default). To change
+the order or select which interfaces to attach, you may use the
+omx_ifnames module parameter when loading:
+$ modprobe open-mx omx_ifnames="eth3 eth2"
+
+The current list of attached interfaces may be observed by reading
+the /sys/class/misc/openmx/ifaces special file. Writing '+foo' in
+the file will attach interface 'foo'. Writing '-bar' will detach
+interface 'bar'.
+
+The interfaces may also be observed with the omx_info user-space
+tool.
+
++-----------------+
+| Peer Table File |
++-----------------+
 
 A file listing peers must be provided, either in the current directory,
 or at a location given in the environment variable OMX_PEERS_FILENAME

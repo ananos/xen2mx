@@ -1,14 +1,14 @@
++---------------+
+| Basic Install |
++---------------+
+
 $ ./configure
 $ make
 $ make install
 
-It build against the currently running kernel, using headers and build tree
-in /lib/modules/`uname -r`/{source,build}.
-
-To build for another kernel, use
-$ ./configure --with-linux=/path/to/kernel/headers/
-To build using another kernel build tree, use
-$ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
+By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
+the configure line to change this (or set prefix on the 'make install'
+command line).
 
 You might experience some problems when running 'make install' as root
 over NFS because some Makefiles might modify some files before actually
@@ -17,3 +17,20 @@ as non-root before, you may use
 $ make installonly
 so that it really only installs things without checking whether the build
 is up-to-date.
+
++---------------+
+| Kernel Module |
++---------------+
+
+Open-MX is composed of a user-space library with passes communication
+commands to a kernel module. This module 'open-mx' will be installed
+in the standard module path  /lib/modules/<kernel>/
+
+During configure, Open-MX checks the running kernel with 'uname -r' and
+builds the open-mx module against it, using its headers and build tree
+in /lib/modules/`uname -r`/{source,build}.
+
+To build for another kernel, use
+$ ./configure --with-linux=/path/to/kernel/headers/
+To build using another kernel build tree, use
+$ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
