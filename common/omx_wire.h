@@ -103,6 +103,19 @@ struct omx_pkt_msg {
 	/* 24 */
 };
 
+/* 16 Bytes */
+struct omx_pkt_connect {
+	uint8_t ptype;
+	uint8_t dest_endpoint;
+	uint8_t src_endpoint;
+	uint8_t src_generation; /* FIXME: unused ? */
+	uint8_t length;
+	uint8_t pad[3];
+	uint16_t lib_seqnum;
+	uint16_t dest_peer_index;
+	uint32_t src_mac_low32;
+};
+
 struct omx_pkt_medium_frag {
 	struct omx_pkt_msg msg;
 	uint16_t frag_length;
