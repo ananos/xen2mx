@@ -464,7 +464,7 @@ omx_miscdev_fops = {
 static struct miscdevice
 omx_miscdev = {
 	.minor = MISC_DYNAMIC_MINOR,
-	.name = "openmx",
+	.name = "open-mx",
 	.fops = &omx_miscdev_fops,
 };
 
