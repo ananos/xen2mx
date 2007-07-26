@@ -15,7 +15,7 @@ CFLAGS	+=	-g -O2
 
 LD	=	gcc
 
-LIB	=	@top_builddir@/@LIBOPENMX_A@
+LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
 
 .PHONY: all installonly install clean distclean
 

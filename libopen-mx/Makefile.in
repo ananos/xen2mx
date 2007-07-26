@@ -8,16 +8,20 @@ CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
 CPPFLAGS	+=	-I@top_srcdir@/common
 CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2
+STATIC_CFLAGS	+=	
+DYNAMIC_CFLAGS	+=	-fpic
 
 SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
-LIBOBJS	=	$(filter-out omx__assertions.o,$(OBJS))
-LIB	=	@top_builddir@/@LIBOPENMX_A@
+STATIC_LIB_OBJS	=	$(filter-out omx__assertions.o,$(OBJS))
+DYNAMIC_LIB_OBJS	=	$(subst .o,.lo,$(OBJS))
+STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
+DYNAMIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_DYNAMIC@
 
 .PHONY: all installonly install assertions depend clean distclean
 
 # build assertions first, then the actual lib
-all: assertions $(LIB)
+all: assertions $(STATIC_LIB) $(DYNAMIC_LIB)
 
 ###############
 # dependencies
@@ -29,25 +33,32 @@ include @top_srcdir@/depend.mk
 ########
 # build
 
-$(LIB): $(LIBOBJS)
+$(STATIC_LIB): $(STATIC_LIB_OBJS)
 	ar cr $@ $^
+
+$(DYNAMIC_LIB): $(DYNAMIC_LIB_OBJS)
+	gcc --shared -o $@ $^
 
 assertions: omx__assertions.o
 
 # build and create dependency file
-$(OBJS): %.o: @srcdir@/%.c
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+
+$(STATIC_LIB_OBJS): %.o: @srcdir@/%.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(STATIC_CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+
+$(DYNAMIC_LIB_OBJS): %.lo: @srcdir@/%.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DYNAMIC_CFLAGS) $(BUILDDEPFLAGS) $< -o $@
 
 ##########
 # install
 
 installonly:
-	@echo "Installing lib to $(DESTDIR)$(libdir)/"
+	@echo "Installing libs to $(DESTDIR)$(libdir)/"
 	@if test ! -d $(DESTDIR)$(libdir); then \
 		echo "Directory didn't exist, creating it" ; \
 		mkdir -p $(DESTDIR)$(libdir) ; \
 	fi
-	install -m 0644 $(LIB) $(DESTDIR)$(libdir)/
+	install -m 0644 $(STATIC_LIB) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)/
 
 install: all installonly
 
@@ -55,7 +66,7 @@ install: all installonly
 # clean
 
 clean:
-	$(RM) $(LIB) $(OBJS)
+	$(RM) $(STATIC_LIB) $(STATIC_LIB_OBJS) $(DYNAMIC_LIB) $(DYNAMIC_LIB_OBJS)
 
 distclean: clean
 	$(RM) $(DEPS)
