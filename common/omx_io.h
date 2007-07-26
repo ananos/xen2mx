@@ -44,6 +44,7 @@
 
 #define OMX_TINY_MAX		32
 #define OMX_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
+#define OMX_CONNECT_DATA_MAX	32
 
 #define OMX_HOSTNAMELEN_MAX	80
 
@@ -74,6 +75,7 @@ struct omx_cmd_region_segment {
 #define OMX_CMD_SEND_PULL		0x87
 #define OMX_CMD_REGISTER_REGION		0x88
 #define OMX_CMD_DEREGISTER_REGION	0x89
+#define OMX_CMD_SEND_CONNECT		0x90
 
 static inline const char *
 omx_strcmd(unsigned cmd)
@@ -107,6 +109,8 @@ omx_strcmd(unsigned cmd)
 		return "Register Region";
 	case OMX_CMD_DEREGISTER_REGION:
 		return "Deregister Region";
+	case OMX_CMD_SEND_CONNECT:
+		return "Send Connect";
 	default:
 		return "** Unknown **";
 	}
@@ -173,6 +177,19 @@ struct omx_cmd_send_medium {
 	/* 24 */
 	uint64_t match_info;
 	/* 32 */
+};
+
+struct omx_cmd_send_connect {
+	struct omx_cmd_send_connect_hdr {
+		uint64_t dest_addr;
+		uint8_t dest_endpoint;
+		uint8_t length;
+		/* 8 */
+		uint16_t seqnum;
+		uint16_t dest_peer_index;
+		/* 12 */
+	} hdr;
+	char data[OMX_CONNECT_DATA_MAX];
 };
 
 struct omx_cmd_send_pull {

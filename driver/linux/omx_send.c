@@ -352,6 +352,82 @@ omx_send_medium(struct omx_endpoint * endpoint,
 }
 
 int
+omx_send_connect(struct omx_endpoint * endpoint,
+		 void __user * uparam)
+{
+	struct sk_buff *skb;
+	struct omx_hdr *mh;
+	struct ethhdr *eh;
+	struct omx_cmd_send_connect_hdr cmd;
+	struct omx_iface * iface = endpoint->iface;
+	struct net_device * ifp = iface->eth_ifp;
+	int ret;
+	uint8_t length;
+
+	ret = copy_from_user(&cmd, &((struct omx_cmd_send_connect __user *) uparam)->hdr, sizeof(cmd));
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send connect cmd hdr\n");
+		ret = -EFAULT;
+		goto out;
+	}
+
+	length = cmd.length;
+	if (unlikely(length > OMX_CONNECT_DATA_MAX)) {
+		printk(KERN_ERR "Open-MX: Cannot send more than %d as connect data (tried %d)\n",
+		       OMX_CONNECT_DATA_MAX, length);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	skb = omx_new_skb(ifp,
+			  /* pad to ETH_ZLEN */
+			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
+	if (unlikely(skb == NULL)) {
+		printk(KERN_INFO "Open-MX: Failed to create connect skb\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* locate headers */
+	mh = omx_hdr(skb);
+	eh = &mh->head.eth;
+
+	/* fill ethernet header */
+	memset(eh, 0, sizeof(*eh));
+	omx_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+
+	/* fill omx header */
+	mh->body.connect.src_endpoint = endpoint->endpoint_index;
+	mh->body.connect.dst_endpoint = cmd.dest_endpoint;
+	mh->body.connect.ptype = OMX_PKT_TYPE_CONNECT;
+	mh->body.connect.length = length;
+	mh->body.connect.lib_seqnum = cmd.seqnum;
+	mh->body.connect.dest_peer_index = cmd.dest_peer_index;
+	mh->body.connect.src_mac_low32 = (uint32_t) omx_board_addr_from_netdevice(ifp);
+
+	omx_send_dprintk(eh, "CONNECT length %ld", (unsigned long) length);
+
+	/* copy the data right after the header */
+	ret = copy_from_user(mh+1, &((struct omx_cmd_send_connect __user *) uparam)->data, length);
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send connect cmd data\n");
+		ret = -EFAULT;
+		goto out_with_skb;
+	}
+
+	dev_queue_xmit(skb);
+
+	return 0;
+
+ out_with_skb:
+	dev_kfree_skb(skb);
+ out:
+	return ret;
+}
+
+int
 omx_send_rendez_vous(struct omx_endpoint * endpoint,
 		     void __user * uparam)
 {

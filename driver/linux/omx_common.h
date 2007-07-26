@@ -53,6 +53,7 @@ extern int omx_send_small(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_medium(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_rendez_vous(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_pull(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_send_connect(struct omx_endpoint * endpoint, void __user * uparam);
 
 /* receiving */
 extern void omx_pkt_type_handlers_init(void);

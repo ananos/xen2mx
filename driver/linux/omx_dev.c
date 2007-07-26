@@ -298,6 +298,7 @@ static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, v
 	[OMX_CMD_SEND_PULL]		= omx_send_pull,
 	[OMX_CMD_REGISTER_REGION]	= omx_register_user_region,
 	[OMX_CMD_DEREGISTER_REGION]	= omx_deregister_user_region,
+	[OMX_CMD_SEND_CONNECT]		= omx_send_connect,
 };
 
 /*
@@ -420,6 +421,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 	case OMX_CMD_SEND_PULL:
 	case OMX_CMD_REGISTER_REGION:
 	case OMX_CMD_DEREGISTER_REGION:
+	case OMX_CMD_SEND_CONNECT:
 	{
 		struct omx_endpoint * endpoint = file->private_data;
 

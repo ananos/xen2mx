@@ -124,7 +124,7 @@ struct omx_pkt_msg {
 /* 16 Bytes */
 struct omx_pkt_connect {
 	uint8_t ptype;
-	uint8_t dest_endpoint;
+	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint8_t length;
@@ -191,6 +191,7 @@ struct omx_hdr {
 		struct omx_pkt_medium_frag medium;
 		struct omx_pkt_pull_request pull;
 		struct omx_pkt_pull_reply pull_reply;
+		struct omx_pkt_connect connect;
 	} body;
 };
 

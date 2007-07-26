@@ -16,6 +16,7 @@
  * See the GNU Lesser General Public License in COPYING.LGPL for more details.
  */
 
+#include <sys/ioctl.h>
 #include <errno.h>
 
 #include "omx_lib.h"
@@ -115,16 +116,31 @@ omx_connect(omx_endpoint_t ep,
 	    uint32_t timeout,
 	    omx_endpoint_addr_t *addr)
 {
-  /* FIXME: do a real roundtrip to check the key, exchange session
-   * and src_peer_index and initialize receiver's seqnums
-   */
   struct omx__partner * partner;
+  struct omx_cmd_send_connect connect_param;
   omx_return_t ret;
+  int err;
 
   ret = omx__partner_lookup(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS)
     return ret;
 
+  connect_param.hdr.dest_addr = partner->board_addr;
+  connect_param.hdr.dest_endpoint = partner->endpoint_index;
+  connect_param.hdr.seqnum = 0;
+  connect_param.hdr.dest_peer_index = partner->peer_index;
+  connect_param.hdr.length = 0; /* FIXME: add some data */
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &connect_param);
+  if (err < 0) {
+    ret = omx__errno_to_return(errno, "ioctl send/connect");
+    goto out_with_req;
+  }
+  /* no need to wait for a done event, connect is synchronous */
+
   omx__partner_to_addr(partner, addr);
   return OMX_SUCCESS;
+
+ out_with_req:
+  return ret;
 }
