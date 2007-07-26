@@ -16,10 +16,10 @@
  * See the GNU Lesser General Public License in COPYING.LGPL for more details.
  */
 
+#include <net/if.h>
+
 #include "omx_io.h"
 #include "omx_lib.h"
-
-#include <net/if.h>
 
 /*
  * This file runs build-time assertions without ever being linked to anybody

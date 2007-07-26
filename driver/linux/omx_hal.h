@@ -19,11 +19,11 @@
 #ifndef __omx_hal_h__
 #define __omx_hal_h__
 
-#include "omx_checks.h"
-
 #include <linux/skbuff.h>
 #include <linux/netdevice.h>
 #include <linux/vmalloc.h>
+
+#include "omx_checks.h"
 
 /* FIXME: useless now */
 #ifdef OMX_SKB_LINEARIZE_HAS_GFP

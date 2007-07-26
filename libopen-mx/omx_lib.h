@@ -19,9 +19,9 @@
 #ifndef __omx_lib_h__
 #define __omx_lib_h__
 
-#include <string.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "open-mx.h"
 #include "omx_io.h"

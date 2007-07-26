@@ -18,8 +18,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <errno.h>
 #include <sys/ioctl.h>
+#include <errno.h>
 
 #include "omx_lib.h"
 
