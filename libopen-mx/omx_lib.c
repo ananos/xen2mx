@@ -6,7 +6,7 @@
 #include <assert.h>
 
 #include "omx_io.h"
-#include "omx__lib.h"
+#include "omx_lib.h"
 #include "omx_list.h"
 
 /***********************

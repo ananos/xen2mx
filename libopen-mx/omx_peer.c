@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 
-#include "omx__lib.h"
+#include "omx_lib.h"
 
 #ifndef OMX_PEERS_DEFAULT_FILENAME
 /* might be set by configure */

@@ -1,5 +1,5 @@
 #include "omx_io.h"
-#include "omx__lib.h"
+#include "omx_lib.h"
 
 #include <net/if.h>
 

@@ -6,7 +6,7 @@
 #include <string.h>
 #include <sys/time.h>
 
-#include "../libopen-mx/omx__lib.h"
+#include "../libopen-mx/omx_lib.h"
 
 #define EP 3
 #define ITER 10

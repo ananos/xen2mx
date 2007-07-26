@@ -1,6 +1,6 @@
 #include "errno.h"
 
-#include "omx__lib.h"
+#include "omx_lib.h"
 
 /******************************
  * Endpoint address management

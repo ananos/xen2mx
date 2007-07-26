@@ -8,7 +8,7 @@
 #include "open-mx.h"
 #include "omx_io.h"
 #include "omx_list.h"
-#include "omx__valgrind.h"
+#include "omx_valgrind.h"
 
 /************
  * Debugging

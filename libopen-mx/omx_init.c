@@ -3,7 +3,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 
-#include "omx__lib.h"
+#include "omx_lib.h"
 
 struct omx__globals omx__globals = { 0 };
 
