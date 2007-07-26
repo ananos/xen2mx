@@ -45,6 +45,7 @@ tools tools-installonly tools-install tools-clean tools-distclean:
 tests tests-installonly tests-install tests-clean tests-distclean:
 	$(MAKE) -C tests bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
 
+.PHONY: wc
 wc:
 	wc -cl \
 		driver/linux/*.[ch] \
@@ -53,10 +54,29 @@ wc:
 		tools/*.c \
 		tests/*.c
 
-dist:
-	olddir=$$(basename $$PWD) && newdir=open-mx.svn.$$(date +%Y%m%d.%H%M%S) && cd .. \
-	 && cp -a $$olddir $$newdir && find $$newdir -type d | grep '\.svn$$' | xargs rm -rf \; \
+.PHONY: svndist curdist
+
+DATE	=	$$(date +%Y%m%d.%H%M%S)
+TARBALL	=	open-mx.svn.$(DATE)
+SVN_URL	=	svn+ssh://labri/usr/labri/goglin/SVN/open-mx/
+SVN_BRANCH	=	trunk
+
+svndist:
+	@newdir=$(TARBALL) \
+	 && echo "Exporting current SVN branch $(SVN_BRANCH)..." \
+	 && svn export $(SVN_URL)/$(SVN_BRANCH) $$newdir \
+	 && echo "Preparing the tree..." \
 	 && cd $$newdir && autoreconf -f && rm -rf autom4te.cache/ && cd .. \
-	 && tar cfz $${newdir}.tar.gz $$newdir \
-	 && rm -rf $$newdir \
-	 && cd $$olddir
+	 && echo "Creating the tarball..." \
+	 && tar cfz $${newdir}.tar.gz $$newdir && rm -rf $$newdir \
+	 && echo "Created $${newdir}.tar.gz" && ls -l $${newdir}.tar.gz
+
+curdist:
+	@newdir=$(TARBALL) \
+	 && echo "Copying current tree with SVN versioning info..." \
+	 && cp -a . ../$$newdir && mv ../$$newdir . && find $$newdir -type d | grep '\.svn$$' | xargs rm -rf \; \
+	 && echo "Preparing the tree..." \
+	 && cd $$newdir && autoreconf -f && rm -rf autom4te.cache/ && cd .. \
+	 && echo "Creating the tarball..." \
+	 && tar cfz $${newdir}.tar.gz $$newdir && rm -rf $$newdir \
+	 && echo "Created $${newdir}.tar.gz" && ls -l $${newdir}.tar.gz
