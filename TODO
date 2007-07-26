@@ -35,8 +35,8 @@
 
 * omx_endpoint_info
 
-* mapper (openmxd)
-* /dev/openmxd ?
+* mapper (open-mxd)
+* /dev/open-mxd ?
 
 * use valgrind memory hooks
 * add valgrind ioctl hooks
@@ -53,6 +53,8 @@
 
 * add copyright/license headers to all files
 * move to gforge.inria.fr
+
+* add a VERSION file and a script to update MODULE_VERSION, COPYING and file headers ?
 
 * non MXoE compatible extensions:
   + rdma in both direction with optional notification containing the target window id ?

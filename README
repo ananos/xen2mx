@@ -27,7 +27,7 @@ omx_ifnames module parameter when loading:
 $ modprobe open-mx omx_ifnames="eth3 eth2"
 
 The current list of attached interfaces may be observed by reading
-the /sys/class/misc/openmx/ifaces special file. Writing '+foo' in
+the /sys/class/misc/open-mx/ifaces special file. Writing '+foo' in
 the file will attach interface 'foo'. Writing '-bar' will detach
 interface 'bar'.
 

@@ -7,7 +7,7 @@
 
 #ifndef OMX_PEERS_DEFAULT_FILENAME
 /* might be set by configure */
-#define OMX_PEERS_DEFAULT_FILENAME "openmx.peers"
+#define OMX_PEERS_DEFAULT_FILENAME "open-mx.peers"
 #endif
 
 #define OMX_PEERS_FILENAME_ENVVAR "OMX_PEERS_FILENAME"
