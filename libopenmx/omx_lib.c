@@ -30,7 +30,7 @@ omx__errno_to_return(int error, char * caller)
   case ENOENT:
     return OMX_NO_DEVICE;
   default:
-    fprintf(stderr, "OpenMX: %s got unexpected errno %d (%s)\n",
+    fprintf(stderr, "Open-MX: %s got unexpected errno %d (%s)\n",
 	    caller, error, strerror(error));
     return OMX_BAD_ERROR;
   }
