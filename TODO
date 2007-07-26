@@ -51,8 +51,6 @@
 * pass the user-address of contig small/tiny buffer instead of copying ?
 * optimize shared comms between boards from within the driver
 
-* move to gforge.inria.fr
-
 * add a VERSION file and a script to update MODULE_VERSION, COPYING and file headers ?
 
 * non MXoE compatible extensions:

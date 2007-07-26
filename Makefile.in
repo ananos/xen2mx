@@ -58,7 +58,7 @@ wc:
 
 DATE	=	$$(date +%Y%m%d.%H%M%S)
 TARBALL	=	open-mx.svn.$(DATE)
-SVN_URL	=	svn+ssh://labri/usr/labri/goglin/SVN/open-mx/
+SVN_URL	=	svn+ssh://scm.gforge.inria.fr/svn/open-mx/
 SVN_BRANCH	=	trunk
 
 svndist:
