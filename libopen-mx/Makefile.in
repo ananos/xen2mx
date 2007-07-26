@@ -12,10 +12,13 @@ STATIC_CFLAGS	+=
 DYNAMIC_CFLAGS	+=	-fpic
 
 SRCS	=	$(wildcard @srcdir@/*.c)
-OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
-STATIC_LIB_OBJS	=	$(filter-out omx__assertions.o,$(OBJS))
-DYNAMIC_LIB_OBJS	=	$(subst .o,.lo,$(OBJS))
+
+STATIC_OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
+STATIC_LIB_OBJS	=	$(filter-out omx__assertions.o,$(STATIC_OBJS))
 STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
+
+DYNAMIC_OBJS	=	$(subst .o,.lo,$(STATIC_OBJS))
+DYNAMIC_LIB_OBJS	=	$(subst .o,.lo,$(STATIC_LIB_OBJS))
 DYNAMIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_DYNAMIC@
 
 .PHONY: all installonly install assertions depend clean distclean
@@ -43,10 +46,10 @@ assertions: omx__assertions.o
 
 # build and create dependency file
 
-$(STATIC_LIB_OBJS): %.o: @srcdir@/%.c
+$(STATIC_OBJS): %.o: @srcdir@/%.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(STATIC_CFLAGS) $(BUILDDEPFLAGS) $< -o $@
 
-$(DYNAMIC_LIB_OBJS): %.lo: @srcdir@/%.c
+$(DYNAMIC_OBJS): %.lo: @srcdir@/%.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DYNAMIC_CFLAGS) $(BUILDDEPFLAGS) $< -o $@
 
 ##########
