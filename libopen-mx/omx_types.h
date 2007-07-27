@@ -81,6 +81,7 @@ struct omx_endpoint {
   int fd;
   int endpoint_index, board_index;
   char board_name[OMX_HOSTNAMELEN_MAX];
+  uint32_t session_id;
   uint32_t app_key;
   void * recvq, * sendq, * eventq;
   void * next_event;
@@ -145,6 +146,7 @@ union omx_request {
   struct {
     struct omx__generic_request generic;
     struct omx__partner * partner;
+    uint32_t session_id;
   } connect;
 };
 

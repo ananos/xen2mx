@@ -127,6 +127,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->eventq = ep->next_event = eventq;
   ep->board_index = board_index;
   ep->endpoint_index = endpoint_index;
+  ep->session_id = open_param.session_id;
   ep->app_key = key;
 
   /* get some info */

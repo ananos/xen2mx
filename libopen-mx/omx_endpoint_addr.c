@@ -113,7 +113,7 @@ omx__partner_lookup(struct omx_endpoint *ep,
  */
 
 struct omx__connect_data {
-  uint32_t dest_session;
+  uint32_t session_id;
   uint32_t app_key;
   uint16_t seqnum_start;
   uint8_t is_reply;
@@ -152,6 +152,7 @@ omx_connect(omx_endpoint_t ep,
   connect_param.hdr.seqnum = 0;
   connect_param.hdr.dest_peer_index = partner->peer_index;
   connect_param.hdr.length = sizeof(*data);
+  data->session_id = ep->session_id;
   data->app_key = key;
   data->is_reply = 0;
 
@@ -165,6 +166,7 @@ omx_connect(omx_endpoint_t ep,
   req->generic.type = OMX_REQUEST_TYPE_CONNECT;
   req->generic.state = OMX_REQUEST_STATE_PENDING;
   req->connect.partner = partner;
+  req->connect.session_id = ep->session_id;
   omx__enqueue_request(&ep->connect_req_q, req);
 
   printf("waiting for connect reply\n");
@@ -218,10 +220,13 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   }
 
   omx__foreach_request(&ep->connect_req_q, req)
-    if (partner == req->connect.partner) {
-      /* FIXME check connect seqnu, and session too */
+    if (reply_data->session_id == ep->session_id
+	&& partner == req->connect.partner) {
+      /* FIXME check connect seqnum */
       goto found;
   }
+
+  /* invalid connect reply, just ignore it */
   return OMX_SUCCESS;
 
  found:
@@ -255,7 +260,10 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   }
 
   if (request_data->app_key == ep->app_key) {
-    /* FIXME: do the connection stuff */
+    /* FIXME: do the connection stuff:
+     * + initialize receive seqnums
+     * + save the session
+     */
 
     status_code = OMX_STATUS_SUCCESS;
   } else {
@@ -270,6 +278,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   reply_param.hdr.dest_peer_index = partner->peer_index;
   reply_param.hdr.length = sizeof(*reply_data);
   reply_data->is_reply = 1;
+  reply_data->session_id = request_data->session_id;
   reply_data->status_code = status_code;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);
