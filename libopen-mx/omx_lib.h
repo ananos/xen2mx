@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <assert.h>
 
 #include "open-mx.h"
 #include "omx_io.h"
