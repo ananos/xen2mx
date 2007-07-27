@@ -61,4 +61,7 @@ omx__queue_empty(struct list_head *head)
   return list_empty(head);
 }
 
+#define omx__foreach_request(head, req)		\
+list_for_each_entry(req, head, generic.queue_elt)
+
 #endif /* __omx_request_h__ */

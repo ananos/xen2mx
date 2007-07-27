@@ -66,6 +66,9 @@ extern struct omx__globals omx__globals;
  * Internal functions
  */
 
+extern omx_return_t
+omx__progress(struct omx_endpoint * ep);
+
 static inline struct omx__partner *
 omx__partner_from_addr(omx_endpoint_addr_t * addr)
 {
@@ -88,6 +91,10 @@ extern omx_return_t
 omx__partner_lookup(struct omx_endpoint *ep,
 		    uint64_t board_addr, uint8_t endpoint_index,
 		    struct omx__partner ** partnerp);
+
+extern omx_return_t
+omx__process_recv_connect(struct omx_endpoint *ep,
+			  struct omx_evt_recv_connect *event);
 
 static inline int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)

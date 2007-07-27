@@ -16,10 +16,12 @@
  * See the GNU Lesser General Public License in COPYING.LGPL for more details.
  */
 
+#include <stdlib.h>
 #include <sys/ioctl.h>
 #include <errno.h>
 
 #include "omx_lib.h"
+#include "omx_request.h"
 
 /******************************
  * Endpoint address management
@@ -110,26 +112,47 @@ omx__partner_lookup(struct omx_endpoint *ep,
  * Connection
  */
 
+struct omx__connect_data {
+  uint32_t dest_session;
+  uint32_t app_key_n;
+  uint16_t seqnum_start;
+  uint8_t is_reply;
+  uint8_t connect_seqnum;
+  uint8_t status_code;
+};
+
+/*
+ * Start the connection process to another peer
+ */
 omx_return_t
 omx_connect(omx_endpoint_t ep,
 	    uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
 	    uint32_t timeout,
 	    omx_endpoint_addr_t *addr)
 {
+  union omx_request * req;
   struct omx__partner * partner;
   struct omx_cmd_send_connect connect_param;
+  struct omx__connect_data * data = (void *) &connect_param.data;
   omx_return_t ret;
   int err;
 
+  req = malloc(sizeof(union omx_request));
+  if (!req) {
+    ret = omx__errno_to_return(ENOMEM, "isend request malloc");
+    goto out;
+  }
+
   ret = omx__partner_lookup(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS)
-    return ret;
+    goto out_with_req;
 
   connect_param.hdr.dest_addr = partner->board_addr;
   connect_param.hdr.dest_endpoint = partner->endpoint_index;
   connect_param.hdr.seqnum = 0;
   connect_param.hdr.dest_peer_index = partner->peer_index;
-  connect_param.hdr.length = 0; /* FIXME: add some data */
+  connect_param.hdr.length = sizeof(*data);
+  data->is_reply = 0;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &connect_param);
   if (err < 0) {
@@ -138,9 +161,119 @@ omx_connect(omx_endpoint_t ep,
   }
   /* no need to wait for a done event, connect is synchronous */
 
+  req->generic.type = OMX_REQUEST_TYPE_CONNECT;
+  req->generic.state = OMX_REQUEST_STATE_PENDING;
+  req->connect.partner = partner;
+  omx__enqueue_request(&ep->connect_req_q, req);
+
+  printf("waiting for connect reply\n");
+  while (req->generic.state == OMX_REQUEST_STATE_PENDING) {
+    ret = omx__progress(ep);
+    if (ret != OMX_SUCCESS)
+      goto out_with_req_queued;
+  }
+  omx__dequeue_request(&ep->connect_req_q, req);
+  printf("connect done\n");
+
   omx__partner_to_addr(partner, addr);
+  return OMX_SUCCESS;
+
+ out_with_req_queued:
+  omx__dequeue_request(&ep->connect_req_q, req);
+ out_with_req:
+  free(req);
+ out:
+  return ret;
+}
+
+/*
+ * End the connection process to another peer
+ */
+static inline omx_return_t
+omx__process_recv_connect_reply(struct omx_endpoint *ep,
+				struct omx_evt_recv_connect *event)
+{
+  struct omx__partner * partner;
+  //  struct omx__connect_data * reply_data = (void *) event->data;
+  union omx_request * req;
+  omx_return_t ret;
+
+  ret = omx__partner_lookup(ep, event->src_addr, event->src_endpoint, &partner);
+  if (ret != OMX_SUCCESS) {
+    if (ret == OMX_INVALID_PARAMETER)
+      fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
+    return ret;
+  }
+
+  omx__foreach_request(&ep->connect_req_q, req)
+    if (partner == req->connect.partner) {
+      /* FIXME check connect seqnu, and session too */
+      goto found;
+  }
+  return OMX_SUCCESS;
+
+ found:
+  printf("waking up on connect reply\n");
+  req->generic.state = OMX_REQUEST_STATE_DONE;
+
+  return OMX_SUCCESS;
+}
+
+/*
+ * Another peer is connecting to us
+ */
+static inline omx_return_t
+omx__process_recv_connect_request(struct omx_endpoint *ep,
+				  struct omx_evt_recv_connect *event)
+{
+  struct omx__partner * partner;
+  struct omx_cmd_send_connect reply_param;
+  //  struct omx__connect_data * request_data = (void *) event->data;
+  struct omx__connect_data * reply_data = (void *) reply_param.data;
+  omx_return_t ret;
+  int err;
+
+  ret = omx__partner_lookup(ep, event->src_addr, event->src_endpoint, &partner);
+  if (ret != OMX_SUCCESS) {
+    if (ret == OMX_INVALID_PARAMETER)
+      fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
+    return ret;
+  }
+
+  /* check the key and set reply_data->status */
+
+  printf("got a connect, replying\n");
+
+  reply_param.hdr.dest_addr = partner->board_addr;
+  reply_param.hdr.dest_endpoint = partner->endpoint_index;
+  reply_param.hdr.seqnum = 0;
+  reply_param.hdr.dest_peer_index = partner->peer_index;
+  reply_param.hdr.length = sizeof(*reply_data);
+  reply_data->is_reply = 1;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);
+  if (err < 0) {
+    ret = omx__errno_to_return(errno, "ioctl send/connect");
+    goto out_with_req;
+  }
+  /* no need to wait for a done event, connect is synchronous */
+
   return OMX_SUCCESS;
 
  out_with_req:
   return ret;
+}
+
+/*
+ * Incoming connection message
+ */
+omx_return_t
+omx__process_recv_connect(struct omx_endpoint *ep,
+			  struct omx_evt_recv_connect *event)
+{
+  struct omx__connect_data * data = (void *) event->data;
+  if (data->is_reply)
+    return omx__process_recv_connect_reply(ep, event);
+  else
+    return omx__process_recv_connect_request(ep, event);
 }

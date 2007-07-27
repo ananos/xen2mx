@@ -87,6 +87,7 @@ struct omx_endpoint {
   struct list_head unexp_req_q;
   struct list_head recv_req_q;
   struct list_head multifraq_medium_recv_req_q;
+  struct list_head connect_req_q;
   struct list_head done_req_q;
   struct omx__sendq_map sendq_map;
   struct omx__partner ** partners;
@@ -95,6 +96,7 @@ struct omx_endpoint {
 
 enum omx__request_type {
   OMX_REQUEST_TYPE_NONE=0,
+  OMX_REQUEST_TYPE_CONNECT,
   OMX_REQUEST_TYPE_SEND_TINY,
   OMX_REQUEST_TYPE_SEND_SMALL,
   OMX_REQUEST_TYPE_SEND_MEDIUM,
@@ -138,6 +140,11 @@ union omx_request {
       } medium;
     } type;
   } recv;
+
+  struct {
+    struct omx__generic_request generic;
+    struct omx__partner * partner;
+  } connect;
 };
 
 struct omx__globals {

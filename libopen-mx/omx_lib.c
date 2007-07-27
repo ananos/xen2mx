@@ -368,6 +368,11 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   omx__debug_printf("received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
 
+  case OMX_EVT_RECV_CONNECT: {
+    ret = omx__process_recv_connect(ep, &evt->recv_connect);
+    break;
+  }
+
   case OMX_EVT_RECV_TINY: {
     ret = omx__process_recv(ep,
 			    evt, evt->recv_tiny.seqnum, evt->recv_tiny.data,
@@ -421,7 +426,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
  * Main progression
  */
 
-static omx_return_t
+omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
   /* process events */

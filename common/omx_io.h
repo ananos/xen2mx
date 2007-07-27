@@ -226,6 +226,7 @@ struct omx_cmd_deregister_region {
 
 #define OMX_EVT_NONE			0x00
 #define OMX_EVT_SEND_MEDIUM_FRAG_DONE	0x01
+#define OMX_EVT_RECV_CONNECT		0x11
 #define OMX_EVT_RECV_TINY		0x12
 #define OMX_EVT_RECV_SMALL		0x13
 #define OMX_EVT_RECV_MEDIUM		0x14
@@ -238,6 +239,8 @@ omx_strevt(unsigned type)
 		return "None";
 	case OMX_EVT_SEND_MEDIUM_FRAG_DONE:
 		return "Send Medium Fragment Done";
+	case OMX_EVT_RECV_CONNECT:
+		return "Receive Connect";
 	case OMX_EVT_RECV_TINY:
 		return "Receive Tiny";
 	case OMX_EVT_RECV_SMALL:
@@ -268,6 +271,20 @@ union omx_evt {
 		uint8_t type;
 		/* 64 */
 	} send_medium_frag_done;
+
+	struct omx_evt_recv_connect {
+		uint64_t src_addr;
+		/* 8 */
+		uint8_t src_endpoint;
+		uint8_t length;
+		uint16_t seqnum;
+		uint32_t pad1;
+		/* 16 */
+		uint8_t data[OMX_CONNECT_DATA_MAX];
+		/* 48 */
+		uint8_t pad2[15];
+		uint8_t type;
+	} recv_connect;
 
 	/* recv tiny */
 	struct omx_evt_recv_tiny {

@@ -58,6 +58,80 @@ omx_find_next_recvq_slot(struct omx_endpoint *endpoint)
  */
 
 static int
+omx_recv_connect(struct omx_iface * iface,
+		 struct omx_hdr * mh,
+		 struct sk_buff * skb)
+{
+	struct omx_endpoint * endpoint;
+	struct ethhdr *eh = &mh->head.eth;
+	struct omx_pkt_connect *connect = &mh->body.connect;
+	uint8_t length = connect->length;
+	union omx_evt *evt;
+	struct omx_evt_recv_connect *event;
+	int err = 0;
+
+	/* check packet length */
+	if (unlikely(length > OMX_CONNECT_DATA_MAX)) {
+		omx_drop_dprintk(eh, "CONNECT packet data too long (length %d)",
+				 (unsigned) length);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* check actual data length */
+	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
+		omx_drop_dprintk(eh, "CONNECT packet data with %ld bytes instead of %d",
+				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned) length);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* get the destination endpoint */
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, connect->dst_endpoint);
+	if (unlikely(!endpoint)) {
+		omx_drop_dprintk(eh, "CONNECT packet for unknown endpoint %d",
+				 connect->dst_endpoint);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* get the eventq slot */
+	evt = omx_find_next_eventq_slot(endpoint);
+	if (unlikely(!evt)) {
+		omx_drop_dprintk(eh, "CONNECT packet because of event queue full");
+		err = -EBUSY;
+		goto out_with_endpoint;
+	}
+	event = &evt->recv_connect;
+
+	/* fill event */
+	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
+	event->src_endpoint = connect->src_endpoint;
+	event->length = length;
+	event->seqnum = connect->lib_seqnum;
+
+	omx_recv_dprintk(eh, "CONNECT data length %ld", (unsigned long) length);
+
+	/* copy data in event data */
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event->data, length);
+	/* cannot fail since pages are allocated by us */
+	BUG_ON(err < 0);
+
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = OMX_EVT_RECV_CONNECT;
+
+	omx_endpoint_release(endpoint);
+
+	return 0;
+
+ out_with_endpoint:
+	omx_endpoint_release(endpoint);
+ out:
+	return err;
+}
+
+static int
 omx_recv_tiny(struct omx_iface * iface,
 	      struct omx_hdr * mh,
 	      struct sk_buff * skb)
@@ -376,7 +450,7 @@ omx_pkt_type_handlers_init(void)
 	omx_pkt_type_handlers[OMX_PKT_TYPE_ETHER_MULTICAST] = omx_recv_nosys; /* FIXME */
 	omx_pkt_type_handlers[OMX_PKT_TYPE_ETHER_NATIVE] = omx_recv_nosys; /* FIXME */
 	omx_pkt_type_handlers[OMX_PKT_TYPE_TRUC] = omx_recv_nosys; /* FIXME */
-	omx_pkt_type_handlers[OMX_PKT_TYPE_CONNECT] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_CONNECT] = omx_recv_connect;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_TINY] = omx_recv_tiny;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_SMALL] = omx_recv_small;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_MEDIUM] = omx_recv_medium_frag;
