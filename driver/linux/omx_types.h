@@ -62,6 +62,7 @@ enum omx_endpoint_status {
 struct omx_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
+	uint32_t session_id;
 
 	spinlock_t lock;
 	enum omx_endpoint_status status;

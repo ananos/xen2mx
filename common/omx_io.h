@@ -129,6 +129,7 @@ struct omx_cmd_get_board_id {
 struct omx_cmd_open_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
+	uint32_t session_id;
 };
 
 struct omx_cmd_send_tiny {
