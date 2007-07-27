@@ -43,6 +43,8 @@ struct omx__partner {
   uint16_t peer_index;
   uint8_t endpoint_index;
 
+  uint8_t connect_seqnum;
+
   /* list of request matched but not entirely received */
   struct list_head partialq;
 
@@ -60,7 +62,6 @@ struct omx__partner {
    * (all seqnum < next_frag_recv_seq have been entirely received)
    */
   omx__seqnum_t next_frag_recv_seq;
-
 
   /*
    * when matching, increase recv_seq
@@ -147,6 +148,7 @@ union omx_request {
     struct omx__generic_request generic;
     struct omx__partner * partner;
     uint32_t session_id;
+    uint8_t connect_seqnum;
   } connect;
 };
 

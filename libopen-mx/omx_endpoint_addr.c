@@ -65,6 +65,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->board_addr = board_addr;
   partner->endpoint_index = endpoint_index;
   partner->peer_index = peer_index;
+  partner->connect_seqnum = 0;
   INIT_LIST_HEAD(&partner->partialq);
   partner->next_send_seq = 0;
   partner->next_match_recv_seq = 0;
@@ -134,6 +135,7 @@ omx_connect(omx_endpoint_t ep,
   struct omx__partner * partner;
   struct omx_cmd_send_connect connect_param;
   struct omx__connect_data * data = (void *) &connect_param.data;
+  uint8_t connect_seqnum;
   omx_return_t ret;
   int err;
 
@@ -147,6 +149,8 @@ omx_connect(omx_endpoint_t ep,
   if (ret != OMX_SUCCESS)
     goto out_with_req;
 
+  connect_seqnum = partner->connect_seqnum++;
+
   connect_param.hdr.dest_addr = partner->board_addr;
   connect_param.hdr.dest_endpoint = partner->endpoint_index;
   connect_param.hdr.seqnum = 0;
@@ -154,6 +158,7 @@ omx_connect(omx_endpoint_t ep,
   connect_param.hdr.length = sizeof(*data);
   data->session_id = ep->session_id;
   data->app_key = key;
+  data->connect_seqnum = connect_seqnum;
   data->is_reply = 0;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &connect_param);
@@ -167,6 +172,7 @@ omx_connect(omx_endpoint_t ep,
   req->generic.state = OMX_REQUEST_STATE_PENDING;
   req->connect.partner = partner;
   req->connect.session_id = ep->session_id;
+  req->connect.connect_seqnum = connect_seqnum;
   omx__enqueue_request(&ep->connect_req_q, req);
 
   printf("waiting for connect reply\n");
@@ -219,11 +225,15 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     return ret;
   }
 
-  omx__foreach_request(&ep->connect_req_q, req)
+  omx__foreach_request(&ep->connect_req_q, req) {
+    /* check the endpoint session (so that the endpoint didn't close/reopen in the meantime)
+     * and the partner and the connection seqnum given by this partner
+     */
     if (reply_data->session_id == ep->session_id
-	&& partner == req->connect.partner) {
-      /* FIXME check connect seqnum */
+	&& partner == req->connect.partner
+	&& reply_data->connect_seqnum == req->connect.connect_seqnum) {
       goto found;
+    }
   }
 
   /* invalid connect reply, just ignore it */
@@ -279,6 +289,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   reply_param.hdr.length = sizeof(*reply_data);
   reply_data->is_reply = 1;
   reply_data->session_id = request_data->session_id;
+  reply_data->connect_seqnum = request_data->connect_seqnum;
   reply_data->status_code = status_code;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);

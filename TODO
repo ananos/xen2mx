@@ -1,3 +1,6 @@
+* make connect idempotent
+* send a nack on bad session, except for connect (no session), truc or nack libs
+
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
 
