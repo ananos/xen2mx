@@ -168,11 +168,11 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 	set_current_state(TASK_RUNNING);
 	remove_wait_queue(&endpoint->noref_queue, &wq);
 
-	/* release resources */
-	omx_endpoint_free_resources(endpoint);
-
 	/* detach */
 	omx_iface_detach_endpoint(endpoint, ifacelocked);
+
+	/* release resources */
+	omx_endpoint_free_resources(endpoint);
 
 	/* mark as free now */
 	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
