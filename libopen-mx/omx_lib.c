@@ -25,7 +25,7 @@
 
 #include "omx_io.h"
 #include "omx_lib.h"
-#include "omx_list.h"
+#include "omx_request.h"
 
 /***********************
  * Management of errors
@@ -92,45 +92,6 @@ omx_strstatus(omx_status_code_t code)
     return "Failed";
   }
   assert(0);
-}
-
-/***************************
- * Request queue management
- */
-
-static inline void
-omx__enqueue_request(struct list_head *head,
-		     union omx_request *req)
-{
-  list_add_tail(&req->generic.queue_elt, head);
-}
-
-static inline void
-omx__dequeue_request(struct list_head *head,
-		     union omx_request *req)
-{
-#ifdef OMX_DEBUG
-  struct list_head *e;
-  list_for_each(e, head)
-    if (req == list_entry(e, union omx_request, generic.queue_elt))
-      goto found;
-  assert(0);
-
- found:
-#endif /* OMX_DEBUG */
-  list_del(&req->generic.queue_elt);
-}
-
-static inline union omx_request *
-omx__queue_first_request(struct list_head *head)
-{
-  return list_first_entry(head, union omx_request, generic.queue_elt);
-}
-
-static inline int
-omx__queue_empty(struct list_head *head)
-{
-  return list_empty(head);
 }
 
 /*******************
