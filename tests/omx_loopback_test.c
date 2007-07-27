@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  ret = omx_open_endpoint(board_index, endpoint_index, &ep);
+  ret = omx_open_endpoint(board_index, endpoint_index, 0x12345678, &ep);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to open endpoint (%s)\n",
 	    omx_strerror(ret));

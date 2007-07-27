@@ -78,6 +78,8 @@ omx_strerror(omx_return_t ret)
     return "Invalid parameter";
   case OMX_NOT_IMPLEMENTED:
     return "Not implemented";
+  case OMX_BAD_CONNECTION_KEY:
+    return "Bad Connection Key";
   }
   assert(0);
 }
@@ -90,6 +92,8 @@ omx_strstatus(omx_status_code_t code)
     return "Success";
   case OMX_STATUS_FAILED:
     return "Failed";
+  case OMX_STATUS_BAD_KEY:
+    return "Bad Connection Key";
   }
   assert(0);
 }

@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
       break;
     }
 
-  ret = omx_open_endpoint(bid, eid, &ep);
+  ret = omx_open_endpoint(bid, eid, 0x12345678, &ep);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to open endpoint (%s)\n",
 	    omx_strerror(ret));
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
 
     printf("Starting sender to %s...\n", dest_name);
 
-    ret = omx_connect(ep, dest_addr, rid, 0, 0, &addr);
+    ret = omx_connect(ep, dest_addr, rid, 0x12345678, 0, &addr);
     if (ret != OMX_SUCCESS) {
 	fprintf(stderr, "Failed to connect (%s)\n",
 		omx_strerror(ret));

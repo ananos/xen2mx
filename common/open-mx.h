@@ -36,12 +36,14 @@ enum omx_return {
   OMX_NO_SYSTEM_RESOURCES,
   OMX_INVALID_PARAMETER,
   OMX_NOT_IMPLEMENTED,
+  OMX_BAD_CONNECTION_KEY,
 };
 typedef enum omx_return omx_return_t;
 
 enum omx_status_code {
   OMX_STATUS_SUCCESS=0,
   OMX_STATUS_FAILED,
+  OMX_STATUS_BAD_KEY,
 };
 typedef enum omx_status_code omx_status_code_t;
 
@@ -84,7 +86,7 @@ omx_nic_id_to_board_number(uint64_t nic_id,
 			   uint32_t *board_number);
 
 omx_return_t
-omx_open_endpoint(uint32_t board_index, uint32_t index,
+omx_open_endpoint(uint32_t board_index, uint32_t index, uint32_t key,
 		  omx_endpoint_t *epp);
 
 omx_return_t

@@ -63,7 +63,7 @@ omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
  */
 
 omx_return_t
-omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
+omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 		  struct omx_endpoint **epp)
 {
   /* FIXME: add parameters to choose the board name? */
@@ -127,6 +127,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index,
   ep->eventq = ep->next_event = eventq;
   ep->board_index = board_index;
   ep->endpoint_index = endpoint_index;
+  ep->app_key = key;
 
   /* get some info */
   ret = omx__get_board_id(ep, NULL, ep->board_name, &board_addr);
