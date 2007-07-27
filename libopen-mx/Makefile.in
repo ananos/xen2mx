@@ -6,8 +6,14 @@ CC	=	gcc
 
 CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
 CPPFLAGS	+=	-I@top_srcdir@/common
+
 CFLAGS	+=	-Wall
-CFLAGS	+=	-g -O2
+ifeq (@OMX_DEBUG@,1)
+CFLAGS	+=	-g -O0
+else
+CFLAGS	+=	-O2
+endif
+
 STATIC_CFLAGS	+=	
 DYNAMIC_CFLAGS	+=	-fpic
 

@@ -150,8 +150,10 @@ AC_MSG_CHECKING(if debug is enabled)
 if test x$enable_debug = xyes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(OMX_DEBUG, [1], [Define to enable debug features])
+  AC_SUBST(OMX_DEBUG, 1)
 else
   AC_MSG_RESULT(no)
+  AC_SUBST(OMX_DEBUG, 0)
 fi
 
 AC_ARG_ENABLE(valgrind, [  --enable-valgrind	enable Valgrind hooks in the library ],
