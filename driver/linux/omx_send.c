@@ -141,6 +141,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
+	mh->head.dst_src_peer_index = cmd.dest_src_peer_index;
 	mh->body.tiny.src_endpoint = endpoint->endpoint_index;
 	mh->body.tiny.dst_endpoint = cmd.dest_endpoint;
 	mh->body.tiny.ptype = OMX_PKT_TYPE_TINY;
@@ -217,6 +218,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
+	mh->head.dst_src_peer_index = cmd.dest_src_peer_index;
 	mh->body.small.src_endpoint = endpoint->endpoint_index;
 	mh->body.small.dst_endpoint = cmd.dest_endpoint;
 	mh->body.small.ptype = OMX_PKT_TYPE_SMALL;
@@ -304,6 +306,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
+	mh->head.dst_src_peer_index = cmd.dest_src_peer_index;
 	mh->body.medium.msg.src_endpoint = endpoint->endpoint_index;
 	mh->body.medium.msg.dst_endpoint = cmd.dest_endpoint;
 	mh->body.medium.msg.ptype = OMX_PKT_TYPE_MEDIUM;
@@ -407,7 +410,7 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	mh->body.connect.ptype = OMX_PKT_TYPE_CONNECT;
 	mh->body.connect.length = length;
 	mh->body.connect.lib_seqnum = cmd.seqnum;
-	mh->body.connect.dest_peer_index = cmd.dest_peer_index;
+	mh->body.connect.src_dst_peer_index = cmd.src_dest_peer_index;
 	mh->body.connect.src_mac_low32 = (uint32_t) omx_board_addr_from_netdevice(ifp);
 
 	omx_send_dprintk(eh, "CONNECT length %ld", (unsigned long) length);

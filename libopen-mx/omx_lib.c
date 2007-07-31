@@ -114,21 +114,10 @@ omx__process_recv_tiny(struct omx_endpoint *ep,
   struct omx__partner * partner;
   union omx_request *req;
   unsigned long length;
-  uint16_t peer_index;
   omx_return_t ret;
 
-  /* FIXME: use the src_peer_index with omx_connect */
-  ret = omx__peer_addr_to_index(event->src_addr, &peer_index);
-  if (ret != OMX_SUCCESS) {
-    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-    omx__board_addr_sprintf(board_addr_str, event->src_addr);
-    fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
-	    board_addr_str, omx_strerror(ret));
-    return ret;
-  }
-
-  ret = omx__partner_lookup(ep, peer_index, event->src_endpoint,
-			    &partner);
+  ret = omx__partner_recv_lookup(ep, event->dest_src_peer_index, event->src_endpoint,
+				 &partner);
   if (ret != OMX_SUCCESS)
     return ret;
 
@@ -187,21 +176,10 @@ omx__process_recv_small(struct omx_endpoint *ep,
   struct omx__partner * partner;
   union omx_request *req;
   unsigned long length;
-  uint16_t peer_index;
   omx_return_t ret;
 
-  /* FIXME: use the src_peer_index with omx_connect */
-  ret = omx__peer_addr_to_index(event->src_addr, &peer_index);
-  if (ret != OMX_SUCCESS) {
-    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-    omx__board_addr_sprintf(board_addr_str, event->src_addr);
-    fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
-	    board_addr_str, omx_strerror(ret));
-    return ret;
-  }
-
-  ret = omx__partner_lookup(ep, peer_index, event->src_endpoint,
-			    &partner);
+  ret = omx__partner_recv_lookup(ep, event->dest_src_peer_index, event->src_endpoint,
+				 &partner);
   if (ret != OMX_SUCCESS)
     return ret;
 
@@ -263,25 +241,14 @@ omx__process_recv_medium(struct omx_endpoint *ep,
   unsigned long seqnum = event->frag_seqnum;
   unsigned long offset = seqnum << (OMX_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
   struct omx__partner * partner;
-  uint16_t peer_index;
   omx_return_t ret;
 
   printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
 	 (unsigned) seqnum, (unsigned) event->frag_pipeline, (unsigned) chunk,
 	 (unsigned) offset, (unsigned) msg_length);
 
-  /* FIXME: use the src_peer_index with omx_connect */
-  ret = omx__peer_addr_to_index(event->src_addr, &peer_index);
-  if (ret != OMX_SUCCESS) {
-    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-    omx__board_addr_sprintf(board_addr_str, event->src_addr);
-    fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
-	    board_addr_str, omx_strerror(ret));
-    return ret;
-  }
-
-  ret = omx__partner_lookup(ep, peer_index, event->src_endpoint,
-			    &partner);
+  ret = omx__partner_recv_lookup(ep, event->dest_src_peer_index, event->src_endpoint,
+				 &partner);
   if (ret != OMX_SUCCESS)
     return ret;
 
@@ -494,6 +461,7 @@ omx_isend(struct omx_endpoint *ep,
     tiny_param.hdr.length = length;
     tiny_param.hdr.seqnum = seqnum;
     tiny_param.hdr.session_id = partner->session_id;
+    tiny_param.hdr.dest_src_peer_index = partner->dest_src_peer_index;
     /* FIXME: tiny_param.hdr.lib_cookie = lib_cookie; */
     memcpy(tiny_param.data, buffer, length);
 
@@ -520,6 +488,7 @@ omx_isend(struct omx_endpoint *ep,
     small_param.vaddr = (uintptr_t) buffer;
     small_param.seqnum = seqnum;
     small_param.session_id = partner->session_id;
+    small_param.dest_src_peer_index = partner->dest_src_peer_index;
 
     err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &small_param);
     if (err < 0) {
@@ -556,6 +525,7 @@ omx_isend(struct omx_endpoint *ep,
     medium_param.msg_length = length;
     medium_param.seqnum = seqnum;
     medium_param.session_id = partner->session_id;
+    medium_param.dest_src_peer_index = partner->dest_src_peer_index;
 
     for(i=0; i<frags; i++) {
       unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX

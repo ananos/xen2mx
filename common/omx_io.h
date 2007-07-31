@@ -138,9 +138,9 @@ struct omx_cmd_send_tiny {
 		uint8_t dest_endpoint;
 		uint8_t length;
 		/* 8 */
-		uint32_t session_id;
+		uint16_t dest_src_peer_index;
 		uint16_t seqnum;
-		uint16_t pad;
+		uint32_t session_id;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
@@ -154,13 +154,17 @@ struct omx_cmd_send_small {
 	uint8_t dest_endpoint;
 	uint8_t pad1;
 	/* 8 */
+	uint16_t dest_src_peer_index;
+	uint16_t pad2;
 	uint32_t session_id;
+	/* 16 */
 	uint16_t length;
 	uint16_t seqnum;
-	/* 16 */
+	uint32_t pad3;
+	/* 24 */
 	uint64_t vaddr;
 	uint64_t match_info;
-	/* 32 */
+	/* 40 */
 };
 
 struct omx_cmd_send_medium {
@@ -168,17 +172,21 @@ struct omx_cmd_send_medium {
 	uint8_t dest_endpoint;
 	uint8_t pad1;
 	/* 8 */
+	uint16_t dest_src_peer_index;
+	uint16_t pad2;
 	uint32_t session_id;
+	/* 16 */
 	uint16_t seqnum;
 	uint16_t sendq_page_offset;
-	/* 16 */
+	uint32_t pad3;
+	/* 24 */
 	uint32_t msg_length;
 	uint16_t frag_length;
 	uint8_t frag_seqnum;
 	uint8_t frag_pipeline;
-	/* 24 */
-	uint64_t match_info;
 	/* 32 */
+	uint64_t match_info;
+	/* 40 */
 };
 
 struct omx_cmd_send_connect {
@@ -188,7 +196,7 @@ struct omx_cmd_send_connect {
 		uint8_t length;
 		/* 8 */
 		uint16_t seqnum;
-		uint16_t dest_peer_index;
+		uint16_t src_dest_peer_index;
 		/* 12 */
 	} hdr;
 	char data[OMX_CONNECT_DATA_MAX];
@@ -281,7 +289,8 @@ union omx_evt {
 		uint8_t src_endpoint;
 		uint8_t length;
 		uint16_t seqnum;
-		uint32_t pad1;
+		uint16_t src_dest_peer_index;
+		uint16_t pad1;
 		/* 16 */
 		uint8_t data[OMX_CONNECT_DATA_MAX];
 		/* 48 */
@@ -296,7 +305,8 @@ union omx_evt {
 		uint8_t src_endpoint;
 		uint8_t length;
 		uint16_t seqnum;
-		uint32_t pad1;
+		uint16_t dest_src_peer_index;
+		uint16_t pad1;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
@@ -315,11 +325,11 @@ union omx_evt {
 		uint8_t pad1;
 		uint16_t length;
 		uint16_t seqnum;
-		uint16_t pad2;
+		uint16_t dest_src_peer_index;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
-		uint8_t pad3[39];
+		uint8_t pad2[39];
 		uint8_t type;
 		/* 64 */
 	} recv_small;
@@ -336,7 +346,8 @@ union omx_evt {
 		uint16_t frag_length;
 		uint8_t frag_seqnum;
 		uint8_t frag_pipeline;
-		uint32_t pad2;
+		uint16_t dest_src_peer_index;
+		uint16_t pad2;
 		/* 24 */
 		uint64_t match_info;
 		/* 32 */

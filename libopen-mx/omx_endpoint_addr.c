@@ -42,6 +42,7 @@ omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
   struct omx__partner *partner = omx__partner_from_addr(&endpoint_addr);
   *nic_id = partner->board_addr;
   *endpoint_id = partner->endpoint_index;
+  printf("returning addr %llx ep %x\n", partner->board_addr, partner->endpoint_index);
   return OMX_SUCCESS;
 }
 
@@ -65,6 +66,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->board_addr = board_addr;
   partner->endpoint_index = endpoint_index;
   partner->peer_index = peer_index;
+  partner->dest_src_peer_index = -1;
   partner->connect_seqnum = 0;
   INIT_LIST_HEAD(&partner->partialq);
   partner->session_id = 0; /* will be initialized when the partner will connect to me */
@@ -77,6 +79,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   ep->partners[partner_index] = partner;
 
   *partnerp = partner;
+  fprintf(stderr, "created peer %d %d\n", peer_index, endpoint_index);
 
   return OMX_SUCCESS;
 }
@@ -107,6 +110,23 @@ omx__partner_lookup(struct omx_endpoint *ep,
 
 
   *partnerp = ep->partners[partner_index];
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx__partner_recv_lookup(struct omx_endpoint *ep,
+			 uint16_t peer_index, uint8_t endpoint_index,
+			 struct omx__partner ** partnerp)
+{
+  uint32_t partner_index;
+  struct omx__partner * partner;
+
+  partner_index = ((uint32_t) endpoint_index)
+    + ((uint32_t) peer_index) * omx__globals.endpoint_max;
+  partner = ep->partners[partner_index];
+  assert(partner);
+
+  *partnerp = partner;
   return OMX_SUCCESS;
 }
 
@@ -178,7 +198,7 @@ omx_connect(omx_endpoint_t ep,
   connect_param.hdr.dest_addr = partner->board_addr;
   connect_param.hdr.dest_endpoint = partner->endpoint_index;
   connect_param.hdr.seqnum = 0;
-  connect_param.hdr.dest_peer_index = partner->peer_index;
+  connect_param.hdr.src_dest_peer_index = partner->peer_index;
   connect_param.hdr.length = sizeof(*data);
   data->src_session_id = ep->session_id;
   data->app_key = key;
@@ -265,8 +285,17 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
  found:
   printf("waking up on connect reply\n");
-  partner->next_send_seq = reply_data->target_recv_seqnum_start;
-  partner->session_id = reply_data->target_session_id;
+
+  if (reply_data->status_code == OMX_STATUS_SUCCESS) {
+    /* connection successfull, initialize stuff */
+    partner->next_send_seq = reply_data->target_recv_seqnum_start;
+    partner->session_id = reply_data->target_session_id;
+    partner->dest_src_peer_index = event->src_dest_peer_index;
+    printf("I am #%d in partner's table, with next_send_seq %d\n",
+	   partner->dest_src_peer_index, partner->next_send_seq);
+  }
+
+  /* complete the request */
   req->generic.status.code = reply_data->status_code;
   req->generic.state = OMX_REQUEST_STATE_DONE;
 
@@ -296,10 +325,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   }
 
   if (request_data->app_key == ep->app_key) {
-    /* FIXME: do the connection stuff:
-     * + initialize receive seqnums
-     * + save the session
-     */
+    /* FIXME: do bidirectionnal connection stuff? */
 
     status_code = OMX_STATUS_SUCCESS;
   } else {
@@ -311,7 +337,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   reply_param.hdr.dest_addr = partner->board_addr;
   reply_param.hdr.dest_endpoint = partner->endpoint_index;
   reply_param.hdr.seqnum = 0;
-  reply_param.hdr.dest_peer_index = partner->peer_index;
+  reply_param.hdr.src_dest_peer_index = partner->peer_index;
   reply_param.hdr.length = sizeof(*reply_data);
   reply_data->is_reply = 1;
   reply_data->target_session_id = ep->session_id;

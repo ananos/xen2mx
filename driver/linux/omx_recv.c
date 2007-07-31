@@ -108,6 +108,7 @@ omx_recv_connect(struct omx_iface * iface,
 	/* fill event */
 	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = connect->src_endpoint;
+	event->src_dest_peer_index = connect->src_dst_peer_index;
 	event->length = length;
 	event->seqnum = connect->lib_seqnum;
 
@@ -187,6 +188,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	event = &evt->recv_tiny;
 
 	/* fill event */
+	event->dest_src_peer_index = mh->head.dst_src_peer_index;
 	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = tiny->src_endpoint;
 	event->length = length;
@@ -270,6 +272,7 @@ omx_recv_small(struct omx_iface * iface,
 	event = &evt->recv_small;
 
 	/* fill event */
+	event->dest_src_peer_index = mh->head.dst_src_peer_index;
 	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = small->src_endpoint;
 	event->length = length;
@@ -354,6 +357,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event = &evt->recv_medium;
 
 	/* fill event */
+	event->dest_src_peer_index = mh->head.dst_src_peer_index;
 	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = medium->msg.src_endpoint;
 	event->match_info = OMX_MATCH_INFO_FROM_PKT(&medium->msg);

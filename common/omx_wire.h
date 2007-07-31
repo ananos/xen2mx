@@ -102,7 +102,7 @@ omx_strpkttype(enum omx_pkt_type ptype)
 
 struct omx_pkt_head {
 	struct ethhdr eth;
-	uint16_t sender_peer_index; /* FIXME: unused */
+	uint16_t dst_src_peer_index;
 	/* 16 */
 };
 
@@ -130,7 +130,7 @@ struct omx_pkt_connect {
 	uint8_t length;
 	uint8_t pad[3];
 	uint16_t lib_seqnum;
-	uint16_t dest_peer_index;
+	uint16_t src_dst_peer_index;
 	uint32_t src_mac_low32;
 };
 
