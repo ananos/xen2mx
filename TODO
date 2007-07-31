@@ -25,7 +25,13 @@
 * rdma_put
 
 * true sleeping in the kernel
+  - pass the eventq index in the ioctl to avoid races
   - always wakeup on event?
+  - wake up only one and have it wake up the right one ?
+* progress thread sleeps on a special queue
+  - some event wakeup both queues (force_wakeup)
+  - other events wakeup the progress thread only no one on the regular queue
+
 * medium level helpers for tools accessing small part of internals
 * matching
 * seqnum for in-order matching, associated with lib_cookie
