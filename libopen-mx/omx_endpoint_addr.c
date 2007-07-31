@@ -130,6 +130,46 @@ omx__partner_recv_lookup(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
+/*
+ * Actually initialize connected partner
+ */
+static inline void
+omx__connect_partner(struct omx__partner * partner,
+		     uint16_t src_dest_peer_index,
+		     uint32_t target_session_id,
+		     omx__seqnum_t target_recv_seqnum_start)
+{
+    partner->dest_src_peer_index = src_dest_peer_index;
+    partner->session_id = target_session_id;
+    partner->next_send_seq = target_recv_seqnum_start;
+}
+
+omx_return_t
+omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
+{
+  uint16_t peer_index;
+  omx_return_t ret;
+
+  ret = omx__peer_addr_to_index(board_addr, &peer_index);
+  if (ret != OMX_SUCCESS) {
+    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+    omx__board_addr_sprintf(board_addr_str, board_addr);
+    fprintf(stderr, "Failed to find peer index of local board %s (%s)\n",
+	    board_addr_str, omx_strerror(ret));
+    return ret;
+  }
+
+  ret = omx__partner_create(ep, peer_index,
+			    board_addr, ep->endpoint_index,
+			    &ep->myself);
+  if (ret != OMX_SUCCESS)
+    return ret;
+
+  omx__connect_partner(ep->myself, peer_index, ep->session_id, 0);
+
+  return OMX_SUCCESS;
+}
+
 /*************
  * Connection
  */
@@ -288,11 +328,10 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
   if (reply_data->status_code == OMX_STATUS_SUCCESS) {
     /* connection successfull, initialize stuff */
-    partner->next_send_seq = reply_data->target_recv_seqnum_start;
-    partner->session_id = reply_data->target_session_id;
-    partner->dest_src_peer_index = event->src_dest_peer_index;
-    printf("I am #%d in partner's table, with next_send_seq %d\n",
-	   partner->dest_src_peer_index, partner->next_send_seq);
+    omx__connect_partner(partner,
+			 event->src_dest_peer_index,
+			 reply_data->target_session_id,
+			 reply_data->target_recv_seqnum_start);
   }
 
   /* complete the request */

@@ -72,7 +72,6 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   void * recvq, * sendq, * eventq;
   uint64_t board_addr;
-  uint16_t peer_index;
   omx_return_t ret = OMX_SUCCESS;
   int err, fd;
 
@@ -148,19 +147,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_userq_mmap;
   }
 
-  /* link me to myself */
-  ret = omx__peer_addr_to_index(board_addr, &peer_index);
-  if (ret != OMX_SUCCESS) {
-    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-    omx__board_addr_sprintf(board_addr_str, board_addr);
-    fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
-	    board_addr_str, omx_strerror(ret));
-    goto out_with_partners;
-  }
-
-  ret = omx__partner_create(ep, peer_index,
-			    board_addr, endpoint_index,
-			    &ep->myself);
+  /* connect to myself */
+  ret = omx__connect_myself(ep, board_addr);
   if (ret != OMX_SUCCESS)
     goto out_with_partners;
 

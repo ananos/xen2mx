@@ -83,9 +83,7 @@ omx__partner_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
 }
 
 extern omx_return_t
-omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
-		    uint64_t board_addr, uint8_t endpoint_index,
-		    struct omx__partner ** partnerp);
+omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr);
 
 extern omx_return_t
 omx__partner_recv_lookup(struct omx_endpoint *ep,
