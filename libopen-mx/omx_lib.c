@@ -482,7 +482,7 @@ omx_isend(struct omx_endpoint *ep,
   req->send.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
 
-  seqnum = ep->myself->next_send_seq++; /* FIXME: increater at the end, in case of error */
+  seqnum = partner->next_send_seq++; /* FIXME: increase at the end, in case of error */
   req->send.seqnum = seqnum;
 
   if (length <= OMX_TINY_MAX) {
