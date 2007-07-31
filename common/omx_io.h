@@ -138,14 +138,15 @@ struct omx_cmd_send_tiny {
 		uint8_t dest_endpoint;
 		uint8_t length;
 		/* 8 */
-		uint64_t match_info;
-		/* 16 */
+		uint32_t session_id;
 		uint16_t seqnum;
 		uint16_t pad;
-		/* 20 */
+		/* 16 */
+		uint64_t match_info;
+		/* 24 */
 	} hdr;
 	char data[OMX_TINY_MAX];
-	/* 52 */
+	/* 56 */
 };
 
 struct omx_cmd_send_small {
@@ -153,9 +154,9 @@ struct omx_cmd_send_small {
 	uint8_t dest_endpoint;
 	uint8_t pad1;
 	/* 8 */
+	uint32_t session_id;
 	uint16_t length;
 	uint16_t seqnum;
-	uint32_t pad2;
 	/* 16 */
 	uint64_t vaddr;
 	uint64_t match_info;
@@ -167,14 +168,14 @@ struct omx_cmd_send_medium {
 	uint8_t dest_endpoint;
 	uint8_t pad1;
 	/* 8 */
+	uint32_t session_id;
+	uint16_t seqnum;
+	uint16_t sendq_page_offset;
+	/* 16 */
 	uint32_t msg_length;
 	uint16_t frag_length;
 	uint8_t frag_seqnum;
 	uint8_t frag_pipeline;
-	/* 16 */
-	uint16_t seqnum;
-	uint16_t sendq_page_offset;
-	uint32_t pad2;
 	/* 24 */
 	uint64_t match_info;
 	/* 32 */
@@ -206,6 +207,7 @@ struct omx_cmd_send_pull {
 	/* 24 */
 	uint32_t remote_offset; /* FIXME: 64bits ? */
 	/* 28 */
+	/* FIXME: add session id */
 };
 
 struct omx_cmd_register_region {

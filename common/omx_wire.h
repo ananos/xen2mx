@@ -117,7 +117,7 @@ struct omx_pkt_msg {
 	uint16_t lib_piggyack; /* FIXME: unused ? */
 	uint32_t match_a;
 	uint32_t match_b;
-	uint32_t session; /* FIXME: unused ? */
+	uint32_t session;
 	/* 24 */
 };
 

@@ -493,6 +493,7 @@ omx_isend(struct omx_endpoint *ep,
     tiny_param.hdr.match_info = match_info;
     tiny_param.hdr.length = length;
     tiny_param.hdr.seqnum = seqnum;
+    tiny_param.hdr.session_id = partner->session_id;
     /* FIXME: tiny_param.hdr.lib_cookie = lib_cookie; */
     memcpy(tiny_param.data, buffer, length);
 
@@ -518,6 +519,7 @@ omx_isend(struct omx_endpoint *ep,
     /* FIXME: small_param.lib_cookie = lib_cookie; */
     small_param.vaddr = (uintptr_t) buffer;
     small_param.seqnum = seqnum;
+    small_param.session_id = partner->session_id;
 
     err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &small_param);
     if (err < 0) {
@@ -553,6 +555,7 @@ omx_isend(struct omx_endpoint *ep,
     /* FIXME: medium_param.lib_cookie = lib_cookie; */
     medium_param.msg_length = length;
     medium_param.seqnum = seqnum;
+    medium_param.session_id = partner->session_id;
 
     for(i=0; i<frags; i++) {
       unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX

@@ -146,6 +146,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	mh->body.tiny.ptype = OMX_PKT_TYPE_TINY;
 	mh->body.tiny.length = length;
 	mh->body.tiny.lib_seqnum = cmd.seqnum;
+	mh->body.tiny.session = cmd.session_id;
 	OMX_PKT_FROM_MATCH_INFO(& mh->body.tiny, cmd.match_info);
 
 	omx_send_dprintk(eh, "TINY length %ld", (unsigned long) length);
@@ -221,6 +222,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 	mh->body.small.ptype = OMX_PKT_TYPE_SMALL;
 	mh->body.small.length = length;
 	mh->body.small.lib_seqnum = cmd.seqnum;
+	mh->body.small.session = cmd.session_id;
 	OMX_PKT_FROM_MATCH_INFO(& mh->body.small, cmd.match_info);
 
 	omx_send_dprintk(eh, "SMALL length %ld", (unsigned long) length);
@@ -307,6 +309,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	mh->body.medium.msg.ptype = OMX_PKT_TYPE_MEDIUM;
 	mh->body.medium.msg.length = cmd.msg_length;
 	mh->body.medium.msg.lib_seqnum = cmd.seqnum;
+	mh->body.medium.msg.session = cmd.session_id;
 	OMX_PKT_FROM_MATCH_INFO(& mh->body.medium.msg, cmd.match_info);
 	mh->body.medium.frag_length = frag_length;
 	mh->body.medium.frag_seqnum = cmd.frag_seqnum;

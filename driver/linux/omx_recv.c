@@ -170,6 +170,13 @@ omx_recv_tiny(struct omx_iface * iface,
 		goto out;
 	}
 
+	/* check the session */
+	if (unlikely(tiny->session != endpoint->session_id)) {
+		omx_drop_dprintk(eh, "TINY packet with bad session");
+		err = -EINVAL;
+		goto out_with_endpoint;
+	}
+
 	/* get the eventq slot */
 	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
@@ -244,6 +251,13 @@ omx_recv_small(struct omx_iface * iface,
 				 small->dst_endpoint);
 		err = -EINVAL;
 		goto out;
+	}
+
+	/* check the session */
+	if (unlikely(small->session != endpoint->session_id)) {
+		omx_drop_dprintk(eh, "SMALL packet with bad session");
+		err = -EINVAL;
+		goto out_with_endpoint;
 	}
 
 	/* get the eventq slot */
@@ -321,6 +335,13 @@ omx_recv_medium_frag(struct omx_iface * iface,
 				 medium->msg.dst_endpoint);
 		err = -EINVAL;
 		goto out;
+	}
+
+	/* check the session */
+	if (unlikely(medium->msg.session != endpoint->session_id)) {
+		omx_drop_dprintk(eh, "MEDIUM packet with bad session");
+		err = -EINVAL;
+		goto out_with_endpoint;
 	}
 
 	/* get the eventq slot */

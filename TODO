@@ -1,5 +1,10 @@
 * make connect idempotent
 * send a nack on bad session, except for connect (no session), truc or nack libs
+* use src/dest_peer_index
+* split partner_lookup into recv_lookup/connect_req_lookup/connect_reply_lookup/connect_done_lookup or so
+* check the session in partner_recv_lookup
+
+* make sure tests/tools are rebuilt when lib is modified
 
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
@@ -7,6 +12,9 @@
 * check pingpong contents
 
 * unexpected medium
+
+* autoconnect to myself
+* revert mx_connect to get_endpoint_addr in loopback_test
 
 * factorize loopback_test send functions once unexpected medium are ready
 * check data instead of displaying

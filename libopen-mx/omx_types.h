@@ -42,6 +42,7 @@ struct omx__partner {
   uint64_t board_addr;
   uint16_t peer_index;
   uint8_t endpoint_index;
+  uint32_t session_id;
 
   uint8_t connect_seqnum;
 

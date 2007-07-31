@@ -67,7 +67,8 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->peer_index = peer_index;
   partner->connect_seqnum = 0;
   INIT_LIST_HEAD(&partner->partialq);
-  partner->next_send_seq = 0;
+  partner->session_id = 0; /* will be initialized when the partner will connect to me */
+  partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   partner->next_match_recv_seq = 0;
   partner->next_frag_recv_seq = 0;
 
@@ -113,14 +114,37 @@ omx__partner_lookup(struct omx_endpoint *ep,
  * Connection
  */
 
-struct omx__connect_data {
-  uint32_t session_id;
+struct omx__connect_request_data {
+  /* the sender's session id (so that we know when the connect has been sent) */
+  uint32_t src_session_id;
+  /* the application level key in the request */
   uint32_t app_key;
-  uint16_t seqnum_start;
+
+  uint16_t pad1;
+  /* is this a request ot a reply? 0 here */
   uint8_t is_reply;
+  /* sequence number of this connect request (in case multiple have been sent/lost) */
   uint8_t connect_seqnum;
+
+  uint8_t pad2;
+};
+
+struct omx__connect_reply_data {
+  /* the sender's session id (so that we know when the connect has been sent) */
+  uint32_t src_session_id;
+  /* the target session_id (so that we can send right after this connect) */
+  uint32_t target_session_id;
+  /* the target next recv seqnum in the reply (so that we know out next send seqnum) */
+  uint16_t target_recv_seqnum_start;
+  /* is this a request ot a reply? 1 here */
+  uint8_t is_reply;
+  /* sequence number of this connect request (in case multiple have been sent/lost) */
+  uint8_t connect_seqnum;
+  /* the target connect matching status (only in the reply) */
   uint8_t status_code;
 };
+
+/* FIXME: assertions so that is_reply is at the same offset/size */
 
 /*
  * Start the connection process to another peer
@@ -134,7 +158,7 @@ omx_connect(omx_endpoint_t ep,
   union omx_request * req;
   struct omx__partner * partner;
   struct omx_cmd_send_connect connect_param;
-  struct omx__connect_data * data = (void *) &connect_param.data;
+  struct omx__connect_request_data * data = (void *) &connect_param.data;
   uint8_t connect_seqnum;
   omx_return_t ret;
   int err;
@@ -156,7 +180,7 @@ omx_connect(omx_endpoint_t ep,
   connect_param.hdr.seqnum = 0;
   connect_param.hdr.dest_peer_index = partner->peer_index;
   connect_param.hdr.length = sizeof(*data);
-  data->session_id = ep->session_id;
+  data->src_session_id = ep->session_id;
   data->app_key = key;
   data->connect_seqnum = connect_seqnum;
   data->is_reply = 0;
@@ -214,7 +238,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 				struct omx_evt_recv_connect *event)
 {
   struct omx__partner * partner;
-  struct omx__connect_data * reply_data = (void *) event->data;
+  struct omx__connect_reply_data * reply_data = (void *) event->data;
   union omx_request * req;
   omx_return_t ret;
 
@@ -229,7 +253,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     /* check the endpoint session (so that the endpoint didn't close/reopen in the meantime)
      * and the partner and the connection seqnum given by this partner
      */
-    if (reply_data->session_id == ep->session_id
+    if (reply_data->src_session_id == ep->session_id
 	&& partner == req->connect.partner
 	&& reply_data->connect_seqnum == req->connect.connect_seqnum) {
       goto found;
@@ -241,6 +265,8 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
  found:
   printf("waking up on connect reply\n");
+  partner->next_send_seq = reply_data->target_recv_seqnum_start;
+  partner->session_id = reply_data->target_session_id;
   req->generic.status.code = reply_data->status_code;
   req->generic.state = OMX_REQUEST_STATE_DONE;
 
@@ -256,8 +282,8 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 {
   struct omx__partner * partner;
   struct omx_cmd_send_connect reply_param;
-  struct omx__connect_data * request_data = (void *) event->data;
-  struct omx__connect_data * reply_data = (void *) reply_param.data;
+  struct omx__connect_request_data * request_data = (void *) event->data;
+  struct omx__connect_reply_data * reply_data = (void *) reply_param.data;
   omx_return_t ret;
   omx_status_code_t status_code;
   int err;
@@ -288,9 +314,11 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   reply_param.hdr.dest_peer_index = partner->peer_index;
   reply_param.hdr.length = sizeof(*reply_data);
   reply_data->is_reply = 1;
-  reply_data->session_id = request_data->session_id;
+  reply_data->target_session_id = ep->session_id;
+  reply_data->src_session_id = request_data->src_session_id;
   reply_data->connect_seqnum = request_data->connect_seqnum;
   reply_data->status_code = status_code;
+  reply_data->target_recv_seqnum_start = 0;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);
   if (err < 0) {
@@ -312,7 +340,7 @@ omx_return_t
 omx__process_recv_connect(struct omx_endpoint *ep,
 			  struct omx_evt_recv_connect *event)
 {
-  struct omx__connect_data * data = (void *) event->data;
+  struct omx__connect_request_data * data = (void *) event->data;
   if (data->is_reply)
     return omx__process_recv_connect_reply(ep, event);
   else
