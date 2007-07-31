@@ -462,7 +462,7 @@ omx_isend(struct omx_endpoint *ep,
     tiny_param.hdr.seqnum = seqnum;
     tiny_param.hdr.session_id = partner->session_id;
     tiny_param.hdr.dest_src_peer_index = partner->dest_src_peer_index;
-    /* FIXME: tiny_param.hdr.lib_cookie = lib_cookie; */
+
     memcpy(tiny_param.data, buffer, length);
 
     err = ioctl(ep->fd, OMX_CMD_SEND_TINY, &tiny_param);
@@ -484,7 +484,6 @@ omx_isend(struct omx_endpoint *ep,
     small_param.dest_endpoint = partner->endpoint_index;
     small_param.match_info = match_info;
     small_param.length = length;
-    /* FIXME: small_param.lib_cookie = lib_cookie; */
     small_param.vaddr = (uintptr_t) buffer;
     small_param.seqnum = seqnum;
     small_param.session_id = partner->session_id;
@@ -521,7 +520,6 @@ omx_isend(struct omx_endpoint *ep,
     medium_param.dest_endpoint = partner->endpoint_index;
     medium_param.match_info = match_info;
     medium_param.frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
-    /* FIXME: medium_param.lib_cookie = lib_cookie; */
     medium_param.msg_length = length;
     medium_param.seqnum = seqnum;
     medium_param.session_id = partner->session_id;
