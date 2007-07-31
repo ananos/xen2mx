@@ -300,14 +300,26 @@ union omx_evt {
 		uint8_t type;
 	} recv_connect;
 
+	/* generic recv whose fields match recv_tiny/small/medium */
+	struct omx_evt_recv_generic {
+		uint16_t dest_src_peer_index;
+		uint8_t src_endpoint;
+		uint8_t pad1;
+		uint16_t seqnum;
+		/* 6 */
+		uint8_t pad[55];
+		uint8_t type;
+		/* 64 */
+	} recv_generic;
+
 	/* recv tiny */
 	struct omx_evt_recv_tiny {
 		uint16_t dest_src_peer_index;
 		uint8_t src_endpoint;
 		uint8_t pad1;
-		/* 4 */
 		uint16_t seqnum;
 		uint8_t length;
+		/* 6 bytes as in recv_generic */
 		uint8_t pad2;
 		/* 8 */
 		uint64_t match_info;
@@ -324,9 +336,9 @@ union omx_evt {
 		uint16_t dest_src_peer_index;
 		uint8_t src_endpoint;
 		uint8_t pad1;
-		/* 4 */
-		uint16_t length;
 		uint16_t seqnum;
+		/* 6 bytes as in recv_generic */
+		uint16_t length;
 		/* 8 */
 		uint64_t match_info;
 		/* 16 */
@@ -340,14 +352,14 @@ union omx_evt {
 		uint16_t dest_src_peer_index;
 		uint8_t src_endpoint;
 		uint8_t pad1;
-		/* 4 */
+		uint16_t seqnum;
+		/* 6 bytes as in recv_generic */
+		uint16_t pad2;
+		/* 8 */
+		uint32_t msg_length;
 		uint16_t frag_length;
 		uint8_t frag_seqnum;
 		uint8_t frag_pipeline;
-		/* 8 */
-		uint32_t msg_length;
-		uint16_t seqnum;
-		uint16_t pad2;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */

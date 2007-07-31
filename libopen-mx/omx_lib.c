@@ -103,23 +103,17 @@ omx_strstatus(omx_status_code_t code)
  */
 
 typedef omx_return_t (*omx__process_recv_func_t) (struct omx_endpoint *ep,
+						  struct omx__partner *partner,
 						  union omx_evt *evt,
 						  void *data);
 
 static omx_return_t
-omx__process_recv_tiny(struct omx_endpoint *ep,
+omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_evt *evt, void *data)
 {
   struct omx_evt_recv_tiny *event = &evt->recv_tiny;
-  struct omx__partner * partner;
   union omx_request *req;
   unsigned long length;
-  omx_return_t ret;
-
-  ret = omx__partner_recv_lookup(ep, event->dest_src_peer_index, event->src_endpoint,
-				 &partner);
-  if (ret != OMX_SUCCESS)
-    return ret;
 
   if (omx__queue_empty(&ep->recv_req_q)) {
     void *unexp_buffer;
@@ -169,19 +163,12 @@ omx__process_recv_tiny(struct omx_endpoint *ep,
 }
 
 static omx_return_t
-omx__process_recv_small(struct omx_endpoint *ep,
+omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 			union omx_evt *evt, void *data)
 {
   struct omx_evt_recv_small * event = &evt->recv_small;
-  struct omx__partner * partner;
   union omx_request *req;
   unsigned long length;
-  omx_return_t ret;
-
-  ret = omx__partner_recv_lookup(ep, event->dest_src_peer_index, event->src_endpoint,
-				 &partner);
-  if (ret != OMX_SUCCESS)
-    return ret;
 
   if (omx__queue_empty(&ep->recv_req_q)) {
     void *unexp_buffer;
@@ -231,7 +218,7 @@ omx__process_recv_small(struct omx_endpoint *ep,
 }
 
 static omx_return_t
-omx__process_recv_medium(struct omx_endpoint *ep,
+omx__process_recv_medium(struct omx_endpoint *ep, struct omx__partner * partner,
 			 union omx_evt *evt, void *data)
 {
   struct omx_evt_recv_medium * event = &evt->recv_medium;
@@ -240,17 +227,10 @@ omx__process_recv_medium(struct omx_endpoint *ep,
   unsigned long chunk = event->frag_length;
   unsigned long seqnum = event->frag_seqnum;
   unsigned long offset = seqnum << (OMX_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
-  struct omx__partner * partner;
-  omx_return_t ret;
 
   printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
 	 (unsigned) seqnum, (unsigned) event->frag_pipeline, (unsigned) chunk,
 	 (unsigned) offset, (unsigned) msg_length);
-
-  ret = omx__partner_recv_lookup(ep, event->dest_src_peer_index, event->src_endpoint,
-				 &partner);
-  if (ret != OMX_SUCCESS)
-    return ret;
 
   if (!omx__queue_empty(&ep->multifraq_medium_recv_req_q)) {
     /* message already partially received */
@@ -321,14 +301,24 @@ omx__process_recv_medium(struct omx_endpoint *ep,
 
 static omx_return_t
 omx__process_recv(struct omx_endpoint *ep,
-		  union omx_evt *evt, omx__seqnum_t seqnum, void *data,
+		  union omx_evt *evt, void *data,
 		  omx__process_recv_func_t recv_func)
 {
+  struct omx_evt_recv_generic * generic = &evt->recv_generic;
+  omx__seqnum_t seqnum = generic->seqnum;
+  struct omx__partner * partner;
+  omx_return_t ret;
+
+  ret = omx__partner_recv_lookup(ep, generic->dest_src_peer_index, generic->src_endpoint,
+				 &partner);
+  if (ret != OMX_SUCCESS)
+    return ret;
+
   omx__debug_printf("got seqnum %d\n", seqnum);
 
   /* FIXME: check order, do matching, handle unexpected and early */
 
-  return recv_func(ep, evt, data);
+  return recv_func(ep, partner, evt, data);
 }
 
 static omx_return_t
@@ -346,7 +336,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
   case OMX_EVT_RECV_TINY: {
     ret = omx__process_recv(ep,
-			    evt, evt->recv_tiny.seqnum, evt->recv_tiny.data,
+			    evt, evt->recv_tiny.data,
 			    omx__process_recv_tiny);
     break;
   }
@@ -355,7 +345,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
     char * recvq_buffer = ep->recvq + evt_index * OMX_RECVQ_ENTRY_SIZE;
     ret = omx__process_recv(ep,
-			    evt, evt->recv_small.seqnum, recvq_buffer,
+			    evt, recvq_buffer,
 			    omx__process_recv_small);
     break;
   }
@@ -364,7 +354,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
     char * recvq_buffer = ep->recvq + evt_index * OMX_RECVQ_ENTRY_SIZE;
     ret = omx__process_recv(ep,
-			    evt, evt->recv_medium.seqnum, recvq_buffer,
+			    evt, recvq_buffer,
 			    omx__process_recv_medium);
     break;
   }
