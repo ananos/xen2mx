@@ -286,72 +286,72 @@ union omx_evt {
 	struct omx_evt_recv_connect {
 		uint64_t src_addr;
 		/* 8 */
-		uint8_t src_endpoint;
-		uint8_t length;
-		uint16_t seqnum;
 		uint16_t src_dest_peer_index;
-		uint16_t pad1;
+		uint8_t src_endpoint;
+		uint8_t pad1;
+		/* 12 */
+		uint16_t seqnum;
+		uint8_t length;
+		uint8_t pad2;
 		/* 16 */
 		uint8_t data[OMX_CONNECT_DATA_MAX];
 		/* 48 */
-		uint8_t pad2[15];
+		uint8_t pad3[15];
 		uint8_t type;
 	} recv_connect;
 
 	/* recv tiny */
 	struct omx_evt_recv_tiny {
-		uint64_t src_addr;
-		/* 8 */
-		uint8_t src_endpoint;
-		uint8_t length;
-		uint16_t seqnum;
 		uint16_t dest_src_peer_index;
-		uint16_t pad1;
-		/* 16 */
+		uint8_t src_endpoint;
+		uint8_t pad1;
+		/* 4 */
+		uint16_t seqnum;
+		uint8_t length;
+		uint8_t pad2;
+		/* 8 */
 		uint64_t match_info;
-		/* 24 */
+		/* 16 */
 		char data[OMX_TINY_MAX];
-		/* 56 */
-		uint8_t pad2[7];
+		/* 48 */
+		uint8_t pad3[15];
 		uint8_t type;
 		/* 64 */
 	} recv_tiny;
 
 	/* recv small */
 	struct omx_evt_recv_small {
-		uint64_t src_addr;
-		/* 8 */
+		uint16_t dest_src_peer_index;
 		uint8_t src_endpoint;
 		uint8_t pad1;
+		/* 4 */
 		uint16_t length;
 		uint16_t seqnum;
-		uint16_t dest_src_peer_index;
-		/* 16 */
+		/* 8 */
 		uint64_t match_info;
-		/* 24 */
-		uint8_t pad2[39];
+		/* 16 */
+		uint8_t pad2[47];
 		uint8_t type;
 		/* 64 */
 	} recv_small;
 
 	/* recv medium */
 	struct omx_evt_recv_medium {
-		uint64_t src_addr;
-		/* 8 */
+		uint16_t dest_src_peer_index;
 		uint8_t src_endpoint;
 		uint8_t pad1;
-		uint16_t seqnum;
-		uint32_t msg_length;
-		/* 16 */
+		/* 4 */
 		uint16_t frag_length;
 		uint8_t frag_seqnum;
 		uint8_t frag_pipeline;
-		uint16_t dest_src_peer_index;
+		/* 8 */
+		uint32_t msg_length;
+		uint16_t seqnum;
 		uint16_t pad2;
-		/* 24 */
+		/* 16 */
 		uint64_t match_info;
-		/* 32 */
-		uint8_t pad3[31];
+		/* 24 */
+		uint8_t pad3[39];
 		uint8_t type;
 		/* 64 */
 	} recv_medium;

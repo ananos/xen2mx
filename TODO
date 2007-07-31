@@ -1,7 +1,3 @@
-* remove src_addr from message event (and maybe more)
-* make connect idempotent
-* send a nack on bad session, except for connect (no session), truc or nack libs
-
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
 
@@ -16,6 +12,9 @@
 * check data instead of displaying
 
 * single medium send done event by using a refcount in the deferred event? how to factorize them on post?
+
+* make connect idempotent
+* send a nack on bad session, except for connect (no session), truc or nack libs
 
 * true pull support
   - events on both sides

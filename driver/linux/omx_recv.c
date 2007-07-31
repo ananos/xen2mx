@@ -138,7 +138,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	      struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct ethhdr *eh = &mh->head.eth;
+	struct ethhdr __attribute((unused)) *eh = &mh->head.eth;
 	struct omx_pkt_msg *tiny = &mh->body.tiny;
 	uint16_t length = tiny->length;
 	union omx_evt *evt;
@@ -189,7 +189,6 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	/* fill event */
 	event->dest_src_peer_index = mh->head.dst_src_peer_index;
-	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = tiny->src_endpoint;
 	event->length = length;
 	event->match_info = OMX_MATCH_INFO_FROM_PKT(tiny);
@@ -221,7 +220,7 @@ omx_recv_small(struct omx_iface * iface,
 	       struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct ethhdr *eh = &mh->head.eth;
+	struct ethhdr __attribute((unused)) *eh = &mh->head.eth;
 	struct omx_pkt_msg *small = &mh->body.small;
 	uint16_t length = small->length;
 	union omx_evt *evt;
@@ -273,7 +272,6 @@ omx_recv_small(struct omx_iface * iface,
 
 	/* fill event */
 	event->dest_src_peer_index = mh->head.dst_src_peer_index;
-	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = small->src_endpoint;
 	event->length = length;
 	event->match_info = OMX_MATCH_INFO_FROM_PKT(small);
@@ -306,7 +304,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		     struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct ethhdr *eh = &mh->head.eth;
+	struct ethhdr __attribute((unused)) *eh = &mh->head.eth;
 	struct omx_pkt_medium_frag *medium = &mh->body.medium;
 	uint16_t frag_length = medium->frag_length;
 	union omx_evt *evt;
@@ -358,7 +356,6 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	/* fill event */
 	event->dest_src_peer_index = mh->head.dst_src_peer_index;
-	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
 	event->src_endpoint = medium->msg.src_endpoint;
 	event->match_info = OMX_MATCH_INFO_FROM_PKT(&medium->msg);
 	event->msg_length = medium->msg.length;
