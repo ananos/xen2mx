@@ -279,9 +279,9 @@ int main(int argc, char *argv[])
 
   printf("Using board #%d name %s\n", board_index, board_name);
 
-  ret = omx_get_endpoint_addr(ep, &addr);
+  ret = omx_connect(ep, board_index, endpoint_index, 0x12345678, 0, &addr);
   if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to find endpoint address (%s)\n",
+    fprintf(stderr, "Failed to connect to myself (%s)\n",
 	    omx_strerror(ret));
     goto out_with_ep;
   }

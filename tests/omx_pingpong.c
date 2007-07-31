@@ -276,6 +276,7 @@ int main(int argc, char *argv[])
     omx_status_t status;
     uint32_t result;
     struct param param;
+    omx_endpoint_addr_t addr;
     struct timeval tv1, tv2;
     unsigned long long us;
     uint64_t board_addr;
@@ -289,7 +290,7 @@ int main(int argc, char *argv[])
       if (verbose)
 	printf("Waiting for parameters...\n");
 
-      /* wait for theparam  message */
+      /* wait for the param message */
       ret = omx_irecv(ep, &param, sizeof(param),
 		      0, 0,
 		      NULL, &req);
@@ -310,7 +311,11 @@ int main(int argc, char *argv[])
       warmup = param.warmup;
       length = param.length;
 
-      omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
+      if (!iter)
+	/* the sender wants us to stop */
+	goto out_receiver;
+
+      ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
       if (ret != OMX_SUCCESS) {
 	fprintf(stderr, "Failed to decompose sender's address (%s)\n",
 		omx_strerror(ret));
@@ -325,9 +330,13 @@ int main(int argc, char *argv[])
 	printf("Got parameters (iter=%d, warmup=%d, length=%d) from peer %s\n",
 	       iter, warmup, length, dest_name);
 
-      if (!iter)
-	/* the sender wants us to stop */
-	goto out_receiver;
+      /* connect back */
+      ret = omx_connect(ep, board_addr, endpoint_index, 0x12345678, 0, &addr);
+      if (ret != OMX_SUCCESS) {
+	fprintf(stderr, "Failed to connect back to client (%s)\n",
+		omx_strerror(ret));
+	goto out_with_ep;
+      }
 
       buffer = malloc(length);
       if (!buffer) {
@@ -344,7 +353,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = omx_isend(ep, buffer, length,
-			0x1234567887654321ULL, status.addr,
+			0x1234567887654321ULL, addr,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",
