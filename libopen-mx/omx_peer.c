@@ -200,7 +200,7 @@ omx_hostname_to_nic_id(char *hostname,
   int i;
 
   for(i=0; i<omx_peers_max; i++)
-    if (!strcmp(hostname, omx_peers[i].hostname)) {
+    if (omx_peers[i].valid && !strcmp(hostname, omx_peers[i].hostname)) {
       *board_addr = omx_peers[i].board_addr;
       return OMX_SUCCESS;
     }
@@ -215,7 +215,7 @@ omx_nic_id_to_hostname(uint64_t board_addr,
   int i;
 
   for(i=0; i<omx_peers_max; i++)
-    if (board_addr == omx_peers[i].board_addr) {
+    if (omx_peers[i].valid && board_addr == omx_peers[i].board_addr) {
       strcpy(hostname, omx_peers[i].hostname);
       return OMX_SUCCESS;
     }
