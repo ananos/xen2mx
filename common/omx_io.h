@@ -329,8 +329,11 @@ union omx_evt {
 		uint8_t src_endpoint;
 		uint8_t pad1;
 		uint16_t seqnum;
-		/* 6 */
-		uint8_t pad[55];
+		uint16_t pad2;
+		/* 8 */
+		uint64_t match_info;
+		/* 16 */
+		uint8_t pad3[47];
 		uint8_t type;
 		/* 64 */
 	} recv_generic;
@@ -341,9 +344,8 @@ union omx_evt {
 		uint8_t src_endpoint;
 		uint8_t pad1;
 		uint16_t seqnum;
-		uint8_t length;
-		/* 6 bytes as in recv_generic */
-		uint8_t pad2;
+		uint8_t length; /* overlapping generic.pad2 */
+		uint8_t pad2; /* overlapping generic.pad2 */
 		/* 8 */
 		uint64_t match_info;
 		/* 16 */
@@ -360,8 +362,7 @@ union omx_evt {
 		uint8_t src_endpoint;
 		uint8_t pad1;
 		uint16_t seqnum;
-		/* 6 bytes as in recv_generic */
-		uint16_t length;
+		uint16_t length; /* overlapping generic.pad2 */
 		/* 8 */
 		uint64_t match_info;
 		/* 16 */
@@ -376,15 +377,14 @@ union omx_evt {
 		uint8_t src_endpoint;
 		uint8_t pad1;
 		uint16_t seqnum;
-		/* 6 bytes as in recv_generic */
 		uint16_t pad2;
 		/* 8 */
+		uint64_t match_info;
+		/* 16 */
 		uint32_t msg_length;
 		uint16_t frag_length;
 		uint8_t frag_seqnum;
 		uint8_t frag_pipeline;
-		/* 16 */
-		uint64_t match_info;
 		/* 24 */
 		uint8_t pad3[39];
 		uint8_t type;
