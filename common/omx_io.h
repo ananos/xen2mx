@@ -61,6 +61,7 @@ struct omx_cmd_region_segment {
  * IOCTL commands
  */
 
+#define OMX_CMD_BENCH			0x00
 #define OMX_CMD_GET_BOARD_MAX		0x01
 #define OMX_CMD_GET_ENDPOINT_MAX	0x02
 #define OMX_CMD_GET_PEER_MAX		0x03
@@ -81,6 +82,8 @@ static inline const char *
 omx_strcmd(unsigned cmd)
 {
 	switch (cmd) {
+	case OMX_CMD_BENCH:
+		return "Command Benchmark";
 	case OMX_CMD_GET_BOARD_MAX:
 		return "Get Board Max";
 	case OMX_CMD_GET_ENDPOINT_MAX:
@@ -119,6 +122,26 @@ omx_strcmd(unsigned cmd)
 /************************
  * IOCTL parameter types
  */
+
+/* level 0 testing, only pass the command and get the endpoint, no parameter given */
+#define OMX_CMD_BENCH_TYPE_PARAMS	0x01
+#define OMX_CMD_BENCH_TYPE_SEND_ALLOC	0x02
+#define OMX_CMD_BENCH_TYPE_SEND_PREP	0x03
+#define OMX_CMD_BENCH_TYPE_SEND_FILL	0x04
+#define OMX_CMD_BENCH_TYPE_SEND_DONE	0x05
+#define OMX_CMD_BENCH_TYPE_RECV_ACQU	0x11
+#define OMX_CMD_BENCH_TYPE_RECV_ALLOC	0x12
+#define OMX_CMD_BENCH_TYPE_RECV_DONE	0x13
+
+struct omx_cmd_bench {
+	struct omx_cmd_bench_hdr {
+		uint8_t type;
+		uint8_t pad[7];
+		/* 8 */
+	} hdr;
+	char dummy_data[OMX_TINY_MAX];
+	/* 40 */
+};
 
 struct omx_cmd_get_board_id {
 	uint8_t board_index;

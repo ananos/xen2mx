@@ -1,7 +1,8 @@
 * matching
 * unexpected medium
 
-* command to mesure cost of command, skb, queue_xmit, event, ...
+* open any_nic any_endpoint
+
 * likely/unlikely in the lib; for gcc only
 
 * check pingpong contents

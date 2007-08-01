@@ -75,6 +75,9 @@ extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
 extern int omx_dev_init(void);
 extern void omx_dev_exit(void);
 
+/* misc */
+extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
+
 /* manage addresses */
 static inline uint64_t
 omx_board_addr_from_netdevice(struct net_device * ifp)

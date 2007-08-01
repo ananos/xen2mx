@@ -441,6 +441,113 @@ omx_send_rendez_vous(struct omx_endpoint * endpoint,
 }
 
 /*
+ * Command to benchmark commands
+ */
+int
+omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam)
+{
+	struct sk_buff *skb;
+	struct omx_hdr *mh;
+	struct ethhdr *eh;
+	union omx_evt *evt;
+	struct omx_iface * iface = endpoint->iface;
+	struct net_device * ifp = iface->eth_ifp;
+	struct omx_cmd_bench_hdr cmd;
+	char data[OMX_TINY_MAX];
+	int ret = 0;
+
+	/* level 00: only pass the command and get the endpoint */
+	if (!uparam)
+		goto out;
+
+	ret = copy_from_user(&cmd, &((struct omx_cmd_bench __user *) uparam)->hdr, sizeof(cmd));
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send connect cmd hdr\n");
+		ret = -EFAULT;
+		goto out;
+	}
+
+	/* level 01: get command parameters from users-space */
+	if (cmd.type == OMX_CMD_BENCH_TYPE_PARAMS)
+		goto out;
+
+	skb = omx_new_skb(ifp, ETH_ZLEN);
+	if (unlikely(skb == NULL)) {
+		printk(KERN_INFO "Open-MX: Failed to create bench skb\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* level 02: alloc skb */
+	if (cmd.type == OMX_CMD_BENCH_TYPE_SEND_ALLOC)
+		goto out_with_skb;
+
+	mh = omx_hdr(skb);
+	eh = &mh->head.eth;
+	memset(eh, 0, sizeof(*eh));
+	omx_board_addr_to_ethhdr_dst(eh, (uint64_t)-1ULL);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+
+	/* level 03: prepare */
+	if (cmd.type == OMX_CMD_BENCH_TYPE_SEND_PREP)
+		goto out_with_skb;
+
+	ret = copy_from_user(data, &((struct omx_cmd_bench __user *) uparam)->dummy_data, OMX_TINY_MAX);
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send tiny cmd data\n");
+		ret = -EFAULT;
+		goto out_with_skb;
+	}
+
+	/* level 04: fill */
+	if (cmd.type == OMX_CMD_BENCH_TYPE_SEND_FILL)
+		goto out_with_skb;
+
+	dev_queue_xmit(skb);
+
+	/* level 05: send done */
+	if (cmd.type == OMX_CMD_BENCH_TYPE_SEND_DONE)
+		goto out;
+
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, endpoint->endpoint_index);
+	BUG_ON(!endpoint);
+
+	/* level 11: recv acquire */
+	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_ACQU)
+		goto out_with_endpoint;
+
+	evt = omx_find_next_eventq_slot(endpoint);
+	if (unlikely(!evt)) {
+		dprintk("BENCH command failed of event queue full");
+		ret = -EBUSY;
+		goto out_with_endpoint;
+	}
+
+	/* level 12: recv alloc */
+	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_ALLOC)
+		goto out_with_endpoint;
+
+	memcpy(evt->generic.pad, data, OMX_TINY_MAX);
+	evt->generic.type = OMX_EVT_NONE;
+	omx_endpoint_release(endpoint);
+
+	/* level 13: recv done */
+	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_DONE)
+		goto out;
+
+	BUG();
+
+ out_with_endpoint:
+	omx_endpoint_release(endpoint);
+	goto out;
+ out_with_skb:
+	dev_kfree_skb(skb);
+ out:
+	return ret;
+}
+
+/*
  * Local variables:
  *  tab-width: 8
  *  c-basic-offset: 8

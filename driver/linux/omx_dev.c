@@ -305,6 +305,7 @@ omx_miscdev_release(struct inode * inode, struct file * file)
  * 1 when success and does not want to release the reference on the endpoint
  */
 static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
+	[OMX_CMD_BENCH]			= omx_cmd_bench,
 	[OMX_CMD_SEND_TINY]		= omx_send_tiny,
 	[OMX_CMD_SEND_SMALL]		= omx_send_small,
 	[OMX_CMD_SEND_MEDIUM]		= omx_send_medium,
@@ -428,6 +429,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		break;
 	}
 
+	case OMX_CMD_BENCH:
 	case OMX_CMD_SEND_TINY:
 	case OMX_CMD_SEND_SMALL:
 	case OMX_CMD_SEND_MEDIUM:
