@@ -35,7 +35,7 @@
 #define ITER 1000
 #define WARMUP 10
 #define MIN 0
-#define MAX 129
+#define MAX 32769
 #define MULTIPLIER 2
 #define INCREMENT 0
 
