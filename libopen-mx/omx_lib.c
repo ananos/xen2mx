@@ -148,9 +148,9 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   unsigned long offset = frag_seqnum << (OMX_MEDIUM_FRAG_PIPELINE_BASE + event->frag_pipeline);
   int new = (req->recv.type.medium.frags_received_mask == 0);
 
-  printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
-	 (unsigned) frag_seqnum, (unsigned) event->frag_pipeline, (unsigned) chunk,
-	 (unsigned) offset, (unsigned) msg_length);
+  omx__debug_printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
+		    (unsigned) frag_seqnum, (unsigned) event->frag_pipeline, (unsigned) chunk,
+		    (unsigned) offset, (unsigned) msg_length);
 
   if (req->recv.type.medium.frags_received_mask & (1 << frag_seqnum))
     /* already received this frag */
@@ -165,13 +165,11 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
   if (req->recv.type.medium.accumulated_length == msg_length) {
     /* was the last frag */
-    printf("got last frag of seqnum %d\n", req->recv.seqnum);
+    omx__debug_printf("got last frag of seqnum %d\n", req->recv.seqnum);
 
     /* if there were previous frags, remove from the partialq */
-    if (!new) {
-      printf("removing %p from partner\n", req);
+    if (!new)
       omx__dequeue_partner_request(partner, req);
-    }
 
     req->generic.state = OMX_REQUEST_STATE_DONE;
     req->generic.status.code = OMX_STATUS_SUCCESS;
@@ -180,13 +178,11 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
   } else {
     /* more frags missing */
-    printf("got one frag of seqnum %d\n", req->recv.seqnum);
+    omx__debug_printf("got one frag of seqnum %d\n", req->recv.seqnum);
 
-    if (new) {
-      printf("adding %p from partner\n", req);
+    if (new)
       omx__enqueue_partner_request(partner, req);
-    }
-
+ 
     omx__enqueue_request(req->recv.unexpected ? &ep->unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			 req);
   }
@@ -567,8 +563,8 @@ omx_isend(struct omx_endpoint *ep,
       medium_param.frag_length = chunk;
       medium_param.frag_seqnum = i;
       medium_param.sendq_page_offset = sendq_index[i];
-      printf("sending medium seqnum %d pipeline 2 length %d of total %ld\n",
-	     i, chunk, (unsigned long) length);
+      omx__debug_printf("sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+			i, chunk, (unsigned long) length);
       memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, length);
 
       err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, &medium_param);
@@ -629,10 +625,8 @@ omx_irecv(struct omx_endpoint *ep,
     req->recv.unexpected = 0;
 
     if (req->generic.state == OMX_REQUEST_STATE_DONE) {
-      printf("unexp request is done\n");
       omx__enqueue_request(&ep->done_req_q, req);
     } else {
-      printf("unexp request is still pending\n");
       omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
     }
 

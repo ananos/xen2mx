@@ -42,7 +42,6 @@ omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
   struct omx__partner *partner = omx__partner_from_addr(&endpoint_addr);
   *nic_id = partner->board_addr;
   *endpoint_id = partner->endpoint_index;
-  printf("returning addr %llx ep %x\n", partner->board_addr, partner->endpoint_index);
   return OMX_SUCCESS;
 }
 
@@ -79,7 +78,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   ep->partners[partner_index] = partner;
 
   *partnerp = partner;
-  fprintf(stderr, "created peer %d %d\n", peer_index, endpoint_index);
+  omx__debug_printf("created peer %d %d\n", peer_index, endpoint_index);
 
   return OMX_SUCCESS;
 }
@@ -259,14 +258,14 @@ omx_connect(omx_endpoint_t ep,
   req->connect.connect_seqnum = connect_seqnum;
   omx__enqueue_request(&ep->connect_req_q, req);
 
-  printf("waiting for connect reply\n");
+  omx__debug_printf("waiting for connect reply\n");
   while (req->generic.state == OMX_REQUEST_STATE_PENDING) {
     ret = omx__progress(ep);
     if (ret != OMX_SUCCESS)
       goto out_with_req_queued;
   }
   omx__dequeue_request(&ep->connect_req_q, req);
-  printf("connect done\n");
+  omx__debug_printf("connect done\n");
 
   switch (req->generic.status.code) {
   case OMX_STATUS_SUCCESS:
@@ -324,7 +323,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 
  found:
-  printf("waking up on connect reply\n");
+  omx__debug_printf("waking up on connect reply\n");
 
   if (reply_data->status_code == OMX_STATUS_SUCCESS) {
     /* connection successfull, initialize stuff */
@@ -371,7 +370,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     status_code = OMX_STATUS_BAD_KEY;
   }
 
-  printf("got a connect, replying\n");
+  omx__debug_printf("got a connect, replying\n");
 
   reply_param.hdr.dest_addr = partner->board_addr;
   reply_param.hdr.dest_endpoint = partner->endpoint_index;
