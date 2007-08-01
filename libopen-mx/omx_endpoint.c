@@ -156,7 +156,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   INIT_LIST_HEAD(&ep->sent_req_q);
   INIT_LIST_HEAD(&ep->unexp_req_q);
   INIT_LIST_HEAD(&ep->recv_req_q);
-  INIT_LIST_HEAD(&ep->multifraq_medium_recv_req_q);
+  INIT_LIST_HEAD(&ep->multifrag_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->connect_req_q);
   INIT_LIST_HEAD(&ep->done_req_q);
 

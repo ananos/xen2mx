@@ -94,7 +94,7 @@ struct omx_endpoint {
   struct list_head sent_req_q;
   struct list_head unexp_req_q;
   struct list_head recv_req_q;
-  struct list_head multifraq_medium_recv_req_q;
+  struct list_head multifrag_medium_recv_req_q;
   struct list_head connect_req_q;
   struct list_head done_req_q;
   struct omx__sendq_map sendq_map;
@@ -118,6 +118,7 @@ enum omx__request_state {
 
 struct omx__generic_request {
   struct list_head queue_elt;
+  struct list_head partner_elt;
   enum omx__request_type type;
   enum omx__request_state state;
   struct omx_status status;
@@ -141,6 +142,8 @@ union omx_request {
     struct omx__generic_request generic;
     void * buffer;
     unsigned long length;
+    omx__seqnum_t seqnum;
+    int unexpected;
     union {
       struct {
 	uint32_t frags_received_mask;
