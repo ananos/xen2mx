@@ -282,6 +282,7 @@ int main(int argc, char *argv[])
     uint64_t board_addr;
     uint32_t endpoint_index;
     int length;
+    int connected = 0;
     int i;
 
     printf("Starting receiver...\n");
@@ -330,12 +331,15 @@ int main(int argc, char *argv[])
 	printf("Got parameters (iter=%d, warmup=%d, length=%d) from peer %s\n",
 	       iter, warmup, length, dest_name);
 
-      /* connect back */
-      ret = omx_connect(ep, board_addr, endpoint_index, 0x12345678, 0, &addr);
-      if (ret != OMX_SUCCESS) {
-	fprintf(stderr, "Failed to connect back to client (%s)\n",
-		omx_strerror(ret));
-	goto out_with_ep;
+      if (!connected) {
+	/* connect back */
+	ret = omx_connect(ep, board_addr, endpoint_index, 0x12345678, 0, &addr);
+	if (ret != OMX_SUCCESS) {
+	  fprintf(stderr, "Failed to connect back to client (%s)\n",
+		  omx_strerror(ret));
+	  goto out_with_ep;
+	}
+	connected = 1;
       }
 
       buffer = malloc(length);
