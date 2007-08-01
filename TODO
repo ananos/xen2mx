@@ -4,8 +4,6 @@
 
 * request alloc/free helpers to memset them
 
-* likely/unlikely in the lib; for gcc only
-
 * check pingpong contents
 
 * make connect idempotent and drop workaround in pingpong
@@ -40,6 +38,10 @@
 
 * mapper (open-mxd)
 * /dev/open-mxd ?
+
+* optimizations
+  + likely/unlikely in the lib; for gcc only
+  + single ioctl for multiple medium frags ?
 
 * use valgrind memory hooks
 * add valgrind ioctl hooks
