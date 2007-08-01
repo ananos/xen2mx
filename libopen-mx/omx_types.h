@@ -142,6 +142,8 @@ union omx_request {
     struct omx__generic_request generic;
     void * buffer;
     unsigned long length;
+    uint64_t match_info;
+    uint64_t match_mask;
     omx__seqnum_t seqnum;
     int unexpected;
     union {

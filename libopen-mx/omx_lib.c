@@ -182,7 +182,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
     if (new)
       omx__enqueue_partner_request(partner, req);
- 
+
     omx__enqueue_request(req->recv.unexpected ? &ep->unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			 req);
   }
@@ -197,17 +197,16 @@ omx__match_recv(struct omx_endpoint *ep,
 		union omx_evt *evt,
 		union omx_request **reqp)
 {
-  //uint64_t match_info = evt->recv_generic.match_info;
-  /* FIXME */
+  uint64_t match_info = evt->recv_generic.match_info;
+  union omx_request * req;
 
-  if (!omx__queue_empty(&ep->recv_req_q)) {
-    union omx_request * req;
-
-    req = omx__queue_first_request(&ep->recv_req_q);
-    omx__dequeue_request(&ep->recv_req_q, req);
-
-    *reqp = req;
-  }
+  omx__foreach_request(&ep->recv_req_q, req)
+    if (req->recv.match_info == (req->recv.match_mask & match_info)) {
+      /* matched a posted recv */
+      omx__dequeue_request(&ep->recv_req_q, req);
+      *reqp = req;
+      return OMX_SUCCESS;
+    }
 
   return OMX_SUCCESS;
 }
@@ -608,44 +607,50 @@ omx_irecv(struct omx_endpoint *ep,
   union omx_request * req;
   omx_return_t ret;
 
-  if (!omx__queue_empty(&ep->unexp_req_q)) {
-    req = omx__queue_first_request(&ep->unexp_req_q);
-    omx__dequeue_request(&ep->unexp_req_q, req);
+  omx__foreach_request(&ep->unexp_req_q, req)
+    if ((req->generic.status.match_info & match_mask) == match_info) {
+      /* matched an unexpected */
+      omx__dequeue_request(&ep->unexp_req_q, req);
 
-    /* compute xfer length */
-    if (length > req->generic.status.msg_length)
-      length = req->generic.status.msg_length;
-    req->generic.status.xfer_length = length;
+      /* compute xfer length */
+      if (length > req->generic.status.msg_length)
+	length = req->generic.status.msg_length;
+      req->generic.status.xfer_length = length;
 
-    /* copy data from the unexpected buffer */
-    memcpy(buffer, req->recv.buffer, length);
-    free(req->recv.buffer);
+      /* copy data from the unexpected buffer */
+      memcpy(buffer, req->recv.buffer, length);
+      free(req->recv.buffer);
 
-    omx__debug_assert(req->recv.unexpected);
-    req->recv.unexpected = 0;
+      omx__debug_assert(req->recv.unexpected);
+      req->recv.unexpected = 0;
 
-    if (req->generic.state == OMX_REQUEST_STATE_DONE) {
-      omx__enqueue_request(&ep->done_req_q, req);
-    } else {
-      omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
+      if (req->generic.state == OMX_REQUEST_STATE_DONE) {
+	omx__enqueue_request(&ep->done_req_q, req);
+      } else {
+	omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
+      }
+
+      *requestp = req;
+
+      return OMX_SUCCESS;
     }
 
-  } else {
-    req = malloc(sizeof(union omx_request));
-    if (!req) {
-      ret = omx__errno_to_return(ENOMEM, "irecv request malloc");
-      goto out;
-    }
-
-    req->generic.type = OMX_REQUEST_TYPE_RECV;
-    req->generic.state = OMX_REQUEST_STATE_PENDING;
-    req->generic.status.context = context;
-    req->recv.buffer = buffer;
-    req->recv.length = length;
-
-    omx__enqueue_request(&ep->recv_req_q, req);
+  /* allocate a new recv request */
+  req = malloc(sizeof(union omx_request));
+  if (!req) {
+    ret = omx__errno_to_return(ENOMEM, "irecv request malloc");
+    goto out;
   }
 
+  req->generic.type = OMX_REQUEST_TYPE_RECV;
+  req->generic.state = OMX_REQUEST_STATE_PENDING;
+  req->generic.status.context = context;
+  req->recv.buffer = buffer;
+  req->recv.length = length;
+  req->recv.match_info = match_info;
+  req->recv.match_mask = match_mask;
+
+  omx__enqueue_request(&ep->recv_req_q, req);
   omx__progress(ep);
 
   *requestp = req;
