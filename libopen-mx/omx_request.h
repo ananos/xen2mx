@@ -64,4 +64,46 @@ omx__queue_empty(struct list_head *head)
 #define omx__foreach_request(head, req)		\
 list_for_each_entry(req, head, generic.queue_elt)
 
+/***********************************
+ * Partner request queue management
+ */
+
+static inline void
+omx__enqueue_partner_request(struct omx__partner *partner,
+			     union omx_request *req)
+{
+  list_add_tail(&req->generic.partner_elt, &partner->partialq);
+}
+
+static inline void
+omx__dequeue_partner_request(struct omx__partner *partner,
+			     union omx_request *req)
+{
+#ifdef OMX_DEBUG
+  struct list_head *e;
+  list_for_each(e, &partner->partialq)
+    if (req == list_entry(e, union omx_request, generic.partner_elt))
+      goto found;
+  assert(0);
+
+ found:
+#endif /* OMX_DEBUG */
+  list_del(&req->generic.partner_elt);
+}
+
+static inline union omx_request *
+omx__partner_queue_first_request(struct omx__partner *partner)
+{
+  return list_first_entry(&partner->partialq, union omx_request, generic.partner_elt);
+}
+
+static inline int
+omx__partner_queue_empty(struct omx__partner *partner)
+{
+  return list_empty(&partner->partialq);
+}
+
+#define omx__foreach_partner_request(partner, req)		\
+list_for_each_entry(req, &partner->partialq, generic.partner_elt)
+
 #endif /* __omx_request_h__ */
