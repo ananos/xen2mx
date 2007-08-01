@@ -29,28 +29,40 @@
 #define ITER 10
 
 static omx_return_t
-send_tiny(omx_endpoint_t ep, omx_endpoint_addr_t addr,
-	  int i)
+one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
+	      int length, int seed)
 {
   omx_request_t request, request2;
   omx_status_t status;
-  char buffer[12], buffer2[12];
-  unsigned long length;
+  char *buffer, *buffer2;
   omx_return_t ret;
   uint32_t result;
+  int i;
 
-  sprintf(buffer, "message %d", i);
-  length = strlen(buffer) + 1;
+  buffer = malloc(length);
+  if (!buffer)
+    return OMX_NO_RESOURCES;
+  buffer2 = malloc(length);
+  if (!buffer)
+    return OMX_NO_RESOURCES;
+
+  /* initialize buffers to different values
+   * so that it's easy to check bytes correctness
+   * after the transfer
+   */
+  for(i=0; i<length; i++) {
+    buffer[i] = (seed+i)%26+'a';
+    buffer2[i] = (seed+i+13)%26+'a';
+  }
 
   ret = omx_isend(ep, buffer, length,
 		  0x1234567887654321ULL, addr,
 		  NULL, &request);
   if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to send a tiny message (%s)\n",
-	    omx_strerror(ret));
+    fprintf(stderr, "Failed to send message length %d (%s)\n",
+	    length, omx_strerror(ret));
     return ret;
   }
-  fprintf(stderr, "Successfully sent tiny \"%s\"\n", (char*) buffer);
 
   ret = omx_wait(ep, &request, &status, &result);
   if (ret != OMX_SUCCESS || !result) {
@@ -87,129 +99,19 @@ send_tiny(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     return ret;
   }
 
-  fprintf(stderr, "Successfully received tiny with omx_test loop \"%s\"\n", (char*) buffer2);
-
-  return OMX_SUCCESS;
-}
-
-static int
-send_small(omx_endpoint_t ep, omx_endpoint_addr_t addr,
-	   int i)
-{
-  omx_request_t request;
-  omx_status_t status;
-  char buffer[4096];
-  char buffer2[4096];
-  unsigned long length;
-  omx_return_t ret;
-  uint32_t result;
-
-  sprintf(buffer, "message %d is much longer than in a tiny buffer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!", i);
-  length = strlen(buffer) + 1;
-
-  ret = omx_isend(ep, buffer, length,
-		  0x1234567887654321ULL, addr,
-		  NULL, &request);
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to send a small message (%s)\n",
-	    omx_strerror(ret));
-    return ret;
-  }
-
-  fprintf(stderr, "Successfully sent small \"%s\"\n", (char*) buffer);
-
-  ret = omx_wait(ep, &request, &status, &result);
-  if (ret != OMX_SUCCESS || !result) {
-    fprintf(stderr, "Failed to wait for completion (%s)\n",
-	    omx_strerror(ret));
-    return ret;
-  }
-
-  fprintf(stderr, "Successfully waited for send completion\n");
-
-  ret = omx_irecv(ep, buffer2, length,
-		  0, 0,
-		  NULL, &request);
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to post a recv for a small message (%s)\n",
-	    omx_strerror(ret));
-    return ret;
-  }
-
-  do {
-    ret = omx_test(ep, &request, &status, &result);
-    if (ret != OMX_SUCCESS) {
-      fprintf(stderr, "Failed to wait for completion (%s)\n",
-	      omx_strerror(ret));
-      return ret;
+  for(i=0; i<length; i++) {
+    if (buffer[i] != buffer2[i]) {
+      fprintf(stderr, "buffer invalid at offset %d, got '%c' instead of '%c'\n",
+	      i, buffer[i], buffer2[i]);
+      goto out;
     }
-  } while (!result);
-
-  fprintf(stderr, "Successfully received small with omx_test loop \"%s\"\n", (char*) buffer2);
+  }
+  fprintf(stderr, "Successfully transferred %d bytes\n", length);
 
   return OMX_SUCCESS;
-}
 
-static int
-send_medium(omx_endpoint_t ep, omx_endpoint_addr_t addr,
-	    int i)
-{
-  omx_request_t request, request2;
-  omx_status_t status;
-  char buffer[8192], buffer2[8192];
-  omx_return_t ret;
-  uint32_t result;
-  unsigned long length;
-  int j;
-
-  sprintf(buffer, "message %d is much longer than in a tiny buffer !", i);
-  length = strlen(buffer);
-  for(j=0;j<4096;j++)
-    buffer[length+j] = '!';
-  buffer[length+4096] = '\0';
-  length = strlen(buffer) + 1;
-
-  ret = omx_irecv(ep, buffer2, length,
-		  0, 0,
-		  NULL, &request2);
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to post a recv for a medium message (%s)\n",
-	    omx_strerror(ret));
-    return ret;
-  }
-
-  ret = omx_isend(ep, buffer, length,
-		  0x1234567887654321ULL, addr,
-		  NULL, &request);
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to send a medium message (%s)\n",
-	    omx_strerror(ret));
-    return ret;
-  }
-
-  fprintf(stderr, "Successfully sent medium \"%s\"\n", (char*) buffer);
-
-  ret = omx_wait(ep, &request, &status, &result);
-  if (ret != OMX_SUCCESS || !result) {
-    fprintf(stderr, "Failed to wait for completion (%s)\n",
-	    omx_strerror(ret));
-    return ret;
-  }
-
-  fprintf(stderr, "Successfully waited for send completion\n");
-
-  do {
-    ret = omx_test(ep, &request2, &status, &result);
-    if (ret != OMX_SUCCESS) {
-      fprintf(stderr, "Failed to wait for completion (%s)\n",
-	      omx_strerror(ret));
-      return ret;
-    }
-  } while (!result);
-
-  fprintf(stderr, "Successfully received medium with omx_test loop \"%s\"\n", (char*) buffer2);
-
-  return OMX_SUCCESS;
+ out:
+  return OMX_BAD_ERROR;
 }
 
 static void
@@ -289,7 +191,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a tiny message */
-    ret = send_tiny(ep, addr, i);
+    ret = one_iteration(ep, addr, 13, i);
     if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }
@@ -300,7 +202,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a small message */
-    ret = send_small(ep, addr, i);
+    ret = one_iteration(ep, addr, 95, i);
     if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }
@@ -311,7 +213,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a medium message */
-    ret = send_medium(ep, addr, i);
+    ret = one_iteration(ep, addr, 13274, i);
     if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }
