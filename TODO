@@ -3,6 +3,8 @@
 
 * open any_nic any_endpoint
 
+* add details to omx_cmd_bench
+
 * likely/unlikely in the lib; for gcc only
 
 * check pingpong contents
