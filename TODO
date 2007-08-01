@@ -1,14 +1,12 @@
+* matching
+* unexpected medium
+
 * command to mesure cost of command, skb, queue_xmit, event, ...
 * likely/unlikely in the lib; for gcc only
 
 * check pingpong contents
-
-* unexpected medium
-
 * factorize loopback_test send functions once unexpected medium are ready
-* check data instead of displaying
-
-* single medium send done event by using a refcount in the deferred event? how to factorize them on post?
+* check loopback data instead of displaying
 
 * make connect idempotent
 * send a nack on bad session, except for connect (no session), truc or nack libs
@@ -31,10 +29,6 @@
 * progress thread sleeps on a special queue
   - some event wakeup both queues (force_wakeup)
   - other events wakeup the progress thread only no one on the regular queue
-
-* medium level helpers for tools accessing small part of internals
-* matching
-* seqnum for in-order matching, associated with lib_cookie
 
 * truc messages
 * rendez-vous messages
@@ -67,3 +61,5 @@
   + no notify message, report event on rdma get completion ?
   + multiple segments in large messages
   + extend threshold for small/tiny ?
+  + cleanup connect request/reply data
+  + no bidirectionnal connect in the background
