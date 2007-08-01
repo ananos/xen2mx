@@ -536,7 +536,7 @@ omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_DONE)
 		goto out;
 
-	BUG();
+	return -EINVAL;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);

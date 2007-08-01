@@ -2,8 +2,6 @@
 
 * open any_nic any_endpoint
 
-* add details to omx_cmd_bench
-
 * request alloc/free helpers to memset them
 
 * likely/unlikely in the lib; for gcc only
