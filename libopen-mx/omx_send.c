@@ -50,7 +50,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, &tiny_param);
   if (err < 0) {
-    ret = omx__errno_to_return("ioctl send/tiny");
+    ret = omx__errno_to_return("ioctl SEND_TINY");
     goto out_with_req;
   }
   /* no need to wait for a done event, tiny is synchronous */
@@ -100,7 +100,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &small_param);
   if (err < 0) {
-    ret = omx__errno_to_return("ioctl send/small");
+    ret = omx__errno_to_return("ioctl SEND_SMALL");
     goto out_with_req;
   }
   /* no need to wait for a done event, small is synchronous */
@@ -172,7 +172,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 
     err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, &medium_param);
     if (err < 0) {
-      ret = omx__errno_to_return("ioctl send/medium");
+      ret = omx__errno_to_return("ioctl SEND_MEDIUM");
       goto out_with_req;
     }
 
