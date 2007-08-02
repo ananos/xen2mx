@@ -243,9 +243,9 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     /* unexpected */
     void *unexp_buffer;
 
-    ret = omx__request_alloc(OMX_REQUEST_TYPE_RECV, &req);
-    if (ret != OMX_SUCCESS)
-      return ret;
+    req = omx__request_alloc(OMX_REQUEST_TYPE_RECV);
+    if (!req)
+      return OMX_NO_RESOURCES;
 
     unexp_buffer = malloc(length);
     if (!unexp_buffer) {
@@ -490,9 +490,11 @@ omx_irecv(struct omx_endpoint *ep,
     }
 
   /* allocate a new recv request */
-  ret = omx__request_alloc(OMX_REQUEST_TYPE_RECV, &req);
-  if (ret != OMX_SUCCESS)
+  req = omx__request_alloc(OMX_REQUEST_TYPE_RECV);
+  if (!req) {
+    ret = OMX_NO_RESOURCES;
     goto out;
+  }
 
   req->generic.state = OMX_REQUEST_STATE_PENDING;
   req->generic.status.context = context;

@@ -34,9 +34,11 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   omx_return_t ret;
   int err;
 
-  ret = omx__request_alloc(OMX_REQUEST_TYPE_SEND_TINY, &req);
-  if (ret != OMX_SUCCESS)
+  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_TINY);
+  if (!req) {
+    ret = OMX_NO_RESOURCES;
     goto out;
+  }
 
   tiny_param.hdr.dest_addr = partner->board_addr;
   tiny_param.hdr.dest_endpoint = partner->endpoint_index;
@@ -82,9 +84,11 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   omx_return_t ret;
   int err;
 
-  ret = omx__request_alloc(OMX_REQUEST_TYPE_SEND_SMALL, &req);
-  if (ret != OMX_SUCCESS)
+  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_SMALL);
+  if (!req) {
+    ret = OMX_NO_RESOURCES;
     goto out;
+  }
 
   small_param.dest_addr = partner->board_addr;
   small_param.dest_endpoint = partner->endpoint_index;
@@ -138,9 +142,11 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   frags = OMX_MEDIUM_FRAGS_NR(length);
   omx__debug_assert(frags <= 8); /* for the sendq_index array above */
 
-  ret = omx__request_alloc(OMX_REQUEST_TYPE_SEND_MEDIUM, &req);
-  if (ret != OMX_SUCCESS)
+  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_MEDIUM);
+  if (!req) {
+    ret = OMX_NO_RESOURCES;
     goto out;
+  }
 
   if (omx__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0)
     /* FIXME: queue */

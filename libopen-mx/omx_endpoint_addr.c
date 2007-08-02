@@ -222,9 +222,11 @@ omx_connect(omx_endpoint_t ep,
   omx_return_t ret;
   int err;
 
-  ret = omx__request_alloc(OMX_REQUEST_TYPE_CONNECT, &req);
-  if (ret != OMX_SUCCESS)
+  req = omx__request_alloc(OMX_REQUEST_TYPE_CONNECT);
+  if (!req) {
+    ret = OMX_NO_RESOURCES;
     goto out;
+  }
 
   ret = omx__partner_lookup(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS)

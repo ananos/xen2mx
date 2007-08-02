@@ -28,15 +28,14 @@
  * Request allocation
  */
 
-static inline omx_return_t
-omx__request_alloc(enum omx__request_type type,
-		   union omx_request ** requestp)
+static inline union omx_request *
+omx__request_alloc(enum omx__request_type type)
 {
   union omx_request * req;
 
   req = malloc(sizeof(*req));
   if (!req)
-    return omx__errno_to_return(ENOMEM, "request malloc");
+    return NULL;
 
   req->generic.type = type;
 
@@ -50,8 +49,7 @@ omx__request_alloc(enum omx__request_type type,
     break;
   }
 
-  *requestp = req;
-  return OMX_SUCCESS;
+  return req;
 }
 
 static inline void
