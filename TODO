@@ -1,5 +1,9 @@
 * early
 
+* move errno/strfoo to omx_misc.c
+* move irecv and process_recv* to omx_recv.c
+* move test/wait/peek/ipeek/... to omx_test.c
+
 * open any_nic any_endpoint
 
 * check pingpong contents
