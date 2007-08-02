@@ -19,6 +19,8 @@
 #ifndef __omx_request_h__
 #define __omx_request_h__
 
+#include <stdlib.h>
+
 #include "omx_types.h"
 #include "omx_list.h"
 
