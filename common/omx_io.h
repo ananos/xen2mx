@@ -67,16 +67,17 @@ struct omx_cmd_region_segment {
 #define OMX_CMD_GET_PEER_MAX		0x03
 #define OMX_CMD_GET_BOARD_COUNT		0x04
 #define OMX_CMD_GET_BOARD_ID		0x05
-#define OMX_CMD_OPEN_ENDPOINT		0x81
-#define OMX_CMD_CLOSE_ENDPOINT		0x82
-#define OMX_CMD_SEND_TINY		0x83
-#define OMX_CMD_SEND_SMALL		0x84
-#define OMX_CMD_SEND_MEDIUM		0x85
-#define OMX_CMD_SEND_RENDEZ_VOUS	0x86
-#define OMX_CMD_SEND_PULL		0x87
-#define OMX_CMD_REGISTER_REGION		0x88
-#define OMX_CMD_DEREGISTER_REGION	0x89
-#define OMX_CMD_SEND_CONNECT		0x90
+#define OMX_CMD_OPEN_ENDPOINT		0x71
+#define OMX_CMD_CLOSE_ENDPOINT		0x72
+#define OMX_CMD_GET_ENDPOINT_SESSION_ID	0x73
+#define OMX_CMD_SEND_TINY		0x81
+#define OMX_CMD_SEND_SMALL		0x82
+#define OMX_CMD_SEND_MEDIUM		0x83
+#define OMX_CMD_SEND_RENDEZ_VOUS	0x84
+#define OMX_CMD_SEND_PULL		0x85
+#define OMX_CMD_REGISTER_REGION		0x86
+#define OMX_CMD_DEREGISTER_REGION	0x87
+#define OMX_CMD_SEND_CONNECT		0x88
 
 static inline const char *
 omx_strcmd(unsigned cmd)
@@ -94,6 +95,8 @@ omx_strcmd(unsigned cmd)
 		return "Get Board Count";
 	case OMX_CMD_GET_BOARD_ID:
 		return "Get Board ID";
+	case OMX_CMD_GET_ENDPOINT_SESSION_ID:
+		return "Get Endpoint Session ID";
 	case OMX_CMD_OPEN_ENDPOINT:
 		return "Open Endpoint";
 	case OMX_CMD_CLOSE_ENDPOINT:
@@ -152,7 +155,6 @@ struct omx_cmd_get_board_id {
 struct omx_cmd_open_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
-	uint32_t session_id;
 };
 
 struct omx_cmd_send_tiny {

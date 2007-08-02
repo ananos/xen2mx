@@ -122,21 +122,11 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 	if (ret < 0)
 		goto out_with_resources;
 
-	/* return the session id to the application */
-	param.session_id = endpoint->session_id;
-	ret = copy_to_user(uparam, &param, sizeof(param));
-	if (ret < 0) {
-		printk(KERN_ERR "Open-MX: Failed to write open endpoint command result, error %d\n", ret);
-		goto out_with_attached;
-	}
-
 	printk(KERN_INFO "Open-MX: Successfully open board %d endpoint %d\n",
 	       endpoint->board_index, endpoint->endpoint_index);
 
 	return 0;
 
- out_with_attached:
-	omx_iface_detach_endpoint(endpoint, 0); /* we don't hold the iface lock */
  out_with_resources:
 	omx_endpoint_free_resources(endpoint);
  out_with_init:
@@ -425,6 +415,26 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		BUG_ON(!endpoint);
 
 		ret = omx_endpoint_close(endpoint);
+
+		break;
+	}
+
+	case OMX_CMD_GET_ENDPOINT_SESSION_ID: {
+		struct omx_endpoint * endpoint = file->private_data;
+		uint32_t session_id;
+
+		ret = omx_endpoint_acquire(endpoint);
+		if (unlikely(ret < 0))
+			goto out;
+
+		session_id = endpoint->session_id;
+
+		ret = copy_to_user((void __user *) arg, &session_id,
+				   sizeof(session_id));
+		if (ret < 0)
+			printk(KERN_ERR "Open-MX: Failed to write get_endpoint_session_id command result, error %d\n", ret);
+
+		omx_endpoint_release(endpoint);
 
 		break;
 	}

@@ -125,10 +125,15 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->eventq = ep->next_event = eventq;
   ep->board_index = board_index;
   ep->endpoint_index = endpoint_index;
-  ep->session_id = open_param.session_id;
   ep->app_key = key;
 
   /* get some info */
+  err = ioctl(fd, OMX_CMD_GET_ENDPOINT_SESSION_ID, &ep->session_id);
+  if (err < 0) {
+    ret = omx__errno_to_return("ioctl GET_ENDPOINT_SESSION_ID");
+    goto out_with_userq_mmap;
+  }
+
   ret = omx__get_board_id(ep, NULL, ep->board_name, &board_addr);
   if (ret != OMX_SUCCESS)
     goto out_with_userq_mmap;
