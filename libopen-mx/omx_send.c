@@ -213,6 +213,8 @@ omx_isend(struct omx_endpoint *ep,
 
   partner = omx__partner_from_addr(&dest_endpoint);
   seqnum = partner->next_send_seq;
+  omx__debug_printf("sending %ld bytes using seqnum %d\n",
+		    (unsigned long) length, seqnum);
 
   if (length <= OMX_TINY_MAX) {
     ret = omx__submit_isend_tiny(ep,

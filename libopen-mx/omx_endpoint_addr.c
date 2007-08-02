@@ -66,6 +66,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->dest_src_peer_index = -1;
   partner->connect_seqnum = 0;
   INIT_LIST_HEAD(&partner->partialq);
+  INIT_LIST_HEAD(&partner->earlyq);
   partner->session_id = 0; /* will be initialized when the partner will connect to me */
   partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   partner->next_match_recv_seq = 0;

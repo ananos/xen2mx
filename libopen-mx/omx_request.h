@@ -142,4 +142,47 @@ omx__partner_queue_empty(struct omx__partner *partner)
 #define omx__foreach_partner_request(partner, req)		\
 list_for_each_entry(req, &partner->partialq, generic.partner_elt)
 
+/*****************************************
+ * Partner early packets queue management
+ */
+
+/*
+ * Insert a early packet in the partner's early queue,
+ * right before the first early with a higher seqnum
+ */
+static inline void
+omx__enqueue_partner_early_packet(struct omx__partner *partner,
+				  struct omx__early_packet *early,
+				  omx__seqnum_t seqnum)
+{
+  struct omx__early_packet * current, * next = NULL;
+
+  list_for_each_entry(current, &partner->earlyq, partner_elt) {
+    if (current->msg.seqnum > seqnum) {
+      next = current;
+      break;
+    }
+  }
+
+  if (next) {
+    /* insert right before next */
+    list_add_tail(&early->partner_elt, &next->partner_elt);
+  } else {
+    /* insert at the end */
+    list_add_tail(&early->partner_elt, &partner->earlyq);
+  }
+}
+
+static inline void
+omx__dequeue_partner_early_packet(struct omx__partner *partner,
+				  struct omx__early_packet *early)
+{
+  /* FIXME: add debug to check that the early is in the queue */
+  list_del(&early->partner_elt);
+}
+
+#define omx__foreach_partner_early_packet_safe(partner, early, next)	\
+list_for_each_entry_safe(early, next, &partner->earlyq, partner_elt)
+
+
 #endif /* __omx_request_h__ */

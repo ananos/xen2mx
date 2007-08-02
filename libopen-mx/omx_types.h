@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include "omx_io.h"
 #include "omx_list.h"
 
 /*****************
@@ -52,6 +53,9 @@ struct omx__partner {
 
   /* list of request matched but not entirely received */
   struct list_head partialq;
+
+  /* early packets */
+  struct list_head earlyq;
 
   /* seqnum of the next send */
   omx__seqnum_t next_send_seq;
@@ -160,6 +164,20 @@ union omx_request {
     uint32_t session_id;
     uint8_t connect_seqnum;
   } connect;
+};
+
+typedef void (*omx__process_recv_func_t) (struct omx_endpoint *ep,
+					  struct omx__partner *partner,
+					  union omx_request *req,
+					  struct omx_evt_recv_msg *msg,
+					  void *data, uint32_t msg_length);
+
+struct omx__early_packet {
+  struct list_head partner_elt;
+  struct omx_evt_recv_msg msg;
+  omx__process_recv_func_t recv_func;
+  char * data;
+  uint32_t msg_length;
 };
 
 struct omx__globals {

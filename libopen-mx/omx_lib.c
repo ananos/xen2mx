@@ -97,15 +97,74 @@ omx_strstatus(omx_status_code_t code)
   assert(0);
 }
 
+/****************
+ * Early packets
+ */
+
+static inline omx_return_t
+omx__postpone_early_packet(struct omx__partner * partner,
+			   struct omx_evt_recv_msg *msg, void *data,
+			   omx__process_recv_func_t recv_func)
+{
+  struct omx__early_packet * early;
+
+  early = malloc(sizeof(*early));
+  if (!early)
+    return OMX_NO_RESOURCES;
+
+  /* copy the whole event, the callback, and the data */
+  memcpy(&early->msg, msg, sizeof(*msg));
+  early->recv_func = recv_func;
+
+  switch (msg->type) {
+  case OMX_EVT_RECV_TINY:
+    /* no need to set early->data, omx__process_recv_tiny
+     * always takes the data from inside the event
+     */
+    early->msg_length = msg->specific.tiny.length;
+    break;
+
+  case OMX_EVT_RECV_SMALL: {
+    uint16_t length = msg->specific.small.length;
+    char * early_data = malloc(length);
+    if (!early_data) {
+      free(early);
+      return OMX_NO_RESOURCES;
+    }
+    memcpy(early_data, data, length);
+    early->data = early_data;
+    early->msg_length = length;
+    break;
+  }
+
+  case OMX_EVT_RECV_MEDIUM: {
+    uint16_t frag_length = msg->specific.medium.frag_length;
+    char * early_data = malloc(frag_length);
+    if (!early_data) {
+      free(early);
+      return OMX_NO_RESOURCES;
+    }
+    memcpy(early_data, data, frag_length);
+    early->data = early_data;
+    early->msg_length = msg->specific.medium.msg_length;
+    break;
+  }
+
+  default:
+    assert(0);
+  }
+
+  omx__debug_printf("postponing early packet with seqnum %d\n",
+		    msg->seqnum);
+
+  omx__enqueue_partner_early_packet(partner, early, msg->seqnum);
+
+  return OMX_SUCCESS;
+}
+
 /*******************
  * Receive callback
  */
-
-typedef void (*omx__process_recv_func_t) (struct omx_endpoint *ep,
-					  struct omx__partner *partner,
-					  union omx_request *req,
-					  struct omx_evt_recv_msg *msg,
-					  void *data, uint32_t msg_length);
 
 static void
 omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
@@ -267,6 +326,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
   }
 
+  /* FIXME: do that below, but only if necessary */
   /* we matched this seqnum, we now expect the next one */
   partner->next_match_recv_seq++;
 
@@ -369,9 +429,28 @@ omx__process_recv(struct omx_endpoint *ep,
 					    msg, data, msg_length,
 					    recv_func);
 
+    /* FIXME: do that only if the match seqnum got increased */
+    /* process early packets in case they match the new expected seqnum */
+    {
+      struct omx__early_packet * early, * next;
+    omx__foreach_partner_early_packet_safe(partner, early, next) {
+      if (early->msg.seqnum <= partner->next_match_recv_seq) {
+	omx__dequeue_partner_early_packet(partner, early);
+	printf("processing early packet with seqnum %d\n",
+	       early->msg.seqnum);
+	ret = omx__process_partner_ordered_recv(ep, partner, early->msg.seqnum,
+						&early->msg, early->data, early->msg_length,
+						early->recv_func);
+	free(early);
+      }
+    }
+    }
+
   } else {
     /* early fragment or message, postpone it */
-    assert(0); /* FIXME */
+    ret = omx__postpone_early_packet(partner,
+				     msg, data,
+				     recv_func);
 
   }
 
