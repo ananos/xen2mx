@@ -2,8 +2,6 @@
 
 * open any_nic any_endpoint
 
-* request alloc/free helpers to memset them
-
 * check pingpong contents
 
 * make connect idempotent and drop workaround in pingpong

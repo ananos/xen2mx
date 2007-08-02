@@ -222,11 +222,9 @@ omx_connect(omx_endpoint_t ep,
   omx_return_t ret;
   int err;
 
-  req = malloc(sizeof(union omx_request));
-  if (!req) {
-    ret = omx__errno_to_return(ENOMEM, "isend request malloc");
+  ret = omx__request_alloc(OMX_REQUEST_TYPE_CONNECT, &req);
+  if (ret != OMX_SUCCESS)
     goto out;
-  }
 
   ret = omx__partner_lookup(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS)
@@ -251,7 +249,6 @@ omx_connect(omx_endpoint_t ep,
   }
   /* no need to wait for a done event, connect is synchronous */
 
-  req->generic.type = OMX_REQUEST_TYPE_CONNECT;
   req->generic.state = OMX_REQUEST_STATE_PENDING;
   req->connect.partner = partner;
   req->connect.session_id = ep->session_id;
@@ -284,7 +281,7 @@ omx_connect(omx_endpoint_t ep,
  out_with_req_queued:
   omx__dequeue_request(&ep->connect_req_q, req);
  out_with_req:
-  free(req);
+  omx__request_free(req);
  out:
   return ret;
 }

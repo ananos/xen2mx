@@ -22,6 +22,42 @@
 #include "omx_types.h"
 #include "omx_list.h"
 
+/*********************
+ * Request allocation
+ */
+
+static inline omx_return_t
+omx__request_alloc(enum omx__request_type type,
+		   union omx_request ** requestp)
+{
+  union omx_request * req;
+
+  req = malloc(sizeof(*req));
+  if (!req)
+    return omx__errno_to_return(ENOMEM, "request malloc");
+
+  req->generic.type = type;
+
+  switch (type) {
+  case OMX_REQUEST_TYPE_RECV:
+    req->recv.unexpected = 0;
+    memset(&req->recv.specific, 0, sizeof(req->recv.specific));
+    break;
+  default:
+    /* nothing */
+    break;
+  }
+
+  *requestp = req;
+  return OMX_SUCCESS;
+}
+
+static inline void
+omx__request_free(union omx_request * req)
+{
+
+}
+
 /***************************
  * Request queue management
  */
