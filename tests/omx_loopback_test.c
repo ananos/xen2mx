@@ -25,7 +25,7 @@
 #include "open-mx.h"
 
 #define BID 0
-#define EID 3
+#define EID OMX_ANY_ENDPOINT
 #define ITER 10
 
 static omx_return_t
