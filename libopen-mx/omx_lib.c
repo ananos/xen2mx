@@ -314,6 +314,34 @@ omx__continue_partial_request(struct omx_endpoint *ep,
 }
 
 static omx_return_t
+omx__process_partner_ordered_recv(struct omx_endpoint *ep,
+				  struct omx__partner *partner, omx__seqnum_t seqnum,
+				  struct omx_evt_recv_msg *msg, void *data, uint32_t length,
+				  omx__process_recv_func_t recv_func)
+{
+  omx_return_t ret;
+
+  if (seqnum == partner->next_match_recv_seq) {
+    /* expected seqnum, do the matching */
+    ret = omx__try_match_next_recv(ep, partner, seqnum,
+				   msg, data, length,
+				   recv_func);
+
+  } else if (msg->type == OMX_EVT_RECV_MEDIUM
+	     && seqnum >= partner->next_frag_recv_seq) {
+    /* fragment of already matched but incomplete medium message */
+    ret = omx__continue_partial_request(ep, partner, seqnum,
+					msg, data, length);
+
+  } else {
+    /* obsolete fragment or message, just ignore it */
+    ret = OMX_SUCCESS;
+  }
+
+  return ret;
+}
+
+static inline omx_return_t
 omx__process_recv(struct omx_endpoint *ep,
 		  struct omx_evt_recv_msg *msg, void *data, uint32_t length,
 		  omx__process_recv_func_t recv_func)
@@ -330,24 +358,19 @@ omx__process_recv(struct omx_endpoint *ep,
   omx__debug_printf("got seqnum %d, expected match at %d, frag at %d\n",
 		    seqnum, partner->next_match_recv_seq, partner->next_frag_recv_seq);
 
-  if (seqnum == partner->next_match_recv_seq) {
-    /* expected seqnum, do the matching */
-    ret = omx__try_match_next_recv(ep, partner, seqnum,
-				   msg, data, length,
-				   recv_func);
-
-  } else if (seqnum > partner->next_frag_recv_seq) {
-    /* early fragment or message */
-    assert(0); /* FIXME */
-
-  } else if (msg->type == OMX_EVT_RECV_MEDIUM
-	     && seqnum >= partner->next_frag_recv_seq) {
-    /* fragment of already matched but incomplete medium message */
-    ret = omx__continue_partial_request(ep, partner, seqnum,
-					msg, data, length);
+  if (seqnum <= partner->next_match_recv_seq) {
+    /* either the new expected seqnum (to match)
+     * or a incomplete previous multi-fragment medium messages (to accumulate)
+     * or an old obsolete duplicate packet (to drop)
+     */
+    ret = omx__process_partner_ordered_recv(ep, partner, seqnum,
+					    msg, data, length,
+					    recv_func);
 
   } else {
-    /* obsolete fragment or message, ignore it */
+    /* early fragment or message, postpone it */
+    assert(0); /* FIXME */
+
   }
 
   return ret;
