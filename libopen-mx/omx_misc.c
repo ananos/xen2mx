@@ -42,6 +42,8 @@ omx__errno_to_return(char * caller)
   case ENODEV:
   case ENOENT:
     return OMX_NO_DEVICE;
+  case EBUSY:
+    return OMX_BUSY;
   default:
     fprintf(stderr, "Open-MX: %s got unexpected errno %d (%m)\n",
 	    caller, errno);
@@ -75,6 +77,8 @@ omx_strerror(omx_return_t ret)
     return "Not implemented";
   case OMX_BAD_CONNECTION_KEY:
     return "Bad Connection Key";
+  case OMX_BUSY:
+    return "Resource Busy";
   }
   assert(0);
 }

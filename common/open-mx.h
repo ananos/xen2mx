@@ -37,6 +37,7 @@ enum omx_return {
   OMX_INVALID_PARAMETER,
   OMX_NOT_IMPLEMENTED,
   OMX_BAD_CONNECTION_KEY,
+  OMX_BUSY,
 };
 typedef enum omx_return omx_return_t;
 
