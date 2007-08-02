@@ -32,9 +32,9 @@
  */
 
 omx_return_t
-omx__errno_to_return(int error, char * caller)
+omx__errno_to_return(char * caller)
 {
-  switch (error) {
+  switch (errno) {
   case EINVAL:
     return OMX_INVALID_PARAMETER;
   case EACCES:
@@ -48,8 +48,8 @@ omx__errno_to_return(int error, char * caller)
   case ENOENT:
     return OMX_NO_DEVICE;
   default:
-    fprintf(stderr, "Open-MX: %s got unexpected errno %d (%s)\n",
-	    caller, error, strerror(error));
+    fprintf(stderr, "Open-MX: %s got unexpected errno %d (%m)\n",
+	    caller, errno);
     return OMX_BAD_ERROR;
   }
 }

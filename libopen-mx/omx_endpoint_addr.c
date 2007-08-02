@@ -18,7 +18,6 @@
 
 #include <stdlib.h>
 #include <sys/ioctl.h>
-#include <errno.h>
 
 #include "omx_lib.h"
 #include "omx_request.h"
@@ -58,9 +57,8 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   uint32_t partner_index;
 
   partner = malloc(sizeof(*partner));
-  if (!partner) {
-    return omx__errno_to_return(ENOMEM, "partner malloc");
-  }
+  if (!partner)
+    return OMX_NO_RESOURCES;
 
   partner->board_addr = board_addr;
   partner->endpoint_index = endpoint_index;
@@ -246,7 +244,7 @@ omx_connect(omx_endpoint_t ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &connect_param);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl send/connect");
+    ret = omx__errno_to_return("ioctl send/connect");
     goto out_with_req;
   }
   /* no need to wait for a done event, connect is synchronous */
@@ -385,7 +383,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl send/connect");
+    ret = omx__errno_to_return("ioctl send/connect");
     goto out_with_req;
   }
   /* no need to wait for a done event, connect is synchronous */

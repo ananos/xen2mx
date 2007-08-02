@@ -19,7 +19,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
-#include <errno.h>
 
 #include "omx_lib.h"
 
@@ -36,25 +35,25 @@ omx__init_api(int api)
 
   err = open(OMX_DEVNAME, O_RDONLY);
   if (err < 0)
-    return omx__errno_to_return(errno, "init open control fd");
+    return omx__errno_to_return("init open control fd");
 
   omx__globals.control_fd = err;
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_MAX, &omx__globals.board_max);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl GET_BOARD_MAX");
+    ret = omx__errno_to_return("ioctl GET_BOARD_MAX");
     goto out_with_fd;
   }
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_ENDPOINT_MAX, &omx__globals.endpoint_max);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl GET_ENDPOINT_MAX");
+    ret = omx__errno_to_return("ioctl GET_ENDPOINT_MAX");
     goto out_with_fd;
   }
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_PEER_MAX, &omx__globals.peer_max);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl GET_PEER_MAX");
+    ret = omx__errno_to_return("ioctl GET_PEER_MAX");
     goto out_with_fd;
   }
 

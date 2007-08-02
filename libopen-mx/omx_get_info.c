@@ -17,7 +17,6 @@
  */
 
 #include <sys/ioctl.h>
-#include <errno.h>
 
 #include "omx_io.h"
 #include "omx_lib.h"
@@ -38,7 +37,7 @@ omx__get_board_count(uint32_t * count)
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_COUNT, count);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl GET_BOARD_COUNT");
+    ret = omx__errno_to_return("ioctl GET_BOARD_COUNT");
     goto out;
   }
 
@@ -76,7 +75,7 @@ omx__get_board_id(struct omx_endpoint * ep, uint8_t * index,
 
   err = ioctl(fd, OMX_CMD_GET_BOARD_ID, &board_id);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl GET_BOARD_ID");
+    ret = omx__errno_to_return("ioctl GET_BOARD_ID");
     goto out;
   }
 
@@ -108,7 +107,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_MAX, &max);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl GET_BOARD_MAX");
+    ret = omx__errno_to_return("ioctl GET_BOARD_MAX");
     goto out;
   }
 
@@ -119,7 +118,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
     board_id.board_index = i;
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_ID, &board_id);
     if (err < 0) {
-      ret = omx__errno_to_return(errno, "ioctl GET_BOARD_ID");
+      ret = omx__errno_to_return("ioctl GET_BOARD_ID");
       if (ret != OMX_INVALID_PARAMETER)
 	goto out;
     }
@@ -152,7 +151,7 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_MAX, &max);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl GET_BOARD_MAX");
+    ret = omx__errno_to_return("ioctl GET_BOARD_MAX");
     goto out;
   }
 
@@ -163,7 +162,7 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     board_id.board_index = i;
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_ID, &board_id);
     if (err < 0) {
-      ret = omx__errno_to_return(errno, "ioctl GET_BOARD_ID");
+      ret = omx__errno_to_return("ioctl GET_BOARD_ID");
       if (ret != OMX_INVALID_PARAMETER)
 	goto out;
     }

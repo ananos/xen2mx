@@ -21,7 +21,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <errno.h>
 
 #include "omx_lib.h"
 
@@ -37,7 +36,7 @@ omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
 
   array = malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct omx__sendq_entry));
   if (!array)
-    return omx__errno_to_return(ENOMEM, "sendq_map malloc");
+    return OMX_NO_RESOURCES;
 
   ep->sendq_map.array = array;
 
@@ -82,13 +81,13 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   ep = malloc(sizeof(struct omx_endpoint));
   if (!ep) {
-    ret = omx__errno_to_return(ENOMEM, "endpoint malloc");
+    ret = OMX_NO_RESOURCES;
     goto out;
   }
 
   err = open(OMX_DEVNAME, O_RDWR);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "open");
+    ret = omx__errno_to_return("open");
     goto out_with_ep;
   }
   fd = err;
@@ -98,7 +97,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   open_param.endpoint_index = endpoint_index;
   err = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
   if (err < 0) {
-    ret = omx__errno_to_return(errno, "ioctl OPEN_ENDPOINT");
+    ret = omx__errno_to_return("ioctl OPEN_ENDPOINT");
     goto out_with_fd;
   }
 
@@ -114,7 +113,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   if (sendq == (void *) -1
       || recvq == (void *) -1
       || eventq == (void *) -1) {
-    ret = omx__errno_to_return(errno, "mmap");
+    ret = omx__errno_to_return("mmap");
     goto out_with_sendq_map;
   }
   printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
@@ -143,7 +142,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->partners = calloc(omx__globals.peer_max * omx__globals.endpoint_max,
 			sizeof(*ep->partners));
   if (!ep->partners) {
-    ret = omx__errno_to_return(ENOMEM, "endpoint partners calloc");
+    ret = OMX_NO_RESOURCES;
     goto out_with_userq_mmap;
   }
 

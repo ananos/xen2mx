@@ -127,7 +127,7 @@ omx__board_addr_sscanf(char * buffer, uint64_t * addr)
 	return err;
 }
 
-extern omx_return_t omx__errno_to_return(int error, char * caller);
+extern omx_return_t omx__errno_to_return(char * caller);
 
 extern omx_return_t omx__get_board_count(uint32_t * count);
 extern omx_return_t omx__get_board_id(struct omx_endpoint * ep, uint8_t * index, char * name, uint64_t * addr);
