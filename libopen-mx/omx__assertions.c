@@ -30,7 +30,7 @@
 void
 assertions(void)
 {
-  CHECK(sizeof(struct omx_evt_recv_tiny) == OMX_EVENTQ_ENTRY_SIZE);
+  CHECK(sizeof(struct omx_evt_recv_msg) == OMX_EVENTQ_ENTRY_SIZE);
   CHECK(sizeof(union omx_evt) == OMX_EVENTQ_ENTRY_SIZE);
   CHECK(OMX_MEDIUM_FRAG_LENGTH_MAX <= OMX_RECVQ_ENTRY_SIZE);
   CHECK(OMX_MEDIUM_FRAG_LENGTH_MAX <= OMX_SENDQ_ENTRY_SIZE);

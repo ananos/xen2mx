@@ -142,7 +142,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	struct omx_pkt_msg *tiny = &mh->body.tiny;
 	uint16_t length = tiny->length;
 	union omx_evt *evt;
-	struct omx_evt_recv_tiny *event;
+	struct omx_evt_recv_msg *event;
 	int err = 0;
 
 	/* check packet length */
@@ -185,19 +185,19 @@ omx_recv_tiny(struct omx_iface * iface,
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_tiny;
+	event = &evt->recv_msg;
 
 	/* fill event */
 	event->dest_src_peer_index = mh->head.dst_src_peer_index;
 	event->src_endpoint = tiny->src_endpoint;
-	event->length = length;
 	event->match_info = OMX_MATCH_INFO_FROM_PKT(tiny);
 	event->seqnum = tiny->lib_seqnum;
+	event->specific.tiny.length = length;
 
 	omx_recv_dprintk(eh, "TINY length %ld", (unsigned long) length);
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event->data, length);
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event->specific.tiny.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
@@ -224,7 +224,7 @@ omx_recv_small(struct omx_iface * iface,
 	struct omx_pkt_msg *small = &mh->body.small;
 	uint16_t length = small->length;
 	union omx_evt *evt;
-	struct omx_evt_recv_small *event;
+	struct omx_evt_recv_msg *event;
 	char *recvq_slot;
 	int err;
 
@@ -268,14 +268,14 @@ omx_recv_small(struct omx_iface * iface,
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_small;
+	event = &evt->recv_msg;
 
 	/* fill event */
 	event->dest_src_peer_index = mh->head.dst_src_peer_index;
 	event->src_endpoint = small->src_endpoint;
-	event->length = length;
 	event->match_info = OMX_MATCH_INFO_FROM_PKT(small);
 	event->seqnum = small->lib_seqnum;
+	event->specific.small.length = length;
 
 	omx_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
@@ -308,7 +308,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	struct omx_pkt_medium_frag *medium = &mh->body.medium;
 	uint16_t frag_length = medium->frag_length;
 	union omx_evt *evt;
-	struct omx_evt_recv_medium *event;
+	struct omx_evt_recv_msg *event;
 	char *recvq_slot;
 	int err;
 
@@ -352,17 +352,17 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_medium;
+	event = &evt->recv_msg;
 
 	/* fill event */
 	event->dest_src_peer_index = mh->head.dst_src_peer_index;
 	event->src_endpoint = medium->msg.src_endpoint;
 	event->match_info = OMX_MATCH_INFO_FROM_PKT(&medium->msg);
-	event->msg_length = medium->msg.length;
 	event->seqnum = medium->msg.lib_seqnum;
-	event->frag_length = frag_length;
-	event->frag_seqnum = medium->frag_seqnum;
-	event->frag_pipeline = medium->frag_pipeline;
+	event->specific.medium.msg_length = medium->msg.length;
+	event->specific.medium.frag_length = frag_length;
+	event->specific.medium.frag_seqnum = medium->frag_seqnum;
+	event->specific.medium.frag_pipeline = medium->frag_pipeline;
 
 	omx_recv_dprintk(eh, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
