@@ -313,7 +313,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
   assert(0);
 }
 
-static omx_return_t
+static inline omx_return_t
 omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 				  struct omx__partner *partner, omx__seqnum_t seqnum,
 				  struct omx_evt_recv_msg *msg, void *data, uint32_t length,
