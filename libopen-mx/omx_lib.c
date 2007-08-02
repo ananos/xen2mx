@@ -112,9 +112,9 @@ static void
 omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
 		       struct omx_evt_recv_msg *msg,
-		       void *data, uint32_t length)
+		       void *data /* unused */, uint32_t length)
 {
-  memcpy(req->recv.buffer, data, length);
+  memcpy(req->recv.buffer, msg->specific.tiny.data, length);
 
   req->generic.state = OMX_REQUEST_STATE_DONE;
   req->generic.status.code = OMX_STATUS_SUCCESS;
