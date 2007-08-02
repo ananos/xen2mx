@@ -19,6 +19,10 @@
   - use it for shared memory ?
 * rdma_get
 * rdma_put
+* use kref to get user region without keeping a spinlock ?
+* user region seqnum
+* write parameter in ioctl to register a region, check it when reading/writing from/to the region
+* keep a current (segment+offset+remaining) in user_region and recompute only when unordered
 
 * true sleeping in the kernel
   - pass the eventq index in the ioctl to avoid races
@@ -27,6 +31,10 @@
 * progress thread sleeps on a special queue
   - some event wakeup both queues (force_wakeup)
   - other events wakeup the progress thread only no one on the regular queue
+
+* debug
+  - filter various debug message types
+  - make driver dprintk runtime configurable
 
 * truc messages
 * rendez-vous messages
@@ -40,21 +48,16 @@
 * /dev/open-mxd ?
 
 * optimizations
-  + likely/unlikely in the lib; for gcc only
-  + single ioctl for multiple medium frags ?
+  - likely/unlikely in the lib; for gcc only
+  - single ioctl for multiple medium frags ?
+  - use IOAT
+  - no need to pad event to 64 ? no need to put the type at the end, but write it after the rest
+  - optimize shared comms between boards from within the driver
 
 * use valgrind memory hooks
 * add valgrind ioctl hooks
 
-* no need to pad event to 64 ? no need to put the type at the end, but write it after the rest
 * ntoh[sl] fields
-* use kref to get user region without keeping a spinlock ?
-* user region seqnum
-* write parameter in ioctl to register a region, check it when reading/writing from/to the region
-* keep a current (segment+offset+remaining) in user_region and recompute only when unordered
-* use IOAT
-* pass the user-address of contig small/tiny buffer instead of copying ?
-* optimize shared comms between boards from within the driver
 
 * add a VERSION file and a script to update MODULE_VERSION, COPYING and file headers ?
 
