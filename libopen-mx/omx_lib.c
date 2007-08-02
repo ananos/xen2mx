@@ -267,10 +267,11 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
   }
 
-  /* we match this seqnum, we now expect the next one */
+  /* we matched this seqnum, we now expect the next one */
   partner->next_match_recv_seq++;
 
-  /* if no more partner partial request, we expect a frag for the new seqnum,
+  /* update the seqnum of the next partial fragment to expect
+   * if no more partner partial request, we expect a frag for the new seqnum,
    * if not, we expect the fragment for at least the first partial seqnum
    */
   if (omx__partner_queue_empty(partner)) {
