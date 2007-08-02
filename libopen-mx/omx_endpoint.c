@@ -57,6 +57,94 @@ omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
   free(ep->sendq_map.array);
 }
 
+/**********************************
+ * Find a board/endpoint available
+ */
+
+static inline omx_return_t
+omx__open_one_endpoint(int fd,
+		       uint32_t board_index, uint32_t endpoint_index)
+{
+  struct omx_cmd_open_endpoint open_param;
+  int err;
+
+  omx__debug_printf("trying to open board #%d endpoint #%d\n",
+		    board_index, endpoint_index);
+
+  open_param.board_index = board_index;
+  open_param.endpoint_index = endpoint_index;
+  err = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
+  if (err < 0)
+    return omx__errno_to_return("ioctl OPEN_ENDPOINT");
+
+  return OMX_SUCCESS;
+}
+
+static inline omx_return_t
+omx__open_endpoint_in_range(int fd,
+			    uint32_t board_start, uint32_t board_end,
+			    uint32_t *board_found_p,
+			    uint32_t endpoint_start, uint32_t endpoint_end,
+			    uint32_t *endpoint_found_p)
+{
+  uint32_t board, endpoint;
+  omx_return_t ret;
+
+  omx__debug_printf("trying to open board [%d,%d] endpoint [%d,%d]\n",
+		    board_start, board_end, endpoint_start, endpoint_end);
+
+  /* loop on the board first, to distribute the load,
+   * assuming no crappy board are attached (lo, ...)
+   */
+  for(endpoint=endpoint_start; endpoint<=endpoint_end; endpoint++)
+
+    for(board=board_start; board<=board_end; board++) {
+
+      /* try to open this one */
+      ret = omx__open_one_endpoint(fd, board, endpoint);
+
+      /* if success or error, return. if busy or nodev, try the next one */
+      if (ret == OMX_SUCCESS) {
+	omx__debug_printf("successfully open board #%d endpoint #%d\n",
+			  board, endpoint);
+	*board_found_p = board;
+	*endpoint_found_p = endpoint;
+	return OMX_SUCCESS;
+      } else if (ret != OMX_BUSY && ret != OMX_NO_DEVICE) {
+	return ret;
+      }
+    }
+
+  /* didn't find any endpoint available */
+  return OMX_BUSY;
+}
+
+static inline omx_return_t
+omx__open_endpoint(int fd,
+		   uint32_t *board_index_p, uint32_t *endpoint_index_p)
+{
+  uint32_t board_start, board_end;
+  uint32_t endpoint_start, endpoint_end;
+
+  if (*board_index_p == OMX_ANY_NIC) {
+    board_start = 0;
+    board_end = omx__globals.board_max-1;
+  } else {
+    board_start = board_end = *board_index_p;
+  }
+
+  if (*endpoint_index_p == OMX_ANY_ENDPOINT) {
+    endpoint_start = 0;
+    endpoint_end = omx__globals.endpoint_max-1;
+  } else {
+    endpoint_start = endpoint_end = *endpoint_index_p;
+  }
+
+  return omx__open_endpoint_in_range(fd,
+				     board_start, board_end, board_index_p,
+				     endpoint_start, endpoint_end, endpoint_index_p);
+}
+
 /**********************
  * Endpoint management
  */
@@ -66,7 +154,6 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 		  struct omx_endpoint **epp)
 {
   /* FIXME: add parameters to choose the board name? */
-  struct omx_cmd_open_endpoint open_param;
   struct omx_endpoint * ep;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   void * recvq, * sendq, * eventq;
@@ -92,14 +179,10 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   }
   fd = err;
 
-  /* ok */
-  open_param.board_index = board_index;
-  open_param.endpoint_index = endpoint_index;
-  err = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
-  if (err < 0) {
-    ret = omx__errno_to_return("ioctl OPEN_ENDPOINT");
+  /* try to open */
+  ret = omx__open_endpoint(fd, &board_index, &endpoint_index);
+  if (ret != OMX_SUCCESS)
     goto out_with_fd;
-  }
 
   /* prepare the sendq */
   ret = omx__endpoint_sendq_map_init(ep);

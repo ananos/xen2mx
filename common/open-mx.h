@@ -86,6 +86,9 @@ omx_return_t
 omx_nic_id_to_board_number(uint64_t nic_id,
 			   uint32_t *board_number);
 
+#define OMX_ANY_NIC 0xffffffffU
+#define OMX_ANY_ENDPOINT 0xffffffffU
+
 omx_return_t
 omx_open_endpoint(uint32_t board_index, uint32_t index, uint32_t key,
 		  omx_endpoint_t *epp);

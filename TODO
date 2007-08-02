@@ -1,7 +1,5 @@
 * move irecv and process_recv* to omx_recv.c
 
-* open any_nic any_endpoint
-
 * check pingpong contents
 
 * make connect idempotent and drop workaround in pingpong
