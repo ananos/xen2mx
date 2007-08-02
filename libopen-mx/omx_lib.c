@@ -105,15 +105,15 @@ typedef void (*omx__process_recv_func_t) (struct omx_endpoint *ep,
 					  struct omx__partner *partner,
 					  union omx_request *req,
 					  struct omx_evt_recv_msg *msg,
-					  void *data, uint32_t length);
+					  void *data, uint32_t msg_length);
 
 static void
 omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
 		       struct omx_evt_recv_msg *msg,
-		       void *data /* unused */, uint32_t length)
+		       void *data /* unused */, uint32_t msg_length)
 {
-  memcpy(req->recv.buffer, msg->specific.tiny.data, length);
+  memcpy(req->recv.buffer, msg->specific.tiny.data, msg_length);
 
   req->generic.state = OMX_REQUEST_STATE_DONE;
   req->generic.status.code = OMX_STATUS_SUCCESS;
@@ -125,9 +125,9 @@ static void
 omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 			union omx_request *req,
 			struct omx_evt_recv_msg *msg,
-			void *data, uint32_t length)
+			void *data, uint32_t msg_length)
 {
-  memcpy(req->recv.buffer, data, length);
+  memcpy(req->recv.buffer, data, msg_length);
 
   req->generic.state = OMX_REQUEST_STATE_DONE;
   req->generic.status.code = OMX_STATUS_SUCCESS;
@@ -213,7 +213,7 @@ omx__match_recv(struct omx_endpoint *ep,
 static inline omx_return_t
 omx__try_match_next_recv(struct omx_endpoint *ep,
 			 struct omx__partner * partner, omx__seqnum_t seqnum,
-			 struct omx_evt_recv_msg *msg, void *data, uint32_t length,
+			 struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
 			 omx__process_recv_func_t recv_func)
 {
   union omx_request * req = NULL;
@@ -226,17 +226,18 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
   if (req) {
     /* expected */
+    uint32_t xfer_length;
+
     omx__partner_to_addr(partner, &req->generic.status.addr);
     req->recv.seqnum = seqnum;
     req->generic.status.match_info = msg->match_info;
     req->generic.state = OMX_REQUEST_STATE_PENDING;
 
-    req->generic.status.msg_length = length;
-    if (req->recv.length < length)
-      length = req->recv.length;
-    req->generic.status.xfer_length = length;
+    req->generic.status.msg_length = msg_length;
+    xfer_length = req->recv.length < msg_length ? req->recv.length : msg_length;
+    req->generic.status.xfer_length = xfer_length;
 
-    (*recv_func)(ep, partner, req, msg, data, length);
+    (*recv_func)(ep, partner, req, msg, data, xfer_length);
 
   } else {
     /* unexpected */
@@ -246,7 +247,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     if (!req)
       return OMX_NO_RESOURCES;
 
-    unexp_buffer = malloc(length);
+    unexp_buffer = malloc(msg_length);
     if (!unexp_buffer) {
       fprintf(stderr, "Failed to allocate buffer for unexpected messages, dropping\n");
       omx__request_free(req);
@@ -259,10 +260,10 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     req->generic.state = OMX_REQUEST_STATE_PENDING;
     req->recv.unexpected = 1;
 
-    req->generic.status.msg_length = length;
+    req->generic.status.msg_length = msg_length;
     req->recv.buffer = unexp_buffer;
 
-    (*recv_func)(ep, partner, req, msg, data, length);
+    (*recv_func)(ep, partner, req, msg, data, msg_length);
 
   }
 
@@ -316,7 +317,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
 static inline omx_return_t
 omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 				  struct omx__partner *partner, omx__seqnum_t seqnum,
-				  struct omx_evt_recv_msg *msg, void *data, uint32_t length,
+				  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
 				  omx__process_recv_func_t recv_func)
 {
   omx_return_t ret;
@@ -324,14 +325,14 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
   if (seqnum == partner->next_match_recv_seq) {
     /* expected seqnum, do the matching */
     ret = omx__try_match_next_recv(ep, partner, seqnum,
-				   msg, data, length,
+				   msg, data, msg_length,
 				   recv_func);
 
   } else if (msg->type == OMX_EVT_RECV_MEDIUM
 	     && seqnum >= partner->next_frag_recv_seq) {
     /* fragment of already matched but incomplete medium message */
     ret = omx__continue_partial_request(ep, partner, seqnum,
-					msg, data, length);
+					msg, data, msg_length);
 
   } else {
     /* obsolete fragment or message, just ignore it */
@@ -343,7 +344,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 
 static inline omx_return_t
 omx__process_recv(struct omx_endpoint *ep,
-		  struct omx_evt_recv_msg *msg, void *data, uint32_t length,
+		  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
 		  omx__process_recv_func_t recv_func)
 {
   omx__seqnum_t seqnum = msg->seqnum;
@@ -364,7 +365,7 @@ omx__process_recv(struct omx_endpoint *ep,
      * or an old obsolete duplicate packet (to drop)
      */
     ret = omx__process_partner_ordered_recv(ep, partner, seqnum,
-					    msg, data, length,
+					    msg, data, msg_length,
 					    recv_func);
 
   } else {
