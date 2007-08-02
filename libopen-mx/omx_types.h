@@ -135,7 +135,7 @@ union omx_request {
       struct {
 	uint32_t frags_pending_nr;
       } medium;
-    } type;
+    } specific;
   } send;
 
   struct {
@@ -151,7 +151,7 @@ union omx_request {
 	uint32_t frags_received_mask;
 	uint32_t accumulated_length;
       } medium;
-    } type;
+    } specific;
   } recv;
 
   struct {

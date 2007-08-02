@@ -147,13 +147,13 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   unsigned long frag_seqnum = event->specific.medium.frag_seqnum;
   unsigned long frag_pipeline = event->specific.medium.frag_pipeline;
   unsigned long offset = frag_seqnum << (OMX_MEDIUM_FRAG_PIPELINE_BASE + frag_pipeline);
-  int new = (req->recv.type.medium.frags_received_mask == 0);
+  int new = (req->recv.specific.medium.frags_received_mask == 0);
 
   omx__debug_printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
 		    (unsigned) frag_seqnum, (unsigned) frag_pipeline, (unsigned) chunk,
 		    (unsigned) offset, (unsigned) msg_length);
 
-  if (req->recv.type.medium.frags_received_mask & (1 << frag_seqnum))
+  if (req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum))
     /* already received this frag */
     return;
 
@@ -161,10 +161,10 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   if (offset + chunk > msg_length)
     chunk = msg_length - offset;
   memcpy(req->recv.buffer + offset, data, chunk);
-  req->recv.type.medium.frags_received_mask |= 1 << frag_seqnum;
-  req->recv.type.medium.accumulated_length += chunk;
+  req->recv.specific.medium.frags_received_mask |= 1 << frag_seqnum;
+  req->recv.specific.medium.accumulated_length += chunk;
 
-  if (req->recv.type.medium.accumulated_length == msg_length) {
+  if (req->recv.specific.medium.accumulated_length == msg_length) {
     /* was the last frag */
     omx__debug_printf("got last frag of seqnum %d\n", req->recv.seqnum);
 
@@ -234,7 +234,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     req->generic.type = OMX_REQUEST_TYPE_RECV;
     req->generic.state = OMX_REQUEST_STATE_PENDING;
     req->recv.unexpected = 0;
-    memset(&req->recv.type, 0, sizeof(req->recv.type));
+    memset(&req->recv.specific, 0, sizeof(req->recv.specific));
 
     req->generic.status.msg_length = length;
     if (req->recv.length < length)
@@ -266,7 +266,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     req->generic.type = OMX_REQUEST_TYPE_RECV;
     req->generic.state = OMX_REQUEST_STATE_PENDING;
     req->recv.unexpected = 1;
-    memset(&req->recv.type, 0, sizeof(req->recv.type));
+    memset(&req->recv.specific, 0, sizeof(req->recv.specific));
 
     req->generic.status.msg_length = length;
     req->recv.buffer = unexp_buffer;
@@ -408,7 +408,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 	   && req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM);
 
     /* message is not done */
-    if (--req->send.type.medium.frags_pending_nr)
+    if (--req->send.specific.medium.frags_pending_nr)
       break;
 
     omx__dequeue_request(&ep->sent_req_q, req);
@@ -580,7 +580,7 @@ omx_isend(struct omx_endpoint *ep,
     /* need to wait for a done event, since the sendq pages
      * might still be in use
      */
-    req->send.type.medium.frags_pending_nr = frags;
+    req->send.specific.medium.frags_pending_nr = frags;
     req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
     req->generic.status.context = context;
     req->generic.state = OMX_REQUEST_STATE_PENDING;
