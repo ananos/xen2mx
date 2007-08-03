@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/utsname.h>
+#include <linux/if_arp.h>
 
 #include "omx_common.h"
 #include "omx_hal.h"
@@ -174,8 +175,8 @@ omx_iface_attach(struct net_device * ifp)
 		goto out_with_ifp_hold;
 	}
 
-	printk(KERN_INFO "Open-MX: Attaching interface '%s' as #%i, MTU=%d\n",
-	       ifp->name, i, mtu);
+	printk(KERN_INFO "Open-MX: Attaching %sEthernet device '%s' as #%i, MTU=%d\n",
+	       (ifp->type == ARPHRD_ETHER ? "" : "non-"), ifp->name, i, mtu);
 	if (mtu < OMX_MTU_MIN)
 		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
 		       ifp->name, OMX_MTU_MIN, mtu);
