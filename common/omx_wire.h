@@ -147,7 +147,7 @@ struct omx_pkt_pull_request {
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
-	uint32_t session; /* FIXME: unused ? */
+	uint32_t session;
 	uint32_t length; /* FIXME: 64bits ? */
 	uint32_t puller_rdma_id;
 	uint32_t puller_offset; /* FIXME: 64bits ? */

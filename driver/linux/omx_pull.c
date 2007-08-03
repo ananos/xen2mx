@@ -337,6 +337,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	pull->src_endpoint = endpoint->endpoint_index;
 	pull->dst_endpoint = cmd.dest_endpoint;
 	pull->ptype = OMX_PKT_TYPE_PULL;
+	pull->session = cmd.session_id;
 	pull->length = cmd.length;
 	pull->puller_rdma_id = cmd.local_rdma_id;
 	pull->puller_offset = cmd.local_offset;
@@ -393,8 +394,6 @@ omx_recv_pull(struct omx_iface * iface,
 	struct omx_user_region *region;
 	int err = 0;
 
-	/* FIXME: check session */
-
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, pull_request->dst_endpoint);
 	if (unlikely(!endpoint)) {
@@ -404,6 +403,14 @@ omx_recv_pull(struct omx_iface * iface,
 		goto out;
 	}
 
+	/* check the session */
+	if (unlikely(pull_request->session != endpoint->session_id)) {
+		omx_drop_dprintk(pull_eh, "PULL packet with bad session");
+		err = -EINVAL;
+		goto out_with_endpoint;
+	}
+
+	/* alloc the reply skb */
 	skb = omx_new_skb(ifp,
 			  /* only allocate space for the header now,
 			   * we'll attach pages and pad to ETH_ZLEN later
@@ -518,8 +525,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out;
 	}
 
-	/* FIXME: check session */
-
 	/* acquire the handle and endpoint */
 	handle = omx_pull_handle_acquire_by_wire(iface, pull_reply->dst_magic,
 						  pull_reply->dst_pull_handle);
@@ -529,6 +534,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		err = -EINVAL;
 		goto out;
 	}
+
+	/* no session to check */
 
 	/* acquire the region */
 	region = omx_user_region_acquire(handle->endpoint, pull_reply->puller_rdma_id);

@@ -34,18 +34,19 @@
 #define COMM_LEN (LEN/4)
 
 static int
-send_pull(int fd, int id, int from, int to, int len)
+send_pull(int fd, uint32_t session_id, int id, int from, int to, int len)
 {
   struct omx_cmd_send_pull pull_param;
   int ret;
 
   pull_param.dest_addr = -1; /* broadcast */
   pull_param.dest_endpoint = EP;
+  pull_param.length = len;
+  pull_param.session_id = session_id;
   pull_param.local_rdma_id = id;
   pull_param.local_offset = from;
   pull_param.remote_rdma_id = id;
   pull_param.remote_offset = to;
-  pull_param.length = len;
 
   ret = ioctl(fd, OMX_CMD_SEND_PULL, &pull_param);
   if (ret < 0) {
@@ -84,6 +85,7 @@ int main(void)
   //  volatile union omx_evt * evt;
   void * recvq, * sendq, * eventq;
   char * buffer;
+  uint32_t session_id;
   //  int i;
   //  struct timeval tv1, tv2;
 
@@ -102,6 +104,12 @@ int main(void)
     goto out_with_fd;
   }
   fprintf(stderr, "Successfully attached endpoint %d/%d\n", 0, 34);
+
+  ret = ioctl(fd, OMX_CMD_GET_ENDPOINT_SESSION_ID, &session_id);
+  if (ret < 0) {
+    perror("get session id");
+    goto out_with_fd;
+  }
 
   /* mmap */
   sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
@@ -134,7 +142,7 @@ int main(void)
   }
 
   /* send a message */
-  ret = send_pull(fd, 34, SEND_BEGIN, RECV_BEGIN, COMM_LEN);
+  ret = send_pull(fd, session_id, 34, SEND_BEGIN, RECV_BEGIN, COMM_LEN);
   if (ret < 0)
     goto out_with_fd;
 
