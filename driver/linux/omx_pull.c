@@ -368,13 +368,6 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	return ret;
 }
 
-static inline int
-omx_pull_reply_append_user_region_segment(struct sk_buff *skb,
-					  struct omx_user_region_segment *seg)
-{
-	return -ENOSYS;
-}
-
 /* pull reply skb destructor to release the user region */
 static void
 omx_send_pull_reply_skb_destructor(struct sk_buff *skb)
@@ -398,9 +391,9 @@ omx_recv_pull(struct omx_iface * iface,
 	struct ethhdr *reply_eh;
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_user_region *region;
-	uint32_t queued;
-//	uint32_t length, queued, iseg;
 	int err = 0;
+
+	/* FIXME: check session */
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, pull_request->dst_endpoint);
@@ -455,32 +448,24 @@ omx_recv_pull(struct omx_iface * iface,
 		goto out_with_skb;
 
 	/* append segment pages */
-	queued = 0;
-#if 0
-	for(iseg = 0;
-	    iseg < region->nr_segments && queued < pull_request->length;
-	    iseg++) {
-		struct omx_user_region_segment *segment = &region->segments[iseg];
-		uint32_t append;
-		append = omx_pull_reply_append_user_region_segment(skb, segment);
-		if (unlikely(append < 0)) {
-			printk(KERN_ERR "Open-MX: failed to queue segment to skb, error %d\n", append);
-			/* FIXME: release pages */
-			goto out_with_region;
-		}
-		queued += append;
+	err = omx_user_region_append_pages(region,
+					   pull_request->pulled_offset,
+					   skb,
+					   pull_request->length);
+	if (err < 0) {
+		omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
+		/* pages will be released in dev_kfree_skb() */
+		goto out_with_region;
 	}
-#endif
-
-	pull_reply->length = queued;
+	pull_reply->length = pull_request->length;
 
  	if (unlikely(skb->len < ETH_ZLEN)) {
 		/* pad to ETH_ZLEN */
 		err = omx_skb_pad(skb, ETH_ZLEN);
 		if (err)
-			/* skb has been freed in skb_pad */
-			/* FIXME: release region */
-			goto out_with_region;
+			/* skb has been freed in skb_pad') */
+			omx_user_region_release(region);
+			goto out_with_endpoint;
 		skb->len = ETH_ZLEN;
 	}
 
@@ -512,16 +497,30 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		    struct sk_buff * skb)
 {
 	struct omx_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
+	struct ethhdr *eh = &mh->head.eth;
+	uint32_t pull_length = pull_reply->length;
 	struct omx_pull_handle * handle;
 	struct omx_user_region * region;
 	int err = 0;
 
-	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld",
+	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld length %ld skb length %ld",
 			 (unsigned long) pull_reply->dst_pull_handle,
-			 (unsigned long) pull_reply->dst_magic);
+			 (unsigned long) pull_reply->dst_magic,
+			 (unsigned long) pull_length,
+			 (unsigned long) skb->len - sizeof(struct omx_hdr));
 
-	/* FIXME */
+	/* check actual data length */
+	if (unlikely(pull_length > skb->len - sizeof(struct omx_hdr))) {
+		omx_drop_dprintk(eh, "PULL REPLY packet with %ld bytes instead of %d",
+				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned) pull_length);
+		err = -EINVAL;
+		goto out;
+	}
 
+	/* FIXME: check session */
+
+	/* acquire the handle and endpoint */
 	handle = omx_pull_handle_acquire_by_wire(iface, pull_reply->dst_magic,
 						  pull_reply->dst_pull_handle);
 	if (unlikely(!handle)) {
@@ -531,6 +530,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out;
 	}
 
+	/* acquire the region */
 	region = omx_user_region_acquire(handle->endpoint, pull_reply->puller_rdma_id);
 	if (unlikely(!region)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown rdma id %d\n",
@@ -546,7 +546,15 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* release the handle during the copy */
 	omx_pull_handle_release(handle);
 
-	/* FIXME: copy stuff */
+	/* fill segment pages */
+	err = omx_user_region_fill_pages(region,
+					 pull_reply->puller_offset,
+					 skb,
+					 pull_reply->length);
+	if (err < 0) {
+		omx_drop_dprintk(eh, "PULL REPLY packet due to failure to fill pages from skb");
+		goto out_with_region;
+	}
 
 	/* FIXME: release instead of destroy if not done */
 	omx_pull_handle_reacquire(handle);
@@ -558,6 +566,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	return 0;
 
+ out_with_region:
+	omx_user_region_release(region);
  out_with_handle:
 	omx_pull_handle_release(handle);
  out:

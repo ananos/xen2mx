@@ -6,6 +6,8 @@
 
 * have a way to make install without the driver or only the driver
 
+* pull/reply session
+* check offset/length vs region and drop if invalid
 * true pull support
   - events on both sides
   - multiple frames per pull

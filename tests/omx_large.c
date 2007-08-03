@@ -28,7 +28,10 @@
 
 #define EP 3
 #define ITER 10
-#define LEN (1024*1024)
+#define LEN (64*1024)
+#define SEND_BEGIN (LEN/8)
+#define RECV_BEGIN (LEN/2+LEN/8)
+#define COMM_LEN (LEN/4)
 
 static int
 send_pull(int fd, int id, int from, int to, int len)
@@ -56,18 +59,20 @@ send_pull(int fd, int id, int from, int to, int len)
 
 static inline int
 do_register(int fd, int id,
-	    void * buffer, unsigned long len)
+	    char * buffer, unsigned long len)
 {
-  struct omx_cmd_region_segment seg;
+  struct omx_cmd_region_segment seg[2];
   struct omx_cmd_register_region reg;
 
-  seg.vaddr = (uintptr_t) buffer;
-  seg.len = len;
-  reg.nr_segments = 1;
+  seg[0].vaddr = (uintptr_t) buffer;
+  seg[0].len = len/2;
+  seg[1].vaddr = (uintptr_t) buffer + len/2;
+  seg[1].len = len/2;
+  reg.nr_segments = 2;
   reg.id = id;
   reg.seqnum = 567; /* unused for now */
   reg.memory_context = 0ULL; /* unused for now */
-  reg.segments = (uintptr_t) &seg;
+  reg.segments = (uintptr_t) seg;
 
   return ioctl(fd, OMX_CMD_REGISTER_REGION, &reg);
 }
@@ -78,7 +83,7 @@ int main(void)
   struct omx_cmd_open_endpoint open_param;
   //  volatile union omx_evt * evt;
   void * recvq, * sendq, * eventq;
-  void * buffer;
+  char * buffer;
   //  int i;
   //  struct timeval tv1, tv2;
 
@@ -118,12 +123,50 @@ int main(void)
     goto out_with_fd;
   }
 
+  {
+    int i;
+    for(i=0; i<LEN; i++)
+      buffer[i] = 'a';
+    for(i=0; i<COMM_LEN; i++)
+      buffer[i+SEND_BEGIN] = 'b';
+    for(i=0; i<COMM_LEN; i++)
+      buffer[i+RECV_BEGIN] = 'c';
+  }
+
   /* send a message */
-  ret = send_pull(fd, 34, LEN/8, LEN/2+LEN/8, LEN/4);
+  ret = send_pull(fd, 34, SEND_BEGIN, RECV_BEGIN, COMM_LEN);
   if (ret < 0)
     goto out_with_fd;
 
   sleep(5);
+
+  {
+    int i;
+    for(i=0; i<COMM_LEN; i++)
+      if (buffer[i+SEND_BEGIN] != buffer[i+RECV_BEGIN]) {
+	printf("buffer different at byte %d: '%c' instead of '%c'\n",
+	       i, buffer[i+RECV_BEGIN], buffer[i+SEND_BEGIN]);
+	break;
+      }
+    for(i=0; i<SEND_BEGIN; i++)
+      if (buffer[i] != 'a') {
+	printf("buffer different at byte %d: '%c' instead of 'a'\n",
+	       i, buffer[i]);
+	break;
+      }
+    for(i=SEND_BEGIN+COMM_LEN; i<RECV_BEGIN; i++)
+      if (buffer[i] != 'a') {
+	printf("buffer different at byte %d: '%c' instead of 'a'\n",
+	       i, buffer[i]);
+	break;
+      }
+    for(i=RECV_BEGIN+COMM_LEN; i<LEN; i++)
+      if (buffer[i] != 'a') {
+	printf("buffer different at byte %d: '%c' instead of 'a'\n",
+	       i, buffer[i]);
+	break;
+      }
+  }
 
 #if 0
   evt = eventq;

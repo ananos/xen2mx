@@ -72,6 +72,8 @@ extern int omx_user_region_deregister(struct omx_endpoint * endpoint, void __use
 extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
 extern void omx_user_region_release(struct omx_user_region * region);
 extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
+extern int omx_user_region_append_pages(struct omx_user_region * region, int region_offset, struct sk_buff * skb, int length);
+extern int omx_user_region_fill_pages(struct omx_user_region * region, int region_offset, struct sk_buff * skb, int length);
 
 /* device */
 extern int omx_dev_init(void);
