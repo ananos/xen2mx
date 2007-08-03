@@ -135,6 +135,8 @@ omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
  * Attaching/Detaching interfaces
  */
 
+#define OMX_MTU_MIN (sizeof(struct omx_hdr)+4096) /* FIXME */
+
 /*
  * Attach a new iface.
  *
@@ -145,6 +147,7 @@ omx_iface_attach(struct net_device * ifp)
 {
 	struct omx_iface * iface;
 	char *board_name;
+	unsigned mtu = ifp->mtu;
 	int ret;
 	int i;
 
@@ -171,7 +174,11 @@ omx_iface_attach(struct net_device * ifp)
 		goto out_with_ifp_hold;
 	}
 
-	printk(KERN_INFO "Open-MX: Attaching interface '%s' as #%i\n", ifp->name, i);
+	printk(KERN_INFO "Open-MX: Attaching interface '%s' as #%i, MTU=%d\n",
+	       ifp->name, i, mtu);
+	if (mtu < OMX_MTU_MIN)
+		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
+		       ifp->name, OMX_MTU_MIN, mtu);
 
 	board_name = kmalloc(strlen(omx_current_utsname.nodename) + 1 + strlen(ifp->name) + 1, GFP_KERNEL);
 	if (!board_name) {
