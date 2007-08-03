@@ -137,9 +137,13 @@ omx__connect_partner(struct omx__partner * partner,
 		     uint32_t target_session_id,
 		     omx__seqnum_t target_recv_seqnum_start)
 {
-    partner->dest_src_peer_index = src_dest_peer_index;
-    partner->session_id = target_session_id;
+  if (partner->session_id != target_session_id) {
+    /* this is the first connect, only update seqnums here */
     partner->next_send_seq = target_recv_seqnum_start;
+  }
+
+  partner->session_id = target_session_id;
+  partner->dest_src_peer_index = src_dest_peer_index;
 }
 
 omx_return_t

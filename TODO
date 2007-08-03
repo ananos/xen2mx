@@ -2,8 +2,9 @@
 
 * check pingpong contents
 
-* make connect idempotent and drop workaround in pingpong
 * send a nack on bad session, except for connect (no session), truc or nack libs
+
+* have a way to make install without the driver or only the driver
 
 * true pull support
   - events on both sides
