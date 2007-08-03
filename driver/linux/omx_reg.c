@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/mm.h>
+#include <linux/highmem.h>
 #include <linux/skbuff.h>
 #include <linux/spinlock.h>
 
