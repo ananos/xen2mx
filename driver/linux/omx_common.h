@@ -67,8 +67,10 @@ extern void omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint);
 
 /* user regions */
 extern void omx_endpoint_user_regions_init(struct omx_endpoint * endpoint);
-extern int omx_register_user_region(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_deregister_user_region(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_user_region_register(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_user_region_deregister(struct omx_endpoint * endpoint, void __user * uparam);
+extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
+extern void omx_user_region_release(struct omx_user_region * region);
 extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
 
 /* device */

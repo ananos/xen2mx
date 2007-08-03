@@ -35,7 +35,7 @@ omx_endpoint_user_regions_init(struct omx_endpoint * endpoint)
 }
 
 static int
-omx_register_user_region_segment(struct omx_cmd_region_segment * useg,
+omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 				 struct omx_user_region_segment * segment)
 {
 	struct page ** pages;
@@ -78,7 +78,7 @@ omx_register_user_region_segment(struct omx_cmd_region_segment * useg,
 }
 
 static void
-omx_deregister_user_region_segment(struct omx_user_region_segment * segment)
+omx_user_region_deregister_segment(struct omx_user_region_segment * segment)
 {
 	unsigned long i;
 	for(i=0; i<segment->nr_pages; i++)
@@ -87,16 +87,16 @@ omx_deregister_user_region_segment(struct omx_user_region_segment * segment)
 }
 
 static void
-omx__deregister_user_region(struct omx_user_region * region)
+omx__user_region_deregister(struct omx_user_region * region)
 {
 	int i;
 	for(i=0; i<region->nr_segments; i++)
-		omx_deregister_user_region_segment(&region->segments[i]);
+		omx_user_region_deregister_segment(&region->segments[i]);
 	kfree(region);
 }
 
 int
-omx_register_user_region(struct omx_endpoint * endpoint,
+omx_user_region_register(struct omx_endpoint * endpoint,
 			 void __user * uparam)
 {
 	struct omx_cmd_register_region cmd;
@@ -155,7 +155,7 @@ omx_register_user_region(struct omx_endpoint * endpoint,
 	down_write(&current->mm->mmap_sem);
 
 	for(i=0; i<cmd.nr_segments; i++) {
-		ret = omx_register_user_region_segment(&usegs[i], &region->segments[i]);
+		ret = omx_user_region_register_segment(&usegs[i], &region->segments[i]);
 		if (ret < 0) {
 			up_write(&current->mm->mmap_sem);
 			goto out_with_region;
@@ -181,7 +181,7 @@ omx_register_user_region(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_region:
-	omx__deregister_user_region(region);
+	omx__user_region_deregister(region);
  out_with_usegs:
 	kfree(usegs);
  out:
@@ -225,7 +225,7 @@ omx_user_region_release(struct omx_user_region * region)
 }
 
 int
-omx_deregister_user_region(struct omx_endpoint * endpoint,
+omx_user_region_deregister(struct omx_endpoint * endpoint,
 			   void __user * uparam)
 {
 	struct omx_cmd_deregister_region cmd;
@@ -277,7 +277,7 @@ omx_deregister_user_region(struct omx_endpoint * endpoint,
 
 	/* release the region now that nobody uses it */
 	spin_lock(&endpoint->user_regions_lock);
-	omx__deregister_user_region(region);
+	omx__user_region_deregister(region);
 	endpoint->user_regions[cmd.id] = NULL;
 	spin_unlock(&endpoint->user_regions_lock);
 
@@ -304,7 +304,7 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 
 		printk(KERN_INFO "Open-MX: Forcing deregister of window %d on endpoint %d board %d\n",
 		       i, endpoint->endpoint_index, endpoint->iface->index);
-		omx__deregister_user_region(region);
+		omx__user_region_deregister(region);
 		endpoint->user_regions[i] = NULL;
 	}
 }

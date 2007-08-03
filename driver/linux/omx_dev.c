@@ -301,8 +301,8 @@ static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, v
 	[OMX_CMD_SEND_MEDIUM]		= omx_send_medium,
 	[OMX_CMD_SEND_RENDEZ_VOUS]	= omx_send_rendez_vous,
 	[OMX_CMD_SEND_PULL]		= omx_send_pull,
-	[OMX_CMD_REGISTER_REGION]	= omx_register_user_region,
-	[OMX_CMD_DEREGISTER_REGION]	= omx_deregister_user_region,
+	[OMX_CMD_REGISTER_REGION]	= omx_user_region_register,
+	[OMX_CMD_DEREGISTER_REGION]	= omx_user_region_deregister,
 	[OMX_CMD_SEND_CONNECT]		= omx_send_connect,
 };
 
