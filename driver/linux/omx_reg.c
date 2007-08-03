@@ -195,6 +195,8 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 	struct omx_user_region * region;
 
 	spin_lock(&endpoint->user_regions_lock);
+	if (rdma_id >= OMX_USER_REGION_MAX)
+		goto out_with_endpoint_lock;
 	region = endpoint->user_regions[rdma_id];
 	if (!region)
 		goto out_with_endpoint_lock;
