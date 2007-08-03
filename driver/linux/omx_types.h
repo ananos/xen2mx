@@ -112,8 +112,19 @@ struct omx_endpoint {
  * omx_iface_lock, iface->endpoint_lock, endpoint->lock
  */
 
+enum omx_user_region_status {
+	/* region is ready to be used */
+	OMX_USER_REGION_STATUS_OK,
+	/* region is being closed by somebody else */
+	OMX_USER_REGION_STATUS_CLOSING,
+};
 
 struct omx_user_region {
+	spinlock_t lock;
+	enum omx_user_region_status status;
+	atomic_t refcount;
+	wait_queue_head_t noref_queue;
+
 	unsigned nr_segments;
 	struct omx_user_region_segment {
 		unsigned offset;

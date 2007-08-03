@@ -144,6 +144,11 @@ omx_register_user_region(struct omx_endpoint * endpoint,
 		goto out_with_usegs;
 	}
 
+	spin_lock_init(&region->lock);
+	region->status = OMX_USER_REGION_STATUS_OK;
+	atomic_set(&region->refcount, 0);
+	init_waitqueue_head(&region->noref_queue);
+
 	/* keep nr_segments exact so that we may call omx__deregister_user_region safely */
 	region->nr_segments = 0;
 
@@ -183,12 +188,49 @@ omx_register_user_region(struct omx_endpoint * endpoint,
 	return ret;
 }
 
+struct omx_user_region *
+omx_user_region_acquire(struct omx_endpoint * endpoint,
+			uint32_t rdma_id)
+{
+	struct omx_user_region * region;
+
+	spin_lock(&endpoint->user_regions_lock);
+	region = endpoint->user_regions[rdma_id];
+	if (!region)
+		goto out_with_endpoint_lock;
+
+	spin_lock(&region->lock);
+	if (region->status != OMX_USER_REGION_STATUS_OK)
+		goto out_with_region_lock;
+
+	atomic_inc(&region->refcount);
+	spin_unlock(&region->lock);
+	spin_unlock(&endpoint->user_regions_lock);
+
+	return region;
+
+ out_with_region_lock:
+	spin_unlock(&region->lock);
+ out_with_endpoint_lock:
+	spin_unlock(&endpoint->user_regions_lock);
+	return NULL;
+}
+
+void
+omx_user_region_release(struct omx_user_region * region)
+{
+	/* decrement refcount and wake up the closer */
+	if (unlikely(atomic_dec_and_test(&region->refcount)))
+		wake_up(&region->noref_queue);
+}
+
 int
 omx_deregister_user_region(struct omx_endpoint * endpoint,
 			   void __user * uparam)
 {
 	struct omx_cmd_deregister_region cmd;
 	struct omx_user_region * region;
+	DECLARE_WAITQUEUE(wq, current);
 	int ret;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
@@ -198,9 +240,9 @@ omx_deregister_user_region(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+	ret = -EINVAL;
 	if (cmd.id >= OMX_USER_REGION_MAX) {
 		printk(KERN_ERR "Open-MX: Cannot deregister invalid region %d\n", cmd.id);
-		ret = -EINVAL;
 		goto out;
 	}
 
@@ -209,18 +251,42 @@ omx_deregister_user_region(struct omx_endpoint * endpoint,
 	region = endpoint->user_regions[cmd.id];
 	if (!region) {
 		printk(KERN_ERR "Open-MX: Cannot register unexisting region %d\n", cmd.id);
-		ret = -EINVAL;
-		spin_unlock(&endpoint->user_regions_lock);
-		goto out;
+		goto out_with_endpoint_lock;
 	}
 
+	spin_lock(&region->lock);
+	if (region->status != OMX_USER_REGION_STATUS_OK)
+		goto out_with_region_lock;
+
+	/* mark it as closing so that nobody may use it again */
+	region->status = OMX_USER_REGION_STATUS_CLOSING;
+
+	spin_unlock(&region->lock);
+	spin_unlock(&endpoint->user_regions_lock);
+
+	/* wait until refcount is 0 so that other users are gone */
+	add_wait_queue(&region->noref_queue, &wq);
+	for(;;) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		if (!atomic_read(&region->refcount))
+			break;
+		schedule();
+	}
+	set_current_state(TASK_RUNNING);
+	remove_wait_queue(&endpoint->noref_queue, &wq);
+
+	/* release the region now that nobody uses it */
+	spin_lock(&endpoint->user_regions_lock);
 	omx__deregister_user_region(region);
 	endpoint->user_regions[cmd.id] = NULL;
-
 	spin_unlock(&endpoint->user_regions_lock);
 
 	return 0;
 
+ out_with_region_lock:
+	spin_unlock(&region->lock);
+ out_with_endpoint_lock:
+	spin_unlock(&endpoint->user_regions_lock);
  out:
 	return ret;
 }
