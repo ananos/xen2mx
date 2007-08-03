@@ -32,6 +32,7 @@
 #define SEND_BEGIN (LEN/8)
 #define RECV_BEGIN (LEN/2+LEN/8)
 #define COMM_LEN (LEN/4)
+#define COOKIE 0xdeadbeef
 
 static int
 send_pull(int fd, uint32_t session_id, int id, int from, int to, int len)
@@ -43,6 +44,7 @@ send_pull(int fd, uint32_t session_id, int id, int from, int to, int len)
   pull_param.dest_endpoint = EP;
   pull_param.length = len;
   pull_param.session_id = session_id;
+  pull_param.lib_cookie = COOKIE;
   pull_param.local_rdma_id = id;
   pull_param.local_offset = from;
   pull_param.remote_rdma_id = id;
@@ -82,7 +84,7 @@ int main(void)
 {
   int fd, ret;
   struct omx_cmd_open_endpoint open_param;
-  //  volatile union omx_evt * evt;
+  volatile union omx_evt * evt;
   void * recvq, * sendq, * eventq;
   char * buffer;
   uint32_t session_id;
@@ -146,7 +148,21 @@ int main(void)
   if (ret < 0)
     goto out_with_fd;
 
-  sleep(5);
+  evt = eventq;
+  /* wait for the message */
+  while (evt->generic.type == OMX_EVT_NONE) ;
+
+  printf("received type %d\n", evt->generic.type);
+  assert(evt->generic.type == OMX_EVT_PULL_DONE);
+  assert(evt->pull_done.lib_cookie == COOKIE);
+
+  /* mark event as done */
+  evt->generic.type = OMX_EVT_NONE;
+
+  /* next event */
+  evt++;
+  if ((void *) evt >= eventq + OMX_EVENTQ_SIZE)
+    evt = eventq;
 
   {
     int i;
@@ -175,48 +191,6 @@ int main(void)
 	break;
       }
   }
-
-#if 0
-  evt = eventq;
-  gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++) {
-
-    /* send a message */
-    ret = send_tiny(fd, i);
-    if (ret < 0)
-      goto out_with_fd;
-
-    /* wait for the message */
-    while (evt->generic.type == OMX_EVT_NONE) ;
-
-    printf("received type %d\n", evt->generic.type);
-    switch (evt->generic.type) {
-    case OMX_EVT_RECV_TINY:
-      printf("tiny contains \"%s\"\n", evt->tiny.data);
-      break;
-
-    case OMX_EVT_RECV_MEDIUM: {
-      char * buf = recvq + ((char *) evt - (char *) eventq)/sizeof(*evt) * OMX_RECVQ_ENTRY_SIZE;
-      printf("medium length %d contains \"%s\"\n", evt->medium.length, buf);
-      break;
-   }
-
-    default:
-      printf("unknown type\n");
-      goto out_with_fd;
-    }
-
-    /* mark event as done */
-    evt->generic.type = OMX_EVT_NONE;
-
-    /* next event */
-    evt++;
-    if ((void *) evt >= eventq + OMX_EVENTQ_SIZE)
-      evt = eventq;
-  }
-  gettimeofday(&tv2, NULL);
-  printf("%lld us\n", (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
-#endif
 
   close(fd);
 

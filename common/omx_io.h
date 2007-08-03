@@ -241,6 +241,8 @@ struct omx_cmd_send_pull {
 	uint32_t remote_rdma_id;
 	uint32_t remote_offset; /* FIXME: 64bits ? */
 	/* 32 */
+	uint32_t lib_cookie;
+	/* 36 */
 };
 
 struct omx_cmd_register_region {
@@ -262,6 +264,7 @@ struct omx_cmd_deregister_region {
 
 #define OMX_EVT_NONE			0x00
 #define OMX_EVT_SEND_MEDIUM_FRAG_DONE	0x01
+#define OMX_EVT_PULL_DONE		0x02
 #define OMX_EVT_RECV_CONNECT		0x11
 #define OMX_EVT_RECV_TINY		0x12
 #define OMX_EVT_RECV_SMALL		0x13
@@ -275,6 +278,8 @@ omx_strevt(unsigned type)
 		return "None";
 	case OMX_EVT_SEND_MEDIUM_FRAG_DONE:
 		return "Send Medium Fragment Done";
+	case OMX_EVT_PULL_DONE:
+		return "Pull Done";
 	case OMX_EVT_RECV_CONNECT:
 		return "Receive Connect";
 	case OMX_EVT_RECV_TINY:
@@ -307,6 +312,13 @@ union omx_evt {
 		uint8_t type;
 		/* 64 */
 	} send_medium_frag_done;
+
+	struct omx_evt_pull_done {
+		uint32_t lib_cookie;
+		char pad[59];
+		uint8_t type;
+		/* 64 */
+	} pull_done;
 
 	struct omx_evt_recv_connect {
 		uint64_t src_addr;

@@ -25,6 +25,7 @@
 
 struct omx_pull_handle {
 	struct omx_endpoint * endpoint;
+	uint32_t lib_cookie;
 	struct list_head endpoint_pull_handles;
 	uint32_t idr_index;
 
@@ -40,8 +41,6 @@ struct omx_pull_handle {
 	uint32_t frame_missing;
 	uint32_t frame_transferring;
 	/* FIXME: need a frame window for multiple pull request */
-
-	/* FIXME: need a refcount in the endpoint and a waitqueue? */
 };
 
 /*
@@ -129,7 +128,7 @@ omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
  * with a reference on the endpoint
  */
 static inline struct omx_pull_handle *
-omx_pull_handle_create(struct omx_endpoint * endpoint)
+omx_pull_handle_create(struct omx_endpoint * endpoint, uint32_t lib_cookie)
 {
 	struct omx_pull_handle * handle;
 	int err;
@@ -167,6 +166,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint)
 	/* we are good now, finish filling the handle */
 	spin_lock_init(&handle->lock);
 	handle->endpoint = endpoint;
+	handle->lib_cookie = lib_cookie;
 	handle->frame_missing = 0;
 	handle->frame_transferring = 0;
 	list_add_tail(&handle->endpoint_pull_handles,
@@ -306,7 +306,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	handle = omx_pull_handle_create(endpoint);
+	handle = omx_pull_handle_create(endpoint, cmd.lib_cookie);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		ret = -ENOMEM;
@@ -498,6 +498,35 @@ omx_recv_pull(struct omx_iface * iface,
 	return err;
 }
 
+static int
+omx_pull_handle_done_notify(struct omx_pull_handle * handle)
+{
+	struct omx_endpoint *endpoint = handle->endpoint;
+	union omx_evt *evt;
+	struct omx_evt_pull_done *event;
+	int err;
+
+	/* get the eventq slot */
+	evt = omx_find_next_eventq_slot(endpoint);
+	if (unlikely(!evt)) {
+		printk(KERN_INFO "Open-MX: Failed to complete send of PULL packet because of event queue full\n");
+		err = -EBUSY;
+		goto out;
+	}
+	event = &evt->pull_done;
+
+	/* fill event */
+	event->lib_cookie = handle->lib_cookie;
+
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = OMX_EVT_PULL_DONE;
+
+	return 0;
+
+ out:
+	return err;
+}
+
 int
 omx_recv_pull_reply(struct omx_iface * iface,
 		    struct omx_hdr * mh,
@@ -569,6 +598,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->frame_transferring = 0;
 
 	omx_user_region_release(region);
+
+	if (!handle->frame_transferring)
+		omx_pull_handle_done_notify(handle);
+
 	omx_pull_handle_release(handle);
 
 	return 0;
