@@ -375,6 +375,15 @@ omx_pull_reply_append_user_region_segment(struct sk_buff *skb,
 	return -ENOSYS;
 }
 
+/* pull reply skb destructor to release the user region */
+static void
+omx_send_pull_reply_skb_destructor(struct sk_buff *skb)
+{
+	struct omx_user_region * region = (void *) skb->sk;
+
+	omx_user_region_release(region);
+}
+
 int
 omx_recv_pull(struct omx_iface * iface,
 	      struct omx_hdr * pull_mh,
@@ -389,8 +398,8 @@ omx_recv_pull(struct omx_iface * iface,
 	struct ethhdr *reply_eh;
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_user_region *region;
-	uint32_t rdma_id, queued;
-//	uint32_t rdma_id, length, queued, iseg;
+	uint32_t queued;
+//	uint32_t length, queued, iseg;
 	int err = 0;
 
 	/* get the destination endpoint */
@@ -441,14 +450,9 @@ omx_recv_pull(struct omx_iface * iface,
 			 (unsigned long) pull_reply->dst_magic);
 
 	/* get the rdma window */
-	rdma_id = pull_request->pulled_rdma_id;
-	if (unlikely(rdma_id >= OMX_USER_REGION_MAX)) {
-		printk(KERN_ERR "Open-MX: got pull request for invalid window %d\n", rdma_id);
-		/* FIXME: send nack */
+	region = omx_user_region_acquire(endpoint, pull_request->pulled_rdma_id);
+	if (!region)
 		goto out_with_skb;
-	}
-	spin_lock(&endpoint->user_regions_lock);
-	region = endpoint->user_regions[rdma_id];
 
 	/* append segment pages */
 	queued = 0;
@@ -467,7 +471,6 @@ omx_recv_pull(struct omx_iface * iface,
 		queued += append;
 	}
 #endif
-	spin_unlock(&endpoint->user_regions_lock);
 
 	pull_reply->length = queued;
 
@@ -477,9 +480,12 @@ omx_recv_pull(struct omx_iface * iface,
 		if (err)
 			/* skb has been freed in skb_pad */
 			/* FIXME: release region */
-			goto out_with_endpoint;
+			goto out_with_region;
 		skb->len = ETH_ZLEN;
 	}
+
+	skb->sk = (void *) region;
+	skb->destructor = omx_send_pull_reply_skb_destructor;
 
 	dev_queue_xmit(skb);
 
@@ -490,10 +496,8 @@ omx_recv_pull(struct omx_iface * iface,
 
 	return 0;
 
-#if 0
  out_with_region:
-	spin_unlock(&endpoint->user_regions_lock);
-#endif
+	omx_user_region_release(region);
  out_with_skb:
 	dev_kfree_skb(skb);
  out_with_endpoint:
@@ -509,6 +513,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 {
 	struct omx_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
 	struct omx_pull_handle * handle;
+	struct omx_user_region * region;
 	int err = 0;
 
 	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld",
@@ -526,6 +531,14 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out;
 	}
 
+	region = omx_user_region_acquire(handle->endpoint, pull_reply->puller_rdma_id);
+	if (unlikely(!region)) {
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown rdma id %d\n",
+				 pull_reply->puller_rdma_id);
+		err = -EINVAL;
+		goto out_with_handle;
+	}
+
 	/* FIXME: store the sender mac in the handle and check it ? */
 
 	handle->frame_missing = 0;
@@ -540,10 +553,13 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	handle->frame_transferring = 0;
 
+	omx_user_region_release(region);
 	omx_pull_handle_release(handle);
 
 	return 0;
 
+ out_with_handle:
+	omx_pull_handle_release(handle);
  out:
 	return err;
 }
