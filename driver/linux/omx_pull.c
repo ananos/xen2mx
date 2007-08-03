@@ -451,7 +451,7 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* get the rdma window */
 	region = omx_user_region_acquire(endpoint, pull_request->pulled_rdma_id);
-	if (!region)
+	if (unlikely(!region))
 		goto out_with_skb;
 
 	/* append segment pages */
@@ -459,7 +459,7 @@ omx_recv_pull(struct omx_iface * iface,
 					   pull_request->pulled_offset,
 					   skb,
 					   pull_request->length);
-	if (err < 0) {
+	if (unlikely(err < 0)) {
 		omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
 		/* pages will be released in dev_kfree_skb() */
 		goto out_with_region;
@@ -469,7 +469,7 @@ omx_recv_pull(struct omx_iface * iface,
  	if (unlikely(skb->len < ETH_ZLEN)) {
 		/* pad to ETH_ZLEN */
 		err = omx_skb_pad(skb, ETH_ZLEN);
-		if (err)
+		if (unlikely(err < 0))
 			/* skb has been freed in skb_pad') */
 			omx_user_region_release(region);
 			goto out_with_endpoint;
@@ -558,7 +558,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 					 pull_reply->puller_offset,
 					 skb,
 					 pull_reply->length);
-	if (err < 0) {
+	if (unlikely(err < 0)) {
 		omx_drop_dprintk(eh, "PULL REPLY packet due to failure to fill pages from skb");
 		goto out_with_region;
 	}

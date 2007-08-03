@@ -26,8 +26,6 @@
 #include "omx_io.h"
 #include "omx_common.h"
 
-/* FIXME: likely/unlikely */
-
 /***************************
  * User region registration
  */
@@ -49,14 +47,14 @@ omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 	nr_pages = aligned_len >> PAGE_SHIFT;
 
 	pages = kmalloc(nr_pages * sizeof(struct page *), GFP_KERNEL);
-	if (!pages) {
+	if (unlikely(!pages)) {
 		printk(KERN_ERR "Open-MX: Failed to allocate user region segment page array\n");
 		ret = -ENOMEM;
 		goto out;
 	}
 
 	ret = get_user_pages(current, current->mm, aligned_vaddr, nr_pages, 1, 0, pages, NULL);
-	if (ret < 0) {
+	if (unlikely(ret < 0)) {
 		printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
 		goto out_with_pages;
 	}
@@ -103,13 +101,13 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 	int ret, i;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read register region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
-	if (cmd.id >= OMX_USER_REGION_MAX) {
+	if (unlikely(cmd.id >= OMX_USER_REGION_MAX)) {
 		printk(KERN_ERR "Open-MX: Cannot register invalid region %d\n", cmd.id);
 		ret = -EINVAL;
 		goto out;
@@ -118,7 +116,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 	/* get the list of segments */
 	usegs = kmalloc(sizeof(struct omx_cmd_region_segment) * cmd.nr_segments,
 			GFP_KERNEL);
-	if (!usegs) {
+	if (unlikely(!usegs)) {
 		printk(KERN_ERR "Open-MX: Failed to allocate segments for user region\n");
 		ret = -ENOMEM;
 		goto out;
@@ -126,7 +124,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 
 	ret = copy_from_user(usegs, (void __user *)(unsigned long) cmd.segments,
 			     sizeof(struct omx_cmd_region_segment) * cmd.nr_segments);
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read register region cmd\n");
 		ret = -EFAULT;
 		goto out_with_usegs;
@@ -136,7 +134,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 	region = kzalloc(sizeof(struct omx_user_region)
 			 + cmd.nr_segments * sizeof(struct omx_user_region_segment),
 			 GFP_KERNEL);
-	if (!region) {
+	if (unlikely(!region)) {
 		printk(KERN_ERR "Open-MX: failed to allocate user region\n");
 		ret = -ENOMEM;
 		goto out_with_usegs;
@@ -154,7 +152,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 
 	for(i=0; i<cmd.nr_segments; i++) {
 		ret = omx_user_region_register_segment(&usegs[i], &region->segments[i]);
-		if (ret < 0) {
+		if (unlikely(ret < 0)) {
 			up_write(&current->mm->mmap_sem);
 			goto out_with_region;
 		}
@@ -165,7 +163,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 
 	spin_lock(&endpoint->user_regions_lock);
 
-	if (endpoint->user_regions[cmd.id]) {
+	if (unlikely(endpoint->user_regions[cmd.id] != NULL)) {
 		printk(KERN_ERR "Open-MX: Cannot register busy region %d\n", cmd.id);
 		ret = -EBUSY;
 		spin_unlock(&endpoint->user_regions_lock);
@@ -196,14 +194,14 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 	int ret;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read deregister region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	ret = -EINVAL;
-	if (cmd.id >= OMX_USER_REGION_MAX) {
+	if (unlikely(cmd.id >= OMX_USER_REGION_MAX)) {
 		printk(KERN_ERR "Open-MX: Cannot deregister invalid region %d\n", cmd.id);
 		goto out;
 	}
@@ -211,13 +209,13 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 	spin_lock(&endpoint->user_regions_lock);
 
 	region = endpoint->user_regions[cmd.id];
-	if (!region) {
+	if (unlikely(!region)) {
 		printk(KERN_ERR "Open-MX: Cannot register unexisting region %d\n", cmd.id);
 		goto out_with_endpoint_lock;
 	}
 
 	spin_lock(&region->lock);
-	if (region->status != OMX_USER_REGION_STATUS_OK)
+	if (unlikely(region->status != OMX_USER_REGION_STATUS_OK))
 		goto out_with_region_lock;
 
 	/* mark it as closing so that nobody may use it again */
@@ -230,7 +228,7 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 	add_wait_queue(&region->noref_queue, &wq);
 	for(;;) {
 		set_current_state(TASK_INTERRUPTIBLE);
-		if (!atomic_read(&region->refcount))
+		if (likely(!atomic_read(&region->refcount)))
 			break;
 		schedule();
 	}
@@ -264,14 +262,14 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 	struct omx_user_region * region;
 
 	spin_lock(&endpoint->user_regions_lock);
-	if (rdma_id >= OMX_USER_REGION_MAX)
+	if (unlikely(rdma_id >= OMX_USER_REGION_MAX))
 		goto out_with_endpoint_lock;
 	region = endpoint->user_regions[rdma_id];
-	if (!region)
+	if (unlikely(!region))
 		goto out_with_endpoint_lock;
 
 	spin_lock(&region->lock);
-	if (region->status != OMX_USER_REGION_STATUS_OK)
+	if (unlikely(region->status != OMX_USER_REGION_STATUS_OK))
 		goto out_with_region_lock;
 
 	atomic_inc(&region->refcount);
@@ -344,7 +342,7 @@ omx__user_region_segment_append_pages(struct omx_user_region_segment * segment,
 	for(i=first_page; ; i++) {
 		/* compute chunk to take in this page */
 		int chunk = PAGE_SIZE-page_offset;
-		if (chunk > remaining)
+		if (unlikely(chunk > remaining))
 			chunk = remaining;
 
 		/* append the page */
@@ -362,7 +360,7 @@ omx__user_region_segment_append_pages(struct omx_user_region_segment * segment,
 		/* update counters */
 		queued += chunk;
 		remaining -= chunk;
-		if (!remaining)
+		if (likely(!remaining))
 			break;
 		page_offset = 0;
 	}
@@ -389,12 +387,12 @@ omx_user_region_append_pages(struct omx_user_region * region,
 		       iseg, (unsigned long) segment->length, segment_offset, remaining);
 
 		/* skip segment if offset is beyond it */
-		if (segment_offset >= segment->length) {
+		if (unlikely(segment_offset >= segment->length)) {
 			segment_offset -= segment->length;
 			continue;
 		}
 
-		if (segment_offset + remaining > segment->length) {
+		if (unlikely(segment_offset + remaining > segment->length)) {
 			/* take the end of this segment and jump to the next one */
 			int chunk = segment->length - segment_offset;
 			printk("appending pages from segment #%d offset %d length %d\n",
@@ -450,7 +448,7 @@ omx__user_region_segment_fill_pages(struct omx_user_region_segment * segment,
 
 		/* compute chunk to take in this page */
 		int chunk = PAGE_SIZE-page_offset;
-		if (chunk > remaining)
+		if (unlikely(chunk > remaining))
 			chunk = remaining;
 
 		/* fill the page */
@@ -464,7 +462,7 @@ omx__user_region_segment_fill_pages(struct omx_user_region_segment * segment,
 		copied += chunk;
 		skb_offset += chunk;
 		remaining -= chunk;
-		if (!remaining)
+		if (likely(!remaining))
 			break;
 		page_offset = 0;
 	}
@@ -491,12 +489,12 @@ omx_user_region_fill_pages(struct omx_user_region * region,
 		       iseg, (unsigned long) segment->length, segment_offset, remaining);
 
 		/* skip segment if offset is beyond it */
-		if (segment_offset >= segment->length) {
+		if (unlikely(segment_offset >= segment->length)) {
 			segment_offset -= segment->length;
 			continue;
 		}
 
-		if (segment_offset + remaining > segment->length) {
+		if (unlikely(segment_offset + remaining > segment->length)) {
 			/* fill the end of this segment and jump to the next one */
 			int chunk = segment->length - segment_offset;
 			printk("filling pages from segment #%d offset %d length %d\n",
