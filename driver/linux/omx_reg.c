@@ -32,13 +32,6 @@
  * User region registration
  */
 
-void
-omx_endpoint_user_regions_init(struct omx_endpoint * endpoint)
-{
-	memset(endpoint->user_regions, 0, sizeof(endpoint->user_regions));
-	spin_lock_init(&endpoint->user_regions_lock);
-}
-
 static int
 omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 				 struct omx_user_region_segment * segment)
@@ -193,44 +186,6 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 	return ret;
 }
 
-struct omx_user_region *
-omx_user_region_acquire(struct omx_endpoint * endpoint,
-			uint32_t rdma_id)
-{
-	struct omx_user_region * region;
-
-	spin_lock(&endpoint->user_regions_lock);
-	if (rdma_id >= OMX_USER_REGION_MAX)
-		goto out_with_endpoint_lock;
-	region = endpoint->user_regions[rdma_id];
-	if (!region)
-		goto out_with_endpoint_lock;
-
-	spin_lock(&region->lock);
-	if (region->status != OMX_USER_REGION_STATUS_OK)
-		goto out_with_region_lock;
-
-	atomic_inc(&region->refcount);
-	spin_unlock(&region->lock);
-	spin_unlock(&endpoint->user_regions_lock);
-
-	return region;
-
- out_with_region_lock:
-	spin_unlock(&region->lock);
- out_with_endpoint_lock:
-	spin_unlock(&endpoint->user_regions_lock);
-	return NULL;
-}
-
-void
-omx_user_region_release(struct omx_user_region * region)
-{
-	/* decrement refcount and wake up the closer */
-	if (unlikely(atomic_dec_and_test(&region->refcount)))
-		wake_up(&region->noref_queue);
-}
-
 int
 omx_user_region_deregister(struct omx_endpoint * endpoint,
 			   void __user * uparam)
@@ -296,6 +251,59 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 	spin_unlock(&endpoint->user_regions_lock);
  out:
 	return ret;
+}
+
+/******************************
+ * User Region Acquire/Release
+ */
+
+struct omx_user_region *
+omx_user_region_acquire(struct omx_endpoint * endpoint,
+			uint32_t rdma_id)
+{
+	struct omx_user_region * region;
+
+	spin_lock(&endpoint->user_regions_lock);
+	if (rdma_id >= OMX_USER_REGION_MAX)
+		goto out_with_endpoint_lock;
+	region = endpoint->user_regions[rdma_id];
+	if (!region)
+		goto out_with_endpoint_lock;
+
+	spin_lock(&region->lock);
+	if (region->status != OMX_USER_REGION_STATUS_OK)
+		goto out_with_region_lock;
+
+	atomic_inc(&region->refcount);
+	spin_unlock(&region->lock);
+	spin_unlock(&endpoint->user_regions_lock);
+
+	return region;
+
+ out_with_region_lock:
+	spin_unlock(&region->lock);
+ out_with_endpoint_lock:
+	spin_unlock(&endpoint->user_regions_lock);
+	return NULL;
+}
+
+void
+omx_user_region_release(struct omx_user_region * region)
+{
+	/* decrement refcount and wake up the closer */
+	if (unlikely(atomic_dec_and_test(&region->refcount)))
+		wake_up(&region->noref_queue);
+}
+
+/***************************************
+ * Endpoint User Regions Initialization
+ */
+
+void
+omx_endpoint_user_regions_init(struct omx_endpoint * endpoint)
+{
+	memset(endpoint->user_regions, 0, sizeof(endpoint->user_regions));
+	spin_lock_init(&endpoint->user_regions_lock);
 }
 
 void
