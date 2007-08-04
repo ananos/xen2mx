@@ -315,7 +315,8 @@ union omx_evt {
 
 	struct omx_evt_pull_done {
 		uint32_t lib_cookie;
-		char pad[59];
+		uint32_t pulled_length;
+		char pad[55];
 		uint8_t type;
 		/* 64 */
 	} pull_done;

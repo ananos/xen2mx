@@ -56,7 +56,8 @@ send_pull(int fd, uint32_t session_id, int id, int from, int to, int len)
     return ret;
   }
 
-  fprintf(stderr, "Successfully sent pull request\n");
+  fprintf(stderr, "Successfully sent pull request (cookie 0x%lx, length %ld)\n",
+	  (unsigned long) COOKIE, (unsigned long) len);
   return 0;
 }
 
@@ -155,6 +156,9 @@ int main(void)
   printf("received type %d\n", evt->generic.type);
   assert(evt->generic.type == OMX_EVT_PULL_DONE);
   assert(evt->pull_done.lib_cookie == COOKIE);
+  printf("pull (cookie 0x%lx) transferred %ld bytes\n",
+	 (unsigned long) evt->pull_done.lib_cookie,
+	 (unsigned long) evt->pull_done.pulled_length);
 
   /* mark event as done */
   evt->generic.type = OMX_EVT_NONE;

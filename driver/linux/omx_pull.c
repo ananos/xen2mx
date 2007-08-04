@@ -31,6 +31,8 @@ struct omx_pull_handle {
 
 	spinlock_t lock;
 
+	uint32_t length;
+
 	/*
 	 * Masks of frames missing (not received at all)
 	 * and transferring (received but not copied yet)
@@ -128,7 +130,8 @@ omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
  * with a reference on the endpoint
  */
 static inline struct omx_pull_handle *
-omx_pull_handle_create(struct omx_endpoint * endpoint, uint32_t lib_cookie)
+omx_pull_handle_create(struct omx_endpoint * endpoint,
+		       uint32_t lib_cookie, uint32_t length)
 {
 	struct omx_pull_handle * handle;
 	int err;
@@ -167,6 +170,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint, uint32_t lib_cookie)
 	spin_lock_init(&handle->lock);
 	handle->endpoint = endpoint;
 	handle->lib_cookie = lib_cookie;
+	handle->length = length;
 	handle->frame_missing = 0;
 	handle->frame_transferring = 0;
 	list_add_tail(&handle->endpoint_pull_handles,
@@ -263,7 +267,6 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		/* transfer is done,
 		 * destroy the handle and release the endpoint */
 
-		/* FIXME: notify recv_large done to the application */
 		/* FIXME: if multiple pull requests, start the next one */
 
 		/* destroy the handle */
@@ -306,7 +309,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	handle = omx_pull_handle_create(endpoint, cmd.lib_cookie);
+	handle = omx_pull_handle_create(endpoint, cmd.lib_cookie, cmd.length);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		ret = -ENOMEM;
@@ -499,7 +502,8 @@ omx_recv_pull(struct omx_iface * iface,
 }
 
 static int
-omx_pull_handle_done_notify(struct omx_pull_handle * handle)
+omx_pull_handle_done_notify(struct omx_pull_handle * handle,
+			    uint32_t pulled_length)
 {
 	struct omx_endpoint *endpoint = handle->endpoint;
 	union omx_evt *evt;
@@ -517,6 +521,7 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle)
 
 	/* fill event */
 	event->lib_cookie = handle->lib_cookie;
+	event->pulled_length = pulled_length;
 
 	/* set the type at the end so that user-space does not find the slot on error */
 	event->type = OMX_EVT_PULL_DONE;
@@ -589,9 +594,11 @@ omx_recv_pull_reply(struct omx_iface * iface,
 					 pull_reply->length);
 	if (unlikely(err < 0)) {
 		omx_drop_dprintk(eh, "PULL REPLY packet due to failure to fill pages from skb");
-		/* the other peer is sending crap, close the handle */
-		/* FIXME: report an error to user-space */
+		/* the other peer is sending crap, close the handle and report truncated to userspace */
 		handle->frame_transferring = 0;
+		/* FIXME: make sure a new pull is not queued too, so that the handle is dropped */
+		/* FIXME: report what has already been tranferred? */
+		omx_pull_handle_done_notify(handle, 0);
 		goto out_with_region;
 	}
 
@@ -603,7 +610,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	omx_user_region_release(region);
 
 	if (!handle->frame_transferring)
-		omx_pull_handle_done_notify(handle);
+		omx_pull_handle_done_notify(handle, handle->length);
 
 	omx_pull_handle_release(handle);
 
