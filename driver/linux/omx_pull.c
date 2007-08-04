@@ -342,7 +342,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	pull->puller_rdma_id = cmd.local_rdma_id;
 	pull->puller_offset = cmd.local_offset;
 	pull->pulled_rdma_id = cmd.remote_rdma_id;
-	pull->pulled_offset = cmd.remote_offset+16000000;
+	pull->pulled_offset = cmd.remote_offset;
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = omx_endpoint_pull_magic(endpoint);
 
