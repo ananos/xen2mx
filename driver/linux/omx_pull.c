@@ -246,7 +246,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		 */
 		spin_unlock(&handle->lock);
 
-		printk("some frames and being transferred, just release the handle\n");
+		printk("some frames are being transferred, just release the handle\n");
 
 	} else if (handle->frame_transferring != 0) {
 		/* no transfer pending but frames are missing,
@@ -342,7 +342,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	pull->puller_rdma_id = cmd.local_rdma_id;
 	pull->puller_offset = cmd.local_offset;
 	pull->pulled_rdma_id = cmd.remote_rdma_id;
-	pull->pulled_offset = cmd.remote_offset;
+	pull->pulled_offset = cmd.remote_offset+16000000;
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = omx_endpoint_pull_magic(endpoint);
 
@@ -589,6 +589,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 					 pull_reply->length);
 	if (unlikely(err < 0)) {
 		omx_drop_dprintk(eh, "PULL REPLY packet due to failure to fill pages from skb");
+		/* the other peer is sending crap, close the handle */
+		/* FIXME: report an error to user-space */
+		handle->frame_transferring = 0;
 		goto out_with_region;
 	}
 

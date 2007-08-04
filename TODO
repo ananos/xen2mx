@@ -14,7 +14,6 @@
   - rdnv message
   - notify
 * rdma_put
-* check offset/length vs region and drop if invalid
 * user region seqnum
 * write parameter in ioctl to register a region, check it when reading/writing from/to the region
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered

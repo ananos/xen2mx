@@ -126,6 +126,7 @@ struct omx_user_region {
 	wait_queue_head_t noref_queue;
 
 	unsigned nr_segments;
+	unsigned long total_length;
 	struct omx_user_region_segment {
 		unsigned first_page_offset;
 		unsigned long length;

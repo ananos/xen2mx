@@ -145,6 +145,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 	region->status = OMX_USER_REGION_STATUS_OK;
 	atomic_set(&region->refcount, 0);
 	init_waitqueue_head(&region->noref_queue);
+	region->total_length = 0;
 
 	/* keep nr_segments exact so that we may call omx__deregister_user_region safely */
 	region->nr_segments = 0;
@@ -158,6 +159,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 			goto out_with_region;
 		}
 		region->nr_segments++;
+		region->total_length += region->segments[i].length;
 	}
 
 	up_write(&current->mm->mmap_sem);
@@ -327,7 +329,7 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
  * Appending region pages to send
  */
 
-static inline int
+static inline void
 omx__user_region_segment_append_pages(struct omx_user_region_segment * segment,
 				      int segment_offset,
 				      struct sk_buff * skb,
@@ -367,7 +369,6 @@ omx__user_region_segment_append_pages(struct omx_user_region_segment * segment,
 	}
 
 	BUG_ON(queued != length);
-	return 0;
 }
 
 int
@@ -381,6 +382,9 @@ omx_user_region_append_pages(struct omx_user_region * region,
 	int remaining = length;
 	int iseg;
 	int frag = 0;
+
+	if (region_offset+length > region->total_length)
+		return -EINVAL;
 
 	for(iseg=0; iseg<region->nr_segments; iseg++) {
 		struct omx_user_region_segment * segment = &region->segments[iseg];
@@ -430,7 +434,7 @@ omx_user_region_append_pages(struct omx_user_region * region,
  * Filling region pages with receive
  */
 
-static inline int
+static inline void
 omx__user_region_segment_fill_pages(struct omx_user_region_segment * segment,
 				    int segment_offset,
 				    struct sk_buff * skb,
@@ -469,7 +473,6 @@ omx__user_region_segment_fill_pages(struct omx_user_region_segment * segment,
 	}
 
 	BUG_ON(copied != length);
-	return 0;
 }
 
 int
@@ -483,6 +486,9 @@ omx_user_region_fill_pages(struct omx_user_region * region,
 	int copied = 0;
 	int remaining = length;
 	int iseg;
+
+	if (region_offset+length > region->total_length)
+		return -EINVAL;
 
 	for(iseg=0; iseg<region->nr_segments; iseg++) {
 		struct omx_user_region_segment * segment = &region->segments[iseg];
