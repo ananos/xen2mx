@@ -127,7 +127,7 @@ struct omx_user_region {
 
 	unsigned nr_segments;
 	struct omx_user_region_segment {
-		unsigned offset;
+		unsigned first_page_offset;
 		unsigned long length;
 		unsigned long nr_pages;
 		struct page ** pages;

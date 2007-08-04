@@ -61,7 +61,7 @@ omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 	}
 	BUG_ON(ret != nr_pages);
 
-	segment->offset = offset;
+	segment->first_page_offset = offset;
 	segment->length = useg->len;
 	segment->nr_pages = nr_pages;
 	segment->pages = pages;
@@ -336,8 +336,8 @@ omx__user_region_segment_append_pages(struct omx_user_region_segment * segment,
 {
 	int queued = 0;
 	int remaining = length;
-	int first_page = (segment_offset+segment->offset)>>PAGE_SHIFT;
-	int page_offset = (segment_offset+segment->offset) & (PAGE_SIZE-1);
+	int first_page = (segment_offset+segment->first_page_offset)>>PAGE_SHIFT;
+	int page_offset = (segment_offset+segment->first_page_offset) & (PAGE_SIZE-1);
 	int i;
 
 	for(i=first_page; ; i++) {
@@ -439,8 +439,8 @@ omx__user_region_segment_fill_pages(struct omx_user_region_segment * segment,
 {
 	int copied = 0;
 	int remaining = length;
-	int first_page = (segment_offset+segment->offset)>>PAGE_SHIFT;
-	int page_offset = (segment_offset+segment->offset) & (PAGE_SIZE-1);
+	int first_page = (segment_offset+segment->first_page_offset)>>PAGE_SHIFT;
+	int page_offset = (segment_offset+segment->first_page_offset) & (PAGE_SIZE-1);
 	int i;
 
 	for(i=first_page; ; i++) {
