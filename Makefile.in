@@ -57,7 +57,7 @@ wc:
 .PHONY: svndist curdist
 
 DATE	=	$$(date +%Y%m%d.%H%M%S)
-TARBALL	=	open-mx.svn.$(DATE)
+TARBALL	=	@PACKAGE_TARNAME@-@PACKAGE_VERSION@+svn.$(DATE)
 SVN_URL	=	svn+ssh://scm.gforge.inria.fr/svn/open-mx/
 SVN_BRANCH	=	trunk
 

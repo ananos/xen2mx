@@ -14,7 +14,10 @@
 #
 # See the GNU General Public License in COPYING.GPL for more details.
 
-AC_INIT(configure.ac)
+AC_INIT([Open-MX],
+        0.0.0,
+        [http://gforge.inria.fr/projects/open-mx],
+        open-mx)
 AC_PREREQ(2.53)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/open-mx)
