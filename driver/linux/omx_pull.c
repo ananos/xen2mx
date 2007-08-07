@@ -360,7 +360,6 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	pull->session = cmd.session_id;
 	pull->total_length = cmd.length;
 	pull->block_length = cmd.length;
-	pull->puller_rdma_id = cmd.local_rdma_id;
 	pull->puller_offset = cmd.local_offset;
 	pull->pulled_rdma_id = cmd.remote_rdma_id;
 	pull->pulled_offset = cmd.remote_offset;
@@ -462,7 +461,6 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* fill omx header */
 	pull_reply = &reply_mh->body.pull_reply;
-	pull_reply->puller_rdma_id = pull_request->puller_rdma_id;
 	pull_reply->puller_offset = pull_request->puller_offset;
 	pull_reply->ptype = OMX_PKT_TYPE_PULL_REPLY;
 	pull_reply->dst_pull_handle = pull_request->src_pull_handle;

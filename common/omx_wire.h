@@ -150,8 +150,7 @@ struct omx_pkt_pull_request {
 	uint32_t session;
 	uint32_t total_length; /* total pull length */
 	uint16_t block_length; /* current pull block length (nr * pagesize - target offset) */
-	uint32_t puller_rdma_id;
-	uint32_t puller_offset; /* FIXME: 64bits ? */
+	uint32_t puller_offset; /* sender's first page offset */
 	uint32_t pulled_rdma_id;
 	uint32_t pulled_offset; /* FIXME: 64bits ? */
 	uint32_t src_pull_handle; /* sender's handle id */
@@ -160,7 +159,6 @@ struct omx_pkt_pull_request {
 	uint8_t rdmawin_id; /* target window id */
 	uint8_t rdmawin_seqnum; /* target window seqnum */
 	uint16_t rdma_offset; /* offset in target window first page */
-	uint16_t offset; /* sender's first page offset */
 	uint32_t index; /* pull interation index (page_nr/page_per_pull) */
 #endif
 };
@@ -218,18 +216,18 @@ do {									\
  * + pull->magic = internal endpoint pull magic number
  * + pull->block_length = (PAGE*MAX_FRAMES_PER_PULL) - req->remote_rdma_offset,
  *        (align the transfer on page boundaries on the receiver's side)
- * + pull->offset = req->local_rdma_offset
+ * + pull->puller_offset = req->local_rdma_offset
  * + pull->index = 0
  *
  * Once this pull is done, a new one is sent with the following changes
  * + pull->block_length = PAGE*MAX_FRAMES_PER_PULL
- * + pull->offset = 0
+ * + pull->puller_offset = 0
  * + pull->index += MAX_FRAMES_PER_PULL
  *
  * When a pull arrives, the replier sends a pull_reply with
  * reply->frame_seqnum = pull->index
- * reply->frame_length = PAGE - pull->offset
- * reply->msg_offset = pull->index * PAGE - pull->rdma_offset + pull->offset
+ * reply->frame_length = PAGE - pull->puller_offset
+ * reply->msg_offset = pull->index * PAGE - pull->rdma_offset + pull->puller_offset
  * reply->src_send_handle = pull->src_send_handle
  * reply->magic = pull->magic
  *
