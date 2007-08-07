@@ -2,6 +2,8 @@
 
 * check pingpong contents
 
+* keep the region held while the handle exists
+
 * send a nack on bad session, except for connect (no session), truc or nack libs
 
 * have a way to make install without the driver or only the driver

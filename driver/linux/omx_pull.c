@@ -341,7 +341,8 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	pull->dst_endpoint = cmd.dest_endpoint;
 	pull->ptype = OMX_PKT_TYPE_PULL;
 	pull->session = cmd.session_id;
-	pull->length = cmd.length;
+	pull->total_length = cmd.length;
+	pull->block_length = cmd.length;
 	pull->puller_rdma_id = cmd.local_rdma_id;
 	pull->puller_offset = cmd.local_offset;
 	pull->pulled_rdma_id = cmd.remote_rdma_id;
@@ -349,10 +350,11 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = omx_endpoint_pull_magic(endpoint);
 
-	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld",
+	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld",
 			 (unsigned long) pull->src_pull_handle,
 			 (unsigned long) pull->src_magic,
-			 (unsigned long) pull->length);
+			 (unsigned long) pull->block_length,
+			 (unsigned long) pull->total_length);
 
 	/* mark the frames as missing and release the handle */
 	handle->frame_missing = 1;
@@ -425,10 +427,11 @@ omx_recv_pull(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_recv_dprintk(pull_eh, "PULL handle %lx magic %lx length %ld",
+	omx_recv_dprintk(pull_eh, "PULL handle %lx magic %lx length %ld out of %ld",
 			 (unsigned long) pull_request->src_pull_handle,
 			 (unsigned long) pull_request->src_magic,
-			 (unsigned long) pull_request->length);
+			 (unsigned long) pull_request->block_length,
+			 (unsigned long) pull_request->total_length);
 
 	/* locate headers */
 	reply_mh = omx_hdr(skb);
@@ -461,13 +464,13 @@ omx_recv_pull(struct omx_iface * iface,
 	err = omx_user_region_append_pages(region,
 					   pull_request->pulled_offset,
 					   skb,
-					   pull_request->length);
+					   pull_request->block_length);
 	if (unlikely(err < 0)) {
 		omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
 		/* pages will be released in dev_kfree_skb() */
 		goto out_with_region;
 	}
-	pull_reply->length = pull_request->length;
+	pull_reply->length = pull_request->block_length;
 
  	if (unlikely(skb->len < ETH_ZLEN)) {
 		/* pad to ETH_ZLEN */
