@@ -25,6 +25,7 @@
 
 struct omx_pull_handle {
 	struct omx_endpoint * endpoint;
+	struct omx_user_region * region;
 	uint32_t lib_cookie;
 	struct list_head endpoint_pull_handles;
 	uint32_t idr_index;
@@ -131,9 +132,10 @@ omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
  */
 static inline struct omx_pull_handle *
 omx_pull_handle_create(struct omx_endpoint * endpoint,
-		       uint32_t lib_cookie, uint32_t length)
+		       uint32_t lib_cookie, uint32_t length, uint32_t rdma_id)
 {
 	struct omx_pull_handle * handle;
+	struct omx_user_region * region;
 	int err;
 
 	/* take a reference on the endpoint since we will return the pull_handle as acquired */
@@ -141,11 +143,18 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	if (unlikely(err < 0))
 		goto out;
 
+	/* acquire the region */
+	region = omx_user_region_acquire(endpoint, rdma_id);
+	if (unlikely(!region)) {
+		err = -ENOMEM;
+		goto out_with_endpoint;
+	}
+
 	/* alloc the pull handle */
 	handle = kmalloc(sizeof(struct omx_pull_handle), GFP_KERNEL);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
-		goto out_with_endpoint;
+		goto out_with_region;
 	}
 
 	/* while failed, realloc and retry */
@@ -153,8 +162,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	err = idr_pre_get(&endpoint->pull_handle_idr, GFP_KERNEL);
 	if (unlikely(!err)) {
 		printk(KERN_ERR "Open-MX: Failed to allocate idr space for pull handles\n");
-		err = -ENOMEM; /* unused for now */
-		goto out_with_endpoint;
+		err = -ENOMEM;
+		goto out_with_handle;
 	}
 
 	spin_lock(&endpoint->pull_handle_lock);
@@ -169,6 +178,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* we are good now, finish filling the handle */
 	spin_lock_init(&handle->lock);
 	handle->endpoint = endpoint;
+	handle->region = region;
 	handle->lib_cookie = lib_cookie;
 	handle->length = length;
 	handle->frame_missing = 0;
@@ -184,6 +194,10 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	printk("created and acquired pull handle %p\n", handle);
 	return handle;
 
+ out_with_handle:
+	kfree(handle);
+ out_with_region:
+	omx_user_region_release(region);
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
@@ -239,6 +253,7 @@ static inline void
 omx_pull_handle_release(struct omx_pull_handle * handle)
 {
 	struct omx_endpoint * endpoint = handle->endpoint;
+	struct omx_user_region * region = handle->region;
 
 	printk("releasing pull handle %p\n", handle);
 
@@ -265,7 +280,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 
 	} else {
 		/* transfer is done,
-		 * destroy the handle and release the endpoint */
+		 * destroy the handle and release the region and endpoint */
 
 		/* FIXME: if multiple pull requests, start the next one */
 
@@ -276,7 +291,8 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		kfree(handle);
 		spin_unlock(&endpoint->pull_handle_lock);
 
-		/* release the endpoint */
+		/* release the region and endpoint */
+		omx_user_region_release(region);
 		omx_endpoint_release(endpoint);
 
 		printk("frame are all done, destroy the handle and release the endpoint\n");
@@ -309,7 +325,8 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	handle = omx_pull_handle_create(endpoint, cmd.lib_cookie, cmd.length);
+	handle = omx_pull_handle_create(endpoint,
+					cmd.lib_cookie, cmd.length, cmd.local_rdma_id);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		ret = -ENOMEM;
@@ -544,7 +561,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	struct ethhdr *eh = &mh->head.eth;
 	uint32_t pull_length = pull_reply->length;
 	struct omx_pull_handle * handle;
-	struct omx_user_region * region;
 	int err = 0;
 
 	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld length %ld skb length %ld",
@@ -574,15 +590,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* no session to check */
 
-	/* acquire the region */
-	region = omx_user_region_acquire(handle->endpoint, pull_reply->puller_rdma_id);
-	if (unlikely(!region)) {
-		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown rdma id %d\n",
-				 pull_reply->puller_rdma_id);
-		err = -EINVAL;
-		goto out_with_handle;
-	}
-
 	/* FIXME: store the sender mac in the handle and check it ? */
 
 	handle->frame_missing = 0;
@@ -591,7 +598,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	omx_pull_handle_release(handle);
 
 	/* fill segment pages */
-	err = omx_user_region_fill_pages(region,
+	err = omx_user_region_fill_pages(handle->region,
 					 pull_reply->puller_offset,
 					 skb,
 					 pull_reply->length);
@@ -602,15 +609,13 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* FIXME: make sure a new pull is not queued too, so that the handle is dropped */
 		/* FIXME: report what has already been tranferred? */
 		omx_pull_handle_done_notify(handle, 0);
-		goto out_with_region;
+		goto out_with_handle;
 	}
 
 	/* FIXME: release instead of destroy if not done */
 	omx_pull_handle_reacquire(handle);
 
 	handle->frame_transferring = 0;
-
-	omx_user_region_release(region);
 
 	if (!handle->frame_transferring)
 		omx_pull_handle_done_notify(handle, handle->length);
@@ -619,8 +624,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	return 0;
 
- out_with_region:
-	omx_user_region_release(region);
  out_with_handle:
 	omx_pull_handle_release(handle);
  out:
