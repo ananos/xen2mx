@@ -67,7 +67,7 @@
 * non MXoE compatible extensions:
   + rdma in both direction with optional notification containing the target window id ?
   + no notify message, report event on rdma get completion ?
-  + multiple segments in large messages
+  + multiple segments in large messages, with random page offset (support in the driver, not used by the lib)
   + extend threshold for small/tiny ?
   + cleanup connect request/reply data
   + no bidirectionnal connect in the background

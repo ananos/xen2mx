@@ -24,26 +24,26 @@
 #include "omx_hal.h"
 
 struct omx_pull_handle {
+	struct list_head endpoint_pull_handles;
+	uint32_t idr_index;
+	spinlock_t lock;
+
+	/* global pull fields */
 	struct omx_endpoint * endpoint;
 	struct omx_user_region * region;
 	uint32_t lib_cookie;
-	struct list_head endpoint_pull_handles;
-	uint32_t idr_index;
+	uint32_t total_length;
 
-	spinlock_t lock;
-
-	uint32_t length;
-
-	/*
-	 * Masks of frames missing (not received at all)
-	 * and transferring (received but not copied yet)
-	 *
-	 * handle is done when frame_transferring = frame_missing = 0
-	 * handle is being used when frame_transferring != frame_missing
-	 */
-	uint32_t frame_missing;
-	uint32_t frame_transferring;
+	/* current block */
+	uint32_t block_offset;
+	uint32_t block_length;
+	uint32_t frame_missing; /* frames not received at all */
+	uint32_t frame_transferring; /* frames received but not copied yet */
 	/* FIXME: need a frame window for multiple pull request */
+
+	/* pull packet header */
+	struct ethhdr pkt_eth_hdr;
+	struct omx_pkt_pull_request pkt_pull_hdr;
 };
 
 /*
@@ -126,13 +126,42 @@ omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
  * Per-endpoint pull handles create/find/...
  */
 
+static inline void
+omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
+			     struct omx_pull_handle * handle,
+			     struct omx_cmd_send_pull * cmd)
+{
+	struct net_device * ifp= endpoint->iface->eth_ifp;
+	struct ethhdr * eh = &handle->pkt_eth_hdr;
+	struct omx_pkt_pull_request * pull = &handle->pkt_pull_hdr;
+
+	/* pre-fill the packet header */
+	memset(eh, 0, sizeof(*eh));
+	omx_board_addr_to_ethhdr_dst(eh, cmd->dest_addr);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+
+	/* fill omx header */
+	pull->ptype = OMX_PKT_TYPE_PULL;
+	pull->src_endpoint = endpoint->endpoint_index;
+	pull->dst_endpoint = cmd->dest_endpoint;
+	pull->session = cmd->session_id;
+	pull->total_length = cmd->length;
+	/* block_length filled at actual send */
+	pull->puller_offset = cmd->local_offset;
+	pull->pulled_rdma_id = cmd->remote_rdma_id;
+	pull->pulled_offset = cmd->remote_offset;
+	pull->src_pull_handle = handle->idr_index;
+	pull->src_magic = omx_endpoint_pull_magic(endpoint);
+}
+
 /*
  * Create a pull handle and return it as acquired,
  * with a reference on the endpoint
  */
 static inline struct omx_pull_handle *
 omx_pull_handle_create(struct omx_endpoint * endpoint,
-		       uint32_t lib_cookie, uint32_t length, uint32_t rdma_id)
+		       struct omx_cmd_send_pull * cmd)
 {
 	struct omx_pull_handle * handle;
 	struct omx_user_region * region;
@@ -144,7 +173,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		goto out;
 
 	/* acquire the region */
-	region = omx_user_region_acquire(endpoint, rdma_id);
+	region = omx_user_region_acquire(endpoint, cmd->local_rdma_id);
 	if (unlikely(!region)) {
 		err = -ENOMEM;
 		goto out_with_endpoint;
@@ -179,10 +208,13 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	spin_lock_init(&handle->lock);
 	handle->endpoint = endpoint;
 	handle->region = region;
-	handle->lib_cookie = lib_cookie;
-	handle->length = length;
+
+	/* fill handle */
+	handle->lib_cookie = cmd->lib_cookie;
+	handle->total_length = cmd->length;
 	handle->frame_missing = 0;
 	handle->frame_transferring = 0;
+	omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
 	list_add_tail(&handle->endpoint_pull_handles,
 		      &endpoint->pull_handle_list);
 
@@ -325,8 +357,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	handle = omx_pull_handle_create(endpoint,
-					cmd.lib_cookie, cmd.length, cmd.local_rdma_id);
+	handle = omx_pull_handle_create(endpoint, &cmd);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		ret = -ENOMEM;
@@ -345,26 +376,14 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	/* locate headers */
 	mh = omx_hdr(skb);
 	eh = &mh->head.eth;
-
-	/* fill ethernet header */
-	memset(eh, 0, sizeof(*eh));
-	omx_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
-	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-
-	/* fill omx header */
 	pull = &mh->body.pull;
-	pull->src_endpoint = endpoint->endpoint_index;
-	pull->dst_endpoint = cmd.dest_endpoint;
-	pull->ptype = OMX_PKT_TYPE_PULL;
-	pull->session = cmd.session_id;
-	pull->total_length = cmd.length;
-	pull->block_length = cmd.length;
-	pull->puller_offset = cmd.local_offset;
-	pull->pulled_rdma_id = cmd.remote_rdma_id;
-	pull->pulled_offset = cmd.remote_offset;
-	pull->src_pull_handle = handle->idr_index;
-	pull->src_magic = omx_endpoint_pull_magic(endpoint);
+
+	/* copy common pkt hdrs from the handle */
+	memcpy(eh, &handle->pkt_eth_hdr, sizeof(handle->pkt_eth_hdr));
+	memcpy(pull, &handle->pkt_pull_hdr, sizeof(handle->pkt_pull_hdr));
+
+	/* update other fields */
+	pull->block_length = handle->total_length;
 
 	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld",
 			 (unsigned long) pull->src_pull_handle,
@@ -616,7 +635,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->frame_transferring = 0;
 
 	if (!handle->frame_transferring)
-		omx_pull_handle_done_notify(handle, handle->length);
+		omx_pull_handle_done_notify(handle, handle->total_length);
 
 	omx_pull_handle_release(handle);
 
