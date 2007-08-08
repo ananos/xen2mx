@@ -580,7 +580,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		    struct sk_buff * skb)
 {
 	struct omx_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
-	struct ethhdr *eh = &mh->head.eth;
 	uint32_t pull_length = pull_reply->length;
 	struct omx_pull_handle * handle;
 	int err = 0;
@@ -593,7 +592,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(pull_length > skb->len - sizeof(struct omx_hdr))) {
-		omx_drop_dprintk(eh, "PULL REPLY packet with %ld bytes instead of %d",
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with %ld bytes instead of %d",
 				 (unsigned long) skb->len - sizeof(struct omx_hdr),
 				 (unsigned) pull_length);
 		err = -EINVAL;
