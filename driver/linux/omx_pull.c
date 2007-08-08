@@ -398,9 +398,6 @@ omx_send_pull(struct omx_endpoint * endpoint,
 
 	dev_queue_xmit(skb);
 
-//	printk(KERN_INFO "Open-MX: sent a pull message from endpoint %d\n",
-//	       endpoint->endpoint_index);
-
 	return 0;
 
  out_with_handle:
@@ -522,9 +519,6 @@ omx_recv_pull(struct omx_iface * iface,
 	dev_queue_xmit(skb);
 
 	omx_endpoint_release(endpoint);
-
-//	printk(KERN_INFO "Open-MX: sent a pull reply from endpoint %d\n",
-//	       endpoint->endpoint_index);
 
 	return 0;
 
