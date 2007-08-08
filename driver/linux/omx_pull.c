@@ -648,7 +648,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 					 skb,
 					 pull_reply->length);
 	if (unlikely(err < 0)) {
-		omx_drop_dprintk(eh, "PULL REPLY packet due to failure to fill pages from skb");
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
 		/* the other peer is sending crap, close the handle and report truncated to userspace */
 		handle->frame_transferring = 0;
 		/* FIXME: make sure a new pull is not queued too, so that the handle is dropped */
