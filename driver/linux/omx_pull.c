@@ -33,9 +33,10 @@ struct omx_pull_handle {
 	struct omx_user_region * region;
 	uint32_t lib_cookie;
 	uint32_t total_length;
+	uint32_t puller_offset;
 
 	/* current block */
-	uint32_t block_offset;
+	uint32_t frame_index;
 	uint32_t block_length;
 	uint32_t frame_missing; /* frames not received at all */
 	uint32_t frame_transferring; /* frames received but not copied yet */
@@ -147,12 +148,12 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	pull->dst_endpoint = cmd->dest_endpoint;
 	pull->session = cmd->session_id;
 	pull->total_length = cmd->length;
-	/* block_length filled at actual send */
-	pull->puller_offset = cmd->local_offset;
 	pull->pulled_rdma_id = cmd->remote_rdma_id;
 	pull->pulled_offset = cmd->remote_offset;
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = omx_endpoint_pull_magic(endpoint);
+
+	/* block_length, frame_index, and puller_offset filled at actual send */
 }
 
 /*
@@ -212,6 +213,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* fill handle */
 	handle->lib_cookie = cmd->lib_cookie;
 	handle->total_length = cmd->length;
+	handle->puller_offset = cmd->local_offset;
+	handle->frame_index = 0;
 	handle->frame_missing = 0;
 	handle->frame_transferring = 0;
 	omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
@@ -347,41 +350,27 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
  * Pull-related networking
  */
 
-int
-omx_send_pull(struct omx_endpoint * endpoint,
-	      void __user * uparam)
+/* Called with the handle held, will be released before returning */
+static inline int
+omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 {
-	struct sk_buff *skb;
-	struct omx_hdr *mh;
-	struct ethhdr *eh;
-	struct omx_cmd_send_pull cmd;
-	struct omx_iface * iface = endpoint->iface;
+	struct omx_iface * iface = handle->endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
-	struct omx_pull_handle * handle;
+	struct sk_buff * skb;
+	struct omx_hdr * mh;
+	struct ethhdr * eh;
 	struct omx_pkt_pull_request * pull;
-	int ret;
-
-	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
-	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read send pull cmd hdr\n");
-		ret = -EFAULT;
-		goto out;
-	}
-
-	handle = omx_pull_handle_create(endpoint, &cmd);
-	if (unlikely(!handle)) {
-		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
-		ret = -ENOMEM;
-		goto out;
-	}
+	uint32_t block_length, puller_offset, frame_index;
+	int err = 0;
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(*mh), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create pull skb\n");
-		ret = -ENOMEM;
-		goto out_with_handle;
+		err = -ENOMEM;
+		/* FIXME: make sure the handle will be destroyed here */
+		goto out;
 	}
 
 	/* locate headers */
@@ -394,7 +383,26 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	memcpy(pull, &handle->pkt_pull_hdr, sizeof(handle->pkt_pull_hdr));
 
 	/* update other fields */
-	pull->block_length = handle->total_length;
+	frame_index = handle->frame_index;
+	if (frame_index == 0) {
+		block_length = handle->total_length;
+		puller_offset = handle->puller_offset;
+	} else {
+		BUG();
+	}
+
+	/* FIXME: modify directly in the handle cache ? */
+	pull->block_length = block_length;
+	pull->puller_offset = puller_offset;
+	pull->frame_index = frame_index;
+
+	/* mark the frames as missing so that the handle is released but not destroyed */
+	handle->frame_missing = 1;
+	handle->frame_transferring = 1;
+	/* release the handle before sending to avoid
+	 * deadlock when sending to ourself in the same region
+	 */
+	omx_pull_handle_release(handle);
 
 	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld",
 			 (unsigned long) pull->src_pull_handle,
@@ -402,19 +410,35 @@ omx_send_pull(struct omx_endpoint * endpoint,
 			 (unsigned long) pull->block_length,
 			 (unsigned long) pull->total_length);
 
-	/* mark the frames as missing and release the handle */
-	handle->frame_missing = 1;
-	handle->frame_transferring = 1;
-	omx_pull_handle_release(handle);
-
 	dev_queue_xmit(skb);
 
-	return 0;
-
- out_with_handle:
-	omx_pull_handle_release(handle);
  out:
-	return ret;
+	return err;
+}
+
+int
+omx_send_pull(struct omx_endpoint * endpoint,
+	      void __user * uparam)
+{
+	struct omx_cmd_send_pull cmd;
+	struct omx_pull_handle * handle;
+	int ret;
+
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send pull cmd hdr\n");
+		return -EFAULT;
+	}
+
+	/* create and acquire the handle */
+	handle = omx_pull_handle_create(endpoint, &cmd);
+	if (unlikely(!handle)) {
+		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
+		return -ENOMEM;
+	}
+
+	/* send this pull block request and release the handle */
+	return omx_send_next_pull_block_request(handle);
 }
 
 /* pull reply skb destructor to release the user region */
@@ -601,7 +625,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* acquire the handle and endpoint */
 	handle = omx_pull_handle_acquire_by_wire(iface, pull_reply->dst_magic,
-						  pull_reply->dst_pull_handle);
+						 pull_reply->dst_pull_handle);
 	if (unlikely(!handle)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown handle %d magic %d",
 				 pull_reply->dst_pull_handle, pull_reply->dst_magic);

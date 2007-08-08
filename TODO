@@ -36,6 +36,8 @@
   - filter various debug message types
   - make driver dprintk runtime configurable
 
+* pull on lo on same region deadlocks
+
 * truc messages
 * rendez-vous messages
 * notify messages
