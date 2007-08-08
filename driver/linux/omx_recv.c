@@ -138,7 +138,6 @@ omx_recv_tiny(struct omx_iface * iface,
 	      struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct ethhdr __attribute((unused)) *eh = &mh->head.eth;
 	struct omx_pkt_msg *tiny = &mh->body.tiny;
 	uint16_t length = tiny->length;
 	union omx_evt *evt;
@@ -147,7 +146,7 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	/* check packet length */
 	if (unlikely(length > OMX_TINY_MAX)) {
-		omx_drop_dprintk(eh, "TINY packet too long (length %d)",
+		omx_drop_dprintk(&mh->head.eth, "TINY packet too long (length %d)",
 				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
@@ -155,7 +154,7 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
-		omx_drop_dprintk(eh, "TINY packet with %ld bytes instead of %d",
+		omx_drop_dprintk(&mh->head.eth, "TINY packet with %ld bytes instead of %d",
 				 (unsigned long) skb->len - sizeof(struct omx_hdr),
 				 (unsigned) length);
 		err = -EINVAL;
@@ -165,7 +164,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, tiny->dst_endpoint);
 	if (unlikely(!endpoint)) {
-		omx_drop_dprintk(eh, "TINY packet for unknown endpoint %d",
+		omx_drop_dprintk(&mh->head.eth, "TINY packet for unknown endpoint %d",
 				 tiny->dst_endpoint);
 		err = -EINVAL;
 		goto out;
@@ -173,7 +172,7 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(tiny->session != endpoint->session_id)) {
-		omx_drop_dprintk(eh, "TINY packet with bad session");
+		omx_drop_dprintk(&mh->head.eth, "TINY packet with bad session");
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
@@ -181,7 +180,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	/* get the eventq slot */
 	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(eh, "TINY packet because of event queue full");
+		omx_drop_dprintk(&mh->head.eth, "TINY packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -194,7 +193,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	event->seqnum = tiny->lib_seqnum;
 	event->specific.tiny.length = length;
 
-	omx_recv_dprintk(eh, "TINY length %ld", (unsigned long) length);
+	omx_recv_dprintk(&mh->head.eth, "TINY length %ld", (unsigned long) length);
 
 	/* copy data in event data */
 	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event->specific.tiny.data, length);
@@ -220,7 +219,6 @@ omx_recv_small(struct omx_iface * iface,
 	       struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct ethhdr __attribute((unused)) *eh = &mh->head.eth;
 	struct omx_pkt_msg *small = &mh->body.small;
 	uint16_t length = small->length;
 	union omx_evt *evt;
@@ -230,7 +228,7 @@ omx_recv_small(struct omx_iface * iface,
 
 	/* check packet length */
 	if (unlikely(length > OMX_SMALL_MAX)) {
-		omx_drop_dprintk(eh, "SMALL packet too long (length %d)",
+		omx_drop_dprintk(&mh->head.eth, "SMALL packet too long (length %d)",
 				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
@@ -238,7 +236,7 @@ omx_recv_small(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
-		omx_drop_dprintk(eh, "SMALL packet with %ld bytes instead of %d",
+		omx_drop_dprintk(&mh->head.eth, "SMALL packet with %ld bytes instead of %d",
 				 (unsigned long) skb->len - sizeof(struct omx_hdr),
 				 (unsigned) length);
 		err = -EINVAL;
@@ -248,7 +246,7 @@ omx_recv_small(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, small->dst_endpoint);
 	if (unlikely(!endpoint)) {
-		omx_drop_dprintk(eh, "SMALL packet for unknown endpoint %d",
+		omx_drop_dprintk(&mh->head.eth, "SMALL packet for unknown endpoint %d",
 				 small->dst_endpoint);
 		err = -EINVAL;
 		goto out;
@@ -256,7 +254,7 @@ omx_recv_small(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(small->session != endpoint->session_id)) {
-		omx_drop_dprintk(eh, "SMALL packet with bad session");
+		omx_drop_dprintk(&mh->head.eth, "SMALL packet with bad session");
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
@@ -264,7 +262,7 @@ omx_recv_small(struct omx_iface * iface,
 	/* get the eventq slot */
 	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(eh, "SMALL packet because of event queue full");
+		omx_drop_dprintk(&mh->head.eth, "SMALL packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -277,7 +275,7 @@ omx_recv_small(struct omx_iface * iface,
 	event->seqnum = small->lib_seqnum;
 	event->specific.small.length = length;
 
-	omx_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
+	omx_recv_dprintk(&mh->head.eth, "SMALL length %ld", (unsigned long) length);
 
 	/* copy data in recvq slot */
 	recvq_slot = omx_find_next_recvq_slot(endpoint);
@@ -304,7 +302,6 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		     struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct ethhdr __attribute((unused)) *eh = &mh->head.eth;
 	struct omx_pkt_medium_frag *medium = &mh->body.medium;
 	uint16_t frag_length = medium->frag_length;
 	union omx_evt *evt;
@@ -314,7 +311,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	/* check packet length */
 	if (unlikely(frag_length > OMX_RECVQ_ENTRY_SIZE)) {
-		omx_drop_dprintk(eh, "MEDIUM fragment packet too long (length %d)",
+		omx_drop_dprintk(&mh->head.eth, "MEDIUM fragment packet too long (length %d)",
 				 (unsigned) frag_length);
 		err = -EINVAL;
 		goto out;
@@ -322,7 +319,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(frag_length > skb->len - sizeof(struct omx_hdr))) {
-		omx_drop_dprintk(eh, "MEDIUM fragment with %ld bytes instead of %d",
+		omx_drop_dprintk(&mh->head.eth, "MEDIUM fragment with %ld bytes instead of %d",
 				 (unsigned long) skb->len - sizeof(struct omx_hdr),
 				 (unsigned) frag_length);
 		err = -EINVAL;
@@ -332,7 +329,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, medium->msg.dst_endpoint);
 	if (unlikely(!endpoint)) {
-		omx_drop_dprintk(eh, "MEDIUM packet for unknown endpoint %d",
+		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet for unknown endpoint %d",
 				 medium->msg.dst_endpoint);
 		err = -EINVAL;
 		goto out;
@@ -340,7 +337,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(medium->msg.session != endpoint->session_id)) {
-		omx_drop_dprintk(eh, "MEDIUM packet with bad session");
+		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet with bad session");
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
@@ -348,7 +345,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* get the eventq slot */
 	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(eh, "MEDIUM packet because of event queue full");
+		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -364,7 +361,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event->specific.medium.frag_seqnum = medium->frag_seqnum;
 	event->specific.medium.frag_pipeline = medium->frag_pipeline;
 
-	omx_recv_dprintk(eh, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
+	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
 	/* copy data in recvq slot */
 	recvq_slot = omx_find_next_recvq_slot(endpoint);
@@ -392,13 +389,12 @@ omx_recv_rndv(struct omx_iface * iface,
 {
 #if 0
 	struct omx_endpoint * endpoint;
-	struct ethhdr *eh = &mh->head.eth;
 	struct omx_pkt_rndv *rndv = &mh->body.rndv;
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, rndv->dst_endpoint);
 	if (unlikely(!endpoint)) {
-		omx_drop_dprintk(eh, "RNDV packet for unknown endpoint %d",
+		omx_drop_dprintk(&mh->head.eth, "RNDV packet for unknown endpoint %d",
 				 rndv->dst_endpoint);
 		err = -EINVAL;
 		goto out;
@@ -407,7 +403,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	/* get the eventq slot */
 	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(eh, "RNDV packet because of event queue full");
+		omx_drop_dprintk(&mh->head.eth, "RNDV packet because of event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
