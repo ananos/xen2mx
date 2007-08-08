@@ -249,10 +249,15 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 
 	endpoint = omx_endpoint_acquire_by_pull_magic(iface, magic);
 	if (unlikely(!endpoint))
-		return NULL;
+		goto out;
 
 	spin_lock(&endpoint->pull_handle_lock);
 	handle = idr_find(&endpoint->pull_handle_idr, wire_handle);
+	if (!handle) {
+		spin_unlock(&endpoint->pull_handle_lock);
+		omx_endpoint_release(endpoint);
+		goto out_with_endpoint_lock;
+	}
 
 	/* acquire the handle */
 	spin_lock(&handle->lock);
@@ -261,6 +266,12 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 
 	printk("acquired pull handle %p\n", handle);
 	return handle;
+
+ out_with_endpoint_lock:
+	spin_unlock(&endpoint->pull_handle_lock);
+	omx_endpoint_release(endpoint);
+ out:
+	return NULL;
 }
 
 /*
