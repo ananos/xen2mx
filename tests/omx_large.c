@@ -23,6 +23,7 @@
 #include <sys/mman.h>
 #include <string.h>
 #include <sys/time.h>
+#include <errno.h>
 
 #include "../libopen-mx/omx_lib.h"
 
@@ -33,9 +34,11 @@
 #define RECV_BEGIN (LEN/2+LEN/8)
 #define COMM_LEN (LEN/4)
 #define COOKIE 0xdeadbeef
+#define RDMA_ID1 34
+#define RDMA_ID2 RDMA_ID1
 
 static int
-send_pull(int fd, uint32_t session_id, int id, int from, int to, int len)
+send_pull(int fd, uint32_t session_id, int id1, int from, int id2, int to, int len)
 {
   struct omx_cmd_send_pull pull_param;
   int ret;
@@ -45,9 +48,9 @@ send_pull(int fd, uint32_t session_id, int id, int from, int to, int len)
   pull_param.length = len;
   pull_param.session_id = session_id;
   pull_param.lib_cookie = COOKIE;
-  pull_param.local_rdma_id = id;
+  pull_param.local_rdma_id = id1;
   pull_param.local_offset = from;
-  pull_param.remote_rdma_id = id;
+  pull_param.remote_rdma_id = id2;
   pull_param.remote_offset = to;
 
   ret = ioctl(fd, OMX_CMD_SEND_PULL, &pull_param);
@@ -106,7 +109,6 @@ int main(void)
     perror("attach endpoint");
     goto out_with_fd;
   }
-  fprintf(stderr, "Successfully attached endpoint %d/%d\n", 0, 34);
 
   ret = ioctl(fd, OMX_CMD_GET_ENDPOINT_SESSION_ID, &session_id);
   if (ret < 0) {
@@ -128,8 +130,15 @@ int main(void)
   }
 
   /* create rdma window */
-  ret = do_register(fd, 34, buffer, LEN);
+  ret = do_register(fd, RDMA_ID1, buffer, LEN);
   if (ret < 0) {
+    fprintf(stderr, "Failed to register (%m)\n");
+    goto out_with_fd;
+  }
+
+  /* create rdma window */
+  ret = do_register(fd, RDMA_ID2, buffer, LEN);
+  if (ret < 0 && (RDMA_ID2 != RDMA_ID1 || errno != EBUSY)) {
     fprintf(stderr, "Failed to register (%m)\n");
     goto out_with_fd;
   }
@@ -145,7 +154,7 @@ int main(void)
   }
 
   /* send a message */
-  ret = send_pull(fd, session_id, 34, SEND_BEGIN, RECV_BEGIN, COMM_LEN);
+  ret = send_pull(fd, session_id, RDMA_ID1, SEND_BEGIN, RDMA_ID2, RECV_BEGIN, COMM_LEN);
   if (ret < 0)
     goto out_with_fd;
 
