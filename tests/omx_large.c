@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <malloc.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <string.h>
@@ -29,29 +30,30 @@
 
 #define EP 3
 #define ITER 10
-#define LEN (64*1024)
-#define SEND_BEGIN (LEN/8)
-#define RECV_BEGIN (LEN/2+LEN/8)
-#define COMM_LEN (LEN/4)
+#define BUFFER_ALIGN (2*4096) /* page-aligned on any arch */
+#define PULL_LENGTH (16*4096)
+#define BUFFER_LENGTH (19*4096) /* PULL_LENGTH + BUFFER_ALIGN + 4096 */
+#define SEND_OFFSET 23
+#define RECV_OFFSET 57
 #define COOKIE 0xdeadbeef
-#define RDMA_ID1 34
-#define RDMA_ID2 RDMA_ID1
+#define SEND_RDMA_ID 34
+#define RECV_RDMA_ID 35
 
 static int
-send_pull(int fd, uint32_t session_id, int id1, int from, int id2, int to, int len)
+send_pull(int fd, uint32_t session_id)
 {
   struct omx_cmd_send_pull pull_param;
   int ret;
 
   pull_param.dest_addr = -1; /* broadcast */
   pull_param.dest_endpoint = EP;
-  pull_param.length = len;
+  pull_param.length = PULL_LENGTH;
   pull_param.session_id = session_id;
   pull_param.lib_cookie = COOKIE;
-  pull_param.local_rdma_id = id1;
-  pull_param.local_offset = from;
-  pull_param.remote_rdma_id = id2;
-  pull_param.remote_offset = to;
+  pull_param.local_rdma_id = RECV_RDMA_ID;
+  pull_param.local_offset = RECV_OFFSET;
+  pull_param.remote_rdma_id = SEND_RDMA_ID;
+  pull_param.remote_offset = SEND_OFFSET;
 
   ret = ioctl(fd, OMX_CMD_SEND_PULL, &pull_param);
   if (ret < 0) {
@@ -60,13 +62,12 @@ send_pull(int fd, uint32_t session_id, int id1, int from, int id2, int to, int l
   }
 
   fprintf(stderr, "Successfully sent pull request (cookie 0x%lx, length %ld)\n",
-	  (unsigned long) COOKIE, (unsigned long) len);
+	  (unsigned long) COOKIE, (unsigned long) PULL_LENGTH);
   return 0;
 }
 
 static inline int
-do_register(int fd, int id,
-	    char * buffer, unsigned long len)
+do_register(int fd, int id, char * buffer, int len)
 {
   struct omx_cmd_region_segment seg[2];
   struct omx_cmd_register_region reg;
@@ -90,7 +91,7 @@ int main(void)
   struct omx_cmd_open_endpoint open_param;
   volatile union omx_evt * evt;
   void * recvq, * sendq, * eventq;
-  char * buffer;
+  char * send_buffer, * recv_buffer;
   uint32_t session_id;
   //  int i;
   //  struct timeval tv1, tv2;
@@ -122,47 +123,53 @@ int main(void)
   eventq = mmap(0, OMX_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EVENTQ_FILE_OFFSET);
   printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
 
-  /* allocate buffer */
-  buffer = malloc(LEN);
-  if (!buffer) {
-    fprintf(stderr, "Failed to allocate buffer\n");
+  memset(eventq, 0, sizeof(OMX_EVENTQ_SIZE));
+
+  /* allocate buffers */
+  send_buffer = memalign(BUFFER_ALIGN, BUFFER_LENGTH);
+  if (!send_buffer) {
+    fprintf(stderr, "Failed to allocate send buffer\n");
     goto out_with_fd;
   }
+  recv_buffer = memalign(BUFFER_ALIGN, BUFFER_LENGTH);
+  if (!recv_buffer) {
+    fprintf(stderr, "Failed to allocate recv buffer\n");
+    goto out_with_send_buffer;
+  }
 
-  /* create rdma window */
-  ret = do_register(fd, RDMA_ID1, buffer, LEN);
+  /* create rdma windows */
+  ret = do_register(fd, SEND_RDMA_ID, send_buffer, BUFFER_LENGTH);
   if (ret < 0) {
-    fprintf(stderr, "Failed to register (%m)\n");
-    goto out_with_fd;
+    fprintf(stderr, "Failed to register send buffer (%m)\n");
+    goto out_with_recv_buffer;
   }
-
-  /* create rdma window */
-  ret = do_register(fd, RDMA_ID2, buffer, LEN);
-  if (ret < 0 && (RDMA_ID2 != RDMA_ID1 || errno != EBUSY)) {
-    fprintf(stderr, "Failed to register (%m)\n");
-    goto out_with_fd;
+  ret = do_register(fd, RECV_RDMA_ID, recv_buffer, BUFFER_LENGTH);
+  if (ret < 0) {
+    fprintf(stderr, "Failed to register recv buffer (%m)\n");
+    goto out_with_send_register;
   }
 
   {
     int i;
-    for(i=0; i<LEN; i++)
-      buffer[i] = 'a';
-    for(i=0; i<COMM_LEN; i++)
-      buffer[i+SEND_BEGIN] = 'b';
-    for(i=0; i<COMM_LEN; i++)
-      buffer[i+RECV_BEGIN] = 'c';
+    for(i=0; i<BUFFER_LENGTH; i++) {
+      send_buffer[i] = 'a';
+      recv_buffer[i] = 'b';
+    }
+    for(i=0; i<PULL_LENGTH; i++) {
+      send_buffer[i+SEND_OFFSET] = 'k' + (i%10);
+      recv_buffer[i+RECV_OFFSET] = 'c';
+    }
   }
 
   /* send a message */
-  ret = send_pull(fd, session_id, RDMA_ID1, SEND_BEGIN, RDMA_ID2, RECV_BEGIN, COMM_LEN);
+  ret = send_pull(fd, session_id);
   if (ret < 0)
-    goto out_with_fd;
+    goto out_with_recv_register;
 
   evt = eventq;
   /* wait for the message */
   while (evt->generic.type == OMX_EVT_NONE) ;
 
-  printf("received type %d\n", evt->generic.type);
   assert(evt->generic.type == OMX_EVT_PULL_DONE);
   assert(evt->pull_done.lib_cookie == COOKIE);
   printf("pull (cookie 0x%lx) transferred %ld bytes\n",
@@ -179,28 +186,22 @@ int main(void)
 
   {
     int i;
-    for(i=0; i<COMM_LEN; i++)
-      if (buffer[i+SEND_BEGIN] != buffer[i+RECV_BEGIN]) {
-	printf("buffer different at byte %d: '%c' instead of '%c'\n",
-	       i, buffer[i+RECV_BEGIN], buffer[i+SEND_BEGIN]);
+    for(i=0; i<PULL_LENGTH; i++)
+      if (send_buffer[i+SEND_OFFSET] != recv_buffer[i+RECV_OFFSET]) {
+	printf("byte pulled different at #%d: '%c' instead of '%c'\n",
+	       i, recv_buffer[i+RECV_OFFSET], send_buffer[i+SEND_OFFSET]);
 	break;
       }
-    for(i=0; i<SEND_BEGIN; i++)
-      if (buffer[i] != 'a') {
-	printf("buffer different at byte %d: '%c' instead of 'a'\n",
-	       i, buffer[i]);
+    for(i=0; i<RECV_OFFSET; i++)
+      if (recv_buffer[i] != 'b') {
+	printf("byte before those pulled different at #%d: '%c' instead of 'b'\n",
+	       i, recv_buffer[i]);
 	break;
       }
-    for(i=SEND_BEGIN+COMM_LEN; i<RECV_BEGIN; i++)
-      if (buffer[i] != 'a') {
-	printf("buffer different at byte %d: '%c' instead of 'a'\n",
-	       i, buffer[i]);
-	break;
-      }
-    for(i=RECV_BEGIN+COMM_LEN; i<LEN; i++)
-      if (buffer[i] != 'a') {
-	printf("buffer different at byte %d: '%c' instead of 'a'\n",
-	       i, buffer[i]);
+    for(i=RECV_OFFSET+PULL_LENGTH; i<BUFFER_LENGTH; i++)
+      if (recv_buffer[i] != 'b') {
+	printf("byte after those pulled different at #%d: '%c' instead of 'b'\n",
+	       i, recv_buffer[i]);
 	break;
       }
   }
@@ -209,6 +210,14 @@ int main(void)
 
   return 0;
 
+ out_with_recv_register:
+  /* FIXME */
+ out_with_send_register:
+  /* FIXME */
+ out_with_recv_buffer:
+  free(recv_buffer);
+ out_with_send_buffer:
+  free(send_buffer);
  out_with_fd:
   close(fd);
  out:
