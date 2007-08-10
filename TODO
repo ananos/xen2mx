@@ -1,5 +1,4 @@
 * check rdma_offset < pages
-* add _bitmap prefix
 * replace pull_offset with frame_offset
 
 * move irecv and process_recv* to omx_recv.c

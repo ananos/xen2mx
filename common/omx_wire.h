@@ -151,7 +151,7 @@ struct omx_pkt_pull_request {
 	uint32_t total_length; /* total pull length */
 	uint16_t block_length; /* current pull block length (nr * pagesize - target offset) */
 	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull) */
-	uint32_t pull_offset; /* pull iteration offset (for the first iteration, set to pulled_rdma_offset) */
+	uint32_t pull_offset; /* pull iteration offset in the first frame (for the first iteration, set to pulled_rdma_offset) */
 	uint32_t pulled_rdma_id;
 	uint32_t pulled_rdma_offset; /* FIXME: 64bits ? */
 	uint32_t src_pull_handle; /* sender's handle id */
