@@ -33,7 +33,7 @@ struct omx_pull_handle {
 	struct omx_user_region * region;
 	uint32_t lib_cookie;
 	uint32_t total_length;
-	uint32_t puller_offset;
+	uint32_t puller_rdma_offset;
 
 	/* current block */
 	uint32_t frame_index;
@@ -153,7 +153,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = omx_endpoint_pull_magic(endpoint);
 
-	/* block_length, frame_index, and puller_offset filled at actual send */
+	/* block_length, frame_index, and puller_rdma_offset filled at actual send */
 }
 
 /*
@@ -213,7 +213,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* fill handle */
 	handle->lib_cookie = cmd->lib_cookie;
 	handle->total_length = cmd->length;
-	handle->puller_offset = cmd->local_offset;
+	handle->puller_rdma_offset = cmd->local_offset;
 	handle->frame_index = 0;
 	handle->frame_missing = 0;
 	handle->frame_copying = 0;
@@ -386,7 +386,7 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	frame_index = handle->frame_index;
 	if (frame_index == 0) {
 		block_length = handle->total_length;
-		pull_offset = handle->puller_offset;
+		pull_offset = handle->puller_rdma_offset;
 	} else {
 		BUG();
 	}
