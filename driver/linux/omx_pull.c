@@ -153,7 +153,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = omx_endpoint_pull_magic(endpoint);
 
-	/* block_length, frame_index, and puller_rdma_offset filled at actual send */
+	/* block_length, frame_index, and pull_offset filled at actual send */
 }
 
 /*
@@ -293,7 +293,7 @@ omx_pull_handle_reacquire(struct omx_pull_handle * handle)
 
 /*
  * Takes a locked pull handle and unlocked it if it is not done yet,
- * or destory it if it is done.
+ * or destroy it if it is done.
  */
 static inline void
 omx_pull_handle_release(struct omx_pull_handle * handle)
@@ -311,7 +311,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		 */
 		spin_unlock(&handle->lock);
 
-		printk("some frames are being transferred, just release the handle\n");
+		printk("some frames are being copied, just release the handle\n");
 
 	} else if (handle->frame_copying != 0) {
 		/* current block not done (no frames are being copied but some are missing),
