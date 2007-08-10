@@ -412,8 +412,8 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	/* mark the frames as missing so that the handle is released but not destroyed */
 	replies = (pull_offset + block_length + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
 	handle->block_frames = replies;
-	handle->frame_missing_bitmap = replies; /* FIXME: bitmap */
-	handle->frame_copying_bitmap = replies;
+	handle->frame_missing_bitmap = (1<<replies)-1;
+	handle->frame_copying_bitmap = (1<<replies)-1;
 
 	/* release the handle before sending to avoid
 	 * deadlock when sending to ourself in the same region
@@ -698,6 +698,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	uint32_t frame_seqnum = pull_reply->frame_seqnum;
 	uint32_t msg_offset = pull_reply->msg_offset;
 	struct omx_pull_handle * handle;
+	uint32_t bitmap_mask;
 	int err = 0;
 
 	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld length %ld skb length %ld",
@@ -729,7 +730,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* FIXME: store the sender mac in the handle and check it ? */
 
-	handle->frame_missing_bitmap--; /* FIXME: bitmap */
+	bitmap_mask = (1 << (frame_seqnum - handle->frame_index));
+
+	handle->frame_missing_bitmap &= ~bitmap_mask;
 
 	/* release the handle during the copy */
 	omx_pull_handle_release(handle);
@@ -755,7 +758,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* FIXME: release instead of destroy if not done */
 	omx_pull_handle_reacquire(handle);
 
-	handle->frame_copying_bitmap--; /* FIXME: bitmap */
+	handle->frame_copying_bitmap &= ~bitmap_mask;
 
 	if (handle->frame_copying_bitmap) {
 		/* current block not done, juste release the handle */

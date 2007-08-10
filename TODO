@@ -11,7 +11,7 @@
 
 * full pull support
   - export rdma_get and rdma window management functions
-  - use bitmaps to check which pull_reply arrived
+  - check obsolete, future and duplicate frames
 * send large support
   - rdnv message
   - notify
