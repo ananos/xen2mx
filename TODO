@@ -1,5 +1,3 @@
-* replace pull_offset with frame_offset
-
 * move irecv and process_recv* to omx_recv.c
 
 * check pingpong contents

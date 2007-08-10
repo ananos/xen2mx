@@ -159,7 +159,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = omx_endpoint_pull_magic(endpoint);
 
-	/* block_length, frame_index, and pull_offset filled at actual send */
+	/* block_length, frame_index, and first_frame_offset filled at actual send */
 }
 
 /*
@@ -366,7 +366,7 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	struct omx_hdr * mh;
 	struct ethhdr * eh;
 	struct omx_pkt_pull_request * pull;
-	uint32_t block_length, pull_offset, frame_index;
+	uint32_t block_length, first_frame_offset, frame_index;
 	int replies;
 	int err = 0;
 
@@ -393,10 +393,10 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	frame_index = handle->frame_index;
 	if (frame_index == 0) {
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX - (handle->pulled_rdma_offset % 4096);
-		pull_offset = handle->pulled_rdma_offset;
+		first_frame_offset = handle->pulled_rdma_offset;
 	} else {
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
-		pull_offset = 0;
+		first_frame_offset = 0;
 	}
 
 	if (block_length > handle->remaining_length)
@@ -405,11 +405,11 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 
 	/* FIXME: modify directly in the handle cache ? */
 	pull->block_length = block_length;
-	pull->pull_offset = pull_offset;
+	pull->first_frame_offset = first_frame_offset;
 	pull->frame_index = frame_index;
 
 	/* mark the frames as missing so that the handle is released but not destroyed */
-	replies = (pull_offset + block_length + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
+	replies = (first_frame_offset + block_length + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
 	handle->block_frames = replies;
 	handle->frame_missing_bitmap = (1<<replies)-1;
 	handle->frame_copying_bitmap = (1<<replies)-1;
@@ -419,13 +419,13 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	 */
 	omx_pull_handle_release(handle);
 
-	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld, frame index %ld pull_offset %ld",
+	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld, frame index %ld first_frame_offset %ld",
 			 (unsigned long) pull->src_pull_handle,
 			 (unsigned long) pull->src_magic,
-			 (unsigned long) pull->block_length,
+			 (unsigned long) block_length,
 			 (unsigned long) pull->total_length,
-			 (unsigned long) pull->frame_index,
-			 (unsigned long) pull->pull_offset);
+			 (unsigned long) frame_index,
+			 (unsigned long) first_frame_offset);
 
 	dev_queue_xmit(skb);
 
@@ -513,7 +513,7 @@ omx_recv_pull(struct omx_iface * iface,
 			 (unsigned long) pull_request->total_length);
 
 	/* compute and check the number of PULL_REPLY to send */
-	replies = (pull_request->pull_offset + pull_request->block_length
+	replies = (pull_request->first_frame_offset + pull_request->block_length
 		   + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
 	if (unlikely(replies > OMX_PULL_REPLY_PER_BLOCK)) {
 		omx_drop_dprintk(pull_eh, "PULL packet for %d REPLY (%d max)",
@@ -547,7 +547,7 @@ omx_recv_pull(struct omx_iface * iface,
 	current_frame_seqnum = pull_request->frame_index;
 	current_msg_offset = pull_request->frame_index * 4096
 		- pull_request->pulled_rdma_offset
-		+ pull_request->pull_offset;
+		+ pull_request->first_frame_offset;
 	block_remaining_length = pull_request->block_length;
 
 	/* prepare all skbs now */
@@ -565,7 +565,7 @@ omx_recv_pull(struct omx_iface * iface,
 		/* get the destination address */
 		memcpy(reply_eh->h_dest, pull_eh->h_source, sizeof(reply_eh->h_dest));
 
-		frame_length = (i==0) ? OMX_PULL_REPLY_LENGTH_MAX-pull_request->pull_offset
+		frame_length = (i==0) ? OMX_PULL_REPLY_LENGTH_MAX-pull_request->first_frame_offset
 			: OMX_PULL_REPLY_LENGTH_MAX;
 		if (block_remaining_length < frame_length)
 			frame_length = block_remaining_length;
