@@ -234,7 +234,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 	spin_unlock(&endpoint->pull_handle_lock);
 
-	printk("created and acquired pull handle %p\n", handle);
+	dprintk("created and acquired pull handle %p\n", handle);
 	return handle;
 
  out_with_handle:
@@ -275,7 +275,7 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 
 	spin_unlock(&endpoint->pull_handle_lock);
 
-	printk("acquired pull handle %p\n", handle);
+	dprintk("acquired pull handle %p\n", handle);
 	return handle;
 
  out_with_endpoint_lock:
@@ -296,7 +296,7 @@ omx_pull_handle_reacquire(struct omx_pull_handle * handle)
 	/* acquire the handle */
 	spin_lock(&handle->lock);
 
-	printk("reacquired pull handle %p\n", handle);
+	dprintk("reacquired pull handle %p\n", handle);
 }
 
 /*
@@ -309,7 +309,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 	struct omx_endpoint * endpoint = handle->endpoint;
 	struct omx_user_region * region = handle->region;
 
-	printk("releasing pull handle %p\n", handle);
+	dprintk("releasing pull handle %p\n", handle);
 
 	/* FIXME: add likely/unlikely */
 	if (handle->frame_copying_bitmap != handle->frame_missing_bitmap) {
@@ -319,7 +319,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		 */
 		spin_unlock(&handle->lock);
 
-		printk("some frames are being copied, just release the handle\n");
+		dprintk("some frames are being copied, just release the handle\n");
 
 	} else if (handle->frame_copying_bitmap != 0) {
 		/* current block not done (no frames are being copied but some are missing),
@@ -330,7 +330,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		/* release the endpoint */
 		omx_endpoint_release(endpoint);
 
-		printk("some frames are missing, release the handle and the endpoint\n");
+		dprintk("some frames are missing, release the handle and the endpoint\n");
 
 	} else {
 		/* transfer is done,
@@ -347,7 +347,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		omx_user_region_release(region);
 		omx_endpoint_release(endpoint);
 
-		printk("frame are all done, destroy the handle and release the endpoint\n");
+		dprintk("frame are all done, destroy the handle and release the endpoint\n");
 
 	}
 }
@@ -760,7 +760,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	omx_pull_handle_release(handle);
 
 	/* fill segment pages */
-	printk("copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
+	dprintk("copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
 	       (unsigned long) frame_length,
 	       (unsigned long) msg_offset,
 	       (unsigned long) msg_offset + handle->puller_rdma_offset);
@@ -784,18 +784,18 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	if (handle->frame_copying_bitmap) {
 		/* current block not done, juste release the handle */
-		printk("block not done, just releasing\n");
+		dprintk("block not done, just releasing\n");
 		omx_pull_handle_release(handle);
 
 	} else if (handle->remaining_length) {
 		/* current block is done, start the next block */
-		printk("queueing next pull block request\n");
+		dprintk("queueing next pull block request\n");
 		handle->frame_index += handle->block_frames;
 		omx_send_next_pull_block_request(handle);
 
 	} else {
 		/* last block is done, notify the completion */
-		printk("notifying pull completion\n");
+		dprintk("notifying pull completion\n");
 		omx_pull_handle_done_notify(handle);
 	}
 
