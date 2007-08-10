@@ -149,7 +149,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	pull->session = cmd->session_id;
 	pull->total_length = cmd->length;
 	pull->pulled_rdma_id = cmd->remote_rdma_id;
-	pull->pulled_offset = cmd->remote_offset;
+	pull->pulled_rdma_offset = cmd->remote_offset;
 	pull->src_pull_handle = handle->idr_index;
 	pull->src_magic = omx_endpoint_pull_magic(endpoint);
 
@@ -360,7 +360,7 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	struct omx_hdr * mh;
 	struct ethhdr * eh;
 	struct omx_pkt_pull_request * pull;
-	uint32_t block_length, puller_offset, frame_index;
+	uint32_t block_length, pull_offset, frame_index;
 	int err = 0;
 
 	skb = omx_new_skb(ifp,
@@ -386,14 +386,14 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	frame_index = handle->frame_index;
 	if (frame_index == 0) {
 		block_length = handle->total_length;
-		puller_offset = handle->puller_offset;
+		pull_offset = handle->puller_offset;
 	} else {
 		BUG();
 	}
 
 	/* FIXME: modify directly in the handle cache ? */
 	pull->block_length = block_length;
-	pull->puller_offset = puller_offset;
+	pull->pull_offset = pull_offset;
 	pull->frame_index = frame_index;
 
 	/* mark the frames as missing so that the handle is released but not destroyed */
@@ -512,7 +512,7 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* fill omx header */
 	pull_reply = &reply_mh->body.pull_reply;
-	pull_reply->puller_offset = pull_request->puller_offset;
+	pull_reply->msg_offset = pull_request->pull_offset;
 	pull_reply->ptype = OMX_PKT_TYPE_PULL_REPLY;
 	pull_reply->dst_pull_handle = pull_request->src_pull_handle;
 	pull_reply->dst_magic = pull_request->src_magic;
@@ -528,7 +528,7 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* append segment pages */
 	err = omx_user_region_append_pages(region,
-					   pull_request->pulled_offset,
+					   pull_request->pulled_rdma_offset,
 					   skb,
 					   pull_request->block_length);
 	if (unlikely(err < 0)) {
@@ -644,7 +644,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* fill segment pages */
 	err = omx_user_region_fill_pages(handle->region,
-					 pull_reply->puller_offset,
+					 pull_reply->msg_offset,
 					 skb,
 					 pull_reply->length);
 	if (unlikely(err < 0)) {

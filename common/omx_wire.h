@@ -150,10 +150,10 @@ struct omx_pkt_pull_request {
 	uint32_t session;
 	uint32_t total_length; /* total pull length */
 	uint16_t block_length; /* current pull block length (nr * pagesize - target offset) */
-	uint32_t frame_index; /* pull interation index (page_nr/page_per_pull) */
-	uint32_t puller_offset; /* sender's first page offset */
+	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull) */
+	uint32_t pull_offset; /* pull iteration offset (for the first iteration, set to pulled_rdma_offset) */
 	uint32_t pulled_rdma_id;
-	uint32_t pulled_offset; /* FIXME: 64bits ? */
+	uint32_t pulled_rdma_offset; /* FIXME: 64bits ? */
 	uint32_t src_pull_handle; /* sender's handle id */
 	uint32_t src_magic; /* sender's endpoint magic */
 #if 0
@@ -168,7 +168,7 @@ struct omx_pkt_pull_reply {
 	uint8_t pad[3];
 	uint32_t length; /* FIXME: 64bits ? */
 	uint32_t puller_rdma_id;
-	uint32_t puller_offset; /* FIXME: 64bits ? */
+	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
 	uint32_t dst_pull_handle; /* sender's handle id */
 	uint32_t dst_magic; /* sender's endpoint magic */
 #if 0
@@ -216,18 +216,18 @@ do {									\
  * + pull->magic = internal endpoint pull magic number
  * + pull->block_length = (PAGE*MAX_FRAMES_PER_PULL) - req->remote_rdma_offset,
  *        (align the transfer on page boundaries on the receiver's side)
- * + pull->puller_offset = req->local_rdma_offset
+ * + pull->pull_offset = req->target_rdma_offset
  * + pull->frame_index = 0
  *
  * Once this pull is done, a new one is sent with the following changes
  * + pull->block_length = PAGE*MAX_FRAMES_PER_PULL
- * + pull->puller_offset = 0
+ * + pull->pull_offset = 0
  * + pull->frame_index += MAX_FRAMES_PER_PULL
  *
  * When a pull arrives, the replier sends a pull_reply with
  * reply->frame_seqnum = pull->index
- * reply->frame_length = PAGE - pull->puller_offset
- * reply->msg_offset = pull->index * PAGE - pull->rdma_offset + pull->puller_offset
+ * reply->frame_length = PAGE - pull->pulled_offset
+ * reply->msg_offset = pull->index * PAGE - pull->pulled_rdma_offset + pull->pull_offset
  * reply->src_send_handle = pull->src_send_handle
  * reply->magic = pull->magic
  *
