@@ -482,11 +482,11 @@ omx_recv_pull(struct omx_iface * iface,
 	struct ethhdr *pull_eh = &pull_mh->head.eth;
 	struct omx_pkt_pull_request *pull_request = &pull_mh->body.pull;
 	struct omx_pkt_pull_reply *pull_reply;
-	struct sk_buff *skbs[OMX_PULL_REPLY_PER_BLOCK] = { NULL };
 	struct omx_hdr *reply_mh;
 	struct ethhdr *reply_eh;
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_user_region *region;
+	struct sk_buff *skb = NULL;
 	uint32_t current_frame_seqnum, current_msg_offset, block_remaining_length;
 	int replies, i;
 	int err = 0;
@@ -526,23 +526,7 @@ omx_recv_pull(struct omx_iface * iface,
 	/* get the rdma window once */
 	region = omx_user_region_acquire(endpoint, pull_request->pulled_rdma_id);
 	if (unlikely(!region))
-		goto out_with_skbs;
-
-	/* alloc all the reply skbuffs at once */
-	for(i=0; i<replies; i++) {
-		struct sk_buff *skb = omx_new_skb(ifp,
-						  /* only allocate space for the header now,
-						   * we'll attach pages and pad to ETH_ZLEN later
-						   */
-						  sizeof(*reply_mh));
-		if (unlikely(skb == NULL)) {
-			omx_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
-			err = -ENOMEM;
-			goto out_with_skbs;
-		}
-
-		skbs[i] = skb;
-	}
+		goto out_with_endpoint;
 
 	/* initialize pull reply fields */
 	current_frame_seqnum = pull_request->frame_index;
@@ -553,8 +537,19 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* prepare all skbs now */
 	for(i=0; i<replies; i++) {
-		struct sk_buff *skb = skbs[i];
 		uint32_t frame_length;
+
+		/* allocate a skb */
+		struct sk_buff *skb = omx_new_skb(ifp,
+						  /* only allocate space for the header now,
+						   * we'll attach pages and pad to ETH_ZLEN later
+						   */
+						  sizeof(*reply_mh));
+		if (unlikely(skb == NULL)) {
+			omx_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
+			err = -ENOMEM;
+			goto out_with_region_once;
+		}
 
 		/* locate headers */
 		reply_mh = omx_hdr(skb);
@@ -595,23 +590,16 @@ omx_recv_pull(struct omx_iface * iface,
 						   skb, frame_length);
 		if (unlikely(err < 0)) {
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
-			/* pages will be released in dev_kfree_skb(),
-			 * just release our hold on the region
-			 */
-			omx_user_region_release(region);
-			goto out_with_skbs;
+			/* pages will be released in dev_kfree_skb() */
+			goto out_with_skb_and_region_twice;
 		}
 
 		if (unlikely(skb->len < ETH_ZLEN)) {
 			/* pad to ETH_ZLEN */
 			err = omx_skb_pad(skb, ETH_ZLEN);
 			if (unlikely(err < 0)) {
-				/* skb has been freed in skb_pad(),
-				 * just release our hold on the region
-				 */
-				skbs[i] = NULL;
-				omx_user_region_release(region);
-				goto out_with_skbs;
+				/* skb has already been freed in skb_pad() */
+				goto out_with_region_twice;
 			}
 			skb->len = ETH_ZLEN;
 		}
@@ -622,7 +610,6 @@ omx_recv_pull(struct omx_iface * iface,
 		/* now that the skb is ready, remove it from the array
 		 * so that we don't try to free it in case of error later
 		 */
-		skbs[i] = NULL;
 		dev_queue_xmit(skb);
 
 		/* update fields now */
@@ -635,21 +622,11 @@ omx_recv_pull(struct omx_iface * iface,
 	omx_endpoint_release(endpoint);
 	return 0;
 
- out_with_skbs:
-	/* release skbuffs:
-	 * + the first ones have been queued and removed from array,
-	 *   they will be freeed correctly when sent
-	 * + the last ones have only been allocated,
-	 *   we release them with dev_kfree_skb
-	 * + the current one might have pages attached but released its hold on the region,
-	 *   we release it with dev_kfree_skb
-	 */
-	for(i=0; i<replies; i++)
-		if (skbs[i] != NULL)
-			/* release skbuff (they've only been allocated so far) */
-			dev_kfree_skb(skbs[i]);
-
-	/* release the main hold on the rdma window */
+ out_with_skb_and_region_twice:
+	dev_kfree_skb(skb);
+ out_with_region_twice:
+	omx_user_region_release(region);
+ out_with_region_once:
 	omx_user_region_release(region);
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
