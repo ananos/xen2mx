@@ -392,7 +392,8 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	/* update other fields */
 	frame_index = handle->frame_index;
 	if (frame_index == 0) {
-		block_length = OMX_PULL_BLOCK_LENGTH_MAX - (handle->pulled_rdma_offset % 4096);
+		block_length = OMX_PULL_BLOCK_LENGTH_MAX
+			- handle->pulled_rdma_offset;
 		first_frame_offset = handle->pulled_rdma_offset;
 	} else {
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
@@ -545,7 +546,7 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* initialize pull reply fields */
 	current_frame_seqnum = pull_request->frame_index;
-	current_msg_offset = pull_request->frame_index * 4096
+	current_msg_offset = pull_request->frame_index * OMX_PULL_REPLY_LENGTH_MAX
 		- pull_request->pulled_rdma_offset
 		+ pull_request->first_frame_offset;
 	block_remaining_length = pull_request->block_length;
