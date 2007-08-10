@@ -23,7 +23,9 @@
 #include "omx_common.h"
 #include "omx_hal.h"
 
-#define OMX_PULL_BLOCK_LENGTH_MAX (4096)
+#define OMX_PULL_REPLY_LENGTH_MAX 4096
+#define OMX_PULL_REPLY_PER_BLOCK 8
+#define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
 
 struct omx_pull_handle {
 	struct list_head endpoint_pull_handles;
@@ -42,9 +44,9 @@ struct omx_pull_handle {
 	uint32_t remaining_length;
 	uint32_t frame_index;
 	uint32_t block_length;
+	uint32_t block_frames;
 	uint32_t frame_missing; /* frames not received at all */
 	uint32_t frame_copying; /* frames received but not copied yet */
-	/* FIXME: need a frame window for multiple pull request */
 
 	/* pull packet header */
 	struct ethhdr pkt_eth_hdr;
@@ -365,6 +367,7 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	struct ethhdr * eh;
 	struct omx_pkt_pull_request * pull;
 	uint32_t block_length, pull_offset, frame_index;
+	int replies;
 	int err = 0;
 
 	skb = omx_new_skb(ifp,
@@ -407,8 +410,11 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	pull->frame_index = frame_index;
 
 	/* mark the frames as missing so that the handle is released but not destroyed */
-	handle->frame_missing = 1;
-	handle->frame_copying = 1;
+	replies = (pull_offset + block_length + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
+	handle->block_frames = replies;
+	handle->frame_missing = replies; /* FIXME: bitmap */
+	handle->frame_copying = replies;
+
 	/* release the handle before sending to avoid
 	 * deadlock when sending to ourself in the same region
 	 */
@@ -471,11 +477,13 @@ omx_recv_pull(struct omx_iface * iface,
 	struct ethhdr *pull_eh = &pull_mh->head.eth;
 	struct omx_pkt_pull_request *pull_request = &pull_mh->body.pull;
 	struct omx_pkt_pull_reply *pull_reply;
-	struct sk_buff *skb;
+	struct sk_buff *skbs[OMX_PULL_REPLY_PER_BLOCK] = { NULL };
 	struct omx_hdr *reply_mh;
 	struct ethhdr *reply_eh;
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_user_region *region;
+	uint32_t current_frame_seqnum, current_msg_offset, block_remaining_length;
+	int replies, i;
 	int err = 0;
 
 	/* get the destination endpoint */
@@ -494,87 +502,150 @@ omx_recv_pull(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	/* alloc the reply skb */
-	skb = omx_new_skb(ifp,
-			  /* only allocate space for the header now,
-			   * we'll attach pages and pad to ETH_ZLEN later
-			   */
-			  sizeof(*reply_mh));
-	if (unlikely(skb == NULL)) {
-		omx_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
-		err = -ENOMEM;
-		goto out_with_endpoint;
-	}
-
 	omx_recv_dprintk(pull_eh, "PULL handle %lx magic %lx length %ld out of %ld",
 			 (unsigned long) pull_request->src_pull_handle,
 			 (unsigned long) pull_request->src_magic,
 			 (unsigned long) pull_request->block_length,
 			 (unsigned long) pull_request->total_length);
 
-	/* locate headers */
-	reply_mh = omx_hdr(skb);
-	reply_eh = &reply_mh->head.eth;
+	/* compute and check the number of PULL_REPLY to send */
+	replies = (pull_request->pull_offset + pull_request->block_length
+		   + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
+	if (unlikely(replies > OMX_PULL_REPLY_PER_BLOCK)) {
+		omx_drop_dprintk(pull_eh, "PULL packet for %d REPLY (%d max)",
+				 replies, OMX_PULL_REPLY_PER_BLOCK);
+		err = -EINVAL;
+		goto out_with_endpoint;
+	}
 
-	/* fill ethernet header */
-	memcpy(reply_eh->h_source, ifp->dev_addr, sizeof (reply_eh->h_source));
-	reply_eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	/* get the destination address */
-	memcpy(reply_eh->h_dest, pull_eh->h_source, sizeof(reply_eh->h_dest));
-
-	/* fill omx header */
-	pull_reply = &reply_mh->body.pull_reply;
-	pull_reply->msg_offset = pull_request->frame_index * 4096
-		- pull_request->pulled_rdma_offset
-		+ pull_request->pull_offset;
-	pull_reply->ptype = OMX_PKT_TYPE_PULL_REPLY;
-	pull_reply->dst_pull_handle = pull_request->src_pull_handle;
-	pull_reply->dst_magic = pull_request->src_magic;
-
-	omx_send_dprintk(reply_eh, "PULL REPLY handle %ld magic %ld",
-			 (unsigned long) pull_reply->dst_pull_handle,
-			 (unsigned long) pull_reply->dst_magic);
-
-	/* get the rdma window */
+	/* get the rdma window once */
 	region = omx_user_region_acquire(endpoint, pull_request->pulled_rdma_id);
 	if (unlikely(!region))
-		goto out_with_skb;
+		goto out_with_skbs;
 
-	/* append segment pages */
-	err = omx_user_region_append_pages(region,
-					   pull_request->frame_index * 4096 + pull_request->pull_offset,
-					   skb,
-					   pull_request->block_length);
-	if (unlikely(err < 0)) {
-		omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
-		/* pages will be released in dev_kfree_skb() */
-		goto out_with_region;
+	/* alloc all the reply skbuffs at once */
+	for(i=0; i<replies; i++) {
+		struct sk_buff *skb = omx_new_skb(ifp,
+						  /* only allocate space for the header now,
+						   * we'll attach pages and pad to ETH_ZLEN later
+						   */
+						  sizeof(*reply_mh));
+		if (unlikely(skb == NULL)) {
+			omx_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
+			err = -ENOMEM;
+			goto out_with_skbs;
+		}
+
+		skbs[i] = skb;
 	}
-	pull_reply->length = pull_request->block_length;
 
- 	if (unlikely(skb->len < ETH_ZLEN)) {
-		/* pad to ETH_ZLEN */
-		err = omx_skb_pad(skb, ETH_ZLEN);
-		if (unlikely(err < 0))
-			/* skb has been freed in skb_pad') */
+	/* initialize pull reply fields */
+	current_frame_seqnum = pull_request->frame_index;
+	current_msg_offset = pull_request->frame_index * 4096
+		- pull_request->pulled_rdma_offset
+		+ pull_request->pull_offset;
+	block_remaining_length = pull_request->block_length;
+
+	/* prepare all skbs now */
+	for(i=0; i<replies; i++) {
+		struct sk_buff *skb = skbs[i];
+		uint32_t frame_length;
+
+		/* locate headers */
+		reply_mh = omx_hdr(skb);
+		reply_eh = &reply_mh->head.eth;
+
+		/* fill ethernet header */
+		memcpy(reply_eh->h_source, ifp->dev_addr, sizeof (reply_eh->h_source));
+		reply_eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+		/* get the destination address */
+		memcpy(reply_eh->h_dest, pull_eh->h_source, sizeof(reply_eh->h_dest));
+
+		frame_length = (i==0) ? OMX_PULL_REPLY_LENGTH_MAX-pull_request->pull_offset
+			: OMX_PULL_REPLY_LENGTH_MAX;
+		if (block_remaining_length < frame_length)
+			frame_length = block_remaining_length;
+
+		/* fill omx header */
+		pull_reply = &reply_mh->body.pull_reply;
+		pull_reply->msg_offset = current_msg_offset;
+		pull_reply->frame_seqnum = current_frame_seqnum;
+		pull_reply->frame_length = frame_length;
+		pull_reply->ptype = OMX_PKT_TYPE_PULL_REPLY;
+		pull_reply->dst_pull_handle = pull_request->src_pull_handle;
+		pull_reply->dst_magic = pull_request->src_magic;
+
+		omx_send_dprintk(reply_eh, "PULL REPLY #%d handle %ld magic %ld frame seqnum %ld length %ld offset %ld", i,
+				 (unsigned long) pull_reply->dst_pull_handle,
+				 (unsigned long) pull_reply->dst_magic,
+				 (unsigned long) current_frame_seqnum,
+				 (unsigned long) frame_length,
+				 (unsigned long) current_msg_offset);
+
+		/* reacquire the rdma window once per reply */
+		omx_user_region_reacquire(region);
+
+		/* append segment pages */
+		err = omx_user_region_append_pages(region, current_msg_offset + pull_request->pulled_rdma_offset,
+						   skb, frame_length);
+		if (unlikely(err < 0)) {
+			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
+			/* pages will be released in dev_kfree_skb(),
+			 * just release our hold on the region
+			 */
 			omx_user_region_release(region);
-			goto out_with_endpoint;
-		skb->len = ETH_ZLEN;
+			goto out_with_skbs;
+		}
+
+		if (unlikely(skb->len < ETH_ZLEN)) {
+			/* pad to ETH_ZLEN */
+			err = omx_skb_pad(skb, ETH_ZLEN);
+			if (unlikely(err < 0)) {
+				/* skb has been freed in skb_pad(),
+				 * just release our hold on the region
+				 */
+				skbs[i] = NULL;
+				omx_user_region_release(region);
+				goto out_with_skbs;
+			}
+			skb->len = ETH_ZLEN;
+		}
+
+		skb->sk = (void *) region;
+		skb->destructor = omx_send_pull_reply_skb_destructor;
+
+		/* now that the skb is ready, remove it from the array
+		 * so that we don't try to free it in case of error later
+		 */
+		skbs[i] = NULL;
+		dev_queue_xmit(skb);
+
+		/* update fields now */
+		current_frame_seqnum++;
+		current_msg_offset += frame_length;
+		block_remaining_length -= frame_length;
 	}
 
-	skb->sk = (void *) region;
-	skb->destructor = omx_send_pull_reply_skb_destructor;
-
-	dev_queue_xmit(skb);
-
+	/* release the main hold on the region */
 	omx_endpoint_release(endpoint);
-
 	return 0;
 
- out_with_region:
+ out_with_skbs:
+	/* release skbuffs:
+	 * + the first ones have been queued and removed from array,
+	 *   they will be freeed correctly when sent
+	 * + the last ones have only been allocated,
+	 *   we release them with dev_kfree_skb
+	 * + the current one might have pages attached but released its hold on the region,
+	 *   we release it with dev_kfree_skb
+	 */
+	for(i=0; i<replies; i++)
+		if (skbs[i] != NULL)
+			/* release skbuff (they've only been allocated so far) */
+			dev_kfree_skb(skbs[i]);
+
+	/* release the main hold on the rdma window */
 	omx_user_region_release(region);
- out_with_skb:
-	dev_kfree_skb(skb);
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
@@ -623,21 +694,23 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		    struct sk_buff * skb)
 {
 	struct omx_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
-	uint32_t pull_length = pull_reply->length;
+	uint32_t frame_length = pull_reply->frame_length;
+	uint32_t frame_seqnum = pull_reply->frame_seqnum;
+	uint32_t msg_offset = pull_reply->msg_offset;
 	struct omx_pull_handle * handle;
 	int err = 0;
 
 	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld length %ld skb length %ld",
 			 (unsigned long) pull_reply->dst_pull_handle,
 			 (unsigned long) pull_reply->dst_magic,
-			 (unsigned long) pull_length,
+			 (unsigned long) frame_length,
 			 (unsigned long) skb->len - sizeof(struct omx_hdr));
 
 	/* check actual data length */
-	if (unlikely(pull_length > skb->len - sizeof(struct omx_hdr))) {
+	if (unlikely(frame_length > skb->len - sizeof(struct omx_hdr))) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with %ld bytes instead of %d",
 				 (unsigned long) skb->len - sizeof(struct omx_hdr),
-				 (unsigned) pull_length);
+				 (unsigned) frame_length);
 		err = -EINVAL;
 		goto out;
 	}
@@ -656,20 +729,20 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* FIXME: store the sender mac in the handle and check it ? */
 
-	handle->frame_missing = 0;
+	handle->frame_missing--; /* FIXME: bitmap */
 
 	/* release the handle during the copy */
 	omx_pull_handle_release(handle);
 
 	/* fill segment pages */
 	printk("copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
-	       (unsigned long) pull_reply->length,
-	       (unsigned long) pull_reply->msg_offset,
-	       (unsigned long) pull_reply->msg_offset + handle->puller_rdma_offset);
+	       (unsigned long) frame_length,
+	       (unsigned long) msg_offset,
+	       (unsigned long) msg_offset + handle->puller_rdma_offset);
 	err = omx_user_region_fill_pages(handle->region,
-					 pull_reply->msg_offset + handle->puller_rdma_offset,
+					 msg_offset + handle->puller_rdma_offset,
 					 skb,
-					 pull_reply->length);
+					 frame_length);
 	if (unlikely(err < 0)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
 		/* the other peer is sending crap, close the handle and report truncated to userspace */
@@ -682,7 +755,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* FIXME: release instead of destroy if not done */
 	omx_pull_handle_reacquire(handle);
 
-	handle->frame_copying = 0;
+	handle->frame_copying--; /* FIXME: bitmap */
 
 	if (handle->frame_copying) {
 		/* current block not done, juste release the handle */
@@ -692,7 +765,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	} else if (handle->remaining_length) {
 		/* current block is done, start the next block */
 		printk("queueing next pull block request\n");
-		handle->frame_index++;
+		handle->frame_index += handle->block_frames;
 		omx_send_next_pull_block_request(handle);
 
 	} else {

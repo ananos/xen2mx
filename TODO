@@ -1,3 +1,7 @@
+* check rdma_offset < pages
+* add _bitmap prefix
+* replace pull_offset with frame_offset
+
 * move irecv and process_recv* to omx_recv.c
 
 * check pingpong contents
@@ -7,8 +11,8 @@
 * have a way to make install without the driver or only the driver
 
 * full pull support
-  - multiple frames per pull
   - export rdma_get and rdma window management functions
+  - use bitmaps to check which pull_reply arrived
 * send large support
   - rdnv message
   - notify

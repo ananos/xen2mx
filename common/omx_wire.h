@@ -166,16 +166,12 @@ struct omx_pkt_pull_request {
 struct omx_pkt_pull_reply {
 	uint8_t ptype;
 	uint8_t pad[3];
-	uint32_t length; /* FIXME: 64bits ? */
+	uint16_t frame_length; /* pagesize - frame_offset */
 	uint32_t puller_rdma_id;
 	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
 	uint32_t dst_pull_handle; /* sender's handle id */
 	uint32_t dst_magic; /* sender's endpoint magic */
-#if 0
 	uint8_t frame_seqnum; /* sender's pull index + page number in this frame */
-	uint16_t frame_length; /* pagesize - frame_offset */
-	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
-#endif
 };
 
 struct omx_hdr {
