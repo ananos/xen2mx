@@ -23,6 +23,8 @@
 #include "omx_common.h"
 #include "omx_hal.h"
 
+#define OMX_PULL_BLOCK_LENGTH_MAX (4096)
+
 struct omx_pull_handle {
 	struct list_head endpoint_pull_handles;
 	uint32_t idr_index;
@@ -34,8 +36,10 @@ struct omx_pull_handle {
 	uint32_t lib_cookie;
 	uint32_t total_length;
 	uint32_t puller_rdma_offset;
+	uint32_t pulled_rdma_offset;
 
 	/* current block */
+	uint32_t remaining_length;
 	uint32_t frame_index;
 	uint32_t block_length;
 	uint32_t frame_missing; /* frames not received at all */
@@ -213,7 +217,9 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* fill handle */
 	handle->lib_cookie = cmd->lib_cookie;
 	handle->total_length = cmd->length;
+	handle->remaining_length = cmd->length;
 	handle->puller_rdma_offset = cmd->local_offset;
+	handle->pulled_rdma_offset = cmd->remote_offset;
 	handle->frame_index = 0;
 	handle->frame_missing = 0;
 	handle->frame_copying = 0;
@@ -328,8 +334,6 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		/* transfer is done,
 		 * destroy the handle and release the region and endpoint */
 
-		/* FIXME: if multiple pull requests, start the next one */
-
 		/* destroy the handle */
 		spin_lock(&endpoint->pull_handle_lock);
 		list_del(&handle->endpoint_pull_handles);
@@ -385,11 +389,17 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	/* update other fields */
 	frame_index = handle->frame_index;
 	if (frame_index == 0) {
-		block_length = handle->total_length;
-		pull_offset = handle->puller_rdma_offset;
+		/* FIXME: be sure offset is within a page */
+		block_length = OMX_PULL_BLOCK_LENGTH_MAX - (handle->pulled_rdma_offset % 4096);
+		pull_offset = handle->pulled_rdma_offset;
 	} else {
-		BUG();
+		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
+		pull_offset = 0;
 	}
+
+	if (block_length > handle->remaining_length)
+		block_length = handle->remaining_length;
+	handle->remaining_length -= block_length;
 
 	/* FIXME: modify directly in the handle cache ? */
 	pull->block_length = block_length;
@@ -404,11 +414,13 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	 */
 	omx_pull_handle_release(handle);
 
-	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld",
+	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld, frame index %ld pull_offset %ld",
 			 (unsigned long) pull->src_pull_handle,
 			 (unsigned long) pull->src_magic,
 			 (unsigned long) pull->block_length,
-			 (unsigned long) pull->total_length);
+			 (unsigned long) pull->total_length,
+			 (unsigned long) pull->frame_index,
+			 (unsigned long) pull->pull_offset);
 
 	dev_queue_xmit(skb);
 
@@ -512,7 +524,9 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* fill omx header */
 	pull_reply = &reply_mh->body.pull_reply;
-	pull_reply->msg_offset = pull_request->pull_offset;
+	pull_reply->msg_offset = pull_request->frame_index * 4096
+		- pull_request->pulled_rdma_offset
+		+ pull_request->pull_offset;
 	pull_reply->ptype = OMX_PKT_TYPE_PULL_REPLY;
 	pull_reply->dst_pull_handle = pull_request->src_pull_handle;
 	pull_reply->dst_magic = pull_request->src_magic;
@@ -528,7 +542,7 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* append segment pages */
 	err = omx_user_region_append_pages(region,
-					   pull_request->pulled_rdma_offset,
+					   pull_request->frame_index * 4096 + pull_request->pull_offset,
 					   skb,
 					   pull_request->block_length);
 	if (unlikely(err < 0)) {
@@ -568,8 +582,7 @@ omx_recv_pull(struct omx_iface * iface,
 }
 
 static int
-omx_pull_handle_done_notify(struct omx_pull_handle * handle,
-			    uint32_t pulled_length)
+omx_pull_handle_done_notify(struct omx_pull_handle * handle)
 {
 	struct omx_endpoint *endpoint = handle->endpoint;
 	union omx_evt *evt;
@@ -587,10 +600,16 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 
 	/* fill event */
 	event->lib_cookie = handle->lib_cookie;
-	event->pulled_length = pulled_length;
+	event->pulled_length = handle->total_length - handle->remaining_length;
 
 	/* set the type at the end so that user-space does not find the slot on error */
 	event->type = OMX_EVT_PULL_DONE;
+
+	/* make sure the handle will be released, in case we are reported truncation */
+	handle->frame_missing = 0;
+	handle->frame_copying = 0;
+	handle->remaining_length = 0;
+	omx_pull_handle_release(handle);
 
 	return 0;
 
@@ -643,18 +662,21 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	omx_pull_handle_release(handle);
 
 	/* fill segment pages */
+	printk("copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
+	       (unsigned long) pull_reply->length,
+	       (unsigned long) pull_reply->msg_offset,
+	       (unsigned long) pull_reply->msg_offset + handle->puller_rdma_offset);
 	err = omx_user_region_fill_pages(handle->region,
-					 pull_reply->msg_offset,
+					 pull_reply->msg_offset + handle->puller_rdma_offset,
 					 skb,
 					 pull_reply->length);
 	if (unlikely(err < 0)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
 		/* the other peer is sending crap, close the handle and report truncated to userspace */
-		handle->frame_copying = 0;
 		/* FIXME: make sure a new pull is not queued too, so that the handle is dropped */
 		/* FIXME: report what has already been tranferred? */
-		omx_pull_handle_done_notify(handle, 0);
-		goto out_with_handle;
+		omx_pull_handle_done_notify(handle);
+		goto out;
 	}
 
 	/* FIXME: release instead of destroy if not done */
@@ -662,15 +684,25 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	handle->frame_copying = 0;
 
-	if (!handle->frame_copying)
-		omx_pull_handle_done_notify(handle, handle->total_length);
+	if (handle->frame_copying) {
+		/* current block not done, juste release the handle */
+		printk("block not done, just releasing\n");
+		omx_pull_handle_release(handle);
 
-	omx_pull_handle_release(handle);
+	} else if (handle->remaining_length) {
+		/* current block is done, start the next block */
+		printk("queueing next pull block request\n");
+		handle->frame_index++;
+		omx_send_next_pull_block_request(handle);
+
+	} else {
+		/* last block is done, notify the completion */
+		printk("notifying pull completion\n");
+		omx_pull_handle_done_notify(handle);
+	}
 
 	return 0;
 
- out_with_handle:
-	omx_pull_handle_release(handle);
  out:
 	return err;
 }

@@ -8,7 +8,6 @@
 
 * full pull support
   - multiple frames per pull
-  - multiple pull per request
   - export rdma_get and rdma window management functions
 * send large support
   - rdnv message
