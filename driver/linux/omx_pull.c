@@ -731,14 +731,15 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* FIXME: store the sender mac in the handle and check it ? */
 
 	/* check that the frame is from this block */
-	if (unlikely(frame_seqnum < handle->frame_index)) {
-		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with obsolete seqnum %ld (instead of >= %ld)",
+	if (unlikely(frame_seqnum < handle->frame_index
+		     || frame_seqnum - handle->frame_index >= handle->block_frames)) {
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (should be within %ld-%ld)",
 				 (unsigned long) frame_seqnum,
-				 (unsigned long) handle->frame_index);
+				 (unsigned long) handle->frame_index,
+				 (unsigned long) handle->frame_index+handle->block_frames);
 		err = 0;
 		goto out;
 	}
-	/* FIXME: check future too */
 
 	/* check that the frame is not a duplicate */
 	bitmap_mask = (1 << (frame_seqnum - handle->frame_index));

@@ -11,7 +11,7 @@
 
 * full pull support
   - export rdma_get and rdma window management functions
-  - check for future frames
+  - debuggify printk
 * send large support
   - rdnv message
   - notify
