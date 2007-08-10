@@ -730,8 +730,25 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* FIXME: store the sender mac in the handle and check it ? */
 
-	bitmap_mask = (1 << (frame_seqnum - handle->frame_index));
+	/* check that the frame is from this block */
+	if (unlikely(frame_seqnum < handle->frame_index)) {
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with obsolete seqnum %ld (instead of >= %ld)",
+				 (unsigned long) frame_seqnum,
+				 (unsigned long) handle->frame_index);
+		err = 0;
+		goto out;
+	}
+	/* FIXME: check future too */
 
+	/* check that the frame is not a duplicate */
+	bitmap_mask = (1 << (frame_seqnum - handle->frame_index));
+	if (unlikely((handle->frame_missing_bitmap & bitmap_mask) == 0)) {
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with duplicate seqnum %ld in current block %ld",
+				 (unsigned long) frame_seqnum,
+				 (unsigned long) handle->frame_index);
+		err = 0;
+		goto out;
+	}
 	handle->frame_missing_bitmap &= ~bitmap_mask;
 
 	/* release the handle during the copy */
