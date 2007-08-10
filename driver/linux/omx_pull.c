@@ -39,7 +39,7 @@ struct omx_pull_handle {
 	uint32_t frame_index;
 	uint32_t block_length;
 	uint32_t frame_missing; /* frames not received at all */
-	uint32_t frame_transferring; /* frames received but not copied yet */
+	uint32_t frame_copying; /* frames received but not copied yet */
 	/* FIXME: need a frame window for multiple pull request */
 
 	/* pull packet header */
@@ -216,7 +216,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->puller_offset = cmd->local_offset;
 	handle->frame_index = 0;
 	handle->frame_missing = 0;
-	handle->frame_transferring = 0;
+	handle->frame_copying = 0;
 	omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
 	list_add_tail(&handle->endpoint_pull_handles,
 		      &endpoint->pull_handle_list);
@@ -304,8 +304,8 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 	printk("releasing pull handle %p\n", handle);
 
 	/* FIXME: add likely/unlikely */
-	if (handle->frame_transferring != handle->frame_missing) {
-		/* some transfer are pending,
+	if (handle->frame_copying != handle->frame_missing) {
+		/* some frames are being copied,
 		 * release the handle but keep the reference on the endpoint
 		 * since it will be reacquired later
 		 */
@@ -313,8 +313,8 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 
 		printk("some frames are being transferred, just release the handle\n");
 
-	} else if (handle->frame_transferring != 0) {
-		/* no transfer pending but frames are missing,
+	} else if (handle->frame_copying != 0) {
+		/* current block not done (no frames are being copied but some are missing),
 		 * release the handle and the endpoint
 		 */
 		spin_unlock(&handle->lock);
@@ -398,7 +398,7 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 
 	/* mark the frames as missing so that the handle is released but not destroyed */
 	handle->frame_missing = 1;
-	handle->frame_transferring = 1;
+	handle->frame_copying = 1;
 	/* release the handle before sending to avoid
 	 * deadlock when sending to ourself in the same region
 	 */
@@ -650,7 +650,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	if (unlikely(err < 0)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
 		/* the other peer is sending crap, close the handle and report truncated to userspace */
-		handle->frame_transferring = 0;
+		handle->frame_copying = 0;
 		/* FIXME: make sure a new pull is not queued too, so that the handle is dropped */
 		/* FIXME: report what has already been tranferred? */
 		omx_pull_handle_done_notify(handle, 0);
@@ -660,9 +660,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* FIXME: release instead of destroy if not done */
 	omx_pull_handle_reacquire(handle);
 
-	handle->frame_transferring = 0;
+	handle->frame_copying = 0;
 
-	if (!handle->frame_transferring)
+	if (!handle->frame_copying)
 		omx_pull_handle_done_notify(handle, handle->total_length);
 
 	omx_pull_handle_release(handle);
