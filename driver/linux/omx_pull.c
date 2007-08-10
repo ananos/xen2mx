@@ -392,7 +392,6 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	/* update other fields */
 	frame_index = handle->frame_index;
 	if (frame_index == 0) {
-		/* FIXME: be sure offset is within a page */
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX - (handle->pulled_rdma_offset % 4096);
 		pull_offset = handle->pulled_rdma_offset;
 	} else {
@@ -447,6 +446,11 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		printk(KERN_ERR "Open-MX: Failed to read send pull cmd hdr\n");
 		return -EFAULT;
 	}
+
+	/* check the offsets */
+	if (cmd.local_offset >= OMX_PULL_REPLY_LENGTH_MAX
+	    || cmd.remote_offset >= OMX_PULL_REPLY_LENGTH_MAX)
+		return -EINVAL;
 
 	/* create and acquire the handle */
 	handle = omx_pull_handle_create(endpoint, &cmd);
