@@ -174,6 +174,35 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   }
 }
 
+static void
+omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
+		       union omx_request *req,
+		       struct omx_evt_recv_msg *msg,
+		       void *data /* unused */, uint32_t msg_length)
+{
+  uint8_t rdma_id = *(uint8_t *) &(msg->specific.rndv.data[4]);
+  uint8_t rdma_seqnum = *(uint8_t *) &(msg->specific.rndv.data[5]);
+  uint16_t rdma_offset = *(uint16_t *) &(msg->specific.rndv.data[6]);
+
+  printf("got a rndv req for rdma id %d seqnum %d offset %d length %d\n",
+	 (unsigned) rdma_id, (unsigned) rdma_seqnum, (unsigned) rdma_offset,
+	 (unsigned) msg_length);
+
+  req->recv.specific.large.target_rdma_id = rdma_id;
+  req->recv.specific.large.target_rdma_seqnum = rdma_seqnum;
+  req->recv.specific.large.target_rdma_offset = rdma_offset;
+
+  req->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
+
+  if (!req->recv.unexpected) {
+    printf("expected large\n");
+    omx__queue_large_recv(ep, req);
+  } else {
+    printf("unexpected large\n");
+    omx__enqueue_request(&ep->unexp_req_q, req);
+  }
+}
+
 /*******************
  * Event processing
  */
@@ -229,17 +258,20 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
   } else {
     /* unexpected */
-    void *unexp_buffer;
 
     req = omx__request_alloc(OMX_REQUEST_TYPE_RECV);
     if (!req)
       return OMX_NO_RESOURCES;
 
-    unexp_buffer = malloc(msg_length);
-    if (!unexp_buffer) {
-      fprintf(stderr, "Failed to allocate buffer for unexpected messages, dropping\n");
-      omx__request_free(req);
-      return OMX_NO_RESOURCES;
+    if (msg->type != OMX_EVT_RECV_RNDV) {
+      /* alloc unexpected buffer, except for rndv since they have no data */
+      void *unexp_buffer = malloc(msg_length);
+      if (!unexp_buffer) {
+	fprintf(stderr, "Failed to allocate buffer for unexpected messages, dropping\n");
+	omx__request_free(req);
+	return OMX_NO_RESOURCES;
+      }
+      req->recv.buffer = unexp_buffer;
     }
 
     req->generic.partner = partner;
@@ -250,7 +282,6 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     req->recv.unexpected = 1;
 
     req->generic.status.msg_length = msg_length;
-    req->recv.buffer = unexp_buffer;
 
     (*recv_func)(ep, partner, req, msg, data, msg_length);
 
@@ -428,6 +459,15 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     break;
   }
 
+  case OMX_EVT_RECV_RNDV: {
+    struct omx_evt_recv_msg * msg = &evt->recv_msg;
+    uint32_t msg_length = *(uint32_t *) &(msg->specific.tiny.data[0]);
+    ret = omx__process_recv(ep,
+			    msg, NULL, msg_length,
+			    omx__process_recv_rndv);
+    break;
+  }
+
   case OMX_EVT_SEND_MEDIUM_FRAG_DONE: {
     uint16_t sendq_page_offset = evt->send_medium_frag_done.sendq_page_offset;
     union omx_request * req = omx__endpoint_sendq_map_put(ep, sendq_page_offset);
@@ -439,6 +479,22 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
       break;
 
     omx__dequeue_request(&ep->sent_req_q, req);
+    req->generic.state = OMX_REQUEST_STATE_DONE;
+    omx__enqueue_request(&ep->done_req_q, req);
+    break;
+  }
+
+  case OMX_EVT_PULL_DONE: {
+    uint32_t lib_cookie = evt->pull_done.lib_cookie;
+    union omx_request * req = omx__queue_first_request(&ep->large_recv_req_q);
+
+    assert(req
+	   && req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
+    printf("bar %p\n", req);
+
+    /* FIXME: check length */
+    omx__dequeue_request(&ep->large_recv_req_q, req);
+    omx__deregister_region(ep, &req->recv.specific.large.local_region);
     req->generic.state = OMX_REQUEST_STATE_DONE;
     omx__enqueue_request(&ep->done_req_q, req);
     break;
@@ -494,7 +550,7 @@ omx_irecv(struct omx_endpoint *ep,
   union omx_request * req;
   omx_return_t ret;
 
-  omx__foreach_request(&ep->unexp_req_q, req)
+  omx__foreach_request(&ep->unexp_req_q, req) {
     if ((req->generic.status.match_info & match_mask) == match_info) {
       /* matched an unexpected */
       omx__dequeue_request(&ep->unexp_req_q, req);
@@ -504,23 +560,32 @@ omx_irecv(struct omx_endpoint *ep,
 	length = req->generic.status.msg_length;
       req->generic.status.xfer_length = length;
 
-      /* copy data from the unexpected buffer */
-      memcpy(buffer, req->recv.buffer, length);
-      free(req->recv.buffer);
-
       omx__debug_assert(req->recv.unexpected);
       req->recv.unexpected = 0;
 
-      if (req->generic.state == OMX_REQUEST_STATE_DONE) {
-	omx__enqueue_request(&ep->done_req_q, req);
+      if (req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE) {
+	/* it's a large message, queue the recv large */
+	printf("found unexp large\n");
+	req->recv.buffer = buffer;
+	omx__queue_large_recv(ep, req);
+
       } else {
-	omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
+	/* it's a tiny/small/medium, copy the data back to our buffer */
+	memcpy(buffer, req->recv.buffer, length);
+	free(req->recv.buffer);
+
+	if (req->generic.state == OMX_REQUEST_STATE_DONE) {
+	  omx__enqueue_request(&ep->done_req_q, req);
+	} else {
+	  omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
+	}
       }
 
       *requestp = req;
 
       return OMX_SUCCESS;
     }
+  }
 
   /* allocate a new recv request */
   req = omx__request_alloc(OMX_REQUEST_TYPE_RECV);

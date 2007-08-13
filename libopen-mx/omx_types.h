@@ -99,6 +99,8 @@ struct omx_endpoint {
   struct list_head unexp_req_q;
   struct list_head recv_req_q;
   struct list_head multifrag_medium_recv_req_q;
+  struct list_head large_send_req_q;
+  struct list_head large_recv_req_q;
   struct list_head connect_req_q;
   struct list_head done_req_q;
   struct omx__sendq_map sendq_map;
@@ -112,12 +114,20 @@ enum omx__request_type {
   OMX_REQUEST_TYPE_SEND_TINY,
   OMX_REQUEST_TYPE_SEND_SMALL,
   OMX_REQUEST_TYPE_SEND_MEDIUM,
+  OMX_REQUEST_TYPE_SEND_LARGE,
   OMX_REQUEST_TYPE_RECV,
+  OMX_REQUEST_TYPE_RECV_LARGE,
 };
 
 enum omx__request_state {
   OMX_REQUEST_STATE_PENDING=0,
   OMX_REQUEST_STATE_DONE,
+};
+
+struct omx__large_region {
+  uint8_t id;
+  uint8_t seqnum;
+  uint16_t offset;
 };
 
 struct omx__generic_request {
@@ -139,6 +149,9 @@ union omx_request {
       struct {
 	uint32_t frags_pending_nr;
       } medium;
+      struct {
+	struct omx__large_region region;
+      } large;
     } specific;
   } send;
 
@@ -155,6 +168,12 @@ union omx_request {
 	uint32_t frags_received_mask;
 	uint32_t accumulated_length;
       } medium;
+      struct {
+	struct omx__large_region local_region;
+	uint8_t target_rdma_id;
+	uint8_t target_rdma_seqnum;
+	uint16_t target_rdma_offset;
+      } large;
     } specific;
   } recv;
 

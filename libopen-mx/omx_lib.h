@@ -94,6 +94,19 @@ extern omx_return_t
 omx__process_recv_connect(struct omx_endpoint *ep,
 			  struct omx_evt_recv_connect *event);
 
+omx_return_t
+omx__register_region(struct omx_endpoint *ep,
+		     char * buffer, size_t length,
+		     struct omx__large_region *region);
+
+omx_return_t
+omx__deregister_region(struct omx_endpoint *ep,
+		       struct omx__large_region *region);
+
+extern omx_return_t
+omx__queue_large_recv(struct omx_endpoint * ep,
+		      union omx_request * req);
+
 static inline int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)
 {

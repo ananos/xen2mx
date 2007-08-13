@@ -6,10 +6,10 @@
 
 * have a way to make install without the driver or only the driver
 
+* notify + free the sender user region
+* manage region ids
+* handle pull status
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered
-* send large support
-  - rdnv message
-  - notify
 * export rdma_get and rdma window management functions
 * rdma_put
 * user region seqnum

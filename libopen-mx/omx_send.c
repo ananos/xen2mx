@@ -200,6 +200,68 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   return ret;
 }
 
+static inline omx_return_t
+omx__submit_isend_large(struct omx_endpoint *ep,
+			void *buffer, size_t length,
+			uint64_t match_info,
+			struct omx__partner * partner, omx__seqnum_t seqnum,
+			void *context, union omx_request **requestp)
+{
+  union omx_request * req;
+  struct omx_cmd_send_rndv rndv_param;
+  struct omx__large_region *region;
+  omx_return_t ret;
+  int err;
+
+  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_LARGE);
+  if (!req) {
+    ret = OMX_NO_RESOURCES;
+    goto out;
+  }
+
+  region = &req->send.specific.large.region;
+  ret = omx__register_region(ep, buffer, length, region);
+  if (ret != OMX_SUCCESS)
+    goto out_with_req;
+
+  rndv_param.hdr.dest_addr = partner->board_addr;
+  rndv_param.hdr.dest_endpoint = partner->endpoint_index;
+  rndv_param.hdr.match_info = match_info;
+  rndv_param.hdr.length = 8;
+  rndv_param.hdr.seqnum = seqnum;
+  rndv_param.hdr.session_id = partner->session_id;
+  rndv_param.hdr.dest_src_peer_index = partner->dest_src_peer_index;
+
+  *(uint32_t *) &(rndv_param.data[0]) = length;
+  *(uint8_t *) &(rndv_param.data[4]) = region->id;
+  *(uint8_t *) &(rndv_param.data[5]) = region->seqnum;
+  *(uint16_t *) &(rndv_param.data[6]) = region->offset;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, &rndv_param);
+  if (err < 0) {
+    ret = omx__errno_to_return("ioctl SEND_RNDV");
+    goto out_with_reg;
+  }
+  /* no need to wait for a done event, rndv is synchronous */
+
+  req->generic.partner = partner;
+  omx__partner_to_addr(partner, &req->generic.status.addr);
+  req->send.seqnum = seqnum;
+  req->generic.status.context = context;
+  req->generic.state = OMX_REQUEST_STATE_PENDING;
+  omx__enqueue_request(&ep->large_send_req_q, req);
+
+  *requestp = req;
+  return OMX_SUCCESS;
+
+ out_with_reg:
+  omx__deregister_region(ep, region);
+ out_with_req:
+  omx__request_free(req);
+ out:
+  return ret;
+}
+
 omx_return_t
 omx_isend(struct omx_endpoint *ep,
 	  void *buffer, size_t length,
@@ -228,12 +290,19 @@ omx_isend(struct omx_endpoint *ep,
 				  match_info,
 				  partner, seqnum,
 				  context, requestp);
-  } else {
+  } else if (length <= OMX_MEDIUM_MAX) {
     ret = omx__submit_isend_medium(ep,
 				   buffer, length,
 				   match_info,
 				   partner, seqnum,
 				   context, requestp);
+  } else {
+    ret = omx__submit_isend_large(ep,
+				  buffer, length,
+				  match_info,
+				  partner, seqnum,
+				  context, requestp);
+
   }
 
   if (ret == OMX_SUCCESS) {

@@ -65,7 +65,10 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 	      length, omx_strerror(ret));
       return ret;
     }
+  }
 
+  /* wait for the send to complete */
+  for(i=0; i<4; i++) {
     ret = omx_wait(ep, &sreq[i], &status, &result);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait for completion (%s)\n",
@@ -122,6 +125,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     }
   }
 
+  /* check buffer contents */
   for(i=0; i<length; i++) {
     if (buffer[i] != buffer2[i]) {
       fprintf(stderr, "buffer invalid at offset %d, got '%c' instead of '%c'\n",
@@ -242,6 +246,17 @@ int main(int argc, char *argv[])
   }
   gettimeofday(&tv2, NULL);
   printf("medium latency %lld us\n",
+	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+
+  gettimeofday(&tv1, NULL);
+  for(i=0; i<ITER; i++) {
+    /* send a large message */
+    ret = one_iteration(ep, addr, 1327485, i);
+    if (ret != OMX_SUCCESS)
+      goto out_with_ep;
+  }
+  gettimeofday(&tv2, NULL);
+  printf("large latency %lld us\n",
 	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
   return 0;
