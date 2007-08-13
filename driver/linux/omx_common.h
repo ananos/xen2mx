@@ -51,7 +51,7 @@ extern struct sk_buff * omx_new_skb(struct net_device *ifp, unsigned long len);
 extern int omx_send_tiny(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_small(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_medium(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_send_rendez_vous(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_send_rndv(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_pull(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_connect(struct omx_endpoint * endpoint, void __user * uparam);
 

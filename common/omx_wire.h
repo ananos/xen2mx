@@ -41,7 +41,7 @@ enum omx_pkt_type {
 	OMX_PKT_TYPE_TINY,
 	OMX_PKT_TYPE_SMALL,
 	OMX_PKT_TYPE_MEDIUM,
-	OMX_PKT_TYPE_RENDEZ_VOUS,
+	OMX_PKT_TYPE_RNDV,
 	OMX_PKT_TYPE_PULL,
 	OMX_PKT_TYPE_PULL_REPLY,
 	OMX_PKT_TYPE_NOTIFY, /* FIXME: todo */
@@ -81,7 +81,7 @@ omx_strpkttype(enum omx_pkt_type ptype)
 		return "Small";
 	case OMX_PKT_TYPE_MEDIUM:
 		return "Medium";
-	case OMX_PKT_TYPE_RENDEZ_VOUS:
+	case OMX_PKT_TYPE_RNDV:
 		return "Rendez Vous";
 	case OMX_PKT_TYPE_PULL:
 		return "Pull";

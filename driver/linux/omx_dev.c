@@ -299,7 +299,7 @@ static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, v
 	[OMX_CMD_SEND_TINY]		= omx_send_tiny,
 	[OMX_CMD_SEND_SMALL]		= omx_send_small,
 	[OMX_CMD_SEND_MEDIUM]		= omx_send_medium,
-	[OMX_CMD_SEND_RENDEZ_VOUS]	= omx_send_rendez_vous,
+	[OMX_CMD_SEND_RNDV]		= omx_send_rndv,
 	[OMX_CMD_SEND_PULL]		= omx_send_pull,
 	[OMX_CMD_REGISTER_REGION]	= omx_user_region_register,
 	[OMX_CMD_DEREGISTER_REGION]	= omx_user_region_deregister,
@@ -443,7 +443,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 	case OMX_CMD_SEND_TINY:
 	case OMX_CMD_SEND_SMALL:
 	case OMX_CMD_SEND_MEDIUM:
-	case OMX_CMD_SEND_RENDEZ_VOUS:
+	case OMX_CMD_SEND_RNDV:
 	case OMX_CMD_SEND_PULL:
 	case OMX_CMD_REGISTER_REGION:
 	case OMX_CMD_DEREGISTER_REGION:

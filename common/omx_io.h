@@ -73,7 +73,7 @@ struct omx_cmd_region_segment {
 #define OMX_CMD_SEND_TINY		0x81
 #define OMX_CMD_SEND_SMALL		0x82
 #define OMX_CMD_SEND_MEDIUM		0x83
-#define OMX_CMD_SEND_RENDEZ_VOUS	0x84
+#define OMX_CMD_SEND_RNDV		0x84
 #define OMX_CMD_SEND_PULL		0x85
 #define OMX_CMD_REGISTER_REGION		0x86
 #define OMX_CMD_DEREGISTER_REGION	0x87
@@ -107,7 +107,7 @@ omx_strcmd(unsigned cmd)
 		return "Send Small";
 	case OMX_CMD_SEND_MEDIUM:
 		return "Send Medium";
-	case OMX_CMD_SEND_RENDEZ_VOUS:
+	case OMX_CMD_SEND_RNDV:
 		return "Send Rendez-vous";
 	case OMX_CMD_SEND_PULL:
 		return "Send Pull";

@@ -358,6 +358,13 @@ omx_send_medium(struct omx_endpoint * endpoint,
 }
 
 int
+omx_send_rndv(struct omx_endpoint * endpoint,
+	      void __user * uparam)
+{
+	return -ENOSYS;
+}
+
+int
 omx_send_connect(struct omx_endpoint * endpoint,
 		 void __user * uparam)
 {
@@ -431,13 +438,6 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	dev_kfree_skb(skb);
  out:
 	return ret;
-}
-
-int
-omx_send_rendez_vous(struct omx_endpoint * endpoint,
-		     void __user * uparam)
-{
-	return -ENOSYS;
 }
 
 /*
