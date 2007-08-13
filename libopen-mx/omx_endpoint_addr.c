@@ -255,7 +255,7 @@ omx_connect(omx_endpoint_t ep,
   /* no need to wait for a done event, connect is synchronous */
 
   req->generic.state = OMX_REQUEST_STATE_PENDING;
-  req->connect.partner = partner;
+  req->generic.partner = partner;
   req->connect.session_id = ep->session_id;
   req->connect.connect_seqnum = connect_seqnum;
   omx__enqueue_request(&ep->connect_req_q, req);
@@ -315,7 +315,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
      * and the partner and the connection seqnum given by this partner
      */
     if (reply_data->src_session_id == ep->session_id
-	&& partner == req->connect.partner
+	&& partner == req->generic.partner
 	&& reply_data->connect_seqnum == req->connect.connect_seqnum) {
       goto found;
     }

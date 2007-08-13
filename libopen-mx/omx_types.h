@@ -123,6 +123,7 @@ enum omx__request_state {
 struct omx__generic_request {
   struct list_head queue_elt;
   struct list_head partner_elt;
+  struct omx__partner * partner;
   enum omx__request_type type;
   enum omx__request_state state;
   struct omx_status status;
@@ -133,7 +134,6 @@ union omx_request {
 
   struct {
     struct omx__generic_request generic;
-    struct omx__partner * partner;
     omx__seqnum_t seqnum;
     union {
       struct {
@@ -160,7 +160,6 @@ union omx_request {
 
   struct {
     struct omx__generic_request generic;
-    struct omx__partner * partner;
     uint32_t session_id;
     uint8_t connect_seqnum;
   } connect;

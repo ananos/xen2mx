@@ -55,7 +55,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   }
   /* no need to wait for a done event, tiny is synchronous */
 
-  req->send.partner = partner;
+  req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;
   req->generic.status.context = context;
@@ -105,7 +105,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   }
   /* no need to wait for a done event, small is synchronous */
 
-  req->send.partner = partner;
+  req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;
   req->generic.status.context = context;
@@ -183,7 +183,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   /* need to wait for a done event, since the sendq pages
    * might still be in use
    */
-  req->send.partner = partner;
+  req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;
   req->send.specific.medium.frags_pending_nr = frags;

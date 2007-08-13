@@ -215,6 +215,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     /* expected */
     uint32_t xfer_length;
 
+    req->generic.partner = partner;
     omx__partner_to_addr(partner, &req->generic.status.addr);
     req->recv.seqnum = seqnum;
     req->generic.status.match_info = msg->match_info;
@@ -241,6 +242,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       return OMX_NO_RESOURCES;
     }
 
+    req->generic.partner = partner;
     omx__partner_to_addr(partner, &req->generic.status.addr);
     req->recv.seqnum = seqnum;
     req->generic.status.match_info = msg->match_info;
