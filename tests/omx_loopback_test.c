@@ -77,14 +77,14 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   /* recv one with wait */
   ret = omx_irecv(ep, buffer2, length,
 		  0, 0,
-		  NULL, &rreq[i]);
+		  NULL, &rreq[0]);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to post a recv for a tiny message (%s)\n",
 	    omx_strerror(ret));
     return ret;
   }
 
-  ret = omx_wait(ep, &rreq[i], &status, &result);
+  ret = omx_wait(ep, &rreq[0], &status, &result);
   if (ret != OMX_SUCCESS || !result) {
     fprintf(stderr, "Failed to wait for completion (%s)\n",
 	    omx_strerror(ret));
