@@ -180,6 +180,7 @@ struct omx_hdr {
 		struct omx_pkt_msg tiny;
 		struct omx_pkt_msg small;
 		struct omx_pkt_medium_frag medium;
+		struct omx_pkt_msg rndv;
 		struct omx_pkt_pull_request pull;
 		struct omx_pkt_pull_reply pull_reply;
 		struct omx_pkt_connect connect;

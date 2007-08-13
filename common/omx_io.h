@@ -44,6 +44,8 @@
 
 #define OMX_TINY_MAX		32
 #define OMX_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
+#define OMX_MEDIUM_MAX		65536
+#define OMX_RNDV_DATA_MAX	8
 #define OMX_CONNECT_DATA_MAX	32
 
 #define OMX_HOSTNAMELEN_MAX	80
@@ -214,6 +216,23 @@ struct omx_cmd_send_medium {
 	/* 40 */
 };
 
+struct omx_cmd_send_rndv {
+	struct omx_cmd_send_rndv_hdr {
+		uint64_t dest_addr;
+		uint8_t dest_endpoint;
+		uint8_t length;
+		/* 8 */
+		uint16_t dest_src_peer_index;
+		uint16_t seqnum;
+		uint32_t session_id;
+		/* 16 */
+		uint64_t match_info;
+		/* 24 */
+	} hdr;
+	char data[OMX_RNDV_DATA_MAX];
+	/* 56 */
+};
+
 struct omx_cmd_send_connect {
 	struct omx_cmd_send_connect_hdr {
 		uint64_t dest_addr;
@@ -269,6 +288,7 @@ struct omx_cmd_deregister_region {
 #define OMX_EVT_RECV_TINY		0x12
 #define OMX_EVT_RECV_SMALL		0x13
 #define OMX_EVT_RECV_MEDIUM		0x14
+#define OMX_EVT_RECV_RNDV		0x15
 
 static inline const char *
 omx_strevt(unsigned type)
@@ -288,6 +308,8 @@ omx_strevt(unsigned type)
 		return "Receive Small";
 	case OMX_EVT_RECV_MEDIUM:
 		return "Receive Medium Fragment";
+	case OMX_EVT_RECV_RNDV:
+		return "Receive Rendez-vous";
 	default:
 		return "** Unknown **";
 	}
@@ -371,6 +393,17 @@ union omx_evt {
 				uint64_t pad[4];
 				/* 40 */
 			} medium;
+
+			struct {
+				uint8_t length;
+				uint8_t pad1[7];
+				/* 8 */
+				char data[OMX_RNDV_DATA_MAX];
+				/* 16 */
+				uint64_t pad2[3];
+				/* 40 */
+			} rndv;
+
 			/* 40 */;
 		} specific;
 		/* 56 */

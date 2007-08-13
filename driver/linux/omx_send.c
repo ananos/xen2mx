@@ -361,7 +361,77 @@ int
 omx_send_rndv(struct omx_endpoint * endpoint,
 	      void __user * uparam)
 {
-	return -ENOSYS;
+	struct sk_buff *skb;
+	struct omx_hdr *mh;
+	struct ethhdr *eh;
+	struct omx_cmd_send_rndv_hdr cmd;
+	struct omx_iface * iface = endpoint->iface;
+	struct net_device * ifp = iface->eth_ifp;
+	int ret;
+	uint8_t length;
+
+	ret = copy_from_user(&cmd, &((struct omx_cmd_send_rndv __user *) uparam)->hdr, sizeof(cmd));
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send rndv cmd hdr\n");
+		ret = -EFAULT;
+		goto out;
+	}
+
+	length = cmd.length;
+	if (unlikely(length > OMX_RNDV_DATA_MAX)) {
+		printk(KERN_ERR "Open-MX: Cannot send more than %d as a rndv (tried %d)\n",
+		       OMX_RNDV_DATA_MAX, length);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	skb = omx_new_skb(ifp,
+			  /* pad to ETH_ZLEN */
+			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
+	if (unlikely(skb == NULL)) {
+		printk(KERN_INFO "Open-MX: Failed to create rndv skb\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* locate headers */
+	mh = omx_hdr(skb);
+	eh = &mh->head.eth;
+
+	/* fill ethernet header */
+	memset(eh, 0, sizeof(*eh));
+	omx_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+
+	/* fill omx header */
+	mh->head.dst_src_peer_index = cmd.dest_src_peer_index;
+	mh->body.rndv.src_endpoint = endpoint->endpoint_index;
+	mh->body.rndv.dst_endpoint = cmd.dest_endpoint;
+	mh->body.rndv.ptype = OMX_PKT_TYPE_RNDV;
+	mh->body.rndv.length = length;
+	mh->body.rndv.lib_seqnum = cmd.seqnum;
+	mh->body.rndv.session = cmd.session_id;
+	OMX_PKT_FROM_MATCH_INFO(& mh->body.rndv, cmd.match_info);
+
+	omx_send_dprintk(eh, "RNDV length %ld", (unsigned long) length);
+
+	/* copy the data right after the header */
+	ret = copy_from_user(mh+1, &((struct omx_cmd_send_rndv __user *) uparam)->data, length);
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send rndv cmd data\n");
+		ret = -EFAULT;
+		goto out_with_skb;
+	}
+
+	dev_queue_xmit(skb);
+
+	return 0;
+
+ out_with_skb:
+	dev_kfree_skb(skb);
+ out:
+	return ret;
 }
 
 int

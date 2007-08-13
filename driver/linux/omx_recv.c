@@ -387,9 +387,29 @@ omx_recv_rndv(struct omx_iface * iface,
 	      struct omx_hdr * mh,
 	      struct sk_buff * skb)
 {
-#if 0
 	struct omx_endpoint * endpoint;
-	struct omx_pkt_rndv *rndv = &mh->body.rndv;
+	struct omx_pkt_msg *rndv = &mh->body.rndv;
+	uint16_t length = rndv->length;
+	union omx_evt *evt;
+	struct omx_evt_recv_msg *event;
+	int err = 0;
+
+	/* check packet length */
+	if (unlikely(length > OMX_RNDV_DATA_MAX)) {
+		omx_drop_dprintk(&mh->head.eth, "RNDV packet too long (length %d)",
+				 (unsigned) length);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* check actual data length */
+	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
+		omx_drop_dprintk(&mh->head.eth, "RNDV packet with %ld bytes instead of %d",
+				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned) length);
+		err = -EINVAL;
+		goto out;
+	}
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, rndv->dst_endpoint);
@@ -400,6 +420,13 @@ omx_recv_rndv(struct omx_iface * iface,
 		goto out;
 	}
 
+	/* check the session */
+	if (unlikely(rndv->session != endpoint->session_id)) {
+		omx_drop_dprintk(&mh->head.eth, "RNDV packet with bad session");
+		err = -EINVAL;
+		goto out_with_endpoint;
+	}
+
 	/* get the eventq slot */
 	evt = omx_find_next_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
@@ -407,7 +434,24 @@ omx_recv_rndv(struct omx_iface * iface,
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->rndv;
+	event = &evt->recv_msg;
+
+	/* fill event */
+	event->dest_src_peer_index = mh->head.dst_src_peer_index;
+	event->src_endpoint = rndv->src_endpoint;
+	event->match_info = OMX_MATCH_INFO_FROM_PKT(rndv);
+	event->seqnum = rndv->lib_seqnum;
+	event->specific.rndv.length = length;
+
+	omx_recv_dprintk(&mh->head.eth, "RNDV length %ld", (unsigned long) length);
+
+	/* copy data in event data */
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event->specific.rndv.data, length);
+	/* cannot fail since pages are allocated by us */
+	BUG_ON(err < 0);
+
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = OMX_EVT_RECV_RNDV;
 
 	omx_endpoint_release(endpoint);
 
@@ -417,11 +461,6 @@ omx_recv_rndv(struct omx_iface * iface,
 	omx_endpoint_release(endpoint);
  out:
 	return err;
-#endif
-
-	/* FIXME */
-
-	return 0;
 }
 
 static int
