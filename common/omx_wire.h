@@ -169,7 +169,7 @@ struct omx_pkt_pull_reply {
 	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
 	uint32_t dst_pull_handle; /* sender's handle id */
 	uint32_t dst_magic; /* sender's endpoint magic */
-	uint8_t frame_seqnum; /* sender's pull index + page number in this frame */
+	uint8_t frame_seqnum; /* sender's pull index + page number in this frame, %256 */
 };
 
 struct omx_pkt_notify {

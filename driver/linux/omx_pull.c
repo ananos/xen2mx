@@ -680,6 +680,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	struct omx_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
 	uint32_t frame_length = pull_reply->frame_length;
 	uint32_t frame_seqnum = pull_reply->frame_seqnum;
+	uint32_t frame_seqnum_offset; /* unsigned to make seqnum offset easy to check */
 	uint32_t msg_offset = pull_reply->msg_offset;
 	struct omx_pull_handle * handle;
 	uint32_t bitmap_mask;
@@ -715,18 +716,18 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* FIXME: store the sender mac in the handle and check it ? */
 
 	/* check that the frame is from this block */
-	if (unlikely(frame_seqnum < handle->frame_index
-		     || frame_seqnum - handle->frame_index >= handle->block_frames)) {
+	frame_seqnum_offset = (frame_seqnum - (handle->frame_index % 256));
+	if (unlikely(frame_seqnum_offset >= handle->block_frames)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (should be within %ld-%ld)",
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) handle->frame_index,
-				 (unsigned long) handle->frame_index+handle->block_frames);
+				 (unsigned long) handle->frame_index + handle->block_frames);
 		err = 0;
 		goto out;
 	}
 
 	/* check that the frame is not a duplicate */
-	bitmap_mask = (1 << (frame_seqnum - handle->frame_index));
+	bitmap_mask = 1 << frame_seqnum_offset;
 	if (unlikely((handle->frame_missing_bitmap & bitmap_mask) == 0)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with duplicate seqnum %ld in current block %ld",
 				 (unsigned long) frame_seqnum,
