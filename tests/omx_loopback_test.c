@@ -67,35 +67,8 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     }
   }
 
-  /* wait for the send to complete */
+  /* recv 4 with wait */
   for(i=0; i<4; i++) {
-    ret = omx_wait(ep, &sreq[i], &status, &result);
-    if (ret != OMX_SUCCESS || !result) {
-      fprintf(stderr, "Failed to wait for completion (%s)\n",
-	      omx_strerror(ret));
-      return ret;
-    }
-  }
-
-  /* recv one with wait */
-  ret = omx_irecv(ep, buffer2, length,
-		  0, 0,
-		  NULL, &rreq[0]);
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to post a recv for a tiny message (%s)\n",
-	    omx_strerror(ret));
-    return ret;
-  }
-
-  ret = omx_wait(ep, &rreq[0], &status, &result);
-  if (ret != OMX_SUCCESS || !result) {
-    fprintf(stderr, "Failed to wait for completion (%s)\n",
-	    omx_strerror(ret));
-    return ret;
-  }
-
-  /* recv 3 with peek */
-  for(i=1; i<4; i++) {
     ret = omx_irecv(ep, buffer2, length,
 		    0, 0,
 		    NULL, &rreq[i]);
@@ -105,22 +78,40 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
       return ret;
     }
 
-    ret = omx_peek(ep, &req, &result);
-    if (ret != OMX_SUCCESS || !result) {
-      fprintf(stderr, "Failed to peek (%s)\n",
-	      omx_strerror(ret));
-      return ret;
-    }
-    if (rreq[i] != req) {
-      fprintf(stderr, "Peek got request %p instead of %p\n",
-	      req, rreq[i]);
-      return OMX_BAD_ERROR;
-    }
-
-    ret = omx_test(ep, &rreq[i], &status, &result);
+    ret = omx_wait(ep, &rreq[i], &status, &result);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait for completion (%s)\n",
 	      omx_strerror(ret));
+      return ret;
+    }
+  }
+
+  /* wait for the first send to complete */
+  ret = omx_wait(ep, &sreq[0], &status, &result);
+  if (ret != OMX_SUCCESS || !result) {
+    fprintf(stderr, "Failed to wait for completion (%s)\n",
+            omx_strerror(ret));
+    return ret;
+  }
+
+  /* use peek to wait for the sends to complete */
+  for(i=1; i<4; i++) {
+    ret = omx_peek(ep, &req, &result);
+    if (ret != OMX_SUCCESS || !result) {
+      fprintf(stderr, "Failed to peek (%s)\n",
+              omx_strerror(ret));
+      return ret;
+    }
+    if (req != sreq[i]) {
+      fprintf(stderr, "Peek got request %p instead of %p\n",
+              req, sreq[i]);
+      return OMX_BAD_ERROR;
+    }
+
+    ret = omx_test(ep, &sreq[i], &status, &result);
+    if (ret != OMX_SUCCESS || !result) {
+      fprintf(stderr, "Failed to wait for completion (%s)\n",
+              omx_strerror(ret));
       return ret;
     }
   }
