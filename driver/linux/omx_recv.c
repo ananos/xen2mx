@@ -464,6 +464,65 @@ omx_recv_rndv(struct omx_iface * iface,
 }
 
 static int
+omx_recv_notify(struct omx_iface * iface,
+		struct omx_hdr * mh,
+		struct sk_buff * skb)
+{
+	struct omx_endpoint * endpoint;
+	struct omx_pkt_notify *notify = &mh->body.notify;
+	union omx_evt *evt;
+	struct omx_evt_recv_msg *event;
+	int err = 0;
+
+	/* get the destination endpoint */
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, notify->dst_endpoint);
+	if (unlikely(!endpoint)) {
+		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet for unknown endpoint %d",
+				 notify->dst_endpoint);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* check the session */
+	if (unlikely(notify->session != endpoint->session_id)) {
+		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet with bad session");
+		err = -EINVAL;
+		goto out_with_endpoint;
+	}
+
+	/* get the eventq slot */
+	evt = omx_find_next_eventq_slot(endpoint);
+	if (unlikely(!evt)) {
+		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet because of event queue full");
+		err = -EBUSY;
+		goto out_with_endpoint;
+	}
+	event = &evt->recv_msg;
+
+	/* fill event */
+	event->dest_src_peer_index = mh->head.dst_src_peer_index;
+	event->src_endpoint = notify->src_endpoint;
+	event->seqnum = notify->lib_seqnum;
+	event->specific.notify.length = notify->total_length;
+	event->specific.notify.puller_rdma_id = notify->puller_rdma_id;
+	event->specific.notify.puller_rdma_seqnum = notify->puller_rdma_seqnum;
+
+	omx_recv_dprintk(&mh->head.eth, "NOTIFY");
+
+	/* set the type at the end so that user-space does not find the slot on error */
+	event->type = OMX_EVT_RECV_NOTIFY;
+
+	omx_endpoint_release(endpoint);
+
+	return 0;
+
+ out_with_endpoint:
+	omx_endpoint_release(endpoint);
+ out:
+	return err;
+}
+
+static int
 omx_recv_nosys(struct omx_iface * iface,
 		struct omx_hdr * mh,
 		struct sk_buff * skb)
@@ -514,7 +573,7 @@ omx_pkt_type_handlers_init(void)
 	omx_pkt_type_handlers[OMX_PKT_TYPE_RNDV] = omx_recv_rndv;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL] = omx_recv_pull;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL_REPLY] = omx_recv_pull_reply;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_NOTIFY] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_NOTIFY] = omx_recv_notify;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_LIB] = omx_recv_nosys; /* FIXME */
 	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_MCP] = omx_recv_nosys; /* FIXME */
 }
