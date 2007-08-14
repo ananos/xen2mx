@@ -119,3 +119,36 @@ omx__queue_large_recv(struct omx_endpoint * ep,
   return ret;
 }
 
+omx_return_t
+omx__notify(struct omx_endpoint * ep,
+	    union omx_request * req)
+{
+  struct omx_cmd_send_notify notify_param;
+  uint32_t xfer_length = req->generic.status.xfer_length;
+  struct omx__partner * partner = req->generic.partner;
+  omx_return_t ret;
+  int err;
+
+  notify_param.dest_addr = partner->board_addr;
+  notify_param.dest_endpoint = partner->endpoint_index;
+  notify_param.total_length = xfer_length;
+  notify_param.session_id = partner->session_id;
+  /* FIXME: seqnum */
+  notify_param.puller_rdma_id = req->recv.specific.large.target_rdma_id;
+  notify_param.puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, &notify_param);
+  if (err < 0) {
+    ret = omx__errno_to_return("ioctl SEND_NOTIFY");
+    goto out;
+  }
+
+  req->generic.state = OMX_REQUEST_STATE_DONE;
+  omx__enqueue_request(&ep->done_req_q, req);
+  return OMX_SUCCESS;
+
+ out:
+  /* FIXME */
+  assert(0);
+  return ret;
+}

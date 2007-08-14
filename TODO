@@ -8,7 +8,8 @@
 
 * notify + free the sender user region
 * manage region ids
-* handle pull status
+* manage lib_cookie
+* handle pull status/length
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered
 * export rdma_get and rdma window management functions
 * rdma_put

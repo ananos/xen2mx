@@ -107,6 +107,10 @@ extern omx_return_t
 omx__queue_large_recv(struct omx_endpoint * ep,
 		      union omx_request * req);
 
+extern omx_return_t
+omx__notify(struct omx_endpoint * ep,
+	    union omx_request * req);
+
 static inline int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)
 {
