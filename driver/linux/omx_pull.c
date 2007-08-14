@@ -619,6 +619,8 @@ omx_recv_pull(struct omx_iface * iface,
 	}
 
 	/* release the main hold on the region */
+	omx_user_region_release(region);
+
 	omx_endpoint_release(endpoint);
 	return 0;
 
