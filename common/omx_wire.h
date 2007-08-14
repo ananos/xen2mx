@@ -172,6 +172,19 @@ struct omx_pkt_pull_reply {
 	uint8_t frame_seqnum; /* sender's pull index + page number in this frame */
 };
 
+struct omx_pkt_notify {
+	uint8_t ptype;
+	uint8_t dst_endpoint;
+	uint8_t src_endpoint;
+	uint8_t src_generation; /* FIXME: unused ? */
+	uint32_t session;
+	uint32_t total_length;
+	uint8_t puller_rdma_id;
+	uint8_t puller_rdma_seqnum;
+	uint16_t lib_seqnum;
+	uint16_t lib_piggyack; /* FIXME: unused ? */
+};
+
 struct omx_hdr {
 	struct omx_pkt_head head;
 	/* 32 */
@@ -183,6 +196,7 @@ struct omx_hdr {
 		struct omx_pkt_msg rndv;
 		struct omx_pkt_pull_request pull;
 		struct omx_pkt_pull_reply pull_reply;
+		struct omx_pkt_notify notify;
 		struct omx_pkt_connect connect;
 	} body;
 };

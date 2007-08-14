@@ -77,9 +77,10 @@ struct omx_cmd_region_segment {
 #define OMX_CMD_SEND_MEDIUM		0x83
 #define OMX_CMD_SEND_RNDV		0x84
 #define OMX_CMD_SEND_PULL		0x85
-#define OMX_CMD_REGISTER_REGION		0x86
-#define OMX_CMD_DEREGISTER_REGION	0x87
-#define OMX_CMD_SEND_CONNECT		0x88
+#define OMX_CMD_SEND_NOTIFY		0x86
+#define OMX_CMD_REGISTER_REGION		0x87
+#define OMX_CMD_DEREGISTER_REGION	0x88
+#define OMX_CMD_SEND_CONNECT		0x89
 
 static inline const char *
 omx_strcmd(unsigned cmd)
@@ -113,6 +114,8 @@ omx_strcmd(unsigned cmd)
 		return "Send Rendez-vous";
 	case OMX_CMD_SEND_PULL:
 		return "Send Pull";
+	case OMX_CMD_SEND_NOTIFY:
+		return "Send Notify";
 	case OMX_CMD_REGISTER_REGION:
 		return "Register Region";
 	case OMX_CMD_DEREGISTER_REGION:
@@ -264,6 +267,22 @@ struct omx_cmd_send_pull {
 	/* 36 */
 };
 
+struct omx_cmd_send_notify {
+	uint64_t dest_addr;
+	uint8_t dest_endpoint;
+	uint8_t pad1;
+	/* 8 */
+	uint16_t dest_src_peer_index;
+	uint16_t pad2;
+	uint32_t session_id;
+	/* 16 */
+	uint32_t total_length;
+	uint8_t puller_rdma_id;
+	uint8_t puller_rdma_seqnum;
+	uint16_t seqnum;
+	/* 24 */
+};
+
 struct omx_cmd_register_region {
 	uint32_t nr_segments;
 	uint32_t id;
@@ -289,6 +308,7 @@ struct omx_cmd_deregister_region {
 #define OMX_EVT_RECV_SMALL		0x13
 #define OMX_EVT_RECV_MEDIUM		0x14
 #define OMX_EVT_RECV_RNDV		0x15
+#define OMX_EVT_RECV_NOTIFY		0x16
 
 static inline const char *
 omx_strevt(unsigned type)
@@ -310,6 +330,8 @@ omx_strevt(unsigned type)
 		return "Receive Medium Fragment";
 	case OMX_EVT_RECV_RNDV:
 		return "Receive Rendez-vous";
+	case OMX_EVT_RECV_NOTIFY:
+		return "Receive Notify";
 	default:
 		return "** Unknown **";
 	}
@@ -403,6 +425,16 @@ union omx_evt {
 				uint64_t pad2[3];
 				/* 40 */
 			} rndv;
+
+			struct {
+				uint32_t length;
+				uint8_t puller_rdma_id;
+				uint8_t puller_rdma_seqnum;
+				uint16_t pad1;
+				/* 8 */
+				uint64_t pad2[4];
+				/* 40 */
+			} notify;
 
 			/* 40 */;
 		} specific;
