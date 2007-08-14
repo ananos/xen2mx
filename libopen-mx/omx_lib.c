@@ -500,16 +500,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_PULL_DONE: {
-    //    uint32_t lib_cookie = evt->pull_done.lib_cookie;
-    union omx_request * req = omx__queue_first_request(&ep->large_recv_req_q);
-
-    assert(req
-	   && req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
-
-    /* FIXME: check length */
-    omx__dequeue_request(&ep->large_recv_req_q, req);
-    omx__deregister_region(ep, &req->recv.specific.large.local_region);
-    omx__notify(ep, req);
+    omx__pull_done(ep, &evt->pull_done);
     break;
   }
 

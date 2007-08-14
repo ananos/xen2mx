@@ -75,6 +75,23 @@ omx__deregister_region(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
+#define OMX__LARGE_REGION_COOKIE_MASK 0x25101984
+
+static inline uint32_t
+omx__large_region_cookie(struct omx__large_region * region)
+{
+  return OMX__LARGE_REGION_COOKIE_MASK ^ region->id;
+}
+
+static inline struct omx__large_region *
+omx__large_region_from_cookie(uint32_t cookie)
+{
+  //uint8_t id = OMX__LARGE_REGION_COOKIE_MASK ^ cookie;
+
+  /* FIXME */
+  return NULL;
+}
+
 omx_return_t
 omx__queue_large_recv(struct omx_endpoint * ep,
 		      union omx_request * req)
@@ -84,7 +101,6 @@ omx__queue_large_recv(struct omx_endpoint * ep,
   uint32_t xfer_length = req->generic.status.xfer_length;
   struct omx__partner * partner = req->generic.partner;
   omx_return_t ret;
-  uint32_t lib_cookie = 2; /* FIXME */
   int err;
 
   region = &req->recv.specific.large.local_region;
@@ -96,7 +112,7 @@ omx__queue_large_recv(struct omx_endpoint * ep,
   pull_param.dest_endpoint = partner->endpoint_index;
   pull_param.length = xfer_length;
   pull_param.session_id = partner->session_id;
-  pull_param.lib_cookie = lib_cookie;
+  pull_param.lib_cookie = omx__large_region_cookie(region);
   pull_param.local_rdma_id = region->id;
   pull_param.local_offset = region->offset;
   /* FIXME: seqnum */
@@ -120,14 +136,26 @@ omx__queue_large_recv(struct omx_endpoint * ep,
 }
 
 omx_return_t
-omx__notify(struct omx_endpoint * ep,
-	    union omx_request * req)
+omx__pull_done(struct omx_endpoint * ep,
+	       struct omx_evt_pull_done * event)
 {
+  union omx_request * req;
+  uint32_t xfer_length = event->pulled_length;
+  struct omx__partner * partner;
   struct omx_cmd_send_notify notify_param;
-  uint32_t xfer_length = req->generic.status.xfer_length;
-  struct omx__partner * partner = req->generic.partner;
   omx_return_t ret;
   int err;
+
+  req = omx__queue_first_request(&ep->large_recv_req_q);
+  assert(req
+	 && req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
+  /* FIXME: use event->lib_cookie to get region and then request */
+
+  partner = req->generic.partner;
+  /* FIXME: check length, update req->generic.status.xfer_length and status */
+
+  omx__dequeue_request(&ep->large_recv_req_q, req);
+  omx__deregister_region(ep, &req->recv.specific.large.local_region);
 
   notify_param.dest_addr = partner->board_addr;
   notify_param.dest_endpoint = partner->endpoint_index;
