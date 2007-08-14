@@ -6,7 +6,6 @@
 
 * have a way to make install without the driver or only the driver
 
-* notify + free the sender user region
 * manage region ids
 * manage lib_cookie
 * handle pull status/length
