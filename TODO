@@ -1,3 +1,6 @@
+* make iface_detach, endpoint_close and region_dereg interruptible by signals
+* iface_detach force should not be interruptible?
+
 * move irecv and process_recv* to omx_recv.c
 
 * check pingpong contents
@@ -6,8 +9,7 @@
 
 * have a way to make install without the driver or only the driver
 
-* manage region ids
-* manage lib_cookie
+* manage region ids, and use them as a lib_cookie
 * handle pull status/length
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered
 * export rdma_get and rdma window management functions
