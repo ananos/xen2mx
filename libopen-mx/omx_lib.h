@@ -94,10 +94,16 @@ extern omx_return_t
 omx__process_recv_connect(struct omx_endpoint *ep,
 			  struct omx_evt_recv_connect *event);
 
+extern omx_return_t
+omx__endpoint_large_region_map_init(struct omx_endpoint * ep);
+
+extern void
+omx__endpoint_large_region_map_exit(struct omx_endpoint * ep);
+
 omx_return_t
 omx__register_region(struct omx_endpoint *ep,
 		     char * buffer, size_t length,
-		     struct omx__large_region *region);
+		     struct omx__large_region **regionp);
 
 omx_return_t
 omx__deregister_region(struct omx_endpoint *ep,

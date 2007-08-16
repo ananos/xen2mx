@@ -9,7 +9,7 @@
 
 * have a way to make install without the driver or only the driver
 
-* manage region ids, and use them as a lib_cookie
+* hide region id in lib_cookies since region might be used for something else?
 * handle pull status/length
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered
 * export rdma_get and rdma window management functions

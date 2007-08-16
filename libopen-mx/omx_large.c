@@ -24,39 +24,134 @@
 #include "omx_lib.h"
 #include "omx_request.h"
 
+/***********************
+ * Region Map managment
+ */
+
+#define OMX__LARGE_REGION_ID_MAX 256
+
+omx_return_t
+omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
+{
+  struct omx__large_region_slot * array;
+  int i;
+
+  array = malloc(OMX__LARGE_REGION_ID_MAX * sizeof(struct omx__large_region_slot));
+  if (!array)
+    return OMX_NO_RESOURCES;
+
+  ep->large_region_map.array = array;
+
+  for(i=0; i<OMX__LARGE_REGION_ID_MAX; i++) {
+    array[i].next_free = i+1;
+    array[i].region.id = i;
+    array[i].region.user = NULL;
+    /* FIXME: seqnum */
+  }
+  array[OMX__LARGE_REGION_ID_MAX-1].next_free = -1;
+  ep->large_region_map.first_free = 0;
+  ep->large_region_map.nr_free = OMX__LARGE_REGION_ID_MAX;
+
+  return OMX_SUCCESS;
+}
+
+void
+omx__endpoint_large_region_map_exit(struct omx_endpoint * ep)
+{
+  /* FIXME: check and deregister */
+  free(ep->large_region_map.array);
+}
+
+static inline omx_return_t
+omx__endpoint_large_region_alloc(struct omx_endpoint * ep,
+				 struct omx__large_region ** regionp)
+{
+  struct omx__large_region_slot * array;
+  int index, next_free;
+
+  assert((ep->large_region_map.first_free == -1)
+	 == (ep->large_region_map.nr_free == 0));
+
+  index = ep->large_region_map.first_free;
+  if (index == -1)
+    return OMX_NO_RESOURCES;
+
+  array = ep->large_region_map.array;
+  next_free = array[index].next_free;
+
+  omx__debug_assert(array[index].region.user == NULL);
+  omx__debug_instr(array[index].next_free = -1);
+
+  *regionp = &array[index].region;
+
+  ep->large_region_map.first_free = next_free;
+  ep->large_region_map.nr_free--;
+
+  return OMX_SUCCESS;
+}
+
+static inline void
+omx__endpoint_large_region_free(struct omx_endpoint * ep,
+				struct omx__large_region * region)
+{
+  struct omx__large_region_slot * array;
+  int index = region->id;
+
+  array = ep->large_region_map.array;
+
+  omx__debug_assert(array[index].next_free == -1);
+
+  array[index].region.user = NULL;
+  array[index].next_free = ep->large_region_map.first_free;
+  ep->large_region_map.first_free = index;
+  ep->large_region_map.nr_free++;
+}
+
+/******************************
+ * Registration/Deregistration
+ */
+
 omx_return_t
 omx__register_region(struct omx_endpoint *ep,
 		     char * buffer, size_t length,
-		     struct omx__large_region *region)
+		     struct omx__large_region **regionp)
 {
   struct omx_cmd_region_segment seg;
   struct omx_cmd_register_region reg;
-  static uint8_t rdma_id = 0;
-  uint8_t rdma_seqnum = 0; /* FIXME */
   uint32_t rdma_length;
   uint16_t offset;
+  omx_return_t ret;
   int err;
+
+  ret = omx__endpoint_large_region_alloc(ep, regionp);
+  if (ret != OMX_SUCCESS)
+    goto out;
 
   offset = ((uintptr_t) buffer) & 4095;
   rdma_length = (offset + length + 4095) & ~4095;
+  (*regionp)->offset = offset;
 
   seg.vaddr = ((uintptr_t) buffer) & ~4095;
   seg.len = rdma_length;
 
   reg.nr_segments = 1;
-  reg.id = rdma_id;
-  reg.seqnum = rdma_seqnum;
+  reg.id = (*regionp)->id;
+  reg.seqnum = (*regionp)->seqnum;
   reg.memory_context = 0ULL; /* FIXME */
   reg.segments = (uintptr_t) &seg;
 
   err = ioctl(ep->fd, OMX_CMD_REGISTER_REGION, &reg);
-  if (err < 0)
-    return omx__errno_to_return("ioctl REGISTER");
+  if (err < 0) {
+    ret = omx__errno_to_return("ioctl REGISTER");
+    goto out_with_region;
+  }
 
-  region->id = rdma_id++;
-  region->seqnum = rdma_seqnum;
-  region->offset = offset;
   return OMX_SUCCESS;
+
+ out_with_region:
+  omx__endpoint_large_region_free(ep, *regionp);
+ out:
+  return ret;
 }
 
 omx_return_t
@@ -72,25 +167,14 @@ omx__deregister_region(struct omx_endpoint *ep,
   if (err < 0)
     return omx__errno_to_return("ioctl REGISTER");
 
+  omx__endpoint_large_region_free(ep, region);
+
   return OMX_SUCCESS;
 }
 
-#define OMX__LARGE_REGION_COOKIE_MASK 0x25101984
-
-static inline uint32_t
-omx__large_region_cookie(struct omx__large_region * region)
-{
-  return OMX__LARGE_REGION_COOKIE_MASK ^ region->id;
-}
-
-static inline struct omx__large_region *
-omx__large_region_from_cookie(uint32_t cookie)
-{
-  //uint8_t id = OMX__LARGE_REGION_COOKIE_MASK ^ cookie;
-
-  /* FIXME */
-  return NULL;
-}
+/***************************
+ * Large Messages Managment
+ */
 
 omx_return_t
 omx__queue_large_recv(struct omx_endpoint * ep,
@@ -103,8 +187,7 @@ omx__queue_large_recv(struct omx_endpoint * ep,
   omx_return_t ret;
   int err;
 
-  region = &req->recv.specific.large.local_region;
-  ret = omx__register_region(ep, req->recv.buffer, xfer_length, region);
+  ret = omx__register_region(ep, req->recv.buffer, xfer_length, &region);
   if (ret != OMX_SUCCESS)
     goto out;
 
@@ -112,7 +195,7 @@ omx__queue_large_recv(struct omx_endpoint * ep,
   pull_param.dest_endpoint = partner->endpoint_index;
   pull_param.length = xfer_length;
   pull_param.session_id = partner->session_id;
-  pull_param.lib_cookie = omx__large_region_cookie(region);
+  /* FIXME: cookie */
   pull_param.local_rdma_id = region->id;
   pull_param.local_offset = region->offset;
   /* FIXME: seqnum */
@@ -125,6 +208,8 @@ omx__queue_large_recv(struct omx_endpoint * ep,
     goto out_with_reg;
   }
 
+  region->user = req;
+  req->recv.specific.large.local_region = region;
   omx__enqueue_request(&ep->large_recv_req_q, req);
 
   return OMX_SUCCESS;
@@ -141,21 +226,24 @@ omx__pull_done(struct omx_endpoint * ep,
 {
   union omx_request * req;
   uint32_t xfer_length = event->pulled_length;
+  uint32_t region_id = event->local_rdma_id;
+  struct omx__large_region * region;
   struct omx__partner * partner;
   struct omx_cmd_send_notify notify_param;
   omx_return_t ret;
   int err;
 
-  req = omx__queue_first_request(&ep->large_recv_req_q);
+  /* FIXME: use cookie since region might be used for something else? */
+  region = &ep->large_region_map.array[region_id].region;
+  req = region->user;
   assert(req
 	 && req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
-  /* FIXME: use event->lib_cookie to get region and then request */
 
   partner = req->generic.partner;
   /* FIXME: check length, update req->generic.status.xfer_length and status */
 
   omx__dequeue_request(&ep->large_recv_req_q, req);
-  omx__deregister_region(ep, &req->recv.specific.large.local_region);
+  omx__deregister_region(ep, req->recv.specific.large.local_region);
 
   notify_param.dest_addr = partner->board_addr;
   notify_param.dest_endpoint = partner->endpoint_index;

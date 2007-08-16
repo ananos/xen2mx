@@ -475,7 +475,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 	   && req->generic.type == OMX_REQUEST_TYPE_SEND_LARGE);
 
     omx__dequeue_request(&ep->large_send_req_q, req);
-    omx__deregister_region(ep, &req->send.specific.large.region);
+    omx__deregister_region(ep, req->send.specific.large.region);
     req->generic.status.xfer_length = xfer_length;
     /* FIXME: check length */
     req->generic.state = OMX_REQUEST_STATE_DONE;

@@ -219,8 +219,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
     goto out;
   }
 
-  region = &req->send.specific.large.region;
-  ret = omx__register_region(ep, buffer, length, region);
+  ret = omx__register_region(ep, buffer, length, &region);
   if (ret != OMX_SUCCESS)
     goto out_with_req;
 
@@ -243,6 +242,9 @@ omx__submit_isend_large(struct omx_endpoint *ep,
     goto out_with_reg;
   }
   /* no need to wait for a done event, rndv is synchronous */
+
+  req->send.specific.large.region = region;
+  region->user = req;
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);

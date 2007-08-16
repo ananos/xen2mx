@@ -37,6 +37,20 @@ struct omx__sendq_map {
   } * array;
 };
 
+struct omx__large_region_map {
+  int first_free;
+  int nr_free;
+  struct omx__large_region_slot {
+    int next_free;
+    struct omx__large_region {
+      uint8_t id;
+      uint8_t seqnum;
+      uint16_t offset;
+      void * user;
+    } region;
+  } * array;
+};
+
 typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
 
 struct omx__partner {
@@ -104,6 +118,7 @@ struct omx_endpoint {
   struct list_head connect_req_q;
   struct list_head done_req_q;
   struct omx__sendq_map sendq_map;
+  struct omx__large_region_map large_region_map;
   struct omx__partner ** partners;
   struct omx__partner * myself;
 };
@@ -122,12 +137,6 @@ enum omx__request_type {
 enum omx__request_state {
   OMX_REQUEST_STATE_PENDING=0,
   OMX_REQUEST_STATE_DONE,
-};
-
-struct omx__large_region {
-  uint8_t id;
-  uint8_t seqnum;
-  uint16_t offset;
 };
 
 struct omx__generic_request {
@@ -150,7 +159,7 @@ union omx_request {
 	uint32_t frags_pending_nr;
       } medium;
       struct {
-	struct omx__large_region region;
+	struct omx__large_region * region;
       } large;
     } specific;
   } send;
@@ -169,7 +178,7 @@ union omx_request {
 	uint32_t accumulated_length;
       } medium;
       struct {
-	struct omx__large_region local_region;
+	struct omx__large_region * local_region;
 	uint8_t target_rdma_id;
 	uint8_t target_rdma_seqnum;
 	uint16_t target_rdma_offset;

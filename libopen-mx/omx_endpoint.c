@@ -201,6 +201,11 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   }
   printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
 
+  /* prepare the large regions */
+  ret = omx__endpoint_large_region_map_init(ep);
+  if (ret != OMX_SUCCESS)
+    goto out_with_userq_mmap;
+
   /* init driver specific fields */
   ep->fd = fd;
   ep->sendq = sendq;
@@ -214,12 +219,12 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   err = ioctl(fd, OMX_CMD_GET_ENDPOINT_SESSION_ID, &ep->session_id);
   if (err < 0) {
     ret = omx__errno_to_return("ioctl GET_ENDPOINT_SESSION_ID");
-    goto out_with_userq_mmap;
+    goto out_with_large_regions;
   }
 
   ret = omx__get_board_id(ep, NULL, ep->board_name, &board_addr);
   if (ret != OMX_SUCCESS)
-    goto out_with_userq_mmap;
+    goto out_with_large_regions;
 
   omx__board_addr_sprintf(board_addr_str, board_addr);
   printf("Successfully attached endpoint #%ld on board #%ld (%s, %s)\n",
@@ -231,7 +236,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 			sizeof(*ep->partners));
   if (!ep->partners) {
     ret = OMX_NO_RESOURCES;
-    goto out_with_userq_mmap;
+    goto out_with_large_regions;
   }
 
   /* connect to myself */
@@ -255,6 +260,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
  out_with_partners:
   free(ep->partners);
+ out_with_large_regions:
+  omx__endpoint_large_region_map_exit(ep);
  out_with_userq_mmap:
   /* could munmap here, but close will do it */
  out_with_sendq_map:
@@ -272,6 +279,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 omx_return_t
 omx_close_endpoint(struct omx_endpoint *ep)
 {
+  /* FIXME */
+
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->recvq, OMX_RECVQ_SIZE);
   munmap(ep->eventq, OMX_EVENTQ_SIZE);
