@@ -168,7 +168,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
     medium_param.sendq_page_offset = sendq_index[i];
     omx__debug_printf("sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 		      i, chunk, (unsigned long) length);
-    memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, length);
+    memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, chunk);
 
     err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, &medium_param);
     if (err < 0) {
