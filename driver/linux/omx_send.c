@@ -321,8 +321,8 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	omx_send_dprintk(eh, "MEDIUM FRAG length %ld", (unsigned long) frag_length);
 
 	/* attach the sendq page */
-	page = vmalloc_to_page(endpoint->sendq + (cmd.sendq_page_offset << PAGE_SHIFT));
-	BUG_ON(page == NULL);
+	/* FIXME: check sendq_page_offset */
+	page = endpoint->sendq_pages[cmd.sendq_page_offset];
 	get_page(page);
 	skb_fill_page_desc(skb, 0, page, 0, frag_length);
 	skb->len += frag_length;

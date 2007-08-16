@@ -27,6 +27,8 @@
  * Common parameters or IOCTL subtypes
  */
 
+/* FIXME: add _SHIFT and use when getting sendq pages in the driver */
+
 #define OMX_SENDQ_ENTRY_SIZE	4096
 #define OMX_SENDQ_ENTRY_NR	1024
 #define OMX_SENDQ_SIZE		(OMX_SENDQ_ENTRY_SIZE*OMX_SENDQ_ENTRY_NR)

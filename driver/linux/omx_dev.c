@@ -38,7 +38,9 @@ static int
 omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 {
 	union omx_evt * evt;
+	struct page ** sendq_pages;
 	char * buffer;
+	int i;
 	int ret;
 
 	/* generate the session id */
@@ -55,6 +57,22 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	endpoint->recvq = buffer + OMX_SENDQ_SIZE;
 	endpoint->eventq = buffer + OMX_SENDQ_SIZE + OMX_RECVQ_SIZE;
 
+#if OMX_SENDQ_ENTRY_SIZE != PAGE_SIZE
+#error Incompatible page and sendq entry sizes
+#endif
+	sendq_pages = kmalloc(OMX_SENDQ_ENTRY_NR * sizeof(struct page *), GFP_KERNEL);
+	if (!sendq_pages) {
+		printk(KERN_ERR "Open-MX: failed to allocate sendq pages array\n");
+		goto out_with_userq;
+	}
+	for(i=0; i<OMX_SENDQ_ENTRY_NR; i++) {
+		struct page * page;
+		page = vmalloc_to_page(endpoint->sendq + (i * OMX_SENDQ_ENTRY_SIZE));
+		BUG_ON(!page);
+		sendq_pages[i] = page;
+	}
+	endpoint->sendq_pages = sendq_pages;
+
 	for(evt = endpoint->eventq;
 	    (void *) evt < endpoint->eventq + OMX_EVENTQ_SIZE;
 	    evt++)
@@ -70,6 +88,8 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 
 	return 0;
 
+ out_with_userq:
+	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
  out:
 	return ret;
 }
@@ -79,6 +99,7 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 {
 	omx_endpoint_pull_handles_exit(endpoint);
 	omx_endpoint_user_regions_exit(endpoint);
+	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
 }
 
