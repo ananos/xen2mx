@@ -279,11 +279,13 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 omx_return_t
 omx_close_endpoint(struct omx_endpoint *ep)
 {
-  /* FIXME */
-
+  free(ep->partners);
+  omx__endpoint_large_region_map_exit(ep);
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->recvq, OMX_RECVQ_SIZE);
   munmap(ep->eventq, OMX_EVENTQ_SIZE);
+  omx__endpoint_sendq_map_exit(ep);
+  /* could detach here, but close will do it */
   close(ep->fd);
   free(ep);
 
