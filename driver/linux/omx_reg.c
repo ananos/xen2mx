@@ -293,7 +293,8 @@ void
 omx_user_region_release(struct omx_user_region * region)
 {
 	/* decrement refcount and wake up the closer */
-	if (unlikely(atomic_dec_and_test(&region->refcount)))
+	if (unlikely(atomic_dec_and_test(&region->refcount)
+		     && region->status == OMX_USER_REGION_STATUS_CLOSING))
 		wake_up(&region->noref_queue);
 }
 

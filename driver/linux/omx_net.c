@@ -519,7 +519,8 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 	BUG_ON(iface->endpoints[endpoint->endpoint_index] != endpoint);
 	iface->endpoints[endpoint->endpoint_index] = NULL;
 	/* decrease the number of endpoints and wakeup the iface detacher if needed */
-	if (!--iface->endpoint_nr)
+	if (!--iface->endpoint_nr
+	    && iface->status == OMX_IFACE_STATUS_CLOSING)
 		wake_up(&iface->noendpoint_queue);
 
 	if (!ifacelocked)

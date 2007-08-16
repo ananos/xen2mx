@@ -250,7 +250,8 @@ void
 omx_endpoint_release(struct omx_endpoint * endpoint)
 {
 	/* decrement refcount and wake up the closer */
-	if (unlikely(atomic_dec_and_test(&endpoint->refcount)))
+	if (unlikely(atomic_dec_and_test(&endpoint->refcount)
+		     && endpoint->status == OMX_ENDPOINT_STATUS_CLOSING))
 		wake_up(&endpoint->noref_queue);
 }
 
