@@ -44,7 +44,7 @@
 
 #define OMX_TINY_MAX		32
 #define OMX_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */
-#define OMX_MEDIUM_MAX		65536
+#define OMX_MEDIUM_MAX		(8*4096)
 #define OMX_RNDV_DATA_MAX	8
 #define OMX_CONNECT_DATA_MAX	32
 
