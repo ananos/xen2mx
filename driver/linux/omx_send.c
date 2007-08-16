@@ -257,6 +257,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_medium cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	uint16_t sendq_page_offset;
 	struct page * page;
 	struct omx_deferred_event * event;
 	int ret;
@@ -273,6 +274,14 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	if (unlikely(frag_length > OMX_SENDQ_ENTRY_SIZE)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a medium (tried %ld)\n",
 		       PAGE_SIZE * 1UL, (unsigned long) frag_length);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	sendq_page_offset = cmd.sendq_page_offset;
+	if (unlikely(sendq_page_offset >= OMX_SENDQ_ENTRY_NR)) {
+		printk(KERN_ERR "Open-MX: Cannot send medium fragment from sendq page offset %ld (max %ld)\n",
+		       (unsigned long) sendq_page_offset, (unsigned long) OMX_SENDQ_ENTRY_NR);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -321,8 +330,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	omx_send_dprintk(eh, "MEDIUM FRAG length %ld", (unsigned long) frag_length);
 
 	/* attach the sendq page */
-	/* FIXME: check sendq_page_offset */
-	page = endpoint->sendq_pages[cmd.sendq_page_offset];
+	page = endpoint->sendq_pages[sendq_page_offset];
 	get_page(page);
 	skb_fill_page_desc(skb, 0, page, 0, frag_length);
 	skb->len += frag_length;
