@@ -120,6 +120,8 @@ enum omx_user_region_status {
 };
 
 struct omx_user_region {
+	uint32_t id;
+
 	spinlock_t lock;
 	enum omx_user_region_status status;
 	atomic_t refcount;

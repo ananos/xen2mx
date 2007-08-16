@@ -360,7 +360,11 @@ union omx_evt {
 	struct omx_evt_pull_done {
 		uint32_t lib_cookie;
 		uint32_t pulled_length;
-		char pad[55];
+		/* 8 */
+		uint32_t local_rdma_id;
+		uint32_t pad1;
+		/* 16 */
+		uint8_t pad2[47];
 		uint8_t type;
 		/* 64 */
 	} pull_done;

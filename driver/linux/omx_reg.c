@@ -173,6 +173,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 		goto out_with_region;
 	}
 	endpoint->user_regions[cmd.id] = region;
+	region->id = cmd.id;
 
 	spin_unlock(&endpoint->user_regions_lock);
 

@@ -656,6 +656,7 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle)
 	/* fill event */
 	event->lib_cookie = handle->lib_cookie;
 	event->pulled_length = handle->total_length - handle->remaining_length;
+	event->local_rdma_id = handle->region->id;
 
 	/* set the type at the end so that user-space does not find the slot on error */
 	event->type = OMX_EVT_PULL_DONE;
