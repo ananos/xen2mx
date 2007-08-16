@@ -188,6 +188,13 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 		set_current_state(TASK_INTERRUPTIBLE);
 		if (!atomic_read(&endpoint->refcount))
 			break;
+		if (signal_pending(current)) {
+			set_current_state(TASK_RUNNING);
+			remove_wait_queue(&endpoint->noref_queue, &wq);
+			atomic_inc(&endpoint->refcount);
+			endpoint->status = OMX_ENDPOINT_STATUS_OK;
+			return -EINTR;
+		}
 		schedule();
 	}
 	set_current_state(TASK_RUNNING);

@@ -234,6 +234,12 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 		set_current_state(TASK_INTERRUPTIBLE);
 		if (likely(!atomic_read(&region->refcount)))
 			break;
+		if (signal_pending(current)) {
+			set_current_state(TASK_RUNNING);
+			remove_wait_queue(&endpoint->noref_queue, &wq);
+			region->status = OMX_USER_REGION_STATUS_OK;
+			return -EINTR;
+		}
 		schedule();
 	}
 	set_current_state(TASK_RUNNING);

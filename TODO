@@ -1,6 +1,3 @@
-* make iface_detach, endpoint_close and region_dereg interruptible by signals
-* iface_detach force should not be interruptible?
-
 * move irecv and process_recv* to omx_recv.c
 
 * check pingpong contents

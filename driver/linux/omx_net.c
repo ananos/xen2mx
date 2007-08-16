@@ -272,11 +272,21 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 	/* wait for concurrent endpoint closers to be done */
 	add_wait_queue(&iface->noendpoint_queue, &wq);
 	for(;;) {
-		set_current_state(TASK_INTERRUPTIBLE);
+		set_current_state(force ? TASK_UNINTERRUPTIBLE
+				  : TASK_INTERRUPTIBLE);
 		if (!iface->endpoint_nr)
 			break;
 		spin_unlock(&iface->endpoint_lock);
+
+		if (signal_pending(current)) {
+			set_current_state(TASK_RUNNING);
+			remove_wait_queue(&iface->noendpoint_queue, &wq);
+			iface->status = OMX_IFACE_STATUS_OK;
+			return -EINTR;
+		}
+
 		schedule();
+
 		spin_lock(&iface->endpoint_lock);
 	}
 	set_current_state(TASK_RUNNING);
