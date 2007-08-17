@@ -574,6 +574,56 @@ static struct notifier_block omx_netdevice_notifier = {
 	.notifier_call = omx_netdevice_notifier_cb,
 };
 
+/************************
+ * Memory Copy Benchmark
+ */
+
+#define OMX_COPYBENCH_BUFLEN (4*1024*1024UL)
+#define OMX_COPYBENCH_ITERS 1024
+
+static int
+omx_net_copy_bench(void)
+{
+	void * srcbuf, * dstbuf;
+	struct timeval tv1, tv2;
+	unsigned long usecs;
+	unsigned long nsecs_per_iter;
+	unsigned long MB_per_sec;
+	int i, err;
+
+	err = -ENOMEM;
+	srcbuf = vmalloc(OMX_COPYBENCH_BUFLEN);
+	if (!srcbuf)
+		goto out;
+	dstbuf = vmalloc(OMX_COPYBENCH_BUFLEN);
+	if (!dstbuf)
+		goto out_with_srcbuf;
+
+	printk("Open-MX: running copy benchmark...\n");
+
+	do_gettimeofday(&tv1);
+	for(i=0; i<OMX_COPYBENCH_ITERS; i++)
+		memcpy(dstbuf, srcbuf, OMX_COPYBENCH_BUFLEN);
+	do_gettimeofday(&tv2);
+
+	usecs = (tv2.tv_sec - tv1.tv_sec)*1000000UL
+		+ (tv2.tv_usec - tv1.tv_usec);
+	nsecs_per_iter = (usecs * 1000ULL) /OMX_COPYBENCH_ITERS;
+	MB_per_sec = OMX_COPYBENCH_BUFLEN / (nsecs_per_iter / 1000);
+	printk("Open-MX: memcpy of %ld bytes %d times took %ld us\n",
+	       OMX_COPYBENCH_BUFLEN, OMX_COPYBENCH_ITERS, usecs);
+	printk("Open-MX: memcpy of %ld bytes took %ld ns (%ld MB/s)\n",
+	       OMX_COPYBENCH_BUFLEN, nsecs_per_iter, MB_per_sec);
+
+	err = 0;
+
+	vfree(dstbuf);
+ out_with_srcbuf:
+	vfree(srcbuf);
+ out:
+	return err;
+}
+
 /******************************
  * Initialization and termination
  */
@@ -582,6 +632,9 @@ int
 omx_net_init(const char * ifnames)
 {
 	int ret = 0;
+
+	if (omx_copybench)
+		omx_net_copy_bench();
 
 	omx_pkt_type_handlers_init();
 

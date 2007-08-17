@@ -22,6 +22,10 @@
 
 #include "omx_common.h"
 
+/********************
+ * Module parameters
+ */
+
 static char * omx_ifnames = NULL;
 module_param(omx_ifnames, charp, 0); /* unreadable, since modifiable by the attached sysfs file */
 
@@ -33,6 +37,13 @@ module_param(omx_endpoint_max, uint, S_IRUGO);
 
 int omx_peer_max = 1024;
 module_param(omx_peer_max, uint, S_IRUGO);
+
+int omx_copybench = 0;
+module_param(omx_copybench, uint, S_IRUGO);
+
+/************************
+ * Main Module Init/Exit
+ */
 
 static __init int
 omx_init(void)
@@ -69,6 +80,10 @@ omx_exit(void)
 	printk(KERN_INFO "Open-MX terminated\n");
 }
 module_exit(omx_exit);
+
+/***************
+ * Module Infos
+ */
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Brice Goglin <Brice.Goglin@inria.fr>");

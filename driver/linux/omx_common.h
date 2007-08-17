@@ -25,6 +25,7 @@
 extern int omx_iface_max;
 extern int omx_endpoint_max;
 extern int omx_peer_max;
+extern int omx_copybench;
 
 /* main net */
 extern int omx_net_init(const char * ifnames);
