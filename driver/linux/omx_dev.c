@@ -225,8 +225,8 @@ omx_endpoint_close(struct omx_endpoint * endpoint)
  * Acquiring/Releasing endpoints
  */
 
-int
-omx_endpoint_acquire(struct omx_endpoint * endpoint)
+static inline int
+omx_endpoint_acquire_from_ioctl(struct omx_endpoint * endpoint)
 {
 	int ret = -EINVAL;
 
@@ -397,7 +397,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		int use_endpoint = 0;
 
 		/* try to acquire the endpoint */
-		ret = omx_endpoint_acquire(endpoint);
+		ret = omx_endpoint_acquire_from_ioctl(endpoint);
 		if (ret < 0) {
 			/* the endpoint is not open, get the command parameter and use its board_index */
 			ret = copy_from_user(&get_board_id, (void __user *) arg,
@@ -453,7 +453,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		struct omx_endpoint * endpoint = file->private_data;
 		uint32_t session_id;
 
-		ret = omx_endpoint_acquire(endpoint);
+		ret = omx_endpoint_acquire_from_ioctl(endpoint);
 		if (unlikely(ret < 0))
 			goto out;
 
@@ -485,7 +485,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		BUG_ON(cmd >= ARRAY_SIZE(omx_cmd_with_endpoint_handlers));
 		BUG_ON(omx_cmd_with_endpoint_handlers[cmd] == NULL);
 
-		ret = omx_endpoint_acquire(endpoint);
+		ret = omx_endpoint_acquire_from_ioctl(endpoint);
 		if (unlikely(ret < 0))
 			goto out;
 

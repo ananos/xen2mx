@@ -174,10 +174,10 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	struct omx_user_region * region;
 	int err;
 
-	/* take a reference on the endpoint since we will return the pull_handle as acquired */
-	err = omx_endpoint_acquire(endpoint);
-	if (unlikely(err < 0))
-		goto out;
+	/* take another reference on the endpoint
+	 * since we will return the pull_handle as acquired
+	 */
+	omx_endpoint_reacquire(endpoint);
 
 	/* acquire the region */
 	region = omx_user_region_acquire(endpoint, cmd->local_rdma_id);
@@ -243,7 +243,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	omx_user_region_release(region);
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
- out:
 	return NULL;
 }
 
