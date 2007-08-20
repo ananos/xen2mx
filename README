@@ -34,6 +34,10 @@ interface 'bar'.
 The interfaces may also be observed with the omx_info user-space
 tool.
 
+Note that these interfaces must be 'up' in order to work.
+$ ifconfig eth2 up
+However, having an IP address is not required.
+
 +-----------------+
 | Peer Table File |
 +-----------------+
