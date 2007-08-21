@@ -64,7 +64,7 @@ struct omx_endpoint {
 	uint8_t endpoint_index;
 	uint32_t session_id;
 
-	spinlock_t lock;
+	rwlock_t lock;
 	enum omx_endpoint_status status;
 	atomic_t refcount;
 	wait_queue_head_t noref_queue;
@@ -90,12 +90,15 @@ struct omx_endpoint {
  * Notes about locking:
  *
  * The endpoint has 2 main status: FREE and OK. To prevent 2 people from changing it
- * at the same time, it is protected by a lock. To reduce the time we hold the lock,
+ * at the same time, it is protected by a rwlock. To reduce the time we hold the lock,
  * there are 2 intermediate status: INITIALIZING and CLOSING.
  * When an endpoint is being used, its refcount is increased (by acquire/release)
  * When somebody wants to close an endpoint, it sets the CLOSING status (so that
  * new users can't acquire the endpoint) and waits for current users to release
  * (when refcount becomes 0).
+ * The rwlock is taken as write only when opening and closing. Bottom half are disabled
+ * meanwhile since they might preempt the application. All other lock are taken as read,
+ * especially on the receive side.
  *
  * The iface doesn't have an actual refcount since it has a number of endpoints attached.
  * There's a lock to protect this array against concurrent endpoint attach/detach.

@@ -123,15 +123,15 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 
 	/* test whether the endpoint is ok to be open
 	 * and mark it as initializing */
-	spin_lock(&endpoint->lock);
+	write_lock_bh(&endpoint->lock);
 	ret = -EINVAL;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_FREE) {
-		spin_unlock(&endpoint->lock);
+		write_unlock_bh(&endpoint->lock);
 		goto out;
 	}
 	endpoint->status = OMX_ENDPOINT_STATUS_INITIALIZING;
 	atomic_inc(&endpoint->refcount);
-	spin_unlock(&endpoint->lock);
+	write_unlock_bh(&endpoint->lock);
 
 	/* alloc internal fields */
 	ret = omx_endpoint_alloc_resources(endpoint);
@@ -168,19 +168,19 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 	int ret;
 
 	/* test whether the endpoint is ok to be closed */
-	spin_lock(&endpoint->lock);
+	write_lock_bh(&endpoint->lock);
 	ret = -EBUSY;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
 		/* only CLOSING and OK endpoints may be attached to the iface */
 		BUG_ON(endpoint->status != OMX_ENDPOINT_STATUS_CLOSING);
-		spin_unlock(&endpoint->lock);
+		write_unlock_bh(&endpoint->lock);
 		goto out;
 	}
 	/* mark it as closing so that nobody may use it again */
 	endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;
 	/* release our refcount now that other users cannot use again */
 	atomic_dec(&endpoint->refcount);
-	spin_unlock(&endpoint->lock);
+	write_unlock_bh(&endpoint->lock);
 
 	/* wait until refcount is 0 so that other users are gone */
 	add_wait_queue(&endpoint->noref_queue, &wq);
@@ -230,17 +230,17 @@ omx_endpoint_acquire_from_ioctl(struct omx_endpoint * endpoint)
 {
 	int ret = -EINVAL;
 
-	spin_lock(&endpoint->lock);
+	read_lock(&endpoint->lock);
 	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
 		goto out_with_lock;
 
 	atomic_inc(&endpoint->refcount);
 
-	spin_unlock(&endpoint->lock);
+	read_unlock(&endpoint->lock);
 	return 0;
 
  out_with_lock:
-	spin_unlock(&endpoint->lock);
+	read_unlock(&endpoint->lock);
 	return ret;
 }
 
@@ -257,18 +257,18 @@ omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 	if (unlikely(!endpoint))
 		goto out_with_iface_lock;
 
-	spin_lock(&endpoint->lock);
+	read_lock(&endpoint->lock);
 	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
 		goto out_with_endpoint_lock;
 
 	atomic_inc(&endpoint->refcount);
 
-	spin_unlock(&endpoint->lock);
+	read_unlock(&endpoint->lock);
 	spin_unlock(&iface->endpoint_lock);
 	return endpoint;
 
  out_with_endpoint_lock:
-	spin_unlock(&endpoint->lock);
+	read_unlock(&endpoint->lock);
  out_with_iface_lock:
 	spin_unlock(&iface->endpoint_lock);
 	return NULL;
@@ -296,7 +296,7 @@ omx_miscdev_open(struct inode * inode, struct file * file)
 	if (!endpoint)
 		return -ENOMEM;
 
-	spin_lock_init(&endpoint->lock);
+	rwlock_init(&endpoint->lock);
 	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
 	atomic_set(&endpoint->refcount, 0);
 	init_waitqueue_head(&endpoint->noref_queue);
