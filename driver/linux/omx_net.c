@@ -282,7 +282,6 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 			set_current_state(TASK_RUNNING);
 			remove_wait_queue(&iface->noendpoint_queue, &wq);
 			iface->status = OMX_IFACE_STATUS_OK;
-			spin_unlock(&iface->endpoint_lock);
 			return -EINTR;
 		}
 
