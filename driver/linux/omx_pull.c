@@ -61,6 +61,16 @@ struct omx_pull_handle {
  *   (by taking the endpoint reference as long as we hold the handle lock)
  * - when copying data corresponding to the handle
  *   (the endpoint reference is hold without taking the handle lock)
+ *
+ * The pile of handles for an endpoint is protected by a rwlock. It is taken
+ * for reading when acquiring an handle (when a pull reply arrives, likely
+ * in a bottom half). It is taken for writing when creating a handle (when the
+ * application request a pull), finishing a handle (when a pull reply arrives
+ * and completes the pull request, likely in a bottom half), and when destroying
+ * and remaining handles (when an endpoint is closed).
+ * Since a bottom half and the application may both acquire the rwlock for
+ * writing, we must always disable bottom halves when taking the rwlock for
+ * either read or writing.
  */
 
 /******************************
@@ -70,7 +80,7 @@ struct omx_pull_handle {
 int
 omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
 {
-	spin_lock_init(&endpoint->pull_handle_lock);
+	rwlock_init(&endpoint->pull_handle_lock);
 	idr_init(&endpoint->pull_handle_idr);
 	INIT_LIST_HEAD(&endpoint->pull_handle_list);
 
@@ -82,7 +92,7 @@ omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 {
 	struct omx_pull_handle * handle, * next;
 
-	spin_lock(&endpoint->pull_handle_lock);
+	write_lock_bh(&endpoint->pull_handle_lock);
 
 	/* release all pull handles of endpoint */
 	list_for_each_entry_safe(handle, next,
@@ -93,7 +103,7 @@ omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 		kfree(handle);
 	}
 
-	spin_unlock(&endpoint->pull_handle_lock);
+	write_unlock_bh(&endpoint->pull_handle_lock);
 }
 
 /******************************
@@ -202,11 +212,11 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		goto out_with_handle;
 	}
 
-	spin_lock(&endpoint->pull_handle_lock);
+	write_lock_bh(&endpoint->pull_handle_lock);
 
 	err = idr_get_new(&endpoint->pull_handle_idr, handle, &handle->idr_index);
 	if (unlikely(err == -EAGAIN)) {
-		spin_unlock(&endpoint->pull_handle_lock);
+		write_unlock_bh(&endpoint->pull_handle_lock);
 		printk("omx_pull_handle_create try again\n");
 		goto idr_try_alloc;
 	}
@@ -232,7 +242,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* acquire the handle */
 	spin_lock(&handle->lock);
 
-	spin_unlock(&endpoint->pull_handle_lock);
+	write_unlock_bh(&endpoint->pull_handle_lock);
 
 	dprintk("created and acquired pull handle %p\n", handle);
 	return handle;
@@ -248,7 +258,9 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 /*
  * Acquire a pull handle and the corresponding endpoint
- * given by an pull magic and a wire handle
+ * given by an pull magic and a wire handle.
+ *
+ * May be called by the bottom half.
  */
 static inline struct omx_pull_handle *
 omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
@@ -261,10 +273,10 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	if (unlikely(!endpoint))
 		goto out;
 
-	spin_lock(&endpoint->pull_handle_lock);
+	read_lock_bh(&endpoint->pull_handle_lock);
 	handle = idr_find(&endpoint->pull_handle_idr, wire_handle);
 	if (!handle) {
-		spin_unlock(&endpoint->pull_handle_lock);
+		read_unlock_bh(&endpoint->pull_handle_lock);
 		omx_endpoint_release(endpoint);
 		goto out_with_endpoint_lock;
 	}
@@ -272,13 +284,13 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	/* acquire the handle */
 	spin_lock(&handle->lock);
 
-	spin_unlock(&endpoint->pull_handle_lock);
+	read_unlock_bh(&endpoint->pull_handle_lock);
 
 	dprintk("acquired pull handle %p\n", handle);
 	return handle;
 
  out_with_endpoint_lock:
-	spin_unlock(&endpoint->pull_handle_lock);
+	read_unlock_bh(&endpoint->pull_handle_lock);
 	omx_endpoint_release(endpoint);
  out:
 	return NULL;
@@ -301,6 +313,8 @@ omx_pull_handle_reacquire(struct omx_pull_handle * handle)
 /*
  * Takes a locked pull handle and unlocked it if it is not done yet,
  * or destroy it if it is done.
+ *
+ * Maybe be called by the bottom half.
  */
 static inline void
 omx_pull_handle_release(struct omx_pull_handle * handle)
@@ -336,11 +350,11 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		 * destroy the handle and release the region and endpoint */
 
 		/* destroy the handle */
-		spin_lock(&endpoint->pull_handle_lock);
+		write_lock_bh(&endpoint->pull_handle_lock);
 		list_del(&handle->endpoint_pull_handles);
 		idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
 		kfree(handle);
-		spin_unlock(&endpoint->pull_handle_lock);
+		write_unlock_bh(&endpoint->pull_handle_lock);
 
 		/* release the region and endpoint */
 		omx_user_region_release(region);

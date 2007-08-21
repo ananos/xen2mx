@@ -80,7 +80,7 @@ struct omx_endpoint {
 	rwlock_t user_regions_lock;
 	struct omx_user_region * user_regions[OMX_USER_REGION_MAX];
 
-	spinlock_t pull_handle_lock;
+	rwlock_t pull_handle_lock;
 	struct idr pull_handle_idr;
 	struct list_head pull_handle_list;
 };
