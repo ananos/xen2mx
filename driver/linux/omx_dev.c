@@ -244,12 +244,13 @@ omx_endpoint_acquire_from_ioctl(struct omx_endpoint * endpoint)
 	return ret;
 }
 
+/* maybe called by the bottom half */
 struct omx_endpoint *
 omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 {
 	struct omx_endpoint * endpoint;
 
-	spin_lock(&iface->endpoint_lock);
+	read_lock(&iface->endpoint_lock);
 	if (unlikely(index >= omx_endpoint_max))
 		goto out_with_iface_lock;
 
@@ -264,13 +265,13 @@ omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 	atomic_inc(&endpoint->refcount);
 
 	read_unlock(&endpoint->lock);
-	spin_unlock(&iface->endpoint_lock);
+	read_unlock(&iface->endpoint_lock);
 	return endpoint;
 
  out_with_endpoint_lock:
 	read_unlock(&endpoint->lock);
  out_with_iface_lock:
-	spin_unlock(&iface->endpoint_lock);
+	read_unlock(&iface->endpoint_lock);
 	return NULL;
 }
 

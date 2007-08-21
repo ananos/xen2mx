@@ -40,7 +40,7 @@ struct omx_iface {
 	struct net_device * eth_ifp;
 	char * board_name;
 
-	spinlock_t endpoint_lock;
+	rwlock_t endpoint_lock;
 	int endpoint_nr;
 	struct omx_endpoint ** endpoints;
 	wait_queue_head_t noendpoint_queue;
@@ -96,14 +96,17 @@ struct omx_endpoint {
  * When somebody wants to close an endpoint, it sets the CLOSING status (so that
  * new users can't acquire the endpoint) and waits for current users to release
  * (when refcount becomes 0).
- * The rwlock is taken as write only when opening and closing. Bottom half are disabled
- * meanwhile since they might preempt the application. All other lock are taken as read,
+ * The rwlock is taken as write only when opening and closing. Bottom halves are disabled
+ * meanwhile since they might preempt the application. All other locks are taken as read,
  * especially on the receive side.
  *
  * The iface doesn't have an actual refcount since it has a number of endpoints attached.
- * There's a lock to protect this array against concurrent endpoint attach/detach.
+ * There's a rwlock to protect this array against concurrent endpoint attach/detach.
  * When removing an iface (either by the user or by the netdevice notifier), the status
  * is set to CLOSING so that any new endpoint opener fails.
+ * The rwlock is taken as write only when attach/detaching endpoints. Bottom halves are
+ * disabled meanwhile since they might preempt the application. All other locks are taken
+ * as read, especially on the receive side.
  *
  * The list of ifaces is always coherent since new ifaces are only added once initialized,
  * and removed in a coherent state (endpoints have been properly detached first)

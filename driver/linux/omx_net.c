@@ -202,7 +202,7 @@ omx_iface_attach(struct net_device * ifp)
 	}
 
 	init_waitqueue_head(&iface->noendpoint_queue);
-	spin_lock_init(&iface->endpoint_lock);
+	rwlock_init(&iface->endpoint_lock);
 	iface->index = i;
 	omx_iface_nr++;
 	omx_ifaces[i] = iface;
@@ -242,12 +242,12 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 	/* if force, close all endpoints.
 	 * if not force, error if some endpoints are open.
 	 */
-	spin_lock(&iface->endpoint_lock);
+	write_lock_bh(&iface->endpoint_lock);
 	ret = -EBUSY;
 	if (!force && iface->endpoint_nr) {
 		printk(KERN_INFO "Open-MX: cannot detach interface #%d '%s', still %d endpoints open\n",
 		       iface->index, iface->eth_ifp->name, iface->endpoint_nr);
-		spin_unlock(&iface->endpoint_lock);
+		write_unlock_bh(&iface->endpoint_lock);
 		goto out;
 	}
 
@@ -276,7 +276,7 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 				  : TASK_INTERRUPTIBLE);
 		if (!iface->endpoint_nr)
 			break;
-		spin_unlock(&iface->endpoint_lock);
+		write_unlock_bh(&iface->endpoint_lock);
 
 		if (signal_pending(current)) {
 			set_current_state(TASK_RUNNING);
@@ -287,11 +287,11 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 
 		schedule();
 
-		spin_lock(&iface->endpoint_lock);
+		write_lock_bh(&iface->endpoint_lock);
 	}
 	set_current_state(TASK_RUNNING);
 	remove_wait_queue(&iface->noendpoint_queue, &wq);
-	spin_unlock(&iface->endpoint_lock);
+	write_unlock_bh(&iface->endpoint_lock);
 
 	printk(KERN_INFO "Open-MX: detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
 
@@ -472,7 +472,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	iface = omx_ifaces[endpoint->board_index];
 
 	/* lock the list of endpoints in the iface */
-	spin_lock(&iface->endpoint_lock);
+	write_lock_bh(&iface->endpoint_lock);
 
 	/* add the endpoint */
 	ret = -EBUSY;
@@ -491,13 +491,13 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	 */
 	endpoint->status = OMX_ENDPOINT_STATUS_OK;
 
-	spin_unlock(&iface->endpoint_lock);
+	write_unlock_bh(&iface->endpoint_lock);
 	spin_unlock(&omx_iface_lock);
 
 	return 0;
 
  out_with_endpoints_locked:
-	spin_unlock(&iface->endpoint_lock);
+	write_unlock_bh(&iface->endpoint_lock);
  out_with_ifaces_locked:
 	spin_unlock(&omx_iface_lock);
  out:
@@ -524,7 +524,7 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 
 	/* lock the list of endpoints in the iface, if needed */
 	if (!ifacelocked)
-		spin_lock(&iface->endpoint_lock);
+		write_lock_bh(&iface->endpoint_lock);
 
 	BUG_ON(iface->endpoints[endpoint->endpoint_index] != endpoint);
 	iface->endpoints[endpoint->endpoint_index] = NULL;
@@ -534,7 +534,7 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 		wake_up(&iface->noendpoint_queue);
 
 	if (!ifacelocked)
-		spin_unlock(&iface->endpoint_lock);
+		write_unlock_bh(&iface->endpoint_lock);
 }
 
 /******************************
