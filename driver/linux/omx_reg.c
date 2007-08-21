@@ -210,10 +210,11 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	/* no need to disable BH now, we only change the region status,
-	 * we don't change the array yet
+	/* we don't change the array yet.
+	 * but taking a write lock could block the BH taking the read_lock
+	 * after preempting us. so we use a write_lock_bh anyway.
 	 */
-	write_lock(&endpoint->user_regions_lock);
+	write_lock_bh(&endpoint->user_regions_lock);
 
 	region = endpoint->user_regions[cmd.id];
 	if (unlikely(!region)) {
@@ -229,7 +230,7 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 	region->status = OMX_USER_REGION_STATUS_CLOSING;
 
 	write_unlock_bh(&region->lock);
-	write_unlock(&endpoint->user_regions_lock);
+	write_unlock_bh(&endpoint->user_regions_lock);
 
 	/* wait until refcount is 0 so that other users are gone */
 	add_wait_queue(&region->noref_queue, &wq);
