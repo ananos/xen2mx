@@ -57,7 +57,7 @@ dev_hold_by_name(const char * ifname)
  */
 static struct omx_iface ** omx_ifaces;
 static unsigned omx_iface_nr = 0;
-static spinlock_t omx_iface_lock = SPIN_LOCK_UNLOCKED;
+static rwlock_t omx_iface_lock = RW_LOCK_UNLOCKED;
 
 /*
  * Returns the iface associated to a physical interface.
@@ -109,7 +109,7 @@ omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
 	int ret;
 
 	/* need to lock since we access the internals of the iface */
-	spin_lock(&omx_iface_lock);
+	read_lock(&omx_iface_lock);
 
 	ret = -EINVAL;
 	if (board_index >= omx_iface_max
@@ -123,12 +123,12 @@ omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
 	strncpy(board_name, iface->board_name, OMX_HOSTNAMELEN_MAX);
 	board_name[OMX_HOSTNAMELEN_MAX-1] = '\0';
 
-	spin_unlock(&omx_iface_lock);
+	read_unlock(&omx_iface_lock);
 
 	return 0;
 
  out_with_lock:
-	spin_unlock(&omx_iface_lock);
+	read_unlock(&omx_iface_lock);
 	return ret;
 }
 
@@ -333,7 +333,7 @@ omx_ifaces_show(char *buf)
 	int i;
 
 	/* need to lock since we access the internals of the ifaces */
-	spin_lock(&omx_iface_lock);
+	read_lock(&omx_iface_lock);
 
 	for (i=0; i<omx_iface_max; i++) {
 		struct omx_iface * iface = omx_ifaces[i];
@@ -349,7 +349,7 @@ omx_ifaces_show(char *buf)
 		}
 	}
 
-	spin_unlock(&omx_iface_lock);
+	read_unlock(&omx_iface_lock);
 
 	return total + 1;
 }
@@ -380,7 +380,7 @@ omx_ifaces_store(const char *buf, size_t size)
 		 */
 		int ret = -EINVAL;
 
-		spin_lock(&omx_iface_lock);
+		write_lock(&omx_iface_lock);
 		for(i=0; i<omx_iface_max; i++) {
 			struct omx_iface * iface = omx_ifaces[i];
 			struct net_device * ifp;
@@ -403,7 +403,7 @@ omx_ifaces_store(const char *buf, size_t size)
 			dev_put(ifp);
 			break;
 		}
-		spin_unlock(&omx_iface_lock);
+		write_unlock(&omx_iface_lock);
 
 		if (ret == -EINVAL) {
 			printk(KERN_ERR "Open-MX: Cannot find any attached interface '%s' to detach\n", copy);
@@ -419,9 +419,9 @@ omx_ifaces_store(const char *buf, size_t size)
 		if (!ifp)
 			return -EINVAL;
 
-		spin_lock(&omx_iface_lock);
+		write_lock(&omx_iface_lock);
 		ret = omx_iface_attach(ifp);
-		spin_unlock(&omx_iface_lock);
+		write_unlock(&omx_iface_lock);
 		if (ret < 0) {
 			dev_put(ifp);
 			return ret;
@@ -455,7 +455,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 		goto out;
 
 	/* lock the list of ifaces */
-	spin_lock(&omx_iface_lock);
+	read_lock(&omx_iface_lock);
 
 	/* find the iface */
 	ret = -EINVAL;
@@ -492,14 +492,14 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	endpoint->status = OMX_ENDPOINT_STATUS_OK;
 
 	write_unlock_bh(&iface->endpoint_lock);
-	spin_unlock(&omx_iface_lock);
+	read_unlock(&omx_iface_lock);
 
 	return 0;
 
  out_with_endpoints_locked:
 	write_unlock_bh(&iface->endpoint_lock);
  out_with_ifaces_locked:
-	spin_unlock(&omx_iface_lock);
+	read_unlock(&omx_iface_lock);
  out:
 	return ret;
 }
@@ -550,7 +550,7 @@ omx_netdevice_notifier_cb(struct notifier_block *unused,
 	if (event == NETDEV_UNREGISTER) {
 		struct omx_iface * iface;
 
-		spin_lock(&omx_iface_lock);
+		write_lock(&omx_iface_lock);
 		iface = omx_iface_find_by_ifp(ifp);
 		if (iface) {
 			int ret;
@@ -563,7 +563,7 @@ omx_netdevice_notifier_cb(struct notifier_block *unused,
 			BUG_ON(ret);
 			dev_put(ifp);
 		}
-		spin_unlock(&omx_iface_lock);
+		write_unlock(&omx_iface_lock);
 	}
 
 	return NOTIFY_DONE;
@@ -708,7 +708,7 @@ omx_net_exit(void)
 	/* now, no iface may be used by any incoming packet */
 
 	/* prevent omx_netdevice_notifier from removing an iface now */
-	spin_lock(&omx_iface_lock);
+	write_lock(&omx_iface_lock);
 
 	for (i=0; i<omx_iface_max; i++) {
 		struct omx_iface * iface = omx_ifaces[i];
@@ -728,7 +728,7 @@ omx_net_exit(void)
 	/* release the lock to let omx_netdevice_notifier finish
 	 * in case it has been invoked during our loop
 	 */
-	spin_unlock(&omx_iface_lock);
+	write_unlock(&omx_iface_lock);
 	/* unregister the notifier then */
 	unregister_netdevice_notifier(&omx_netdevice_notifier);
 

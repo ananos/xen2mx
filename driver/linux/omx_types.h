@@ -112,9 +112,11 @@ struct omx_endpoint {
  * and removed in a coherent state (endpoints have been properly detached first)
  * Incoming packet processing is disabled while removing an iface.
  * So scanning the array of ifaces does not require locking,
- * but looking in the iface internals requires locking.
+ * but looking in the iface internals requires (read) locking.
  * The iface may not be removed while processing an incoming packet, so
  * we don't need locking and no need hold a reference on the iface either.
+ * No need to disable bottom halves since it never scans the array of ifaces
+ * (and the notifier callback may not be called from BH since it is interruptible).
  *
  * The locks are always taken in this priority order:
  * omx_iface_lock, iface->endpoint_lock, endpoint->lock
