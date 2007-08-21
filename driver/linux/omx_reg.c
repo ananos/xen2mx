@@ -164,18 +164,18 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 
 	up_write(&current->mm->mmap_sem);
 
-	spin_lock(&endpoint->user_regions_lock);
+	write_lock_bh(&endpoint->user_regions_lock);
 
 	if (unlikely(endpoint->user_regions[cmd.id] != NULL)) {
 		printk(KERN_ERR "Open-MX: Cannot register busy region %d\n", cmd.id);
 		ret = -EBUSY;
-		spin_unlock(&endpoint->user_regions_lock);
+		write_unlock_bh(&endpoint->user_regions_lock);
 		goto out_with_region;
 	}
 	endpoint->user_regions[cmd.id] = region;
 	region->id = cmd.id;
 
-	spin_unlock(&endpoint->user_regions_lock);
+	write_unlock_bh(&endpoint->user_regions_lock);
 
 	kfree(usegs);
 	return 0;
@@ -210,7 +210,10 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	spin_lock(&endpoint->user_regions_lock);
+	/* no need to disable BH now, we only change the region status,
+	 * we don't change the array yet
+	 */
+	write_lock(&endpoint->user_regions_lock);
 
 	region = endpoint->user_regions[cmd.id];
 	if (unlikely(!region)) {
@@ -226,7 +229,7 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 	region->status = OMX_USER_REGION_STATUS_CLOSING;
 
 	write_unlock_bh(&region->lock);
-	spin_unlock(&endpoint->user_regions_lock);
+	write_unlock(&endpoint->user_regions_lock);
 
 	/* wait until refcount is 0 so that other users are gone */
 	add_wait_queue(&region->noref_queue, &wq);
@@ -246,17 +249,19 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 	remove_wait_queue(&endpoint->noref_queue, &wq);
 
 	/* release the region now that nobody uses it */
-	spin_lock(&endpoint->user_regions_lock);
+
+	/* now we really modify the array now, disable BH too */
+	write_lock_bh(&endpoint->user_regions_lock);
 	omx__user_region_deregister(region);
 	endpoint->user_regions[cmd.id] = NULL;
-	spin_unlock(&endpoint->user_regions_lock);
+	write_unlock_bh(&endpoint->user_regions_lock);
 
 	return 0;
 
  out_with_region_lock:
 	write_unlock_bh(&region->lock);
  out_with_endpoint_lock:
-	spin_unlock(&endpoint->user_regions_lock);
+	write_unlock_bh(&endpoint->user_regions_lock);
  out:
 	return ret;
 }
@@ -272,7 +277,7 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 {
 	struct omx_user_region * region;
 
-	spin_lock(&endpoint->user_regions_lock);
+	read_lock(&endpoint->user_regions_lock);
 	if (unlikely(rdma_id >= OMX_USER_REGION_MAX))
 		goto out_with_endpoint_lock;
 	region = endpoint->user_regions[rdma_id];
@@ -285,14 +290,14 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 
 	atomic_inc(&region->refcount);
 	read_unlock(&region->lock);
-	spin_unlock(&endpoint->user_regions_lock);
+	read_unlock(&endpoint->user_regions_lock);
 
 	return region;
 
  out_with_region_lock:
 	read_unlock(&region->lock);
  out_with_endpoint_lock:
-	spin_unlock(&endpoint->user_regions_lock);
+	read_unlock(&endpoint->user_regions_lock);
 	return NULL;
 }
 
@@ -313,7 +318,7 @@ void
 omx_endpoint_user_regions_init(struct omx_endpoint * endpoint)
 {
 	memset(endpoint->user_regions, 0, sizeof(endpoint->user_regions));
-	spin_lock_init(&endpoint->user_regions_lock);
+	rwlock_init(&endpoint->user_regions_lock);
 }
 
 void
