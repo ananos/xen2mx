@@ -141,7 +141,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 		goto out_with_usegs;
 	}
 
-	spin_lock_init(&region->lock);
+	rwlock_init(&region->lock);
 	region->status = OMX_USER_REGION_STATUS_OK;
 	atomic_set(&region->refcount, 0);
 	init_waitqueue_head(&region->noref_queue);
@@ -218,14 +218,14 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 		goto out_with_endpoint_lock;
 	}
 
-	spin_lock(&region->lock);
+	write_lock_bh(&region->lock);
 	if (unlikely(region->status != OMX_USER_REGION_STATUS_OK))
 		goto out_with_region_lock;
 
 	/* mark it as closing so that nobody may use it again */
 	region->status = OMX_USER_REGION_STATUS_CLOSING;
 
-	spin_unlock(&region->lock);
+	write_unlock_bh(&region->lock);
 	spin_unlock(&endpoint->user_regions_lock);
 
 	/* wait until refcount is 0 so that other users are gone */
@@ -254,7 +254,7 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_region_lock:
-	spin_unlock(&region->lock);
+	write_unlock_bh(&region->lock);
  out_with_endpoint_lock:
 	spin_unlock(&endpoint->user_regions_lock);
  out:
@@ -265,6 +265,7 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
  * User Region Acquire/Release
  */
 
+/* maybe be called from bottom halves */
 struct omx_user_region *
 omx_user_region_acquire(struct omx_endpoint * endpoint,
 			uint32_t rdma_id)
@@ -278,18 +279,18 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 	if (unlikely(!region))
 		goto out_with_endpoint_lock;
 
-	spin_lock(&region->lock);
+	read_lock(&region->lock);
 	if (unlikely(region->status != OMX_USER_REGION_STATUS_OK))
 		goto out_with_region_lock;
 
 	atomic_inc(&region->refcount);
-	spin_unlock(&region->lock);
+	read_unlock(&region->lock);
 	spin_unlock(&endpoint->user_regions_lock);
 
 	return region;
 
  out_with_region_lock:
-	spin_unlock(&region->lock);
+	read_unlock(&region->lock);
  out_with_endpoint_lock:
 	spin_unlock(&endpoint->user_regions_lock);
 	return NULL;

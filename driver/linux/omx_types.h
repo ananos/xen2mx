@@ -132,7 +132,7 @@ enum omx_user_region_status {
 struct omx_user_region {
 	uint32_t id;
 
-	spinlock_t lock;
+	rwlock_t lock;
 	enum omx_user_region_status status;
 	atomic_t refcount;
 	wait_queue_head_t noref_queue;
