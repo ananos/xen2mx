@@ -236,8 +236,8 @@ omx__pull_done(struct omx_endpoint * ep,
   /* FIXME: use cookie since region might be used for something else? */
   region = &ep->large_region_map.array[region_id].region;
   req = region->user;
-  assert(req
-	 && req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
+  assert(req);
+  assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
 
   partner = req->generic.partner;
   /* FIXME: check length, update req->generic.status.xfer_length and status */
