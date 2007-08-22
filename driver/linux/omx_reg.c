@@ -242,14 +242,14 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 			break;
 		if (signal_pending(current)) {
 			set_current_state(TASK_RUNNING);
-			remove_wait_queue(&endpoint->noref_queue, &wq);
+			remove_wait_queue(&region->noref_queue, &wq);
 			region->status = OMX_USER_REGION_STATUS_OK;
 			return -EINTR;
 		}
 		schedule();
 	}
 	set_current_state(TASK_RUNNING);
-	remove_wait_queue(&endpoint->noref_queue, &wq);
+	remove_wait_queue(&region->noref_queue, &wq);
 
 	/* release the region now that nobody uses it */
 
