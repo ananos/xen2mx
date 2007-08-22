@@ -143,7 +143,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 
 	rwlock_init(&region->lock);
 	region->status = OMX_USER_REGION_STATUS_OK;
-	atomic_set(&region->refcount, 0);
+	atomic_set(&region->refcount, 1);
 	init_waitqueue_head(&region->noref_queue);
 	region->total_length = 0;
 
@@ -228,6 +228,8 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 
 	/* mark it as closing so that nobody may use it again */
 	region->status = OMX_USER_REGION_STATUS_CLOSING;
+	/* release our refcount now that other users cannot use again */
+	atomic_dec(&region->refcount);
 
 	write_unlock_bh(&region->lock);
 	write_unlock_bh(&endpoint->user_regions_lock);
