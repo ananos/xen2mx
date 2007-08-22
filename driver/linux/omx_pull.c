@@ -672,6 +672,7 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle)
 	event->local_rdma_id = handle->region->id;
 
 	/* set the type at the end so that user-space does not find the slot on error */
+	wmb();
 	event->type = OMX_EVT_PULL_DONE;
 
 	/* make sure the handle will be released, in case we are reported truncation */

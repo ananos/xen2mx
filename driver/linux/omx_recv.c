@@ -120,6 +120,7 @@ omx_recv_connect(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* set the type at the end so that user-space does not find the slot on error */
+	wmb();
 	event->type = OMX_EVT_RECV_CONNECT;
 
 	omx_endpoint_release(endpoint);
@@ -201,6 +202,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* set the type at the end so that user-space does not find the slot on error */
+	wmb();
 	event->type = OMX_EVT_RECV_TINY;
 
 	omx_endpoint_release(endpoint);
@@ -284,6 +286,7 @@ omx_recv_small(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* set the type at the end so that user-space does not find the slot on error */
+	wmb();
 	event->type = OMX_EVT_RECV_SMALL;
 
 	omx_endpoint_release(endpoint);
@@ -370,6 +373,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* set the type at the end so that user-space does not find the slot on error */
+	wmb();
 	event->type = OMX_EVT_RECV_MEDIUM;
 
 	omx_endpoint_release(endpoint);
@@ -451,6 +455,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* set the type at the end so that user-space does not find the slot on error */
+	wmb();
 	event->type = OMX_EVT_RECV_RNDV;
 
 	omx_endpoint_release(endpoint);
@@ -510,6 +515,7 @@ omx_recv_notify(struct omx_iface * iface,
 	omx_recv_dprintk(&mh->head.eth, "NOTIFY");
 
 	/* set the type at the end so that user-space does not find the slot on error */
+	wmb();
 	event->type = OMX_EVT_RECV_NOTIFY;
 
 	omx_endpoint_release(endpoint);

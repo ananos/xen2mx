@@ -348,6 +348,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	/* prepare the deferred event now that we cannot fail anymore */
 	event->endpoint = endpoint;
 	event->evt.send_medium_frag_done.sendq_page_offset = cmd.sendq_page_offset;
+	/* no need to enforce the type at the end since we don't write to user-space yet */
 	event->evt.generic.type = OMX_EVT_SEND_MEDIUM_FRAG_DONE;
 	skb->sk = (void *) event;
 	skb->destructor = omx_medium_frag_skb_destructor;
