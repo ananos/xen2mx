@@ -147,6 +147,13 @@ struct omx_user_region {
 	} segments[0];
 };
 
+struct omx_user_region_offset_state {
+	int valid;
+	unsigned long current_region_offset;
+	unsigned long current_segment;
+	unsigned long current_segment_offset;
+};
+
 #endif /* __omx_types_h__ */
 
 /*

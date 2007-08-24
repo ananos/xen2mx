@@ -53,9 +53,29 @@
 * optimizations
   - likely/unlikely in the lib; for gcc only
   - single ioctl for multiple medium frags ?
-  - use IOAT
   - no need to pad event to 64 ? no need to put the type at the end, but write it after the rest
   - optimize shared comms between boards from within the driver
+
+* use IOAT
+  + post a req
+    cookie = dma_async_memcpy_pg_to_pg(chan, dst_page, dest_off, src_page, src_off, len)
+  + send a batch of req
+    dma_async_memcpy_issue_pending(chan)
+  + poll completion of one cookie foo:
+    dma_async_memcpy_complete(chan, cookie, NULL, NULL) == DMA_SUCCESS
+  + poll completion up to last_cookie (see tcp_recvmsg() in net/ipv4/tcp.c)
+    while dma_async_memcpy_complete(chan, last_cookie, &done, &used) == DMA_IN_PROGRESS
+      while dma_async_is_complete(next_cookie, done, used) == DMA_SUCCESS
+        free next_cookie's skb
+    free all skb up to last_cookie
+  + get/release a chan
+    chan = get_softnet_dma()
+    ...
+    dma_chan_put(chan)
+  + manage client/chan (see netdev_dma_event() net/core/dev.c)
+    struct dma_client client.event_callback
+    dma_async_client_register(client)
+    dma_async_client_chan_request(client)
 
 * use valgrind memory hooks
 * add valgrind ioctl hooks
