@@ -79,13 +79,18 @@ omx__peers_read(void)
     char hostname[OMX_HOSTNAMELEN_MAX];
     int index;
     int addr_bytes[6];
+    size_t len = strlen(line);
 
     /* ignore comments and empty lines */
-    if (line[0] == '#' || strlen(line) == 1)
+    if (line[0] == '#' || len == 1)
       continue;
 
+    /* clean the line \n */
+    if (line[len-1] == '\n')
+      line[len-1] = '\0';
+
     /* parse a line */
-    if (sscanf(line, "%d\t%02x:%02x:%02x:%02x:%02x:%02x\t%s\n",
+    if (sscanf(line, "%d %02x:%02x:%02x:%02x:%02x:%02x %s",
 	       &index,
 	       &addr_bytes[0], &addr_bytes[1], &addr_bytes[2],
 	       &addr_bytes[3], &addr_bytes[4], &addr_bytes[5],
