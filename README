@@ -1,6 +1,51 @@
-+---------------+
-| Kernel Module |
-+---------------+
++----------------+
+| I. Quick Start |
++----------------+
+
+Assuming you want to connect 2 nodes using their 'eth2' interface:
+
+a. Look for eth2 MAC addresses in /sbin/ifconfig -a on each node.
+   and insert them in a file such as this one:
+     $ cat /path/to/the/peers/file
+     1	01:02:03:04:05:06	node1:0
+     2	a0:b0:c0:d0:e0:f0	node2:0
+
+b. Make Open-MX use this file:
+     $ export OMX_PEERS_FILENAME=/path/to/the/peers/file
+   See Section IV for details.
+
+c. Load the open-mx kernel module and tell it which interface to use
+     $ modprobe open-mx omx_ifnames=eth2
+   See section II and III for details.
+
+d. Make sure both interfaces are up
+     $ ifconfig eth2 up
+
+e. Run omx_info to see which interfaces are attached and which
+   peers are accessible:
+     $ omx_info
+     node1:0 (board #0 name eth2 addr 01:02:03:04:05:06)
+     ==============================================
+     1) 01:02:03:04:05:06 node1:0
+     2) a0:b0:c0:d0:e0:f0 node2:0
+
+f. Use omx_pingpong to test actual communications, on the first node:
+     node1 $ omx_pingpong
+     Successfully attached endpoint #0 on board #0 (hostname 'node1:0', name 'eth2', addr 01:02:03:04:05:06)
+     Starting receiver...
+   then on the second node:
+     node2 $ omx_pingpong -d node1:0
+     Successfully attached endpoint #0 on board #0 (hostname 'node2:0', name 'eth2', addr a0:b0:c0:d0:e0:f0)
+     Starting sender to node1:0...
+   You should get performance numbers such as
+     length         0:       7.970 us   0.00 MB/s        0.00 MiB/s
+     length         1:       7.950 us   0.00 MB/s        0.00 MiB/s
+     [...]
+     length   4194304:       8388.608 us   500.00 MB/s       476.83 MiB/s
+
++-------------------+
+| II. Kernel Module |
++-------------------+
 
 The 'open-mx' kernel module should be loaded prior to any user-space
 usage of Open-MX. If not loaded, a "No device" error will be returned.
@@ -16,9 +61,9 @@ the default mode of this file, for instance by adding the following line
 in a udev rules file:
 KERNEL=="open-mx", MODE="0666", GROUP="users"
 
-+----------------------+
-| Attaching interfaces |
-+----------------------+
++---------------------------+
+| III. Attaching interfaces |
++---------------------------+
 
 By default, all existing network interfaces in the system will be
 attached to Open-MX (except those above 8 by default). To change
@@ -38,9 +83,9 @@ Note that these interfaces must be 'up' in order to work.
 $ ifconfig eth2 up
 However, having an IP address is not required.
 
-+-----------------+
-| Peer Table File |
-+-----------------+
++---------------------+
+| IV. Peer Table File |
++---------------------+
 
 A file listing peers must be provided, either in the current directory,
 or at a location given in the environment variable OMX_PEERS_FILENAME
