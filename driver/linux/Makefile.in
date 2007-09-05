@@ -8,8 +8,10 @@ OPEN_MX_DIR	=	@abs_builddir@
 # instead of builddir
 
 all:
-	@echo Linking kernel module source files to local directory
-	@for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || ln -sf $$file ; done
+	@if test "@srcdir@" != "@builddir@" ; then \
+		echo Linking kernel module source files to local directory ; \
+		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || ln -sf $$file ; done ; \
+	fi
 	@echo Running compile-time assertions
 	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) omx__assertions.o
 	@echo Building kernel module
@@ -24,8 +26,10 @@ install: all installonly
 clean:
 	@echo Cleaning kernel module build
 	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) clean
-	@echo Removing links to kernel module source files in local directory
-	@for file in $(wildcard @srcdir@/*.[ch]) ; do rm -f $$(basename $$file) ; done
+	@if test "@srcdir@" != "@builddir@" ; then \
+		echo Removing links to kernel module source files in local directory ; \
+		for file in $(wildcard @srcdir@/*.[ch]) ; do rm -f $$(basename $$file) ; done ; \
+	fi
 
 # nothing special needed for distclean here
 distclean: clean
