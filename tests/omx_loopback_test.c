@@ -154,7 +154,8 @@ int main(int argc, char *argv[])
   struct timeval tv1, tv2;
   int board_index = BID;
   int endpoint_index = EID;
-  char board_name[OMX_HOSTNAMELEN_MAX];
+  char hostname[OMX_HOSTNAMELEN_MAX];
+  char ifacename[16];
   omx_endpoint_addr_t addr;
   char c;
   int i;
@@ -196,15 +197,23 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  ret = omx_get_info(ep, OMX_INFO_BOARD_NAME, NULL, 0,
-		     board_name, OMX_HOSTNAMELEN_MAX);
+  ret = omx_get_info(ep, OMX_INFO_BOARD_HOSTNAME, NULL, 0,
+		     hostname, sizeof(hostname));
   if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to find board_name (%s)\n",
+    fprintf(stderr, "Failed to find board hostname (%s)\n",
 	    omx_strerror(ret));
     goto out_with_ep;
   }
 
-  printf("Using board #%d name %s\n", board_index, board_name);
+  ret = omx_get_info(ep, OMX_INFO_BOARD_IFACENAME, NULL, 0,
+		     ifacename, sizeof(ifacename));
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to find board iface name (%s)\n",
+	    omx_strerror(ret));
+    goto out_with_ep;
+  }
+
+  printf("Using board #%d name '%s' hostname '%s'\n", board_index, ifacename, hostname);
 
   ret = omx_get_endpoint_addr(ep, &addr);
   if (ret != OMX_SUCCESS) {

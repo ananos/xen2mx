@@ -415,7 +415,8 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 
 		ret = omx_iface_get_id(get_board_id.board_index,
 				       &get_board_id.board_addr,
-				       get_board_id.board_name);
+				       get_board_id.hostname,
+				       get_board_id.ifacename);
 
 		/* release the endpoint if we used it */
 		if (use_endpoint)

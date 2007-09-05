@@ -51,6 +51,7 @@
 #define OMX_CONNECT_DATA_MAX	32
 
 #define OMX_HOSTNAMELEN_MAX	80
+#define OMX_IF_NAMESIZE		16
 
 #define OMX_USER_REGION_MAX	255
 typedef uint8_t omx_user_region_id_t;
@@ -156,7 +157,8 @@ struct omx_cmd_bench {
 struct omx_cmd_get_board_id {
 	uint8_t board_index;
 	uint64_t board_addr;
-	char board_name[OMX_HOSTNAMELEN_MAX];
+	char hostname[OMX_HOSTNAMELEN_MAX];
+	char ifacename[OMX_IF_NAMESIZE];
 };
 
 struct omx_cmd_open_endpoint {

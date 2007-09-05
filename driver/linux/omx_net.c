@@ -102,7 +102,7 @@ omx_ifaces_get_count(void)
  * Return the address and name of an iface.
  */
 int
-omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
+omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, char * ifacename)
 {
 	struct omx_iface * iface;
 	struct net_device * ifp;
@@ -120,8 +120,10 @@ omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name)
 	ifp = iface->eth_ifp;
 
 	*board_addr = omx_board_addr_from_netdevice(ifp);
-	strncpy(board_name, iface->board_name, OMX_HOSTNAMELEN_MAX);
-	board_name[OMX_HOSTNAMELEN_MAX-1] = '\0';
+	strncpy(ifacename, ifp->name, OMX_IF_NAMESIZE);
+	ifacename[OMX_IF_NAMESIZE-1] = '\0';
+	strncpy(hostname, iface->hostname, OMX_HOSTNAMELEN_MAX);
+	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 
 	read_unlock(&omx_iface_lock);
 
@@ -148,7 +150,7 @@ static int
 omx_iface_attach(struct net_device * ifp)
 {
 	struct omx_iface * iface;
-	char *board_name;
+	char *hostname;
 	unsigned mtu = ifp->mtu;
 	int ret;
 	int i;
@@ -182,15 +184,16 @@ omx_iface_attach(struct net_device * ifp)
 		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
 		       ifp->name, OMX_MTU_MIN, mtu);
 
-	board_name = kmalloc(strlen(omx_current_utsname.nodename) + 1 + strlen(ifp->name) + 1, GFP_KERNEL);
-	if (!board_name) {
-		printk(KERN_ERR "Open-MX: Failed to allocate interface board name\n");
+	hostname = kmalloc(OMX_HOSTNAMELEN_MAX, GFP_KERNEL);
+	if (!hostname) {
+		printk(KERN_ERR "Open-MX: Failed to allocate interface hostname\n");
 		ret = -ENOMEM;
 		goto out_with_iface;
 	}
 
-	sprintf(board_name, "%s.%s", omx_current_utsname.nodename, ifp->name);
-	iface->board_name = board_name;
+	snprintf(hostname, OMX_HOSTNAMELEN_MAX, "%s:%d", omx_current_utsname.nodename, i);
+	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+	iface->hostname = hostname;
 
 	iface->eth_ifp = ifp;
 	iface->endpoint_nr = 0;
@@ -198,7 +201,7 @@ omx_iface_attach(struct net_device * ifp)
 	if (!iface->endpoints) {
 		printk(KERN_ERR "Open-MX: Failed to allocate interface endpoint pointers\n");
 		ret = -ENOMEM;
-		goto out_with_iface_board_name;
+		goto out_with_iface_hostname;
 	}
 
 	init_waitqueue_head(&iface->noendpoint_queue);
@@ -209,8 +212,8 @@ omx_iface_attach(struct net_device * ifp)
 
 	return 0;
 
- out_with_iface_board_name:
-	kfree(board_name);
+ out_with_iface_hostname:
+	kfree(hostname);
  out_with_iface:
 	kfree(iface);
  out_with_ifp_hold:
@@ -298,7 +301,7 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 	omx_ifaces[iface->index] = NULL;
 	omx_iface_nr--;
 	kfree(iface->endpoints);
-	kfree(iface->board_name);
+	kfree(iface->hostname);
 	kfree(iface);
 
 	return 0;

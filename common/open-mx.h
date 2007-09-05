@@ -146,8 +146,10 @@ enum omx_info_key {
   OMX_INFO_ENDPOINT_MAX,
   /* return the current number of boards */
   OMX_INFO_BOARD_COUNT,
-  /* return the board name of an endpoint or index (given as uint8_t) */
-  OMX_INFO_BOARD_NAME,
+  /* return the board hostname of an endpoint or index (given as uint8_t) */
+  OMX_INFO_BOARD_HOSTNAME,
+  /* return the board iface name of an endpoint or index (given as uint8_t) */
+  OMX_INFO_BOARD_IFACENAME,
 };
 typedef enum omx_info_key omx_info_key_t;
 

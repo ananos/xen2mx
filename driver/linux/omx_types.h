@@ -38,7 +38,7 @@ struct omx_iface {
 	int index;
 
 	struct net_device * eth_ifp;
-	char * board_name;
+	char * hostname;
 
 	rwlock_t endpoint_lock;
 	int endpoint_nr;

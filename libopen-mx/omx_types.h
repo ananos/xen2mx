@@ -104,7 +104,8 @@ struct omx__partner {
 struct omx_endpoint {
   int fd;
   int endpoint_index, board_index;
-  char board_name[OMX_HOSTNAMELEN_MAX];
+  char hostname[OMX_HOSTNAMELEN_MAX];
+  char ifacename[OMX_IF_NAMESIZE];
   uint32_t session_id;
   uint32_t app_key;
   void * recvq, * sendq, * eventq;

@@ -46,7 +46,7 @@ static inline void omx_endpoint_reacquire(struct omx_endpoint * endpoint)
 extern int omx_ifaces_show(char *buf);
 extern int omx_ifaces_store(const char *buf, size_t size);
 extern int omx_ifaces_get_count(void);
-extern int omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * board_name);
+extern int omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, char * ifacename);
 extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);
 
 /* sending */

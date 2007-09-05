@@ -30,6 +30,7 @@
 void
 assertions(void)
 {
+  CHECK(OMX_IF_NAMESIZE == IFNAMSIZ);
   CHECK(sizeof(uint64_t) >= sizeof(((struct ethhdr *)NULL)->h_dest));
   CHECK(sizeof(uint64_t) >= sizeof(((struct ethhdr *)NULL)->h_source));
   CHECK(PAGE_SIZE%OMX_SENDQ_ENTRY_SIZE == 0);

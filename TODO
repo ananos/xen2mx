@@ -1,3 +1,8 @@
+* /etc/init.d/open-mx script with IFACES variable in /etc/open-mx.conf
+* sethostname ioctl
+* ioctls to change board indexes?
+* restore searching for 'lo' in omx_loopback_test
+
 * move irecv and process_recv* to omx_recv.c
 
 * check pingpong contents

@@ -222,14 +222,14 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_large_regions;
   }
 
-  ret = omx__get_board_id(ep, NULL, ep->board_name, &board_addr);
+  ret = omx__get_board_id(ep, NULL, &board_addr, ep->hostname, ep->ifacename);
   if (ret != OMX_SUCCESS)
     goto out_with_large_regions;
 
   omx__board_addr_sprintf(board_addr_str, board_addr);
-  printf("Successfully attached endpoint #%ld on board #%ld (%s, %s)\n",
+  printf("Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
 	 (unsigned long) endpoint_index, (unsigned long) board_index,
-	 ep->board_name, board_addr_str);
+	 ep->hostname, ep->ifacename, board_addr_str);
 
   /* allocate partners */
   ep->partners = calloc(omx__globals.peer_max * omx__globals.endpoint_max,

@@ -50,11 +50,12 @@ int main(void)
 
   for(i=0, found=0; i<max && found<count; i++) {
     uint8_t board_index = i;
-    char board_name[OMX_HOSTNAMELEN_MAX];
+    char hostname[OMX_HOSTNAMELEN_MAX];
+    char ifacename[OMX_IF_NAMESIZE];
     uint64_t board_addr;
     char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 
-    ret = omx__get_board_id(NULL, &board_index, board_name, &board_addr);
+    ret = omx__get_board_id(NULL, &board_index, &board_addr, hostname, ifacename);
     if (ret == OMX_INVALID_PARAMETER)
       continue;
     if (ret != OMX_SUCCESS) {
@@ -67,8 +68,8 @@ int main(void)
 
     printf("\n");
     omx__board_addr_sprintf(board_addr_str, board_addr);
-    printf("Board #%d name %s addr %s\n",
-	   i, board_name, board_addr_str);
+    printf("%s (board #%d name %s addr %s)\n",
+	   hostname, i, ifacename, board_addr_str);
     printf("==============================================\n");
 
     omx__peers_dump("  %d) %s %s\n");
