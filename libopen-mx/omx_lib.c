@@ -567,6 +567,8 @@ omx_irecv(struct omx_endpoint *ep,
       omx__debug_assert(req->recv.unexpected);
       req->recv.unexpected = 0;
 
+      req->generic.status.context = context;
+
       if (req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE) {
 	/* it's a large message, queue the recv large */
 	req->recv.buffer = buffer;
