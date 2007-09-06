@@ -412,3 +412,26 @@ omx__process_recv_connect(struct omx_endpoint *ep,
   else
     return omx__process_recv_connect_request(ep, event);
 }
+
+/***************************
+ * Endpoint address context
+ */
+
+omx_return_t
+omx_set_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
+			      void *context)
+{
+  struct omx__partner *partner = omx__partner_from_addr(&endpoint_addr);
+  partner->user_context = context;
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
+			      void **context)
+{
+  struct omx__partner *partner = omx__partner_from_addr(&endpoint_addr);
+  *context = partner->user_context;
+  return OMX_SUCCESS;
+}
+

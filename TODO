@@ -1,5 +1,4 @@
 * missing features (for PVFS2)
-  + omx_set/get_endpoint_addr_context
   + thread safety (including omx_wakeup)
   + omx_cancel
   + omx_disconnect

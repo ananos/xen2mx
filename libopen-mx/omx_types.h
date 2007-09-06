@@ -99,6 +99,7 @@ struct omx__partner {
    * if changing next_frag_recv_seq, ack all the previous seqnums
    */
 
+  void * user_context;
 };
 
 struct omx_endpoint {

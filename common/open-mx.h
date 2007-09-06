@@ -111,6 +111,14 @@ omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
 			    uint64_t *nic_id, uint32_t *endpoint_id);
 
 omx_return_t
+omx_set_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
+			      void *context);
+
+omx_return_t
+omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
+			      void **context);
+
+omx_return_t
 omx_isend(omx_endpoint_t ep,
 	  void *buffer, size_t length,
 	  uint64_t match_info,
