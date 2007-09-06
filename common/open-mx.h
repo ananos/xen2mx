@@ -72,6 +72,9 @@ omx__init_api(int api);
 
 static inline omx_return_t omx_init(void) { return omx__init_api(OMX_API); }
 
+omx_return_t
+omx_finalize(void);
+
 const char *
 omx_strerror(omx_return_t ret);
 
