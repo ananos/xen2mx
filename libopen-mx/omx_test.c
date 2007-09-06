@@ -169,3 +169,54 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
  out:
   return ret;
 }
+
+omx_return_t
+omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
+	   omx_status_t *status, uint32_t *result)
+{
+  union omx_request * req;
+  omx_return_t ret = OMX_SUCCESS;
+
+  ret = omx__progress(ep);
+  if (ret != OMX_SUCCESS)
+    goto out;
+
+  omx__foreach_request(&ep->unexp_req_q, req) {
+    if ((req->generic.status.match_info & match_mask) == match_info) {
+      memcpy(status, &req->generic.status, sizeof(*status));
+      *result = 1;
+      goto out;
+    }
+  }
+  *result = 0;
+
+ out:
+  return ret;
+}
+
+omx_return_t
+omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
+	  omx_status_t *status, uint32_t *result)
+{
+  union omx_request * req;
+  omx_return_t ret = OMX_SUCCESS;
+
+  while (1) {
+    ret = omx__progress(ep);
+    if (ret != OMX_SUCCESS)
+      goto out;
+    /* FIXME: sleep */
+
+    omx__foreach_request(&ep->unexp_req_q, req) {
+      if ((req->generic.status.match_info & match_mask) == match_info) {
+	memcpy(status, &req->generic.status, sizeof(*status));
+	*result = 1;
+	goto out;
+      }
+    }
+  }
+  *result = 0;
+
+ out:
+  return ret;
+}

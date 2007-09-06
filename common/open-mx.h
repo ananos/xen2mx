@@ -157,6 +157,14 @@ omx_return_t
 omx_peek(omx_endpoint_t ep, omx_request_t * request,
 	 uint32_t *result);
 
+omx_return_t
+omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
+	   omx_status_t *status, uint32_t *result);
+
+omx_return_t
+omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
+	  omx_status_t *status, uint32_t *result);
+
 enum omx_info_key {
   /* return the maximum number of boards */
   OMX_INFO_BOARD_MAX,
