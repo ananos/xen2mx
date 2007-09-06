@@ -59,6 +59,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;
   req->generic.status.context = context;
+  req->generic.status.match_info = match_info;
   req->generic.state = OMX_REQUEST_STATE_DONE;
   omx__enqueue_request(&ep->done_req_q, req);
 
@@ -109,6 +110,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;
   req->generic.status.context = context;
+  req->generic.status.match_info = match_info;
   req->generic.state = OMX_REQUEST_STATE_DONE;
   omx__enqueue_request(&ep->done_req_q, req);
 
@@ -188,6 +190,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   req->send.seqnum = seqnum;
   req->send.specific.medium.frags_pending_nr = frags;
   req->generic.status.context = context;
+  req->generic.status.match_info = match_info;
   req->generic.state = OMX_REQUEST_STATE_PENDING;
   omx__enqueue_request(&ep->sent_req_q, req);
 
@@ -250,6 +253,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;
   req->generic.status.context = context;
+  req->generic.status.match_info = match_info;
   req->generic.state = OMX_REQUEST_STATE_PENDING;
   omx__enqueue_request(&ep->large_send_req_q, req);
 
