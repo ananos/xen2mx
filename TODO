@@ -18,7 +18,6 @@
 * move irecv and process_recv* to omx_recv.c
 
 * check pingpong contents
-* omx_pingpong -s
 
 * send a nack on bad session, except for connect (no session), truc or nack libs
 

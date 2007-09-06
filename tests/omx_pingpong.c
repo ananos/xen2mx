@@ -56,6 +56,7 @@ usage(void)
   fprintf(stderr, "Common options:\n");
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
+  fprintf(stderr, " -s\tswitch to slave receiver mode\n");
   fprintf(stderr, " -v\tverbose\n");
   fprintf(stderr, "Sender options:\n");
   fprintf(stderr, " -d <hostname>\tset remote peer name and switch to sender mode\n");
@@ -92,6 +93,7 @@ int main(int argc, char *argv[])
   int max = MAX;
   int multiplier = MULTIPLIER;
   int increment = INCREMENT;
+  int slave = 0;
   char dest_name[OMX_HOSTNAMELEN_MAX];
   uint64_t dest_addr;
   int sender = 0;
@@ -105,7 +107,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:v")) != EOF)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:sv")) != EOF)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -143,6 +145,9 @@ int main(int argc, char *argv[])
       break;
     case 'W':
       warmup = atoi(optarg);
+      break;
+    case 's':
+      slave = 1;
       break;
     case 'v':
       verbose = 1;
@@ -301,6 +306,7 @@ int main(int argc, char *argv[])
     int length;
     int i;
 
+  slave_starts_again:
     printf("Starting receiver...\n");
 
     if (verbose)
@@ -419,6 +425,8 @@ int main(int argc, char *argv[])
       free(buffer);
     }
 
+    if (slave)
+      goto slave_starts_again;
   }
 
   return 0;
