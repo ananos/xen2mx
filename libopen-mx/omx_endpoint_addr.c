@@ -196,7 +196,7 @@ struct omx__connect_reply_data {
   uint32_t src_session_id;
   /* the target session_id (so that we can send right after this connect) */
   uint32_t target_session_id;
-  /* the target next recv seqnum in the reply (so that we know out next send seqnum) */
+  /* the target next recv seqnum in the reply (so that we know our next send seqnum) */
   uint16_t target_recv_seqnum_start;
   /* is this a request ot a reply? 1 here */
   uint8_t is_reply;
@@ -374,6 +374,17 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   omx__debug_printf("got a connect, replying\n");
 
+  if (partner->session_id != -1
+      && partner->session_id != request_data->src_session_id) {
+    /* new instance of the partner */
+
+    omx__debug_printf("connect from a new instance of a partner\n");
+
+    partner->next_match_recv_seq = 0;
+    partner->next_frag_recv_seq = 0;
+    /* FIXME: drop other stuff */
+  }
+
   reply_param.hdr.dest_addr = partner->board_addr;
   reply_param.hdr.dest_endpoint = partner->endpoint_index;
   reply_param.hdr.seqnum = 0;
@@ -384,7 +395,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   reply_data->src_session_id = request_data->src_session_id;
   reply_data->connect_seqnum = request_data->connect_seqnum;
   reply_data->status_code = status_code;
-  reply_data->target_recv_seqnum_start = 0;
+  reply_data->target_recv_seqnum_start = partner->next_match_recv_seq;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);
   if (err < 0) {

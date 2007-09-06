@@ -169,6 +169,8 @@ int main(int argc, char *argv[])
     uint32_t result;
     omx_endpoint_addr_t addr;
     struct param param;
+    struct timeval tv1, tv2;
+    unsigned long long us;
     int length;
     int i;
 
@@ -294,8 +296,6 @@ int main(int argc, char *argv[])
     uint32_t result;
     struct param param;
     omx_endpoint_addr_t addr;
-    struct timeval tv1, tv2;
-    unsigned long long us;
     uint64_t board_addr;
     uint32_t endpoint_index;
     int length;
@@ -420,7 +420,6 @@ int main(int argc, char *argv[])
     }
 
   }
- out_receiver:
 
   return 0;
 
