@@ -71,7 +71,10 @@ usage(void)
 struct param {
   uint32_t iter;
   uint32_t warmup;
-  uint32_t length;
+  uint32_t min;
+  uint32_t max;
+  uint32_t multiplier;
+  uint32_t increment;
 };
 
 int main(int argc, char *argv[])
@@ -178,165 +181,50 @@ int main(int argc, char *argv[])
 	goto out_with_ep;
       }
 
-    for(length = min;
-	length < max;
-	length = next_length(length, multiplier, increment)) {
-
-      /* send the param message */
-      param.iter = iter;
-      param.warmup = warmup;
-      param.length = length;
-      ret = omx_isend(ep, &param, sizeof(param),
-		      0x1234567887654321ULL, addr,
-		      NULL, &req);
-      if (ret != OMX_SUCCESS) {
-	fprintf(stderr, "Failed to isend (%s)\n",
-		omx_strerror(ret));
-	goto out_with_ep;
-      }
-      ret = omx_wait(ep, &req, &status, &result);
-      if (ret != OMX_SUCCESS || !result) {
-	fprintf(stderr, "Failed to wait (%s)\n",
-		omx_strerror(ret));
-	goto out_with_ep;
-      }
-
-      if (verbose)
-	printf("Sent parameters (iter=%d, warmup=%d, length=%d)\n", iter, warmup, length);
-
-      buffer = malloc(length);
-      if (!buffer) {
-	perror("buffer malloc");
-	goto out_with_ep;
-      }
-
-      for(i=0; i<iter+warmup; i++) {
-	if (verbose)
-	  printf("Iteration %d/%d\n", i-warmup, iter);
-
-	/* wait for an incoming message */
-	ret = omx_irecv(ep, buffer, length,
-			0, 0,
-			NULL, &req);
-	if (ret != OMX_SUCCESS) {
-	  fprintf(stderr, "Failed to irecv (%s)\n",
-		  omx_strerror(ret));
-	  goto out_with_ep;
-	}
-	ret = omx_wait(ep, &req, &status, &result);
-	if (ret != OMX_SUCCESS || !result) {
-	  fprintf(stderr, "Failed to wait (%s)\n",
-		  omx_strerror(ret));
-	  goto out_with_ep;
-	}
-
-	/* sending a message */
-	ret = omx_isend(ep, buffer, length,
-			0x1234567887654321ULL, addr,
-			NULL, &req);
-	if (ret != OMX_SUCCESS) {
-	  fprintf(stderr, "Failed to isend (%s)\n",
-		  omx_strerror(ret));
-	  goto out_with_ep;
-	}
-	ret = omx_wait(ep, &req, &status, &result);
-	if (ret != OMX_SUCCESS || !result) {
-	  fprintf(stderr, "Failed to wait (%s)\n",
-		  omx_strerror(ret));
-	  goto out_with_ep;
-	}
-      }
-      if (verbose)
-	printf("Iteration %d/%d\n", i-warmup, iter);
-
-      free(buffer);
-    }
-
-    /* send a param message with iter = 0 to stop the receiver */
-    param.iter = 0;
+    /* send the param message */
+    param.iter = iter;
+    param.warmup = warmup;
+    param.min = min;
+    param.max = max;
+    param.multiplier = multiplier;
+    param.increment = increment;
     ret = omx_isend(ep, &param, sizeof(param),
 		    0x1234567887654321ULL, addr,
 		    NULL, &req);
     if (ret != OMX_SUCCESS) {
-      fprintf(stderr, "Failed to isend (%s)\n",
+      fprintf(stderr, "Failed to isend param message (%s)\n",
 	      omx_strerror(ret));
       goto out_with_ep;
     }
     ret = omx_wait(ep, &req, &status, &result);
     if (ret != OMX_SUCCESS || !result) {
-      fprintf(stderr, "Failed to wait (%s)\n",
+      fprintf(stderr, "Failed to wait isend param message (%s)\n",
 	      omx_strerror(ret));
       goto out_with_ep;
     }
 
-  } else {
-    /* receiver */
+    if (verbose)
+      printf("Sent parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d)\n", iter, warmup, min, max, multiplier, increment);
 
-    omx_request_t req;
-    omx_status_t status;
-    uint32_t result;
-    struct param param;
-    omx_endpoint_addr_t addr;
-    struct timeval tv1, tv2;
-    unsigned long long us;
-    uint64_t board_addr;
-    uint32_t endpoint_index;
-    int length;
-    int i;
+    /* wait for the ok message */
+    ret = omx_irecv(ep, NULL, 0,
+		    0, 0,
+		    NULL, &req);
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Failed to irecv param ack message (%s)\n",
+	      omx_strerror(ret));
+      goto out_with_ep;
+    }
+    ret = omx_wait(ep, &req, &status, &result);
+    if (ret != OMX_SUCCESS || !result) {
+      fprintf(stderr, "Failed to wait param ack message (%s)\n",
+	      omx_strerror(ret));
+      goto out_with_ep;
+    }
 
-    printf("Starting receiver...\n");
-
-    while (1) {
-      if (verbose)
-	printf("Waiting for parameters...\n");
-
-      /* wait for the param message */
-      ret = omx_irecv(ep, &param, sizeof(param),
-		      0, 0,
-		      NULL, &req);
-      if (ret != OMX_SUCCESS) {
-	fprintf(stderr, "Failed to irecv (%s)\n",
-		omx_strerror(ret));
-	goto out_with_ep;
-      }
-      ret = omx_wait(ep, &req, &status, &result);
-      if (ret != OMX_SUCCESS || !result) {
-	fprintf(stderr, "Failed to wait (%s)\n",
-		omx_strerror(ret));
-	goto out_with_ep;
-      }
-
-      /* retrieve parameters */
-      iter = param.iter;
-      warmup = param.warmup;
-      length = param.length;
-
-      if (!iter)
-	/* the sender wants us to stop */
-	goto out_receiver;
-
-      ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
-      if (ret != OMX_SUCCESS) {
-	fprintf(stderr, "Failed to decompose sender's address (%s)\n",
-		omx_strerror(ret));
-	goto out_with_ep;
-      }
-
-      ret = omx_nic_id_to_hostname(board_addr, dest_name);
-      if (ret != OMX_SUCCESS)
-	strcpy(dest_name, "<unknown peer>");
-
-      if (verbose)
-	printf("Got parameters (iter=%d, warmup=%d, length=%d) from peer %s\n",
-	       iter, warmup, length, dest_name);
-
-      /* connect back */
-      ret = omx_connect(ep, board_addr, endpoint_index, 0x12345678, 0, &addr);
-      if (ret != OMX_SUCCESS) {
-	fprintf(stderr, "Failed to connect back to client (%s)\n",
-		omx_strerror(ret));
-	goto out_with_ep;
-      }
+    for(length = min;
+	length < max;
+	length = next_length(length, multiplier, increment)) {
 
       buffer = malloc(length);
       if (!buffer) {
@@ -392,7 +280,141 @@ int main(int argc, char *argv[])
       if (verbose)
 	printf("Total Duration: %lld us\n", us);
       printf("length % 9d:\t%.3f us\t%.2f MB/s\t %.2f MiB/s\n",
-	     length, ((float) us)/2./iter, 2.*iter*length/us, 2.*iter*length/us/1.048576);
+	     length, ((float) us)/2./iter,
+	     2.*iter*length/us, 2.*iter*length/us/1.048576);
+
+      free(buffer);
+    }
+
+  } else {
+    /* receiver */
+
+    omx_request_t req;
+    omx_status_t status;
+    uint32_t result;
+    struct param param;
+    omx_endpoint_addr_t addr;
+    struct timeval tv1, tv2;
+    unsigned long long us;
+    uint64_t board_addr;
+    uint32_t endpoint_index;
+    int length;
+    int i;
+
+    printf("Starting receiver...\n");
+
+    if (verbose)
+      printf("Waiting for parameters...\n");
+
+    /* wait for the param message */
+    ret = omx_irecv(ep, &param, sizeof(param),
+		    0, 0,
+		    NULL, &req);
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Failed to irecv (%s)\n",
+	      omx_strerror(ret));
+      goto out_with_ep;
+    }
+    ret = omx_wait(ep, &req, &status, &result);
+    if (ret != OMX_SUCCESS || !result) {
+      fprintf(stderr, "Failed to wait (%s)\n",
+	      omx_strerror(ret));
+      goto out_with_ep;
+    }
+
+    /* retrieve parameters */
+    iter = param.iter;
+    warmup = param.warmup;
+    min = param.min;
+    max = param.max;
+    multiplier = param.multiplier;
+    increment = param.increment;
+
+    ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Failed to decompose sender's address (%s)\n",
+	      omx_strerror(ret));
+      goto out_with_ep;
+    }
+
+    ret = omx_nic_id_to_hostname(board_addr, dest_name);
+    if (ret != OMX_SUCCESS)
+      strcpy(dest_name, "<unknown peer>");
+
+    if (verbose)
+      printf("Got parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d) from peer %s\n", iter, warmup, min, max, multiplier, increment, dest_name);
+
+    /* connect back */
+    ret = omx_connect(ep, board_addr, endpoint_index, 0x12345678, 0, &addr);
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Failed to connect back to client (%s)\n",
+	      omx_strerror(ret));
+      goto out_with_ep;
+    }
+
+    /* send param ack message */
+    ret = omx_isend(ep, NULL, 0, 0,
+		    addr, NULL, &req);
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Failed to isend param ack message (%s)\n",
+	      omx_strerror(ret));
+      goto out_with_ep;
+    }
+    ret = omx_wait(ep, &req, &status, &result);
+    if (ret != OMX_SUCCESS || !result) {
+      fprintf(stderr, "Failed to wait param ack message (%s)\n",
+	      omx_strerror(ret));
+      goto out_with_ep;
+    }
+
+    for(length = min;
+	length < max;
+	length = next_length(length, multiplier, increment)) {
+
+      buffer = malloc(length);
+      if (!buffer) {
+	perror("buffer malloc");
+	goto out_with_ep;
+      }
+
+      for(i=0; i<iter+warmup; i++) {
+	if (verbose)
+	  printf("Iteration %d/%d\n", i-warmup, iter);
+
+	/* wait for an incoming message */
+	ret = omx_irecv(ep, buffer, length,
+			0, 0,
+			NULL, &req);
+	if (ret != OMX_SUCCESS) {
+	  fprintf(stderr, "Failed to irecv (%s)\n",
+		  omx_strerror(ret));
+	  goto out_with_ep;
+	}
+	ret = omx_wait(ep, &req, &status, &result);
+	if (ret != OMX_SUCCESS || !result) {
+	  fprintf(stderr, "Failed to wait (%s)\n",
+		  omx_strerror(ret));
+	  goto out_with_ep;
+	}
+
+	/* sending a message */
+	ret = omx_isend(ep, buffer, length,
+			0x1234567887654321ULL, addr,
+			NULL, &req);
+	if (ret != OMX_SUCCESS) {
+	  fprintf(stderr, "Failed to isend (%s)\n",
+		  omx_strerror(ret));
+	  goto out_with_ep;
+	}
+	ret = omx_wait(ep, &req, &status, &result);
+	if (ret != OMX_SUCCESS || !result) {
+	  fprintf(stderr, "Failed to wait (%s)\n",
+		  omx_strerror(ret));
+	  goto out_with_ep;
+	}
+      }
+      if (verbose)
+	printf("Iteration %d/%d\n", i-warmup, iter);
 
       free(buffer);
     }
