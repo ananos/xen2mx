@@ -1,3 +1,16 @@
+* missing features (for PVFS2)
+  + omx_test/wait_any
+  + omx_set/get_endpoint_addr_context
+  + thread safety (including omx_wakeup)
+  + omx_cancel
+  + omx_disconnect
+  + omx_iprobe
+  + omx_iconnect
+  + omx_register_unexp_handler
+  + omx_set_request_timeout
+  + omx_set_error_handler - if the default is return, I do not need this 
+  + omx_wakeup
+
 * /etc/init.d/open-mx script with IFACES variable in /etc/open-mx.conf
 * sethostname ioctl
 * ioctls to change board indexes?
@@ -11,7 +24,7 @@
 
 * send a nack on bad session, except for connect (no session), truc or nack libs
 
-* have a way to make install without the driver or only the driver
+* have a way to make install without the driver or only the driver (for local install as non-root)
 
 * hide region id in lib_cookies since region might be used for something else?
 * handle pull status/length
@@ -24,6 +37,11 @@
   the other side knows how to deal with smaller pull frames ?
 * add an ioctl to repost a pull, and return the send_handle to the lib
 * add an ioctl to drop a pull
+
+* move recv lib in the kernel
+  + limit unexpq size to avoid memory starvation
+  + need to keep partner's recv_seqnum in the kernel
+    - and synchronize with user-space which takes care of acking
 
 * support eventq full by queueing things?
   - upto when? reserve before sending? should be guaranteed by the lib (polls before sending) => no need to queue?
