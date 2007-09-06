@@ -157,6 +157,7 @@ mx_irecv(mx_endpoint_t endpoint,
 #define MX_RECV_FINISHED OMX_RECV_FINISHED
 typedef omx_unexp_handler_action_t mx_unexp_handler_action_t;
 typedef omx_unexp_handler_t mx_unexp_handler_t;
+#define mx_register_unexp_handler omx_register_unexp_handler
 
 /* FIXME: mx_forget */
 /* FIXME: mx_progress */
