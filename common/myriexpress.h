@@ -24,9 +24,11 @@
 #ifndef MYRIEXPRESS_H
 #define MYRIEXPRESS_H
 
+#include "open-mx.h"
+
 #define MX_API OMX_API
 
-typedef omx_endpoint_t mx_endpoind_t;
+typedef omx_endpoint_t mx_endpoint_t;
 
 #define MX_SIZEOF_ADDR OMX_SIZEOF_ADDR
 
@@ -62,6 +64,15 @@ typedef omx_status_t mx_status_t;
 /* FIXME: mx_disable_progression */
 /* FIXME: mx_reenable_progression */
 
+/* FIXME: wrapper instead */
+typedef void * mx_segment_ptr_t;
+typedef struct
+{
+  mx_segment_ptr_t segment_ptr;
+  uint32_t segment_length;
+}
+mx_segment_t;
+
 /* FIXME: MX_MAX_SEGMENTS */
 
 static inline mx_return_t
@@ -74,7 +85,7 @@ mx_isend(mx_endpoint_t endpoint,
 	 mx_request_t *request)
 {
   assert(segments_count == 1);
-  return omx_isend(endpoint, segments_list[0].segments_ptr, segments_list[0].segment_length, dest_endpoint, match_info, context, request);
+  return omx_isend(endpoint, segments_list[0].segments_ptr, segment_list[0].segment_length, dest_endpoint, match_info, context, request);
 }
 
 static inline mx_return_t
@@ -87,7 +98,7 @@ mx_issend(mx_endpoint_t endpoint,
 	 mx_request_t *request)
 {
   assert(segments_count == 1);
-  return omx_issend(endpoint, segments_list[0].segments_ptr, segments_list[0].segment_length, dest_endpoint, match_info, context, request);
+  return omx_issend(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, dest_endpoint, match_info, context, request);
 }
 
 #define MX_MATCH_MASK_NONE (~(uint64_t)0)
@@ -102,7 +113,7 @@ mx_irecv(mx_endpoint_t endpoint,
 	 mx_request_t *request)
 {
   assert(segments_count == 1);
-  return omx_irecv(endpoint, segments_list[0].segments_ptr, segments_list[0].segment_length, match_info, match_mask, context, request);
+  return omx_irecv(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, match_info, match_mask, context, request);
 }
 
 /* FIXME: mx_cancel */
@@ -132,7 +143,7 @@ mx_irecv(mx_endpoint_t endpoint,
 #define mx_nic_id_to_board_number omx_nic_id_to_board_number
 #define mx_nic_id_to_hostname omx_nic_id_to_hostname
 
-#define mx_connect(endpoint,nic_id,endpoint_id,key,timeout,addr) omx_connect(endpoint,nic_id,endpoint_id,key,addr)
+#define mx_connect omx_connect
 #define mx_decompose_endpoint_addr omx_decompose_endpoint_addr
 #define mx_get_endpoint_add omx_get_endpoint_addr
 
