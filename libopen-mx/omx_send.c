@@ -321,3 +321,35 @@ omx_isend(struct omx_endpoint *ep,
 
   return ret;
 }
+
+omx_return_t
+omx_issend(struct omx_endpoint *ep,
+	   void *buffer, size_t length,
+	   uint64_t match_info,
+	   omx_endpoint_addr_t dest_endpoint,
+	   void *context, union omx_request **requestp)
+{
+  struct omx__partner * partner;
+  omx__seqnum_t seqnum;
+  omx_return_t ret;
+
+  partner = omx__partner_from_addr(&dest_endpoint);
+  seqnum = partner->next_send_seq;
+  omx__debug_printf("sending %ld bytes using seqnum %d\n",
+		    (unsigned long) length, seqnum);
+
+  ret = omx__submit_isend_large(ep,
+				buffer, length,
+				match_info,
+				partner, seqnum,
+				context, requestp);
+  if (ret == OMX_SUCCESS) {
+    /* increase at the end, to avoid having to decrease back in case of error */
+    partner->next_send_seq++;
+  }
+
+  /* progress a little bit */
+  omx__progress(ep);
+
+  return ret;
+}

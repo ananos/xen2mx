@@ -126,6 +126,13 @@ omx_isend(omx_endpoint_t ep,
 	  void * context, omx_request_t * request);
 
 omx_return_t
+omx_issend(omx_endpoint_t ep,
+	   void *buffer, size_t length,
+	   uint64_t match_info,
+	   omx_endpoint_addr_t dest_endpoint,
+	   void * context, omx_request_t * request);
+
+omx_return_t
 omx_irecv(omx_endpoint_t ep,
 	  void *buffer, size_t length,
 	  uint64_t match_info, uint64_t match_mask,
