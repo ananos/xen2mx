@@ -231,6 +231,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 			 omx__process_recv_func_t recv_func)
 {
   union omx_request * req = NULL;
+  omx_unexp_handler_t handler = ep->unexp_handler;
   omx_return_t ret;
 
   /* try to match */
@@ -238,8 +239,39 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
   if (ret != OMX_SUCCESS)
     return ret;
 
+  /* if no match, try the unexpected handler */
+  if (handler && !req) {
+    void * context = ep->unexp_handler_context;
+    omx_unexp_handler_action_t ret;
+    omx_endpoint_addr_t source;
+    void * data_if_available = NULL;
+
+    if (msg->type == OMX_EVT_RECV_TINY)
+      data_if_available = msg->specific.tiny.data;
+    else if (msg->type == OMX_EVT_RECV_SMALL)
+      data_if_available = data;
+
+    omx__partner_to_addr(partner, &source);
+    ep->in_handler = 1;
+    /* FIXME: lock */
+    ret = handler(context, source, msg->match_info,
+		  msg_length, data_if_available);
+    /* FIXME: unlock */
+    ep->in_handler = 0;
+    /* FIXME: signal */
+    if (ret == OMX_RECV_FINISHED)
+      /* the handler took care of the message, we now discard it */
+      goto out_discard;
+
+    assert(ret == OMX_RECV_CONTINUE);
+    /* the unexp has been noticed check if a recv has been posted */
+    ret = omx__match_recv(ep, msg, &req);
+    if (ret != OMX_SUCCESS)
+      return ret;
+  }
+
   if (req) {
-    /* expected */
+    /* expected, or matched through the handler */
     uint32_t xfer_length;
 
     req->generic.partner = partner;
@@ -255,7 +287,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     (*recv_func)(ep, partner, req, msg, data, xfer_length);
 
   } else {
-    /* unexpected */
+    /* unexpected, even after the handler */
 
     req = omx__request_alloc(OMX_REQUEST_TYPE_RECV);
     if (!req)
@@ -284,6 +316,8 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     (*recv_func)(ep, partner, req, msg, data, msg_length);
 
   }
+
+ out_discard:
 
   /* FIXME: do that below, but only if necessary */
   /* we matched this seqnum, we now expect the next one */
@@ -519,6 +553,9 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
+  if (ep->in_handler)
+    return OMX_SUCCESS;
+
   /* process events */
   while (1) {
     volatile union omx_evt * evt = ep->next_event;
@@ -615,4 +652,15 @@ omx_irecv(struct omx_endpoint *ep,
 
  out:
   return ret;
+}
+
+omx_return_t
+omx_register_unexp_handler(omx_endpoint_t ep,
+			   omx_unexp_handler_t handler,
+			   void *context)
+{
+  ep->unexp_handler = handler;
+  ep->unexp_handler_context = context;
+
+  return OMX_SUCCESS;
 }

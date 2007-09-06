@@ -3,7 +3,6 @@
   + omx_cancel
   + omx_disconnect
   + omx_iconnect
-  + omx_register_unexp_handler
   + omx_set_request_timeout
   + omx_set_error_handler - if the default is return, I do not need this 
 

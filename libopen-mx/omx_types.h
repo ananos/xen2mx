@@ -109,6 +109,9 @@ struct omx_endpoint {
   char ifacename[OMX_IF_NAMESIZE];
   uint32_t session_id;
   uint32_t app_key;
+  omx_unexp_handler_t unexp_handler;
+  void * unexp_handler_context;
+  int in_handler;
   void * recvq, * sendq, * eventq;
   void * next_event;
   struct list_head sent_req_q;

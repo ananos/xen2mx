@@ -172,6 +172,22 @@ omx_return_t
 omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
 	  omx_status_t *status, uint32_t *result);
 
+enum omx_unexp_handler_action {
+  OMX_RECV_CONTINUE = 0,
+  OMX_RECV_FINISHED
+};
+typedef enum omx_unexp_handler_action omx_unexp_handler_action_t;
+
+typedef omx_unexp_handler_action_t
+(*omx_unexp_handler_t)(void *context, omx_endpoint_addr_t source,
+		       uint64_t match_info, uint32_t msg_length,
+		       void * data_if_available);
+
+omx_return_t
+omx_register_unexp_handler(omx_endpoint_t ep,
+			   omx_unexp_handler_t handler,
+			   void *context);
+
 enum omx_info_key {
   /* return the maximum number of boards */
   OMX_INFO_BOARD_MAX,

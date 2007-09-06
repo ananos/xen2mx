@@ -245,6 +245,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_partners;
 
   /* init lib specific fieds */
+  ep->unexp_handler = NULL;
+  ep->in_handler = 0;
   INIT_LIST_HEAD(&ep->sent_req_q);
   INIT_LIST_HEAD(&ep->unexp_req_q);
   INIT_LIST_HEAD(&ep->recv_req_q);
@@ -279,6 +281,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 omx_return_t
 omx_close_endpoint(struct omx_endpoint *ep)
 {
+  assert(!ep->in_handler); /* FIXME */
+
   free(ep->partners);
   omx__endpoint_large_region_map_exit(ep);
   munmap(ep->sendq, OMX_SENDQ_SIZE);
