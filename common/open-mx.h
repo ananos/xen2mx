@@ -132,6 +132,16 @@ omx_wait(omx_endpoint_t ep, omx_request_t * request,
 	 struct omx_status *status, uint32_t * result);
 
 omx_return_t
+omx_test_any(struct omx_endpoint *ep,
+	     uint64_t match_info, uint64_t match_mask,
+	     omx_status_t *status, uint32_t *result);
+
+omx_return_t
+omx_wait_any(struct omx_endpoint *ep,
+	     uint64_t match_info, uint64_t match_mask,
+	     omx_status_t *status, uint32_t *result);
+
+omx_return_t
 omx_ipeek(omx_endpoint_t ep, omx_request_t * request,
 	  uint32_t *result);
 

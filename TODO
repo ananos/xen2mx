@@ -1,5 +1,4 @@
 * missing features (for PVFS2)
-  + omx_test/wait_any
   + omx_set/get_endpoint_addr_context
   + thread safety (including omx_wakeup)
   + omx_cancel
@@ -10,6 +9,8 @@
   + omx_set_request_timeout
   + omx_set_error_handler - if the default is return, I do not need this 
   + omx_wakeup
+
+* wrapper for MX API in myriexpress.h?
 
 * /etc/init.d/open-mx script with IFACES variable in /etc/open-mx.conf
 * sethostname ioctl
