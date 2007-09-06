@@ -23,6 +23,10 @@ other-installonly:
 		mkdir -p $(DESTDIR)$(includedir) ; \
 	fi
 	install -m 0644 $(srcdir)/common/open-mx.h $(DESTDIR)$(includedir)
+	@if test @OMX_MX_API_COMPAT@ -eq 1; then \
+		echo "Installing MX API compatibility wrappers" ; \
+		install -m 0644 $(srcdir)/common/myriexpress.h $(DESTDIR)$(includedir) ; \
+	fi
 
 other-install: other-installonly
 

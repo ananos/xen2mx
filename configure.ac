@@ -179,6 +179,18 @@ if test x$with_peers_file != x; then
   AC_DEFINE_UNQUOTED(OMX_PEERS_DEFAULT_FILENAME, ["$with_peers_file"], [Define to choose the static peers file])
 fi
 
+AC_ARG_ENABLE(mx, [  --enable-mx	enable MX API compatibility wrappers],
+	      enable_mx=$enableval, enable_mx=no)
+AC_MSG_CHECKING(if MX API compatibility wrappers are enabled)
+if test x$enable_mx = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_SUBST(OMX_MX_API_COMPAT, 1)
+else
+  AC_MSG_RESULT(no)
+  AC_SUBST(OMX_MX_API_COMPAT, 0)
+fi
+
+
 ##########
 # Globals
 
