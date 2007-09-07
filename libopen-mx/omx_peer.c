@@ -49,6 +49,7 @@ omx__peers_read(void)
   char *envvar;
   FILE *file;
   omx_return_t ret;
+  int index = 0;
   int i;
 
   envvar = getenv(OMX_PEERS_FILENAME_ENVVAR);
@@ -77,7 +78,6 @@ omx__peers_read(void)
 
   while (fgets(line, OMX_PEERS_FILELINELEN_MAX, file)) {
     char hostname[OMX_HOSTNAMELEN_MAX];
-    int index;
     int addr_bytes[6];
     size_t len = strlen(line);
 
@@ -90,39 +90,30 @@ omx__peers_read(void)
       line[len-1] = '\0';
 
     /* parse a line */
-    if (sscanf(line, "%d %02x:%02x:%02x:%02x:%02x:%02x %s",
-	       &index,
+    if (sscanf(line, "%02x:%02x:%02x:%02x:%02x:%02x %s",
 	       &addr_bytes[0], &addr_bytes[1], &addr_bytes[2],
 	       &addr_bytes[3], &addr_bytes[4], &addr_bytes[5],
 	       hostname)
-	!= 8) {
+	!= 7) {
       fprintf(stderr, "Unrecognized peer line '%s'\n", line);
       ret = OMX_INVALID_PARAMETER;
       goto out_with_file;
     }
 
     if (index >= omx_peers_max) {
+      assert(index == omx_peers_max);
       /* increasing peers array */
       struct omx_peer * new_peers;
-      int new_peers_max = omx_peers_max;
-      while (index >= new_peers_max)
-	new_peers_max *= 2;
-      new_peers = realloc(omx_peers, new_peers_max * sizeof(struct omx_peer));
+      new_peers = realloc(omx_peers, 2 * omx_peers_max * sizeof(struct omx_peer));
       if (!new_peers) {
 	ret = OMX_NO_RESOURCES;
 	goto out_with_file;
       }
-      for(i=omx_peers_max; i<new_peers_max; i++)
+      for(i=omx_peers_max; i<2*omx_peers_max; i++)
 	new_peers[i].valid = 0;
 
       omx_peers = new_peers;
-      omx_peers_max = new_peers_max;
-    }
-
-    /* is this peer index already in use? */
-    if (omx_peers[index].valid) {
-      fprintf(stderr, "Overriding host #%d %s with %s\n",
-	      index, omx_peers[index].hostname, hostname);
+      omx_peers_max *= 2;
     }
 
     /* add the new peer */
@@ -134,6 +125,8 @@ omx__peers_read(void)
 				   + (((uint64_t) addr_bytes[3]) << 16)
 				   + (((uint64_t) addr_bytes[4]) << 8)
 				   + (((uint64_t) addr_bytes[5]) << 0));
+
+    index++;
   }
 
   fclose(file);
