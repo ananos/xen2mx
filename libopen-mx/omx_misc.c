@@ -79,6 +79,8 @@ omx_strerror(omx_return_t ret)
     return "Bad Connection Key";
   case OMX_BUSY:
     return "Resource Busy";
+  case OMX_BAD_MATCH_MASK:
+    return "Bad match mask.";
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return "Matching info does not respect context id mask";
   case OMX_NOT_SUPPORTED_WITH_CONTEXT_ID:

@@ -611,7 +611,10 @@ omx_irecv(struct omx_endpoint *ep,
   omx_return_t ret;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
 
-  /* FIXME: check match info/mask */
+  if (match_info & ~match_mask) {
+    ret = OMX_BAD_MATCH_MASK;
+    goto out;
+  }
 
   /* check that there's no wildcard in the context id range */
   if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
