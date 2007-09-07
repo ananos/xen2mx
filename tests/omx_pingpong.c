@@ -350,13 +350,23 @@ int main(int argc, char *argv[])
     if (verbose)
       printf("Got parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d) from peer %s\n", iter, warmup, min, max, multiplier, increment, dest_name);
 
-    /* connect back */
-    ret = omx_connect(ep, board_addr, endpoint_index, 0x12345678, 0, &addr);
+    /* connect back, using iconnect for fun */
+    ret = omx_iconnect(ep, board_addr, endpoint_index, 0x12345678,
+		       0xabcddcbaabcddcbaULL, (void*) 0xdeadbeef, &req);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to connect back to client (%s)\n",
 	      omx_strerror(ret));
       goto out_with_ep;
     }
+    ret = omx_wait(ep, &req, &status, &result);
+    if (ret != OMX_SUCCESS || !result) {
+      fprintf(stderr, "Failed to wait iconnect (%s)\n",
+	      omx_strerror(ret));
+      goto out_with_ep;
+    }
+    assert(status.match_info == 0xabcddcbaabcddcbaULL);
+    assert(status.context == (void*) 0xdeadbeef);
+    addr = status.addr;
 
     /* send param ack message */
     ret = omx_isend(ep, NULL, 0, 0,

@@ -195,6 +195,7 @@ union omx_request {
     struct omx__generic_request generic;
     uint32_t session_id;
     uint8_t connect_seqnum;
+    int is_synchronous;
   } connect;
 };
 

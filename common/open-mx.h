@@ -110,6 +110,12 @@ omx_connect(omx_endpoint_t endpoint,
 	    omx_endpoint_addr_t *addr);
 
 omx_return_t
+omx_iconnect(omx_endpoint_t ep,
+	     uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
+	     uint64_t match_info,
+	     void *context, omx_request_t *request);
+
+omx_return_t
 omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
 			    uint64_t *nic_id, uint32_t *endpoint_id);
 

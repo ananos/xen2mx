@@ -212,12 +212,10 @@ struct omx__connect_reply_data {
  * Start the connection process to another peer
  */
 omx_return_t
-omx_connect(omx_endpoint_t ep,
-	    uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
-	    uint32_t timeout,
-	    omx_endpoint_addr_t *addr)
+omx__connect_common(omx_endpoint_t ep,
+		    uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
+		    union omx_request * req)
 {
-  union omx_request * req;
   struct omx__partner * partner;
   struct omx_cmd_send_connect connect_param;
   struct omx__connect_request_data * data = (void *) &connect_param.data;
@@ -225,15 +223,9 @@ omx_connect(omx_endpoint_t ep,
   omx_return_t ret;
   int err;
 
-  req = omx__request_alloc(OMX_REQUEST_TYPE_CONNECT);
-  if (!req) {
-    ret = OMX_NO_RESOURCES;
-    goto out;
-  }
-
   ret = omx__partner_lookup(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS)
-    goto out_with_req;
+    goto out;
 
   connect_seqnum = partner->connect_seqnum++;
 
@@ -250,7 +242,7 @@ omx_connect(omx_endpoint_t ep,
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &connect_param);
   if (err < 0) {
     ret = omx__errno_to_return("ioctl SEND_CONNECT");
-    goto out_with_req;
+    goto out;
   }
   /* no need to wait for a done event, connect is synchronous */
 
@@ -260,18 +252,50 @@ omx_connect(omx_endpoint_t ep,
   req->connect.connect_seqnum = connect_seqnum;
   omx__enqueue_request(&ep->connect_req_q, req);
 
+  ret = omx__progress(ep);
+  if (ret != OMX_SUCCESS)
+    goto out_queued;
+
+  return OMX_SUCCESS;
+
+ out_queued: 
+  omx__dequeue_request(&ep->connect_req_q, req);
+ out:
+  return ret;
+}
+
+omx_return_t
+omx_connect(omx_endpoint_t ep,
+	    uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
+	    uint32_t timeout,
+	    omx_endpoint_addr_t *addr)
+{
+  union omx_request * req;
+  omx_return_t ret;
+
+  req = omx__request_alloc(OMX_REQUEST_TYPE_CONNECT);
+  if (!req) {
+    ret = OMX_NO_RESOURCES;
+    goto out;
+  }
+
+  req->connect.is_synchronous = 1;
+
+  ret = omx__connect_common(ep, nic_id, endpoint_id, key, req);
+  if (ret != OMX_SUCCESS)
+    goto out_with_req;
+
   omx__debug_printf("waiting for connect reply\n");
   while (req->generic.state == OMX_REQUEST_STATE_PENDING) {
     ret = omx__progress(ep);
     if (ret != OMX_SUCCESS)
-      goto out_with_req_queued;
+      goto out; /* request is queued, do not try to free it */
   }
-  omx__dequeue_request(&ep->connect_req_q, req);
   omx__debug_printf("connect done\n");
 
   switch (req->generic.status.code) {
   case OMX_STATUS_SUCCESS:
-    omx__partner_to_addr(partner, addr);
+    omx__partner_to_addr(req->generic.partner, addr);
     ret = OMX_SUCCESS;
     break;
   case OMX_STATUS_BAD_KEY:
@@ -283,8 +307,38 @@ omx_connect(omx_endpoint_t ep,
 
   return ret;
 
- out_with_req_queued:
-  omx__dequeue_request(&ep->connect_req_q, req);
+ out_with_req:
+  omx__request_free(req);
+ out:
+  return ret;
+}
+
+omx_return_t
+omx_iconnect(omx_endpoint_t ep,
+	     uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
+	     uint64_t match_info,
+	     void *context, omx_request_t *requestp)
+{
+  union omx_request * req;
+  omx_return_t ret;
+
+  req = omx__request_alloc(OMX_REQUEST_TYPE_CONNECT);
+  if (!req) {
+    ret = OMX_NO_RESOURCES;
+    goto out;
+  }
+
+  req->connect.is_synchronous = 0;
+  req->generic.status.match_info = match_info;
+  req->generic.status.context = context;
+
+  ret = omx__connect_common(ep, nic_id, endpoint_id, key, req);
+  if (ret != OMX_SUCCESS)
+    goto out_with_req;
+
+  *requestp = req;
+  return ret;
+
  out_with_req:
   omx__request_free(req);
  out:
@@ -336,8 +390,15 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   }
 
   /* complete the request */
+  omx__dequeue_request(&ep->connect_req_q, req);
   req->generic.status.code = reply_data->status_code;
+  if (req->generic.status.code == OMX_STATUS_SUCCESS)
+    omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.state = OMX_REQUEST_STATE_DONE;
+
+  /* move iconnect request to the done queue */
+  if (!req->connect.is_synchronous)
+    omx__enqueue_request(&ep->done_req_q, req);
 
   return OMX_SUCCESS;
 }
