@@ -151,6 +151,7 @@ omx__open_endpoint(int fd,
 
 omx_return_t
 omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
+		  omx_endpoint_param_t * param_array, uint32_t param_count,
 		  struct omx_endpoint **epp)
 {
   /* FIXME: add parameters to choose the board name? */
@@ -158,12 +159,36 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   void * recvq, * sendq, * eventq;
   uint64_t board_addr;
+  uint8_t ctxid_bits = 0, ctxid_shift = 0;
   omx_return_t ret = OMX_SUCCESS;
   int err, fd, i;
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
     goto out;
+  }
+
+  for(i=0; i<param_count; i++) {
+    switch (param_array[i].key) {
+    case OMX_ENDPOINT_PARAM_ERROR_HANDLER:
+      printf("setting endpoint error handler ignored for now\n");
+      break;
+    case OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX:
+      printf("setting endpoint unexp queue max ignored for now\n");
+      break;
+    case OMX_ENDPOINT_PARAM_CONTEXT_ID:
+      if (param_array[i].val.context_id.bits > OMX_ENDPOINT_CONTEXT_ID_BITS_MAX
+          || param_array[i].val.context_id.bits + param_array[i].val.context_id.shift > 64) {
+	ret = OMX_INVALID_PARAMETER;
+	goto out;
+      }
+      ctxid_bits = param_array[i].val.context_id.bits;
+      ctxid_shift = param_array[i].val.context_id.shift;
+      break;
+    default:
+      ret = OMX_INVALID_PARAMETER;
+      goto out;
+    }
   }
 
   ep = malloc(sizeof(struct omx_endpoint));
@@ -245,10 +270,10 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_partners;
 
   /* context id fields */
-  ep->ctxid_bits = 0;
-  ep->ctxid_max = 1;
-  ep->ctxid_shift = 0;
-  ep->ctxid_mask = 0;
+  ep->ctxid_bits = ctxid_bits;
+  ep->ctxid_max = 1ULL << ctxid_bits;
+  ep->ctxid_shift = ctxid_shift;
+  ep->ctxid_mask = ((uint64_t) ep->ctxid_max - 1) << ctxid_shift;
 
   ep->ctxid = malloc(ep->ctxid_max * sizeof(*ep->ctxid));
   if (!ep->ctxid) {

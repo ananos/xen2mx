@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
       break;
     }
 
-  ret = omx_open_endpoint(bid, eid, 0x12345678, &ep);
+  ret = omx_open_endpoint(bid, eid, 0x12345678, NULL, 0, &ep);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to open endpoint (%s)\n",
 	    omx_strerror(ret));

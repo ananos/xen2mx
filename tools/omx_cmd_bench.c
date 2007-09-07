@@ -19,7 +19,7 @@ main(void)
   ret = omx_init();
   assert(ret == OMX_SUCCESS);
 
-  ret = omx_open_endpoint(0, 0, 0, &ep);
+  ret = omx_open_endpoint(0, 0, 0, NULL, 0, &ep);
   assert(ret == OMX_SUCCESS);
 
   gettimeofday(&tv1, NULL);

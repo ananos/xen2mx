@@ -43,11 +43,16 @@ typedef omx_request_t mx_request_t;
 
 typedef omx_return_t mx_return_t;
 
-/* FIXME: param keys and types */
+#define MX_PARAM_ERROR_HANDLER OMX_ENDPOINT_PARAM_ERROR_HANDLER
+#define MX_PARAM_UNEXP_QUEUE_MAX OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX
+#define MX_PARAM_CONTEXT_ID OMX_ENDPOINT_PARAM_CONTEXT_ID
+typedef omx_endpoint_param_key_t mx_param_key_t;
+typedef omx_endpoint_param_t mx_param_t;
 
-/* FIXME: mx_error_handler_t, values and mx_set_error_handler */
+#define MX_CONTEXT_ID_BITS_MAX OMX_ENDPOINT_CONTEXT_ID_MAX
 
-/* FIXME: MX_CONTEXT_ID_BITS_MAX */
+typedef omx_error_handler_t mx_error_handler_t;
+/* FIXME: error handler values and mx_set_error_handler */
 
 /* FIXME: status codes */
 
@@ -56,7 +61,7 @@ typedef omx_status_t mx_status_t;
 #define mx__init_apit omx__init_api
 #define mx_finalize omx_finalize
 
-#define mx_open_endpoint(board_number, endpoint_id, endpoint_key, params_array, params_count, endpoint) omx_open_endpoint(board_number, endpoint_id, endpoint_key, endpoint)
+#define mx_open_endpoint omx_open_endpoint
 #define mx_close_endpoint omx_close_endpoint
 
 /* FIXME: mx_wakeup */

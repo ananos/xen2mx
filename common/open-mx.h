@@ -95,8 +95,33 @@ omx_nic_id_to_board_number(uint64_t nic_id,
 #define OMX_ANY_NIC 0xffffffffU
 #define OMX_ANY_ENDPOINT 0xffffffffU
 
+enum omx_endpoint_param_key
+{
+  OMX_ENDPOINT_PARAM_ERROR_HANDLER = 0,
+  OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX = 1,
+  OMX_ENDPOINT_PARAM_CONTEXT_ID = 2,
+};
+typedef enum omx_endpoint_param_key omx_endpoint_param_key_t;
+
+#define OMX_ENDPOINT_CONTEXT_ID_BITS_MAX 16
+
+typedef omx_return_t (*omx_error_handler_t)(char *str, omx_return_t ret);
+
+typedef struct {
+  omx_endpoint_param_key_t key;
+  union {
+    omx_error_handler_t error_handler;
+    uint32_t unexp_queue_max;
+    struct {
+      uint8_t bits;
+      uint8_t shift;
+    } context_id;
+  } val;
+} omx_endpoint_param_t;
+
 omx_return_t
 omx_open_endpoint(uint32_t board_index, uint32_t index, uint32_t key,
+		  omx_endpoint_param_t * param_array, uint32_t param_count,
 		  omx_endpoint_t *epp);
 
 omx_return_t
