@@ -159,7 +159,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   void * recvq, * sendq, * eventq;
   uint64_t board_addr;
   omx_return_t ret = OMX_SUCCESS;
-  int err, fd;
+  int err, fd, i;
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
@@ -244,17 +244,31 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   if (ret != OMX_SUCCESS)
     goto out_with_partners;
 
+  /* context id fields */
+  ep->ctxid_bits = 0;
+  ep->ctxid_max = 1;
+  ep->ctxid_shift = 0;
+  ep->ctxid_mask = 0;
+
+  ep->ctxid = malloc(ep->ctxid_max * sizeof(*ep->ctxid));
+  if (!ep->ctxid) {
+    ret = OMX_NO_RESOURCES;
+    goto out_with_partners;
+  }
+  for(i=0; i<ep->ctxid_max; i++) {
+    INIT_LIST_HEAD(&ep->ctxid[i].unexp_req_q);
+    INIT_LIST_HEAD(&ep->ctxid[i].recv_req_q);
+    INIT_LIST_HEAD(&ep->ctxid[i].done_req_q);
+  }
+
   /* init lib specific fieds */
   ep->unexp_handler = NULL;
   ep->in_handler = 0;
   INIT_LIST_HEAD(&ep->sent_req_q);
-  INIT_LIST_HEAD(&ep->unexp_req_q);
-  INIT_LIST_HEAD(&ep->recv_req_q);
   INIT_LIST_HEAD(&ep->multifrag_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->large_send_req_q);
   INIT_LIST_HEAD(&ep->large_recv_req_q);
   INIT_LIST_HEAD(&ep->connect_req_q);
-  INIT_LIST_HEAD(&ep->done_req_q);
 
   *epp = ep;
 

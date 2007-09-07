@@ -38,6 +38,8 @@ enum omx_return {
   OMX_NOT_IMPLEMENTED,
   OMX_BAD_CONNECTION_KEY,
   OMX_BUSY,
+  OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
+  OMX_NOT_SUPPORTED_WITH_CONTEXT_ID,
 };
 typedef enum omx_return omx_return_t;
 

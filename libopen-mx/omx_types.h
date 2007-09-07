@@ -102,6 +102,9 @@ struct omx__partner {
   void * user_context;
 };
 
+#define CTXID_FROM_MATCHING(ep, match) ((uint32_t)(((match) >> (ep)->ctxid_shift) & ((ep)->ctxid_max-1)))
+#define CHECK_MATCHING_WITH_CTXID(ep, match) (((match) & (ep)->ctxid_mask) == (ep)->ctxid_mask)
+
 struct omx_endpoint {
   int fd;
   int endpoint_index, board_index;
@@ -114,14 +117,27 @@ struct omx_endpoint {
   int in_handler;
   void * recvq, * sendq, * eventq;
   void * next_event;
+
+  /* context ids */
+  uint8_t ctxid_bits;
+  uint32_t ctxid_max;
+  uint8_t ctxid_shift;
+  uint64_t ctxid_mask;
+
+  /* context id array for multiplexed queues */
+  struct {
+    struct list_head unexp_req_q;
+    struct list_head recv_req_q;
+    struct list_head done_req_q;
+  } * ctxid;
+
+  /* non multiplexed queues */
   struct list_head sent_req_q;
-  struct list_head unexp_req_q;
-  struct list_head recv_req_q;
   struct list_head multifrag_medium_recv_req_q;
   struct list_head large_send_req_q;
   struct list_head large_recv_req_q;
   struct list_head connect_req_q;
-  struct list_head done_req_q;
+
   struct omx__sendq_map sendq_map;
   struct omx__large_region_map large_region_map;
   struct omx__partner ** partners;

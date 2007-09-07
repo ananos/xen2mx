@@ -29,6 +29,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
 		       void *context, union omx_request **requestp)
 {
   union omx_request * req;
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   struct omx_cmd_send_tiny tiny_param;
   omx_return_t ret;
   int err;
@@ -61,7 +62,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.state = OMX_REQUEST_STATE_DONE;
-  omx__enqueue_request(&ep->done_req_q, req);
+  omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
 
   *requestp = req;
   return OMX_SUCCESS;
@@ -80,6 +81,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 			void *context, union omx_request **requestp)
 {
   union omx_request * req;
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   struct omx_cmd_send_small small_param;
   omx_return_t ret;
   int err;
@@ -112,7 +114,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.state = OMX_REQUEST_STATE_DONE;
-  omx__enqueue_request(&ep->done_req_q, req);
+  omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
 
   *requestp = req;
   return OMX_SUCCESS;

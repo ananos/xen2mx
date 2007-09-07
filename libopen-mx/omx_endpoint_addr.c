@@ -397,8 +397,10 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   req->generic.state = OMX_REQUEST_STATE_DONE;
 
   /* move iconnect request to the done queue */
-  if (!req->connect.is_synchronous)
-    omx__enqueue_request(&ep->done_req_q, req);
+  if (!req->connect.is_synchronous) {
+    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+    omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
+  }
 
   return OMX_SUCCESS;
 }

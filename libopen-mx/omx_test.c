@@ -35,7 +35,8 @@ omx_test(struct omx_endpoint *ep, union omx_request **requestp,
   if (req->generic.state != OMX_REQUEST_STATE_DONE) {
     *result = 0;
   } else {
-    omx__dequeue_request(&ep->done_req_q, req);
+    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+    omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
     memcpy(status, &req->generic.status, sizeof(*status));
 
     omx__request_free(req);
@@ -52,6 +53,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	 struct omx_status *status, uint32_t * result)
 {
   union omx_request * req = *requestp;
+  uint32_t ctxid;
   omx_return_t ret = OMX_SUCCESS;
 
   while (req->generic.state != OMX_REQUEST_STATE_DONE) {
@@ -61,7 +63,8 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
     /* FIXME: sleep */
   }
 
-  omx__dequeue_request(&ep->done_req_q, req);
+  ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+  omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
   memcpy(status, &req->generic.status, sizeof(*status));
 
   omx__request_free(req);
@@ -77,6 +80,7 @@ omx_test_any(struct omx_endpoint *ep,
 	     uint64_t match_info, uint64_t match_mask,
 	     omx_status_t *status, uint32_t *result)
 {
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
 
@@ -84,9 +88,17 @@ omx_test_any(struct omx_endpoint *ep,
   if (ret != OMX_SUCCESS)
     goto out;
 
-  omx__foreach_request(&ep->done_req_q, req) {
+  /* FIXME: check match info/mask */
+
+  /* check that there's no wildcard in the context id range */
+  if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
+    ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
+    goto out;
+  }
+
+  omx__foreach_request(&ep->ctxid[ctxid].done_req_q, req) {
     if ((req->generic.status.match_info & match_mask) == match_info) {
-      omx__dequeue_request(&ep->done_req_q, req);
+      omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
       memcpy(status, &req->generic.status, sizeof(*status));
       omx__request_free(req);
       *result = 1;
@@ -104,8 +116,17 @@ omx_wait_any(struct omx_endpoint *ep,
 	     uint64_t match_info, uint64_t match_mask,
 	     omx_status_t *status, uint32_t *result)
 {
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
+
+  /* FIXME: check match info/mask */
+
+  /* check that there's no wildcard in the context id range */
+  if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
+    ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
+    goto out;
+  }
 
   while (1) {
     ret = omx__progress(ep);
@@ -113,9 +134,9 @@ omx_wait_any(struct omx_endpoint *ep,
       goto out;
     /* FIXME: sleep */
 
-    omx__foreach_request(&ep->done_req_q, req) {
+    omx__foreach_request(&ep->ctxid[ctxid].done_req_q, req) {
       if ((req->generic.status.match_info & match_mask) == match_info) {
-	omx__dequeue_request(&ep->done_req_q, req);
+	omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
 	memcpy(status, &req->generic.status, sizeof(*status));
 	omx__request_free(req);
 	*result = 1;
@@ -135,14 +156,19 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
 {
   omx_return_t ret = OMX_SUCCESS;
 
+  if (ep->ctxid_bits) {
+    ret = OMX_NOT_SUPPORTED_WITH_CONTEXT_ID;
+    goto out;
+  }
+
   ret = omx__progress(ep);
   if (ret != OMX_SUCCESS)
     goto out;
 
-  if (omx__queue_empty(&ep->done_req_q)) {
+  if (omx__queue_empty(&ep->ctxid[0].done_req_q)) {
     *result = 0;
   } else {
-    *requestp = omx__queue_first_request(&ep->done_req_q);
+    *requestp = omx__queue_first_request(&ep->ctxid[0].done_req_q);
     *result = 1;
   }
 
@@ -156,14 +182,19 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 {
   omx_return_t ret = OMX_SUCCESS;
 
-  while (omx__queue_empty(&ep->done_req_q)) {
+  if (ep->ctxid_bits) {
+    ret = OMX_NOT_SUPPORTED_WITH_CONTEXT_ID;
+    goto out;
+  }
+
+  while (omx__queue_empty(&ep->ctxid[0].done_req_q)) {
     ret = omx__progress(ep);
     if (ret != OMX_SUCCESS)
       goto out;
     /* FIXME: sleep */
   }
 
-  *requestp = omx__queue_first_request(&ep->done_req_q);
+  *requestp = omx__queue_first_request(&ep->ctxid[0].done_req_q);
   *result = 1;
 
  out:
@@ -174,14 +205,23 @@ omx_return_t
 omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
 	   omx_status_t *status, uint32_t *result)
 {
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
+
+  /* FIXME: check match info/mask */
+
+  /* check that there's no wildcard in the context id range */
+  if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
+    ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
+    goto out;
+  }
 
   ret = omx__progress(ep);
   if (ret != OMX_SUCCESS)
     goto out;
 
-  omx__foreach_request(&ep->unexp_req_q, req) {
+  omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
     if ((req->generic.status.match_info & match_mask) == match_info) {
       memcpy(status, &req->generic.status, sizeof(*status));
       *result = 1;
@@ -198,8 +238,17 @@ omx_return_t
 omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
 	  omx_status_t *status, uint32_t *result)
 {
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
+
+  /* FIXME: check match info/mask */
+
+  /* check that there's no wildcard in the context id range */
+  if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
+    ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
+    goto out;
+  }
 
   while (1) {
     ret = omx__progress(ep);
@@ -207,7 +256,7 @@ omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
       goto out;
     /* FIXME: sleep */
 
-    omx__foreach_request(&ep->unexp_req_q, req) {
+    omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
       if ((req->generic.status.match_info & match_mask) == match_info) {
 	memcpy(status, &req->generic.status, sizeof(*status));
 	*result = 1;
