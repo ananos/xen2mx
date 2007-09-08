@@ -31,7 +31,18 @@ $ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/
 | Caveats |
 +---------+
 
-1. Installing as root over NFS
+1. Installing as non-root
+
+Since the default installation process stores the kernel module in
+/lib/modules/<kernel>/, it requires corresponding access rights,
+i.e. basically requires to be running as root.
+
+If it fails to install there, it will revert to install in
+<prefix>/lib/modules/<kernel>/. It means that modprobe will not
+work and you will have to manually insert module using (as root):
+$ insmod <prefix>/lib/modules/<kernel>/extra/open-mx.ko
+
+2. Installing as root over NFS
 
 Most NFS configurations do not allow root on the client to operate
 as root on the server's files. When running 'make install' as root,

@@ -1,3 +1,5 @@
+prefix  =       @prefix@
+
 LINUX_DIR	=	@LINUX_BUILD@
 OPEN_MX_DIR	=	@abs_builddir@
 
@@ -19,7 +21,10 @@ all:
 
 installonly:
 	@echo "Installing kernel module for kernel $(LINUX_DIR)"
-	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) modules_install
+	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) modules_install \
+	 || (echo "Failed to install kernel module in system directories, reverting to installing in $(prefix)..." \
+	     && make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) modules_install INSTALL_MOD_PATH=$(prefix) \
+	    )
 
 install: all installonly
 
