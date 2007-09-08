@@ -10,14 +10,6 @@ By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
 the configure line to change this (or set prefix on the 'make install'
 command line).
 
-You might experience some problems when running 'make install' as root
-over NFS because some Makefiles might modify some files before actually
-installing anything. To work this, assuming everything has been built
-as non-root before, you may use
-$ make installonly
-so that it really only installs things without checking whether the build
-is up-to-date.
-
 +---------------+
 | Kernel Module |
 +---------------+
@@ -34,3 +26,21 @@ To build for another kernel, use
 $ ./configure --with-linux=/path/to/kernel/headers/
 To build using another kernel build tree, use
 $ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
+
++---------+
+| Caveats |
++---------+
+
+1. Installing as root over NFS
+
+Most NFS configurations do not allow root on the client to operate
+as root on the server's files. When running 'make install' as root,
+you might experience problems because some Makefiles (especially
+the kernel driver's one) might modify some files before actually
+installing anything.
+
+To work around this, assuming everything has been built as non-root
+before, you may use (as root)
+$ make installonly
+so that it really only installs things without checking whether the
+build is up-to-date.
