@@ -695,3 +695,16 @@ omx_register_unexp_handler(omx_endpoint_t ep,
 
   return OMX_SUCCESS;
 }
+
+omx_return_t
+omx_context(omx_request_t *request, void ** context)
+{
+  *context = (*request)->generic.status.context;
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx_progress(omx_endpoint_t ep)
+{
+  return omx__progress(ep);
+}

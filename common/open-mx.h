@@ -176,6 +176,9 @@ omx_irecv(omx_endpoint_t ep,
 	  void *context, omx_request_t * request);
 
 omx_return_t
+omx_context(omx_request_t *request, void ** context);
+
+omx_return_t
 omx_test(omx_endpoint_t ep, omx_request_t * request,
 	 struct omx_status *status, uint32_t * result);
 
@@ -255,5 +258,8 @@ omx_hostname_to_nic_id(char *hostname,
 omx_return_t
 omx_nic_id_to_hostname(uint64_t board_addr,
 		       char *hostname);
+
+omx_return_t
+omx_progress(omx_endpoint_t ep);
 
 #endif /* __open_mx_h__ */

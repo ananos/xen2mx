@@ -217,7 +217,7 @@ mx_irecv(mx_endpoint_t endpoint,
 /* FIXME: mx_ibuffered */
 /* FIXME: mx_buffered */
 
-/* FIXME: mx_context */
+#define mx_context omx_context
 
 /* FIXME: mx_line_speed_t mx_net_type */
 /* FIXME: mx_get_info_key_t */
