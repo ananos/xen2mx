@@ -26,7 +26,7 @@ other-installonly:
 	@if test @OMX_MX_API_COMPAT@ -eq 1; then \
 		echo "Installing MX API compatibility wrappers" ; \
 		install -m 0644 $(srcdir)/common/myriexpress.h $(DESTDIR)$(includedir) ; \
-		install -m 0644 /dev/null $(DESTDIR)$(includedir)/mx_extensions.h ; \
+		install -m 0644 $(srcdir)/common/mx_extensions.h $(DESTDIR)$(includedir) ; \
 	fi
 
 other-install: other-installonly

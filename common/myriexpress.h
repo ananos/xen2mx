@@ -24,6 +24,7 @@
 #ifndef MYRIEXPRESS_H
 #define MYRIEXPRESS_H
 
+#include <assert.h>
 #include "open-mx.h"
 
 #define MX_API OMX_API
@@ -41,7 +42,53 @@ typedef omx_request_t mx_request_t;
 
 /* FIXME: return codes */
 
-typedef omx_return_t mx_return_t;
+enum mx_return_code
+{
+	MX_SUCCESS		= OMX_SUCCESS,
+	MX_BAD_BAD_BAD		= OMX_BAD_ERROR,
+	MX_FAILURE		= 102,
+	MX_ALREADY_INITIALIZED	= OMX_ALREADY_INITIALIZED,
+	MX_NOT_INITIALIZED	= OMX_NOT_INITIALIZED,
+	MX_NO_DEV		= OMX_NO_DEVICE,
+	MX_NO_DRIVER		= 106,
+	MX_NO_PERM		= OMX_ACCESS_DENIED,
+	MX_BOARD_UNKNOWN	= 108,
+	MX_BAD_ENDPOINT		= 109,
+	MX_BAD_SEG_LIST		= 110,
+	MX_BAD_SEG_MEM		= 111,
+	MX_BAD_SEG_CNT		= 112,
+	MX_BAD_REQUEST		= 113,
+	MX_BAD_MATCH_MASK	= 114,
+	MX_NO_RESOURCES		= OMX_NO_RESOURCES,
+	MX_BAD_ADDR_LIST	= 116,
+	MX_BAD_ADDR_COUNT	= 117,
+	MX_BAD_ROOT		= 118,
+	MX_NOT_COMPLETED	= 119,
+	MX_BUSY			= OMX_BUSY,
+	MX_BAD_INFO_KEY		= 121,
+	MX_BAD_INFO_VAL		= 122,
+	MX_BAD_NIC		= 123,
+	MX_BAD_PARAM_LIST	= 124,
+	MX_BAD_PARAM_NAME	= 125,
+	MX_BAD_PARAM_VAL	= 126,
+	MX_BAD_HOSTNAME_ARGS	= 127,
+	MX_HOST_NOT_FOUND	= 128,
+	MX_REQUEST_PENDING	= 129,
+	MX_TIMEOUT		= 130,
+	MX_NO_MATCH		= 131,
+	MX_BAD_ENDPOINT_ID	= 132,
+	MX_CONNECTION_FAILED	= 133,
+	MX_BAD_CONNECTION_KEY	= OMX_BAD_CONNECTION_KEY,
+	MX_BAD_INFO_LENGTH	= 135,
+	MX_NIC_NOT_FOUND	= 136,
+	MX_BAD_KERNEL_VERSION	= 137,
+	MX_BAD_LIB_VERSION	= 138,
+	MX_NIC_DEAD		= 139,
+	MX_CANCEL_NOT_SUPPORTED	= 140,
+	MX_CLOSE_IN_HANDLER	= 141,
+	MX_BAD_MATCHING_FOR_CONTEXT_ID_MASK	= 142,
+	MX_NOT_SUPPORTED_WITH_CONTEXT_ID	= 143
+};
 
 #define MX_PARAM_ERROR_HANDLER OMX_ENDPOINT_PARAM_ERROR_HANDLER
 #define MX_PARAM_UNEXP_QUEUE_MAX OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX
@@ -56,15 +103,43 @@ typedef omx_error_handler_t mx_error_handler_t;
 
 /* FIXME: status codes */
 
+enum mx_status_code
+{
+	MX_STATUS_SUCCESS	= OMX_SUCCESS,
+	MX_STATUS_PENDING	= 101,
+	MX_STATUS_BUFFERED	= 102,
+	MX_STATUS_REJECTED	= 103,
+	MX_STATUS_TIMEOUT	= 104,
+	MX_STATUS_TRUNCATED	= 105,
+	MX_STATUS_CANCELLED	= 106,
+	MX_STATUS_ENDPOINT_UNKNOWN	= 107,
+	MX_STATUS_ENDPOINT_CLOSED	= 108,
+	MX_STATUS_ENDPOINT_UNREACHABLE	= 109,
+	MX_STATUS_BAD_SESSION	= 110,
+	MX_STATUS_BAD_KEY	= OMX_STATUS_BAD_KEY,
+	MX_STATUS_BAD_ENDPOINT	= 112,
+	MX_STATUS_BAD_RDMAWIN	= 113,
+	MX_STATUS_ABORTED	= 114,
+	MX_STATUS_EVENTQ_FULL	= 115,
+	MX_STATUS_NO_RESOURCES	= 116
+};
+
+typedef enum mx_status_code mx_status_code_t;
+
 typedef omx_status_t mx_status_t;
 
-#define mx__init_apit omx__init_api
+#define mx__init_api omx__init_api
+#define mx_init() mx__init_api(MX_API)
 #define mx_finalize omx_finalize
+
+#define MX_ERRORS_RETURN 0
+#define mx_set_error_handler(...) MX_SUCCESS;
 
 #define mx_open_endpoint omx_open_endpoint
 #define mx_close_endpoint omx_close_endpoint
 
 /* FIXME: mx_wakeup */
+#define mx_wakeup(...) MX_SUCCESS;
 
 /* FIXME: mx_disable_progression */
 /* FIXME: mx_reenable_progression */
@@ -78,7 +153,13 @@ typedef struct
 }
 mx_segment_t;
 
+/* define infinite timeout for mx_wait */
+  
+#define MX_INFINITE   0
+
 /* FIXME: MX_MAX_SEGMENTS */
+#define MX_MAX_SEGMENTS 1
+
 
 static inline mx_return_t
 mx_isend(mx_endpoint_t endpoint,
@@ -90,7 +171,7 @@ mx_isend(mx_endpoint_t endpoint,
 	 mx_request_t *request)
 {
   assert(segments_count == 1);
-  return omx_isend(endpoint, segments_list[0].segments_ptr, segment_list[0].segment_length, dest_endpoint, match_info, context, request);
+  return omx_isend(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, match_info, dest_endpoint, context, request);
 }
 
 static inline mx_return_t
@@ -103,7 +184,7 @@ mx_issend(mx_endpoint_t endpoint,
 	 mx_request_t *request)
 {
   assert(segments_count == 1);
-  return omx_issend(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, dest_endpoint, match_info, context, request);
+  return omx_issend(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, match_info, dest_endpoint, context, request);
 }
 
 #define MX_MATCH_MASK_NONE (~(uint64_t)0)
@@ -122,6 +203,7 @@ mx_irecv(mx_endpoint_t endpoint,
 }
 
 /* FIXME: mx_cancel */
+#define mx_cancel(...) MX_FAILURE
 
 #define mx_test omx_test
 #define mx_wait(endpoint,request,timeout, status,result) omx_wait(endpoint,request,status,result)
@@ -142,6 +224,7 @@ mx_irecv(mx_endpoint_t endpoint,
 /* FIXME: mx_get_info */
 
 /* FIXME: MX_MAX_HOSTNAME_LEN */
+#define MX_MAX_HOSTNAME_LEN 80
 
 #define mx_hostname_to_nic_id omx_hostname_to_nic_id
 #define mx_board_number_to_nic_id omx_board_number_to_nic_id
@@ -151,7 +234,7 @@ mx_irecv(mx_endpoint_t endpoint,
 #define mx_iconnect omx_iconnect
 #define mx_connect omx_connect
 #define mx_decompose_endpoint_addr omx_decompose_endpoint_addr
-#define mx_get_endpoint_add omx_get_endpoint_addr
+#define mx_get_endpoint_addr omx_get_endpoint_addr
 
 #define mx_strerror omx_strerror
 #define mx_strstatus omx_strstatus
