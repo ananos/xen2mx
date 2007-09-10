@@ -231,28 +231,11 @@ mx_irecv(mx_endpoint_t endpoint,
 #define mx_nic_id_to_board_number omx_nic_id_to_board_number
 #define mx_nic_id_to_hostname omx_nic_id_to_hostname
 
-#define mx_iconnect omx_iconnect
 #define mx_connect omx_connect
 #define mx_decompose_endpoint_addr omx_decompose_endpoint_addr
 #define mx_get_endpoint_addr omx_get_endpoint_addr
 
 #define mx_strerror omx_strerror
 #define mx_strstatus omx_strstatus
-
-/* FIXME: mx_disconnect */
-
-#define MX_RECV_CONTINUE OMX_RECV_CONTINUE
-#define MX_RECV_FINISHED OMX_RECV_FINISHED
-typedef omx_unexp_handler_action_t mx_unexp_handler_action_t;
-typedef omx_unexp_handler_t mx_unexp_handler_t;
-#define mx_register_unexp_handler omx_register_unexp_handler
-
-/* FIXME: mx_forget */
-/* FIXME: mx_progress */
-
-#define mx_set_endpoint_addr_context omx_set_endpoint_addr_context
-#define mx_get_endpoint_addr_context omx_get_endpoint_addr_context
-
-/* FIXME: mx_set_request_timeout */
 
 #endif /* MYRIEXPRESS_H */

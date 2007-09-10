@@ -26,7 +26,21 @@
 
 #include "open-mx.h"
 
-#define mx_set_request_timeout(...) MX_SUCCESS
+#define MX_HAS_ICONNECT_V2 1
+#define mx_iconnect omx_iconnect
 #define mx_disconnect(...) MX_FAILURE
+#define mx_set_request_timeout(...) MX_SUCCESS
+
+#define MX_RECV_CONTINUE OMX_RECV_CONTINUE
+#define MX_RECV_FINISHED OMX_RECV_FINISHED
+typedef omx_unexp_handler_action_t mx_unexp_handler_action_t;
+typedef omx_unexp_handler_t mx_unexp_handler_t;
+#define mx_register_unexp_handler omx_register_unexp_handler
+
+/* FIXME: mx_forget */
+/* FIXME: mx_progress */
+
+#define mx_set_endpoint_addr_context omx_set_endpoint_addr_context
+#define mx_get_endpoint_addr_context omx_get_endpoint_addr_context
 
 #endif /* MX_EXTENSIONS_H */
