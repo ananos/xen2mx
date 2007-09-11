@@ -61,9 +61,9 @@ typedef struct omx_endpoint_addr omx_endpoint_addr_t;
 struct omx_status {
   enum omx_status_code code;
   omx_endpoint_addr_t addr;
-  unsigned long msg_length;
-  unsigned long xfer_length;
   uint64_t match_info;
+  uint32_t msg_length;
+  uint32_t xfer_length;
   void *context;
 };
 typedef struct omx_status omx_status_t;

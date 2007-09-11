@@ -15,6 +15,8 @@
 
 * check pingpong contents
 
+* vectorial support, through isendv/irecvv
+
 * send a nack on bad session, except for connect (no session), truc or nack libs
 
 * have a way to make install without the driver or only the driver (for local install as non-root)
@@ -35,6 +37,7 @@
   + limit unexpq size to avoid memory starvation
   + need to keep partner's recv_seqnum in the kernel
     - and synchronize with user-space which takes care of acking
+    - share mapping of peer-index based array of recv seqnums between kernel and user-space?
 
 * support eventq full by queueing things?
   - upto when? reserve before sending? should be guaranteed by the lib (polls before sending) => no need to queue?

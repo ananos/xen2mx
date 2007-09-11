@@ -184,6 +184,7 @@ AC_ARG_ENABLE(mx, [  --enable-mx	enable MX API compatibility wrappers],
 AC_MSG_CHECKING(if MX API compatibility wrappers are enabled)
 if test x$enable_mx = xyes; then
   AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_MX_API_COMPAT, 1, [Define to enable MX API compatibility wrappers])
   AC_SUBST(OMX_MX_API_COMPAT, 1)
 else
   AC_MSG_RESULT(no)

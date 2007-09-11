@@ -40,10 +40,7 @@ typedef omx_endpoint_addr_t mx_endpoint_addr_t;
 
 typedef omx_request_t mx_request_t;
 
-/* FIXME: return codes */
-
-enum mx_return_code
-{
+enum mx_return_code { /* FIXME */
 	MX_SUCCESS		= OMX_SUCCESS,
 	MX_BAD_BAD_BAD		= OMX_BAD_ERROR,
 	MX_FAILURE		= 102,
@@ -100,12 +97,8 @@ typedef omx_endpoint_param_t mx_param_t;
 #define MX_CONTEXT_ID_BITS_MAX OMX_ENDPOINT_CONTEXT_ID_MAX
 
 typedef omx_error_handler_t mx_error_handler_t;
-/* FIXME: error handler values and mx_set_error_handler */
 
-/* FIXME: status codes */
-
-enum mx_status_code
-{
+enum mx_status_code { /* FIXME */
 	MX_STATUS_SUCCESS	= OMX_SUCCESS,
 	MX_STATUS_PENDING	= 101,
 	MX_STATUS_BUFFERED	= 102,
@@ -124,43 +117,47 @@ enum mx_status_code
 	MX_STATUS_EVENTQ_FULL	= 115,
 	MX_STATUS_NO_RESOURCES	= 116
 };
-
 typedef enum mx_status_code mx_status_code_t;
 
-typedef omx_status_t mx_status_t;
+/* need to be redefined entirely since some fields are renamed,
+ * there are some compile-time assertions to check compatibility
+ */
+struct mx_status {
+  mx_status_code_t code;
+  mx_endpoint_addr_t source;
+  uint64_t match_info;
+  uint32_t msg_length;
+  uint32_t xfer_length;
+  void *context;
+};
+typedef struct mx_status mx_status_t;
 
 #define mx__init_api omx__init_api
 #define mx_init() mx__init_api(MX_API)
 #define mx_finalize omx_finalize
 
-#define MX_ERRORS_RETURN 0
-#define mx_set_error_handler(...) MX_SUCCESS;
+#define MX_ERRORS_RETURN 0 /* FIXME */
+#define mx_set_error_handler(...) MX_SUCCESS; /* FIXME */
 
 #define mx_open_endpoint omx_open_endpoint
 #define mx_close_endpoint omx_close_endpoint
 
-/* FIXME: mx_wakeup */
-#define mx_wakeup(...) MX_SUCCESS;
+#define mx_wakeup(...) MX_SUCCESS; /* FIXME */
 
 /* FIXME: mx_disable_progression */
 /* FIXME: mx_reenable_progression */
 
-/* FIXME: wrapper instead */
+/* FIXME: wrapper instead, once supported */
 typedef void * mx_segment_ptr_t;
-typedef struct
-{
+struct mx_segment {
   mx_segment_ptr_t segment_ptr;
   uint32_t segment_length;
-}
-mx_segment_t;
+};
+typedef struct mx_segment mx_segment_t;
 
-/* define infinite timeout for mx_wait */
-  
-#define MX_INFINITE   0
+#define MX_INFINITE   0 /* FIXME */
 
-/* FIXME: MX_MAX_SEGMENTS */
-#define MX_MAX_SEGMENTS 1
-
+#define MX_MAX_SEGMENTS 1 /* FIXME */
 
 static inline mx_return_t
 mx_isend(mx_endpoint_t endpoint,
@@ -203,8 +200,7 @@ mx_irecv(mx_endpoint_t endpoint,
   return omx_irecv(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, match_info, match_mask, context, request);
 }
 
-/* FIXME: mx_cancel */
-#define mx_cancel(...) MX_FAILURE
+#define mx_cancel(...) MX_FAILURE /* FIXME */
 
 #define mx_test omx_test
 #define mx_wait(endpoint,request,timeout, status,result) omx_wait(endpoint,request,status,result)
@@ -224,7 +220,6 @@ mx_irecv(mx_endpoint_t endpoint,
 /* FIXME: mx_get_info_key_t */
 /* FIXME: mx_get_info */
 
-/* FIXME: MX_MAX_HOSTNAME_LEN */
 #define MX_MAX_HOSTNAME_LEN 80
 
 #define mx_hostname_to_nic_id omx_hostname_to_nic_id

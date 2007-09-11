@@ -36,3 +36,34 @@ assertions(void)
   CHECK(OMX_MEDIUM_FRAG_LENGTH_MAX <= OMX_RECVQ_ENTRY_SIZE);
   CHECK(OMX_MEDIUM_FRAG_LENGTH_MAX <= OMX_SENDQ_ENTRY_SIZE);
 }
+
+
+#ifdef OMX_MX_API_COMPAT
+
+#include "myriexpress.h"
+#include "mx_extensions.h"
+
+void
+compat_assertions(void)
+{
+  /* check the contents of status types, since their fields are different */
+  CHECK(sizeof(mx_status_t) == sizeof(omx_status_t));
+  CHECK(offsetof(mx_status_t, code) == offsetof(omx_status_t, code));
+  CHECK(sizeof(((mx_status_t*)NULL)->code) == sizeof(((omx_status_t*)NULL)->code));
+  CHECK(offsetof(mx_status_t, source) == offsetof(omx_status_t, addr));
+  CHECK(sizeof(((mx_status_t*)NULL)->source) == sizeof(((omx_status_t*)NULL)->addr));
+  CHECK(offsetof(mx_status_t, match_info) == offsetof(omx_status_t, match_info));
+  CHECK(sizeof(((mx_status_t*)NULL)->match_info) == sizeof(((omx_status_t*)NULL)->match_info));
+  CHECK(offsetof(mx_status_t, msg_length) == offsetof(omx_status_t, msg_length));
+  CHECK(sizeof(((mx_status_t*)NULL)->msg_length) == sizeof(((omx_status_t*)NULL)->msg_length));
+  CHECK(offsetof(mx_status_t, xfer_length) == offsetof(omx_status_t, xfer_length));
+  CHECK(sizeof(((mx_status_t*)NULL)->xfer_length) == sizeof(((omx_status_t*)NULL)->xfer_length));
+  CHECK(offsetof(mx_status_t, context) == offsetof(omx_status_t, context));
+  CHECK(sizeof(((mx_status_t*)NULL)->context) == sizeof(((omx_status_t*)NULL)->context));
+
+  /* check the size of enums */
+  CHECK(sizeof(mx_return_t) == sizeof(omx_return_t));
+  CHECK(sizeof(mx_status_code_t) == sizeof(omx_status_code_t));
+}
+
+#endif
