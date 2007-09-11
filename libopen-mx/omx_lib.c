@@ -45,10 +45,6 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
       req->generic.status.code = status;
     }
   }
-  printf("completing recv with status %s msg length %d xfer %d\n",
-	 omx_strstatus(status),
-	 req->generic.status.msg_length,
-	 req->generic.status.xfer_length);
 
   omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
 }
