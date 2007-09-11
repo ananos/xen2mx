@@ -95,6 +95,8 @@ omx_strstatus(omx_status_code_t code)
   switch (code) {
   case OMX_STATUS_SUCCESS:
     return "Success";
+  case OMX_STATUS_TRUNCATED:
+    return "Message Truncated";
   case OMX_STATUS_FAILED:
     return "Failed";
   case OMX_STATUS_BAD_KEY:

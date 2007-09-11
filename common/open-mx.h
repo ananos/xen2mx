@@ -46,6 +46,7 @@ typedef enum omx_return omx_return_t;
 
 enum omx_status_code {
   OMX_STATUS_SUCCESS=0,
+  OMX_STATUS_TRUNCATED,
   OMX_STATUS_FAILED,
   OMX_STATUS_BAD_KEY,
 };
