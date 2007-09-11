@@ -113,6 +113,14 @@ extern omx_return_t
 omx__queue_large_recv(struct omx_endpoint * ep,
 		      union omx_request * req);
 
+extern void
+omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
+		   omx_status_code_t status);
+
+extern void
+omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
+		   omx_status_code_t status);
+
 extern omx_return_t
 omx__pull_done(struct omx_endpoint * ep, struct omx_evt_pull_done * event);
 

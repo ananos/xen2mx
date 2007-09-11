@@ -21,6 +21,30 @@
 #include "omx_lib.h"
 #include "omx_request.h"
 
+void
+omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
+		   omx_status_code_t status)
+{
+  uint64_t match_info = req->generic.status.match_info;
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
+
+  if (req->generic.status.code == OMX_STATUS_SUCCESS) {
+    /* only set the status if it is not already set to an error */
+    if (status == OMX_STATUS_SUCCESS) {
+      if (req->generic.status.xfer_length < req->generic.status.msg_length)
+	req->generic.status.code = OMX_STATUS_TRUNCATED;
+    } else {
+      req->generic.status.code = status;
+    }
+  }
+  printf("completing send with status %s msg length %d xfer %d\n",
+	 omx_strstatus(status),
+	 req->generic.status.msg_length,
+	 req->generic.status.xfer_length);
+
+  omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
+}
+
 static inline omx_return_t
 omx__submit_isend_tiny(struct omx_endpoint *ep,
 		       void *buffer, size_t length,
@@ -29,7 +53,6 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
 		       void *context, union omx_request **requestp)
 {
   union omx_request * req;
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   struct omx_cmd_send_tiny tiny_param;
   omx_return_t ret;
   int err;
@@ -61,8 +84,11 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   req->send.seqnum = seqnum;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
+  req->generic.status.msg_length = length;
+  req->generic.status.xfer_length = length; /* truncation not notified to the sender */
+
   req->generic.state = OMX_REQUEST_STATE_DONE;
-  omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
+  omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
 
   *requestp = req;
   return OMX_SUCCESS;
@@ -81,7 +107,6 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 			void *context, union omx_request **requestp)
 {
   union omx_request * req;
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   struct omx_cmd_send_small small_param;
   omx_return_t ret;
   int err;
@@ -113,8 +138,11 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   req->send.seqnum = seqnum;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
+  req->generic.status.msg_length = length;
+  req->generic.status.xfer_length = length; /* truncation not notified to the sender */
+
   req->generic.state = OMX_REQUEST_STATE_DONE;
-  omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
+  omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
 
   *requestp = req;
   return OMX_SUCCESS;
@@ -193,6 +221,9 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   req->send.specific.medium.frags_pending_nr = frags;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
+  req->generic.status.msg_length = length;
+  req->generic.status.xfer_length = length; /* truncation not notified to the sender */
+
   req->generic.state = OMX_REQUEST_STATE_PENDING;
   omx__enqueue_request(&ep->sent_req_q, req);
 
@@ -257,6 +288,9 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.state = OMX_REQUEST_STATE_PENDING;
+  req->generic.status.msg_length = length;
+  /* will set xfer_length when receiving the notify */
+
   omx__enqueue_request(&ep->large_send_req_q, req);
 
   *requestp = req;

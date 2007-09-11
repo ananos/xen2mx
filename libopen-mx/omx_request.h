@@ -38,6 +38,7 @@ omx__request_alloc(enum omx__request_type type)
     return NULL;
 
   req->generic.type = type;
+  req->generic.status.code = OMX_STATUS_SUCCESS;
 
   switch (type) {
   case OMX_REQUEST_TYPE_RECV:

@@ -261,8 +261,8 @@ omx__pull_done(struct omx_endpoint * ep,
   }
 
   req->generic.state = OMX_REQUEST_STATE_DONE;
-  ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-  omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
+  omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+
   return OMX_SUCCESS;
 
  out:
