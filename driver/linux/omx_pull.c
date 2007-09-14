@@ -42,9 +42,8 @@ struct omx_pull_handle {
 
 	/* current block */
 	uint32_t remaining_length;
-	uint32_t frame_index;
-	uint32_t block_length;
-	uint32_t block_frames;
+	uint32_t frame_index; /* index of the first requested frame */
+	uint32_t block_frames; /* number of frames requested */
 	uint32_t frame_missing_bitmap; /* frames not received at all */
 	uint32_t frame_copying_bitmap; /* frames received but not copied yet */
 
@@ -72,6 +71,39 @@ struct omx_pull_handle {
  * writing, we must always disable bottom halves when taking the rwlock for
  * either read or writing.
  */
+
+/********************************
+ * Pull handle bitmap management
+ */
+
+static inline void
+omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
+				     uint32_t block_length,
+				     uint32_t first_frame_offset)
+{
+	uint32_t new_mask;
+	int new_frames;
+
+	new_frames = (first_frame_offset + block_length
+		      + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
+	BUG_ON(new_frames + handle->block_frames > 32);
+
+	new_mask = ((1UL << new_frames) - 1) << handle->block_frames;
+
+	handle->frame_missing_bitmap |= new_mask;
+	handle->frame_copying_bitmap |= new_mask;
+	handle->block_frames += new_frames;
+}
+
+static inline void
+omx_pull_handle_forget_received_frames(struct omx_pull_handle * handle,
+				       uint32_t nr_frames)
+{
+	handle->frame_missing_bitmap >>= nr_frames;
+	handle->frame_copying_bitmap >>= nr_frames;
+	handle->frame_index += nr_frames;
+	handle->block_frames -= nr_frames;
+}
 
 /******************************
  * Per-endpoint pull handles management
@@ -233,6 +265,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->puller_rdma_offset = cmd->local_offset;
 	handle->pulled_rdma_offset = cmd->remote_offset;
 	handle->frame_index = 0;
+	handle->block_frames = 0;
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
 	omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
@@ -369,9 +402,12 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
  * Pull-related networking
  */
 
-/* Called with the handle held, will be released before returning */
-static inline int
-omx_send_next_pull_block_request(struct omx_pull_handle * handle)
+/* Called with the handle held */
+static inline struct sk_buff *
+omx_fill_pull_block_request(struct omx_pull_handle * handle,
+			    uint32_t frame_index,
+			    uint32_t block_length,
+			    uint32_t first_frame_offset)
 {
 	struct omx_iface * iface = handle->endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -379,18 +415,13 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	struct omx_hdr * mh;
 	struct ethhdr * eh;
 	struct omx_pkt_pull_request * pull;
-	uint32_t block_length, first_frame_offset, frame_index;
-	int replies;
-	int err = 0;
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(*mh), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create pull skb\n");
-		err = -ENOMEM;
-		/* FIXME: make sure the handle will be destroyed here */
-		goto out;
+		return ERR_PTR(-ENOMEM);
 	}
 
 	/* locate headers */
@@ -402,36 +433,9 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 	memcpy(eh, &handle->pkt_eth_hdr, sizeof(handle->pkt_eth_hdr));
 	memcpy(pull, &handle->pkt_pull_hdr, sizeof(handle->pkt_pull_hdr));
 
-	/* update other fields */
-	frame_index = handle->frame_index;
-	if (frame_index == 0) {
-		block_length = OMX_PULL_BLOCK_LENGTH_MAX
-			- handle->pulled_rdma_offset;
-		first_frame_offset = handle->pulled_rdma_offset;
-	} else {
-		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
-		first_frame_offset = 0;
-	}
-
-	if (block_length > handle->remaining_length)
-		block_length = handle->remaining_length;
-	handle->remaining_length -= block_length;
-
-	/* FIXME: modify directly in the handle cache ? */
 	pull->block_length = block_length;
 	pull->first_frame_offset = first_frame_offset;
 	pull->frame_index = frame_index;
-
-	/* mark the frames as missing so that the handle is released but not destroyed */
-	replies = (first_frame_offset + block_length + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
-	handle->block_frames = replies;
-	handle->frame_missing_bitmap = (1<<replies)-1;
-	handle->frame_copying_bitmap = (1<<replies)-1;
-
-	/* release the handle before sending to avoid
-	 * deadlock when sending to ourself in the same region
-	 */
-	omx_pull_handle_release(handle);
 
 	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld, frame index %ld first_frame_offset %ld",
 			 (unsigned long) pull->src_pull_handle,
@@ -440,6 +444,74 @@ omx_send_next_pull_block_request(struct omx_pull_handle * handle)
 			 (unsigned long) pull->total_length,
 			 (unsigned long) frame_index,
 			 (unsigned long) first_frame_offset);
+
+	return skb;
+}
+
+/* Called with the handle held, will be released before returning */
+static inline int
+omx_send_first_pull_block_request(struct omx_pull_handle * handle)
+{
+	struct sk_buff * skb;
+	uint32_t block_length, first_frame_offset;
+	int err = 0;
+
+	block_length = OMX_PULL_BLOCK_LENGTH_MAX
+		- handle->pulled_rdma_offset;
+	if (block_length > handle->remaining_length)
+		block_length = handle->remaining_length;
+	handle->remaining_length -= block_length;
+
+	first_frame_offset = handle->pulled_rdma_offset;
+
+	skb = omx_fill_pull_block_request(handle, 0, block_length, first_frame_offset);
+	if (IS_ERR(skb)) {
+		err = PTR_ERR(skb);
+		/* FIXME: make sure the handle will be destroyed here */
+		goto out;
+	}
+
+	/* mark the frames as missing so that the handle is released but not destroyed */
+	omx_pull_handle_append_needed_frames(handle, block_length, first_frame_offset);
+
+	/* release the handle before sending to avoid
+	 * deadlock when sending to ourself in the same region
+	 */
+	omx_pull_handle_release(handle);
+
+	dev_queue_xmit(skb);
+
+ out:
+	return err;
+}
+
+/* Called with the handle held, will be released before returning */
+static inline int
+omx_send_next_pull_block_request(struct omx_pull_handle * handle)
+{
+	struct sk_buff * skb;
+	uint32_t block_length;
+	int err = 0;
+
+	block_length = OMX_PULL_BLOCK_LENGTH_MAX;
+	if (block_length > handle->remaining_length)
+		block_length = handle->remaining_length;
+	handle->remaining_length -= block_length;
+
+	skb = omx_fill_pull_block_request(handle, handle->frame_index, block_length, 0);
+	if (IS_ERR(skb)) {
+		err = PTR_ERR(skb);
+		/* FIXME: make sure the handle will be destroyed here */
+		goto out;
+	}
+
+	/* mark the frames as missing so that the handle is released but not destroyed */
+	omx_pull_handle_append_needed_frames(handle, block_length, 0);
+
+	/* release the handle before sending to avoid
+	 * deadlock when sending to ourself in the same region
+	 */
+	omx_pull_handle_release(handle);
 
 	dev_queue_xmit(skb);
 
@@ -474,7 +546,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	}
 
 	/* send this pull block request and release the handle */
-	return omx_send_next_pull_block_request(handle);
+	return omx_send_first_pull_block_request(handle);
 }
 
 /* pull reply skb destructor to release the user region */
@@ -786,7 +858,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	} else if (handle->remaining_length) {
 		/* current block is done, start the next block */
 		dprintk("queueing next pull block request\n");
-		handle->frame_index += handle->block_frames;
+		omx_pull_handle_forget_received_frames(handle, handle->block_frames);
 		omx_send_next_pull_block_request(handle);
 
 	} else {
