@@ -231,7 +231,6 @@ omx__pull_done(struct omx_endpoint * ep,
   struct omx__partner * partner;
   struct omx_cmd_send_notify notify_param;
   omx_return_t ret;
-  uint32_t ctxid;
   int err;
 
   /* FIXME: use cookie since region might be used for something else? */
