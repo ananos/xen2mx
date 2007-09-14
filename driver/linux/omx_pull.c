@@ -43,6 +43,7 @@ struct omx_pull_handle {
 	/* current block */
 	uint32_t remaining_length;
 	uint32_t frame_index; /* index of the first requested frame */
+	uint32_t next_frame_index; /* index of the frame to request */
 	uint32_t block_frames; /* number of frames requested */
 	uint32_t frame_missing_bitmap; /* frames not received at all */
 	uint32_t frame_copying_bitmap; /* frames received but not copied yet */
@@ -76,6 +77,14 @@ struct omx_pull_handle {
  * Pull handle bitmap management
  */
 
+#define OMX_PULL_HANDLE_BLOCK_BITMASK 0xff
+
+#define OMX_PULL_HANDLE_DONE(handle) \
+	(!(handle)->remaining_length)
+
+#define OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle) \
+	(!((handle)->frame_copying_bitmap & OMX_PULL_HANDLE_BLOCK_BITMASK))
+
 static inline void
 omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 				     uint32_t block_length,
@@ -93,16 +102,16 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 	handle->frame_missing_bitmap |= new_mask;
 	handle->frame_copying_bitmap |= new_mask;
 	handle->block_frames += new_frames;
+	handle->next_frame_index += new_frames;
 }
 
 static inline void
-omx_pull_handle_forget_received_frames(struct omx_pull_handle * handle,
-				       uint32_t nr_frames)
+omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 {
-	handle->frame_missing_bitmap >>= nr_frames;
-	handle->frame_copying_bitmap >>= nr_frames;
-	handle->frame_index += nr_frames;
-	handle->block_frames -= nr_frames;
+	handle->frame_missing_bitmap >>= OMX_PULL_REPLY_PER_BLOCK;
+	handle->frame_copying_bitmap >>= OMX_PULL_REPLY_PER_BLOCK;
+	handle->frame_index += OMX_PULL_REPLY_PER_BLOCK;
+	handle->block_frames -= OMX_PULL_REPLY_PER_BLOCK;
 }
 
 /******************************
@@ -265,6 +274,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->puller_rdma_offset = cmd->local_offset;
 	handle->pulled_rdma_offset = cmd->remote_offset;
 	handle->frame_index = 0;
+	handle->next_frame_index = 0;
 	handle->block_frames = 0;
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
@@ -491,15 +501,13 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	first_frame_offset = handle->pulled_rdma_offset;
 
 	skb = omx_fill_pull_block_request(handle,
-					  0, block_length, first_frame_offset);
+					  handle->next_frame_index,
+					  block_length, first_frame_offset);
 	if (IS_ERR(skb)) {
 		err = PTR_ERR(skb);
 		goto out_with_handle;
 	}
 
-	/* mark the frames as missing so that the handle
-	 * is released but not destroyed
-	 */
 	omx_pull_handle_append_needed_frames(handle,
 					     block_length, first_frame_offset);
 
@@ -565,11 +573,12 @@ omx_recv_pull(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_recv_dprintk(pull_eh, "PULL handle %lx magic %lx length %ld out of %ld",
+	omx_recv_dprintk(pull_eh, "PULL handle %lx magic %lx length %ld out of %ld, index %ld",
 			 (unsigned long) pull_request->src_pull_handle,
 			 (unsigned long) pull_request->src_magic,
 			 (unsigned long) pull_request->block_length,
-			 (unsigned long) pull_request->total_length);
+			 (unsigned long) pull_request->total_length,
+			 (unsigned long) pull_request->first_frame_offset);
 
 	/* compute and check the number of PULL_REPLY to send */
 	replies = (pull_request->first_frame_offset + pull_request->block_length
@@ -746,9 +755,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	uint32_t bitmap_mask;
 	int err = 0;
 
-	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld length %ld skb length %ld",
+	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld frame seqnum length %ld skb length %ld",
 			 (unsigned long) pull_reply->dst_pull_handle,
 			 (unsigned long) pull_reply->dst_magic,
+			 (unsigned long) frame_seqnum,
 			 (unsigned long) frame_length,
 			 (unsigned long) skb->len - sizeof(struct omx_hdr));
 
@@ -823,34 +833,33 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	handle->frame_copying_bitmap &= ~bitmap_mask;
 
-	if (handle->frame_copying_bitmap) {
+	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 		/* current block not done, juste release the handle */
 		dprintk("block not done, just releasing\n");
 		omx_pull_handle_release(handle);
 
-	} else if (handle->remaining_length) {
+	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
 		struct sk_buff * skb;
 		uint32_t block_length;
 
-		/* current block is done, start the next block */
-		dprintk("queueing next pull block request\n");
-		omx_pull_handle_forget_received_frames(handle, handle->block_frames);
+		/* current first block request is done */
+		omx_pull_handle_first_block_done(handle);
 
+		/* start the next block */
+		dprintk("queueing next pull block request\n");
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
 		if (block_length > handle->remaining_length)
 			block_length = handle->remaining_length;
 		handle->remaining_length -= block_length;
 
 		skb = omx_fill_pull_block_request(handle,
-						  handle->frame_index, block_length, 0);
+						  handle->next_frame_index,
+						  block_length, 0);
 		if (IS_ERR(skb)) {
 			err = PTR_ERR(skb);
 			goto out_with_handle;
 		}
 
-		/* mark the frames as missing so that the handle is
-		 * released but not destroyed
-		 */
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
 		/* release the handle before sending to avoid
