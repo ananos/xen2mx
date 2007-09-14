@@ -494,8 +494,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 					  0, block_length, first_frame_offset);
 	if (IS_ERR(skb)) {
 		err = PTR_ERR(skb);
-		/* FIXME: make sure the handle will be destroyed here */
-		goto out;
+		goto out_with_handle;
 	}
 
 	/* mark the frames as missing so that the handle
@@ -511,6 +510,14 @@ omx_send_pull(struct omx_endpoint * endpoint,
 
 	dev_queue_xmit(skb);
 
+	return 0;
+
+ out_with_handle:
+	/* make sure the handle will be released */
+	handle->frame_missing_bitmap = 0;
+	handle->frame_copying_bitmap = 0;
+	handle->remaining_length = 0;
+	omx_pull_handle_release(handle);
  out:
 	return err;
 }
@@ -713,7 +720,7 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle)
 	wmb();
 	event->type = OMX_EVT_PULL_DONE;
 
-	/* make sure the handle will be released, in case we are reported truncation */
+	/* make sure the handle will be released, in case we are reporting truncation */
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
 	handle->remaining_length = 0;
@@ -807,7 +814,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* the other peer is sending crap, close the handle and report truncated to userspace */
 		/* FIXME: make sure a new pull is not queued too, so that the handle is dropped */
 		/* FIXME: report what has already been tranferred? */
-		omx_pull_handle_done_notify(handle);
+		omx_pull_handle_done_notify(handle); /* FIXME: needs the handle to be held! */
 		goto out;
 	}
 
@@ -838,8 +845,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 						  handle->frame_index, block_length, 0);
 		if (IS_ERR(skb)) {
 			err = PTR_ERR(skb);
-			/* FIXME: make sure the handle will be destroyed here */
-			goto out;
+			goto out_with_handle;
 		}
 
 		/* mark the frames as missing so that the handle is
@@ -862,6 +868,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	return 0;
 
+ out_with_handle:
+	/* FIXME: report what has already been tranferred? */
+	omx_pull_handle_done_notify(handle);
  out:
 	return err;
 }
