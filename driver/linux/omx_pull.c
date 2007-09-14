@@ -78,9 +78,11 @@ struct omx_pull_handle {
  */
 
 #define OMX_PULL_HANDLE_BLOCK_BITMASK 0xff
+#define OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK 0xffff
 
 #define OMX_PULL_HANDLE_DONE(handle) \
-	(!(handle)->remaining_length)
+	(!((handle)->remaining_length) \
+	 && !((handle)->frame_copying_bitmap & OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK))
 
 #define OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle) \
 	(!((handle)->frame_copying_bitmap & OMX_PULL_HANDLE_BLOCK_BITMASK))
@@ -464,7 +466,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 {
 	struct omx_cmd_send_pull cmd;
 	struct omx_pull_handle * handle;
-	struct sk_buff * skb;
+	struct sk_buff * skb, * skb2;
 	uint32_t block_length, first_frame_offset;
 	int err = 0;
 
@@ -490,8 +492,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	/* send this pull block request and release the handle */
-
+	/* send a first pull block request */
 	block_length = OMX_PULL_BLOCK_LENGTH_MAX
 		- handle->pulled_rdma_offset;
 	if (block_length > handle->remaining_length)
@@ -511,12 +512,36 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	omx_pull_handle_append_needed_frames(handle,
 					     block_length, first_frame_offset);
 
+	/* send a second pull block request if needed */
+	skb2 = NULL;
+	if (!handle->remaining_length)
+		goto skbs_ready;
+
+	block_length = OMX_PULL_BLOCK_LENGTH_MAX;
+	if (block_length > handle->remaining_length)
+		block_length = handle->remaining_length;
+	handle->remaining_length -= block_length;
+
+	skb2 = omx_fill_pull_block_request(handle,
+					   handle->next_frame_index,
+					   block_length, 0);
+	if (IS_ERR(skb2)) {
+		err = PTR_ERR(skb2);
+		dev_kfree_skb(skb);
+		goto out_with_handle;
+	}
+
+	omx_pull_handle_append_needed_frames(handle, block_length, 0);
+
+ skbs_ready:
 	/* release the handle before sending to avoid
 	 * deadlock when sending to ourself in the same region
 	 */
 	omx_pull_handle_release(handle);
 
 	dev_queue_xmit(skb);
+	if (skb2)
+		dev_queue_xmit(skb2);
 
 	return 0;
 
@@ -834,12 +859,12 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->frame_copying_bitmap &= ~bitmap_mask;
 
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
-		/* current block not done, juste release the handle */
+		/* current first block not done, just release the handle */
 		dprintk("block not done, just releasing\n");
 		omx_pull_handle_release(handle);
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
-		struct sk_buff * skb;
+		struct sk_buff * skb, * skb2;
 		uint32_t block_length;
 
 		/* current first block request is done */
@@ -862,12 +887,47 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
+		/* the second current block (now first) request might be done too
+		 * (in case of out-or-order packets)
+		 */
+		skb2 = NULL;
+		if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle))
+			goto skbs_ready;
+
+		/* current second block request is done */
+		omx_pull_handle_first_block_done(handle);
+
+		/* is there more to request? if so, use the now-freed second block */
+		if (!handle->remaining_length)
+			goto skbs_ready;
+
+		/* start another next block */
+		dprintk("queueing another next pull block request\n");
+		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
+		if (block_length > handle->remaining_length)
+			block_length = handle->remaining_length;
+		handle->remaining_length -= block_length;
+
+		skb2 = omx_fill_pull_block_request(handle,
+						   handle->next_frame_index,
+						   block_length, 0);
+		if (IS_ERR(skb2)) {
+			err = PTR_ERR(skb2);
+			dev_kfree_skb(skb);
+			goto out_with_handle;
+		}
+
+		omx_pull_handle_append_needed_frames(handle, block_length, 0);
+
+	skbs_ready:
 		/* release the handle before sending to avoid
 		 * deadlock when sending to ourself in the same region
 		 */
 		omx_pull_handle_release(handle);
 
 		dev_queue_xmit(skb);
+		if (skb2)
+			dev_queue_xmit(skb2);
 
 	} else {
 		/* last block is done, notify the completion */
