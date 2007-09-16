@@ -259,7 +259,8 @@ omx__pull_done(struct omx_endpoint * ep,
     goto out;
   }
 
-  req->generic.state = OMX_REQUEST_STATE_DONE;
+  req->generic.state &= ~OMX_REQUEST_STATE_PENDING;
+  req->generic.state |= OMX_REQUEST_STATE_DONE;
   omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
 
   return OMX_SUCCESS;

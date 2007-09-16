@@ -156,8 +156,9 @@ enum omx__request_type {
 };
 
 enum omx__request_state {
-  OMX_REQUEST_STATE_PENDING=0,
-  OMX_REQUEST_STATE_DONE,
+  OMX_REQUEST_STATE_DONE = (1<<0),
+  OMX_REQUEST_STATE_PENDING = (1<<1),
+  OMX_REQUEST_STATE_MATCHED = (1<<2),
 };
 
 struct omx__generic_request {
@@ -165,7 +166,7 @@ struct omx__generic_request {
   struct list_head partner_elt;
   struct omx__partner * partner;
   enum omx__request_type type;
-  enum omx__request_state state;
+  uint32_t state;
   struct omx_status status;
 };
 

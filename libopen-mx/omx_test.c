@@ -32,7 +32,7 @@ omx_test(struct omx_endpoint *ep, union omx_request **requestp,
   if (ret != OMX_SUCCESS)
     goto out;
 
-  if (req->generic.state != OMX_REQUEST_STATE_DONE) {
+  if (!(req->generic.state & OMX_REQUEST_STATE_DONE)) {
     *result = 0;
   } else {
     uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
@@ -56,7 +56,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   uint32_t ctxid;
   omx_return_t ret = OMX_SUCCESS;
 
-  while (req->generic.state != OMX_REQUEST_STATE_DONE) {
+  while (!(req->generic.state & OMX_REQUEST_STATE_DONE)) {
     ret = omx__progress(ep);
     if (ret != OMX_SUCCESS)
       goto out;
