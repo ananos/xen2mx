@@ -1,6 +1,5 @@
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
-  + omx_cancel
   + omx_disconnect
   + omx_set_request_timeout
   + omx_set_error_handler - if the default is return, I do not need this 

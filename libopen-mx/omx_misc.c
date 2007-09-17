@@ -87,6 +87,8 @@ omx_strerror(omx_return_t ret)
     return "Operation not supported when context id are enabled";
   case OMX_NOT_SUPPORTED_IN_HANDLER:
     return "Operation not supported in the handler";
+  case OMX_CANCEL_NOT_SUPPORTED:
+    return "Cancel not supported for this request";
   }
   assert(0);
 }

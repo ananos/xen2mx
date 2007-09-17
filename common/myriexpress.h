@@ -81,7 +81,7 @@ enum mx_return_code { /* FIXME */
 	MX_BAD_KERNEL_VERSION	= 137,
 	MX_BAD_LIB_VERSION	= 138,
 	MX_NIC_DEAD		= 139,
-	MX_CANCEL_NOT_SUPPORTED	= 140,
+	MX_CANCEL_NOT_SUPPORTED	= OMX_CANCEL_NOT_SUPPORTED,
 	MX_CLOSE_IN_HANDLER	= OMX_NOT_SUPPORTED_IN_HANDLER,
 	MX_BAD_MATCHING_FOR_CONTEXT_ID_MASK	= 142,
 	MX_NOT_SUPPORTED_WITH_CONTEXT_ID	= 143
@@ -200,7 +200,7 @@ mx_irecv(mx_endpoint_t endpoint,
   return omx_irecv(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, match_info, match_mask, context, request);
 }
 
-#define mx_cancel(...) MX_FAILURE /* FIXME */
+#define mx_cancel omx_cancel
 
 #define mx_test omx_test
 #define mx_wait(endpoint,request,timeout, status,result) omx_wait(endpoint,request,status,result)

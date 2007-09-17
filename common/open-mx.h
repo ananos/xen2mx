@@ -42,6 +42,7 @@ enum omx_return {
   OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
   OMX_NOT_SUPPORTED_WITH_CONTEXT_ID,
   OMX_NOT_SUPPORTED_IN_HANDLER,
+  OMX_CANCEL_NOT_SUPPORTED,
 };
 typedef enum omx_return omx_return_t;
 
@@ -243,6 +244,9 @@ enum omx_info_key {
   OMX_INFO_BOARD_IFACENAME,
 };
 typedef enum omx_info_key omx_info_key_t;
+
+omx_return_t
+omx_cancel(omx_endpoint_t ep, omx_request_t *request, uint32_t *result);
 
 omx_return_t
 omx_disable_progression(struct omx_endpoint *ep);
