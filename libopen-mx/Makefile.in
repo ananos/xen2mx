@@ -37,6 +37,9 @@ all: assertions $(STATIC_LIB) $(DYNAMIC_LIB)
 
 DEPS	=	$(patsubst @srcdir@/%.c,%.d,$(SRCS))
 DEPSRCDIR	=	@srcdir@
+# make sure the dependency contains both .lo and .o targets
+BUILD_O_AND_LO_OBJECTS	=	1
+
 include @top_srcdir@/depend.mk
 
 ########

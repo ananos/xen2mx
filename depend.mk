@@ -8,8 +8,13 @@ BUILDDEPFLAGS	=	-MMD
 ONLYDEPFLAGS	=	-MMD -MM
 
 # create a dependency file when it doesn't exist (called by the include line below)
-$(DEPS): %.d:
-	$(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(DEPSRCDIR)/$(shell basename $@ .d).c
+ifeq ($(BUILD_O_AND_LO_OBJECTS),1)
+$(DEPS): %.d: $(DEPSRCDIR)/%.c
+	$(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(DEPSRCDIR)/$(subst .d,.c,$@) -MT $(subst .d,.o,$@) -MT $(subst .d,.lo,$@)
+else
+$(DEPS): %.d: $(DEPSRCDIR)/%.c
+	$(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(DEPSRCDIR)/$(subst .d,.c,$@)
+endif
 
 # include dependencies, except when cleaning (so that we don't re-create for nothing)
 ifeq ($(filter ${MAKECMDGOALS},clean distclean),)
