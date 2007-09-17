@@ -53,10 +53,10 @@ assertions: omx__assertions.o
 # build and create dependency file
 
 $(STATIC_OBJS): %.o: @srcdir@/%.c
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(STATIC_CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(STATIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .o,.lo,$@) $< -o $@
 
 $(DYNAMIC_OBJS): %.lo: @srcdir@/%.c
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DYNAMIC_CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DYNAMIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .lo,.o,$@) $< -o $@
 
 ##########
 # install
