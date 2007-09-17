@@ -244,6 +244,12 @@ enum omx_info_key {
 typedef enum omx_info_key omx_info_key_t;
 
 omx_return_t
+omx_disable_progression(struct omx_endpoint *ep);
+
+omx_return_t
+omx_reenable_progression(struct omx_endpoint *ep);
+
+omx_return_t
 omx_get_info(omx_endpoint_t ep, omx_info_key_t key,
 	     const void * in_val, uint32_t in_len,
 	     void * out_val, uint32_t out_len);

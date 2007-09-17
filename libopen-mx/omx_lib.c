@@ -735,3 +735,19 @@ omx_progress(omx_endpoint_t ep)
 {
   return omx__progress(ep);
 }
+
+omx_return_t
+omx_disable_progression(struct omx_endpoint *ep)
+{
+  /* FIXME: return an error in ep->in_handler already set */
+  ep->in_handler = 1;
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx_reenable_progression(struct omx_endpoint *ep)
+{
+  ep->in_handler = 0;
+  omx__progress(ep);
+  return OMX_SUCCESS;
+}

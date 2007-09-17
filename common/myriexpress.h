@@ -144,8 +144,8 @@ typedef struct mx_status mx_status_t;
 
 #define mx_wakeup(...) MX_SUCCESS; /* FIXME */
 
-/* FIXME: mx_disable_progression */
-/* FIXME: mx_reenable_progression */
+#define mx_disable_progression omx_disable_progression
+#define mx_reenable_progression omx_reenable_progression
 
 /* FIXME: wrapper instead, once supported */
 typedef void * mx_segment_ptr_t;
