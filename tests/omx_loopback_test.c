@@ -60,7 +60,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   /* post 4 sends */
   for(i=0; i<4; i++) {
     ret = omx_isend(ep, buffer, length,
-		    0x1234567887654321ULL, addr,
+		    addr, 0x1234567887654321ULL,
 		    NULL, &sreq[i]);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to send message length %d (%s)\n",

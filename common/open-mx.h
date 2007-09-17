@@ -160,15 +160,15 @@ omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
 omx_return_t
 omx_isend(omx_endpoint_t ep,
 	  void *buffer, size_t length,
-	  uint64_t match_info,
 	  omx_endpoint_addr_t dest_endpoint,
+	  uint64_t match_info,
 	  void * context, omx_request_t * request);
 
 omx_return_t
 omx_issend(omx_endpoint_t ep,
 	   void *buffer, size_t length,
-	   uint64_t match_info,
 	   omx_endpoint_addr_t dest_endpoint,
+	   uint64_t match_info,
 	   void * context, omx_request_t * request);
 
 omx_return_t

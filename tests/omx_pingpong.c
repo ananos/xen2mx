@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
     param.multiplier = multiplier;
     param.increment = increment;
     ret = omx_isend(ep, &param, sizeof(param),
-		    0x1234567887654321ULL, addr,
+		    addr, 0x1234567887654321ULL,
 		    NULL, &req);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to isend param message (%s)\n",
@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = omx_isend(ep, buffer, length,
-			0x1234567887654321ULL, addr,
+			addr, 0x1234567887654321ULL,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",
@@ -369,8 +369,8 @@ int main(int argc, char *argv[])
     addr = status.addr;
 
     /* send param ack message */
-    ret = omx_isend(ep, NULL, 0, 0,
-		    addr, NULL, &req);
+    ret = omx_isend(ep, NULL, 0,
+		    addr, 0, NULL, &req);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to isend param ack message (%s)\n",
 	      omx_strerror(ret));
@@ -415,7 +415,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = omx_isend(ep, buffer, length,
-			0x1234567887654321ULL, addr,
+			addr, 0x1234567887654321ULL,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to isend (%s)\n",

@@ -44,8 +44,8 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
 static inline omx_return_t
 omx__submit_isend_tiny(struct omx_endpoint *ep,
 		       void *buffer, size_t length,
-		       uint64_t match_info,
 		       struct omx__partner * partner, omx__seqnum_t seqnum,
+		       uint64_t match_info,
 		       void *context, union omx_request **requestp)
 {
   union omx_request * req;
@@ -98,8 +98,8 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
 static inline omx_return_t
 omx__submit_isend_small(struct omx_endpoint *ep,
 			void *buffer, size_t length,
-			uint64_t match_info,
 			struct omx__partner * partner, omx__seqnum_t seqnum,
+			uint64_t match_info,
 			void *context, union omx_request **requestp)
 {
   union omx_request * req;
@@ -152,8 +152,8 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 static inline omx_return_t
 omx__submit_isend_medium(struct omx_endpoint *ep,
 			 void *buffer, size_t length,
-			 uint64_t match_info,
 			 struct omx__partner * partner, omx__seqnum_t seqnum,
+			 uint64_t match_info,
 			 void *context, union omx_request **requestp)
 {
   union omx_request * req;
@@ -235,8 +235,8 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 static inline omx_return_t
 omx__submit_isend_large(struct omx_endpoint *ep,
 			void *buffer, size_t length,
-			uint64_t match_info,
 			struct omx__partner * partner, omx__seqnum_t seqnum,
+			uint64_t match_info,
 			void *context, union omx_request **requestp)
 {
   union omx_request * req;
@@ -303,8 +303,8 @@ omx__submit_isend_large(struct omx_endpoint *ep,
 omx_return_t
 omx_isend(struct omx_endpoint *ep,
 	  void *buffer, size_t length,
-	  uint64_t match_info,
 	  omx_endpoint_addr_t dest_endpoint,
+	  uint64_t match_info,
 	  void *context, union omx_request **requestp)
 {
   struct omx__partner * partner;
@@ -319,26 +319,26 @@ omx_isend(struct omx_endpoint *ep,
   if (length <= OMX_TINY_MAX) {
     ret = omx__submit_isend_tiny(ep,
 				 buffer, length,
-				 match_info,
 				 partner, seqnum,
+				 match_info,
 				 context, requestp);
   } else if (length <= OMX_SMALL_MAX) {
     ret = omx__submit_isend_small(ep,
 				  buffer, length,
-				  match_info,
 				  partner, seqnum,
+				  match_info,
 				  context, requestp);
   } else if (length <= OMX_MEDIUM_MAX) {
     ret = omx__submit_isend_medium(ep,
 				   buffer, length,
-				   match_info,
 				   partner, seqnum,
+				   match_info,
 				   context, requestp);
   } else {
     ret = omx__submit_isend_large(ep,
 				  buffer, length,
-				  match_info,
 				  partner, seqnum,
+				  match_info,
 				  context, requestp);
 
   }
@@ -357,8 +357,8 @@ omx_isend(struct omx_endpoint *ep,
 omx_return_t
 omx_issend(struct omx_endpoint *ep,
 	   void *buffer, size_t length,
-	   uint64_t match_info,
 	   omx_endpoint_addr_t dest_endpoint,
+	   uint64_t match_info,
 	   void *context, union omx_request **requestp)
 {
   struct omx__partner * partner;
@@ -372,8 +372,8 @@ omx_issend(struct omx_endpoint *ep,
 
   ret = omx__submit_isend_large(ep,
 				buffer, length,
-				match_info,
 				partner, seqnum,
+				match_info,
 				context, requestp);
   if (ret == OMX_SUCCESS) {
     /* increase at the end, to avoid having to decrease back in case of error */
