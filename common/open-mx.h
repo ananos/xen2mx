@@ -41,6 +41,7 @@ enum omx_return {
   OMX_BAD_MATCH_MASK,
   OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
   OMX_NOT_SUPPORTED_WITH_CONTEXT_ID,
+  OMX_NOT_SUPPORTED_IN_HANDLER,
 };
 typedef enum omx_return omx_return_t;
 

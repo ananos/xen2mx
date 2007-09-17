@@ -84,7 +84,9 @@ omx_strerror(omx_return_t ret)
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return "Matching info does not respect context id mask";
   case OMX_NOT_SUPPORTED_WITH_CONTEXT_ID:
-    return "Feature not supported when context id are enabled";
+    return "Operation not supported when context id are enabled";
+  case OMX_NOT_SUPPORTED_IN_HANDLER:
+    return "Operation not supported in the handler";
   }
   assert(0);
 }

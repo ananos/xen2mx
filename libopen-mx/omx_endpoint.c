@@ -320,7 +320,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 omx_return_t
 omx_close_endpoint(struct omx_endpoint *ep)
 {
-  assert(!ep->in_handler); /* FIXME */
+  if (!ep->in_handler)
+    return OMX_NOT_SUPPORTED_IN_HANDLER;
 
   free(ep->partners);
   omx__endpoint_large_region_map_exit(ep);
