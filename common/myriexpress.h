@@ -169,7 +169,7 @@ mx_isend(mx_endpoint_t endpoint,
 	 mx_request_t *request)
 {
   assert(segments_count == 1);
-  return omx_isend(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, match_info, dest_endpoint, context, request);
+  return omx_isend(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, dest_endpoint, match_info, context, request);
 }
 
 static inline mx_return_t
@@ -182,7 +182,7 @@ mx_issend(mx_endpoint_t endpoint,
 	 mx_request_t *request)
 {
   assert(segments_count == 1);
-  return omx_issend(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, match_info, dest_endpoint, context, request);
+  return omx_issend(endpoint, segments_list[0].segment_ptr, segments_list[0].segment_length, dest_endpoint, match_info, context, request);
 }
 
 #define MX_MATCH_MASK_NONE (~(uint64_t)0)
