@@ -200,6 +200,15 @@ else
   AC_SUBST(OMX_MX_API_COMPAT, 0)
 fi
 
+AC_ARG_WITH(ethertype, [  --with-ethertype=<value>	change Ethertype (default is 0x86DF)],
+	    ethertype=$withval, ethertype=default)
+AC_MSG_CHECKING(the Ethertype to use)
+if test x$ethertype = xdefault; then
+  AC_MSG_RESULT([default (0x86df)])
+else
+  AC_MSG_RESULT($ethertype)
+  AC_DEFINE_UNQUOTED(ETH_P_OMX, $ethertype, [Define to change the Ethertype])
+fi
 
 ##########
 # Globals

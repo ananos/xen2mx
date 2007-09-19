@@ -23,7 +23,11 @@
  * Packet definition
  */
 
-#define ETH_P_OMX 0x86DF
+#define DEFAULT_ETH_P_OMX 0x86DF
+
+#ifndef ETH_P_OMX
+#define ETH_P_OMX DEFAULT_ETH_P_OMX
+#endif
 
 enum omx_pkt_type {
 	/* must start with NONE and end with MAX */
