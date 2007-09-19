@@ -1,4 +1,5 @@
 bindir = @bindir@
+sbindir = @sbindir@
 exec_prefix = @exec_prefix@
 prefix = @prefix@
 
@@ -48,6 +49,14 @@ installonly:
 		mkdir -p $(DESTDIR)$(bindir) ; \
 	fi
 	install -m 0755 $(TOOLS) $(DESTDIR)$(bindir)/
+	
+	@echo "Installing init script to $(DESTDIR)$(sbindir)/"
+	@if test ! -d $(DESTDIR)$(sbindir); then \
+		echo "'$(DESTDIR)$(sbindir)' didn't exist, creating it" ; \
+		mkdir -p $(DESTDIR)$(sbindir) ; \
+	fi
+	sed -e 's£@omx_install_prefix@£$(prefix)£' < @srcdir@/omx_init.in > omx_init
+	install -m 0755 omx_init $(DESTDIR)$(sbindir)/
 
 install: all installonly
 

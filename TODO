@@ -6,6 +6,7 @@
 
 * finish and test the wrappers for MX API in myriexpress.h
 
+* omx_local_install and update INSTALL
 * /etc/init.d/open-mx script with IFACES variable in /etc/open-mx.conf
 * sethostname ioctl
 * ioctls to change board indexes?

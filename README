@@ -15,7 +15,7 @@ b. Make Open-MX use this file:
    See Section IV for details.
 
 c. Load the open-mx kernel module and tell it which interface to use
-     $ modprobe open-mx omx_ifnames=eth2
+     $ /path/to/mx/sbin/omx_init omx_ifnames=eth2
    See section II and III for details.
 
 d. Make sure both interfaces are up
@@ -49,7 +49,8 @@ f. Use omx_pingpong to test actual communications, on the first node:
 
 The 'open-mx' kernel module should be loaded prior to any user-space
 usage of Open-MX. If not loaded, a "No device" error will be returned.
-$ modprobe open-mx
+The omx_init script takes care of loading the module
+$ /path/to/mx/sbin/omx_init omx_ifnames=eth2
 
 This module works at least on Linux kernels 2.6.17 to 2.6.23 on i386
 and x86_64 architectures.

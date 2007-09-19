@@ -62,6 +62,15 @@ if ! test -f ${LINUX_BUILD}/Makefile ; then
 fi
 AC_MSG_RESULT(found in ${LINUX_BUILD})
 
+# Find the kernel release
+AC_MSG_CHECKING(kernel release)
+LINUX_RELEASE=$(cd $LINUX_BUILD && make kernelrelease)
+if test x${LINUX_RELEASE} = x; then
+  AC_MSG_ERROR(not found)
+fi
+AC_MSG_RESULT(${LINUX_RELEASE})
+AC_SUBST(LINUX_RELEASE)
+
 # create the output file
 CHECKS_NAME=driver/linux/omx_checks.h
 CHECKS_PATH=`pwd`/${CHECKS_NAME}

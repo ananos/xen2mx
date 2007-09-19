@@ -1,7 +1,11 @@
+exec_prefix	=	@exec_prefix@
 prefix  =       @prefix@
+libdir	=	@libdir@
 
 LINUX_DIR	=	@LINUX_BUILD@
 OPEN_MX_DIR	=	@abs_builddir@
+INSTALL_MOD_PATH	=	$(libdir)/modules/@LINUX_RELEASE@
+MODULE_OBJS	=	open-mx.ko
 
 .PHONY: all installonly install clean distclean wc
 
@@ -20,11 +24,12 @@ all:
 	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR)
 
 installonly:
-	@echo "Installing kernel module for kernel $(LINUX_DIR)"
-	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) modules_install \
-	 || (echo "Failed to install kernel module in system directories, reverting to installing in $(prefix)..." \
-	     && make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) modules_install INSTALL_MOD_PATH=$(prefix) \
-	    )
+	@echo "Installing kernel module to $(INSTALL_MOD_PATH)"
+	@if test ! -d $(DESTDIR)$(INSTALL_MOD_PATH); then \
+		echo "Directory didn't exist, creating it" ; \
+		mkdir -p $(DESTDIR)$(INSTALL_MOD_PATH) ; \
+	fi
+	install -m 0644 $(MODULE_OBJS) $(DESTDIR)$(INSTALL_MOD_PATH)/
 
 install: all installonly
 

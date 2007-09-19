@@ -1,0 +1,71 @@
+#!/bin/sh
+
+# chkconfig: 2345 30 70
+# description: starts Open-MX driver
+
+### BEGIN INIT INFO
+# Provides:          mx
+# Required-Start:    $network $syslog $remote_fs
+# Required-Stop:     $network $syslog $remote_fs
+# Default-Start:     3 5
+# Default-Stop:      0 1 2 6
+# Description:       Starts the Open-MX driver
+### END INIT INFO
+
+# Note that this is replaced by make install, not configure!
+OMX_PREFIX=@omx_install_prefix@
+
+LINUX_RELEASE=$(uname -r)
+
+set -e
+
+if test ! -d ${OMX_PREFIX}; then
+    echo "Something bad happened with the install script"
+    echo "OMX_PREFIX isn't pointing to a valid directory"
+    exit 1
+fi
+
+# Remove the Open-MX module if loaded
+unload_omx() {
+    if grep open[-_]mx /proc/modules > /dev/null; then
+        echo "Removing Open-MX driver"
+        /sbin/rmmod open-mx
+    fi
+}
+
+# Load the Open-MX module
+load_omx() {
+    echo "Loading Open-MX driver"
+    params=" $OMX_MODULE_PARAMS $*"
+
+    /sbin/insmod ${OMX_PREFIX}/lib/modules/${LINUX_RELEASE}/open-mx.ko $params
+}
+
+cmd="$1"
+shift
+
+case "$cmd" in
+    start|"")
+	load_omx "$@"
+	;;
+    stop)
+	unload_omx
+	;;
+    status)
+	if grep open[-_]mx /proc/modules > /dev/null; then
+	    echo "Open-MX driver is loaded"
+	else
+	    echo "Open-MX driver is not loaded"
+	fi
+	;;
+    restart)
+	unload_omx
+	load_omx "$@"
+        ;;
+    *)
+	echo $"Usage: $0 {start|stop|status|restart}"
+	exit 1
+esac
+
+exit 0
+
