@@ -200,6 +200,16 @@ else
   AC_SUBST(OMX_MX_API_COMPAT, 0)
 fi
 
+AC_ARG_ENABLE(mx-wire, [  --disable-mx-wire		disable MX wire compatibility],
+	      enable_mx_wire=$enableval, enable_mx_wire=yes)
+AC_MSG_CHECKING(if MX wire compatibility is enabled)
+if test x$enable_mx_wire = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_MX_WIRE_COMPAT, 1, [Define to enable MX API compatibility wrappers])
+else
+  AC_MSG_RESULT(no)
+fi
+
 AC_ARG_WITH(ethertype, [  --with-ethertype=<value>	change Ethertype (default is 0x86DF)],
 	    ethertype=$withval, ethertype=default)
 AC_MSG_CHECKING(the Ethertype to use)
