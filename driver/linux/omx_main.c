@@ -61,7 +61,7 @@ omx_init(void)
 		goto out_with_net;
 
 	printk(KERN_INFO "Open-MX initialized, using Ethertype 0x%lx\n",
-	       ETH_P_OMX);
+	       (unsigned long) ETH_P_OMX);
 	return 0;
 
  out_with_net:
