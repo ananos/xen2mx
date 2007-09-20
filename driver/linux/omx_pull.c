@@ -817,8 +817,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* FIXME: store the sender mac in the handle and check it ? */
 
-	/* check that the frame is from this block */
-	frame_seqnum_offset = (frame_seqnum - (handle->frame_index % 256));
+	/* check that the frame is from this block, and handle wrap around 256 */
+	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
 	if (unlikely(frame_seqnum_offset >= handle->block_frames)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (should be within %ld-%ld)",
 				 (unsigned long) frame_seqnum,
