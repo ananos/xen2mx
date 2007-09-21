@@ -122,6 +122,35 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
 		   omx_status_code_t status);
 
 extern omx_return_t
+omx__process_recv(struct omx_endpoint *ep,
+		  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
+		  omx__process_recv_func_t recv_func);
+
+extern void
+omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
+		       union omx_request *req,
+		       struct omx_evt_recv_msg *msg,
+		       void *data /* unused */, uint32_t msg_length);
+
+extern void
+omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
+			union omx_request *req,
+			struct omx_evt_recv_msg *msg,
+			void *data, uint32_t msg_length);
+
+extern void
+omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *partner,
+			      union omx_request *req,
+			      struct omx_evt_recv_msg *msg,
+			      void *data, uint32_t msg_length);
+
+extern void
+omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
+		       union omx_request *req,
+		       struct omx_evt_recv_msg *msg,
+		       void *data /* unused */, uint32_t msg_length);
+
+extern omx_return_t
 omx__pull_done(struct omx_endpoint * ep, struct omx_evt_pull_done * event);
 
 static inline int

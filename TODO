@@ -11,8 +11,6 @@
 * sethostname ioctl
 * ioctls to change board indexes?
 
-* move irecv and process_recv* to omx_recv.c
-
 * check pingpong contents
 
 * vectorial support, through isendv/irecvv
