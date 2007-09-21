@@ -117,6 +117,7 @@ struct omx_endpoint {
   int in_handler;
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   void * next_exp_event, * next_unexp_event;
+  uint32_t avail_exp_events;
 
   /* context ids */
   uint8_t ctxid_bits;

@@ -188,6 +188,12 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   medium_param.session_id = partner->session_id;
   medium_param.dest_src_peer_index = partner->dest_src_peer_index;
 
+  if (ep->avail_exp_events < frags) {
+    /* FIXME: queue */
+    omx__debug_printf("not enough eventq slots available, need to queue the medium request\n");
+    assert(0);
+  }
+
   for(i=0; i<frags; i++) {
     unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
       ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
@@ -203,6 +209,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
       ret = omx__errno_to_return("ioctl SEND_MEDIUM");
       goto out_with_req;
     }
+    ep->avail_exp_events--;
 
     remaining -= chunk;
     offset += chunk;

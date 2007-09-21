@@ -108,6 +108,8 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     assert(req);
     assert(req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM);
 
+    ep->avail_exp_events++; /* FIXME: requeue pending */
+
     /* message is not done */
     if (--req->send.specific.medium.frags_pending_nr)
       break;
@@ -121,6 +123,9 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_PULL_DONE: {
+
+    ep->avail_exp_events++; /* FIXME: requeue pending */
+
     omx__pull_done(ep, &evt->pull_done);
     break;
   }

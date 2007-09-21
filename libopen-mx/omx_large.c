@@ -191,6 +191,12 @@ omx__queue_large_recv(struct omx_endpoint * ep,
   if (ret != OMX_SUCCESS)
     goto out;
 
+  if (ep->avail_exp_events < 1) {
+    /* FIXME: queue */
+    omx__debug_printf("not enough eventq slots available, need to queue the large recv request\n");
+    assert(0);
+  }
+
   pull_param.dest_addr = partner->board_addr;
   pull_param.dest_endpoint = partner->endpoint_index;
   pull_param.length = xfer_length;
@@ -207,6 +213,7 @@ omx__queue_large_recv(struct omx_endpoint * ep,
     ret = omx__errno_to_return("ioctl SEND_PULL");
     goto out_with_reg;
   }
+  ep->avail_exp_events--;
 
   region->user = req;
   req->recv.specific.large.local_region = region;

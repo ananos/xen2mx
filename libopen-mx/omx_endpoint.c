@@ -239,6 +239,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->recvq = recvq;
   ep->exp_eventq = ep->next_exp_event = exp_eventq;
   ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
+  ep->avail_exp_events = OMX_EXP_EVENTQ_ENTRY_NR;
   ep->board_index = board_index;
   ep->endpoint_index = endpoint_index;
   ep->app_key = key;
