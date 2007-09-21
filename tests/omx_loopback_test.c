@@ -258,7 +258,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++) {
     /* send a large message */
-    ret = one_iteration(ep, addr, 1327485, i);
+    ret = one_iteration(ep, addr, 9327485, i);
     if (ret != OMX_SUCCESS)
       goto out_with_ep;
   }
