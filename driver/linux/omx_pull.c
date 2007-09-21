@@ -787,7 +787,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	uint32_t bitmap_mask;
 	int err = 0;
 
-	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld frame seqnum length %ld skb length %ld",
+	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld frame seqnum %ld length %ld skb length %ld",
 			 (unsigned long) pull_reply->dst_pull_handle,
 			 (unsigned long) pull_reply->dst_magic,
 			 (unsigned long) frame_seqnum,
