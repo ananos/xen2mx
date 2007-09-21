@@ -60,8 +60,14 @@ omx_init(void)
 	if (ret < 0)
 		goto out_with_net;
 
-	printk(KERN_INFO "Open-MX initialized, using Ethertype 0x%lx\n",
+	printk(KERN_INFO "Open-MX initialized\n");
+	printk(KERN_INFO "Open-MX: using Ethertype 0x%lx\n",
 	       (unsigned long) ETH_P_OMX);
+	printk(KERN_INFO "Open-MX: requires MTU >= %ld\n",
+	       (unsigned long) OMX_MTU_MIN);
+	printk(KERN_INFO "Open-MX: using %ld x %ldkB pull replies per request\n",
+	       (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
+	       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);
 	return 0;
 
  out_with_net:
