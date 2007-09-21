@@ -129,8 +129,8 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   return ret;
 }
 
-/************************
- * Main progression loop
+/**************
+ * Progression
  */
 
 omx_return_t
@@ -173,13 +173,6 @@ omx_register_unexp_handler(omx_endpoint_t ep,
 }
 
 omx_return_t
-omx_context(omx_request_t *request, void ** context)
-{
-  *context = (*request)->generic.status.context;
-  return OMX_SUCCESS;
-}
-
-omx_return_t
 omx_progress(omx_endpoint_t ep)
 {
   return omx__progress(ep);
@@ -201,58 +194,4 @@ omx_reenable_progression(struct omx_endpoint *ep)
   ep->in_handler = 0;
   omx__progress(ep);
   return OMX_SUCCESS;
-}
-
-omx_return_t
-omx_cancel(omx_endpoint_t ep,
-	   omx_request_t *request,
-	   uint32_t *result)
-{
-  union omx_request * req = *request;
-  omx_return_t ret = OMX_SUCCESS;
-
-  /* Search in the send request queue and recv request queue. */
-
-  switch (req->generic.type) {
-  case OMX_REQUEST_TYPE_RECV: {
-    if (req->generic.state & OMX_REQUEST_STATE_MATCHED) {
-      /* already matched, too late */
-      *result = 0;
-    } else {
-      /* not matched, still in the recv queue */
-      uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-      omx__dequeue_request(&ep->ctxid[ctxid].recv_req_q, req);
-      omx__request_free(req);
-      *request = 0;
-      *result = 1;
-    }
-    break;
-  }
-
-  case OMX_REQUEST_TYPE_RECV_LARGE:
-    /* RECV are converted to RECV_LARGE when matched, so it's already too late */
-    *result = 0;
-    break;
-
-  case OMX_REQUEST_TYPE_CONNECT:
-
-    if (req->generic.state & OMX_REQUEST_STATE_DONE) {
-      /* the request is already completed */
-      *result = 0;
-    } else {
-      /* the request is pending on a queue */
-      struct list_head * head = &ep->connect_req_q;
-      omx__dequeue_request(head, req);
-      omx__request_free(req);
-      *request = 0;
-      *result = 1;
-    }
-    break;
-
-  default:
-    /* SEND_* are NOT cancellable with omx_cancel() */
-    ret = OMX_CANCEL_NOT_SUPPORTED;
-  }
-
-  return ret;
 }
