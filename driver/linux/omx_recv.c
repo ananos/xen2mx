@@ -42,7 +42,8 @@ omx_find_next_eventq_slot(struct omx_endpoint *endpoint)
 		endpoint->next_eventq_slot = endpoint->eventq;
 
 	/* recvq slot is at same index for now */
-	endpoint->next_recvq_slot = endpoint->recvq + ((void *) slot - endpoint->eventq)/sizeof(union omx_evt)*PAGE_SIZE;
+	endpoint->next_recvq_slot = endpoint->recvq
+		+ (((void *) slot - endpoint->eventq) << (OMX_RECVQ_ENTRY_SHIFT - OMX_EVENTQ_ENTRY_SHIFT));
 
 	return slot;
 }
