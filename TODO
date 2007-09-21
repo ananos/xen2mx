@@ -4,8 +4,6 @@
   + omx_set_request_timeout
   + omx_set_error_handler - if the default is return, I do not need this 
 
-* finish and test the wrappers for MX API in myriexpress.h
-
 * omx_local_install and update INSTALL
 * /etc/init.d/open-mx script with IFACES variable in /etc/open-mx.conf
 * sethostname ioctl
@@ -15,9 +13,9 @@
 
 * vectorial support, through isendv/irecvv
 
+* truc messages
+* retransmission
 * send a nack on bad session, except for connect (no session), truc or nack libs
-
-* have a way to make install without the driver or only the driver (for local install as non-root)
 
 * hide region id in lib_cookies since region might be used for something else?
 * handle pull status/length
@@ -33,6 +31,7 @@
 
 * move recv lib in the kernel
   + limit unexpq size to avoid memory starvation
+    - or allocate default unexp buffers upto 32kB
   + need to keep partner's recv_seqnum in the kernel
     - and synchronize with user-space which takes care of acking
     - share mapping of peer-index based array of recv seqnums between kernel and user-space?
@@ -52,14 +51,6 @@
 * debug
   - filter various debug message types
   - make driver dprintk runtime configurable
-
-* pull on lo on same region deadlocks
-
-* truc messages
-* rendez-vous messages
-* notify messages
-* connect messages
-* retransmission
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
