@@ -61,7 +61,6 @@
 * connect messages
 * retransmission
 
-* fix OMX_MTU_MIN with exact medium/pull max length
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
 * omx_endpoint_info

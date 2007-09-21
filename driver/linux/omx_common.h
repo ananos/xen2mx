@@ -21,6 +21,17 @@
 
 #include "omx_types.h"
 
+/* constants */
+#ifdef OMX_MX_WIRE_COMPAT
+#define OMX_PULL_REPLY_LENGTH_MAX 4096
+#define OMX_PULL_REPLY_PER_BLOCK 8
+#else
+#define OMX_PULL_REPLY_LENGTH_MAX 8192
+#define OMX_PULL_REPLY_PER_BLOCK 31
+#endif
+
+#define OMX_MTU_MIN ((unsigned)(sizeof(struct omx_hdr)+max(OMX_PULL_REPLY_LENGTH_MAX,OMX_SENDQ_ENTRY_SIZE)))
+
 /* globals */
 extern int omx_iface_max;
 extern int omx_endpoint_max;

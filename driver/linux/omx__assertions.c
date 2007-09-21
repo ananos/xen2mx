@@ -35,6 +35,7 @@ assertions(void)
   CHECK(sizeof(uint64_t) >= sizeof(((struct ethhdr *)NULL)->h_source));
   CHECK(PAGE_SIZE%OMX_SENDQ_ENTRY_SIZE == 0);
   CHECK(PAGE_SIZE%OMX_RECVQ_ENTRY_SIZE == 0);
+  CHECK(OMX_SENDQ_ENTRY_SIZE <= OMX_RECVQ_ENTRY_SIZE);
   CHECK(sizeof(union omx_evt) == OMX_EVENTQ_ENTRY_SIZE);
   CHECK((unsigned) OMX_PKT_TYPE_MAX == (1<<(sizeof(((struct omx_pkt_msg*)NULL)->ptype)*8)) - 1);
 }

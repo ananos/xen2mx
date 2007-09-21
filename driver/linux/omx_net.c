@@ -138,9 +138,6 @@ omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, ch
  * Attaching/Detaching interfaces
  */
 
-#define OMX_MTU_MIN ((unsigned)(sizeof(struct omx_hdr)+4096)) /* FIXME 
-*/
-
 /*
  * Attach a new iface.
  *
