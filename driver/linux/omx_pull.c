@@ -605,11 +605,12 @@ omx_recv_pull(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_recv_dprintk(pull_eh, "PULL handle %lx magic %lx length %ld out of %ld, index %ld",
+	omx_recv_dprintk(pull_eh, "PULL handle %lx magic %lx length %ld out of %ld, index %ld first_frame_offset %ld",
 			 (unsigned long) pull_request->src_pull_handle,
 			 (unsigned long) pull_request->src_magic,
 			 (unsigned long) pull_request->block_length,
 			 (unsigned long) pull_request->total_length,
+			 (unsigned long) pull_request->frame_index,
 			 (unsigned long) pull_request->first_frame_offset);
 
 	/* compute and check the number of PULL_REPLY to send */
