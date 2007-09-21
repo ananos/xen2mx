@@ -36,10 +36,6 @@
     - and synchronize with user-space which takes care of acking
     - share mapping of peer-index based array of recv seqnums between kernel and user-space?
 
-* support eventq full by queueing things?
-  - upto when? reserve before sending? should be guaranteed by the lib (polls before sending) => no need to queue?
-  - use it for shared memory ?
-
 * true sleeping in the kernel
   - pass the eventq index in the ioctl to avoid races
   - always wakeup on event?
@@ -64,6 +60,8 @@
   - single ioctl for multiple medium frags ?
   - no need to pad event to 64 ? no need to put the type at the end, but write it after the rest
   - optimize shared comms between boards from within the driver
+    + reject sends if no place in the target eventq so that we requeue them
+      instead of dropping them and needing to ack them later ?
 
 * use IOAT
   + post a req

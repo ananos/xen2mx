@@ -29,6 +29,12 @@
  * Event processing
  */
 
+static inline char *
+omx__recvq_slot_of_unexp_eventq(struct omx_endpoint * ep, union omx_evt * evt)
+{
+  return ep->recvq + (((char *) evt - (char *) ep->unexp_eventq) << (OMX_RECVQ_ENTRY_SHIFT-OMX_EVENTQ_ENTRY_SHIFT));
+}
+
 static omx_return_t
 omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 {
@@ -52,8 +58,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
   case OMX_EVT_RECV_SMALL: {
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
-    char * recvq_buffer = ep->recvq + evt_index * OMX_RECVQ_ENTRY_SIZE;
+    char * recvq_buffer = omx__recvq_slot_of_unexp_eventq(ep, evt);
     ret = omx__process_recv(ep,
 			    msg, recvq_buffer, msg->specific.small.length,
 			    omx__process_recv_small);
@@ -62,8 +67,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
   case OMX_EVT_RECV_MEDIUM: {
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    int evt_index = ((char *) evt - (char *) ep->eventq)/sizeof(*evt);
-    char * recvq_buffer = ep->recvq + evt_index * OMX_RECVQ_ENTRY_SIZE;
+    char * recvq_buffer = omx__recvq_slot_of_unexp_eventq(ep, evt);
     ret = omx__process_recv(ep,
 			    msg, recvq_buffer, msg->specific.medium.msg_length,
 			    omx__process_recv_medium_frag);
@@ -139,9 +143,11 @@ omx__progress(struct omx_endpoint * ep)
   if (ep->in_handler)
     return OMX_SUCCESS;
 
-  /* process events */
+  /* process unexpected events first,
+   * to release the pressure coming from the network
+   */
   while (1) {
-    volatile union omx_evt * evt = ep->next_event;
+    volatile union omx_evt * evt = ep->next_unexp_event;
 
     if (evt->generic.type == OMX_EVT_NONE)
       break;
@@ -153,9 +159,28 @@ omx__progress(struct omx_endpoint * ep)
 
     /* next event */
     evt++;
-    if ((void *) evt >= ep->eventq + OMX_EVENTQ_SIZE)
-      evt = ep->eventq;
-    ep->next_event = (void *) evt;
+    if ((void *) evt >= ep->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE)
+      evt = ep->unexp_eventq;
+    ep->next_unexp_event = (void *) evt;
+  }
+
+  /* process expected events then */
+  while (1) {
+    volatile union omx_evt * evt = ep->next_exp_event;
+
+    if (evt->generic.type == OMX_EVT_NONE)
+      break;
+
+    omx__process_event(ep, (union omx_evt *) evt);
+
+    /* mark event as done */
+    evt->generic.type = OMX_EVT_NONE;
+
+    /* next event */
+    evt++;
+    if ((void *) evt >= ep->exp_eventq + OMX_EXP_EVENTQ_SIZE)
+      evt = ep->exp_eventq;
+    ep->next_exp_event = (void *) evt;
   }
 
   return OMX_SUCCESS;

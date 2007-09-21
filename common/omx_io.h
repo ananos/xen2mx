@@ -27,23 +27,30 @@
  * Common parameters or IOCTL subtypes
  */
 
+/* sendq: where the lib passes data to send to the driver */
 #define OMX_SENDQ_ENTRY_SHIFT	12
 #define OMX_SENDQ_ENTRY_SIZE	(1UL << OMX_SENDQ_ENTRY_SHIFT)
 #define OMX_SENDQ_ENTRY_NR	1024
 #define OMX_SENDQ_SIZE		(OMX_SENDQ_ENTRY_SIZE*OMX_SENDQ_ENTRY_NR)
 #define OMX_SENDQ_FILE_OFFSET	0
 
+/* recv: where the driver passes data received to the lib */
 #define OMX_RECVQ_ENTRY_SHIFT	12
 #define OMX_RECVQ_ENTRY_SIZE	(1UL << OMX_RECVQ_ENTRY_SHIFT)
 #define OMX_RECVQ_ENTRY_NR	1024
 #define OMX_RECVQ_SIZE		(OMX_RECVQ_ENTRY_SIZE*OMX_RECVQ_ENTRY_NR)
 #define OMX_RECVQ_FILE_OFFSET	4096
 
+/* expected eventq: where expected events are stored, medium send done and pull done */
+/* unexpected eventq: where unexpected events are stored, incoming packets */
 #define OMX_EVENTQ_ENTRY_SHIFT	6
 #define OMX_EVENTQ_ENTRY_SIZE	(1UL << OMX_EVENTQ_ENTRY_SHIFT)
-#define OMX_EVENTQ_ENTRY_NR	1024
-#define OMX_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE*OMX_EVENTQ_ENTRY_NR)
-#define OMX_EVENTQ_FILE_OFFSET	(2*4096)
+#define OMX_EXP_EVENTQ_ENTRY_NR	1024
+#define OMX_UNEXP_EVENTQ_ENTRY_NR	1024
+#define OMX_EXP_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE*OMX_EXP_EVENTQ_ENTRY_NR)
+#define OMX_UNEXP_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE*OMX_UNEXP_EVENTQ_ENTRY_NR)
+#define OMX_EXP_EVENTQ_FILE_OFFSET	(2*4096)
+#define OMX_UNEXP_EVENTQ_FILE_OFFSET	(3*4096)
 
 #define OMX_TINY_MAX		32
 #define OMX_SMALL_MAX		128 /* at most 4096? FIXME: check that it fits in a linear skb and a recvq page */

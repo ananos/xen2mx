@@ -27,23 +27,41 @@
  */
 
 union omx_evt *
-omx_find_next_eventq_slot(struct omx_endpoint *endpoint)
+omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint)
 {
 	/* FIXME: need locking */
-	union omx_evt *slot = endpoint->next_eventq_slot;
+	union omx_evt *slot = endpoint->next_exp_eventq_slot;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
 		dprintk("Open-MX: Event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
 		return NULL;
 	}
 
-	endpoint->next_eventq_slot = slot + 1;
-	if (unlikely((void *) endpoint->next_eventq_slot >= endpoint->eventq + OMX_EVENTQ_SIZE))
-		endpoint->next_eventq_slot = endpoint->eventq;
+	endpoint->next_exp_eventq_slot = slot + 1;
+	if (unlikely((void *) endpoint->next_exp_eventq_slot >= endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE))
+		endpoint->next_exp_eventq_slot = endpoint->exp_eventq;
+
+	return slot;
+}
+
+union omx_evt *
+omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint)
+{
+	/* FIXME: need locking */
+	union omx_evt *slot = endpoint->next_unexp_eventq_slot;
+	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
+		dprintk("Open-MX: Event queue full, no event slot available for endpoint %d\n",
+			endpoint->endpoint_index);
+		return NULL;
+	}
+
+	endpoint->next_unexp_eventq_slot = slot + 1;
+	if (unlikely((void *) endpoint->next_unexp_eventq_slot >= endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
+		endpoint->next_unexp_eventq_slot = endpoint->unexp_eventq;
 
 	/* recvq slot is at same index for now */
 	endpoint->next_recvq_slot = endpoint->recvq
-		+ (((void *) slot - endpoint->eventq) << (OMX_RECVQ_ENTRY_SHIFT - OMX_EVENTQ_ENTRY_SHIFT));
+		+ (((void *) slot - endpoint->unexp_eventq) << (OMX_RECVQ_ENTRY_SHIFT - OMX_EVENTQ_ENTRY_SHIFT));
 
 	return slot;
 }
@@ -98,9 +116,10 @@ omx_recv_connect(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(eh, "CONNECT packet because of event queue full");
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(eh, "CONNECT packet because of unexpected event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -180,9 +199,10 @@ omx_recv_tiny(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(&mh->head.eth, "TINY packet because of event queue full");
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(&mh->head.eth, "TINY packet because of unexpected event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -263,9 +283,10 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(&mh->head.eth, "SMALL packet because of event queue full");
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(&mh->head.eth, "SMALL packet because of unexpected event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -347,9 +368,10 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of event queue full");
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of unexpected event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -433,9 +455,10 @@ omx_recv_rndv(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(&mh->head.eth, "RNDV packet because of event queue full");
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(&mh->head.eth, "RNDV packet because of unexpected event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -497,9 +520,10 @@ omx_recv_notify(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet because of event queue full");
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet because of unexpected event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}

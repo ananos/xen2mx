@@ -71,8 +71,9 @@ struct omx_endpoint {
 
 	struct omx_iface * iface;
 
-	void * sendq, * recvq, * eventq;
-	union omx_evt * next_eventq_slot;
+	void * sendq, * recvq, * exp_eventq, * unexp_eventq;
+	union omx_evt * next_exp_eventq_slot;
+	union omx_evt * next_unexp_eventq_slot;
 	char * next_recvq_slot;
 
 	struct page ** sendq_pages;

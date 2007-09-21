@@ -47,7 +47,8 @@ extern int omx_iface_attach_endpoint(struct omx_endpoint * endpoint);
 extern void omx_iface_detach_endpoint(struct omx_endpoint * endpoint, int ifacelocked);
 extern int __omx_endpoint_close(struct omx_endpoint * endpoint, int ifacelocked);
 extern struct omx_endpoint * omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index);
-extern union omx_evt * omx_find_next_eventq_slot(struct omx_endpoint *endpoint);
+extern union omx_evt * omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint);
+extern union omx_evt * omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint);
 extern void omx_endpoint_release(struct omx_endpoint * endpoint);
 
 static inline void omx_endpoint_reacquire(struct omx_endpoint * endpoint)

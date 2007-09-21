@@ -740,9 +740,10 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle)
 	int err;
 
 	/* get the eventq slot */
-	evt = omx_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_exp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		printk(KERN_INFO "Open-MX: Failed to complete send of PULL packet because of event queue full\n");
+		/* the application sucks, it did not check the expected eventq before posting requests */
+		printk(KERN_INFO "Open-MX: Failed to complete send of PULL packet because of expected event queue full\n");
 		err = -EBUSY;
 		goto out;
 	}

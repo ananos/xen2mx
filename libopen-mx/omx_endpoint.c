@@ -157,7 +157,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   /* FIXME: add parameters to choose the board name? */
   struct omx_endpoint * ep;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-  void * recvq, * sendq, * eventq;
+  void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   uint64_t board_addr;
   uint8_t ctxid_bits = 0, ctxid_shift = 0;
   omx_return_t ret = OMX_SUCCESS;
@@ -217,14 +217,16 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   /* mmap */
   sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
   recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
-  eventq = mmap(0, OMX_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EVENTQ_FILE_OFFSET);
+  exp_eventq = mmap(0, OMX_EXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EXP_EVENTQ_FILE_OFFSET);
+  unexp_eventq = mmap(0, OMX_UNEXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_UNEXP_EVENTQ_FILE_OFFSET);
   if (sendq == (void *) -1
       || recvq == (void *) -1
-      || eventq == (void *) -1) {
+      || exp_eventq == (void *) -1
+      || unexp_eventq == (void *) -1) {
     ret = omx__errno_to_return("mmap");
     goto out_with_sendq_map;
   }
-  printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
+  printf("sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n", sendq, recvq, exp_eventq, unexp_eventq);
 
   /* prepare the large regions */
   ret = omx__endpoint_large_region_map_init(ep);
@@ -235,7 +237,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->fd = fd;
   ep->sendq = sendq;
   ep->recvq = recvq;
-  ep->eventq = ep->next_event = eventq;
+  ep->exp_eventq = ep->next_exp_event = exp_eventq;
+  ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
   ep->board_index = board_index;
   ep->endpoint_index = endpoint_index;
   ep->app_key = key;
@@ -327,7 +330,8 @@ omx_close_endpoint(struct omx_endpoint *ep)
   omx__endpoint_large_region_map_exit(ep);
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->recvq, OMX_RECVQ_SIZE);
-  munmap(ep->eventq, OMX_EVENTQ_SIZE);
+  munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
+  munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
   omx__endpoint_sendq_map_exit(ep);
   /* could detach here, but close will do it */
   close(ep->fd);

@@ -90,7 +90,7 @@ int main(void)
   int fd, ret;
   struct omx_cmd_open_endpoint open_param;
   volatile union omx_evt * evt;
-  void * recvq, * sendq, * eventq;
+  void * recvq, * sendq, * exp_eventq;
   char * send_buffer, * recv_buffer;
   uint32_t session_id;
   //  int i;
@@ -120,10 +120,8 @@ int main(void)
   /* mmap */
   sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
   recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
-  eventq = mmap(0, OMX_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EVENTQ_FILE_OFFSET);
-  printf("sendq at %p, recvq at %p, eventq at %p\n", sendq, recvq, eventq);
-
-  memset(eventq, 0, sizeof(OMX_EVENTQ_SIZE));
+  exp_eventq = mmap(0, OMX_EXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EXP_EVENTQ_FILE_OFFSET);
+  printf("sendq at %p, recvq at %p, exp eventq at %p\n", sendq, recvq, exp_eventq);
 
   /* allocate buffers */
   send_buffer = memalign(BUFFER_ALIGN, BUFFER_LENGTH);
@@ -166,7 +164,7 @@ int main(void)
   if (ret < 0)
     goto out_with_recv_register;
 
-  evt = eventq;
+  evt = exp_eventq;
   /* wait for the message */
   while (evt->generic.type == OMX_EVT_NONE) ;
 
@@ -181,8 +179,8 @@ int main(void)
 
   /* next event */
   evt++;
-  if ((void *) evt >= eventq + OMX_EVENTQ_SIZE)
-    evt = eventq;
+  if ((void *) evt >= exp_eventq + OMX_EXP_EVENTQ_SIZE)
+    evt = exp_eventq;
 
   {
     int i;

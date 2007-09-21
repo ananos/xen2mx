@@ -72,10 +72,11 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 	struct omx_endpoint * endpoint = defevent->endpoint;
 	union omx_evt * evt;
 
-	evt = omx_find_next_eventq_slot(endpoint);
+	/* get the eventq slot */
+	evt = omx_find_next_exp_eventq_slot(endpoint);
 	if (unlikely(!evt) ){
-		printk(KERN_INFO "Open-MX: Failed to complete send of MEDIUM packet because of event queue full\n");
-		/* FIXME: the application sucks, it should take care of events sooner, queue it? */
+		/* the application sucks, it did not check the expected eventq before posting requests */
+		printk(KERN_INFO "Open-MX: Failed to complete send of MEDIUM packet because of expected event queue full\n");
 		return;
 	}
 
@@ -655,9 +656,9 @@ omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_ACQU)
 		goto out_with_endpoint;
 
-	evt = omx_find_next_eventq_slot(endpoint);
+	evt = omx_find_next_exp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		dprintk("BENCH command failed of event queue full");
+		dprintk("BENCH command failed of expected event queue full");
 		ret = -EBUSY;
 		goto out_with_endpoint;
 	}

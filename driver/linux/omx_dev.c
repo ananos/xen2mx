@@ -48,14 +48,15 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 
 	/* alloc and init user queues */
 	ret = -ENOMEM;
-	buffer = omx_vmalloc_user(OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EVENTQ_SIZE);
+	buffer = omx_vmalloc_user(OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EXP_EVENTQ_SIZE + OMX_UNEXP_EVENTQ_SIZE);
 	if (!buffer) {
 		printk(KERN_ERR "Open-MX: failed to allocate queues\n");
 		goto out;
 	}
 	endpoint->sendq = buffer;
-	endpoint->recvq = buffer + OMX_SENDQ_SIZE;
-	endpoint->eventq = buffer + OMX_SENDQ_SIZE + OMX_RECVQ_SIZE;
+	endpoint->recvq = endpoint->sendq + OMX_SENDQ_SIZE;
+	endpoint->exp_eventq = endpoint->recvq + OMX_RECVQ_SIZE;
+	endpoint->unexp_eventq = endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE;
 
 #if OMX_SENDQ_ENTRY_SIZE != PAGE_SIZE
 #error Incompatible page and sendq entry sizes
@@ -73,11 +74,18 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	}
 	endpoint->sendq_pages = sendq_pages;
 
-	for(evt = endpoint->eventq;
-	    (void *) evt < endpoint->eventq + OMX_EVENTQ_SIZE;
+	for(evt = endpoint->exp_eventq;
+	    (void *) evt < endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE;
 	    evt++)
 		evt->generic.type = OMX_EVT_NONE;
-	endpoint->next_eventq_slot = endpoint->eventq;
+	endpoint->next_exp_eventq_slot = endpoint->exp_eventq;
+
+	for(evt = endpoint->unexp_eventq;
+	    (void *) evt < endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE;
+	    evt++)
+		evt->generic.type = OMX_EVT_NONE;
+	endpoint->next_unexp_eventq_slot = endpoint->unexp_eventq;
+
 	endpoint->next_recvq_slot = endpoint->recvq;
 
 	/* initialize user regions */
@@ -100,7 +108,7 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 	omx_endpoint_pull_handles_exit(endpoint);
 	omx_endpoint_user_regions_exit(endpoint);
 	kfree(endpoint->sendq_pages);
-	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
+	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
 }
 
 /******************************
@@ -520,11 +528,17 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 		return -EINVAL;
 
 	if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
-		return omx_remap_vmalloc_range(vma, endpoint->sendq, 0);
+		return omx_remap_vmalloc_range(vma, endpoint->sendq,
+					       0);
 	else if (offset == OMX_RECVQ_FILE_OFFSET && size == OMX_RECVQ_SIZE)
-		return omx_remap_vmalloc_range(vma, endpoint->sendq, OMX_SENDQ_SIZE >> PAGE_SHIFT);
-	else if (offset == OMX_EVENTQ_FILE_OFFSET && size == OMX_EVENTQ_SIZE)
-		return omx_remap_vmalloc_range(vma, endpoint->sendq, (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE) >> PAGE_SHIFT);
+		return omx_remap_vmalloc_range(vma, endpoint->sendq,
+					       OMX_SENDQ_SIZE >> PAGE_SHIFT);
+	else if (offset == OMX_EXP_EVENTQ_FILE_OFFSET && size == OMX_EXP_EVENTQ_SIZE)
+		return omx_remap_vmalloc_range(vma, endpoint->sendq,
+					       (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE) >> PAGE_SHIFT);
+	else if (offset == OMX_UNEXP_EVENTQ_FILE_OFFSET && size == OMX_UNEXP_EVENTQ_SIZE)
+		return omx_remap_vmalloc_range(vma, endpoint->sendq,
+					       (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EXP_EVENTQ_SIZE) >> PAGE_SHIFT);
 	else {
 		printk(KERN_ERR "Open-MX: Cannot mmap %lx at %lx\n", size, offset);
 		return -EINVAL;
