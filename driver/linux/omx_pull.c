@@ -731,21 +731,19 @@ omx_recv_pull(struct omx_iface * iface,
 	return err;
 }
 
-static int
+static void
 omx_pull_handle_done_notify(struct omx_pull_handle * handle)
 {
 	struct omx_endpoint *endpoint = handle->endpoint;
 	union omx_evt *evt;
 	struct omx_evt_pull_done *event;
-	int err;
 
 	/* get the eventq slot */
 	evt = omx_find_next_exp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
 		/* the application sucks, it did not check the expected eventq before posting requests */
 		printk(KERN_INFO "Open-MX: Failed to complete send of PULL packet because of expected event queue full\n");
-		err = -EBUSY;
-		goto out;
+		return;
 	}
 	event = &evt->pull_done;
 
@@ -763,11 +761,6 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle)
 	handle->frame_copying_bitmap = 0;
 	handle->remaining_length = 0;
 	omx_pull_handle_release(handle);
-
-	return 0;
-
- out:
-	return err;
 }
 
 int
