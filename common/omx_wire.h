@@ -153,7 +153,12 @@ struct omx_pkt_pull_request {
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint32_t session;
 	uint32_t total_length; /* total pull length */
-	uint16_t block_length; /* current pull block length (nr * pagesize - target offset) */
+	/* current pull block length (nr * pagesize - target offset) */
+#ifdef OMX_MX_WIRE_COMPAT
+	uint16_t block_length;
+#else
+	uint32_t block_length;
+#endif
 	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull) */
 	uint32_t first_frame_offset; /* pull iteration offset in the first frame (for the first iteration, set to pulled_rdma_offset) */
 	uint32_t pulled_rdma_id;

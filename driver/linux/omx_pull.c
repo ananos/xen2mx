@@ -29,7 +29,6 @@
 #else
 #define OMX_PULL_REPLY_LENGTH_MAX 8192
 #define OMX_PULL_REPLY_PER_BLOCK 7
-/* block_length is only 16bits in the pull request */
 #endif
 
 #define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
