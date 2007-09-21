@@ -67,7 +67,7 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	}
 	for(i=0; i<OMX_SENDQ_ENTRY_NR; i++) {
 		struct page * page;
-		page = vmalloc_to_page(endpoint->sendq + (i * OMX_SENDQ_ENTRY_SIZE));
+		page = vmalloc_to_page(endpoint->sendq + (i << OMX_SENDQ_ENTRY_SHIFT));
 		BUG_ON(!page);
 		sendq_pages[i] = page;
 	}
