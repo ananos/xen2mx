@@ -84,8 +84,8 @@ struct omx_pull_handle {
  * Pull handle bitmap management
  */
 
-#define OMX_PULL_HANDLE_BLOCK_BITMASK 0xff
-#define OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK 0xffff
+#define OMX_PULL_HANDLE_BLOCK_BITMASK ((1ULL<<OMX_PULL_REPLY_PER_BLOCK)-1)
+#define OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK ((1ULL<<(2*OMX_PULL_REPLY_PER_BLOCK))-1)
 
 #define OMX_PULL_HANDLE_DONE(handle) \
 	(!((handle)->remaining_length) \
