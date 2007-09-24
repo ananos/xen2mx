@@ -177,8 +177,8 @@ omx__deregister_region(struct omx_endpoint *ep,
  */
 
 omx_return_t
-omx__queue_large_recv(struct omx_endpoint * ep,
-		      union omx_request * req)
+omx__post_recv_large(struct omx_endpoint * ep,
+		     union omx_request * req)
 {
   struct omx_cmd_send_pull pull_param;
   struct omx__large_region *region;
@@ -187,15 +187,12 @@ omx__queue_large_recv(struct omx_endpoint * ep,
   omx_return_t ret;
   int err;
 
+  if (ep->avail_exp_events < 1)
+    return OMX_NO_RESOURCES;
+
   ret = omx__register_region(ep, req->recv.buffer, xfer_length, &region);
   if (ret != OMX_SUCCESS)
-    goto out;
-
-  if (ep->avail_exp_events < 1) {
-    /* FIXME: queue */
-    omx__debug_printf("not enough eventq slots available, need to queue the large recv request\n");
-    assert(0);
-  }
+    return ret;
 
   pull_param.dest_addr = partner->board_addr;
   pull_param.dest_endpoint = partner->endpoint_index;
@@ -211,7 +208,13 @@ omx__queue_large_recv(struct omx_endpoint * ep,
   err = ioctl(ep->fd, OMX_CMD_SEND_PULL, &pull_param);
   if (err < 0) {
     ret = omx__errno_to_return("ioctl SEND_PULL");
-    goto out_with_reg;
+    if (ret != OMX_NO_SYSTEM_RESOURCES) {
+      /* FIXME: error message, something went wrong in the driver */
+      assert(0);
+    }
+
+    omx__deregister_region(ep, region);
+    return ret;
   }
   ep->avail_exp_events--;
 
@@ -220,11 +223,22 @@ omx__queue_large_recv(struct omx_endpoint * ep,
   omx__enqueue_request(&ep->large_recv_req_q, req);
 
   return OMX_SUCCESS;
+}
 
- out_with_reg:
-  omx__deregister_region(ep, region);
- out:
-  return ret;
+omx_return_t
+omx__queue_recv_large(struct omx_endpoint * ep,
+		      union omx_request * req)
+{
+  omx_return_t ret;
+
+  ret = omx__post_recv_large(ep, req);
+  if (ret != OMX_SUCCESS) {
+    omx__debug_printf("queueing large request %p\n", req);
+    req->generic.state = OMX_REQUEST_STATE_QUEUED;
+    omx__enqueue_request(&ep->queued_send_req_q, req);
+  }
+
+  return OMX_SUCCESS;
 }
 
 omx_return_t
