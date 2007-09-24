@@ -71,6 +71,13 @@ omx__enqueue_request(struct list_head *head,
 }
 
 static inline void
+omx__requeue_request(struct list_head *head,
+		     union omx_request *req)
+{
+  list_add(&req->generic.queue_elt, head);
+}
+
+static inline void
 omx__dequeue_request(struct list_head *head,
 		     union omx_request *req)
 {
@@ -100,6 +107,9 @@ omx__queue_empty(struct list_head *head)
 
 #define omx__foreach_request(head, req)		\
 list_for_each_entry(req, head, generic.queue_elt)
+
+#define omx__foreach_request_safe(head, req, next)	\
+list_for_each_entry_safe(req, next, head, generic.queue_elt)
 
 /***********************************
  * Partner request queue management

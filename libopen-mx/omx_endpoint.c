@@ -293,6 +293,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   /* init lib specific fieds */
   ep->unexp_handler = NULL;
   ep->in_handler = 0;
+  INIT_LIST_HEAD(&ep->queued_send_req_q);
   INIT_LIST_HEAD(&ep->sent_req_q);
   INIT_LIST_HEAD(&ep->multifrag_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->large_send_req_q);

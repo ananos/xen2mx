@@ -208,7 +208,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
       /* if some frags posted, behave as if other frags were lost */
       req->send.specific.medium.frags_pending_nr = posted;
       if (posted)
-	return OMX_SUCCESS;
+	goto posted;
       else
 	return OMX_NO_SYSTEM_RESOURCES;
     }
@@ -218,6 +218,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
     offset += chunk;
   }
 
+ posted:
   req->generic.state = OMX_REQUEST_STATE_PENDING;
   omx__enqueue_request(&ep->sent_req_q, req);
 
@@ -254,9 +255,9 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 
   ret = omx__post_isend_medium(ep, req);
   if (ret != OMX_SUCCESS) {
-    /* FIXME: queue if no resources or no system resources */
-    omx__debug_printf("not enough eventq slots available, need to queue the medium request\n");
-    assert(0);
+    omx__debug_printf("queueing medium request %p\n", req);
+    req->generic.state = OMX_REQUEST_STATE_QUEUED;
+    omx__enqueue_request(&ep->queued_send_req_q, req);
   }
 
   *requestp = req;

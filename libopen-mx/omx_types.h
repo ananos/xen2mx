@@ -133,6 +133,7 @@ struct omx_endpoint {
   } * ctxid;
 
   /* non multiplexed queues */
+  struct list_head queued_send_req_q;
   struct list_head sent_req_q;
   struct list_head multifrag_medium_recv_req_q;
   struct list_head large_send_req_q;
@@ -160,6 +161,7 @@ enum omx__request_state {
   OMX_REQUEST_STATE_DONE = (1<<0),
   OMX_REQUEST_STATE_PENDING = (1<<1),
   OMX_REQUEST_STATE_MATCHED = (1<<2),
+  OMX_REQUEST_STATE_QUEUED = (1<<3),
 };
 
 struct omx__generic_request {

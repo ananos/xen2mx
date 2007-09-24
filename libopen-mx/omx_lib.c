@@ -108,7 +108,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     assert(req);
     assert(req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM);
 
-    ep->avail_exp_events++; /* FIXME: requeue pending */
+    ep->avail_exp_events++;
 
     /* message is not done */
     if (--req->send.specific.medium.frags_pending_nr)
@@ -124,7 +124,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
   case OMX_EVT_PULL_DONE: {
 
-    ep->avail_exp_events++; /* FIXME: requeue pending */
+    ep->avail_exp_events++;
 
     omx__pull_done(ep, &evt->pull_done);
     break;
@@ -145,6 +145,8 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
+  union omx_request *req , *next;
+
   if (ep->in_handler)
     return OMX_SUCCESS;
 
@@ -186,6 +188,31 @@ omx__progress(struct omx_endpoint * ep)
     if ((void *) evt >= ep->exp_eventq + OMX_EXP_EVENTQ_SIZE)
       evt = ep->exp_eventq;
     ep->next_exp_event = (void *) evt;
+  }
+
+  /* post queued requests */
+  omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
+    omx_return_t ret;
+
+    req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
+    omx__dequeue_request(&ep->queued_send_req_q, req);
+
+    switch (req->generic.type) {
+    case OMX_REQUEST_TYPE_SEND_MEDIUM:
+      omx__debug_printf("reposting queued request %p\n", req);
+      ret = omx__post_isend_medium(ep, req);
+      break;
+    default:
+      assert(0);
+    }
+
+    if (ret != OMX_SUCCESS) {
+      /* put back at the head of the queue */
+      omx__debug_printf("requeueing medium request %p\n", req);
+      req->generic.state |= OMX_REQUEST_STATE_QUEUED;
+      omx__requeue_request(&ep->queued_send_req_q, req);
+      break;
+    }
   }
 
   return OMX_SUCCESS;
