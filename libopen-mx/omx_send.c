@@ -194,12 +194,26 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 
     err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, &medium_param);
     if (err < 0) {
-      ret = omx__errno_to_return("ioctl SEND_MEDIUM");
-      /* FIXME: how to recover when only some post were accepted? */
-      assert(0);
-    }
-    ep->avail_exp_events--;
+      int posted = i;
 
+      ret = omx__errno_to_return("ioctl SEND_MEDIUM");
+      if (ret != OMX_NO_SYSTEM_RESOURCES) {
+	/* FIXME: error message, something went wrong in the driver */
+	assert(0);
+      }
+
+      /* release resources that were not used */
+      for(i=posted; i<frags; i++)
+	omx__endpoint_sendq_map_put(ep, sendq_index[i]);
+      /* if some frags posted, behave as if other frags were lost */
+      req->send.specific.medium.frags_pending_nr = posted;
+      if (posted)
+	return OMX_SUCCESS;
+      else
+	return OMX_NO_SYSTEM_RESOURCES;
+    }
+
+    ep->avail_exp_events--;
     remaining -= chunk;
     offset += chunk;
   }
