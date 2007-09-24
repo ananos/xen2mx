@@ -179,6 +179,7 @@ union omx_request {
     omx__seqnum_t seqnum;
     union {
       struct {
+	void * buffer;
 	uint32_t frags_pending_nr;
       } medium;
       struct {

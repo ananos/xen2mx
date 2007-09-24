@@ -149,50 +149,38 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   return ret;
 }
 
-static inline omx_return_t
-omx__submit_isend_medium(struct omx_endpoint *ep,
-			 void *buffer, size_t length,
-			 struct omx__partner * partner, omx__seqnum_t seqnum,
-			 uint64_t match_info,
-			 void *context, union omx_request **requestp)
+omx_return_t
+omx__post_isend_medium(struct omx_endpoint *ep,
+		       union omx_request *req)
 {
-  union omx_request * req;
   struct omx_cmd_send_medium medium_param;
+  struct omx__partner * partner = req->generic.partner;
+  void * buffer = req->send.specific.medium.buffer;
+  uint32_t length = req->generic.status.xfer_length;
   uint32_t remaining = length;
   uint32_t offset = 0;
-  int sendq_index[8];
-  int frags;
-  int i;
   omx_return_t ret;
+  int sendq_index[8]; /* FIXME #define NR_MEDIUM_FRAGS */
+  int frags;
   int err;
+  int i;
 
   frags = OMX_MEDIUM_FRAGS_NR(length);
   omx__debug_assert(frags <= 8); /* for the sendq_index array above */
+  req->send.specific.medium.frags_pending_nr = frags;
 
-  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_MEDIUM);
-  if (!req) {
-    ret = OMX_NO_RESOURCES;
-    goto out;
-  }
-
-  if (omx__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0)
-    /* FIXME: queue */
-    assert(0);
+  if (ep->avail_exp_events < frags
+      || omx__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0)
+    return OMX_NO_RESOURCES;
 
   medium_param.dest_addr = partner->board_addr;
   medium_param.dest_endpoint = partner->endpoint_index;
-  medium_param.match_info = match_info;
+  medium_param.match_info = req->generic.status.match_info;
   medium_param.frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
   medium_param.msg_length = length;
-  medium_param.seqnum = seqnum;
+  medium_param.seqnum = req->send.seqnum;
   medium_param.session_id = partner->session_id;
   medium_param.dest_src_peer_index = partner->dest_src_peer_index;
-
-  if (ep->avail_exp_events < frags) {
-    /* FIXME: queue */
-    omx__debug_printf("not enough eventq slots available, need to queue the medium request\n");
-    assert(0);
-  }
 
   for(i=0; i<frags; i++) {
     unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
@@ -207,12 +195,35 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
     err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, &medium_param);
     if (err < 0) {
       ret = omx__errno_to_return("ioctl SEND_MEDIUM");
-      goto out_with_req;
+      /* FIXME: how to recover when only some post were accepted? */
+      assert(0);
     }
     ep->avail_exp_events--;
 
     remaining -= chunk;
     offset += chunk;
+  }
+
+  req->generic.state = OMX_REQUEST_STATE_PENDING;
+  omx__enqueue_request(&ep->sent_req_q, req);
+
+  return OMX_SUCCESS;
+}
+
+static inline omx_return_t
+omx__submit_isend_medium(struct omx_endpoint *ep,
+			 void *buffer, size_t length,
+			 struct omx__partner * partner, omx__seqnum_t seqnum,
+			 uint64_t match_info,
+			 void *context, union omx_request **requestp)
+{
+  union omx_request * req;
+  omx_return_t ret;
+
+  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_MEDIUM);
+  if (!req) {
+    ret = OMX_NO_RESOURCES;
+    goto out;
   }
 
   /* need to wait for a done event, since the sendq pages
@@ -221,20 +232,22 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;
-  req->send.specific.medium.frags_pending_nr = frags;
+  req->send.specific.medium.buffer = buffer;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  req->generic.state = OMX_REQUEST_STATE_PENDING;
-  omx__enqueue_request(&ep->sent_req_q, req);
+  ret = omx__post_isend_medium(ep, req);
+  if (ret != OMX_SUCCESS) {
+    /* FIXME: queue if no resources or no system resources */
+    omx__debug_printf("not enough eventq slots available, need to queue the medium request\n");
+    assert(0);
+  }
 
   *requestp = req;
   return OMX_SUCCESS;
 
- out_with_req:
-  omx__request_free(req);
  out:
   return ret;
 }
