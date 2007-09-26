@@ -241,8 +241,8 @@ omx__submit_pull(struct omx_endpoint * ep,
 }
 
 omx_return_t
-omx__pull_done(struct omx_endpoint * ep,
-	       struct omx_evt_pull_done * event)
+omx__process_pull_done(struct omx_endpoint * ep,
+		       struct omx_evt_pull_done * event)
 {
   union omx_request * req;
   uint32_t xfer_length = event->pulled_length;

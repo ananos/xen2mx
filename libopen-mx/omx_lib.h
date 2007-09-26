@@ -163,7 +163,8 @@ omx__process_recv_notify(struct omx_endpoint *ep,
 			 struct omx_evt_recv_msg *msg);
 
 extern omx_return_t
-omx__pull_done(struct omx_endpoint * ep, struct omx_evt_pull_done * event);
+omx__process_pull_done(struct omx_endpoint * ep,
+		       struct omx_evt_pull_done * event);
 
 static inline int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)

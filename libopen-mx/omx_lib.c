@@ -114,7 +114,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
     ep->avail_exp_events++;
 
-    omx__pull_done(ep, &evt->pull_done);
+    omx__process_pull_done(ep, &evt->pull_done);
     break;
   }
 
