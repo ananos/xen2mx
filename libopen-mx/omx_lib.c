@@ -95,7 +95,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     omx__deregister_region(ep, req->send.specific.large.region);
     req->generic.status.xfer_length = xfer_length;
 
-    req->generic.state &= ~OMX_REQUEST_STATE_PENDING;
+    req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
     req->generic.state |= OMX_REQUEST_STATE_DONE;
     omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
     break;

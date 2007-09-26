@@ -133,12 +133,12 @@ struct omx_endpoint {
   } * ctxid;
 
   /* non multiplexed queues */
-  struct list_head queued_send_req_q;
-  struct list_head sent_req_q;
-  struct list_head multifrag_medium_recv_req_q;
-  struct list_head large_send_req_q;
-  struct list_head pull_req_q;
-  struct list_head connect_req_q;
+  struct list_head queued_send_req_q; /* SEND req with state = QUEUED */
+  struct list_head sent_req_q; /* SEND req with state = IN_DRIVER */
+  struct list_head multifrag_medium_recv_req_q; /* RECV req with state = PENDING */
+  struct list_head large_send_req_q; /* SEND req with state = NEED_REPLY */
+  struct list_head pull_req_q; /* RECV_LARGE req with state = IN_DRIVER */
+  struct list_head connect_req_q; /* CONNECT req with state = NEED_REPLY */
 
   struct omx__sendq_map sendq_map;
   struct omx__large_region_map large_region_map;
@@ -163,6 +163,7 @@ enum omx__request_state {
   OMX_REQUEST_STATE_MATCHED = (1<<2),
   OMX_REQUEST_STATE_QUEUED = (1<<3),
   OMX_REQUEST_STATE_IN_DRIVER = (1<<4),
+  OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
 };
 
 struct omx__generic_request {

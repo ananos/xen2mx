@@ -246,7 +246,7 @@ omx__connect_common(omx_endpoint_t ep,
   }
   /* no need to wait for a done event, connect is synchronous */
 
-  req->generic.state = OMX_REQUEST_STATE_PENDING;
+  req->generic.state = OMX_REQUEST_STATE_NEED_REPLY;
   req->generic.partner = partner;
   req->connect.session_id = ep->session_id;
   req->connect.connect_seqnum = connect_seqnum;
@@ -279,7 +279,6 @@ omx_connect(omx_endpoint_t ep,
     goto out;
   }
 
-  req->generic.state = OMX_REQUEST_STATE_PENDING;
   req->connect.is_synchronous = 1;
 
   ret = omx__connect_common(ep, nic_id, endpoint_id, key, req);
@@ -329,7 +328,6 @@ omx_iconnect(omx_endpoint_t ep,
     goto out;
   }
 
-  req->generic.state = OMX_REQUEST_STATE_PENDING;
   req->connect.is_synchronous = 0;
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
@@ -396,7 +394,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   req->generic.status.code = reply_data->status_code;
   if (req->generic.status.code == OMX_STATUS_SUCCESS)
     omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->generic.state &= ~OMX_REQUEST_STATE_PENDING;
+  req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
   req->generic.state |= OMX_REQUEST_STATE_DONE;
 
   /* move iconnect request to the done queue */

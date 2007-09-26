@@ -318,7 +318,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   req->send.seqnum = seqnum;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
-  req->generic.state = OMX_REQUEST_STATE_PENDING;
+  req->generic.state = OMX_REQUEST_STATE_NEED_REPLY;
   req->generic.status.msg_length = length;
   /* will set xfer_length when receiving the notify */
 
