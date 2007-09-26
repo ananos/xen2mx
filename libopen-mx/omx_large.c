@@ -254,6 +254,8 @@ omx__pull_done(struct omx_endpoint * ep,
   int err;
 
   /* FIXME: use cookie since region might be used for something else? */
+
+  /* FIXME: check region id */
   region = &ep->large_region_map.array[region_id].region;
   req = region->user;
   assert(req);
@@ -289,4 +291,31 @@ omx__pull_done(struct omx_endpoint * ep,
   /* FIXME */
   assert(0);
   return ret;
+}
+
+omx_return_t
+omx__process_recv_notify(struct omx_endpoint * ep,
+			 struct omx_evt_recv_msg * msg)
+{
+  uint32_t xfer_length = msg->specific.notify.length;
+  uint8_t region_id = msg->specific.notify.puller_rdma_id;
+  struct omx__large_region * region;
+  union omx_request * req;
+
+  /* FIXME: check region id */
+  region = &ep->large_region_map.array[region_id].region;
+  req = region->user;
+  assert(req);
+  assert(req->generic.type == OMX_REQUEST_TYPE_SEND_LARGE);
+  assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
+
+  omx__dequeue_request(&ep->large_send_req_q, req);
+  omx__deregister_region(ep, req->send.specific.large.region);
+  req->generic.status.xfer_length = xfer_length;
+
+  req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
+  req->generic.state |= OMX_REQUEST_STATE_DONE;
+  omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+
+  return OMX_SUCCESS;
 }

@@ -1,3 +1,5 @@
+* --enable-linux-release
+
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
   + omx_disconnect

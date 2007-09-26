@@ -84,20 +84,8 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_NOTIFY: {
-    struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    uint32_t xfer_length = msg->specific.notify.length;
-    union omx_request * req = omx__queue_first_request(&ep->large_send_req_q);
 
-    assert(req);
-    assert(req->generic.type == OMX_REQUEST_TYPE_SEND_LARGE);
-
-    omx__dequeue_request(&ep->large_send_req_q, req);
-    omx__deregister_region(ep, req->send.specific.large.region);
-    req->generic.status.xfer_length = xfer_length;
-
-    req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
-    req->generic.state |= OMX_REQUEST_STATE_DONE;
-    omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+    omx__process_recv_notify(ep, &evt->recv_msg);
     break;
   }
 

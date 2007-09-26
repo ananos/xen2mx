@@ -159,6 +159,10 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
 		       void *data /* unused */, uint32_t msg_length);
 
 extern omx_return_t
+omx__process_recv_notify(struct omx_endpoint *ep,
+			 struct omx_evt_recv_msg *msg);
+
+extern omx_return_t
 omx__pull_done(struct omx_endpoint * ep, struct omx_evt_pull_done * event);
 
 static inline int
