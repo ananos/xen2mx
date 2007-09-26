@@ -114,12 +114,12 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 		       union omx_request *req);
 
 omx_return_t
-omx__post_recv_large(struct omx_endpoint * ep,
-		     union omx_request * req);
+omx__post_pull(struct omx_endpoint * ep,
+	       union omx_request * req);
 
 extern omx_return_t
-omx__queue_recv_large(struct omx_endpoint * ep,
-		      union omx_request * req);
+omx__submit_pull(struct omx_endpoint * ep,
+		 union omx_request * req);
 
 extern void
 omx__send_complete(struct omx_endpoint *ep, union omx_request *req,

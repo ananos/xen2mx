@@ -137,7 +137,7 @@ struct omx_endpoint {
   struct list_head sent_req_q;
   struct list_head multifrag_medium_recv_req_q;
   struct list_head large_send_req_q;
-  struct list_head large_recv_req_q;
+  struct list_head pull_req_q;
   struct list_head connect_req_q;
 
   struct omx__sendq_map sendq_map;

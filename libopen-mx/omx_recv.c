@@ -226,7 +226,7 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
   req->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
 
   if (!req->recv.unexpected) {
-    omx__queue_recv_large(ep, req);
+    omx__submit_pull(ep, req);
   } else {
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   }
@@ -529,7 +529,7 @@ omx_irecv(struct omx_endpoint *ep,
       if (req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE) {
 	/* it's a large message, queue the recv large */
 	req->recv.buffer = buffer;
-	omx__queue_recv_large(ep, req);
+	omx__submit_pull(ep, req);
 
       } else {
 	/* it's a tiny/small/medium, copy the data back to our buffer */

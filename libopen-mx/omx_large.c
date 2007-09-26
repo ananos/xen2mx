@@ -177,8 +177,8 @@ omx__deregister_region(struct omx_endpoint *ep,
  */
 
 omx_return_t
-omx__post_recv_large(struct omx_endpoint * ep,
-		     union omx_request * req)
+omx__post_pull(struct omx_endpoint * ep,
+	       union omx_request * req)
 {
   struct omx_cmd_send_pull pull_param;
   struct omx__large_region *region;
@@ -221,18 +221,18 @@ omx__post_recv_large(struct omx_endpoint * ep,
   region->user = req;
   req->recv.specific.large.local_region = region;
   req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
-  omx__enqueue_request(&ep->large_recv_req_q, req);
+  omx__enqueue_request(&ep->pull_req_q, req);
 
   return OMX_SUCCESS;
 }
 
 omx_return_t
-omx__queue_recv_large(struct omx_endpoint * ep,
-		      union omx_request * req)
+omx__submit_pull(struct omx_endpoint * ep,
+		 union omx_request * req)
 {
   omx_return_t ret;
 
-  ret = omx__post_recv_large(ep, req);
+  ret = omx__post_pull(ep, req);
   if (ret != OMX_SUCCESS) {
     omx__debug_printf("queueing large request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED;
@@ -264,7 +264,7 @@ omx__pull_done(struct omx_endpoint * ep,
   partner = req->generic.partner;
   /* FIXME: check length, update req->generic.status.xfer_length and status */
 
-  omx__dequeue_request(&ep->large_recv_req_q, req);
+  omx__dequeue_request(&ep->pull_req_q, req);
   omx__deregister_region(ep, req->recv.specific.large.local_region);
 
   notify_param.dest_addr = partner->board_addr;

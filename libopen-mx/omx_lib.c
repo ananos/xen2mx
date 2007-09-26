@@ -204,7 +204,7 @@ omx__progress(struct omx_endpoint * ep)
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
       omx__debug_printf("reposting queued recv large request %p\n", req);
-      ret = omx__post_recv_large(ep, req);
+      ret = omx__post_pull(ep, req);
       break;
     default:
       assert(0);
