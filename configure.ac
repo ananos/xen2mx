@@ -43,8 +43,13 @@ AC_ARG_WITH(linux,
 AC_ARG_WITH(linux-build,
 	[  --with-linux-build=<dir>	location of the Linux kernel build tree],
 	LINUX_BUILD="$withval")
+AC_ARG_WITH(linux-release,
+	[  --with-linux-release=<version>	release number of the target kernel],
+	LINUX_RELEASE="$withval",
+	LINUX_RELEASE=$(make kernelrelease -C ${LINUX_BUILD} | grep ^2.6.))
 AC_SUBST(LINUX_SRC)
 AC_SUBST(LINUX_BUILD)
+AC_SUBST(LINUX_RELEASE)
 
 # Find where the headers are (to avoid grepping at both places).
 # Do not check for autoconf.h or version.h since these are in
@@ -69,12 +74,10 @@ AC_MSG_RESULT(found in ${LINUX_BUILD})
 
 # Find the kernel release
 AC_MSG_CHECKING(kernel release)
-LINUX_RELEASE=$(make kernelrelease -C ${LINUX_BUILD} | grep ^2.6.)
 if test x${LINUX_RELEASE} = x; then
   AC_MSG_ERROR(not found)
 fi
 AC_MSG_RESULT(${LINUX_RELEASE})
-AC_SUBST(LINUX_RELEASE)
 
 # create the output file
 CHECKS_NAME=driver/linux/omx_checks.h
