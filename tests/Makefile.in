@@ -6,13 +6,14 @@ SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 TESTS	=	$(subst .o,,$(OBJS))
 
-CC	=	gcc
+CC	=	@CC@
+LD	=	@CC@ #FIXME
+MKDIR_P	=	@MKDIR_P@
+INSTALL	=	@INSTALL@
 
 CPPFLAGS	+=	-I@top_srcdir@/common
 CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2
-
-LD	=	gcc
 
 LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
 
@@ -44,9 +45,9 @@ installonly:
 	@echo "Installing tests to $(DESTDIR)$(bindir)/"
 	@if test ! -d $(DESTDIR)$(bindir); then \
 		echo "'$(DESTDIR)$(bindir)' didn't exist, creating it" ; \
-		mkdir -p $(DESTDIR)$(bindir) ; \
+		$(MKDIR_P) $(DESTDIR)$(bindir) ; \
 	fi
-	install -m 0755 $(TESTS) $(DESTDIR)$(bindir)/
+	$(INSTALL) -m 0755 $(TESTS) $(DESTDIR)$(bindir)/
 
 install: all installonly
 

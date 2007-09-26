@@ -2,7 +2,11 @@ exec_prefix	=	@exec_prefix@
 libdir	=	@libdir@
 prefix	=	@prefix@
 
-CC	=	gcc
+CC	=	@CC@
+SHARED_LD	=	@CC@ #FIXME? libtool?
+AR	=	ar #FIXME
+MKDIR_P	=	@MKDIR_P@
+INSTALL	=	@INSTALL@
 
 CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
 CPPFLAGS	+=	-I@top_srcdir@/common
@@ -46,10 +50,10 @@ include @top_srcdir@/depend.mk
 # build
 
 $(STATIC_LIB): $(STATIC_LIB_OBJS)
-	ar cr $@ $^
+	$(AR) cr $@ $^
 
 $(DYNAMIC_LIB): $(DYNAMIC_LIB_OBJS)
-	gcc --shared -o $@ $^
+	$(SHARED_LD) --shared -o $@ $^
 
 assertions: omx__assertions.o
 
@@ -68,9 +72,9 @@ installonly:
 	@echo "Installing libs to $(DESTDIR)$(libdir)/"
 	@if test ! -d $(DESTDIR)$(libdir); then \
 		echo "Directory didn't exist, creating it" ; \
-		mkdir -p $(DESTDIR)$(libdir) ; \
+		$(MKDIR_P) $(DESTDIR)$(libdir) ; \
 	fi
-	install -m 0644 $(STATIC_LIB) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)/
+	$(INSTALL) -m 0644 $(STATIC_LIB) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)/
 
 install: all installonly
 

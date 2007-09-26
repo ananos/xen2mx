@@ -7,14 +7,16 @@ SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 TOOLS	=	$(subst .o,,$(OBJS))
 
-CC	=	gcc
+CC	=	@CC@
+LD	=	@CC@ #FIXME
+MKDIR_P	=	@MKDIR_P@
+SED	=	@SED@
+INSTALL	=	@INSTALL@
 
 CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
 CPPFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libopen-mx
 CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2
-
-LD	=	gcc
 
 LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
 
@@ -46,17 +48,17 @@ installonly:
 	@echo "Installing tools to $(DESTDIR)$(bindir)/"
 	@if test ! -d $(DESTDIR)$(bindir); then \
 		echo "'$(DESTDIR)$(bindir)' didn't exist, creating it" ; \
-		mkdir -p $(DESTDIR)$(bindir) ; \
+		$(MKDIR_P) $(DESTDIR)$(bindir) ; \
 	fi
-	install -m 0755 $(TOOLS) $(DESTDIR)$(bindir)/
+	$(INSTALL) -m 0755 $(TOOLS) $(DESTDIR)$(bindir)/
 	
 	@echo "Installing init script to $(DESTDIR)$(sbindir)/"
 	@if test ! -d $(DESTDIR)$(sbindir); then \
 		echo "'$(DESTDIR)$(sbindir)' didn't exist, creating it" ; \
-		mkdir -p $(DESTDIR)$(sbindir) ; \
+		$(MKDIR_P) $(DESTDIR)$(sbindir) ; \
 	fi
-	sed -e 's£@omx_install_prefix@£$(prefix)£' < @srcdir@/omx_init.in > omx_init
-	install -m 0755 omx_init $(DESTDIR)$(sbindir)/
+	$(SED) -e 's£@omx_install_prefix@£$(prefix)£' < @srcdir@/omx_init.in > omx_init
+	$(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/
 
 install: all installonly
 

@@ -4,6 +4,9 @@ bindir	=	@bindir@
 includedir	=	@includedir@
 srcdir	=	@srcdir@
 
+MKDIR_P	=	@MKDIR_P@
+INSTALL	=	@INSTALL@
+
 .PHONY: all install clean distcleqn
 .PHONY: driver driver-installonly driver-install driver-clean driver-distclean
 .PHONY: lib lib-installonly lib-install lib-clean lib-distclean
@@ -20,13 +23,13 @@ other-installonly:
 	@echo "Installing headers to $(DESTDIR)$(includedir)"
 	@if test ! -d $(DESTDIR)$(includedir); then \
 		echo "$(DESTDIR)$(includedir) didn't exist, creating it" ; \
-		mkdir -p $(DESTDIR)$(includedir) ; \
+		$(MKDIR_P) $(DESTDIR)$(includedir) ; \
 	fi
-	install -m 0644 $(srcdir)/common/open-mx.h $(DESTDIR)$(includedir)
+	$(INSTALL) -m 0644 $(srcdir)/common/open-mx.h $(DESTDIR)$(includedir)
 	@if test @OMX_MX_API_COMPAT@ -eq 1; then \
 		echo "Installing MX API compatibility wrappers" ; \
-		install -m 0644 $(srcdir)/common/myriexpress.h $(DESTDIR)$(includedir) ; \
-		install -m 0644 $(srcdir)/common/mx_extensions.h $(DESTDIR)$(includedir) ; \
+		$(INSTALL) -m 0644 $(srcdir)/common/myriexpress.h $(DESTDIR)$(includedir) ; \
+		$(INSTALL) -m 0644 $(srcdir)/common/mx_extensions.h $(DESTDIR)$(includedir) ; \
 	fi
 
 other-install: other-installonly

@@ -24,6 +24,11 @@ AC_PREFIX_DEFAULT(/opt/open-mx)
 
 AC_PROG_CPP
 AC_PROG_CC
+AC_PROG_LD
+AC_PROG_MKDIR_P
+AC_PROG_SED
+AC_PROG_LN_S
+AC_PROG_INSTALL
 
 ########################
 # Kernel related config

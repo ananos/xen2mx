@@ -2,6 +2,10 @@ exec_prefix	=	@exec_prefix@
 prefix  =       @prefix@
 libdir	=	@libdir@
 
+MKDIR_P	=	@MKDIR_P@
+LN_S	=	@LN_S@
+INSTALL	=	@INSTALL@
+
 LINUX_DIR	=	@LINUX_BUILD@
 OPEN_MX_DIR	=	@abs_builddir@
 INSTALL_MOD_PATH	=	$(libdir)/modules/@LINUX_RELEASE@
@@ -16,29 +20,29 @@ MODULE_OBJS	=	open-mx.ko
 all:
 	@if test "@srcdir@" != "@builddir@" ; then \
 		echo Linking kernel module source files to local directory ; \
-		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || ln -sf $$file ; done ; \
+		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || $(LN_S) $$file ; done ; \
 	fi
 	@echo Running compile-time assertions
-	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) omx__assertions.o
+	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) omx__assertions.o
 	@echo Building kernel module
-	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR)
+	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR)
 
 installonly:
 	@echo "Installing kernel module to $(INSTALL_MOD_PATH)"
 	@if test ! -d $(DESTDIR)$(INSTALL_MOD_PATH); then \
 		echo "Directory didn't exist, creating it" ; \
-		mkdir -p $(DESTDIR)$(INSTALL_MOD_PATH) ; \
+		$(MKDIR_P) -p $(DESTDIR)$(INSTALL_MOD_PATH) ; \
 	fi
-	install -m 0644 $(MODULE_OBJS) $(DESTDIR)$(INSTALL_MOD_PATH)/
+	$(INSTALL) -m 0644 $(MODULE_OBJS) $(DESTDIR)$(INSTALL_MOD_PATH)/
 
 install: all installonly
 
 clean:
 	@echo Cleaning kernel module build
-	+make -C $(LINUX_DIR) M=$(OPEN_MX_DIR) clean
+	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) clean
 	@if test "@srcdir@" != "@builddir@" ; then \
 		echo Removing links to kernel module source files in local directory ; \
-		for file in $(wildcard @srcdir@/*.[ch]) ; do rm -f $$(basename $$file) ; done ; \
+		for file in $(wildcard @srcdir@/*.[ch]) ; do $(RM) $$(basename $$file) ; done ; \
 	fi
 
 # nothing special needed for distclean here
