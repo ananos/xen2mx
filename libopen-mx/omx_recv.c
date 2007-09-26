@@ -122,7 +122,6 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 
   memcpy(req->recv.buffer, msg->specific.tiny.data, msg_length);
 
-  req->generic.state &= ~OMX_REQUEST_STATE_PENDING;
   req->generic.state |= OMX_REQUEST_STATE_DONE;
   if (req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
@@ -140,7 +139,6 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 
   memcpy(req->recv.buffer, data, msg_length);
 
-  req->generic.state &= ~OMX_REQUEST_STATE_PENDING;
   req->generic.state |= OMX_REQUEST_STATE_DONE;
   if (req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
@@ -184,7 +182,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     if (!new)
       omx__dequeue_partner_request(partner, req);
 
-    req->generic.state &= ~(OMX_REQUEST_STATE_PENDING | OMX_REQUEST_STATE_RECV_PARTIAL);
+    req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
     req->generic.state |= OMX_REQUEST_STATE_DONE;
     if (req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
       omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
@@ -313,7 +311,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     omx__partner_to_addr(partner, &req->generic.status.addr);
     req->recv.seqnum = seqnum;
     req->generic.status.match_info = msg->match_info;
-    req->generic.state |= OMX_REQUEST_STATE_MATCHED|OMX_REQUEST_STATE_PENDING;
+    req->generic.state |= OMX_REQUEST_STATE_MATCHED;
 
     req->generic.status.msg_length = msg_length;
     xfer_length = req->recv.length < msg_length ? req->recv.length : msg_length;
@@ -343,7 +341,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     omx__partner_to_addr(partner, &req->generic.status.addr);
     req->recv.seqnum = seqnum;
     req->generic.status.match_info = msg->match_info;
-    req->generic.state = OMX_REQUEST_STATE_PENDING | OMX_REQUEST_STATE_RECV_UNEXPECTED;
+    req->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED;
 
     req->generic.status.msg_length = msg_length;
 
@@ -558,7 +556,7 @@ omx_irecv(struct omx_endpoint *ep,
     goto out;
   }
 
-  req->generic.state = OMX_REQUEST_STATE_PENDING;
+  req->generic.state = 0;
   req->generic.status.context = context;
   req->recv.buffer = buffer;
   req->recv.length = length;
