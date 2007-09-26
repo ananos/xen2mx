@@ -98,52 +98,76 @@ echo "" >> ${TMP_CHECKS_PATH}
 
 # skb_linearize had a gfp argument before 2.6.18
 #AC_MSG_CHECKING(skb_linearize gfp argument)
-#grep "skb_linearize *(.*, .* gfp)" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null \
-#  && echo "#define OMX_SKB_LINEARIZE_HAS_GFP 1" >> ${TMP_CHECKS_PATH} \
-#  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+#if grep "skb_linearize *(.*, .* gfp)" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
+#  echo "#define OMX_SKB_LINEARIZE_HAS_GFP 1" >> ${TMP_CHECKS_PATH}
+#  AC_MSG_RESULT(yes)
+#else
+#  AC_MSG_RESULT(no)
+#fi
 
 # netdev_alloc_skb deprecates dev_alloc_skb in 2.6.18
 AC_MSG_CHECKING(netdev_alloc_skb availability)
-grep "netdev_alloc_skb *(" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null \
-  && echo "#define OMX_HAVE_NETDEV_ALLOC_SKB 1" >> ${TMP_CHECKS_PATH} \
-  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+if grep "netdev_alloc_skb *(" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
+  echo "#define OMX_HAVE_NETDEV_ALLOC_SKB 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
 
 # remap_vmalloc_range and vmalloc_user appeared in 2.6.18
 AC_MSG_CHECKING(remap_vmalloc_range availability)
-grep "remap_vmalloc_range *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null \
-  && echo "#define OMX_HAVE_REMAP_VMALLOC_RANGE 1" >> ${TMP_CHECKS_PATH} \
-  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+if grep "remap_vmalloc_range *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null ; then
+  echo "#define OMX_HAVE_REMAP_VMALLOC_RANGE 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
 
 # miscdevice pointed to a class_device before 2.6.20
 AC_MSG_CHECKING(device type in miscdevice)
-sed -ne '/^struct miscdevice/,/^};/p' ${LINUX_HDR}/include/linux/miscdevice.h \
- | grep "struct class_device" > /dev/null \
- && echo "#define OMX_MISCDEV_HAVE_CLASS_DEVICE 1" >> ${TMP_CHECKS_PATH} \
- && AC_MSG_RESULT(struct class_device) || AC_MSG_RESULT(struct device)
+if sed -ne '/^struct miscdevice/,/^};/p' ${LINUX_HDR}/include/linux/miscdevice.h \
+   | grep "struct class_device" > /dev/null ; then
+  echo "#define OMX_MISCDEV_HAVE_CLASS_DEVICE 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(struct class_device)
+else
+  AC_MSG_RESULT(struct device)
+fi
 
 # dev_base list replaced with for_each_netdev added in 2.6.22
 AC_MSG_CHECKING(for_each_netdev availability)
-grep "for_each_netdev *(" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null \
-  && echo "#define OMX_HAVE_FOR_EACH_NETDEV 1" >> ${TMP_CHECKS_PATH} \
-  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+if grep "for_each_netdev *(" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
+  echo "#define OMX_HAVE_FOR_EACH_NETDEV 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
 
 # skb got mac/network/transport headers in 2.6.22
 AC_MSG_CHECKING(skb headers availability)
-grep "sk_buff_data_t.*mac_header;" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null \
-  && echo "#define OMX_HAVE_SKB_HEADERS 1" >> ${TMP_CHECKS_PATH} \
-  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+if grep "sk_buff_data_t.*mac_header;" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
+  echo "#define OMX_HAVE_SKB_HEADERS 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
 
 # skb_pad returned a new skb up to 2.6.17
 AC_MSG_CHECKING(skb_pad return type)
-grep "struct sk_buff *\*[[ 	]]*skb_pad(.*, .*);" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null \
-  && echo "#define OMX_SKB_PAD_RETURNS_NEW_SKB 1" >> ${TMP_CHECKS_PATH} \
-  && AC_MSG_RESULT(struct sk_buff *) || AC_MSG_RESULT(int)
+if grep "struct sk_buff *\*[[ 	]]*skb_pad(.*, .*);" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
+  echo "#define OMX_SKB_PAD_RETURNS_NEW_SKB 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(struct sk_buff *)
+else
+  AC_MSG_RESULT(int)
+fi
 
 # uts namespace arrived in 2.6.19
 AC_MSG_CHECKING(uts namespace availabilty)
-grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null \
-  && echo "#define OMX_HAVE_UTS_NAMESPACE 1" >> ${TMP_CHECKS_PATH} \
-  && AC_MSG_RESULT(yes) || AC_MSG_RESULT(no)
+if grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null ; then
+  echo "#define OMX_HAVE_UTS_NAMESPACE 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
 
 # add the footer
 echo "" >> ${TMP_CHECKS_PATH}
