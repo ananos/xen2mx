@@ -235,7 +235,7 @@ omx__submit_pull(struct omx_endpoint * ep,
   ret = omx__post_pull(ep, req);
   if (ret != OMX_SUCCESS) {
     omx__debug_printf("queueing large request %p\n", req);
-    req->generic.state = OMX_REQUEST_STATE_QUEUED;
+    req->generic.state |= OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
 
