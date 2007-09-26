@@ -64,7 +64,7 @@ AC_MSG_RESULT(found in ${LINUX_BUILD})
 
 # Find the kernel release
 AC_MSG_CHECKING(kernel release)
-LINUX_RELEASE=$(cd $LINUX_BUILD && make kernelrelease)
+LINUX_RELEASE=$(make kernelrelease -C ${LINUX_BUILD} | grep ^2.6.)
 if test x${LINUX_RELEASE} = x; then
   AC_MSG_ERROR(not found)
 fi
