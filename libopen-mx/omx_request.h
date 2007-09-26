@@ -42,7 +42,6 @@ omx__request_alloc(enum omx__request_type type)
 
   switch (type) {
   case OMX_REQUEST_TYPE_RECV:
-    req->recv.unexpected = 0;
     memset(&req->recv.specific, 0, sizeof(req->recv.specific));
     break;
   default:

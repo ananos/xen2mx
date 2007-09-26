@@ -164,6 +164,7 @@ enum omx__request_state {
   OMX_REQUEST_STATE_QUEUED = (1<<3),
   OMX_REQUEST_STATE_IN_DRIVER = (1<<4),
   OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
+  OMX_REQUEST_STATE_RECV_UNEXPECTED = (1<<6),
 };
 
 struct omx__generic_request {
@@ -199,7 +200,6 @@ union omx_request {
     uint64_t match_info;
     uint64_t match_mask;
     omx__seqnum_t seqnum;
-    int unexpected;
     union {
       struct {
 	uint32_t frags_received_mask;
