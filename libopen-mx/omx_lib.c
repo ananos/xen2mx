@@ -116,7 +116,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
     omx__dequeue_request(&ep->sent_req_q, req);
 
-    req->generic.state &= ~OMX_REQUEST_STATE_PENDING;
+    req->generic.state &= ~OMX_REQUEST_STATE_IN_DRIVER;
     req->generic.state |= OMX_REQUEST_STATE_DONE;
     omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
     break;

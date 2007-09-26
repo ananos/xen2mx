@@ -219,7 +219,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   }
 
  posted:
-  req->generic.state = OMX_REQUEST_STATE_PENDING;
+  req->generic.state = OMX_REQUEST_STATE_IN_DRIVER;
   omx__enqueue_request(&ep->sent_req_q, req);
 
   return OMX_SUCCESS;

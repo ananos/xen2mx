@@ -220,6 +220,7 @@ omx__post_recv_large(struct omx_endpoint * ep,
 
   region->user = req;
   req->recv.specific.large.local_region = region;
+  req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
   omx__enqueue_request(&ep->large_recv_req_q, req);
 
   return OMX_SUCCESS;
@@ -280,7 +281,7 @@ omx__pull_done(struct omx_endpoint * ep,
     goto out;
   }
 
-  req->generic.state &= ~OMX_REQUEST_STATE_PENDING;
+  req->generic.state &= ~OMX_REQUEST_STATE_IN_DRIVER;
   req->generic.state |= OMX_REQUEST_STATE_DONE;
   omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
 

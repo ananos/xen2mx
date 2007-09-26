@@ -162,6 +162,7 @@ enum omx__request_state {
   OMX_REQUEST_STATE_PENDING = (1<<1),
   OMX_REQUEST_STATE_MATCHED = (1<<2),
   OMX_REQUEST_STATE_QUEUED = (1<<3),
+  OMX_REQUEST_STATE_IN_DRIVER = (1<<4),
 };
 
 struct omx__generic_request {
