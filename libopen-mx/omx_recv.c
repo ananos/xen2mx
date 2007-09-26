@@ -184,7 +184,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     if (!new)
       omx__dequeue_partner_request(partner, req);
 
-    req->generic.state &= ~OMX_REQUEST_STATE_PENDING;
+    req->generic.state &= ~(OMX_REQUEST_STATE_PENDING | OMX_REQUEST_STATE_RECV_PARTIAL);
     req->generic.state |= OMX_REQUEST_STATE_DONE;
     if (req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
       omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
@@ -195,8 +195,10 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     /* more frags missing */
     omx__debug_printf("got one frag of seqnum %d\n", req->recv.seqnum);
 
-    if (new)
+    if (new) {
+      req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
       omx__enqueue_partner_request(partner, req);
+    }
 
     omx__enqueue_request(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED
 			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
@@ -224,6 +226,7 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
   req->recv.specific.large.target_rdma_offset = rdma_offset;
 
   req->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
+  req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
 
   if (req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED) {
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);

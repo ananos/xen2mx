@@ -135,7 +135,7 @@ struct omx_endpoint {
   /* non multiplexed queues */
   struct list_head queued_send_req_q; /* SEND req with state = QUEUED */
   struct list_head sent_req_q; /* SEND req with state = IN_DRIVER */
-  struct list_head multifrag_medium_recv_req_q; /* RECV req with state = PENDING */
+  struct list_head multifrag_medium_recv_req_q; /* RECV req with state = PARTIAL */
   struct list_head large_send_req_q; /* SEND req with state = NEED_REPLY */
   struct list_head pull_req_q; /* RECV_LARGE req with state = IN_DRIVER */
   struct list_head connect_req_q; /* CONNECT req with state = NEED_REPLY */
@@ -165,6 +165,7 @@ enum omx__request_state {
   OMX_REQUEST_STATE_IN_DRIVER = (1<<4),
   OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
   OMX_REQUEST_STATE_RECV_UNEXPECTED = (1<<6),
+  OMX_REQUEST_STATE_RECV_PARTIAL = (1<<7),
 };
 
 struct omx__generic_request {

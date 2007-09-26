@@ -281,7 +281,7 @@ omx__pull_done(struct omx_endpoint * ep,
     goto out;
   }
 
-  req->generic.state &= ~OMX_REQUEST_STATE_IN_DRIVER;
+  req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
   req->generic.state |= OMX_REQUEST_STATE_DONE;
   omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
 
