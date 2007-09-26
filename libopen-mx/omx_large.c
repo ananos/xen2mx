@@ -28,29 +28,27 @@
  * Region Map managment
  */
 
-#define OMX__LARGE_REGION_ID_MAX 256
-
 omx_return_t
 omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
 {
   struct omx__large_region_slot * array;
   int i;
 
-  array = malloc(OMX__LARGE_REGION_ID_MAX * sizeof(struct omx__large_region_slot));
+  array = malloc(OMX_USER_REGION_MAX * sizeof(struct omx__large_region_slot));
   if (!array)
     return OMX_NO_RESOURCES;
 
   ep->large_region_map.array = array;
 
-  for(i=0; i<OMX__LARGE_REGION_ID_MAX; i++) {
+  for(i=0; i<OMX_USER_REGION_MAX; i++) {
     array[i].next_free = i+1;
     array[i].region.id = i;
     array[i].region.user = NULL;
     /* FIXME: seqnum */
   }
-  array[OMX__LARGE_REGION_ID_MAX-1].next_free = -1;
+  array[OMX_USER_REGION_MAX-1].next_free = -1;
   ep->large_region_map.first_free = 0;
-  ep->large_region_map.nr_free = OMX__LARGE_REGION_ID_MAX;
+  ep->large_region_map.nr_free = OMX_USER_REGION_MAX;
 
   return OMX_SUCCESS;
 }

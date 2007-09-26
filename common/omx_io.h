@@ -61,7 +61,7 @@
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16
 
-#define OMX_USER_REGION_MAX	255
+#define OMX_USER_REGION_MAX	256
 typedef uint8_t omx_user_region_id_t;
 
 struct omx_cmd_region_segment {
