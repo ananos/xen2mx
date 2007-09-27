@@ -3,8 +3,8 @@ libdir	=	@libdir@
 prefix	=	@prefix@
 
 CC	=	@CC@
-SHARED_LD	=	@CC@ #FIXME? libtool?
-AR	=	ar #FIXME
+SHARED_LD	=	@CC@ #FIXME?
+AR	=	@AR@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 
