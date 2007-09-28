@@ -38,6 +38,7 @@
 #define MAX (1024*4096+1)
 #define MULTIPLIER 2
 #define INCREMENT 0
+#define UNIDIR 0
 
 static int
 next_length(int length, int multiplier, int increment)
@@ -67,6 +68,7 @@ usage(void)
   fprintf(stderr, " -I <n>\tchange the length increment [%d]\n", INCREMENT);
   fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
   fprintf(stderr, " -W <n>\tchange number of warmup iterations [%d]\n", WARMUP);
+  fprintf(stderr, " -U\tswitch to undirectional mode (receiver sends 0-byte replies)\n");
 }
 
 struct param {
@@ -76,6 +78,7 @@ struct param {
   uint32_t max;
   uint32_t multiplier;
   uint32_t increment;
+  uint8_t unidir;
 };
 
 int main(int argc, char *argv[])
@@ -93,6 +96,7 @@ int main(int argc, char *argv[])
   int max = MAX;
   int multiplier = MULTIPLIER;
   int increment = INCREMENT;
+  int unidir = UNIDIR;
   int slave = 0;
   char dest_name[OMX_HOSTNAMELEN_MAX];
   uint64_t dest_addr;
@@ -107,7 +111,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:sv")) != EOF)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:sUv")) != EOF)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -152,6 +156,9 @@ int main(int argc, char *argv[])
     case 'v':
       verbose = 1;
       break;
+    case 'U':
+      unidir = 1;
+      break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
       usage();
@@ -195,6 +202,7 @@ int main(int argc, char *argv[])
     param.max = max;
     param.multiplier = multiplier;
     param.increment = increment;
+    param.unidir = unidir;
     ret = omx_isend(ep, &param, sizeof(param),
 		    addr, 0x1234567887654321ULL,
 		    NULL, &req);
@@ -211,7 +219,8 @@ int main(int argc, char *argv[])
     }
 
     if (verbose)
-      printf("Sent parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d)\n", iter, warmup, min, max, multiplier, increment);
+      printf("Sent parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d, unidir=%d)\n",
+	     iter, warmup, min, max, multiplier, unidir, increment);
 
     /* wait for the ok message */
     ret = omx_irecv(ep, NULL, 0,
@@ -263,7 +272,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* wait for an incoming message */
-	ret = omx_irecv(ep, buffer, length,
+	ret = omx_irecv(ep, buffer, unidir ? 0 : length,
 			0, 0,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
@@ -287,8 +296,8 @@ int main(int argc, char *argv[])
       if (verbose)
 	printf("Total Duration: %lld us\n", us);
       printf("length % 9d:\t%.3f us\t%.2f MB/s\t %.2f MiB/s\n",
-	     length, ((float) us)/2./iter,
-	     2.*iter*length/us, 2.*iter*length/us/1.048576);
+	     length, ((float) us)/(2.-unidir)/iter,
+	     (2.-unidir)*iter*length/us, (2.-unidir)*iter*length/us/1.048576);
 
       free(buffer);
     }
@@ -335,6 +344,7 @@ int main(int argc, char *argv[])
     max = param.max;
     multiplier = param.multiplier;
     increment = param.increment;
+    unidir = param.unidir;
 
     ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
     if (ret != OMX_SUCCESS) {
@@ -348,7 +358,8 @@ int main(int argc, char *argv[])
       strcpy(dest_name, "<unknown peer>");
 
     if (verbose)
-      printf("Got parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d) from peer %s\n", iter, warmup, min, max, multiplier, increment, dest_name);
+      printf("Got parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d, unidir=%d) from peer %s\n",
+	     iter, warmup, min, max, multiplier, increment, unidir, dest_name);
 
     /* connect back, using iconnect for fun */
     ret = omx_iconnect(ep, board_addr, endpoint_index, 0x12345678,
@@ -414,7 +425,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* sending a message */
-	ret = omx_isend(ep, buffer, length,
+	ret = omx_isend(ep, buffer, unidir ? 0 : length,
 			addr, 0x1234567887654321ULL,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
