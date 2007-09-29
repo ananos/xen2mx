@@ -461,17 +461,17 @@ omx__process_recv(struct omx_endpoint *ep,
     /* process early packets in case they match the new expected seqnum */
     {
       struct omx__early_packet * early, * next;
-    omx__foreach_partner_early_packet_safe(partner, early, next) {
-      if (early->msg.seqnum <= partner->next_match_recv_seq) {
-	omx__dequeue_partner_early_packet(partner, early);
-	printf("processing early packet with seqnum %d\n",
-	       early->msg.seqnum);
-	ret = omx__process_partner_ordered_recv(ep, partner, early->msg.seqnum,
-						&early->msg, early->data, early->msg_length,
-						early->recv_func);
-	free(early);
+      omx__foreach_partner_early_packet_safe(partner, early, next) {
+	if (early->msg.seqnum <= partner->next_match_recv_seq) {
+	  omx__dequeue_partner_early_packet(partner, early);
+	  omx__debug_printf("processing early packet with seqnum %d\n",
+			    early->msg.seqnum);
+	  ret = omx__process_partner_ordered_recv(ep, partner, early->msg.seqnum,
+						  &early->msg, early->data, early->msg_length,
+						  early->recv_func);
+	  free(early);
+	}
       }
-    }
     }
 
   } else {
