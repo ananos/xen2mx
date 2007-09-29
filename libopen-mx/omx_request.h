@@ -34,7 +34,7 @@ omx__request_alloc(enum omx__request_type type)
   union omx_request * req;
 
   req = malloc(sizeof(*req));
-  if (!req)
+  if (unlikely(!req))
     return NULL;
 
   req->generic.type = type;
@@ -167,14 +167,15 @@ omx__enqueue_partner_early_packet(struct omx__partner *partner,
 {
   struct omx__early_packet * current, * next = NULL;
 
+  /* FIXME: should start from the end to optimize */
   list_for_each_entry(current, &partner->earlyq, partner_elt) {
-    if (current->msg.seqnum > seqnum) {
+    if (unlikely(current->msg.seqnum > seqnum)) {
       next = current;
       break;
     }
   }
 
-  if (next) {
+  if (unlikely(next)) {
     /* insert right before next */
     list_add_tail(&early->partner_elt, &next->partner_elt);
   } else {

@@ -56,7 +56,6 @@
 * /dev/open-mxd ?
 
 * optimizations
-  - likely/unlikely in the lib; for gcc only
   - single ioctl for multiple medium frags ?
   - no need to pad event to 64 ? no need to put the type at the end, but write it after the rest
   - optimize shared comms between boards from within the driver

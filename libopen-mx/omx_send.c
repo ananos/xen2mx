@@ -28,10 +28,10 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
 
-  if (req->generic.status.code == OMX_STATUS_SUCCESS) {
+  if (likely(req->generic.status.code == OMX_STATUS_SUCCESS)) {
     /* only set the status if it is not already set to an error */
-    if (status == OMX_STATUS_SUCCESS) {
-      if (req->generic.status.xfer_length < req->generic.status.msg_length)
+    if (likely(status == OMX_STATUS_SUCCESS)) {
+      if (unlikely(req->generic.status.xfer_length < req->generic.status.msg_length))
 	req->generic.status.code = OMX_STATUS_TRUNCATED;
     } else {
       req->generic.status.code = status;
@@ -54,7 +54,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   int err;
 
   req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_TINY);
-  if (!req) {
+  if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
     goto out;
   }
@@ -69,7 +69,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   memcpy(tiny_param.data, buffer, length);
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, &tiny_param);
-  if (err < 0) {
+  if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_TINY");
     goto out_with_req;
   }
@@ -108,7 +108,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   int err;
 
   req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_SMALL);
-  if (!req) {
+  if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
     goto out;
   }
@@ -123,7 +123,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   small_param.dest_src_peer_index = partner->dest_src_peer_index;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &small_param);
-  if (err < 0) {
+  if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_SMALL");
     goto out_with_req;
   }
@@ -169,8 +169,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   omx__debug_assert(frags <= 8); /* for the sendq_index array above */
   req->send.specific.medium.frags_pending_nr = frags;
 
-  if (ep->avail_exp_events < frags
-      || omx__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0)
+  if (unlikely(ep->avail_exp_events < frags
+	       || omx__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0))
     return OMX_NO_RESOURCES;
 
   medium_param.dest_addr = partner->board_addr;
@@ -193,11 +193,11 @@ omx__post_isend_medium(struct omx_endpoint *ep,
     memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, chunk);
 
     err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, &medium_param);
-    if (err < 0) {
+    if (unlikely(err < 0)) {
       int posted = i;
 
       ret = omx__errno_to_return("ioctl SEND_MEDIUM");
-      if (ret != OMX_NO_SYSTEM_RESOURCES) {
+      if (unlikely(ret != OMX_NO_SYSTEM_RESOURCES)) {
 	/* FIXME: error message, something went wrong in the driver */
 	assert(0);
       }
@@ -236,7 +236,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   omx_return_t ret;
 
   req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_MEDIUM);
-  if (!req) {
+  if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
     goto out;
   }
@@ -254,7 +254,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
   ret = omx__post_isend_medium(ep, req);
-  if (ret != OMX_SUCCESS) {
+  if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_printf("queueing medium request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
@@ -281,13 +281,13 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   int err;
 
   req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_LARGE);
-  if (!req) {
+  if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
     goto out;
   }
 
   ret = omx__register_region(ep, buffer, length, &region);
-  if (ret != OMX_SUCCESS)
+  if (unlikely(ret != OMX_SUCCESS))
     goto out_with_req;
 
   rndv_param.hdr.dest_addr = partner->board_addr;
@@ -304,7 +304,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   *(uint16_t *) &(rndv_param.data[6]) = region->offset;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, &rndv_param);
-  if (err < 0) {
+  if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_RNDV");
     goto out_with_reg;
   }
@@ -351,7 +351,7 @@ omx_isend(struct omx_endpoint *ep,
   omx__debug_printf("sending %ld bytes using seqnum %d\n",
 		    (unsigned long) length, seqnum);
 
-  if (length <= OMX_TINY_MAX) {
+  if (likely(length <= OMX_TINY_MAX)) {
     ret = omx__submit_isend_tiny(ep,
 				 buffer, length,
 				 partner, seqnum,
@@ -378,7 +378,7 @@ omx_isend(struct omx_endpoint *ep,
 
   }
 
-  if (ret == OMX_SUCCESS) {
+  if (likely(ret == OMX_SUCCESS)) {
     /* increase at the end, to avoid having to decrease back in case of error */
     partner->next_send_seq++;
   }
@@ -410,7 +410,7 @@ omx_issend(struct omx_endpoint *ep,
 				partner, seqnum,
 				match_info,
 				context, requestp);
-  if (ret == OMX_SUCCESS) {
+  if (likely(ret == OMX_SUCCESS)) {
     /* increase at the end, to avoid having to decrease back in case of error */
     partner->next_send_seq++;
   }

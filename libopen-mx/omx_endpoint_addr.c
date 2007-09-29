@@ -58,7 +58,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   uint32_t partner_index;
 
   partner = malloc(sizeof(*partner));
-  if (!partner)
+  if (unlikely(!partner))
     return OMX_NO_RESOURCES;
 
   partner->board_addr = board_addr;
@@ -93,7 +93,7 @@ omx__partner_lookup(struct omx_endpoint *ep,
   omx_return_t ret;
 
   ret = omx__peer_addr_to_index(board_addr, &peer_index);
-  if (ret != OMX_SUCCESS) {
+  if (unlikely(ret != OMX_SUCCESS)) {
     char board_addr_str[OMX_BOARD_ADDR_STRLEN];
     omx__board_addr_sprintf(board_addr_str, board_addr);
     fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
@@ -104,7 +104,7 @@ omx__partner_lookup(struct omx_endpoint *ep,
   partner_index = ((uint32_t) endpoint_index)
     + ((uint32_t) peer_index) * omx__globals.endpoint_max;
 
-  if (!ep->partners[partner_index])
+  if (unlikely(!ep->partners[partner_index]))
     return omx__partner_create(ep, peer_index, board_addr, endpoint_index, partnerp);
 
 

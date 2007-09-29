@@ -99,7 +99,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     ep->avail_exp_events++;
 
     /* message is not done */
-    if (--req->send.specific.medium.frags_pending_nr)
+    if (unlikely(--req->send.specific.medium.frags_pending_nr))
       break;
 
     omx__dequeue_request(&ep->sent_req_q, req);
@@ -135,7 +135,7 @@ omx__progress(struct omx_endpoint * ep)
 {
   union omx_request *req , *next;
 
-  if (ep->in_handler)
+  if (unlikely(ep->in_handler))
     return OMX_SUCCESS;
 
   /* process unexpected events first,
@@ -144,7 +144,7 @@ omx__progress(struct omx_endpoint * ep)
   while (1) {
     volatile union omx_evt * evt = ep->next_unexp_event;
 
-    if (evt->generic.type == OMX_EVT_NONE)
+    if (unlikely(evt->generic.type == OMX_EVT_NONE))
       break;
 
     omx__process_event(ep, (union omx_evt *) evt);
@@ -154,7 +154,7 @@ omx__progress(struct omx_endpoint * ep)
 
     /* next event */
     evt++;
-    if ((void *) evt >= ep->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE)
+    if (unlikely((void *) evt >= ep->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
       evt = ep->unexp_eventq;
     ep->next_unexp_event = (void *) evt;
   }
@@ -163,7 +163,7 @@ omx__progress(struct omx_endpoint * ep)
   while (1) {
     volatile union omx_evt * evt = ep->next_exp_event;
 
-    if (evt->generic.type == OMX_EVT_NONE)
+    if (unlikely(evt->generic.type == OMX_EVT_NONE))
       break;
 
     omx__process_event(ep, (union omx_evt *) evt);
@@ -173,7 +173,7 @@ omx__progress(struct omx_endpoint * ep)
 
     /* next event */
     evt++;
-    if ((void *) evt >= ep->exp_eventq + OMX_EXP_EVENTQ_SIZE)
+    if (unlikely((void *) evt >= ep->exp_eventq + OMX_EXP_EVENTQ_SIZE))
       evt = ep->exp_eventq;
     ep->next_exp_event = (void *) evt;
   }
@@ -198,7 +198,7 @@ omx__progress(struct omx_endpoint * ep)
       assert(0);
     }
 
-    if (ret != OMX_SUCCESS) {
+    if (unlikely(ret != OMX_SUCCESS)) {
       /* put back at the head of the queue */
       omx__debug_printf("requeueing medium request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_QUEUED;
@@ -230,7 +230,7 @@ omx_progress(omx_endpoint_t ep)
 omx_return_t
 omx_disable_progression(struct omx_endpoint *ep)
 {
-  if (ep->in_handler)
+  if (unlikely(ep->in_handler))
     return OMX_NOT_SUPPORTED_IN_HANDLER;
 
   ep->in_handler = 1;

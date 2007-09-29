@@ -233,7 +233,7 @@ omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
 
   omx__debug_assert((ep->sendq_map.first_free == -1) == (ep->sendq_map.nr_free == 0));
 
-  if (ep->sendq_map.nr_free < nr)
+  if (unlikely(ep->sendq_map.nr_free < nr))
     return -1;
 
   index = ep->sendq_map.first_free;

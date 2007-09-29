@@ -30,10 +30,10 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
 
-  if (req->generic.status.code == OMX_STATUS_SUCCESS) {
+  if (likely(req->generic.status.code == OMX_STATUS_SUCCESS)) {
     /* only set the status if it is not already set to an error */
-    if (status == OMX_STATUS_SUCCESS) {
-      if (req->generic.status.xfer_length < req->generic.status.msg_length)
+    if (likely(status == OMX_STATUS_SUCCESS)) {
+      if (unlikely(req->generic.status.xfer_length < req->generic.status.msg_length))
 	req->generic.status.code = OMX_STATUS_TRUNCATED;
     } else {
       req->generic.status.code = status;
@@ -55,7 +55,7 @@ omx__postpone_early_packet(struct omx__partner * partner,
   struct omx__early_packet * early;
 
   early = malloc(sizeof(*early));
-  if (!early)
+  if (unlikely(!early))
     return OMX_NO_RESOURCES;
 
   /* copy the whole event, the callback, and the data */
@@ -86,7 +86,7 @@ omx__postpone_early_packet(struct omx__partner * partner,
   case OMX_EVT_RECV_MEDIUM: {
     uint16_t frag_length = msg->specific.medium.frag_length;
     char * early_data = malloc(frag_length);
-    if (!early_data) {
+    if (unlikely(!early_data)) {
       free(early);
       return OMX_NO_RESOURCES;
     }
@@ -123,7 +123,7 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
   memcpy(req->recv.buffer, msg->specific.tiny.data, msg_length);
 
   req->generic.state |= OMX_REQUEST_STATE_DONE;
-  if (req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
+  if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   else
     omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
@@ -140,7 +140,7 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
   memcpy(req->recv.buffer, data, msg_length);
 
   req->generic.state |= OMX_REQUEST_STATE_DONE;
-  if (req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
+  if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   else
     omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
@@ -163,28 +163,28 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 		    (unsigned) frag_seqnum, (unsigned) frag_pipeline, (unsigned) chunk,
 		    (unsigned) offset, (unsigned) msg_length);
 
-  if (req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum))
+  if (unlikely(req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum)))
     /* already received this frag */
     return;
 
   /* take care of the data chunk */
-  if (offset + chunk > msg_length)
+  if (unlikely(offset + chunk > msg_length))
     chunk = msg_length - offset;
   memcpy(req->recv.buffer + offset, data, chunk);
   req->recv.specific.medium.frags_received_mask |= 1 << frag_seqnum;
   req->recv.specific.medium.accumulated_length += chunk;
 
-  if (req->recv.specific.medium.accumulated_length == msg_length) {
+  if (likely(req->recv.specific.medium.accumulated_length == msg_length)) {
     /* was the last frag */
     omx__debug_printf("got last frag of seqnum %d\n", req->recv.seqnum);
 
     /* if there were previous frags, remove from the partialq */
-    if (!new)
+    if (unlikely(!new))
       omx__dequeue_partner_request(partner, req);
 
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
     req->generic.state |= OMX_REQUEST_STATE_DONE;
-    if (req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
       omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
     else
       omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
@@ -193,12 +193,12 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     /* more frags missing */
     omx__debug_printf("got one frag of seqnum %d\n", req->recv.seqnum);
 
-    if (new) {
+    if (unlikely(new)) {
       req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
       omx__enqueue_partner_request(partner, req);
     }
 
-    omx__enqueue_request(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED
+    omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
 			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			 req);
   }
@@ -226,7 +226,7 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
   req->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
   req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
 
-  if (req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED) {
+  if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)) {
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   } else {
     omx__submit_pull(ep, req);
@@ -247,7 +247,7 @@ omx__match_recv(struct omx_endpoint *ep,
   union omx_request * req;
 
   omx__foreach_request(&ep->ctxid[ctxid].recv_req_q, req)
-    if (req->recv.match_info == (req->recv.match_mask & match_info)) {
+    if (likely(req->recv.match_info == (req->recv.match_mask & match_info))) {
       /* matched a posted recv */
       omx__dequeue_request(&ep->ctxid[ctxid].recv_req_q, req);
       *reqp = req;
@@ -269,17 +269,17 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
   /* try to match */
   ret = omx__match_recv(ep, msg, &req);
-  if (ret != OMX_SUCCESS)
+  if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
   /* if no match, try the unexpected handler */
-  if (handler && !req) {
+  if (unlikely(handler && !req)) {
     void * context = ep->unexp_handler_context;
     omx_unexp_handler_action_t ret;
     omx_endpoint_addr_t source;
     void * data_if_available = NULL;
 
-    if (msg->type == OMX_EVT_RECV_TINY)
+    if (likely(msg->type == OMX_EVT_RECV_TINY))
       data_if_available = msg->specific.tiny.data;
     else if (msg->type == OMX_EVT_RECV_SMALL)
       data_if_available = data;
@@ -299,11 +299,11 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     assert(ret == OMX_RECV_CONTINUE);
     /* the unexp has been noticed check if a recv has been posted */
     ret = omx__match_recv(ep, msg, &req);
-    if (ret != OMX_SUCCESS)
+    if (unlikely(ret != OMX_SUCCESS))
       return ret;
   }
 
-  if (req) {
+  if (likely(req)) {
     /* expected, or matched through the handler */
     uint32_t xfer_length;
 
@@ -323,13 +323,13 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     /* unexpected, even after the handler */
 
     req = omx__request_alloc(OMX_REQUEST_TYPE_RECV);
-    if (!req)
+    if (unlikely(!req))
       return OMX_NO_RESOURCES;
 
-    if (msg->type != OMX_EVT_RECV_RNDV) {
+    if (likely(msg->type != OMX_EVT_RECV_RNDV)) {
       /* alloc unexpected buffer, except for rndv since they have no data */
       void *unexp_buffer = malloc(msg_length);
-      if (!unexp_buffer) {
+      if (unlikely(!unexp_buffer)) {
 	fprintf(stderr, "Failed to allocate buffer for unexpected messages, dropping\n");
 	omx__request_free(req);
 	return OMX_NO_RESOURCES;
@@ -379,7 +379,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
   union omx_request * req = NULL;
 
   omx__foreach_partner_request(partner, req) {
-    if (req->recv.seqnum == seqnum) {
+    if (likely(req->recv.seqnum == seqnum)) {
       omx__dequeue_request(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED
 			   ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			   req);
@@ -411,14 +411,14 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 {
   omx_return_t ret;
 
-  if (seqnum == partner->next_match_recv_seq) {
+  if (likely(seqnum == partner->next_match_recv_seq)) {
     /* expected seqnum, do the matching */
     ret = omx__try_match_next_recv(ep, partner, seqnum,
 				   msg, data, msg_length,
 				   recv_func);
 
-  } else if (msg->type == OMX_EVT_RECV_MEDIUM
-	     && seqnum >= partner->next_frag_recv_seq) {
+  } else if (likely(msg->type == OMX_EVT_RECV_MEDIUM
+		    && seqnum >= partner->next_frag_recv_seq)) {
     /* fragment of already matched but incomplete medium message */
     ret = omx__continue_partial_request(ep, partner, seqnum,
 					msg, data, msg_length);
@@ -442,13 +442,13 @@ omx__process_recv(struct omx_endpoint *ep,
 
   ret = omx__partner_recv_lookup(ep, msg->dest_src_peer_index, msg->src_endpoint,
 				 &partner);
-  if (ret != OMX_SUCCESS)
+  if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
   omx__debug_printf("got seqnum %d, expected match at %d, frag at %d\n",
 		    seqnum, partner->next_match_recv_seq, partner->next_frag_recv_seq);
 
-  if (seqnum <= partner->next_match_recv_seq) {
+  if (likely(seqnum <= partner->next_match_recv_seq)) {
     /* either the new expected seqnum (to match)
      * or a incomplete previous multi-fragment medium messages (to accumulate)
      * or an old obsolete duplicate packet (to drop)
@@ -499,19 +499,19 @@ omx_irecv(struct omx_endpoint *ep,
   omx_return_t ret;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
 
-  if (match_info & ~match_mask) {
+  if (unlikely(match_info & ~match_mask)) {
     ret = OMX_BAD_MATCH_MASK;
     goto out;
   }
 
   /* check that there's no wildcard in the context id range */
-  if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
+  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }
 
   omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
-    if ((req->generic.status.match_info & match_mask) == match_info) {
+    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
       /* matched an unexpected */
       omx__dequeue_request(&ep->ctxid[ctxid].unexp_req_q, req);
 
@@ -526,7 +526,7 @@ omx_irecv(struct omx_endpoint *ep,
 
       req->generic.status.context = context;
 
-      if (req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE) {
+      if (unlikely(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE)) {
 	/* it's a large message, queue the recv large */
 	req->recv.buffer = buffer;
 	omx__submit_pull(ep, req);
@@ -536,7 +536,7 @@ omx_irecv(struct omx_endpoint *ep,
 	memcpy(buffer, req->recv.buffer, length);
 	free(req->recv.buffer);
 
-	if (req->generic.state & OMX_REQUEST_STATE_DONE) {
+	if (likely(req->generic.state & OMX_REQUEST_STATE_DONE)) {
 	  omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
 	} else {
 	  omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
@@ -551,7 +551,7 @@ omx_irecv(struct omx_endpoint *ep,
 
   /* allocate a new recv request */
   req = omx__request_alloc(OMX_REQUEST_TYPE_RECV);
-  if (!req) {
+  if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
     goto out;
   }

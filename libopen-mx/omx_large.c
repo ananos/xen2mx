@@ -71,7 +71,7 @@ omx__endpoint_large_region_alloc(struct omx_endpoint * ep,
 	 == (ep->large_region_map.nr_free == 0));
 
   index = ep->large_region_map.first_free;
-  if (index == -1)
+  if (unlikely(index == -1))
     return OMX_NO_RESOURCES;
 
   array = ep->large_region_map.array;
@@ -122,7 +122,7 @@ omx__register_region(struct omx_endpoint *ep,
   int err;
 
   ret = omx__endpoint_large_region_alloc(ep, regionp);
-  if (ret != OMX_SUCCESS)
+  if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
   offset = ((uintptr_t) buffer) & 4095;
@@ -139,7 +139,7 @@ omx__register_region(struct omx_endpoint *ep,
   reg.segments = (uintptr_t) &seg;
 
   err = ioctl(ep->fd, OMX_CMD_REGISTER_REGION, &reg);
-  if (err < 0) {
+  if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl REGISTER");
     goto out_with_region;
   }
@@ -162,7 +162,7 @@ omx__deregister_region(struct omx_endpoint *ep,
   dereg.id = region->id;
 
   err = ioctl(ep->fd, OMX_CMD_DEREGISTER_REGION, &dereg);
-  if (err < 0)
+  if (unlikely(err < 0))
     return omx__errno_to_return("ioctl REGISTER");
 
   omx__endpoint_large_region_free(ep, region);
@@ -185,11 +185,11 @@ omx__post_pull(struct omx_endpoint * ep,
   omx_return_t ret;
   int err;
 
-  if (ep->avail_exp_events < 1)
+  if (unlikely(ep->avail_exp_events < 1))
     return OMX_NO_RESOURCES;
 
   ret = omx__register_region(ep, req->recv.buffer, xfer_length, &region);
-  if (ret != OMX_SUCCESS)
+  if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
   pull_param.dest_addr = partner->board_addr;
@@ -204,7 +204,7 @@ omx__post_pull(struct omx_endpoint * ep,
   pull_param.remote_offset = req->recv.specific.large.target_rdma_offset;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_PULL, &pull_param);
-  if (err < 0) {
+  if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_PULL");
     if (ret != OMX_NO_SYSTEM_RESOURCES) {
       /* FIXME: error message, something went wrong in the driver */
@@ -231,7 +231,7 @@ omx__submit_pull(struct omx_endpoint * ep,
   omx_return_t ret;
 
   ret = omx__post_pull(ep, req);
-  if (ret != OMX_SUCCESS) {
+  if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_printf("queueing large request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
@@ -276,7 +276,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   notify_param.puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, &notify_param);
-  if (err < 0) {
+  if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_NOTIFY");
     goto out;
   }

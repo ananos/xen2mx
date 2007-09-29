@@ -29,10 +29,10 @@ omx_test(struct omx_endpoint *ep, union omx_request **requestp,
   omx_return_t ret = OMX_SUCCESS;
 
   ret = omx__progress(ep);
-  if (ret != OMX_SUCCESS)
+  if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
-  if (!(req->generic.state & OMX_REQUEST_STATE_DONE)) {
+  if (unlikely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
     *result = 0;
   } else {
     uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
@@ -56,11 +56,14 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   uint32_t ctxid;
   omx_return_t ret = OMX_SUCCESS;
 
-  while (!(req->generic.state & OMX_REQUEST_STATE_DONE)) {
+  while (1) {
     ret = omx__progress(ep);
-    if (ret != OMX_SUCCESS)
+    if (unlikely(ret != OMX_SUCCESS))
       goto out;
     /* FIXME: sleep */
+
+    if (likely(req->generic.state & OMX_REQUEST_STATE_DONE))
+      break;
   }
 
   ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
@@ -84,23 +87,23 @@ omx_test_any(struct omx_endpoint *ep,
   union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
 
-  if (match_info & ~match_mask) {
+  if (unlikely(match_info & ~match_mask)) {
     ret = OMX_BAD_MATCH_MASK;
     goto out;
   }
 
   /* check that there's no wildcard in the context id range */
-  if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
+  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }
 
   ret = omx__progress(ep);
-  if (ret != OMX_SUCCESS)
+  if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
   omx__foreach_request(&ep->ctxid[ctxid].done_req_q, req) {
-    if ((req->generic.status.match_info & match_mask) == match_info) {
+    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
       omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
       memcpy(status, &req->generic.status, sizeof(*status));
       omx__request_free(req);
@@ -123,25 +126,25 @@ omx_wait_any(struct omx_endpoint *ep,
   union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
 
-  if (match_info & ~match_mask) {
+  if (unlikely(match_info & ~match_mask)) {
     ret = OMX_BAD_MATCH_MASK;
     goto out;
   }
 
   /* check that there's no wildcard in the context id range */
-  if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
+  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }
 
   while (1) {
     ret = omx__progress(ep);
-    if (ret != OMX_SUCCESS)
+    if (unlikely(ret != OMX_SUCCESS))
       goto out;
     /* FIXME: sleep */
 
     omx__foreach_request(&ep->ctxid[ctxid].done_req_q, req) {
-      if ((req->generic.status.match_info & match_mask) == match_info) {
+      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
 	omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
 	memcpy(status, &req->generic.status, sizeof(*status));
 	omx__request_free(req);
@@ -162,16 +165,16 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
 {
   omx_return_t ret = OMX_SUCCESS;
 
-  if (ep->ctxid_bits) {
+  if (unlikely(ep->ctxid_bits)) {
     ret = OMX_NOT_SUPPORTED_WITH_CONTEXT_ID;
     goto out;
   }
 
   ret = omx__progress(ep);
-  if (ret != OMX_SUCCESS)
+  if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
-  if (omx__queue_empty(&ep->ctxid[0].done_req_q)) {
+  if (unlikely(omx__queue_empty(&ep->ctxid[0].done_req_q))) {
     *result = 0;
   } else {
     *requestp = omx__queue_first_request(&ep->ctxid[0].done_req_q);
@@ -188,16 +191,19 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 {
   omx_return_t ret = OMX_SUCCESS;
 
-  if (ep->ctxid_bits) {
+  if (unlikely(ep->ctxid_bits)) {
     ret = OMX_NOT_SUPPORTED_WITH_CONTEXT_ID;
     goto out;
   }
 
-  while (omx__queue_empty(&ep->ctxid[0].done_req_q)) {
+  while (1) {
     ret = omx__progress(ep);
-    if (ret != OMX_SUCCESS)
+    if (unlikely(ret != OMX_SUCCESS))
       goto out;
     /* FIXME: sleep */
+
+    if (likely(!omx__queue_empty(&ep->ctxid[0].done_req_q)))
+      break;
   }
 
   *requestp = omx__queue_first_request(&ep->ctxid[0].done_req_q);
@@ -215,23 +221,23 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
   union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
 
-  if (match_info & ~match_mask) {
+  if (unlikely(match_info & ~match_mask)) {
     ret = OMX_BAD_MATCH_MASK;
     goto out;
   }
 
   /* check that there's no wildcard in the context id range */
-  if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
+  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }
 
   ret = omx__progress(ep);
-  if (ret != OMX_SUCCESS)
+  if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
   omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
-    if ((req->generic.status.match_info & match_mask) == match_info) {
+    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
       memcpy(status, &req->generic.status, sizeof(*status));
       *result = 1;
       goto out;
@@ -251,25 +257,25 @@ omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
   union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
 
-  if (match_info & ~match_mask) {
+  if (unlikely(match_info & ~match_mask)) {
     ret = OMX_BAD_MATCH_MASK;
     goto out;
   }
 
   /* check that there's no wildcard in the context id range */
-  if (!CHECK_MATCHING_WITH_CTXID(ep, match_mask)) {
+  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }
 
   while (1) {
     ret = omx__progress(ep);
-    if (ret != OMX_SUCCESS)
+    if (unlikely(ret != OMX_SUCCESS))
       goto out;
     /* FIXME: sleep */
 
     omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
-      if ((req->generic.status.match_info & match_mask) == match_info) {
+      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
 	memcpy(status, &req->generic.status, sizeof(*status));
 	*result = 1;
 	goto out;
