@@ -1,27 +1,43 @@
+Contents:
+  I. Quick Start
+ II. Building and Installing
+   a. Basic Install
+   b. Kernel Module
+   c. Caveats
+III. Kernel Module and /dev/open-mx Device Node
+ IV. Attaching interfaces
+  V. Peer Table File
+
+
 +----------------+
 | I. Quick Start |
 +----------------+
 
 Assuming you want to connect 2 nodes using their 'eth2' interface:
 
-a. Look for eth2 MAC addresses in /sbin/ifconfig -a on each node.
+a. Build and install Open-MX in /opt/open-mx
+   $ ./configure
+   $ make
+   $ make install
+
+b. Look for eth2 MAC addresses in /sbin/ifconfig -a on each node.
    and insert them in a file such as this one:
      $ cat /path/to/the/peers/file
      01:02:03:04:05:06 node1:0
      a0:b0:c0:d0:e0:f0 node2:0
 
-b. Make Open-MX use this file:
+c. Make Open-MX use this file:
      $ export OMX_PEERS_FILENAME=/path/to/the/peers/file
    See Section IV for details.
 
-c. Load the open-mx kernel module and tell it which interface to use
+d. Load the open-mx kernel module and tell it which interface to use
      $ /path/to/mx/sbin/omx_init omx_ifnames=eth2
    See section II and III for details.
 
-d. Make sure both interfaces are up
+e. Make sure both interfaces are up
      $ ifconfig eth2 up
 
-e. Run omx_info to see which interfaces are attached and which
+f. Run omx_info to see which interfaces are attached and which
    peers are accessible:
      $ omx_info
      node1:0 (board #0 name eth2 addr 01:02:03:04:05:06)
@@ -29,7 +45,7 @@ e. Run omx_info to see which interfaces are attached and which
      1) 01:02:03:04:05:06 node1:0
      2) a0:b0:c0:d0:e0:f0 node2:0
 
-f. Use omx_pingpong to test actual communications, on the first node:
+g. Use omx_pingpong to test actual communications, on the first node:
      node1 $ omx_pingpong
      Successfully attached endpoint #0 on board #0 (hostname 'node1:0', name 'eth2', addr 01:02:03:04:05:06)
      Starting receiver...
@@ -43,9 +59,63 @@ f. Use omx_pingpong to test actual communications, on the first node:
      [...]
      length   4194304:       8388.608 us   500.00 MB/s       476.83 MiB/s
 
-+-------------------+
-| II. Kernel Module |
-+-------------------+
+
++-----------------------------+
+| II. Building and Installing |
++-----------------------------+
+
++---------------------
+| II.a. Basic Install
+
+    $ ./configure
+    $ make
+    $ make install
+
+By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
+the configure line to change this (or set prefix on the 'make install'
+command line).
+
++---------------------
+| II.b. Kernel Module
+
+Open-MX is composed of a user-space library with passes communication
+commands to a kernel module. This module 'open-mx' will be installed
+in lib/modules/<kernel>/ with the Open-MX installation, i.e.
+/opt/open-mx/lib/modules/<kernel>/ by default.
+
+During configure, Open-MX checks the running kernel with 'uname -r' and
+builds the open-mx module against it, using its headers and build tree
+in /lib/modules/`uname -r`/{source,build}.
+
+To build for another kernel, use
+$ ./configure --with-linux=/path/to/kernel/headers/
+To build using another kernel build tree, use
+$ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
+
+The kernel module must be compiled with the same compiler than the
+kernel has been. To change the compiler for the kernel module, pass
+KCC=<othercompiler> on the configure or make command line.
+
++---------------
+| II.c. Caveats
+
+II.c.1. Installing as root over NFS
+
+Most NFS configurations do not allow root on the client to operate
+as root on the server's files. When running 'make install' as root,
+you might experience problems because some Makefiles (especially
+the kernel driver's one) might modify some files before actually
+installing anything.
+
+To work around this, assuming everything has been built as non-root
+before, you may use (as root)
+$ make installonly
+so that it really only installs things without checking whether the
+build is up-to-date.
+
++-------------------------------------------------+
+| III. Kernel Module and /dev/open-mx Device Node |
++-------------------------------------------------+
 
 The 'open-mx' kernel module should be loaded prior to any user-space
 usage of Open-MX. If not loaded, a "No device" error will be returned.
@@ -55,17 +125,17 @@ $ /path/to/mx/sbin/omx_init omx_ifnames=eth2
 This module works at least on Linux kernels 2.6.17 to 2.6.23 on i386
 and x86_64 architectures.
 
-Once the module is loaded, udev creates a /dev/open-mx file which is 
+Once the module is loaded, udev creates a /dev/open-mx file which is
 used by user-space libraries and programs. Additionally, the Open-MX
 init script will create the device node in case udev was not running.
 The --with-device configure option may be used to change the name of
-this device file, its group or mode. Write access to this file is 
+this device file, its group or mode. Write access to this file is
 required when using Open-MX.
 
 
-+---------------------------+
-| III. Attaching interfaces |
-+---------------------------+
++--------------------------+
+| IV. Attaching interfaces |
++--------------------------+
 
 By default, all existing network interfaces in the system will be
 attached to Open-MX (except those above 8 by default). To change
@@ -85,9 +155,10 @@ Note that these interfaces must be 'up' in order to work.
 $ ifconfig eth2 up
 However, having an IP address is not required.
 
-+---------------------+
-| IV. Peer Table File |
-+---------------------+
+
++--------------------+
+| V. Peer Table File |
++--------------------+
 
 A file listing peers must be provided, either in the current directory,
 or at a location given in the environment variable OMX_PEERS_FILENAME
