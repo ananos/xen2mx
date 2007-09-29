@@ -43,6 +43,18 @@
 #define omx__debug_printf(args...) /* nothing */
 #endif
 
+/*************
+ * Optimizing
+ */
+
+#if defined(__GNUC__) && !defined(__INTEL_COMPILER) && (__GNUC__ > 2 || __GNUC__ == 2 && __GNUC_MINOR__ >= 96)
+#define likely(x)	__builtin_expect(!!(x), 1)
+#define unlikely(x)	__builtin_expect(!!(x), 0)
+#else
+#define likely(x)	(x)
+#define unlikely(x)	(x)
+#endif
+
 /*****************
  * Various macros
  */
