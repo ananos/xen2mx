@@ -55,12 +55,13 @@ $ /path/to/mx/sbin/omx_init omx_ifnames=eth2
 This module works at least on Linux kernels 2.6.17 to 2.6.23 on i386
 and x86_64 architectures.
 
-Once loaded, it creates a /dev/open-mx file which is used by user-space
-libraries and programs. Write access to this file is required when using
-Open-MX, so you might want to adjust your udev configuration to change
-the default mode of this file, for instance by adding the following line
-in a udev rules file:
-KERNEL=="open-mx", MODE="0666", GROUP="users"
+Once the module is loaded, udev creates a /dev/open-mx file which is 
+used by user-space libraries and programs. Additionally, the Open-MX
+init script will create the device node in case udev was not running.
+The --with-device configure option may be used to change the name of
+this device file, its group or mode. Write access to this file is 
+required when using Open-MX.
+
 
 +---------------------------+
 | III. Attaching interfaces |

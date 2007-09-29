@@ -14,6 +14,9 @@
 
 # Note that this is replaced by make install, not configure!
 OMX_PREFIX=@omx_install_prefix@
+DEVICE=@omx_device_name@
+GROUP=@omx_device_group@
+MODE=@omx_device_mode@
 
 LINUX_RELEASE=$(uname -r)
 
@@ -31,6 +34,7 @@ unload_omx() {
         echo "Removing Open-MX driver"
         /sbin/rmmod open-mx
     fi
+    rm -f "$DEVICE"
 }
 
 # Load the Open-MX module
@@ -39,6 +43,23 @@ load_omx() {
     params=" $OMX_MODULE_PARAMS $*"
 
     /sbin/insmod ${OMX_PREFIX}/lib/modules/${LINUX_RELEASE}/open-mx.ko $params
+
+    if ! test -e $DEVICE; then
+	echo "Creating '$DEVICE'"
+	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
+	minor=$(sed -nr -e 's/ *([0-9]+) *open-mx/\1/p' /proc/misc)
+	if test -z "$major" -o -z "$minor"; then
+	    echo "[ERROR] Failed to retrieve device major/minor numbers"
+	else
+	    mknod "$DEVICE" c "$major" "$minor" \
+		|| echo "[ERROR] Failed to create device node"
+	fi
+    fi
+    echo "Setting group '$GROUP' and mode '$MODE' or device '$DEVICE'"
+    chgrp "$GROUP" "$DEVICE" \
+	|| echo "[ERROR] Failed to set mode"
+    chmod "$MODE" "$DEVICE" \
+	|| echo "[ERROR] Failed to set group"
 }
 
 cmd="$1"

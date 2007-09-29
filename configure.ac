@@ -260,6 +260,28 @@ else
   AC_DEFINE_UNQUOTED(ETH_P_OMX, $ethertype, [Define to change the Ethertype])
 fi
 
+AC_ARG_WITH(device, [  --with-device=<path>:<group>:<mode>	change device node name, group and/or mode],
+	    device_attrs=$withval, device_attrs="")
+DEVICE_NAME=/dev/open-mx
+device_name=$(echo $device_attrs | cut -d: -f1)
+if ! test -z "$device_name"; then
+  DEVICE_NAME=$device_name
+  AC_DEFINE_UNQUOTED(OMX_DEVNAME, "$device_name", [Define to change the device node name])
+fi
+AC_SUBST(DEVICE_NAME)
+DEVICE_GROUP=root
+device_group=$(echo $device_attrs | cut -d: -f2)
+if ! test -z "$device_group"; then
+  DEVICE_GROUP=$device_group
+fi
+AC_SUBST(DEVICE_GROUP)
+DEVICE_MODE=0666
+device_mode=$(echo $device_attrs | cut -d: -f3)
+if ! test -z "$device_mode"; then
+  DEVICE_MODE=$device_mode
+fi
+AC_SUBST(DEVICE_MODE)
+
 ##########
 # Globals
 

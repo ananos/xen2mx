@@ -57,7 +57,11 @@ installonly:
 		echo "'$(DESTDIR)$(sbindir)' didn't exist, creating it" ; \
 		$(MKDIR_P) $(DESTDIR)$(sbindir) ; \
 	fi
-	$(SED) -e 's£@omx_install_prefix@£$(prefix)£' < @srcdir@/omx_init.in > omx_init
+	$(SED)	-e 's£@omx_install_prefix@£$(prefix)£' \
+		-e 's£@omx_device_name@£@DEVICE_NAME@£' \
+		-e 's£@omx_device_group@£@DEVICE_GROUP@£' \
+		-e 's£@omx_device_mode@£@DEVICE_MODE@£' \
+		< @srcdir@/omx_init.in > omx_init
 	$(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/
 
 install: all installonly

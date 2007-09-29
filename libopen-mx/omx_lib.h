@@ -47,8 +47,10 @@
  * Various macros
  */
 
-#define OMX_DEVNAME "/dev/open-mx"
-/* FIXME: envvar to configure? */
+#define OMX_DEFAULT_DEVNAME "/dev/open-mx"
+#ifndef OMX_DEVNAME
+#define OMX_DEVNAME OMX_DEFAULT_DEVNAME
+#endif
 
 #define OMX_MEDIUM_FRAG_PIPELINE_BASE 10  /* pipeline is encoded -10 on the wire */
 #define OMX_MEDIUM_FRAG_PIPELINE 2 /* always send 4k pages (1<<(10+2)) */
