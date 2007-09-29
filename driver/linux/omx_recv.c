@@ -21,6 +21,7 @@
 
 #include "omx_common.h"
 #include "omx_hal.h"
+#include "omx_wire_access.h"
 
 /******************************
  * Manage event and data slots
@@ -83,8 +84,9 @@ omx_recv_connect(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	struct omx_pkt_connect *connect = &mh->body.connect;
-	uint8_t length = connect->length;
+	struct omx_pkt_connect *connect_n = &mh->body.connect;
+	uint8_t length = OMX_FROM_PKT_FIELD(connect_n->length);
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(connect_n->dst_endpoint);
 	union omx_evt *evt;
 	struct omx_evt_recv_connect *event;
 	int err = 0;
@@ -107,10 +109,10 @@ omx_recv_connect(struct omx_iface * iface,
 	}
 
 	/* get the destination endpoint */
-	endpoint = omx_endpoint_acquire_by_iface_index(iface, connect->dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(!endpoint)) {
 		omx_drop_dprintk(eh, "CONNECT packet for unknown endpoint %d",
-				 connect->dst_endpoint);
+				 dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
@@ -127,10 +129,10 @@ omx_recv_connect(struct omx_iface * iface,
 
 	/* fill event */
 	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
-	event->src_endpoint = connect->src_endpoint;
-	event->src_dest_peer_index = connect->src_dst_peer_index;
+	event->src_endpoint = OMX_FROM_PKT_FIELD(connect_n->src_endpoint);
+	event->src_dest_peer_index = OMX_FROM_PKT_FIELD(connect_n->src_dst_peer_index);
 	event->length = length;
-	event->seqnum = connect->lib_seqnum;
+	event->seqnum = OMX_FROM_PKT_FIELD(connect_n->lib_seqnum);
 
 	omx_recv_dprintk(eh, "CONNECT data length %ld", (unsigned long) length);
 
@@ -159,8 +161,10 @@ omx_recv_tiny(struct omx_iface * iface,
 	      struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct omx_pkt_msg *tiny = &mh->body.tiny;
-	uint16_t length = tiny->length;
+	struct omx_pkt_msg *tiny_n = &mh->body.tiny;
+	uint16_t length = OMX_FROM_PKT_FIELD(tiny_n->length);
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(tiny_n->dst_endpoint);
+	uint32_t session_id = OMX_FROM_PKT_FIELD(tiny_n->session);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	int err = 0;
@@ -183,16 +187,16 @@ omx_recv_tiny(struct omx_iface * iface,
 	}
 
 	/* get the destination endpoint */
-	endpoint = omx_endpoint_acquire_by_iface_index(iface, tiny->dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(!endpoint)) {
 		omx_drop_dprintk(&mh->head.eth, "TINY packet for unknown endpoint %d",
-				 tiny->dst_endpoint);
+				 dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check the session */
-	if (unlikely(tiny->session != endpoint->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "TINY packet with bad session");
 		err = -EINVAL;
 		goto out_with_endpoint;
@@ -209,10 +213,10 @@ omx_recv_tiny(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = mh->head.dst_src_peer_index;
-	event->src_endpoint = tiny->src_endpoint;
-	event->match_info = OMX_MATCH_INFO_FROM_PKT(tiny);
-	event->seqnum = tiny->lib_seqnum;
+	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->src_endpoint = OMX_FROM_PKT_FIELD(tiny_n->src_endpoint);
+	event->match_info = OMX_FROM_PKT_MATCH_INFO(tiny_n);
+	event->seqnum = OMX_FROM_PKT_FIELD(tiny_n->lib_seqnum);
 	event->specific.tiny.length = length;
 
 	omx_recv_dprintk(&mh->head.eth, "TINY length %ld", (unsigned long) length);
@@ -242,8 +246,10 @@ omx_recv_small(struct omx_iface * iface,
 	       struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct omx_pkt_msg *small = &mh->body.small;
-	uint16_t length = small->length;
+	struct omx_pkt_msg *small_n = &mh->body.small;
+	uint16_t length =  OMX_FROM_PKT_FIELD(small_n->length);
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(small_n->dst_endpoint);
+	uint32_t session_id = OMX_FROM_PKT_FIELD(small_n->session);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	char *recvq_slot;
@@ -267,16 +273,16 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* get the destination endpoint */
-	endpoint = omx_endpoint_acquire_by_iface_index(iface, small->dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(!endpoint)) {
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet for unknown endpoint %d",
-				 small->dst_endpoint);
+				 dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check the session */
-	if (unlikely(small->session != endpoint->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet with bad session");
 		err = -EINVAL;
 		goto out_with_endpoint;
@@ -293,10 +299,10 @@ omx_recv_small(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = mh->head.dst_src_peer_index;
-	event->src_endpoint = small->src_endpoint;
-	event->match_info = OMX_MATCH_INFO_FROM_PKT(small);
-	event->seqnum = small->lib_seqnum;
+	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->src_endpoint = OMX_FROM_PKT_FIELD(small_n->src_endpoint);
+	event->match_info = OMX_FROM_PKT_MATCH_INFO(small_n);
+	event->seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
 	event->specific.small.length = length;
 
 	omx_recv_dprintk(&mh->head.eth, "SMALL length %ld", (unsigned long) length);
@@ -327,8 +333,10 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		     struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct omx_pkt_medium_frag *medium = &mh->body.medium;
-	uint16_t frag_length = medium->frag_length;
+	struct omx_pkt_medium_frag *medium_n = &mh->body.medium;
+	uint16_t frag_length = OMX_FROM_PKT_FIELD(medium_n->frag_length);
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.dst_endpoint);
+	uint32_t session_id = OMX_FROM_PKT_FIELD(medium_n->msg.session);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	char *recvq_slot;
@@ -352,16 +360,16 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* get the destination endpoint */
-	endpoint = omx_endpoint_acquire_by_iface_index(iface, medium->msg.dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(!endpoint)) {
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet for unknown endpoint %d",
-				 medium->msg.dst_endpoint);
+				 dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check the session */
-	if (unlikely(medium->msg.session != endpoint->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet with bad session");
 		err = -EINVAL;
 		goto out_with_endpoint;
@@ -378,14 +386,14 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = mh->head.dst_src_peer_index;
-	event->src_endpoint = medium->msg.src_endpoint;
-	event->match_info = OMX_MATCH_INFO_FROM_PKT(&medium->msg);
-	event->seqnum = medium->msg.lib_seqnum;
-	event->specific.medium.msg_length = medium->msg.length;
+	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->src_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.src_endpoint);
+	event->match_info = OMX_FROM_PKT_MATCH_INFO(&medium_n->msg);
+	event->seqnum = OMX_FROM_PKT_FIELD(medium_n->msg.lib_seqnum);
+	event->specific.medium.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
 	event->specific.medium.frag_length = frag_length;
-	event->specific.medium.frag_seqnum = medium->frag_seqnum;
-	event->specific.medium.frag_pipeline = medium->frag_pipeline;
+	event->specific.medium.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
+	event->specific.medium.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
 
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
@@ -415,8 +423,10 @@ omx_recv_rndv(struct omx_iface * iface,
 	      struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct omx_pkt_msg *rndv = &mh->body.rndv;
-	uint16_t length = rndv->length;
+	struct omx_pkt_msg *rndv_n = &mh->body.rndv;
+	uint16_t length = OMX_FROM_PKT_FIELD(rndv_n->length);
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(rndv_n->dst_endpoint);
+	uint32_t session_id = OMX_FROM_PKT_FIELD(rndv_n->session);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	int err = 0;
@@ -439,16 +449,16 @@ omx_recv_rndv(struct omx_iface * iface,
 	}
 
 	/* get the destination endpoint */
-	endpoint = omx_endpoint_acquire_by_iface_index(iface, rndv->dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(!endpoint)) {
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet for unknown endpoint %d",
-				 rndv->dst_endpoint);
+				 dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check the session */
-	if (unlikely(rndv->session != endpoint->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet with bad session");
 		err = -EINVAL;
 		goto out_with_endpoint;
@@ -465,10 +475,10 @@ omx_recv_rndv(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = mh->head.dst_src_peer_index;
-	event->src_endpoint = rndv->src_endpoint;
-	event->match_info = OMX_MATCH_INFO_FROM_PKT(rndv);
-	event->seqnum = rndv->lib_seqnum;
+	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->src_endpoint);
+	event->match_info = OMX_FROM_PKT_MATCH_INFO(rndv_n);
+	event->seqnum = OMX_FROM_PKT_FIELD(rndv_n->lib_seqnum);
 	event->specific.rndv.length = length;
 
 	omx_recv_dprintk(&mh->head.eth, "RNDV length %ld", (unsigned long) length);
@@ -498,22 +508,24 @@ omx_recv_notify(struct omx_iface * iface,
 		struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
-	struct omx_pkt_notify *notify = &mh->body.notify;
+	struct omx_pkt_notify *notify_n = &mh->body.notify;
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(notify_n->dst_endpoint);
+	uint32_t session_id = OMX_FROM_PKT_FIELD(notify_n->session);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	int err = 0;
 
 	/* get the destination endpoint */
-	endpoint = omx_endpoint_acquire_by_iface_index(iface, notify->dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(!endpoint)) {
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet for unknown endpoint %d",
-				 notify->dst_endpoint);
+				 dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check the session */
-	if (unlikely(notify->session != endpoint->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet with bad session");
 		err = -EINVAL;
 		goto out_with_endpoint;
@@ -530,12 +542,12 @@ omx_recv_notify(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = mh->head.dst_src_peer_index;
-	event->src_endpoint = notify->src_endpoint;
-	event->seqnum = notify->lib_seqnum;
-	event->specific.notify.length = notify->total_length;
-	event->specific.notify.puller_rdma_id = notify->puller_rdma_id;
-	event->specific.notify.puller_rdma_seqnum = notify->puller_rdma_seqnum;
+	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->src_endpoint = OMX_FROM_PKT_FIELD(notify_n->src_endpoint);
+	event->seqnum = OMX_FROM_PKT_FIELD(notify_n->lib_seqnum);
+	event->specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
+	event->specific.notify.puller_rdma_id = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_id);
+	event->specific.notify.puller_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_seqnum);
 
 	omx_recv_dprintk(&mh->head.eth, "NOTIFY");
 

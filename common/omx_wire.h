@@ -210,14 +210,6 @@ struct omx_hdr {
 	} body;
 };
 
-#define OMX_PKT_FROM_MATCH_INFO(_pkt, _match_info)			\
-do {									\
-	(_pkt)->match_a = (uint32_t) (_match_info >> 32);		\
-	(_pkt)->match_b = (uint32_t) (_match_info & 0xffffffff);	\
-} while (0)
-
-#define OMX_MATCH_INFO_FROM_PKT(_pkt) (((uint64_t) (_pkt)->match_a) << 32) | ((uint64_t) (_pkt)->match_b)
-
 /*
  * Pull Protocol
  *

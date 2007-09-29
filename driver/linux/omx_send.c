@@ -22,6 +22,7 @@
 
 #include "omx_common.h"
 #include "omx_hal.h"
+#include "omx_wire_access.h"
 
 /*************************************
  * Allocate and initialize a OMX skb
@@ -142,14 +143,14 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
-	mh->head.dst_src_peer_index = cmd.dest_src_peer_index;
-	mh->body.tiny.src_endpoint = endpoint->endpoint_index;
-	mh->body.tiny.dst_endpoint = cmd.dest_endpoint;
-	mh->body.tiny.ptype = OMX_PKT_TYPE_TINY;
-	mh->body.tiny.length = length;
-	mh->body.tiny.lib_seqnum = cmd.seqnum;
-	mh->body.tiny.session = cmd.session_id;
-	OMX_PKT_FROM_MATCH_INFO(& mh->body.tiny, cmd.match_info);
+	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
+	OMX_PKT_FIELD_FROM(mh->body.tiny.src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(mh->body.tiny.dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.tiny.ptype, OMX_PKT_TYPE_TINY);
+	OMX_PKT_FIELD_FROM(mh->body.tiny.length, length);
+	OMX_PKT_FIELD_FROM(mh->body.tiny.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.tiny.session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(&mh->body.tiny, cmd.match_info);
 
 	omx_send_dprintk(eh, "TINY length %ld", (unsigned long) length);
 
@@ -219,14 +220,14 @@ omx_send_small(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
-	mh->head.dst_src_peer_index = cmd.dest_src_peer_index;
-	mh->body.small.src_endpoint = endpoint->endpoint_index;
-	mh->body.small.dst_endpoint = cmd.dest_endpoint;
-	mh->body.small.ptype = OMX_PKT_TYPE_SMALL;
-	mh->body.small.length = length;
-	mh->body.small.lib_seqnum = cmd.seqnum;
-	mh->body.small.session = cmd.session_id;
-	OMX_PKT_FROM_MATCH_INFO(& mh->body.small, cmd.match_info);
+	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
+	OMX_PKT_FIELD_FROM(mh->body.small.src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(mh->body.small.dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.small.ptype, OMX_PKT_TYPE_SMALL);
+	OMX_PKT_FIELD_FROM(mh->body.small.length, length);
+	OMX_PKT_FIELD_FROM(mh->body.small.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.small.session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(& mh->body.small, cmd.match_info);
 
 	omx_send_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
@@ -316,17 +317,17 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
-	mh->head.dst_src_peer_index = cmd.dest_src_peer_index;
-	mh->body.medium.msg.src_endpoint = endpoint->endpoint_index;
-	mh->body.medium.msg.dst_endpoint = cmd.dest_endpoint;
-	mh->body.medium.msg.ptype = OMX_PKT_TYPE_MEDIUM;
-	mh->body.medium.msg.length = cmd.msg_length;
-	mh->body.medium.msg.lib_seqnum = cmd.seqnum;
-	mh->body.medium.msg.session = cmd.session_id;
-	OMX_PKT_FROM_MATCH_INFO(& mh->body.medium.msg, cmd.match_info);
-	mh->body.medium.frag_length = frag_length;
-	mh->body.medium.frag_seqnum = cmd.frag_seqnum;
-	mh->body.medium.frag_pipeline = cmd.frag_pipeline;
+	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
+	OMX_PKT_FIELD_FROM(mh->body.medium.msg.src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(mh->body.medium.msg.dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.medium.msg.ptype, OMX_PKT_TYPE_MEDIUM);
+	OMX_PKT_FIELD_FROM(mh->body.medium.msg.length, cmd.msg_length);
+	OMX_PKT_FIELD_FROM(mh->body.medium.msg.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.medium.msg.session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(& mh->body.medium.msg, cmd.match_info);
+	OMX_PKT_FIELD_FROM(mh->body.medium.frag_length, frag_length);
+	OMX_PKT_FIELD_FROM(mh->body.medium.frag_seqnum, cmd.frag_seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.medium.frag_pipeline, cmd.frag_pipeline);
 
 	omx_send_dprintk(eh, "MEDIUM FRAG length %ld", (unsigned long) frag_length);
 
@@ -415,14 +416,14 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
-	mh->head.dst_src_peer_index = cmd.dest_src_peer_index;
-	mh->body.rndv.src_endpoint = endpoint->endpoint_index;
-	mh->body.rndv.dst_endpoint = cmd.dest_endpoint;
-	mh->body.rndv.ptype = OMX_PKT_TYPE_RNDV;
-	mh->body.rndv.length = length;
-	mh->body.rndv.lib_seqnum = cmd.seqnum;
-	mh->body.rndv.session = cmd.session_id;
-	OMX_PKT_FROM_MATCH_INFO(& mh->body.rndv, cmd.match_info);
+	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
+	OMX_PKT_FIELD_FROM(mh->body.rndv.src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(mh->body.rndv.dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.rndv.ptype, OMX_PKT_TYPE_RNDV);
+	OMX_PKT_FIELD_FROM(mh->body.rndv.length, length);
+	OMX_PKT_FIELD_FROM(mh->body.rndv.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.rndv.session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(& mh->body.rndv, cmd.match_info);
 
 	omx_send_dprintk(eh, "RNDV length %ld", (unsigned long) length);
 
@@ -492,13 +493,13 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
-	mh->body.connect.src_endpoint = endpoint->endpoint_index;
-	mh->body.connect.dst_endpoint = cmd.dest_endpoint;
-	mh->body.connect.ptype = OMX_PKT_TYPE_CONNECT;
-	mh->body.connect.length = length;
-	mh->body.connect.lib_seqnum = cmd.seqnum;
-	mh->body.connect.src_dst_peer_index = cmd.src_dest_peer_index;
-	mh->body.connect.src_mac_low32 = (uint32_t) omx_board_addr_from_netdevice(ifp);
+	OMX_PKT_FIELD_FROM(mh->body.connect.src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(mh->body.connect.dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.connect.ptype, OMX_PKT_TYPE_CONNECT);
+	OMX_PKT_FIELD_FROM(mh->body.connect.length, length);
+	OMX_PKT_FIELD_FROM(mh->body.connect.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.connect.src_dst_peer_index, cmd.src_dest_peer_index);
+	OMX_PKT_FIELD_FROM(mh->body.connect.src_mac_low32, (uint32_t) omx_board_addr_from_netdevice(ifp));
 
 	omx_send_dprintk(eh, "CONNECT length %ld", (unsigned long) length);
 
@@ -559,15 +560,15 @@ omx_send_notify(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
-	mh->head.dst_src_peer_index = cmd.dest_src_peer_index;
-	mh->body.notify.src_endpoint = endpoint->endpoint_index;
-	mh->body.notify.dst_endpoint = cmd.dest_endpoint;
-	mh->body.notify.ptype = OMX_PKT_TYPE_NOTIFY;
-	mh->body.notify.total_length = cmd.total_length;
-	mh->body.notify.lib_seqnum = cmd.seqnum;
-	mh->body.notify.session = cmd.session_id;
-	mh->body.notify.puller_rdma_id = cmd.puller_rdma_id;
-	mh->body.notify.puller_rdma_seqnum = cmd.puller_rdma_seqnum;
+	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
+	OMX_PKT_FIELD_FROM(mh->body.notify.src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(mh->body.notify.dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.notify.ptype, OMX_PKT_TYPE_NOTIFY);
+	OMX_PKT_FIELD_FROM(mh->body.notify.total_length, cmd.total_length);
+	OMX_PKT_FIELD_FROM(mh->body.notify.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.notify.session, cmd.session_id);
+	OMX_PKT_FIELD_FROM(mh->body.notify.puller_rdma_id, cmd.puller_rdma_id);
+	OMX_PKT_FIELD_FROM(mh->body.notify.puller_rdma_seqnum, cmd.puller_rdma_seqnum);
 
 	omx_send_dprintk(eh, "NOTIFY");
 

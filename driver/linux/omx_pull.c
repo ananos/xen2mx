@@ -22,6 +22,7 @@
 
 #include "omx_common.h"
 #include "omx_hal.h"
+#include "omx_wire_access.h"
 
 #define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
 
@@ -195,7 +196,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 {
 	struct net_device * ifp= endpoint->iface->eth_ifp;
 	struct ethhdr * eh = &handle->pkt_eth_hdr;
-	struct omx_pkt_pull_request * pull = &handle->pkt_pull_hdr;
+	struct omx_pkt_pull_request * pull_n = &handle->pkt_pull_hdr;
 
 	/* pre-fill the packet header */
 	memset(eh, 0, sizeof(*eh));
@@ -204,15 +205,15 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
-	pull->ptype = OMX_PKT_TYPE_PULL;
-	pull->src_endpoint = endpoint->endpoint_index;
-	pull->dst_endpoint = cmd->dest_endpoint;
-	pull->session = cmd->session_id;
-	pull->total_length = cmd->length;
-	pull->pulled_rdma_id = cmd->remote_rdma_id;
-	pull->pulled_rdma_offset = cmd->remote_offset;
-	pull->src_pull_handle = handle->idr_index;
-	pull->src_magic = omx_endpoint_pull_magic(endpoint);
+	OMX_PKT_FIELD_FROM(pull_n->ptype, OMX_PKT_TYPE_PULL);
+	OMX_PKT_FIELD_FROM(pull_n->src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(pull_n->dst_endpoint, cmd->dest_endpoint);
+	OMX_PKT_FIELD_FROM(pull_n->session, cmd->session_id);
+	OMX_PKT_FIELD_FROM(pull_n->total_length, cmd->length);
+	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_id, cmd->remote_rdma_id);
+	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_offset, cmd->remote_offset);
+	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->idr_index);
+	OMX_PKT_FIELD_FROM(pull_n->src_magic, omx_endpoint_pull_magic(endpoint));
 
 	/* block_length, frame_index, and first_frame_offset filled at actual send */
 }
@@ -428,7 +429,7 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 	struct sk_buff * skb;
 	struct omx_hdr * mh;
 	struct ethhdr * eh;
-	struct omx_pkt_pull_request * pull;
+	struct omx_pkt_pull_request * pull_n;
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
@@ -441,21 +442,21 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 	/* locate headers */
 	mh = omx_hdr(skb);
 	eh = &mh->head.eth;
-	pull = &mh->body.pull;
+	pull_n = &mh->body.pull;
 
 	/* copy common pkt hdrs from the handle */
 	memcpy(eh, &handle->pkt_eth_hdr, sizeof(handle->pkt_eth_hdr));
-	memcpy(pull, &handle->pkt_pull_hdr, sizeof(handle->pkt_pull_hdr));
+	memcpy(pull_n, &handle->pkt_pull_hdr, sizeof(handle->pkt_pull_hdr));
 
-	pull->block_length = block_length;
-	pull->first_frame_offset = first_frame_offset;
-	pull->frame_index = frame_index;
+	OMX_PKT_FIELD_FROM(pull_n->block_length, block_length);
+	OMX_PKT_FIELD_FROM(pull_n->first_frame_offset, first_frame_offset);
+	OMX_PKT_FIELD_FROM(pull_n->frame_index, frame_index);
 
 	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld, frame index %ld first_frame_offset %ld",
-			 (unsigned long) pull->src_pull_handle,
-			 (unsigned long) pull->src_magic,
+			 (unsigned long) OMX_FROM_PKT_FIELD(pull_n->src_pull_handle),
+			 (unsigned long) OMX_FROM_PKT_FIELD(pull_n->src_magic),
 			 (unsigned long) block_length,
-			 (unsigned long) pull->total_length,
+			 (unsigned long) OMX_FROM_PKT_FIELD(pull_n->total_length),
 			 (unsigned long) frame_index,
 			 (unsigned long) first_frame_offset);
 
@@ -573,8 +574,17 @@ omx_recv_pull(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *pull_eh = &pull_mh->head.eth;
-	struct omx_pkt_pull_request *pull_request = &pull_mh->body.pull;
-	struct omx_pkt_pull_reply *pull_reply;
+	struct omx_pkt_pull_request *pull_request_n = &pull_mh->body.pull;
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(pull_request_n->dst_endpoint);
+	uint32_t session_id = OMX_FROM_PKT_FIELD(pull_request_n->session);
+	uint32_t block_length = OMX_FROM_PKT_FIELD(pull_request_n->block_length);
+	uint32_t src_pull_handle = OMX_FROM_PKT_FIELD(pull_request_n->src_pull_handle);
+	uint32_t src_magic = OMX_FROM_PKT_FIELD(pull_request_n->src_magic);
+	uint32_t frame_index = OMX_FROM_PKT_FIELD(pull_request_n->frame_index);
+	uint32_t first_frame_offset = OMX_FROM_PKT_FIELD(pull_request_n->first_frame_offset);
+	uint32_t pulled_rdma_id = OMX_FROM_PKT_FIELD(pull_request_n->pulled_rdma_id);
+	uint32_t pulled_rdma_offset = OMX_FROM_PKT_FIELD(pull_request_n->pulled_rdma_offset);
+	struct omx_pkt_pull_reply *pull_reply_n;
 	struct omx_hdr *reply_mh;
 	struct ethhdr *reply_eh;
 	struct net_device * ifp = iface->eth_ifp;
@@ -585,31 +595,31 @@ omx_recv_pull(struct omx_iface * iface,
 	int err = 0;
 
 	/* get the destination endpoint */
-	endpoint = omx_endpoint_acquire_by_iface_index(iface, pull_request->dst_endpoint);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(!endpoint)) {
 		omx_drop_dprintk(pull_eh, "PULL packet for unknown endpoint %d",
-				 pull_request->dst_endpoint);
+				 dst_endpoint);
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* check the session */
-	if (unlikely(pull_request->session != endpoint->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(pull_eh, "PULL packet with bad session");
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
 
 	omx_recv_dprintk(pull_eh, "PULL handle %lx magic %lx length %ld out of %ld, index %ld first_frame_offset %ld",
-			 (unsigned long) pull_request->src_pull_handle,
-			 (unsigned long) pull_request->src_magic,
-			 (unsigned long) pull_request->block_length,
-			 (unsigned long) pull_request->total_length,
-			 (unsigned long) pull_request->frame_index,
-			 (unsigned long) pull_request->first_frame_offset);
+			 (unsigned long) src_pull_handle,
+			 (unsigned long) src_magic,
+			 (unsigned long) block_length,
+			 (unsigned long) OMX_FROM_PKT_FIELD(pull_request_n->total_length),
+			 (unsigned long) frame_index,
+			 (unsigned long) first_frame_offset);
 
 	/* compute and check the number of PULL_REPLY to send */
-	replies = (pull_request->first_frame_offset + pull_request->block_length
+	replies = (first_frame_offset + block_length
 		   + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
 	if (unlikely(replies > OMX_PULL_REPLY_PER_BLOCK)) {
 		omx_drop_dprintk(pull_eh, "PULL packet for %d REPLY (%d max)",
@@ -619,16 +629,15 @@ omx_recv_pull(struct omx_iface * iface,
 	}
 
 	/* get the rdma window once */
-	region = omx_user_region_acquire(endpoint, pull_request->pulled_rdma_id);
+	region = omx_user_region_acquire(endpoint, pulled_rdma_id);
 	if (unlikely(!region))
 		goto out_with_endpoint;
 
 	/* initialize pull reply fields */
-	current_frame_seqnum = pull_request->frame_index;
-	current_msg_offset = pull_request->frame_index * OMX_PULL_REPLY_LENGTH_MAX
-		- pull_request->pulled_rdma_offset
-		+ pull_request->first_frame_offset;
-	block_remaining_length = pull_request->block_length;
+	current_frame_seqnum = frame_index;
+	current_msg_offset = frame_index * OMX_PULL_REPLY_LENGTH_MAX
+		- pulled_rdma_offset + first_frame_offset;
+	block_remaining_length = block_length;
 
 	/* prepare all skbs now */
 	for(i=0; i<replies; i++) {
@@ -656,23 +665,23 @@ omx_recv_pull(struct omx_iface * iface,
 		/* get the destination address */
 		memcpy(reply_eh->h_dest, pull_eh->h_source, sizeof(reply_eh->h_dest));
 
-		frame_length = (i==0) ? OMX_PULL_REPLY_LENGTH_MAX-pull_request->first_frame_offset
+		frame_length = (i==0) ? OMX_PULL_REPLY_LENGTH_MAX - first_frame_offset
 			: OMX_PULL_REPLY_LENGTH_MAX;
 		if (block_remaining_length < frame_length)
 			frame_length = block_remaining_length;
 
 		/* fill omx header */
-		pull_reply = &reply_mh->body.pull_reply;
-		pull_reply->msg_offset = current_msg_offset;
-		pull_reply->frame_seqnum = current_frame_seqnum;
-		pull_reply->frame_length = frame_length;
-		pull_reply->ptype = OMX_PKT_TYPE_PULL_REPLY;
-		pull_reply->dst_pull_handle = pull_request->src_pull_handle;
-		pull_reply->dst_magic = pull_request->src_magic;
+		pull_reply_n = &reply_mh->body.pull_reply;
+		OMX_PKT_FIELD_FROM(pull_reply_n->msg_offset, current_msg_offset);
+		OMX_PKT_FIELD_FROM(pull_reply_n->frame_seqnum, current_frame_seqnum);
+		OMX_PKT_FIELD_FROM(pull_reply_n->frame_length, frame_length);
+		OMX_PKT_FIELD_FROM(pull_reply_n->ptype, OMX_PKT_TYPE_PULL_REPLY);
+		OMX_PKT_FIELD_FROM(pull_reply_n->dst_pull_handle, src_pull_handle);
+		OMX_PKT_FIELD_FROM(pull_reply_n->dst_magic, src_magic);
 
 		omx_send_dprintk(reply_eh, "PULL REPLY #%d handle %ld magic %ld frame seqnum %ld length %ld offset %ld", i,
-				 (unsigned long) pull_reply->dst_pull_handle,
-				 (unsigned long) pull_reply->dst_magic,
+				 (unsigned long) src_pull_handle,
+				 (unsigned long) src_magic,
 				 (unsigned long) current_frame_seqnum,
 				 (unsigned long) frame_length,
 				 (unsigned long) current_msg_offset);
@@ -681,7 +690,7 @@ omx_recv_pull(struct omx_iface * iface,
 		omx_user_region_reacquire(region);
 
 		/* append segment pages */
-		err = omx_user_region_append_pages(region, current_msg_offset + pull_request->pulled_rdma_offset,
+		err = omx_user_region_append_pages(region, current_msg_offset + pulled_rdma_offset,
 						   skb, frame_length);
 		if (unlikely(err < 0)) {
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
@@ -768,18 +777,20 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		    struct omx_hdr * mh,
 		    struct sk_buff * skb)
 {
-	struct omx_pkt_pull_reply *pull_reply = &mh->body.pull_reply;
-	uint32_t frame_length = pull_reply->frame_length;
-	uint32_t frame_seqnum = pull_reply->frame_seqnum;
+	struct omx_pkt_pull_reply *pull_reply_n = &mh->body.pull_reply;
+	uint32_t dst_pull_handle = OMX_FROM_PKT_FIELD(pull_reply_n->dst_pull_handle);
+	uint32_t dst_magic = OMX_FROM_PKT_FIELD(pull_reply_n->dst_magic);
+	uint32_t frame_length = OMX_FROM_PKT_FIELD(pull_reply_n->frame_length);
+	uint32_t frame_seqnum = OMX_FROM_PKT_FIELD(pull_reply_n->frame_seqnum);
+	uint32_t msg_offset = OMX_FROM_PKT_FIELD(pull_reply_n->msg_offset);
 	uint32_t frame_seqnum_offset; /* unsigned to make seqnum offset easy to check */
-	uint32_t msg_offset = pull_reply->msg_offset;
 	struct omx_pull_handle * handle;
 	uint64_t bitmap_mask;
 	int err = 0;
 
 	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld frame seqnum %ld length %ld skb length %ld",
-			 (unsigned long) pull_reply->dst_pull_handle,
-			 (unsigned long) pull_reply->dst_magic,
+			 (unsigned long) dst_pull_handle,
+			 (unsigned long) dst_magic,
 			 (unsigned long) frame_seqnum,
 			 (unsigned long) frame_length,
 			 (unsigned long) skb->len - sizeof(struct omx_hdr));
@@ -794,11 +805,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 
 	/* acquire the handle and endpoint */
-	handle = omx_pull_handle_acquire_by_wire(iface, pull_reply->dst_magic,
-						 pull_reply->dst_pull_handle);
+	handle = omx_pull_handle_acquire_by_wire(iface, dst_magic, dst_pull_handle);
 	if (unlikely(!handle)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown handle %d magic %d",
-				 pull_reply->dst_pull_handle, pull_reply->dst_magic);
+				 dst_pull_handle, dst_magic);
 		err = -EINVAL;
 		goto out;
 	}

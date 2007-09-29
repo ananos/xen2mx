@@ -63,6 +63,8 @@
     + reject sends if no place in the target eventq so that we requeue them
       instead of dropping them and needing to ack them later ?
 
+* KCC
+
 * use IOAT
   + post a req
     cookie = dma_async_memcpy_pg_to_pg(chan, dst_page, dest_off, src_page, src_off, len)
@@ -86,8 +88,6 @@
 
 * use valgrind memory hooks
 * add valgrind ioctl hooks
-
-* ntoh[sl] fields
 
 * add a VERSION file and a script to update MODULE_VERSION, COPYING and file headers ?
 
