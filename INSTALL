@@ -28,6 +28,10 @@ $ ./configure --with-linux=/path/to/kernel/headers/
 To build using another kernel build tree, use
 $ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
 
+The kernel module must be compiled with the same compiler than the
+kernel has been. To change the compiler for the kernel module, pass
+KCC=<othercompiler> on the configure or make command line.
+
 +---------+
 | Caveats |
 +---------+
