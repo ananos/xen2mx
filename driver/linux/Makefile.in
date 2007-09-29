@@ -2,6 +2,7 @@ exec_prefix	=	@exec_prefix@
 prefix  =       @prefix@
 libdir	=	@libdir@
 
+KCC	=	@KCC@
 MKDIR_P	=	@MKDIR_P@
 LN_S	=	@LN_S@
 INSTALL	=	@INSTALL@
@@ -23,9 +24,9 @@ all:
 		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || $(LN_S) $$file ; done ; \
 	fi
 	@echo Running compile-time assertions
-	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) omx__assertions.o
+	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) CC=$(KCC) omx__assertions.o
 	@echo Building kernel module
-	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR)
+	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) CC=$(KCC)
 
 installonly:
 	@echo "Installing kernel module to $(INSTALL_MOD_PATH)"
@@ -39,7 +40,7 @@ install: all installonly
 
 clean:
 	@echo Cleaning kernel module build
-	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) clean
+	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) CC=$(KCC) clean
 	@if test "@srcdir@" != "@builddir@" ; then \
 		echo Removing links to kernel module source files in local directory ; \
 		for file in $(wildcard @srcdir@/*.[ch]) ; do $(RM) $$(basename $$file) ; done ; \
