@@ -180,6 +180,16 @@ else
   AC_MSG_RESULT(no)
 fi
 
+# dmaengine really usable when channel may be shared among clients, arrived in 2.6.23
+AC_MSG_CHECKING(whether DMA engine channels are shareable)
+if test -e ${LINUX_HDR}/include/linux/dmaengine.h \
+  && grep DMA_RESOURCE_AVAILABLE ${LINUX_HDR}/include/linux/dmaengine.h > /dev/null ; then
+  echo "#define OMX_HAVE_SHAREABLE_DMA_CHANNELS 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
 # add the footer
 echo "" >> ${TMP_CHECKS_PATH}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_PATH}

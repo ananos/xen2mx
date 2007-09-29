@@ -52,9 +52,13 @@ omx_init(void)
 
 	printk(KERN_INFO "Open-MX initializing...\n");
 
-	ret = omx_net_init((const char *) omx_ifnames);
+	ret = omx_dma_init();
 	if (ret < 0)
 		goto out;
+
+	ret = omx_net_init((const char *) omx_ifnames);
+	if (ret < 0)
+		goto out_with_dma;
 
 	ret = omx_dev_init();
 	if (ret < 0)
@@ -72,6 +76,8 @@ omx_init(void)
 
  out_with_net:
 	omx_net_exit();
+ out_with_dma:
+	omx_dma_exit();
  out:
 	printk(KERN_ERR "Failed to initialize Open-MX\n");
 	return ret;
@@ -84,6 +90,7 @@ omx_exit(void)
 	printk(KERN_INFO "Open-MX terminating...\n");
 	omx_dev_exit();
 	omx_net_exit();
+	omx_dma_exit();
 	printk(KERN_INFO "Open-MX terminated\n");
 }
 module_exit(omx_exit);

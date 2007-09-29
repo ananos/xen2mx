@@ -42,6 +42,10 @@ extern int omx_copybench;
 extern int omx_net_init(const char * ifnames);
 extern void omx_net_exit(void);
 
+/* dma if available */
+extern int omx_dma_init(void);
+extern void omx_dma_exit(void);
+
 /* manage endpoints */
 extern int omx_iface_attach_endpoint(struct omx_endpoint * endpoint);
 extern void omx_iface_detach_endpoint(struct omx_endpoint * endpoint, int ifacelocked);
