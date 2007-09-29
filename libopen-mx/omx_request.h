@@ -55,7 +55,7 @@ omx__request_alloc(enum omx__request_type type)
 static inline void
 omx__request_free(union omx_request * req)
 {
-
+  free(req);
 }
 
 /***************************
