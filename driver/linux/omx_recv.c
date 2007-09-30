@@ -114,10 +114,25 @@ omx_recv_connect(struct omx_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
-	if (unlikely(!endpoint)) {
+	if (unlikely(IS_ERR(endpoint))) {
+		enum omx_nack_type nack_type;
+
 		omx_drop_dprintk(eh, "CONNECT packet for unknown endpoint %d",
 				 dst_endpoint);
-		omx_send_nack_lib(iface, eh->h_source, OMX_NACK_TYPE_BAD_ENDPT,
+
+		switch (PTR_ERR(endpoint)) {
+		case -EINVAL:
+			nack_type = OMX_NACK_TYPE_BAD_ENDPT;
+			break;
+		case -ENOENT:
+			nack_type = OMX_NACK_TYPE_ENDPT_CLOSED;
+			break;
+		default:
+			BUG();
+			break;
+		}
+
+		omx_send_nack_lib(iface, eh->h_source, nack_type,
 				  dst_endpoint, src_endpoint, lib_seqnum);
 		goto out;
 	}
@@ -193,7 +208,7 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
-	if (unlikely(!endpoint)) {
+	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "TINY packet for unknown endpoint %d",
 				 dst_endpoint);
 		err = -EINVAL;
@@ -279,7 +294,7 @@ omx_recv_small(struct omx_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
-	if (unlikely(!endpoint)) {
+	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet for unknown endpoint %d",
 				 dst_endpoint);
 		err = -EINVAL;
@@ -366,7 +381,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
-	if (unlikely(!endpoint)) {
+	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet for unknown endpoint %d",
 				 dst_endpoint);
 		err = -EINVAL;
@@ -455,7 +470,7 @@ omx_recv_rndv(struct omx_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
-	if (unlikely(!endpoint)) {
+	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet for unknown endpoint %d",
 				 dst_endpoint);
 		err = -EINVAL;
@@ -522,7 +537,7 @@ omx_recv_notify(struct omx_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
-	if (unlikely(!endpoint)) {
+	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet for unknown endpoint %d",
 				 dst_endpoint);
 		err = -EINVAL;
@@ -578,13 +593,14 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 	struct omx_pkt_nack_lib *nack_lib_n = &mh->body.nack_lib;
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->dst_endpoint);
+	enum omx_nack_type nack_type = OMX_FROM_PKT_FIELD(nack_lib_n->nack_type);
 	union omx_evt *evt;
 	struct omx_evt_recv_nack_lib *event;
 	int err = 0;
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
-	if (unlikely(!endpoint)) {
+	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "NACK LIB packet for unknown endpoint %d",
 				 dst_endpoint);
 		err = -EINVAL;
@@ -607,7 +623,8 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	event->seqnum = OMX_FROM_PKT_FIELD(nack_lib_n->lib_seqnum);
 	/* FIXME: nack type as a status */
 
-	omx_recv_dprintk(&mh->head.eth, "NACK LIB"); /* FIXME: add nack type */
+	omx_recv_dprintk(&mh->head.eth, "NACK LIB type %s",
+			 omx_strnacktype(nack_type));
 
 	/* set the type at the end so that user-space does not find the slot on error */
 	wmb();

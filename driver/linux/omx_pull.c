@@ -170,6 +170,11 @@ omx_endpoint_pull_magic(struct omx_endpoint * endpoint)
 	return magic;
 }
 
+/*
+ * Acquire an endpoint using a pull handle magic given on the wire.
+ *
+ * Returns an endpoint acquired, on ERR_PTR(-errno) on error
+ */
 static inline struct omx_endpoint *
 omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
 {
@@ -318,7 +323,7 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 
 	endpoint = omx_endpoint_acquire_by_pull_magic(iface, magic);
-	if (unlikely(!endpoint))
+	if (unlikely(IS_ERR(endpoint)))
 		goto out;
 
 	read_lock_bh(&endpoint->pull_handle_lock);
@@ -596,7 +601,7 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
-	if (unlikely(!endpoint)) {
+	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(pull_eh, "PULL packet for unknown endpoint %d",
 				 dst_endpoint);
 		err = -EINVAL;

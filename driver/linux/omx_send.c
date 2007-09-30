@@ -696,7 +696,7 @@ omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam)
 		goto out;
 
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, endpoint->endpoint_index);
-	BUG_ON(!endpoint);
+	BUG_ON(IS_ERR(endpoint));
 
 	/* level 11: recv acquire */
 	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_ACQU)

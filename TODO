@@ -22,7 +22,7 @@
 * add dst_src_peer_index in nacks
 
 * fix nack_lib
-  + distinguish between closed and invalid endpoint when trying to acquire the endpoint
+  + check session
   + pass nack type back to userspace
 * add nack_mcp
 
