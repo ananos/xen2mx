@@ -26,6 +26,11 @@
  * Module parameters
  */
 
+#ifdef OMX_DEBUG
+unsigned long omx_debug = OMX_DEBUG_SEND | OMX_DEBUG_RECV | OMX_DEBUG_DROP | OMX_DEBUG_EVENT | OMX_DEBUG_IOCTL;
+module_param(omx_debug, ulong, S_IRUGO|S_IWUSR);
+#endif
+
 static char * omx_ifnames = NULL;
 module_param(omx_ifnames, charp, 0); /* unreadable, since modifiable by the attached sysfs file */
 

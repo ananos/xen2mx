@@ -659,7 +659,7 @@ omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam)
 
 	evt = omx_find_next_exp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
-		dprintk("BENCH command failed of expected event queue full");
+		dprintk(IOCTL, "BENCH command failed of expected event queue full");
 		ret = -EBUSY;
 		goto out_with_endpoint;
 	}

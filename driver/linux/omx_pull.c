@@ -292,7 +292,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 	write_unlock_bh(&endpoint->pull_handle_lock);
 
-	dprintk("created and acquired pull handle %p\n", handle);
+	dprintk(PULL, "created and acquired pull handle %p\n", handle);
 	return handle;
 
  out_with_handle:
@@ -334,7 +334,7 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 
 	read_unlock_bh(&endpoint->pull_handle_lock);
 
-	dprintk("acquired pull handle %p\n", handle);
+	dprintk(PULL, "acquired pull handle %p\n", handle);
 	return handle;
 
  out_with_endpoint_lock:
@@ -355,7 +355,7 @@ omx_pull_handle_reacquire(struct omx_pull_handle * handle)
 	/* acquire the handle */
 	spin_lock(&handle->lock);
 
-	dprintk("reacquired pull handle %p\n", handle);
+	dprintk(PULL, "reacquired pull handle %p\n", handle);
 }
 
 /*
@@ -370,7 +370,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 	struct omx_endpoint * endpoint = handle->endpoint;
 	struct omx_user_region * region = handle->region;
 
-	dprintk("releasing pull handle %p\n", handle);
+	dprintk(PULL, "releasing pull handle %p\n", handle);
 
 	/* FIXME: add likely/unlikely */
 	if (handle->frame_copying_bitmap != handle->frame_missing_bitmap) {
@@ -380,7 +380,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		 */
 		spin_unlock(&handle->lock);
 
-		dprintk("some frames are being copied, just release the handle\n");
+		dprintk(PULL, "some frames are being copied, just release the handle\n");
 
 	} else if (handle->frame_copying_bitmap != 0) {
 		/* current block not done (no frames are being copied but some are missing),
@@ -391,7 +391,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		/* release the endpoint */
 		omx_endpoint_release(endpoint);
 
-		dprintk("some frames are missing, release the handle and the endpoint\n");
+		dprintk(PULL, "some frames are missing, release the handle and the endpoint\n");
 
 	} else {
 		/* transfer is done,
@@ -408,7 +408,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 		omx_user_region_release(region);
 		omx_endpoint_release(endpoint);
 
-		dprintk("frame are all done, destroy the handle and release the endpoint\n");
+		dprintk(PULL, "frame are all done, destroy the handle and release the endpoint\n");
 
 	}
 }
@@ -843,7 +843,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	omx_pull_handle_release(handle);
 
 	/* fill segment pages */
-	dprintk("copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
+	dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
 	       (unsigned long) frame_length,
 	       (unsigned long) msg_offset,
 	       (unsigned long) msg_offset + handle->puller_rdma_offset);
@@ -867,7 +867,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 		/* current first block not done, just release the handle */
-		dprintk("block not done, just releasing\n");
+		dprintk(PULL, "block not done, just releasing\n");
 		omx_pull_handle_release(handle);
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
@@ -878,7 +878,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_first_block_done(handle);
 
 		/* start the next block */
-		dprintk("queueing next pull block request\n");
+		dprintk(PULL, "queueing next pull block request\n");
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
 		if (block_length > handle->remaining_length)
 			block_length = handle->remaining_length;
@@ -909,7 +909,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			goto skbs_ready;
 
 		/* start another next block */
-		dprintk("queueing another next pull block request\n");
+		dprintk(PULL, "queueing another next pull block request\n");
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
 		if (block_length > handle->remaining_length)
 			block_length = handle->remaining_length;
@@ -938,7 +938,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	} else {
 		/* last block is done, notify the completion */
-		dprintk("notifying pull completion\n");
+		dprintk(PULL, "notifying pull completion\n");
 		omx_pull_handle_done_notify(handle);
 	}
 

@@ -370,8 +370,9 @@ omx__user_region_segment_append_pages(struct omx_user_region_segment * segment,
 		skb_fill_page_desc(skb, *fragp, segment->pages[i], page_offset, chunk);
 		skb->len += chunk;
 		skb->data_len += chunk;
-		dprintk("appending page #%ld offset %ld to skb frag #%d with length %ld\n",
-		       i, page_offset, *fragp, chunk);
+		dprintk(REG,
+			"appending page #%ld offset %ld to skb frag #%d with length %ld\n",
+			i, page_offset, *fragp, chunk);
 
 		/* update skb frags counter */
 		(*fragp)++;
@@ -405,8 +406,9 @@ omx_user_region_append_pages(struct omx_user_region * region,
 
 	for(iseg=0; iseg<region->nr_segments; iseg++) {
 		struct omx_user_region_segment * segment = &region->segments[iseg];
-		dprintk("looking at segment #%d length %ld for offset %ld length %ld\n",
-		       iseg, (unsigned long) segment->length, segment_offset, remaining);
+		dprintk(REG,
+			"looking at segment #%d length %ld for offset %ld length %ld\n",
+			iseg, (unsigned long) segment->length, segment_offset, remaining);
 
 		/* skip segment if offset is beyond it */
 		if (unlikely(segment_offset >= segment->length)) {
@@ -417,8 +419,9 @@ omx_user_region_append_pages(struct omx_user_region * region,
 		if (unlikely(segment_offset + remaining > segment->length)) {
 			/* take the end of this segment and jump to the next one */
 			unsigned long chunk = segment->length - segment_offset;
-			dprintk("appending pages from segment #%d offset %ld length %ld\n",
-			       iseg, segment_offset, chunk);
+			dprintk(REG,
+				"appending pages from segment #%d offset %ld length %ld\n",
+				iseg, segment_offset, chunk);
 			omx__user_region_segment_append_pages(segment, segment_offset,
 							      skb,
 							      chunk,
@@ -430,8 +433,9 @@ omx_user_region_append_pages(struct omx_user_region * region,
 
 		} else {
 			/* the whole data is in this segment */
-			dprintk("last appending pages from segment #%d offset %ld length %ld\n",
-			       iseg, segment_offset, remaining);
+			dprintk(REG,
+				"last appending pages from segment #%d offset %ld length %ld\n",
+				iseg, segment_offset, remaining);
 			omx__user_region_segment_append_pages(segment, segment_offset,
 							      skb,
 							      remaining,
@@ -477,8 +481,9 @@ omx__user_region_segment_fill_pages(struct omx_user_region_segment * segment,
 		kvaddr = kmap_atomic(segment->pages[i], KM_USER0);
 		err = skb_copy_bits(skb, skb_offset, kvaddr+page_offset, chunk);
 		kunmap_atomic(kvaddr, KM_USER0);
-		dprintk("filling page #%ld offset %ld from skb offset %ld with length %ld\n",
-		       i, page_offset, skb_offset, chunk);
+		dprintk(REG,
+			"filling page #%ld offset %ld from skb offset %ld with length %ld\n",
+			i, page_offset, skb_offset, chunk);
 
 		/* update counters */
 		copied += chunk;
@@ -509,8 +514,9 @@ omx_user_region_fill_pages(struct omx_user_region * region,
 
 	for(iseg=0; iseg<region->nr_segments; iseg++) {
 		struct omx_user_region_segment * segment = &region->segments[iseg];
-		dprintk("looking at segment #%d length %ld for offset %ld length %ld\n",
-		       iseg, (unsigned long) segment->length, segment_offset, remaining);
+		dprintk(REG,
+			"looking at segment #%d length %ld for offset %ld length %ld\n",
+			iseg, (unsigned long) segment->length, segment_offset, remaining);
 
 		/* skip segment if offset is beyond it */
 		if (unlikely(segment_offset >= segment->length)) {
@@ -521,8 +527,9 @@ omx_user_region_fill_pages(struct omx_user_region * region,
 		if (unlikely(segment_offset + remaining > segment->length)) {
 			/* fill the end of this segment and jump to the next one */
 			unsigned long chunk = segment->length - segment_offset;
-			dprintk("filling pages from segment #%d offset %ld length %ld\n",
-			       iseg, segment_offset, chunk);
+			dprintk(REG,
+				"filling pages from segment #%d offset %ld length %ld\n",
+				iseg, segment_offset, chunk);
 			omx__user_region_segment_fill_pages(segment, segment_offset,
 							    skb, skb_offset,
 							    chunk);
@@ -534,8 +541,9 @@ omx_user_region_fill_pages(struct omx_user_region * region,
 
 		} else {
 			/* the whole data is in this segment */
-			dprintk("last filling pages from segment #%d offset %ld length %ld\n",
-			       iseg, segment_offset, remaining);
+			dprintk(REG,
+				"last filling pages from segment #%d offset %ld length %ld\n",
+				iseg, segment_offset, remaining);
 			omx__user_region_segment_fill_pages(segment, segment_offset,
 							    skb, skb_offset,
 							    remaining);

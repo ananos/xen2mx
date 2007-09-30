@@ -44,9 +44,7 @@
   - some event wakeup both queues (force_wakeup)
   - other events wakeup the progress thread only no one on the regular queue
 
-* debug
-  - filter various debug message types
-  - make driver dprintk runtime configurable
+* MX_VERBOSE level in the lib, only for --enable--debug
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 

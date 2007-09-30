@@ -33,7 +33,8 @@ omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint)
 	/* FIXME: need locking */
 	union omx_evt *slot = endpoint->next_exp_eventq_slot;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
-		dprintk("Open-MX: Event queue full, no event slot available for endpoint %d\n",
+		dprintk(EVENT,
+			"Open-MX: Expected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
 		return NULL;
 	}
@@ -51,7 +52,8 @@ omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint)
 	/* FIXME: need locking */
 	union omx_evt *slot = endpoint->next_unexp_eventq_slot;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
-		dprintk("Open-MX: Event queue full, no event slot available for endpoint %d\n",
+		dprintk(EVENT,
+			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
 		return NULL;
 	}
