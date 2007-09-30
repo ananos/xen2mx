@@ -89,6 +89,8 @@ omx_recv_connect(struct omx_iface * iface,
 	struct omx_pkt_connect *connect_n = &mh->body.connect;
 	uint8_t length = OMX_FROM_PKT_FIELD(connect_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(connect_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(connect_n->src_endpoint);
+	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(connect_n->lib_seqnum);
 	union omx_evt *evt;
 	struct omx_evt_recv_connect *event;
 	int err = 0;
@@ -115,7 +117,8 @@ omx_recv_connect(struct omx_iface * iface,
 	if (unlikely(!endpoint)) {
 		omx_drop_dprintk(eh, "CONNECT packet for unknown endpoint %d",
 				 dst_endpoint);
-		err = -EINVAL;
+		omx_send_nack_lib(iface, eh->h_source, OMX_NACK_TYPE_BAD_ENDPT,
+				  dst_endpoint, src_endpoint, lib_seqnum);
 		goto out;
 	}
 
@@ -131,10 +134,10 @@ omx_recv_connect(struct omx_iface * iface,
 
 	/* fill event */
 	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
-	event->src_endpoint = OMX_FROM_PKT_FIELD(connect_n->src_endpoint);
+	event->src_endpoint = src_endpoint;
 	event->src_dest_peer_index = OMX_FROM_PKT_FIELD(connect_n->src_dst_peer_index);
 	event->length = length;
-	event->seqnum = OMX_FROM_PKT_FIELD(connect_n->lib_seqnum);
+	event->seqnum = lib_seqnum;
 
 	omx_recv_dprintk(eh, "CONNECT data length %ld", (unsigned long) length);
 
@@ -568,6 +571,59 @@ omx_recv_notify(struct omx_iface * iface,
 }
 
 static int
+omx_recv_nack_lib(struct omx_iface * iface,
+		  struct omx_hdr * mh,
+		  struct sk_buff * skb)
+{
+	struct omx_endpoint * endpoint;
+	struct omx_pkt_nack_lib *nack_lib_n = &mh->body.nack_lib;
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->dst_endpoint);
+	union omx_evt *evt;
+	struct omx_evt_recv_nack_lib *event;
+	int err = 0;
+
+	/* get the destination endpoint */
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
+	if (unlikely(!endpoint)) {
+		omx_drop_dprintk(&mh->head.eth, "NACK LIB packet for unknown endpoint %d",
+				 dst_endpoint);
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* get the eventq slot */
+	evt = omx_find_next_unexp_eventq_slot(endpoint);
+	if (unlikely(!evt)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(&mh->head.eth, "NACK LIB packet because of unexpected event queue full");
+		err = -EBUSY;
+		goto out_with_endpoint;
+	}
+	event = &evt->recv_nack_lib;
+
+	/* fill event */
+	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->src_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->src_endpoint);
+	event->seqnum = OMX_FROM_PKT_FIELD(nack_lib_n->lib_seqnum);
+	/* FIXME: nack type as a status */
+
+	omx_recv_dprintk(&mh->head.eth, "NACK LIB"); /* FIXME: add nack type */
+
+	/* set the type at the end so that user-space does not find the slot on error */
+	wmb();
+	event->type = OMX_EVT_RECV_NACK_LIB;
+
+	omx_endpoint_release(endpoint);
+
+	return 0;
+
+ out_with_endpoint:
+	omx_endpoint_release(endpoint);
+ out:
+	return err;
+}
+
+static int
 omx_recv_nosys(struct omx_iface * iface,
 		struct omx_hdr * mh,
 		struct sk_buff * skb)
@@ -619,7 +675,7 @@ omx_pkt_type_handlers_init(void)
 	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL] = omx_recv_pull;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL_REPLY] = omx_recv_pull_reply;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_NOTIFY] = omx_recv_notify;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_LIB] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_LIB] = omx_recv_nack_lib;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_MCP] = omx_recv_nosys; /* FIXME */
 }
 

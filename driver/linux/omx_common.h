@@ -75,6 +75,7 @@ extern int omx_send_rndv(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_pull(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_notify(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_connect(struct omx_endpoint * endpoint, void __user * uparam);
+extern void omx_send_nack_lib(struct omx_iface * iface, unsigned char * h_dest, enum omx_nack_type nack_type, uint8_t src_endpoint, uint8_t dst_endpoint, uint16_t lib_seqnum);
 
 /* receiving */
 extern void omx_pkt_type_handlers_init(void);

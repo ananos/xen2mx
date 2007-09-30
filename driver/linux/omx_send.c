@@ -580,6 +580,51 @@ omx_send_notify(struct omx_endpoint * endpoint,
 	return ret;
 }
 
+void
+omx_send_nack_lib(struct omx_iface * iface, unsigned char * h_dest, enum omx_nack_type nack_type,
+		  uint8_t src_endpoint, uint8_t dst_endpoint, uint16_t lib_seqnum)
+{
+	struct sk_buff *skb;
+	struct omx_hdr *mh;
+	struct ethhdr *eh;
+	struct net_device * ifp = iface->eth_ifp;
+
+	skb = omx_new_skb(ifp,
+			  /* pad to ETH_ZLEN */
+			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
+	if (unlikely(skb == NULL)) {
+		printk(KERN_INFO "Open-MX: Failed to create nack lib skb\n");
+		/* just forget about it, it will be resent anyway */
+		return;
+	}
+
+	/* locate headers */
+	mh = omx_hdr(skb);
+	eh = &mh->head.eth;
+
+	/* fill ethernet header */
+	memset(eh, 0, sizeof(*eh));
+	memcpy(eh->h_dest, h_dest, sizeof (eh->h_dest));
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+
+	/* fill omx header */
+#if 0
+	/* need peer table in the driver to set dst_src_peer_index */
+	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, /* TODO */);
+	OMX_PKT_FIELD_FROM(mh->body.nack_lib.dst_src_peer_index, /* TODO */);
+#endif
+	OMX_PKT_FIELD_FROM(mh->body.nack_lib.src_endpoint, src_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.nack_lib.dst_endpoint, dst_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.nack_lib.ptype, OMX_PKT_TYPE_NACK_LIB);
+	OMX_PKT_FIELD_FROM(mh->body.nack_lib.nack_type, nack_type);
+	OMX_PKT_FIELD_FROM(mh->body.tiny.lib_seqnum, lib_seqnum);
+
+	omx_send_dprintk(eh, "NACK LIB type %d", nack_type);
+
+	dev_queue_xmit(skb);
+}
+
 /*
  * Command to benchmark commands
  */

@@ -194,6 +194,24 @@ struct omx_pkt_notify {
 	uint16_t lib_piggyack; /* FIXME: unused ? */
 };
 
+enum omx_nack_type {
+	OMX_NACK_TYPE_NONE = 0,
+	OMX_NACK_TYPE_BAD_ENDPT,
+	OMX_NACK_TYPE_ENDPT_CLOSED,
+	OMX_NACK_TYPE_BAD_SESSION,
+	OMX_NACK_TYPE_BAD_RDMAWIN,
+};
+
+struct omx_pkt_nack_lib {
+	uint8_t ptype;
+	uint8_t dst_endpoint;
+	uint8_t src_endpoint;
+	uint8_t src_generation; /* FIXME: unused ? */
+	enum omx_nack_type nack_type;
+	uint16_t dst_src_peer_index;
+	uint16_t lib_seqnum;
+};
+
 struct omx_hdr {
 	struct omx_pkt_head head;
 	/* 32 */
@@ -207,6 +225,7 @@ struct omx_hdr {
 		struct omx_pkt_pull_reply pull_reply;
 		struct omx_pkt_notify notify;
 		struct omx_pkt_connect connect;
+		struct omx_pkt_nack_lib nack_lib;
 	} body;
 };
 

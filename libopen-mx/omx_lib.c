@@ -111,10 +111,18 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_PULL_DONE: {
-
     ep->avail_exp_events++;
 
     omx__process_pull_done(ep, &evt->pull_done);
+    break;
+  }
+
+  case OMX_EVT_RECV_NACK_LIB: {
+    struct omx_evt_recv_nack_lib * nack_lib = &evt->recv_nack_lib;
+    uint16_t seqnum = nack_lib->seqnum;
+    printf("got a NACK for seqnum %d\n",
+	   (unsigned) seqnum);
+    assert(0);
     break;
   }
 

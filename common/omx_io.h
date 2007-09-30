@@ -332,6 +332,7 @@ struct omx_cmd_deregister_region {
 #define OMX_EVT_RECV_MEDIUM		0x14
 #define OMX_EVT_RECV_RNDV		0x15
 #define OMX_EVT_RECV_NOTIFY		0x16
+#define OMX_EVT_RECV_NACK_LIB		0x20
 
 static inline const char *
 omx_strevt(unsigned type)
@@ -355,6 +356,8 @@ omx_strevt(unsigned type)
 		return "Receive Rendez-vous";
 	case OMX_EVT_RECV_NOTIFY:
 		return "Receive Notify";
+	case OMX_EVT_RECV_NACK_LIB:
+		return "Receive Nack Lib";
 	default:
 		return "** Unknown **";
 	}
@@ -408,6 +411,17 @@ union omx_evt {
 		uint8_t pad3[15];
 		uint8_t type;
 	} recv_connect;
+
+	struct omx_evt_recv_nack_lib {
+		uint16_t dest_src_peer_index; /* FIXME: unused for now */
+		uint8_t src_endpoint;
+		uint8_t nack_type; /* FIXME: pass the status instead */
+		uint16_t seqnum;
+		uint16_t pad1;
+		/* 8 */
+		uint8_t pad3[55];
+		uint8_t type;
+	} recv_nack_lib;
 
 	struct omx_evt_recv_msg {
 		uint16_t dest_src_peer_index;
