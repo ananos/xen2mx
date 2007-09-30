@@ -64,6 +64,9 @@ struct omx_endpoint {
 	uint8_t endpoint_index;
 	uint32_t session_id;
 
+	pid_t opener_pid;
+	char opener_comm[TASK_COMM_LEN];
+
 	rwlock_t lock;
 	enum omx_endpoint_status status;
 	atomic_t refcount;

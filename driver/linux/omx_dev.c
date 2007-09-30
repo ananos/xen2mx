@@ -151,6 +151,9 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 	if (ret < 0)
 		goto out_with_resources;
 
+	endpoint->opener_pid = current->pid;
+	strncpy(endpoint->opener_comm, current->comm, TASK_COMM_LEN);
+
 	printk(KERN_INFO "Open-MX: Successfully open board %d endpoint %d\n",
 	       endpoint->board_index, endpoint->endpoint_index);
 
@@ -437,6 +440,28 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 				   sizeof(get_board_id));
 		if (ret < 0)
 			printk(KERN_ERR "Open-MX: Failed to write get_board_id command result, error %d\n", ret);
+
+		break;
+	}
+
+	case OMX_CMD_GET_ENDPOINT_INFO: {
+		struct omx_cmd_get_endpoint_info get_endpoint_info;
+
+		ret = copy_from_user(&get_endpoint_info, (void __user *) arg,
+				     sizeof(get_endpoint_info));
+		if (ret < 0) {
+			printk(KERN_ERR "Open-MX: Failed to read get_endpoint_info command argument, error %d\n", ret);
+			goto out;
+		}
+
+		ret = omx_endpoint_get_info(get_endpoint_info.board_index, get_endpoint_info.endpoint_index,
+					    &get_endpoint_info.closed, &get_endpoint_info.pid,
+					    get_endpoint_info.command, sizeof(get_endpoint_info.command));
+
+		ret = copy_to_user((void __user *) arg, &get_endpoint_info,
+				   sizeof(get_endpoint_info));
+		if (ret < 0)
+			printk(KERN_ERR "Open-MX: Failed to write get_endpoint_info command result, error %d\n", ret);
 
 		break;
 	}

@@ -537,6 +537,50 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 		write_unlock_bh(&iface->endpoint_lock);
 }
 
+/*
+ * Return some info about an endpoint.
+ */
+int
+omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
+		      uint32_t * closed, uint32_t * pid, char * command, size_t len)
+{
+	struct omx_iface * iface;
+	struct omx_endpoint * endpoint;
+	int ret;
+
+	/* need to lock since we access the internals of the iface */
+	read_lock(&omx_iface_lock);
+
+	ret = -EINVAL;
+	if (board_index >= omx_iface_max
+	    || omx_ifaces[board_index] == NULL)
+		goto out_with_lock;
+	iface = omx_ifaces[board_index];
+
+        read_lock(&iface->endpoint_lock);
+        if (endpoint_index >= omx_endpoint_max)
+                goto out_with_iface_lock;
+
+        endpoint = iface->endpoints[endpoint_index];
+        if (endpoint) {
+		*closed = 0;
+		*pid = endpoint->opener_pid;
+		strncpy(command, endpoint->opener_comm, len);
+	} else {
+		*closed = 1;
+	}
+
+        read_unlock(&iface->endpoint_lock);
+	read_unlock(&omx_iface_lock);
+
+	return 0;
+
+ out_with_iface_lock:
+        read_unlock(&iface->endpoint_lock);
+ out_with_lock:
+	return ret;
+}
+
 /******************************
  * Netdevice notifier
  */

@@ -54,6 +54,7 @@ extern struct omx_endpoint * omx_endpoint_acquire_by_iface_index(struct omx_ifac
 extern union omx_evt * omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint);
 extern union omx_evt * omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint);
 extern void omx_endpoint_release(struct omx_endpoint * endpoint);
+extern int omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index, uint32_t * closed, uint32_t * pid, char * command, size_t len);
 
 static inline void omx_endpoint_reacquire(struct omx_endpoint * endpoint)
 { atomic_inc(&endpoint->refcount); } /* somebody must already hold a reference */

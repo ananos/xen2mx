@@ -50,8 +50,6 @@
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
-* omx_endpoint_info
-
 * mapper (open-mxd)
 * /dev/open-mxd ?
 
