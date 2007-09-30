@@ -202,6 +202,25 @@ enum omx_nack_type {
 	OMX_NACK_TYPE_BAD_RDMAWIN,
 };
 
+static inline const char*
+omx_strnacktype(enum omx_nack_type ntype)
+{
+	switch (ntype) {
+	case OMX_NACK_TYPE_NONE:
+		return "None";
+	case OMX_NACK_TYPE_BAD_ENDPT:
+		return "Bad Endpoint";
+	case OMX_NACK_TYPE_ENDPT_CLOSED:
+		return "Endpoint Closed";
+	case OMX_NACK_TYPE_BAD_SESSION:
+		return "Bad Session";
+	case OMX_NACK_TYPE_BAD_RDMAWIN:
+		return "Bad RDMA Window";
+	default:
+		return "** Unknown **";
+	}
+}
+
 struct omx_pkt_nack_lib {
 	uint8_t ptype;
 	uint8_t dst_endpoint;
