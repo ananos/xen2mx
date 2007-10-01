@@ -84,7 +84,12 @@ int
 omx_peer_lookup_by_index(uint32_t index,
 			 uint64_t *board_addr, char *hostname)
 {
-	struct omx_peer *peer = omx_peer_array[index];
+	struct omx_peer *peer;
+
+	if (index >= omx_peers_nr)
+		return -EINVAL;
+
+	peer = omx_peer_array[index];
 	if (!peer)
 		return -EINVAL;
 
