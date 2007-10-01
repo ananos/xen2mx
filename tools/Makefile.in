@@ -61,6 +61,7 @@ installonly:
 		-e 's£@omx_device_name@£@DEVICE_NAME@£' \
 		-e 's£@omx_device_group@£@DEVICE_GROUP@£' \
 		-e 's£@omx_device_mode@£@DEVICE_MODE@£' \
+		-e 's£@omx_peers_file@£@PEERS_FILE@£' \
 		< @srcdir@/omx_init.in > omx_init
 	$(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/
 

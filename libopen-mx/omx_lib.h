@@ -219,10 +219,10 @@ extern omx_return_t omx__get_board_count(uint32_t * count);
 extern omx_return_t omx__get_board_id(struct omx_endpoint * ep, uint8_t * index, uint64_t * addr, char * hostname, char * ifacename);
 extern omx_return_t omx__get_board_index_by_name(const char * name, uint8_t * index);
 
-extern omx_return_t omx__peers_init(void);
+extern omx_return_t omx__driver_peer_add(uint64_t board_addr, char *hostname);
+extern omx_return_t omx__driver_peers_clear(void);
 extern omx_return_t omx__peers_dump(const char * format);
 extern omx_return_t omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index);
-extern omx_return_t omx__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname);
 
 static inline int
 omx__endpoint_sendq_map_get(struct omx_endpoint * ep,

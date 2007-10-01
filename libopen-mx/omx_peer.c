@@ -16,205 +16,156 @@
  * See the GNU Lesser General Public License in COPYING.LGPL for more details.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <sys/ioctl.h>
 
 #include "omx_lib.h"
 
-#ifndef OMX_PEERS_DEFAULT_FILENAME
-/* might be set by configure */
-#define OMX_PEERS_DEFAULT_FILENAME "open-mx.peers"
-#endif
-
-#define OMX_PEERS_FILENAME_ENVVAR "OMX_PEERS_FILENAME"
-
-#define OMX_PEERS_MAX_DEFAULT 1
-
-struct omx_peer {
-  int valid;
-  char *hostname;
-  uint64_t board_addr;
-};
-
-#define OMX_PEERS_FILELINELEN_MAX (10 + 1 + OMX_HOSTNAMELEN_MAX + OMX_BOARD_ADDR_STRLEN + 1)
-
-static struct omx_peer * omx_peers = NULL;
-static int omx_peers_max;
+/************************
+ * Peer Table Management
+ */
 
 omx_return_t
-omx__peers_read(void)
+omx__driver_peer_add(uint64_t board_addr, char *hostname)
 {
-  char * omx_peers_filename = OMX_PEERS_DEFAULT_FILENAME;
-  char line[OMX_PEERS_FILELINELEN_MAX];
-  char *envvar;
-  FILE *file;
-  omx_return_t ret;
-  int index = 0;
-  int i;
+  struct omx_cmd_misc_peer_info peer_info;
+  int err;
 
-  envvar = getenv(OMX_PEERS_FILENAME_ENVVAR);
-  if (envvar != NULL) {
-    printf("Using peers file '%s'\n", envvar);
-    omx_peers_filename = envvar;
-  }
+  peer_info.board_addr = board_addr;
+  strncpy(peer_info.hostname, hostname, OMX_HOSTNAMELEN_MAX);
 
-  file = fopen(omx_peers_filename, "r");
-  if (!file) {
-    fprintf(stderr, "Provide a peers file '%s' (or update '%s' environment variable)\n",
-	    omx_peers_filename, OMX_PEERS_FILENAME_ENVVAR);
-    return OMX_BAD_ERROR;
-  }
-
-  if (omx_peers)
-    free(omx_peers);
-  omx_peers_max = OMX_PEERS_MAX_DEFAULT;
-  omx_peers = malloc(sizeof(struct omx_peer));
-  if (!omx_peers) {
-    ret = OMX_NO_RESOURCES;
-    goto out_with_file;
-  }
-  for(i=0; i<omx_peers_max; i++)
-    omx_peers[i].valid = 0;
-
-  while (fgets(line, OMX_PEERS_FILELINELEN_MAX, file)) {
-    char hostname[OMX_HOSTNAMELEN_MAX];
-    int addr_bytes[6];
-    size_t len = strlen(line);
-
-    /* ignore comments and empty lines */
-    if (line[0] == '#' || len == 1)
-      continue;
-
-    /* clean the line \n */
-    if (line[len-1] == '\n')
-      line[len-1] = '\0';
-
-    /* parse a line */
-    if (sscanf(line, "%02x:%02x:%02x:%02x:%02x:%02x %s",
-	       &addr_bytes[0], &addr_bytes[1], &addr_bytes[2],
-	       &addr_bytes[3], &addr_bytes[4], &addr_bytes[5],
-	       hostname)
-	!= 7) {
-      fprintf(stderr, "Unrecognized peer line '%s'\n", line);
-      ret = OMX_INVALID_PARAMETER;
-      goto out_with_file;
-    }
-
-    if (index >= omx_peers_max) {
-      assert(index == omx_peers_max);
-      /* increasing peers array */
-      struct omx_peer * new_peers;
-      new_peers = realloc(omx_peers, 2 * omx_peers_max * sizeof(struct omx_peer));
-      if (!new_peers) {
-	ret = OMX_NO_RESOURCES;
-	goto out_with_file;
-      }
-      for(i=omx_peers_max; i<2*omx_peers_max; i++)
-	new_peers[i].valid = 0;
-
-      omx_peers = new_peers;
-      omx_peers_max *= 2;
-    }
-
-    /* add the new peer */
-    omx_peers[index].valid = 1;
-    omx_peers[index].hostname = strdup(hostname);
-    omx_peers[index].board_addr = ((((uint64_t) addr_bytes[0]) << 40)
-				   + (((uint64_t) addr_bytes[1]) << 32)
-				   + (((uint64_t) addr_bytes[2]) << 24)
-				   + (((uint64_t) addr_bytes[3]) << 16)
-				   + (((uint64_t) addr_bytes[4]) << 8)
-				   + (((uint64_t) addr_bytes[5]) << 0));
-
-    index++;
-  }
-
-  fclose(file);
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_ADD, &peer_info);
+  if (err < 0)
+    return omx__errno_to_return("OMX_CMD_PEER_ADD");
 
   return OMX_SUCCESS;
-
- out_with_file:
-  fclose(file);
-  return ret;
 }
 
 omx_return_t
-omx__peers_init(void)
+omx__driver_peers_clear()
 {
-  omx_return_t ret;
+  int err;
 
-  ret = omx__peers_read();
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEERS_CLEAR);
+  if (err < 0)
+    return omx__errno_to_return("OMX_CMD_PEERS_CLEAR");
 
-  return ret;
+  return 0;
 }
+
+/************************
+ * Low-Level Peer Lookup
+ */
+
+static inline omx_return_t
+omx__driver_peer_from_index(uint32_t index, uint64_t *board_addr, char *hostname)
+{
+  struct omx_cmd_misc_peer_info peer_info;
+  int err;
+
+  peer_info.index = index;
+
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_INDEX, &peer_info);
+  if (err < 0)
+    return omx__errno_to_return("OMX_CMD_PEER_FROM_INDEX");
+
+  if (board_addr)
+    *board_addr = peer_info.board_addr;
+  if (hostname)
+    strncpy(hostname, peer_info.hostname, OMX_HOSTNAMELEN_MAX);
+
+  return OMX_SUCCESS;
+}
+
+static inline omx_return_t
+omx__driver_peer_from_addr(uint64_t board_addr, char *hostname, uint32_t *index)
+{
+  struct omx_cmd_misc_peer_info peer_info;
+  int err;
+
+  peer_info.board_addr = board_addr;
+
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_ADDR, &peer_info);
+  if (err < 0)
+    return omx__errno_to_return("OMX_CMD_PEER_FROM_ADDR");
+
+  if (index)
+    *index = peer_info.index;
+  if (hostname)
+    strncpy(hostname, peer_info.hostname, OMX_HOSTNAMELEN_MAX);
+
+  return OMX_SUCCESS;
+}
+
+static inline omx_return_t
+omx__driver_peer_from_hostname(char *hostname, uint64_t *board_addr, uint32_t *index)
+{
+  struct omx_cmd_misc_peer_info peer_info;
+  int err;
+
+  strncpy(peer_info.hostname, hostname, OMX_HOSTNAMELEN_MAX);
+
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_HOSTNAME, &peer_info);
+  if (err < 0)
+    return omx__errno_to_return("OMX_CMD_PEER_FROM_HOSTNAME");
+
+  if (index)
+    *index = peer_info.index;
+  if (board_addr)
+    *board_addr = peer_info.board_addr;
+
+  return OMX_SUCCESS;
+}
+
+/*************************
+ * High-Level Peer Lookup
+ */
 
 omx_return_t
 omx__peers_dump(const char * format)
 {
+  omx_return_t ret;
   int i;
 
-  for(i=0; i<omx_peers_max; i++)
-    if (omx_peers[i].valid) {
-      char addr_str[OMX_BOARD_ADDR_STRLEN];
+  for(i=0; i<omx__globals.peer_max; i++) {
+    char hostname[OMX_HOSTNAMELEN_MAX];
+    uint64_t board_addr = 0;
+    char addr_str[OMX_BOARD_ADDR_STRLEN];
 
-      omx__board_addr_sprintf(addr_str, omx_peers[i].board_addr);
-      printf(format, i, addr_str, omx_peers[i].hostname);
-    }
+    ret = omx__driver_peer_from_index(i, &board_addr, hostname);
+    if (ret != OMX_SUCCESS)
+      break;
+
+    omx__board_addr_sprintf(addr_str, board_addr);
+    printf(format, i, addr_str, hostname);
+  }
 
   return OMX_SUCCESS;
 }
 
 omx_return_t
-omx__peer_from_index(uint16_t index, uint64_t *board_addr, char **hostname)
+omx__peer_addr_to_index(uint64_t board_addr, uint16_t *indexp)
 {
-  if (index >= omx_peers_max || !omx_peers[index].valid)
-    return OMX_INVALID_PARAMETER;
+  omx_return_t ret;
+  uint32_t index = -1;
 
-  *board_addr = omx_peers[index].board_addr;
-  *hostname = omx_peers[index].hostname;
+  ret = omx__driver_peer_from_addr(board_addr, NULL, &index);
+  if (ret != OMX_SUCCESS)
+    return ret;
+
+  *indexp = index;
   return OMX_SUCCESS;
-}
-
-omx_return_t
-omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index)
-{
-  int i;
-
-  for(i=0; i<omx_peers_max; i++)
-    if (omx_peers[i].valid && omx_peers[i].board_addr == board_addr) {
-      *index = i;
-      return OMX_SUCCESS;
-    }
-
-  return OMX_INVALID_PARAMETER;
 }
 
 omx_return_t
 omx_hostname_to_nic_id(char *hostname,
 		       uint64_t *board_addr)
 {
-  int i;
-
-  for(i=0; i<omx_peers_max; i++)
-    if (omx_peers[i].valid && !strcmp(hostname, omx_peers[i].hostname)) {
-      *board_addr = omx_peers[i].board_addr;
-      return OMX_SUCCESS;
-    }
-
-  return OMX_INVALID_PARAMETER;
+  return omx__driver_peer_from_hostname(hostname, board_addr, NULL);
 }
 
 omx_return_t
 omx_nic_id_to_hostname(uint64_t board_addr,
 		       char *hostname)
 {
-  int i;
-
-  for(i=0; i<omx_peers_max; i++)
-    if (omx_peers[i].valid && board_addr == omx_peers[i].board_addr) {
-      strcpy(hostname, omx_peers[i].hostname);
-      return OMX_SUCCESS;
-    }
-
-  return OMX_INVALID_PARAMETER;
+  return omx__driver_peer_from_addr(board_addr, hostname, NULL);
 }

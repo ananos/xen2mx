@@ -20,19 +20,19 @@ a. Build and install Open-MX in /opt/open-mx
    $ make
    $ make install
 
-b. Look for eth2 MAC addresses in /sbin/ifconfig -a on each node.
+b. Load the open-mx kernel module and tell it which interface to use
+     $ /path/to/mx/sbin/omx_init omx_ifnames=eth2
+   See section II and III for details.
+
+c. Look for eth2 MAC addresses in /sbin/ifconfig -a on each node.
    and insert them in a file such as this one:
      $ cat /path/to/the/peers/file
      01:02:03:04:05:06 node1:0
      a0:b0:c0:d0:e0:f0 node2:0
 
-c. Make Open-MX use this file:
-     $ export OMX_PEERS_FILENAME=/path/to/the/peers/file
+d. Make Open-MX use this file:
+     $ /path/to/mx/bin/mx_init_peers /path/to/the/peers/file
    See Section IV for details.
-
-d. Load the open-mx kernel module and tell it which interface to use
-     $ /path/to/mx/sbin/omx_init omx_ifnames=eth2
-   See section II and III for details.
 
 e. Make sure both interfaces are up
      $ ifconfig eth2 up
@@ -160,9 +160,12 @@ However, having an IP address is not required.
 | V. Peer Table File |
 +--------------------+
 
-A file listing peers must be provided, either in the current directory,
-or at a location given in the environment variable OMX_PEERS_FILENAME
-or with the --with-peers-file=<path> configure option.
+A file listing peers must be provided to store the list of hostnames
+and mac addresses in the driver. You should the omx_init_peers tool
+to setup this list. Or the --with-peers-file=<path> configure option
+may be used so that the omx_init startup script takes care of running
+omx_init_peers automatically.
+
 The contents of the file is one line per peer, each containing
 2 fields (seperated by spaces or tabs):
 * a mac address (6 colon-separated numbers)

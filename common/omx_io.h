@@ -81,6 +81,11 @@ struct omx_cmd_region_segment {
 #define OMX_CMD_GET_BOARD_COUNT		0x04
 #define OMX_CMD_GET_BOARD_ID		0x05
 #define OMX_CMD_GET_ENDPOINT_INFO	0x06
+#define OMX_CMD_PEERS_CLEAR		0x10
+#define OMX_CMD_PEER_ADD		0x11
+#define OMX_CMD_PEER_FROM_INDEX		0x12
+#define OMX_CMD_PEER_FROM_ADDR		0x13
+#define OMX_CMD_PEER_FROM_HOSTNAME	0x14
 #define OMX_CMD_OPEN_ENDPOINT		0x71
 #define OMX_CMD_CLOSE_ENDPOINT		0x72
 #define OMX_CMD_GET_ENDPOINT_SESSION_ID	0x73
@@ -112,6 +117,16 @@ omx_strcmd(unsigned cmd)
 		return "Get Board ID";
 	case OMX_CMD_GET_ENDPOINT_INFO:
 		return "Get Endpoint Info";
+	case OMX_CMD_PEERS_CLEAR:
+		return "Clear Peers";
+	case OMX_CMD_PEER_ADD:
+		return "Add Peer";
+	case OMX_CMD_PEER_FROM_INDEX:
+		return "Peer from Index";
+	case OMX_CMD_PEER_FROM_ADDR:
+		return "Peer from Addr";
+	case OMX_CMD_PEER_FROM_HOSTNAME:
+		return "Peer from Hostname";
 	case OMX_CMD_OPEN_ENDPOINT:
 		return "Open Endpoint";
 	case OMX_CMD_CLOSE_ENDPOINT:
@@ -178,6 +193,12 @@ struct omx_cmd_get_endpoint_info {
 	uint32_t closed;
 	uint32_t pid;
 	char command[32];
+};
+
+struct omx_cmd_misc_peer_info {
+	uint64_t board_addr;
+	char hostname[OMX_HOSTNAMELEN_MAX];
+	uint32_t index;
 };
 
 struct omx_cmd_open_endpoint {

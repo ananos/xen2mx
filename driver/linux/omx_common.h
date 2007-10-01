@@ -66,6 +66,13 @@ extern int omx_ifaces_get_count(void);
 extern int omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, char * ifacename);
 extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);
 
+/* manage peers */
+extern int omx_peers_init(void);
+extern void omx_peers_exit(void);
+extern int omx_peer_add(uint64_t board_addr, char *hostname);
+extern void omx_peers_clear(void);
+extern int omx_peer_lookup(unsigned cmd, uint64_t *board_addr, char *hostname, uint32_t *index);
+
 /* sending */
 extern struct sk_buff * omx_new_skb(struct net_device *ifp, unsigned long len);
 extern int omx_send_tiny(struct omx_endpoint * endpoint, void __user * uparam);

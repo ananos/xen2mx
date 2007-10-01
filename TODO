@@ -16,7 +16,6 @@
 * truc messages
 * retransmission
 
-* move peer table in the driver
 * pass peer_index instead of addresses in send command
 * use driver peer table to set dst_src_peer_index in messages
 * add dst_src_peer_index in nacks

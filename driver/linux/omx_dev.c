@@ -473,6 +473,64 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		break;
 	}
 
+	case OMX_CMD_PEERS_CLEAR: {
+
+		ret = -EPERM;
+		if (!capable(CAP_SYS_CHROOT))
+			goto out;
+
+		omx_peers_clear();
+
+		ret = 0;
+		break;
+	}
+
+	case OMX_CMD_PEER_ADD: {
+		struct omx_cmd_misc_peer_info peer_info;
+
+		ret = -EPERM;
+		if (!capable(CAP_SYS_CHROOT))
+			goto out;
+
+		ret = copy_from_user(&peer_info, (void __user *) arg,
+				     sizeof(peer_info));
+		if (ret < 0) {
+			printk(KERN_ERR "Open-MX: Failed to read add_peer command argument, error %d\n", ret);
+			goto out;
+		}
+
+		peer_info.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+
+		ret = omx_peer_add(peer_info.board_addr, peer_info.hostname);
+		break;
+	}
+
+	case OMX_CMD_PEER_FROM_INDEX:
+	case OMX_CMD_PEER_FROM_ADDR:
+	case OMX_CMD_PEER_FROM_HOSTNAME: {
+		struct omx_cmd_misc_peer_info peer_info;
+
+		ret = copy_from_user(&peer_info, (void __user *) arg,
+				     sizeof(peer_info));
+		if (ret < 0) {
+			printk(KERN_ERR "Open-MX: Failed to read '%s' command argument, error %d\n",
+			       omx_strcmd(cmd), ret);
+			goto out;
+		}
+
+		ret = omx_peer_lookup(cmd, &peer_info.board_addr, peer_info.hostname, &peer_info.index);
+		if (ret < 0)
+			goto out;
+
+		ret = copy_to_user((void __user *) arg, &peer_info,
+				   sizeof(peer_info));
+		if (ret < 0)
+			printk(KERN_ERR "Open-MX: Failed to write '%s' command result, error %d\n",
+			       omx_strcmd(cmd), ret);
+
+		break;
+	}
+
 	case OMX_CMD_OPEN_ENDPOINT: {
 		struct omx_endpoint * endpoint = file->private_data;
 		BUG_ON(!endpoint);

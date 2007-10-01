@@ -61,9 +61,13 @@ omx_init(void)
 	if (ret < 0)
 		goto out;
 
-	ret = omx_net_init((const char *) omx_ifnames);
+	ret = omx_peers_init();
 	if (ret < 0)
 		goto out_with_dma;
+
+	ret = omx_net_init((const char *) omx_ifnames);
+	if (ret < 0)
+		goto out_with_peers;
 
 	ret = omx_dev_init();
 	if (ret < 0)
@@ -81,6 +85,8 @@ omx_init(void)
 
  out_with_net:
 	omx_net_exit();
+ out_with_peers:
+	omx_peers_init();
  out_with_dma:
 	omx_dma_exit();
  out:
@@ -95,6 +101,7 @@ omx_exit(void)
 	printk(KERN_INFO "Open-MX terminating...\n");
 	omx_dev_exit();
 	omx_net_exit();
+	omx_peers_init();
 	omx_dma_exit();
 	printk(KERN_INFO "Open-MX terminated\n");
 }
