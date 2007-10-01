@@ -81,69 +81,60 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 }
 
 int
-omx_peer_lookup(unsigned cmd,
-		uint64_t *board_addr, char *hostname, uint32_t *index)
+omx_peer_lookup_by_index(uint32_t index,
+			 uint64_t *board_addr, char *hostname)
 {
-	struct omx_peer *peer;
-	int err = 0;
+	struct omx_peer *peer = omx_peer_array[index];
+	if (!peer)
+		return -EINVAL;
 
-	spin_lock(&omx_peer_lock);
-
-	switch (cmd) {
-
-	case OMX_CMD_PEER_FROM_INDEX: {
-		peer = omx_peer_array[*index];
-		if (!peer) {
-			err = -EINVAL;
-			goto out;
-		}
-
+	if (board_addr)
 		*board_addr = peer->board_addr;
+	if (hostname)
 		strcpy(hostname, peer->hostname);
 
-		break;
-	}
+	return 0;
+}
 
-	case OMX_CMD_PEER_FROM_ADDR: {
-		int i;
+int
+omx_peer_lookup_by_addr(uint64_t board_addr,
+			char *hostname, uint32_t *index)
+{
+	int i;
 
-		for(i=0; i<omx_peers_nr; i++) {
-			peer = omx_peer_array[i];
-			if (peer->board_addr == *board_addr) {
+	for(i=0; i<omx_peers_nr; i++) {
+		struct omx_peer *peer = omx_peer_array[i];
+		if (peer->board_addr == board_addr) {
+			if (index)
 				*index = i;
+			if (hostname)
 				strcpy(hostname, peer->hostname);
-				goto out;
-			}
+			return 0;
 		}
-
-		err = -EINVAL;
-		break;
 	}
 
-	case OMX_CMD_PEER_FROM_HOSTNAME: {
-		int i;
+	return -EINVAL;
 
-		for(i=0; i<omx_peers_nr; i++) {
-			peer = omx_peer_array[i];
-			if (!strcmp(hostname, peer->hostname)) {
+}
+
+int
+omx_peer_lookup_by_hostname(char *hostname,
+			    uint64_t *board_addr, uint32_t *index)
+{
+	int i;
+
+	for(i=0; i<omx_peers_nr; i++) {
+		struct omx_peer *peer = omx_peer_array[i];
+		if (!strcmp(hostname, peer->hostname)) {
+			if (index)
 				*index = i;
+			if (board_addr)
 				*board_addr = peer->board_addr;
-				goto out;
-			}
+			return 0;
 		}
-
-		err = -EINVAL;
-		break;
 	}
 
-	default:
-		BUG();
-	}
-
- out:
-	spin_unlock(&omx_peer_lock);
-
-	return err;
+	return -EINVAL;
 }
 
 int

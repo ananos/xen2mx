@@ -71,7 +71,9 @@ extern int omx_peers_init(void);
 extern void omx_peers_exit(void);
 extern int omx_peer_add(uint64_t board_addr, char *hostname);
 extern void omx_peers_clear(void);
-extern int omx_peer_lookup(unsigned cmd, uint64_t *board_addr, char *hostname, uint32_t *index);
+extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *hostname);
+extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t *index);
+extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uint32_t *index);
 
 /* sending */
 extern struct sk_buff * omx_new_skb(struct net_device *ifp, unsigned long len);

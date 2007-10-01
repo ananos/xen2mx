@@ -518,7 +518,16 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 			goto out;
 		}
 
-		ret = omx_peer_lookup(cmd, &peer_info.board_addr, peer_info.hostname, &peer_info.index);
+		if (cmd == OMX_CMD_PEER_FROM_INDEX)
+			ret = omx_peer_lookup_by_index(peer_info.index,
+						       &peer_info.board_addr, peer_info.hostname);
+		else if (cmd == OMX_CMD_PEER_FROM_ADDR)
+			ret = omx_peer_lookup_by_addr(peer_info.board_addr,
+						      peer_info.hostname, &peer_info.index);
+		else if (cmd == OMX_CMD_PEER_FROM_HOSTNAME)
+			ret = omx_peer_lookup_by_hostname(peer_info.hostname,
+							  &peer_info.board_addr, &peer_info.index);
+
 		if (ret < 0)
 			goto out;
 
