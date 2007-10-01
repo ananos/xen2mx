@@ -23,11 +23,13 @@
 
 #include "omx_common.h"
 
+#define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
+
 struct omx_peer {
 	uint64_t board_addr;
 	char *hostname;
 	uint32_t index; /* this peer index in our table */
-	uint32_t reverse_index; /* our index in this peer table, -1 if unknown */
+	uint32_t reverse_index; /* our index in this peer table, or OMX_UNKNOWN_REVERSE_PEER_INDEX */
 };
 
 static spinlock_t omx_peer_lock;
@@ -69,13 +71,35 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 
 	peer->board_addr = board_addr;
 	peer->hostname = kstrdup(hostname, GFP_KERNEL);
-	peer->reverse_index = -1; /* unknown for now */
+	peer->reverse_index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 
 	spin_lock(&omx_peer_lock);
 	omx_peer_array[omx_peers_nr] = peer;
 	peer->index = omx_peers_nr;
 	omx_peers_nr++;
 	spin_unlock(&omx_peer_lock);
+
+	return 0;
+}
+
+int
+omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
+{
+	struct omx_peer *peer;
+
+	if (index >= omx_peers_nr)
+		return -EINVAL;
+
+	peer = omx_peer_array[index];
+	if (!peer)
+		return -EINVAL;
+
+	if (peer->reverse_index != OMX_UNKNOWN_REVERSE_PEER_INDEX
+	    && reverse_index != peer->reverse_index)
+		dprintk("changing remote peer #%d reverse index from %d to %d\n",
+			index, peer->reverse_index, reverse_index);
+
+	peer->reverse_index = reverse_index;
 
 	return 0;
 }

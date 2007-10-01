@@ -493,6 +493,7 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* fill omx header */
+	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, -1);
 	OMX_PKT_FIELD_FROM(mh->body.connect.src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(mh->body.connect.dst_endpoint, cmd.dest_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.connect.ptype, OMX_PKT_TYPE_CONNECT);

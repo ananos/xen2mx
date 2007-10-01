@@ -86,10 +86,13 @@ omx_recv_connect(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
+	uint64_t src_addr = omx_board_addr_from_ethhdr_src(eh);
+	uint32_t src_peer_index;
 	struct omx_pkt_connect *connect_n = &mh->body.connect;
 	uint8_t length = OMX_FROM_PKT_FIELD(connect_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(connect_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(connect_n->src_endpoint);
+	uint16_t src_dest_peer_index = OMX_FROM_PKT_FIELD(connect_n->src_dst_peer_index);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(connect_n->lib_seqnum);
 	union omx_evt *evt;
 	struct omx_evt_recv_connect *event;
@@ -111,6 +114,19 @@ omx_recv_connect(struct omx_iface * iface,
 		err = -EINVAL;
 		goto out;
 	}
+
+	/* the connect doesn't know its peer index tet, we need to lookup */
+	err = omx_peer_lookup_by_addr(src_addr, NULL, &src_peer_index);
+	if (err < 0) {
+		omx_drop_dprintk(eh, "CONNECT packet with unknown peer index %d",
+				 (unsigned) peer_index);
+		err = -EINVAL;
+		goto out;
+	}		
+
+	/* store our peer_index in the remote table */
+	err = omx_peer_set_reverse_index(src_peer_index, src_dest_peer_index);
+	BUG_ON(err < 0);
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
@@ -148,9 +164,9 @@ omx_recv_connect(struct omx_iface * iface,
 	event = &evt->recv_connect;
 
 	/* fill event */
-	event->src_addr = omx_board_addr_from_ethhdr_src(eh);
+	event->src_addr = src_addr;
 	event->src_endpoint = src_endpoint;
-	event->src_dest_peer_index = OMX_FROM_PKT_FIELD(connect_n->src_dst_peer_index);
+	event->src_dest_peer_index = src_dest_peer_index;
 	event->length = length;
 	event->seqnum = lib_seqnum;
 
