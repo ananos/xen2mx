@@ -16,6 +16,8 @@
  * See the GNU General Public License in COPYING.GPL for more details.
  */
 
+#include <linux/kernel.h>
+
 #include "omx_checks.h"
 
 #ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
