@@ -59,13 +59,12 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
     goto out;
   }
 
-  tiny_param.hdr.dest_addr = partner->board_addr;
+  tiny_param.hdr.peer_index = partner->peer_index;
   tiny_param.hdr.dest_endpoint = partner->endpoint_index;
   tiny_param.hdr.match_info = match_info;
   tiny_param.hdr.length = length;
   tiny_param.hdr.seqnum = seqnum;
   tiny_param.hdr.session_id = partner->session_id;
-  tiny_param.hdr.dest_src_peer_index = partner->dest_src_peer_index;
   memcpy(tiny_param.data, buffer, length);
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, &tiny_param);
@@ -113,14 +112,13 @@ omx__submit_isend_small(struct omx_endpoint *ep,
     goto out;
   }
 
-  small_param.dest_addr = partner->board_addr;
+  small_param.peer_index = partner->peer_index;
   small_param.dest_endpoint = partner->endpoint_index;
   small_param.match_info = match_info;
   small_param.length = length;
   small_param.vaddr = (uintptr_t) buffer;
   small_param.seqnum = seqnum;
   small_param.session_id = partner->session_id;
-  small_param.dest_src_peer_index = partner->dest_src_peer_index;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &small_param);
   if (unlikely(err < 0)) {
@@ -173,14 +171,13 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 	       || omx__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0))
     return OMX_NO_RESOURCES;
 
-  medium_param.dest_addr = partner->board_addr;
+  medium_param.peer_index = partner->peer_index;
   medium_param.dest_endpoint = partner->endpoint_index;
   medium_param.match_info = req->generic.status.match_info;
   medium_param.frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
   medium_param.msg_length = length;
   medium_param.seqnum = req->send.seqnum;
   medium_param.session_id = partner->session_id;
-  medium_param.dest_src_peer_index = partner->dest_src_peer_index;
 
   for(i=0; i<frags; i++) {
     unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
@@ -290,13 +287,12 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS))
     goto out_with_req;
 
-  rndv_param.hdr.dest_addr = partner->board_addr;
+  rndv_param.hdr.peer_index = partner->peer_index;
   rndv_param.hdr.dest_endpoint = partner->endpoint_index;
   rndv_param.hdr.match_info = match_info;
   rndv_param.hdr.length = 8;
   rndv_param.hdr.seqnum = seqnum;
   rndv_param.hdr.session_id = partner->session_id;
-  rndv_param.hdr.dest_src_peer_index = partner->dest_src_peer_index;
 
   *(uint32_t *) &(rndv_param.data[0]) = length;
   *(uint8_t *) &(rndv_param.data[4]) = region->id;

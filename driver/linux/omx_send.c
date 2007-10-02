@@ -137,13 +137,17 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
-	memset(eh, 0, sizeof(*eh));
-	omx_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, cmd.peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in tiny header\n");
+		goto out_with_skb;
+	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
 	OMX_PKT_FIELD_FROM(mh->body.tiny.src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(mh->body.tiny.dst_endpoint, cmd.dest_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.tiny.ptype, OMX_PKT_TYPE_TINY);
@@ -214,13 +218,17 @@ omx_send_small(struct omx_endpoint * endpoint,
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
-	memset(eh, 0, sizeof(*eh));
-	omx_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, cmd.peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in small header\n");
+		goto out_with_skb;
+	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
 	OMX_PKT_FIELD_FROM(mh->body.small.src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(mh->body.small.dst_endpoint, cmd.dest_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.small.ptype, OMX_PKT_TYPE_SMALL);
@@ -311,13 +319,17 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
-	memset(eh, 0, sizeof(*eh));
-	omx_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, cmd.peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in medium header\n");
+		goto out_with_skb;
+	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
 	OMX_PKT_FIELD_FROM(mh->body.medium.msg.src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(mh->body.medium.msg.dst_endpoint, cmd.dest_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.medium.msg.ptype, OMX_PKT_TYPE_MEDIUM);
@@ -362,6 +374,8 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	 */
 	return 1;
 
+ out_with_skb:
+	dev_kfree_skb(skb);
  out_with_event:
 	kfree(event);
  out:
@@ -410,13 +424,17 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
-	memset(eh, 0, sizeof(*eh));
-	omx_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, cmd.peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in rndv header\n");
+		goto out_with_skb;
+	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
 	OMX_PKT_FIELD_FROM(mh->body.rndv.src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(mh->body.rndv.dst_endpoint, cmd.dest_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.rndv.ptype, OMX_PKT_TYPE_RNDV);
@@ -487,19 +505,23 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
-	memset(eh, 0, sizeof(*eh));
-	omx_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, cmd.peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in connect header\n");
+		goto out_with_skb;
+	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, -1);
 	OMX_PKT_FIELD_FROM(mh->body.connect.src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(mh->body.connect.dst_endpoint, cmd.dest_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.connect.ptype, OMX_PKT_TYPE_CONNECT);
 	OMX_PKT_FIELD_FROM(mh->body.connect.length, length);
 	OMX_PKT_FIELD_FROM(mh->body.connect.lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(mh->body.connect.src_dst_peer_index, cmd.src_dest_peer_index);
+	OMX_PKT_FIELD_FROM(mh->body.connect.src_dst_peer_index, cmd.peer_index);
 	OMX_PKT_FIELD_FROM(mh->body.connect.src_mac_low32, (uint32_t) omx_board_addr_from_netdevice(ifp));
 
 	omx_send_dprintk(eh, "CONNECT length %ld", (unsigned long) length);
@@ -555,13 +577,17 @@ omx_send_notify(struct omx_endpoint * endpoint,
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
-	memset(eh, 0, sizeof(*eh));
-	omx_board_addr_to_ethhdr_dst(eh, cmd.dest_addr);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, cmd.peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in notify header\n");
+		goto out_with_skb;
+	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, cmd.dest_src_peer_index);
 	OMX_PKT_FIELD_FROM(mh->body.notify.src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(mh->body.notify.dst_endpoint, cmd.dest_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.notify.ptype, OMX_PKT_TYPE_NOTIFY);
@@ -577,6 +603,8 @@ omx_send_notify(struct omx_endpoint * endpoint,
 
 	return 0;
 
+ out_with_skb:
+	dev_kfree_skb(skb);
  out:
 	return ret;
 }

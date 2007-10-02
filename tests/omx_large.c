@@ -45,7 +45,7 @@ send_pull(int fd, uint32_t session_id)
   struct omx_cmd_send_pull pull_param;
   int ret;
 
-  pull_param.dest_addr = -1; /* broadcast */
+  pull_param.peer_index = 0; /* myself? */
   pull_param.dest_endpoint = EP;
   pull_param.length = PULL_LENGTH;
   pull_param.session_id = session_id;

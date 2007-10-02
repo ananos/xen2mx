@@ -23,6 +23,7 @@
 #include <linux/list.h>
 
 #include "omx_common.h"
+#include "omx_wire_access.h"
 
 #define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
 
@@ -121,6 +122,24 @@ omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
 			index, peer->reverse_index, reverse_index);
 
 	peer->reverse_index = reverse_index;
+
+	return 0;
+}
+
+int
+omx_set_target_peer(struct omx_hdr *mh, uint16_t index)
+{
+	struct omx_peer *peer;
+
+	if (index >= omx_peers_nr)
+		return -EINVAL;
+
+	peer = omx_peer_array[index];
+	if (!peer)
+		return -EINVAL;
+
+	omx_board_addr_to_ethhdr_dst(&mh->head.eth, peer->board_addr);
+	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, peer->reverse_index);
 
 	return 0;
 }

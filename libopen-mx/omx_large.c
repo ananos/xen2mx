@@ -192,7 +192,7 @@ omx__post_pull(struct omx_endpoint * ep,
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
-  pull_param.dest_addr = partner->board_addr;
+  pull_param.peer_index = partner->peer_index;
   pull_param.dest_endpoint = partner->endpoint_index;
   pull_param.length = xfer_length;
   pull_param.session_id = partner->session_id;
@@ -267,7 +267,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx__dequeue_request(&ep->pull_req_q, req);
   omx__deregister_region(ep, req->recv.specific.large.local_region);
 
-  notify_param.dest_addr = partner->board_addr;
+  notify_param.peer_index = partner->peer_index;
   notify_param.dest_endpoint = partner->endpoint_index;
   notify_param.total_length = xfer_length;
   notify_param.session_id = partner->session_id;

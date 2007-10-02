@@ -71,6 +71,7 @@ extern int omx_peers_init(void);
 extern void omx_peers_exit(void);
 extern int omx_peer_add(uint64_t board_addr, char *hostname);
 extern int omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index);
+extern int omx_set_target_peer(struct omx_hdr *mh, uint16_t index);
 extern void omx_peers_clear(void);
 extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *hostname);
 extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t *index);

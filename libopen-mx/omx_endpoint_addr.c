@@ -230,10 +230,9 @@ omx__connect_common(omx_endpoint_t ep,
 
   connect_seqnum = partner->connect_seqnum++;
 
-  connect_param.hdr.dest_addr = partner->board_addr;
+  connect_param.hdr.peer_index = partner->peer_index;
   connect_param.hdr.dest_endpoint = partner->endpoint_index;
   connect_param.hdr.seqnum = 0;
-  connect_param.hdr.src_dest_peer_index = partner->peer_index;
   connect_param.hdr.length = sizeof(*data_n);
   OMX_PKT_FIELD_FROM(data_n->src_session_id, ep->session_id);
   OMX_PKT_FIELD_FROM(data_n->app_key, key);
@@ -457,10 +456,9 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     /* FIXME: drop other stuff */
   }
 
-  reply_param.hdr.dest_addr = partner->board_addr;
+  reply_param.hdr.peer_index = partner->peer_index;
   reply_param.hdr.dest_endpoint = partner->endpoint_index;
   reply_param.hdr.seqnum = 0;
-  reply_param.hdr.src_dest_peer_index = partner->peer_index;
   reply_param.hdr.length = sizeof(*reply_data_n);
   OMX_PKT_FIELD_FROM(reply_data_n->is_reply, 1);
   OMX_PKT_FIELD_FROM(reply_data_n->target_session_id, ep->session_id);

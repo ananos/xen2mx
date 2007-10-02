@@ -208,13 +208,14 @@ struct omx_cmd_open_endpoint {
 
 struct omx_cmd_send_tiny {
 	struct omx_cmd_send_tiny_hdr {
-		uint64_t dest_addr;
+		uint16_t peer_index;
 		uint8_t dest_endpoint;
-		uint8_t length;
-		/* 8 */
-		uint16_t dest_src_peer_index;
-		uint16_t seqnum;
+		uint8_t pad1;
 		uint32_t session_id;
+		/* 8 */
+		uint16_t seqnum;
+		uint8_t length;
+		uint8_t pad2[5];
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
@@ -224,82 +225,80 @@ struct omx_cmd_send_tiny {
 };
 
 struct omx_cmd_send_small {
-	uint64_t dest_addr;
+	uint16_t peer_index;
 	uint8_t dest_endpoint;
 	uint8_t pad1;
-	/* 8 */
-	uint16_t dest_src_peer_index;
-	uint16_t pad2;
 	uint32_t session_id;
-	/* 16 */
-	uint16_t length;
+	/* 8 */
 	uint16_t seqnum;
-	uint32_t pad3;
-	/* 24 */
+	uint16_t length;
+	uint32_t pad2;
+	/* 16 */
 	uint64_t vaddr;
+	/* 24 */
 	uint64_t match_info;
-	/* 40 */
+	/* 32 */
 };
 
 struct omx_cmd_send_medium {
-	uint64_t dest_addr;
+	uint16_t peer_index;
 	uint8_t dest_endpoint;
 	uint8_t pad1;
-	/* 8 */
-	uint16_t dest_src_peer_index;
-	uint16_t pad2;
 	uint32_t session_id;
-	/* 16 */
+	/* 8 */
+	uint32_t msg_length;
 	uint16_t seqnum;
 	uint16_t sendq_page_offset;
-	uint32_t pad3;
-	/* 24 */
-	uint32_t msg_length;
+	/* 16 */
 	uint16_t frag_length;
 	uint8_t frag_seqnum;
 	uint8_t frag_pipeline;
-	/* 32 */
+	uint32_t pad2;
+	/* 24 */
 	uint64_t match_info;
-	/* 40 */
+	/* 32 */
 };
 
 struct omx_cmd_send_rndv {
 	struct omx_cmd_send_rndv_hdr {
-		uint64_t dest_addr;
+		uint16_t peer_index;
 		uint8_t dest_endpoint;
-		uint8_t length;
-		/* 8 */
-		uint16_t dest_src_peer_index;
-		uint16_t seqnum;
+		uint8_t pad1;
 		uint32_t session_id;
+		/* 8 */
+		uint16_t seqnum;
+		uint8_t length;
+		uint8_t pad2[5];
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
 	} hdr;
 	char data[OMX_RNDV_DATA_MAX];
-	/* 56 */
+	/* 32 */
 };
 
 struct omx_cmd_send_connect {
 	struct omx_cmd_send_connect_hdr {
-		uint64_t dest_addr;
+		uint16_t peer_index;
 		uint8_t dest_endpoint;
-		uint8_t length;
-		/* 8 */
+		uint8_t pad1;
 		uint16_t seqnum;
-		uint16_t src_dest_peer_index;
-		/* 12 */
+		uint8_t length;
+		uint8_t pad2;
+		/* 8 */
 	} hdr;
 	char data[OMX_CONNECT_DATA_MAX];
+	/* 40 */
 };
 
 struct omx_cmd_send_pull {
-	uint64_t dest_addr;
+	uint16_t peer_index;
 	uint8_t dest_endpoint;
-	uint8_t pad;
-	/* 8 */
+	uint8_t pad1;
 	uint32_t session_id;
+	/* 8 */
 	uint32_t length; /* FIXME: 64bits ? */
+	uint32_t lib_cookie;
 	/* 16 */
 	uint32_t local_rdma_id;
 	uint32_t local_offset; /* FIXME: 64bits ? */
@@ -307,24 +306,19 @@ struct omx_cmd_send_pull {
 	uint32_t remote_rdma_id;
 	uint32_t remote_offset; /* FIXME: 64bits ? */
 	/* 32 */
-	uint32_t lib_cookie;
-	/* 36 */
 };
 
 struct omx_cmd_send_notify {
-	uint64_t dest_addr;
+	uint16_t peer_index;
 	uint8_t dest_endpoint;
 	uint8_t pad1;
-	/* 8 */
-	uint16_t dest_src_peer_index;
-	uint16_t pad2;
 	uint32_t session_id;
-	/* 16 */
+	/* 8 */
 	uint32_t total_length;
 	uint8_t puller_rdma_id;
 	uint8_t puller_rdma_seqnum;
 	uint16_t seqnum;
-	/* 24 */
+	/* 16 */
 };
 
 struct omx_cmd_register_region {

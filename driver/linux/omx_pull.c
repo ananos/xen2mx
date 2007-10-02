@@ -48,8 +48,7 @@ struct omx_pull_handle {
 	uint64_t frame_copying_bitmap; /* frames received but not copied yet */
 
 	/* pull packet header */
-	struct ethhdr pkt_eth_hdr;
-	struct omx_pkt_pull_request pkt_pull_hdr;
+	struct omx_hdr pkt_hdr;
 };
 
 /*
@@ -194,20 +193,27 @@ omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
  * Per-endpoint pull handles create/find/...
  */
 
-static inline void
+static inline int
 omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 			     struct omx_pull_handle * handle,
 			     struct omx_cmd_send_pull * cmd)
 {
 	struct net_device * ifp= endpoint->iface->eth_ifp;
-	struct ethhdr * eh = &handle->pkt_eth_hdr;
-	struct omx_pkt_pull_request * pull_n = &handle->pkt_pull_hdr;
+	struct omx_hdr * mh = &handle->pkt_hdr;
+	struct ethhdr * eh = &mh->head.eth;
+	struct omx_pkt_pull_request * pull_n = &mh->body.pull;
+	int ret;
 
 	/* pre-fill the packet header */
-	memset(eh, 0, sizeof(*eh));
-	omx_board_addr_to_ethhdr_dst(eh, cmd->dest_addr);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, cmd->peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in pull request header\n");
+		goto out;
+	}
 
 	/* fill omx header */
 	OMX_PKT_FIELD_FROM(pull_n->ptype, OMX_PKT_TYPE_PULL);
@@ -221,6 +227,11 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(pull_n->src_magic, omx_endpoint_pull_magic(endpoint));
 
 	/* block_length, frame_index, and first_frame_offset filled at actual send */
+
+	return 0;
+
+ out:
+	return ret;
 }
 
 /*
@@ -288,11 +299,15 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->block_frames = 0;
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
-	omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
+
+	/* initialize cached header */
+	err = omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
+	if (err < 0)
+		goto out_with_idr;
+
+	/* queue and acquire the handle */
 	list_add_tail(&handle->endpoint_pull_handles,
 		      &endpoint->pull_handle_list);
-
-	/* acquire the handle */
 	spin_lock(&handle->lock);
 
 	write_unlock_bh(&endpoint->pull_handle_lock);
@@ -300,6 +315,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	dprintk(PULL, "created and acquired pull handle %p\n", handle);
 	return handle;
 
+ out_with_idr:
+	idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
  out_with_handle:
 	kfree(handle);
  out_with_region:
@@ -433,7 +450,6 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 	struct net_device * ifp = iface->eth_ifp;
 	struct sk_buff * skb;
 	struct omx_hdr * mh;
-	struct ethhdr * eh;
 	struct omx_pkt_pull_request * pull_n;
 
 	skb = omx_new_skb(ifp,
@@ -446,18 +462,16 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 
 	/* locate headers */
 	mh = omx_hdr(skb);
-	eh = &mh->head.eth;
 	pull_n = &mh->body.pull;
 
 	/* copy common pkt hdrs from the handle */
-	memcpy(eh, &handle->pkt_eth_hdr, sizeof(handle->pkt_eth_hdr));
-	memcpy(pull_n, &handle->pkt_pull_hdr, sizeof(handle->pkt_pull_hdr));
+	memcpy(mh, &handle->pkt_hdr, sizeof(handle->pkt_hdr));
 
 	OMX_PKT_FIELD_FROM(pull_n->block_length, block_length);
 	OMX_PKT_FIELD_FROM(pull_n->first_frame_offset, first_frame_offset);
 	OMX_PKT_FIELD_FROM(pull_n->frame_index, frame_index);
 
-	omx_send_dprintk(eh, "PULL handle %lx magic %lx length %ld out of %ld, frame index %ld first_frame_offset %ld",
+	omx_send_dprintk(&mh->head.eth, "PULL handle %lx magic %lx length %ld out of %ld, frame index %ld first_frame_offset %ld",
 			 (unsigned long) OMX_FROM_PKT_FIELD(pull_n->src_pull_handle),
 			 (unsigned long) OMX_FROM_PKT_FIELD(pull_n->src_magic),
 			 (unsigned long) block_length,
