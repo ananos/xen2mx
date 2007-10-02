@@ -161,6 +161,7 @@ omx_board_addr_to_ethhdr_dst(struct ethhdr * eh, uint64_t board_addr)
 #define OMX_DEBUG_REG (1<<4)
 #define OMX_DEBUG_IOCTL (1<<5)
 #define OMX_DEBUG_EVENT (1<<6)
+#define OMX_DEBUG_PEER (1<<7)
 
 extern unsigned long omx_debug;
 #define omx_debug_type_enabled(type) (OMX_DEBUG_##type & omx_debug)

@@ -117,7 +117,7 @@ omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
 
 	if (peer->reverse_index != OMX_UNKNOWN_REVERSE_PEER_INDEX
 	    && reverse_index != peer->reverse_index)
-		dprintk("changing remote peer #%d reverse index from %d to %d\n",
+		dprintk(PEER, "changing remote peer #%d reverse index from %d to %d\n",
 			index, peer->reverse_index, reverse_index);
 
 	peer->reverse_index = reverse_index;

@@ -119,10 +119,10 @@ omx_recv_connect(struct omx_iface * iface,
 	err = omx_peer_lookup_by_addr(src_addr, NULL, &src_peer_index);
 	if (err < 0) {
 		omx_drop_dprintk(eh, "CONNECT packet with unknown peer index %d",
-				 (unsigned) peer_index);
+				 (unsigned) src_peer_index);
 		err = -EINVAL;
 		goto out;
-	}		
+	}
 
 	/* store our peer_index in the remote table */
 	err = omx_peer_set_reverse_index(src_peer_index, src_dest_peer_index);
