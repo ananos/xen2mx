@@ -440,7 +440,7 @@ omx__process_recv(struct omx_endpoint *ep,
   struct omx__partner * partner;
   omx_return_t ret;
 
-  ret = omx__partner_recv_lookup(ep, msg->dest_src_peer_index, msg->src_endpoint,
+  ret = omx__partner_recv_lookup(ep, msg->peer_index, msg->src_endpoint,
 				 &partner);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;

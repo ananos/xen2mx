@@ -145,6 +145,15 @@ omx_set_target_peer(struct omx_hdr *mh, uint16_t index)
 }
 
 int
+omx_check_recv_peer_index(uint16_t index)
+{
+	if (index >= omx_peers_nr
+	    || !omx_peer_array[index])
+		return -EINVAL;
+	return 0;
+}
+
+int
 omx_peer_lookup_by_index(uint32_t index,
 			 uint64_t *board_addr, char *hostname)
 {

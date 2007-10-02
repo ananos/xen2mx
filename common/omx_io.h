@@ -411,24 +411,22 @@ union omx_evt {
 	} pull_done;
 
 	struct omx_evt_recv_connect {
-		uint64_t src_addr;
-		/* 8 */
-		uint16_t src_dest_peer_index;
+		uint16_t peer_index;
 		uint8_t src_endpoint;
 		uint8_t pad1;
-		/* 12 */
+		/* 4 */
 		uint16_t seqnum;
 		uint8_t length;
 		uint8_t pad2;
-		/* 16 */
+		/* 8 */
 		uint8_t data[OMX_CONNECT_DATA_MAX];
-		/* 48 */
-		uint8_t pad3[15];
+		/* 40 */
+		uint8_t pad3[23];
 		uint8_t type;
 	} recv_connect;
 
 	struct omx_evt_recv_nack_lib {
-		uint16_t dest_src_peer_index; /* FIXME: unused for now */
+		uint16_t peer_index; /* FIXME: unused for now */
 		uint8_t src_endpoint;
 		uint8_t nack_type; /* FIXME: pass the status instead */
 		uint16_t seqnum;
@@ -439,7 +437,7 @@ union omx_evt {
 	} recv_nack_lib;
 
 	struct omx_evt_recv_msg {
-		uint16_t dest_src_peer_index;
+		uint16_t peer_index;
 		uint8_t src_endpoint;
 		uint8_t pad1;
 		uint16_t seqnum;

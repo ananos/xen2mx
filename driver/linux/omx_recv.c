@@ -164,9 +164,8 @@ omx_recv_connect(struct omx_iface * iface,
 	event = &evt->recv_connect;
 
 	/* fill event */
-	event->src_addr = src_addr;
+	event->peer_index = src_peer_index;
 	event->src_endpoint = src_endpoint;
-	event->src_dest_peer_index = src_dest_peer_index;
 	event->length = length;
 	event->seqnum = lib_seqnum;
 
@@ -197,6 +196,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	      struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
+	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_msg *tiny_n = &mh->body.tiny;
 	uint16_t length = OMX_FROM_PKT_FIELD(tiny_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(tiny_n->dst_endpoint);
@@ -219,6 +219,13 @@ omx_recv_tiny(struct omx_iface * iface,
 				 (unsigned long) skb->len - sizeof(struct omx_hdr),
 				 (unsigned) length);
 		err = -EINVAL;
+		goto out;
+	}
+
+	/* check the peer index */
+	err = omx_check_recv_peer_index(peer_index);
+	if (unlikely(err < 0)) {
+		omx_drop_dprintk(&mh->head.eth, "TINY packet with peer index");
 		goto out;
 	}
 
@@ -249,7 +256,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->peer_index = peer_index;
 	event->src_endpoint = OMX_FROM_PKT_FIELD(tiny_n->src_endpoint);
 	event->match_info = OMX_FROM_PKT_MATCH_INFO(tiny_n);
 	event->seqnum = OMX_FROM_PKT_FIELD(tiny_n->lib_seqnum);
@@ -282,6 +289,7 @@ omx_recv_small(struct omx_iface * iface,
 	       struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
+	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_msg *small_n = &mh->body.small;
 	uint16_t length =  OMX_FROM_PKT_FIELD(small_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(small_n->dst_endpoint);
@@ -305,6 +313,13 @@ omx_recv_small(struct omx_iface * iface,
 				 (unsigned long) skb->len - sizeof(struct omx_hdr),
 				 (unsigned) length);
 		err = -EINVAL;
+		goto out;
+	}
+
+	/* check the peer index */
+	err = omx_check_recv_peer_index(peer_index);
+	if (unlikely(err < 0)) {
+		omx_drop_dprintk(&mh->head.eth, "TINY packet with peer index");
 		goto out;
 	}
 
@@ -335,7 +350,7 @@ omx_recv_small(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->peer_index = peer_index;
 	event->src_endpoint = OMX_FROM_PKT_FIELD(small_n->src_endpoint);
 	event->match_info = OMX_FROM_PKT_MATCH_INFO(small_n);
 	event->seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
@@ -369,6 +384,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		     struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
+	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_medium_frag *medium_n = &mh->body.medium;
 	uint16_t frag_length = OMX_FROM_PKT_FIELD(medium_n->frag_length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.dst_endpoint);
@@ -392,6 +408,13 @@ omx_recv_medium_frag(struct omx_iface * iface,
 				 (unsigned long) skb->len - sizeof(struct omx_hdr),
 				 (unsigned) frag_length);
 		err = -EINVAL;
+		goto out;
+	}
+
+	/* check the peer index */
+	err = omx_check_recv_peer_index(peer_index);
+	if (unlikely(err < 0)) {
+		omx_drop_dprintk(&mh->head.eth, "TINY packet with peer index");
 		goto out;
 	}
 
@@ -422,7 +445,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->peer_index = peer_index;
 	event->src_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.src_endpoint);
 	event->match_info = OMX_FROM_PKT_MATCH_INFO(&medium_n->msg);
 	event->seqnum = OMX_FROM_PKT_FIELD(medium_n->msg.lib_seqnum);
@@ -459,6 +482,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	      struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
+	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_msg *rndv_n = &mh->body.rndv;
 	uint16_t length = OMX_FROM_PKT_FIELD(rndv_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(rndv_n->dst_endpoint);
@@ -481,6 +505,13 @@ omx_recv_rndv(struct omx_iface * iface,
 				 (unsigned long) skb->len - sizeof(struct omx_hdr),
 				 (unsigned) length);
 		err = -EINVAL;
+		goto out;
+	}
+
+	/* check the peer index */
+	err = omx_check_recv_peer_index(peer_index);
+	if (unlikely(err < 0)) {
+		omx_drop_dprintk(&mh->head.eth, "TINY packet with peer index");
 		goto out;
 	}
 
@@ -511,7 +542,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->peer_index = peer_index;
 	event->src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->src_endpoint);
 	event->match_info = OMX_FROM_PKT_MATCH_INFO(rndv_n);
 	event->seqnum = OMX_FROM_PKT_FIELD(rndv_n->lib_seqnum);
@@ -544,12 +575,20 @@ omx_recv_notify(struct omx_iface * iface,
 		struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
+	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_notify *notify_n = &mh->body.notify;
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(notify_n->dst_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(notify_n->session);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	int err = 0;
+
+	/* check the peer index */
+	err = omx_check_recv_peer_index(peer_index);
+	if (unlikely(err < 0)) {
+		omx_drop_dprintk(&mh->head.eth, "TINY packet with peer index");
+		goto out;
+	}
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
@@ -578,7 +617,7 @@ omx_recv_notify(struct omx_iface * iface,
 	event = &evt->recv_msg;
 
 	/* fill event */
-	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->peer_index = peer_index;
 	event->src_endpoint = OMX_FROM_PKT_FIELD(notify_n->src_endpoint);
 	event->seqnum = OMX_FROM_PKT_FIELD(notify_n->lib_seqnum);
 	event->specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
@@ -607,6 +646,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 		  struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
+	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_nack_lib *nack_lib_n = &mh->body.nack_lib;
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->dst_endpoint);
 	enum omx_nack_type nack_type = OMX_FROM_PKT_FIELD(nack_lib_n->nack_type);
@@ -634,7 +674,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	event = &evt->recv_nack_lib;
 
 	/* fill event */
-	event->dest_src_peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	event->peer_index = peer_index;
 	event->src_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->src_endpoint);
 	event->seqnum = OMX_FROM_PKT_FIELD(nack_lib_n->lib_seqnum);
 	/* FIXME: nack type as a status */

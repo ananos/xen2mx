@@ -64,7 +64,6 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->board_addr = board_addr;
   partner->endpoint_index = endpoint_index;
   partner->peer_index = peer_index;
-  partner->dest_src_peer_index = -1;
   partner->connect_seqnum = 0;
   INIT_LIST_HEAD(&partner->partialq);
   INIT_LIST_HEAD(&partner->earlyq);
@@ -85,8 +84,36 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
 
 omx_return_t
 omx__partner_lookup(struct omx_endpoint *ep,
-		    uint64_t board_addr, uint8_t endpoint_index,
+		    uint16_t peer_index, uint8_t endpoint_index,
 		    struct omx__partner ** partnerp)
+{
+  uint32_t partner_index;
+
+  partner_index = ((uint32_t) endpoint_index)
+    + ((uint32_t) peer_index) * omx__globals.endpoint_max;
+
+  if (unlikely(!ep->partners[partner_index])) {
+    uint64_t board_addr;
+    omx_return_t ret;
+
+    ret = omx__peer_index_to_addr(peer_index, &board_addr);
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Failed to find peer address of index %d (%s)\n",
+	      (unsigned) peer_index, omx_strerror(ret));
+      return ret;
+    }
+
+    return omx__partner_create(ep, peer_index, board_addr, endpoint_index, partnerp);
+  }
+
+  *partnerp = ep->partners[partner_index];
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx__partner_lookup_by_addr(struct omx_endpoint *ep,
+			    uint64_t board_addr, uint8_t endpoint_index,
+			    struct omx__partner ** partnerp)
 {
   uint32_t partner_index;
   uint16_t peer_index;
@@ -106,7 +133,6 @@ omx__partner_lookup(struct omx_endpoint *ep,
 
   if (unlikely(!ep->partners[partner_index]))
     return omx__partner_create(ep, peer_index, board_addr, endpoint_index, partnerp);
-
 
   *partnerp = ep->partners[partner_index];
   return OMX_SUCCESS;
@@ -134,7 +160,6 @@ omx__partner_recv_lookup(struct omx_endpoint *ep,
  */
 static inline void
 omx__connect_partner(struct omx__partner * partner,
-		     uint16_t src_dest_peer_index,
 		     uint32_t target_session_id,
 		     omx__seqnum_t target_recv_seqnum_start)
 {
@@ -144,7 +169,6 @@ omx__connect_partner(struct omx__partner * partner,
   }
 
   partner->session_id = target_session_id;
-  partner->dest_src_peer_index = src_dest_peer_index;
 }
 
 omx_return_t
@@ -168,7 +192,7 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
   if (ret != OMX_SUCCESS)
     return ret;
 
-  omx__connect_partner(ep->myself, peer_index, ep->session_id, 0);
+  omx__connect_partner(ep->myself, ep->session_id, 0);
 
   return OMX_SUCCESS;
 }
@@ -224,7 +248,7 @@ omx__connect_common(omx_endpoint_t ep,
   omx_return_t ret;
   int err;
 
-  ret = omx__partner_lookup(ep, nic_id, endpoint_id, &partner);
+  ret = omx__partner_lookup_by_addr(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS)
     goto out;
 
@@ -362,7 +386,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   union omx_request * req;
   omx_return_t ret;
 
-  ret = omx__partner_lookup(ep, event->src_addr, event->src_endpoint, &partner);
+  ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_INVALID_PARAMETER)
       fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
@@ -389,7 +413,6 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   if (status_code == OMX_STATUS_SUCCESS) {
     /* connection successfull, initialize stuff */
     omx__connect_partner(partner,
-			 event->src_dest_peer_index,
 			 target_session_id,
 			 target_recv_seqnum_start);
   }
@@ -428,7 +451,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   omx_status_code_t status_code;
   int err;
 
-  ret = omx__partner_lookup(ep, event->src_addr, event->src_endpoint, &partner);
+  ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_INVALID_PARAMETER)
       fprintf(stderr, "Open-MX: Received connect from unknown peer\n");

@@ -62,9 +62,6 @@ struct omx__partner {
   /* seq num of the last connect request to this partner */
   uint8_t connect_seqnum;
 
-  /* index of our peer in the table of the partner */
-  uint16_t dest_src_peer_index;
-
   /* list of request matched but not entirely received */
   struct list_head partialq;
 

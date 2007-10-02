@@ -16,7 +16,6 @@
 * truc messages
 * retransmission
 
-* remove reverse-index from lib partner
 * add dst_src_peer_index in nacks
 
 * fix nack_lib

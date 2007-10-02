@@ -157,6 +157,20 @@ omx__peer_addr_to_index(uint64_t board_addr, uint16_t *indexp)
 }
 
 omx_return_t
+omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp)
+{
+  omx_return_t ret;
+  uint64_t board_addr = 0;
+
+  ret = omx__driver_peer_from_index(index, &board_addr, NULL);
+  if (ret != OMX_SUCCESS)
+    return ret;
+
+  *board_addrp = board_addr;
+  return OMX_SUCCESS;
+}
+
+omx_return_t
 omx_hostname_to_nic_id(char *hostname,
 		       uint64_t *board_addr)
 {

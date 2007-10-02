@@ -223,6 +223,7 @@ extern omx_return_t omx__driver_peer_add(uint64_t board_addr, char *hostname);
 extern omx_return_t omx__driver_peers_clear(void);
 extern omx_return_t omx__peers_dump(const char * format);
 extern omx_return_t omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index);
+extern omx_return_t omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp);
 
 static inline int
 omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
