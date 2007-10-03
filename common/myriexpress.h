@@ -163,7 +163,7 @@ typedef struct mx_segment mx_segment_t;
 
 #define MX_MAX_SEGMENTS 1 /* FIXME */
 
-static INLINE mx_return_t
+static inline mx_return_t
 mx_isend(mx_endpoint_t endpoint,
 	 mx_segment_t *segments_list,
 	 uint32_t segments_count,
@@ -183,7 +183,7 @@ mx_isend(mx_endpoint_t endpoint,
   return omx_isend(endpoint, buffer, length, dest_endpoint, match_info, context, request);
 }
 
-static INLINE mx_return_t
+static inline mx_return_t
 mx_issend(mx_endpoint_t endpoint,
 	 mx_segment_t *segments_list,
 	 uint32_t segments_count,
@@ -205,7 +205,7 @@ mx_issend(mx_endpoint_t endpoint,
 
 #define MX_MATCH_MASK_NONE (~(uint64_t)0)
 
-static INLINE mx_return_t
+static inline mx_return_t
 mx_irecv(mx_endpoint_t endpoint,
 	 mx_segment_t *segments_list,
 	 uint32_t segments_count,

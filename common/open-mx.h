@@ -82,7 +82,7 @@ typedef struct omx_status omx_status_t;
 omx_return_t
 omx__init_api(int api);
 
-static INLINE omx_return_t omx_init(void) { return omx__init_api(OMX_API); }
+static inline omx_return_t omx_init(void) { return omx__init_api(OMX_API); }
 
 omx_return_t
 omx_finalize(void);
