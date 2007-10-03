@@ -349,6 +349,10 @@ struct omx_cmd_deregister_region {
 #define OMX_EVT_RECV_NOTIFY		0x16
 #define OMX_EVT_RECV_NACK_LIB		0x20
 
+#define OMX_EVT_NACK_LIB_BAD_ENDPT	0x01
+#define OMX_EVT_NACK_LIB_ENDPT_CLOSED	0x02
+#define OMX_EVT_NACK_LIB_BAD_SESSION	0x03
+
 static inline const char *
 omx_strevt(unsigned type)
 {
@@ -428,7 +432,7 @@ union omx_evt {
 	struct omx_evt_recv_nack_lib {
 		uint16_t peer_index;
 		uint8_t src_endpoint;
-		uint8_t nack_type; /* FIXME: pass the status instead */
+		uint8_t nack_type;
 		uint16_t seqnum;
 		uint16_t pad1;
 		/* 8 */

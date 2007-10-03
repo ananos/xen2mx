@@ -104,8 +104,14 @@ omx_strstatus(omx_status_code_t code)
     return "Message Truncated";
   case OMX_STATUS_FAILED:
     return "Failed";
+  case OMX_STATUS_ENDPOINT_CLOSED:
+    return "Endpoint Closed";
+  case OMX_STATUS_BAD_SESSION:
+    return "Bad Session";
   case OMX_STATUS_BAD_KEY:
     return "Bad Connection Key";
+  case OMX_STATUS_BAD_ENDPOINT:
+    return "Bad Endpoint";
   }
   assert(0);
 }

@@ -50,7 +50,10 @@ enum omx_status_code {
   OMX_STATUS_SUCCESS=0,
   OMX_STATUS_TRUNCATED,
   OMX_STATUS_FAILED,
+  OMX_STATUS_ENDPOINT_CLOSED,
+  OMX_STATUS_BAD_SESSION,
   OMX_STATUS_BAD_KEY,
+  OMX_STATUS_BAD_ENDPOINT,
 };
 typedef enum omx_status_code omx_status_code_t;
 

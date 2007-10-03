@@ -16,11 +16,6 @@
 * truc messages
 * retransmission
 
-* add dst_src_peer_index in nacks
-
-* fix nack_lib
-  + check session
-  + pass nack type back to userspace
 * add nack_mcp
 
 * hide region id in lib_cookies since region might be used for something else?

@@ -735,6 +735,8 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	event->peer_index = peer_index;
 	event->src_endpoint = src_endpoint;
 	event->seqnum = lib_seqnum;
+	event->nack_type = nack_type; /* types are different, values are the same */
+
 	/* FIXME: nack type as a status */
 
 	omx_recv_dprintk(eh, "NACK LIB type %s",
