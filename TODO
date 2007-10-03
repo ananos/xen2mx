@@ -16,7 +16,7 @@
 * truc messages
 * retransmission
 
-* add nack_mcp
+* add nack_mcp for OMX_NACK_TYPE_BAD_RDMAWIN
 
 * hide region id in lib_cookies since region might be used for something else?
 * handle pull status/length

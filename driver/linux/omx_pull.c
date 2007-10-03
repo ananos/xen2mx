@@ -341,7 +341,6 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 
 	endpoint = omx_endpoint_acquire_by_pull_magic(iface, magic);
 	if (unlikely(IS_ERR(endpoint)))
-		/* FIXME: nack ? */
 		goto out;
 
 	read_lock_bh(&endpoint->pull_handle_lock);
@@ -619,7 +618,7 @@ omx_recv_pull(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(pull_eh, "PULL packet for unknown endpoint %d",
 				 dst_endpoint);
-		/* FIXME: nack? */
+		/* omx_send_nack_mcp(..., OMX_NACK_TYPE_BAD_RDMAWIN, ...); */
 		err = PTR_ERR(endpoint);
 		goto out;
 	}
@@ -830,13 +829,14 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	if (unlikely(!handle)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown handle %d magic %d",
 				 dst_pull_handle, dst_magic);
+		/* no need to nack this */
 		err = -EINVAL;
 		goto out;
 	}
 
 	/* no session to check */
 
-	/* FIXME: store the sender mac in the handle and check it ? */
+	/* FIXME: check the magic */
 
 	/* check that the frame is from this block, and handle wrap around 256 */
 	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
