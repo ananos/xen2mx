@@ -29,7 +29,7 @@
  * Event processing
  */
 
-static inline char *
+static INLINE char *
 omx__recvq_slot_of_unexp_eventq(struct omx_endpoint * ep, union omx_evt * evt)
 {
   return ep->recvq + (((char *) evt - (char *) ep->unexp_eventq) << (OMX_RECVQ_ENTRY_SHIFT-OMX_EVENTQ_ENTRY_SHIFT));

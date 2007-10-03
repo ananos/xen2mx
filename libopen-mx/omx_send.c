@@ -41,7 +41,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
   omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__submit_isend_tiny(struct omx_endpoint *ep,
 		       void *buffer, size_t length,
 		       struct omx__partner * partner, omx__seqnum_t seqnum,
@@ -94,7 +94,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   return ret;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__submit_isend_small(struct omx_endpoint *ep,
 			void *buffer, size_t length,
 			struct omx__partner * partner, omx__seqnum_t seqnum,
@@ -222,7 +222,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__submit_isend_medium(struct omx_endpoint *ep,
 			 void *buffer, size_t length,
 			 struct omx__partner * partner, omx__seqnum_t seqnum,
@@ -264,7 +264,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   return ret;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__submit_isend_large(struct omx_endpoint *ep,
 			void *buffer, size_t length,
 			struct omx__partner * partner, omx__seqnum_t seqnum,

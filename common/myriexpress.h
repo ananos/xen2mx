@@ -119,6 +119,7 @@ enum mx_status_code { /* FIXME */
 };
 typedef enum mx_status_code mx_status_code_t;
 
+#if 1
 /* need to be redefined entirely since some fields are renamed,
  * there are some compile-time assertions to check compatibility
  */
@@ -131,6 +132,9 @@ struct mx_status {
   void *context;
 };
 typedef struct mx_status mx_status_t;
+#else
+typedef omx_status_t mx_status_t;
+#endif
 
 #define mx__init_api omx__init_api
 #define mx_init() mx__init_api(MX_API)
@@ -159,7 +163,7 @@ typedef struct mx_segment mx_segment_t;
 
 #define MX_MAX_SEGMENTS 1 /* FIXME */
 
-static inline mx_return_t
+static INLINE mx_return_t
 mx_isend(mx_endpoint_t endpoint,
 	 mx_segment_t *segments_list,
 	 uint32_t segments_count,
@@ -172,13 +176,14 @@ mx_isend(mx_endpoint_t endpoint,
   uint32_t length = 0;
   assert(segments_count <= 1);
   if (segments_count) {
+    if (!segments_list) return OMX_INVALID_PARAMETER;
     buffer = segments_list[0].segment_ptr;
     length = segments_list[0].segment_length;
   }
   return omx_isend(endpoint, buffer, length, dest_endpoint, match_info, context, request);
 }
 
-static inline mx_return_t
+static INLINE mx_return_t
 mx_issend(mx_endpoint_t endpoint,
 	 mx_segment_t *segments_list,
 	 uint32_t segments_count,
@@ -191,6 +196,7 @@ mx_issend(mx_endpoint_t endpoint,
   uint32_t length = 0;
   assert(segments_count <= 1);
   if (segments_count) {
+    if (!segments_list) return OMX_INVALID_PARAMETER;
     buffer = segments_list[0].segment_ptr;
     length = segments_list[0].segment_length;
   }
@@ -199,7 +205,7 @@ mx_issend(mx_endpoint_t endpoint,
 
 #define MX_MATCH_MASK_NONE (~(uint64_t)0)
 
-static inline mx_return_t
+static INLINE mx_return_t
 mx_irecv(mx_endpoint_t endpoint,
 	 mx_segment_t *segments_list,
 	 uint32_t segments_count,
@@ -212,6 +218,7 @@ mx_irecv(mx_endpoint_t endpoint,
   uint32_t length = 0;
   assert(segments_count <= 1);
   if (segments_count) {
+    if (!segments_list) return OMX_INVALID_PARAMETER;
     buffer = segments_list[0].segment_ptr;
     length = segments_list[0].segment_length;
   }

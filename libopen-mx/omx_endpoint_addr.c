@@ -158,7 +158,7 @@ omx__partner_recv_lookup(struct omx_endpoint *ep,
 /*
  * Actually initialize connected partner
  */
-static inline void
+static INLINE void
 omx__connect_partner(struct omx__partner * partner,
 		     uint32_t target_session_id,
 		     omx__seqnum_t target_recv_seqnum_start)
@@ -372,7 +372,7 @@ omx_iconnect(omx_endpoint_t ep,
 /*
  * End the connection process to another peer
  */
-static inline omx_return_t
+static INLINE omx_return_t
 omx__process_recv_connect_reply(struct omx_endpoint *ep,
 				struct omx_evt_recv_connect *event)
 {
@@ -437,7 +437,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 /*
  * Another peer is connecting to us
  */
-static inline omx_return_t
+static INLINE omx_return_t
 omx__process_recv_connect_request(struct omx_endpoint *ep,
 				  struct omx_evt_recv_connect *event)
 {

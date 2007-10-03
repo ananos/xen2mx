@@ -47,7 +47,7 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
  * Early packets
  */
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__postpone_early_packet(struct omx__partner * partner,
 			   struct omx_evt_recv_msg *msg, void *data,
 			   omx__process_recv_func_t recv_func)
@@ -237,7 +237,7 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
  * Main packet receive processing
  */
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__match_recv(struct omx_endpoint *ep,
 		struct omx_evt_recv_msg *msg,
 		union omx_request **reqp)
@@ -257,7 +257,7 @@ omx__match_recv(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__try_match_next_recv(struct omx_endpoint *ep,
 			 struct omx__partner * partner, omx__seqnum_t seqnum,
 			 struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
@@ -369,7 +369,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__continue_partial_request(struct omx_endpoint *ep,
 			      struct omx__partner * partner, omx__seqnum_t seqnum,
 			      struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length)
@@ -403,7 +403,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
   assert(0);
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 				  struct omx__partner *partner, omx__seqnum_t seqnum,
 				  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,

@@ -83,13 +83,13 @@ extern struct omx__globals omx__globals;
 extern omx_return_t
 omx__progress(struct omx_endpoint * ep);
 
-static inline struct omx__partner *
+static INLINE struct omx__partner *
 omx__partner_from_addr(omx_endpoint_addr_t * addr)
 {
   return *(struct omx__partner **) addr;
 }
 
-static inline void
+static INLINE void
 omx__partner_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
 {
   *(struct omx__partner **) addr = partner;
@@ -180,7 +180,7 @@ extern omx_return_t
 omx__process_pull_done(struct omx_endpoint * ep,
 		       struct omx_evt_pull_done * event);
 
-static inline int
+static INLINE int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)
 {
 	return sprintf(buffer, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
@@ -192,7 +192,7 @@ omx__board_addr_sprintf(char * buffer, uint64_t addr)
 		       (uint8_t)(addr >> 0));
 }
 
-static inline int
+static INLINE int
 omx__board_addr_sscanf(char * buffer, uint64_t * addr)
 {
 	uint8_t bytes[6];
@@ -225,7 +225,7 @@ extern omx_return_t omx__peers_dump(const char * format);
 extern omx_return_t omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index);
 extern omx_return_t omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp);
 
-static inline int
+static INLINE int
 omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
 			    int nr, void * user, int * founds)
 {
@@ -258,7 +258,7 @@ omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
   return 0;
 }
 
-static inline void *
+static INLINE void *
 omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
 			    int index)
 {

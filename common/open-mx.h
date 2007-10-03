@@ -21,6 +21,12 @@
 
 #include <stdint.h>
 
+#if 0
+#define INLINE inline
+#else
+#define INLINE
+#endif
+
 typedef struct omx_endpoint * omx_endpoint_t;
 
 typedef union omx_request * omx_request_t;
@@ -76,7 +82,7 @@ typedef struct omx_status omx_status_t;
 omx_return_t
 omx__init_api(int api);
 
-static inline omx_return_t omx_init(void) { return omx__init_api(OMX_API); }
+static INLINE omx_return_t omx_init(void) { return omx__init_api(OMX_API); }
 
 omx_return_t
 omx_finalize(void);
@@ -123,7 +129,7 @@ typedef struct {
 } omx_endpoint_param_t;
 
 omx_return_t
-omx_open_endpoint(uint32_t board_index, uint32_t index, uint32_t key,
+omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 		  omx_endpoint_param_t * param_array, uint32_t param_count,
 		  omx_endpoint_t *epp);
 

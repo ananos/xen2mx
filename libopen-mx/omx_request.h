@@ -28,12 +28,12 @@
  * Request allocation
  */
 
-static inline union omx_request *
+static INLINE union omx_request *
 omx__request_alloc(enum omx__request_type type)
 {
   union omx_request * req;
 
-  req = malloc(sizeof(*req));
+  req = calloc(1, sizeof(*req));
   if (unlikely(!req))
     return NULL;
 
@@ -52,7 +52,7 @@ omx__request_alloc(enum omx__request_type type)
   return req;
 }
 
-static inline void
+static INLINE void
 omx__request_free(union omx_request * req)
 {
   free(req);
@@ -62,21 +62,21 @@ omx__request_free(union omx_request * req)
  * Request queue management
  */
 
-static inline void
+static INLINE void
 omx__enqueue_request(struct list_head *head,
 		     union omx_request *req)
 {
   list_add_tail(&req->generic.queue_elt, head);
 }
 
-static inline void
+static INLINE void
 omx__requeue_request(struct list_head *head,
 		     union omx_request *req)
 {
   list_add(&req->generic.queue_elt, head);
 }
 
-static inline void
+static INLINE void
 omx__dequeue_request(struct list_head *head,
 		     union omx_request *req)
 {
@@ -92,13 +92,13 @@ omx__dequeue_request(struct list_head *head,
   list_del(&req->generic.queue_elt);
 }
 
-static inline union omx_request *
+static INLINE union omx_request *
 omx__queue_first_request(struct list_head *head)
 {
   return list_first_entry(head, union omx_request, generic.queue_elt);
 }
 
-static inline int
+static INLINE int
 omx__queue_empty(struct list_head *head)
 {
   return list_empty(head);
@@ -114,14 +114,14 @@ list_for_each_entry_safe(req, next, head, generic.queue_elt)
  * Partner request queue management
  */
 
-static inline void
+static INLINE void
 omx__enqueue_partner_request(struct omx__partner *partner,
 			     union omx_request *req)
 {
   list_add_tail(&req->generic.partner_elt, &partner->partialq);
 }
 
-static inline void
+static INLINE void
 omx__dequeue_partner_request(struct omx__partner *partner,
 			     union omx_request *req)
 {
@@ -137,13 +137,13 @@ omx__dequeue_partner_request(struct omx__partner *partner,
   list_del(&req->generic.partner_elt);
 }
 
-static inline union omx_request *
+static INLINE union omx_request *
 omx__partner_queue_first_request(struct omx__partner *partner)
 {
   return list_first_entry(&partner->partialq, union omx_request, generic.partner_elt);
 }
 
-static inline int
+static INLINE int
 omx__partner_queue_empty(struct omx__partner *partner)
 {
   return list_empty(&partner->partialq);
@@ -160,7 +160,7 @@ list_for_each_entry(req, &partner->partialq, generic.partner_elt)
  * Insert a early packet in the partner's early queue,
  * right before the first early with a higher seqnum
  */
-static inline void
+static INLINE void
 omx__enqueue_partner_early_packet(struct omx__partner *partner,
 				  struct omx__early_packet *early,
 				  omx__seqnum_t seqnum)
@@ -184,7 +184,7 @@ omx__enqueue_partner_early_packet(struct omx__partner *partner,
   }
 }
 
-static inline void
+static INLINE void
 omx__dequeue_partner_early_packet(struct omx__partner *partner,
 				  struct omx__early_packet *early)
 {

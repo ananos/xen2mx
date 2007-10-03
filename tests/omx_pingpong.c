@@ -26,6 +26,7 @@
 #include <sys/time.h>
 #include <getopt.h>
 #include <assert.h>
+#include <malloc.h>	/* memalign() */
 
 #include "open-mx.h"
 
@@ -38,6 +39,7 @@
 #define MAX (1024*4096+1)
 #define MULTIPLIER 2
 #define INCREMENT 0
+#define BUFFER_ALIGN (64*1024) /* page-aligned on any arch */
 #define UNIDIR 0
 
 static int
@@ -60,6 +62,7 @@ usage(void)
   fprintf(stderr, " -s\tswitch to slave receiver mode\n");
   fprintf(stderr, " -v\tverbose\n");
   fprintf(stderr, "Sender options:\n");
+  fprintf(stderr, " -a\tuse aligned buffers on both hosts\n");
   fprintf(stderr, " -d <hostname>\tset remote peer name and switch to sender mode\n");
   fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
   fprintf(stderr, " -S <n>\tchange the start length [%d]\n", MIN);
@@ -78,6 +81,7 @@ struct param {
   uint32_t max;
   uint32_t multiplier;
   uint32_t increment;
+  uint32_t align;
   uint8_t unidir;
 };
 
@@ -103,6 +107,7 @@ int main(int argc, char *argv[])
   int sender = 0;
   int verbose = 0;
   char * buffer;
+  int align = 0;
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -111,7 +116,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:sUv")) != EOF)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:sUva")) != EOF)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -155,6 +160,9 @@ int main(int argc, char *argv[])
       break;
     case 'v':
       verbose = 1;
+      break;
+    case 'a':
+      align = 1;
       break;
     case 'U':
       unidir = 1;
@@ -202,6 +210,7 @@ int main(int argc, char *argv[])
     param.max = max;
     param.multiplier = multiplier;
     param.increment = increment;
+    param.align = align;
     param.unidir = unidir;
     ret = omx_isend(ep, &param, sizeof(param),
 		    addr, 0x1234567887654321ULL,
@@ -242,7 +251,10 @@ int main(int argc, char *argv[])
 	length < max;
 	length = next_length(length, multiplier, increment)) {
 
-      buffer = malloc(length);
+      if (align) 
+	buffer = memalign(BUFFER_ALIGN, length);
+      else 
+        buffer = malloc(length);
       if (!buffer) {
 	perror("buffer malloc");
 	goto out_with_ep;
@@ -344,6 +356,7 @@ int main(int argc, char *argv[])
     max = param.max;
     multiplier = param.multiplier;
     increment = param.increment;
+    align = param.align;
     unidir = param.unidir;
 
     ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
@@ -398,7 +411,10 @@ int main(int argc, char *argv[])
 	length < max;
 	length = next_length(length, multiplier, increment)) {
 
-      buffer = malloc(length);
+      if (align) 
+	buffer = memalign(BUFFER_ALIGN, length);
+      else 
+        buffer = malloc(length);
       if (!buffer) {
 	perror("buffer malloc");
 	goto out_with_ep;

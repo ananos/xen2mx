@@ -28,7 +28,7 @@
  * Send queue management
  */
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
 {
   struct omx__sendq_entry * array;
@@ -51,7 +51,7 @@ omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
   return OMX_SUCCESS;
 }
 
-static inline void
+static INLINE void
 omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
 {
   free(ep->sendq_map.array);
@@ -61,7 +61,7 @@ omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
  * Find a board/endpoint available
  */
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__open_one_endpoint(int fd,
 		       uint32_t board_index, uint32_t endpoint_index)
 {
@@ -80,7 +80,7 @@ omx__open_one_endpoint(int fd,
   return OMX_SUCCESS;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__open_endpoint_in_range(int fd,
 			    uint32_t board_start, uint32_t board_end,
 			    uint32_t *board_found_p,
@@ -119,7 +119,7 @@ omx__open_endpoint_in_range(int fd,
   return OMX_BUSY;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__open_endpoint(int fd,
 		   uint32_t *board_index_p, uint32_t *endpoint_index_p)
 {
