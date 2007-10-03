@@ -21,12 +21,6 @@
 
 #include <stdint.h>
 
-#if 0
-#define INLINE inline
-#else
-#define INLINE
-#endif
-
 typedef struct omx_endpoint * omx_endpoint_t;
 
 typedef union omx_request * omx_request_t;

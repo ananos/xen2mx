@@ -34,10 +34,12 @@
  */
 
 #ifdef OMX_DEBUG
+#define INLINE
 #define omx__debug_assert(x) assert(x)
 #define omx__debug_instr(x) do { x; } while (0)
 #define omx__debug_printf(args...) do { if (omx__globals.verbose) fprintf(stderr, args); } while (0)
 #else
+#define INLINE inline
 #define omx__debug_assert(x) /* nothing */
 #define omx__debug_instr(x) /* nothing */
 #define omx__debug_printf(args...) /* nothing */
