@@ -426,7 +426,7 @@ union omx_evt {
 	} recv_connect;
 
 	struct omx_evt_recv_nack_lib {
-		uint16_t peer_index; /* FIXME: unused for now */
+		uint16_t peer_index;
 		uint8_t src_endpoint;
 		uint8_t nack_type; /* FIXME: pass the status instead */
 		uint16_t seqnum;

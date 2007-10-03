@@ -147,7 +147,7 @@ omx_recv_connect(struct omx_iface * iface,
 			break;
 		}
 
-		omx_send_nack_lib(iface, eh->h_source, nack_type,
+		omx_send_nack_lib(iface, peer_index, nack_type,
 				  dst_endpoint, src_endpoint, lib_seqnum);
 		goto out;
 	}
@@ -650,6 +650,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 		  struct sk_buff * skb)
 {
 	struct omx_endpoint * endpoint;
+	struct ethhdr *eh = &mh->head.eth;
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_nack_lib *nack_lib_n = &mh->body.nack_lib;
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->dst_endpoint);
@@ -658,10 +659,33 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	struct omx_evt_recv_nack_lib *event;
 	int err = 0;
 
+	/* check the peer index */
+	err = omx_check_recv_peer_index(peer_index);
+	if (unlikely(err < 0)) {
+		/* FIXME: impossible? in non MX-wire compatible only? */
+		uint32_t src_addr_peer_index;
+		uint64_t src_addr;
+
+		if (peer_index != (uint16_t)-1) {
+			omx_drop_dprintk(eh, "NACK LIB with bad peer index %d",
+					 (unsigned) peer_index);
+			goto out;
+		}
+
+		src_addr = omx_board_addr_from_ethhdr_src(eh);
+		err = omx_peer_lookup_by_addr(src_addr, NULL, &src_addr_peer_index);
+		if (err < 0) {
+			omx_drop_dprintk(eh, "NACK LIB with unknown peer index and unknown address");
+			goto out;
+		}
+
+		peer_index = src_addr_peer_index;
+	}
+
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		omx_drop_dprintk(&mh->head.eth, "NACK LIB packet for unknown endpoint %d",
+		omx_drop_dprintk(eh, "NACK LIB packet for unknown endpoint %d",
 				 dst_endpoint);
 		err = -EINVAL;
 		goto out;
@@ -671,7 +695,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	evt = omx_find_next_unexp_eventq_slot(endpoint);
 	if (unlikely(!evt)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_drop_dprintk(&mh->head.eth, "NACK LIB packet because of unexpected event queue full");
+		omx_drop_dprintk(eh, "NACK LIB packet because of unexpected event queue full");
 		err = -EBUSY;
 		goto out_with_endpoint;
 	}
@@ -683,7 +707,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	event->seqnum = OMX_FROM_PKT_FIELD(nack_lib_n->lib_seqnum);
 	/* FIXME: nack type as a status */
 
-	omx_recv_dprintk(&mh->head.eth, "NACK LIB type %s",
+	omx_recv_dprintk(eh, "NACK LIB type %s",
 			 omx_strnacktype(nack_type));
 
 	/* set the type at the end so that user-space does not find the slot on error */

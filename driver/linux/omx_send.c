@@ -610,21 +610,22 @@ omx_send_notify(struct omx_endpoint * endpoint,
 }
 
 void
-omx_send_nack_lib(struct omx_iface * iface, unsigned char * h_dest, enum omx_nack_type nack_type,
+omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type,
 		  uint8_t src_endpoint, uint8_t dst_endpoint, uint16_t lib_seqnum)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
 	struct net_device * ifp = iface->eth_ifp;
+	int ret;
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create nack lib skb\n");
-		/* just forget about it, it will be resent anyway */
-		return;
+		ret = -ENOMEM;
+		goto out;
 	}
 
 	/* locate headers */
@@ -632,17 +633,19 @@ omx_send_nack_lib(struct omx_iface * iface, unsigned char * h_dest, enum omx_nac
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
-	memset(eh, 0, sizeof(*eh));
-	memcpy(eh->h_dest, h_dest, sizeof (eh->h_dest));
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in notify header\n");
+		/* FIXME: BUG? */
+		goto out_with_skb;
+	}
+	mh->body.nack_lib.dst_src_peer_index = mh->head.dst_src_peer_index;
 
 	/* fill omx header */
-#if 0
-	/* need peer table in the driver to set dst_src_peer_index */
-	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, /* TODO */);
-	OMX_PKT_FIELD_FROM(mh->body.nack_lib.dst_src_peer_index, /* TODO */);
-#endif
 	OMX_PKT_FIELD_FROM(mh->body.nack_lib.src_endpoint, src_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.nack_lib.dst_endpoint, dst_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.nack_lib.ptype, OMX_PKT_TYPE_NACK_LIB);
@@ -652,6 +655,13 @@ omx_send_nack_lib(struct omx_iface * iface, unsigned char * h_dest, enum omx_nac
 	omx_send_dprintk(eh, "NACK LIB type %d", nack_type);
 
 	dev_queue_xmit(skb);
+
+ out_with_skb:
+	dev_kfree_skb(skb);
+ out:
+	/* just forget about it, it will be resent anyway */
+	/* return ret; */
+	return;
 }
 
 /*
