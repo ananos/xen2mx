@@ -656,6 +656,8 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	dev_queue_xmit(skb);
 
+	return;
+
  out_with_skb:
 	dev_kfree_skb(skb);
  out:
