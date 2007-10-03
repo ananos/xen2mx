@@ -18,6 +18,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/ioctl.h>
 
 #include "omx_lib.h"
@@ -28,6 +29,7 @@ omx_return_t
 omx__init_api(int api)
 {
   omx_return_t ret;
+  char *env;
   int err;
 
   if (omx__globals.initialized)
@@ -56,6 +58,11 @@ omx__init_api(int api)
     ret = omx__errno_to_return("ioctl GET_PEER_MAX");
     goto out_with_fd;
   }
+
+  omx__globals.verbose = 0;
+  env = getenv("OMX_VERBOSE");
+  if (env)
+    omx__globals.verbose = 1;
 
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
