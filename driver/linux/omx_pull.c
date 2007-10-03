@@ -341,6 +341,7 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 
 	endpoint = omx_endpoint_acquire_by_pull_magic(iface, magic);
 	if (unlikely(IS_ERR(endpoint)))
+		/* FIXME: nack ? */
 		goto out;
 
 	read_lock_bh(&endpoint->pull_handle_lock);
@@ -618,7 +619,8 @@ omx_recv_pull(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(pull_eh, "PULL packet for unknown endpoint %d",
 				 dst_endpoint);
-		err = -EINVAL;
+		/* FIXME: nack? */
+		err = PTR_ERR(endpoint);
 		goto out;
 	}
 

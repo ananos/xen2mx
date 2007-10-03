@@ -120,6 +120,20 @@ extern void omx_dev_exit(void);
 /* misc */
 extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
 
+/* translate omx_endpoint_acquire_by_iface_index return values into nack type */
+static inline enum omx_nack_type
+omx_endpoint_acquire_by_iface_index_error_to_nack_type(void * errptr)
+{
+	switch (PTR_ERR(errptr)) {
+	case -EINVAL:
+		return OMX_NACK_TYPE_BAD_ENDPT;
+	case -ENOENT:
+		return OMX_NACK_TYPE_ENDPT_CLOSED;
+	default:
+		BUG();
+	}
+}
+
 /* manage addresses */
 static inline uint64_t
 omx_board_addr_from_netdevice(struct net_device * ifp)

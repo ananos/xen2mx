@@ -130,25 +130,12 @@ omx_recv_connect(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		enum omx_nack_type nack_type;
-
 		omx_drop_dprintk(eh, "CONNECT packet for unknown endpoint %d",
 				 dst_endpoint);
-
-		switch (PTR_ERR(endpoint)) {
-		case -EINVAL:
-			nack_type = OMX_NACK_TYPE_BAD_ENDPT;
-			break;
-		case -ENOENT:
-			nack_type = OMX_NACK_TYPE_ENDPT_CLOSED;
-			break;
-		default:
-			BUG();
-			break;
-		}
-
-		omx_send_nack_lib(iface, peer_index, nack_type,
+		omx_send_nack_lib(iface, peer_index,
+				  omx_endpoint_acquire_by_iface_index_error_to_nack_type(endpoint),
 				  dst_endpoint, src_endpoint, lib_seqnum);
+		err = PTR_ERR(endpoint);
 		goto out;
 	}
 
@@ -199,7 +186,9 @@ omx_recv_tiny(struct omx_iface * iface,
 	struct omx_pkt_msg *tiny_n = &mh->body.tiny;
 	uint16_t length = OMX_FROM_PKT_FIELD(tiny_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(tiny_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(tiny_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(tiny_n->session);
+	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(tiny_n->lib_seqnum);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	int err = 0;
@@ -234,13 +223,19 @@ omx_recv_tiny(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "TINY packet for unknown endpoint %d",
 				 dst_endpoint);
-		err = -EINVAL;
+		omx_send_nack_lib(iface, peer_index,
+				  omx_endpoint_acquire_by_iface_index_error_to_nack_type(endpoint),
+				  dst_endpoint, src_endpoint, lib_seqnum);
+		err = PTR_ERR(endpoint);
 		goto out;
 	}
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "TINY packet with bad session");
+		omx_send_nack_lib(iface, peer_index,
+				  OMX_NACK_TYPE_BAD_SESSION,
+				  dst_endpoint, src_endpoint, lib_seqnum);
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
@@ -257,9 +252,9 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	/* fill event */
 	event->peer_index = peer_index;
-	event->src_endpoint = OMX_FROM_PKT_FIELD(tiny_n->src_endpoint);
+	event->src_endpoint = src_endpoint;
 	event->match_info = OMX_FROM_PKT_MATCH_INFO(tiny_n);
-	event->seqnum = OMX_FROM_PKT_FIELD(tiny_n->lib_seqnum);
+	event->seqnum = lib_seqnum;
 	event->specific.tiny.length = length;
 
 	omx_recv_dprintk(&mh->head.eth, "TINY length %ld", (unsigned long) length);
@@ -293,7 +288,9 @@ omx_recv_small(struct omx_iface * iface,
 	struct omx_pkt_msg *small_n = &mh->body.small;
 	uint16_t length =  OMX_FROM_PKT_FIELD(small_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(small_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(small_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(small_n->session);
+	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	char *recvq_slot;
@@ -329,13 +326,19 @@ omx_recv_small(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet for unknown endpoint %d",
 				 dst_endpoint);
-		err = -EINVAL;
+		omx_send_nack_lib(iface, peer_index,
+				  omx_endpoint_acquire_by_iface_index_error_to_nack_type(endpoint),
+				  dst_endpoint, src_endpoint, lib_seqnum);
+		err = PTR_ERR(endpoint);
 		goto out;
 	}
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet with bad session");
+		omx_send_nack_lib(iface, peer_index,
+				  OMX_NACK_TYPE_BAD_SESSION,
+				  dst_endpoint, src_endpoint, lib_seqnum);
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
@@ -352,9 +355,9 @@ omx_recv_small(struct omx_iface * iface,
 
 	/* fill event */
 	event->peer_index = peer_index;
-	event->src_endpoint = OMX_FROM_PKT_FIELD(small_n->src_endpoint);
+	event->src_endpoint = src_endpoint;
 	event->match_info = OMX_FROM_PKT_MATCH_INFO(small_n);
-	event->seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
+	event->seqnum = lib_seqnum;
 	event->specific.small.length = length;
 
 	omx_recv_dprintk(&mh->head.eth, "SMALL length %ld", (unsigned long) length);
@@ -389,7 +392,9 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	struct omx_pkt_medium_frag *medium_n = &mh->body.medium;
 	uint16_t frag_length = OMX_FROM_PKT_FIELD(medium_n->frag_length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(medium_n->msg.session);
+	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(medium_n->msg.lib_seqnum);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	char *recvq_slot;
@@ -425,13 +430,19 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet for unknown endpoint %d",
 				 dst_endpoint);
-		err = -EINVAL;
+		omx_send_nack_lib(iface, peer_index,
+				  omx_endpoint_acquire_by_iface_index_error_to_nack_type(endpoint),
+				  dst_endpoint, src_endpoint, lib_seqnum);
+		err = PTR_ERR(endpoint);
 		goto out;
 	}
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet with bad session");
+		omx_send_nack_lib(iface, peer_index,
+				  OMX_NACK_TYPE_BAD_SESSION,
+				  dst_endpoint, src_endpoint, lib_seqnum);
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
@@ -448,9 +459,9 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	/* fill event */
 	event->peer_index = peer_index;
-	event->src_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.src_endpoint);
+	event->src_endpoint = src_endpoint;
 	event->match_info = OMX_FROM_PKT_MATCH_INFO(&medium_n->msg);
-	event->seqnum = OMX_FROM_PKT_FIELD(medium_n->msg.lib_seqnum);
+	event->seqnum = lib_seqnum;
 	event->specific.medium.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
 	event->specific.medium.frag_length = frag_length;
 	event->specific.medium.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
@@ -488,7 +499,9 @@ omx_recv_rndv(struct omx_iface * iface,
 	struct omx_pkt_msg *rndv_n = &mh->body.rndv;
 	uint16_t length = OMX_FROM_PKT_FIELD(rndv_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(rndv_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(rndv_n->session);
+	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(rndv_n->lib_seqnum);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	int err = 0;
@@ -523,13 +536,19 @@ omx_recv_rndv(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet for unknown endpoint %d",
 				 dst_endpoint);
-		err = -EINVAL;
+		omx_send_nack_lib(iface, peer_index,
+				  omx_endpoint_acquire_by_iface_index_error_to_nack_type(endpoint),
+				  dst_endpoint, src_endpoint, lib_seqnum);
+		err = PTR_ERR(endpoint);
 		goto out;
 	}
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet with bad session");
+		omx_send_nack_lib(iface, peer_index,
+				  OMX_NACK_TYPE_BAD_SESSION,
+				  dst_endpoint, src_endpoint, lib_seqnum);
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
@@ -546,9 +565,9 @@ omx_recv_rndv(struct omx_iface * iface,
 
 	/* fill event */
 	event->peer_index = peer_index;
-	event->src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->src_endpoint);
+	event->src_endpoint = src_endpoint;
 	event->match_info = OMX_FROM_PKT_MATCH_INFO(rndv_n);
-	event->seqnum = OMX_FROM_PKT_FIELD(rndv_n->lib_seqnum);
+	event->seqnum = lib_seqnum;
 	event->specific.rndv.length = length;
 
 	omx_recv_dprintk(&mh->head.eth, "RNDV length %ld", (unsigned long) length);
@@ -581,7 +600,9 @@ omx_recv_notify(struct omx_iface * iface,
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_notify *notify_n = &mh->body.notify;
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(notify_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(notify_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(notify_n->session);
+	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(notify_n->lib_seqnum);
 	union omx_evt *evt;
 	struct omx_evt_recv_msg *event;
 	int err = 0;
@@ -599,13 +620,19 @@ omx_recv_notify(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet for unknown endpoint %d",
 				 dst_endpoint);
-		err = -EINVAL;
+		omx_send_nack_lib(iface, peer_index,
+				  omx_endpoint_acquire_by_iface_index_error_to_nack_type(endpoint),
+				  dst_endpoint, src_endpoint, lib_seqnum);
+		err = PTR_ERR(endpoint);
 		goto out;
 	}
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet with bad session");
+		omx_send_nack_lib(iface, peer_index,
+				  OMX_NACK_TYPE_BAD_SESSION,
+				  dst_endpoint, src_endpoint, lib_seqnum);
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
@@ -622,8 +649,8 @@ omx_recv_notify(struct omx_iface * iface,
 
 	/* fill event */
 	event->peer_index = peer_index;
-	event->src_endpoint = OMX_FROM_PKT_FIELD(notify_n->src_endpoint);
-	event->seqnum = OMX_FROM_PKT_FIELD(notify_n->lib_seqnum);
+	event->src_endpoint = src_endpoint;
+	event->seqnum = lib_seqnum;
 	event->specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
 	event->specific.notify.puller_rdma_id = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_id);
 	event->specific.notify.puller_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_seqnum);
@@ -654,7 +681,9 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_nack_lib *nack_lib_n = &mh->body.nack_lib;
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->src_endpoint);
 	enum omx_nack_type nack_type = OMX_FROM_PKT_FIELD(nack_lib_n->nack_type);
+	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(nack_lib_n->lib_seqnum);
 	union omx_evt *evt;
 	struct omx_evt_recv_nack_lib *event;
 	int err = 0;
@@ -687,7 +716,8 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(eh, "NACK LIB packet for unknown endpoint %d",
 				 dst_endpoint);
-		err = -EINVAL;
+		/* FIXME: BUG? */
+		err = PTR_ERR(endpoint);
 		goto out;
 	}
 
@@ -703,8 +733,8 @@ omx_recv_nack_lib(struct omx_iface * iface,
 
 	/* fill event */
 	event->peer_index = peer_index;
-	event->src_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->src_endpoint);
-	event->seqnum = OMX_FROM_PKT_FIELD(nack_lib_n->lib_seqnum);
+	event->src_endpoint = src_endpoint;
+	event->seqnum = lib_seqnum;
 	/* FIXME: nack type as a status */
 
 	omx_recv_dprintk(eh, "NACK LIB type %s",
