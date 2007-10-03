@@ -312,6 +312,8 @@ int main(int argc, char *argv[])
 	     (2.-unidir)*iter*length/us, (2.-unidir)*iter*length/us/1.048576);
 
       free(buffer);
+
+      sleep(1);
     }
 
   } else {
