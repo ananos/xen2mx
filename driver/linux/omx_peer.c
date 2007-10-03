@@ -61,12 +61,10 @@ omx_peers_clear(void)
 	spin_lock(&omx_peer_lock);
 	for(i=0; i<omx_peers_nr; i++) {
 		struct omx_peer * peer = omx_peer_array[i];
-		if (peer) {
-			kfree(peer->hostname);
-			list_del(&peer->addr_hash_elt);
-			kfree(peer);
-			omx_peer_array[i] = NULL;
-		}
+		kfree(peer->hostname);
+		list_del(&peer->addr_hash_elt);
+		kfree(peer);
+		omx_peer_array[i] = NULL;
 	}
 	omx_peers_nr = 0;
 	spin_unlock(&omx_peer_lock);
@@ -262,7 +260,6 @@ omx_peers_exit(void)
 	omx_peers_clear();
 	kfree(omx_peer_addr_hash_array);
 	kfree(omx_peer_array);
-	omx_peer_array = NULL;
 }
 
 /*
