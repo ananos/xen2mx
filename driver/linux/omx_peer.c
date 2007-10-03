@@ -37,10 +37,10 @@ struct omx_peer {
 
 static spinlock_t omx_peer_lock;
 static struct omx_peer ** omx_peer_array;
-static struct list_head * omx_addr_hash_array;
+static struct list_head * omx_peer_addr_hash_array;
 static int omx_peers_nr;
 
-#define OMX_ADDR_HASH_NR 256
+#define OMX_PEER_ADDR_HASH_NR 256
 
 static inline uint8_t
 omx_peer_addr_hash(uint64_t board_addr)
@@ -97,7 +97,7 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	spin_lock(&omx_peer_lock);
 	omx_peer_array[omx_peers_nr] = peer;
 	peer->index = omx_peers_nr;
-	list_add_tail(&peer->addr_hash_elt, &omx_addr_hash_array[hash]);
+	list_add_tail(&peer->addr_hash_elt, &omx_peer_addr_hash_array[hash]);
 	omx_peers_nr++;
 	spin_unlock(&omx_peer_lock);
 
@@ -186,7 +186,7 @@ omx_peer_lookup_by_addr(uint64_t board_addr,
 
 	hash = omx_peer_addr_hash(board_addr);
 
-	list_for_each_entry(peer, &omx_addr_hash_array[hash], addr_hash_elt) {
+	list_for_each_entry(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
 		if (peer->board_addr == board_addr) {
 			if (index)
 				*index = peer->index;
@@ -239,14 +239,14 @@ omx_peers_init(void)
 	for(i=0; i<omx_peer_max; i++)
 		omx_peer_array[i] = NULL;
 
-	omx_addr_hash_array = kmalloc(OMX_ADDR_HASH_NR * sizeof(*omx_addr_hash_array), GFP_KERNEL);
-	if (!omx_addr_hash_array) {
+	omx_peer_addr_hash_array = kmalloc(OMX_PEER_ADDR_HASH_NR * sizeof(*omx_peer_addr_hash_array), GFP_KERNEL);
+	if (!omx_peer_addr_hash_array) {
 		printk(KERN_ERR "Open-MX: Failed to allocate the peer addr hash array\n");
 		err = -ENOMEM;
 		goto out_with_peer_array;
 	}
-	for(i=0; i<OMX_ADDR_HASH_NR; i++)
-		INIT_LIST_HEAD(&omx_addr_hash_array[i]);
+	for(i=0; i<OMX_PEER_ADDR_HASH_NR; i++)
+		INIT_LIST_HEAD(&omx_peer_addr_hash_array[i]);
 
 	return 0;
 
@@ -260,6 +260,7 @@ void
 omx_peers_exit(void)
 {
 	omx_peers_clear();
+	kfree(omx_peer_addr_hash_array);
 	kfree(omx_peer_array);
 	omx_peer_array = NULL;
 }
