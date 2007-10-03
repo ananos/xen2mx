@@ -28,23 +28,29 @@
 
 #ifdef OMX_DEBUG
 unsigned long omx_debug = OMX_DEBUG_SEND | OMX_DEBUG_RECV | OMX_DEBUG_DROP | OMX_DEBUG_EVENT | OMX_DEBUG_IOCTL;
-module_param(omx_debug, ulong, S_IRUGO|S_IWUSR);
+module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(debug, "Bitmask of debugging messages to display");
 #endif
 
 static char * omx_ifnames = NULL;
-module_param(omx_ifnames, charp, 0); /* unreadable, since modifiable by the attached sysfs file */
+module_param_named(ifnames, omx_ifnames, charp, S_IRUGO); /* modifiable by the attached sysfs file */
+MODULE_PARM_DESC(ifnames, "Interfaces to attach on startup");
 
 int omx_iface_max = 32;
-module_param(omx_iface_max, uint, S_IRUGO);
+module_param_named(ifaces, omx_iface_max, uint, S_IRUGO);
+MODULE_PARM_DESC(ifaces, "Maximum number of attached interfaces");
 
 int omx_endpoint_max = 8;
-module_param(omx_endpoint_max, uint, S_IRUGO);
+module_param_named(endpoints, omx_endpoint_max, uint, S_IRUGO);
+MODULE_PARM_DESC(endpoints, "Maximum number of endpoints per interface");
 
 int omx_peer_max = 1024;
-module_param(omx_peer_max, uint, S_IRUGO);
+module_param_named(peers, omx_peer_max, uint, S_IRUGO);
+MODULE_PARM_DESC(peers, "Maximum number of peer nodes");
 
 int omx_copybench = 0;
-module_param(omx_copybench, uint, S_IRUGO);
+module_param_named(copybench, omx_copybench, uint, S_IRUGO);
+MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");
 
 /************************
  * Main Module Init/Exit

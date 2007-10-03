@@ -21,7 +21,7 @@ a. Build and install Open-MX in /opt/open-mx
    $ make install
 
 b. Load the open-mx kernel module and tell it which interface to use
-     $ /path/to/mx/sbin/omx_init omx_ifnames=eth2
+     $ /path/to/mx/sbin/omx_init ifnames=eth2
    See section II and III for details.
 
 c. Look for eth2 MAC addresses in /sbin/ifconfig -a on each node.
@@ -120,7 +120,7 @@ build is up-to-date.
 The 'open-mx' kernel module should be loaded prior to any user-space
 usage of Open-MX. If not loaded, a "No device" error will be returned.
 The omx_init script takes care of loading the module
-$ /path/to/mx/sbin/omx_init omx_ifnames=eth2
+$ /path/to/mx/sbin/omx_init ifnames=eth2
 
 This module works at least on Linux kernels 2.6.17 to 2.6.23 on i386
 and x86_64 architectures.
@@ -140,8 +140,8 @@ required when using Open-MX.
 By default, all existing network interfaces in the system will be
 attached to Open-MX (except those above 8 by default). To change
 the order or select which interfaces to attach, you may use the
-omx_ifnames module parameter when loading:
-$ modprobe open-mx omx_ifnames="eth3 eth2"
+ifnames module parameter when loading:
+$ modprobe open-mx ifnames="eth3 eth2"
 
 The current list of attached interfaces may be observed by reading
 the /sys/class/misc/open-mx/ifaces special file. Writing '+foo' in
