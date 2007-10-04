@@ -1,5 +1,4 @@
 * do not enable dma unless CONFIG_DMA_ENGINE is y/m
-* modprobe module dependencies in omx_init
 
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)

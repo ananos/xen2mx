@@ -42,8 +42,17 @@ unload_omx() {
 load_omx() {
     echo "Loading Open-MX driver"
     params=" $OMX_MODULE_PARAMS $*"
+    module="${OMX_PREFIX}/lib/modules/${LINUX_RELEASE}/open-mx.ko"
 
-    /sbin/insmod ${OMX_PREFIX}/lib/modules/${LINUX_RELEASE}/open-mx.ko $params
+    # modprobe the dependencies
+    depends=$(modinfo $module | grep ^depends | awk '{print $2}' | sed 's/,/ /')
+    for depend in $depends ; do
+	echo "Loading dependency module: $depend"
+	modprobe $depend
+    done
+
+    # load the driver
+    /sbin/insmod $module $params
 
     # sleep a bit so that udev is done
     sleep 1
