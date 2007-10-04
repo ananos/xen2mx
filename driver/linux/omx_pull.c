@@ -675,7 +675,6 @@ omx_recv_pull(struct omx_iface * iface,
 	/* compute and check the number of PULL_REPLY to send */
 	replies = (first_frame_offset + block_length
 		   + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
-replies--;
 	if (unlikely(replies > OMX_PULL_REPLY_PER_BLOCK)) {
 		omx_drop_dprintk(pull_eh, "PULL packet for %d REPLY (%d max)",
 				 replies, OMX_PULL_REPLY_PER_BLOCK);
