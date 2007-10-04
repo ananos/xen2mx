@@ -20,7 +20,16 @@
 
 #include "omx_checks.h"
 
+/* DMA Engine must be built in the kernel and as a module,
+ * and it must provide shareable channels.
+ */
+#if (defined CONFIG_DMA_ENGINE || defined CONFIG_DMA_ENGINE_MODULE)
 #ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
+#define OMX_MAY_USE_DMA_ENGINE 1
+#endif
+#endif
+
+#ifdef OMX_MAY_USE_DMA_ENGINE
 
 #include <linux/dmaengine.h>
 
@@ -54,18 +63,18 @@ static struct dma_client omx_dma_client = {
 	.event_callback = omx_dma_event_callback,
 };
 
-#endif
+#endif /* OMX_MAY_USE_DMA_ENGINE */
 
 int
 omx_dma_init(void)
 {
-#ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
+#ifdef OMX_MAY_USE_DMA_ENGINE
 	spin_lock_init(&omx_dma_lock);
 	dma_cap_set(DMA_MEMCPY, omx_dma_client.cap_mask);
 	dma_async_client_register(&omx_dma_client);
 	dma_async_client_chan_request(&omx_dma_client);
 	printk(KERN_INFO "Open-MX: Registered DMA event callback\n");
-#elif defined CONFIG_DMA_ENGINE
+#elif (defined CONFIG_DMA_ENGINE || defined CONFIG_DMA_ENGINE_MODULE)
 	printk(KERN_INFO "Open-MX: Not using DMA engine channels since they are not shareable\n");
 #endif
 	return 0;
@@ -74,7 +83,7 @@ omx_dma_init(void)
 void
 omx_dma_exit(void)
 {
-#ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
+#ifdef OMX_MAY_USE_DMA_ENGINE
 	dma_async_client_unregister(&omx_dma_client);
 #endif
 }
