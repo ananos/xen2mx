@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/timer.h>
 
 #include "omx_common.h"
 #include "omx_hal.h"
@@ -26,10 +27,16 @@
 
 #define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
 
+#define OMX_PULL_RETRANSMIT_TIMEOUT_MS	50
+#define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES (OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
+
 struct omx_pull_handle {
 	struct list_head endpoint_pull_handles;
 	uint32_t idr_index;
 	spinlock_t lock;
+
+	/* timer for retransmission */
+	struct timer_list retransmit_timer;
 
 	/* global pull fields */
 	struct omx_endpoint * endpoint;
@@ -50,6 +57,8 @@ struct omx_pull_handle {
 	/* pull packet header */
 	struct omx_hdr pkt_hdr;
 };
+
+static void omx_pull_handle_timeout_handler(unsigned long timer_addr);
 
 /*
  * Notes about locking:
@@ -132,6 +141,17 @@ omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
 	return 0;
 }
 
+static inline void
+omx_pull_handle_destroy(struct omx_pull_handle * handle)
+{
+	struct omx_endpoint * endpoint = handle->endpoint;
+
+	del_timer_sync(&handle->retransmit_timer);
+	list_del(&handle->endpoint_pull_handles);
+	idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
+	kfree(handle);
+}
+
 void
 omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 {
@@ -143,9 +163,7 @@ omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 	list_for_each_entry_safe(handle, next,
 				 &endpoint->pull_handle_list,
 				 endpoint_pull_handles) {
-		list_del(&handle->endpoint_pull_handles);
-		idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
-		kfree(handle);
+		omx_pull_handle_destroy(handle);
 	}
 
 	write_unlock_bh(&endpoint->pull_handle_lock);
@@ -305,6 +323,11 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	if (err < 0)
 		goto out_with_idr;
 
+	/* init timer */
+	setup_timer(&handle->retransmit_timer, omx_pull_handle_timeout_handler, 0);
+	handle->retransmit_timer.expires = jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES;
+	add_timer(&handle->retransmit_timer);
+
 	/* queue and acquire the handle */
 	list_add_tail(&handle->endpoint_pull_handles,
 		      &endpoint->pull_handle_list);
@@ -421,9 +444,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 
 		/* destroy the handle */
 		write_lock_bh(&endpoint->pull_handle_lock);
-		list_del(&handle->endpoint_pull_handles);
-		idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
-		kfree(handle);
+		omx_pull_handle_destroy(handle);
 		write_unlock_bh(&endpoint->pull_handle_lock);
 
 		/* release the region and endpoint */
@@ -478,6 +499,10 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 			 (unsigned long) OMX_FROM_PKT_FIELD(pull_n->total_length),
 			 (unsigned long) frame_index,
 			 (unsigned long) first_frame_offset);
+
+	/* update the timer */
+	mod_timer(&handle->retransmit_timer,
+		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	return skb;
 }
@@ -577,6 +602,15 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	return err;
 }
 
+/* retransmission callback */
+static void omx_pull_handle_timeout_handler(unsigned long timer_addr)
+{
+	struct timer_list * timer = (void *) timer_addr;
+	struct omx_pull_handle * handle = container_of(timer, struct omx_pull_handle, retransmit_timer);
+
+	printk("pull timer reached, need to requeue\n");
+}
+
 /* pull reply skb destructor to release the user region */
 static void
 omx_send_pull_reply_skb_destructor(struct sk_buff *skb)
@@ -641,6 +675,7 @@ omx_recv_pull(struct omx_iface * iface,
 	/* compute and check the number of PULL_REPLY to send */
 	replies = (first_frame_offset + block_length
 		   + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
+replies--;
 	if (unlikely(replies > OMX_PULL_REPLY_PER_BLOCK)) {
 		omx_drop_dprintk(pull_eh, "PULL packet for %d REPLY (%d max)",
 				 replies, OMX_PULL_REPLY_PER_BLOCK);
@@ -890,6 +925,11 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* current first block not done, just release the handle */
 		dprintk(PULL, "block not done, just releasing\n");
 		omx_pull_handle_release(handle);
+
+		/* FIXME: if the second block is done without the first one,
+		 * we could resend the first request,
+		 * but the retransmit timer will take care of this in the end
+		 */
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
 		struct sk_buff * skb, * skb2;
