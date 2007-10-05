@@ -30,6 +30,13 @@
 #define OMX_PULL_RETRANSMIT_TIMEOUT_MS	50
 #define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES (OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
 
+struct omx_pull_block_desc {
+	uint32_t frame_index;
+	uint32_t block_length;
+	uint32_t first_frame_offset;
+	uint32_t valid;
+};
+
 struct omx_pull_handle {
 	struct list_head endpoint_pull_handles;
 	uint32_t idr_index;
@@ -46,13 +53,15 @@ struct omx_pull_handle {
 	uint32_t puller_rdma_offset;
 	uint32_t pulled_rdma_offset;
 
-	/* current block */
+	/* current status */
 	uint32_t remaining_length;
 	uint32_t frame_index; /* index of the first requested frame */
 	uint32_t next_frame_index; /* index of the frame to request */
 	uint32_t block_frames; /* number of frames requested */
 	uint64_t frame_missing_bitmap; /* frames not received at all */
 	uint64_t frame_copying_bitmap; /* frames received but not copied yet */
+	struct omx_pull_block_desc first_desc;
+	struct omx_pull_block_desc second_desc;
 
 	/* pull packet header */
 	struct omx_hdr pkt_hdr;
@@ -125,6 +134,9 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	handle->frame_copying_bitmap >>= OMX_PULL_REPLY_PER_BLOCK;
 	handle->frame_index += OMX_PULL_REPLY_PER_BLOCK;
 	handle->block_frames -= OMX_PULL_REPLY_PER_BLOCK;
+	memcpy(&handle->first_desc, &handle->second_desc,
+	       sizeof(struct omx_pull_block_desc));
+	handle->second_desc.valid = 0;
 }
 
 /******************************
@@ -315,6 +327,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->frame_index = 0;
 	handle->next_frame_index = 0;
 	handle->block_frames = 0;
+	handle->first_desc.valid = 0;
+	handle->second_desc.valid = 0;
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
 
@@ -463,12 +477,13 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 /* Called with the handle held */
 static inline struct sk_buff *
 omx_fill_pull_block_request(struct omx_pull_handle * handle,
-			    uint32_t frame_index,
-			    uint32_t block_length,
-			    uint32_t first_frame_offset)
+			    struct omx_pull_block_desc * desc)
 {
 	struct omx_iface * iface = handle->endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	uint32_t frame_index = desc->frame_index;
+	uint32_t block_length = desc->block_length;
+	uint32_t first_frame_offset = desc->first_frame_offset;
 	struct sk_buff * skb;
 	struct omx_hdr * mh;
 	struct omx_pkt_pull_request * pull_n;
@@ -548,9 +563,11 @@ omx_send_pull(struct omx_endpoint * endpoint,
 
 	first_frame_offset = handle->pulled_rdma_offset;
 
-	skb = omx_fill_pull_block_request(handle,
-					  handle->next_frame_index,
-					  block_length, first_frame_offset);
+	handle->first_desc.frame_index = handle->next_frame_index;
+	handle->first_desc.block_length = block_length;
+	handle->first_desc.first_frame_offset = first_frame_offset;
+	handle->first_desc.valid = 1;
+	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 	if (IS_ERR(skb)) {
 		err = PTR_ERR(skb);
 		goto out_with_handle;
@@ -569,9 +586,11 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		block_length = handle->remaining_length;
 	handle->remaining_length -= block_length;
 
-	skb2 = omx_fill_pull_block_request(handle,
-					   handle->next_frame_index,
-					   block_length, 0);
+	handle->second_desc.frame_index = handle->next_frame_index;
+	handle->second_desc.block_length = block_length;
+	handle->second_desc.first_frame_offset = 0;
+	handle->second_desc.valid = 1;
+	skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
 	if (IS_ERR(skb2)) {
 		err = PTR_ERR(skb2);
 		dev_kfree_skb(skb);
@@ -944,9 +963,11 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			block_length = handle->remaining_length;
 		handle->remaining_length -= block_length;
 
-		skb = omx_fill_pull_block_request(handle,
-						  handle->next_frame_index,
-						  block_length, 0);
+		handle->second_desc.frame_index = handle->next_frame_index;
+		handle->second_desc.block_length = block_length;
+		handle->second_desc.first_frame_offset = 0;
+		handle->second_desc.valid = 1;
+		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (IS_ERR(skb)) {
 			err = PTR_ERR(skb);
 			goto out_with_handle;
@@ -975,9 +996,11 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			block_length = handle->remaining_length;
 		handle->remaining_length -= block_length;
 
-		skb2 = omx_fill_pull_block_request(handle,
-						   handle->next_frame_index,
-						   block_length, 0);
+		handle->second_desc.frame_index = handle->next_frame_index;
+		handle->second_desc.block_length = block_length;
+		handle->second_desc.first_frame_offset = 0;
+		handle->second_desc.valid = 1;
+		skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (IS_ERR(skb2)) {
 			err = PTR_ERR(skb2);
 			dev_kfree_skb(skb);
