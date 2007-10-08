@@ -898,6 +898,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) handle->frame_index,
 				 (unsigned long) handle->frame_index + handle->block_frames);
+		omx_pull_handle_release(handle);
 		err = 0;
 		goto out;
 	}
@@ -908,6 +909,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with duplicate seqnum %ld in current block %ld",
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) handle->frame_index);
+		omx_pull_handle_release(handle);
 		err = 0;
 		goto out;
 	}
