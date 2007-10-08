@@ -338,9 +338,10 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		goto out_with_idr;
 
 	/* init timer */
-	setup_timer(&handle->retransmit_timer, omx_pull_handle_timeout_handler, 0);
-	handle->retransmit_timer.expires = jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES;
-	add_timer(&handle->retransmit_timer);
+	setup_timer(&handle->retransmit_timer, omx_pull_handle_timeout_handler,
+		     (unsigned long) handle);
+	__mod_timer(&handle->retransmit_timer,
+		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	/* queue and acquire the handle */
 	list_add_tail(&handle->endpoint_pull_handles,
@@ -622,12 +623,11 @@ omx_send_pull(struct omx_endpoint * endpoint,
 }
 
 /* retransmission callback */
-static void omx_pull_handle_timeout_handler(unsigned long timer_addr)
+static void omx_pull_handle_timeout_handler(unsigned long data)
 {
-	struct timer_list * timer = (void *) timer_addr;
-	struct omx_pull_handle * handle = container_of(timer, struct omx_pull_handle, retransmit_timer);
+	struct omx_pull_handle * handle = (void *) data;
 
-	printk("pull timer reached, need to requeue\n");
+	printk("pull timer reached, need to requeue %p\n", handle);
 }
 
 /* pull reply skb destructor to release the user region */
