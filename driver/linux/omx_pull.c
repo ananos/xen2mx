@@ -971,6 +971,19 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 		/* current first block not done, just release the handle */
+
+		if (OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
+		    && handle->second_desc.valid) {
+			struct sk_buff *skb;
+
+			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
+				handle);
+
+			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
+			if (skb)
+				dev_queue_xmit(skb);
+		}
+
 		dprintk(PULL, "block not done, just releasing\n");
 		omx_pull_handle_release(handle);
 
