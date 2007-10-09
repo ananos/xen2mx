@@ -624,8 +624,19 @@ omx_send_pull(struct omx_endpoint * endpoint,
 static void omx_pull_handle_timeout_handler(unsigned long data)
 {
 	struct omx_pull_handle * handle = (void *) data;
+	struct sk_buff * skb;
 
-	printk("pull timer reached, need to requeue %p\n", handle);
+	mod_timer(&handle->retransmit_timer,
+		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+
+	dprintk(PULL, "pull handle %p timer reached, need to request again\n", handle);
+
+	if (OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle))
+		return;
+
+	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
+	if (skb)
+		dev_queue_xmit(skb);
 }
 
 /* pull reply skb destructor to release the user region */
