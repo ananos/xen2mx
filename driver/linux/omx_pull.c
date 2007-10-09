@@ -98,6 +98,7 @@ static void omx_pull_handle_timeout_handler(unsigned long timer_addr);
 #endif
 
 #define OMX_PULL_HANDLE_BLOCK_BITMASK ((1ULL<<OMX_PULL_REPLY_PER_BLOCK)-1)
+#define OMX_PULL_HANDLE_SECOND_BLOCK_BITMASK (OMX_PULL_HANDLE_BLOCK_BITMASK<<OMX_PULL_REPLY_PER_BLOCK)
 #define OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK ((1ULL<<(2*OMX_PULL_REPLY_PER_BLOCK))-1)
 
 #define OMX_PULL_HANDLE_DONE(handle) \
@@ -106,6 +107,9 @@ static void omx_pull_handle_timeout_handler(unsigned long timer_addr);
 
 #define OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle) \
 	(!((handle)->frame_copying_bitmap & OMX_PULL_HANDLE_BLOCK_BITMASK))
+
+#define OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle) \
+	(!((handle)->frame_copying_bitmap & OMX_PULL_HANDLE_SECOND_BLOCK_BITMASK))
 
 static inline void
 omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
@@ -635,6 +639,13 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		return;
 
 	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
+	if (skb)
+		dev_queue_xmit(skb);
+
+	if (!handle->second_desc.valid || OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle))
+		return;
+
+	skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 	if (skb)
 		dev_queue_xmit(skb);
 }
