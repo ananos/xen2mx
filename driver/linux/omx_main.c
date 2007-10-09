@@ -47,7 +47,7 @@ module_param_named(copybench, omx_copybench, uint, S_IRUGO);
 MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");
 
 #ifdef OMX_DEBUG
-unsigned long omx_debug = OMX_DEBUG_SEND | OMX_DEBUG_RECV | OMX_DEBUG_DROP | OMX_DEBUG_EVENT | OMX_DEBUG_IOCTL;
+unsigned long omx_debug = 0;
 module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(debug, "Bitmask of debugging messages to display");
 
