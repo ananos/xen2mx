@@ -339,7 +339,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 	/* init timer */
 	setup_timer(&handle->retransmit_timer, omx_pull_handle_timeout_handler,
-		     (unsigned long) handle);
+		    (unsigned long) handle);
 	__mod_timer(&handle->retransmit_timer,
 		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
@@ -355,6 +355,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
  out_with_idr:
 	idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
+	write_unlock_bh(&endpoint->pull_handle_lock);
  out_with_handle:
 	kfree(handle);
  out_with_region:
