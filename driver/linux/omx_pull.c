@@ -384,11 +384,8 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 
 	read_lock_bh(&endpoint->pull_handle_lock);
 	handle = idr_find(&endpoint->pull_handle_idr, wire_handle);
-	if (!handle) {
-		read_unlock_bh(&endpoint->pull_handle_lock);
-		omx_endpoint_release(endpoint);
+	if (!handle)
 		goto out_with_endpoint_lock;
-	}
 
 	/* acquire the handle */
 	spin_lock(&handle->lock);
