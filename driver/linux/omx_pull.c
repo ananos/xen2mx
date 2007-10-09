@@ -27,7 +27,7 @@
 
 #define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
 
-#define OMX_PULL_RETRANSMIT_TIMEOUT_MS	50
+#define OMX_PULL_RETRANSMIT_TIMEOUT_MS	1000
 #define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES (OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
 
 struct omx_pull_block_desc {
@@ -88,6 +88,27 @@ static void omx_pull_handle_timeout_handler(unsigned long timer_addr);
  * Since a bottom half and the application may both acquire the rwlock for
  * writing, we must always disable bottom halves when taking the rwlock for
  * either read or writing.
+ */
+
+/*
+ * Notes about retransmission:
+ *
+ * The puller request 2 blocks of data, and waits for OMX_PULL_REPLY_PER_BLOCK
+ * replies for each of them.
+ *
+ * A timer is set to detect when nothing has been received for a while.  It is
+ * updated every time a new reply is received. This timer repost requests to
+ * get current blocks (using descriptors that were cached in the pull handle).
+ *
+ * Additionally, if the second block completes before the first one, there is
+ * a good chance that one packet got lost for the first block. In this case,
+ * we optimistically re-request the first block.
+ * To avoid re-requesting too often, we do it only once per timeout.
+ *
+ * In the end, the timer is only called if:
+ * + one packet is lost for block the first and the second current block
+ * + or one packet is missing in the first block after one optimistic re-request.
+ * So the timeout doesn't need to be short, 1 second is enough.
  */
 
 /********************************
