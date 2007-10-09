@@ -637,6 +637,8 @@ omx_send_pull_reply_skb_destructor(struct sk_buff *skb)
 	omx_user_region_release(region);
 }
 
+unsigned long omx_pull_packet_loss_index = 0;
+
 int
 omx_recv_pull(struct omx_iface * iface,
 	      struct omx_hdr * pull_mh,
@@ -785,7 +787,13 @@ omx_recv_pull(struct omx_iface * iface,
 		/* now that the skb is ready, remove it from the array
 		 * so that we don't try to free it in case of error later
 		 */
-		dev_queue_xmit(skb);
+#ifdef OMX_DEBUG
+		if (++omx_pull_packet_loss_index == omx_pull_packet_loss) {
+			kfree_skb(skb);
+			omx_pull_packet_loss_index = 0;
+		} else
+#endif
+			dev_queue_xmit(skb);
 
 		/* update fields now */
 		current_frame_seqnum++;

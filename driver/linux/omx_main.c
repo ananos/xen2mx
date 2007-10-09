@@ -26,12 +26,6 @@
  * Module parameters
  */
 
-#ifdef OMX_DEBUG
-unsigned long omx_debug = OMX_DEBUG_SEND | OMX_DEBUG_RECV | OMX_DEBUG_DROP | OMX_DEBUG_EVENT | OMX_DEBUG_IOCTL;
-module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(debug, "Bitmask of debugging messages to display");
-#endif
-
 static char * omx_ifnames = NULL;
 module_param_named(ifnames, omx_ifnames, charp, S_IRUGO); /* modifiable by the attached sysfs file */
 MODULE_PARM_DESC(ifnames, "Interfaces to attach on startup");
@@ -51,6 +45,16 @@ MODULE_PARM_DESC(peers, "Maximum number of peer nodes");
 int omx_copybench = 0;
 module_param_named(copybench, omx_copybench, uint, S_IRUGO);
 MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");
+
+#ifdef OMX_DEBUG
+unsigned long omx_debug = OMX_DEBUG_SEND | OMX_DEBUG_RECV | OMX_DEBUG_DROP | OMX_DEBUG_EVENT | OMX_DEBUG_IOCTL;
+module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(debug, "Bitmask of debugging messages to display");
+
+unsigned long omx_pull_packet_loss = 0;
+module_param_named(pull_packet_loss, omx_pull_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(pull_packet_loss, "Explicit pull reply packet loss frequency");
+#endif
 
 /************************
  * Main Module Init/Exit
