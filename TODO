@@ -4,8 +4,6 @@
 
 * cleanup BH locking in pull ?
 
-* need to set peer_index of myself through ioctl
-
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
   + omx_disconnect

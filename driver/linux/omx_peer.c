@@ -23,6 +23,7 @@
 #include <linux/list.h>
 
 #include "omx_common.h"
+#include "omx_hal.h"
 #include "omx_wire_access.h"
 
 #define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
@@ -70,6 +71,24 @@ omx_peers_clear(void)
 	spin_unlock(&omx_peer_lock);
 }
 
+static int
+omx_peer_is_local(uint64_t board_addr)
+{
+	struct net_device * ifp;
+	int ret = 0;
+
+	read_lock(&dev_base_lock);
+	omx_for_each_netdev(ifp) {
+		if (board_addr == omx_board_addr_from_netdevice(ifp)) {
+			ret = 1;
+			break;
+		}
+	}
+	read_unlock(&dev_base_lock);
+
+	return ret;
+}
+
 int
 omx_peer_add(uint64_t board_addr, char *hostname)
 {
@@ -88,14 +107,21 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 
 	peer->board_addr = board_addr;
 	peer->hostname = kstrdup(hostname, GFP_KERNEL);
-	peer->reverse_index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 
 	hash = omx_peer_addr_hash(board_addr);
 
 	spin_lock(&omx_peer_lock);
-	omx_peer_array[omx_peers_nr] = peer;
 	peer->index = omx_peers_nr;
+
+	if (omx_peer_is_local(board_addr)) {
+		printk("peer %d addr %llx is local\n", peer->index, (unsigned long long) board_addr);
+		peer->reverse_index = peer->index;
+	} else {
+		peer->reverse_index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
+	}
+
 	list_add_tail(&peer->addr_hash_elt, &omx_peer_addr_hash_array[hash]);
+	omx_peer_array[omx_peers_nr] = peer;
 	omx_peers_nr++;
 	spin_unlock(&omx_peer_lock);
 
