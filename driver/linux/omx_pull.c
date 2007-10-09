@@ -62,6 +62,7 @@ struct omx_pull_handle {
 	uint64_t frame_copying_bitmap; /* frames received but not copied yet */
 	struct omx_pull_block_desc first_desc;
 	struct omx_pull_block_desc second_desc;
+	uint32_t already_requeued_first; /* the first block has been requested again since the last timer */
 
 	/* pull packet header */
 	struct omx_hdr pkt_hdr;
@@ -141,6 +142,7 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	memcpy(&handle->first_desc, &handle->second_desc,
 	       sizeof(struct omx_pull_block_desc));
 	handle->second_desc.valid = 0;
+	handle->already_requeued_first = 0;
 }
 
 /******************************
@@ -335,6 +337,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->second_desc.valid = 0;
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
+	handle->already_requeued_first = 0;
 
 	/* initialize cached header */
 	err = omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
@@ -634,6 +637,8 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	dprintk(PULL, "pull handle %p timer reached, need to request again\n", handle);
+
+	handle->already_requeued_first = 0;
 
 	if (OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle))
 		return;
@@ -973,7 +978,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* current first block not done, just release the handle */
 
 		if (OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
-		    && handle->second_desc.valid) {
+		    && handle->second_desc.valid
+		    && !handle->already_requeued_first) {
 			struct sk_buff *skb;
 
 			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
@@ -982,6 +988,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 			if (skb)
 				dev_queue_xmit(skb);
+
+			handle->already_requeued_first = 1;
 		}
 
 		dprintk(PULL, "block not done, just releasing\n");
