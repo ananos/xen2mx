@@ -73,6 +73,11 @@ omx_init(void)
 	printk(KERN_INFO "Open-MX: using %ld x %ldkB pull replies per request\n",
 	       (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
 	       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);
+#ifdef OMX_DEBUG
+	if (omx_pull_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating pull reply packet loss every %ld packets\n",
+		       omx_pull_packet_loss);
+#endif
 
 	ret = omx_dma_init();
 	if (ret < 0)
