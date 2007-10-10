@@ -88,7 +88,7 @@ omx_recv_connect(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
 	if (unlikely(!evt)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "CONNECT packet because of unexpected event queue full");
@@ -189,7 +189,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
 	if (unlikely(!evt)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "TINY packet because of unexpected event queue full");
@@ -292,7 +292,7 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint, &recvq_slot);
 	if (unlikely(!evt)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet because of unexpected event queue full");
@@ -311,7 +311,6 @@ omx_recv_small(struct omx_iface * iface,
 	omx_recv_dprintk(&mh->head.eth, "SMALL length %ld", (unsigned long) length);
 
 	/* copy data in recvq slot */
-	recvq_slot = omx_find_next_recvq_slot(endpoint);
 	err = skb_copy_bits(skb, sizeof(struct omx_hdr), recvq_slot, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
@@ -396,7 +395,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint, &recvq_slot);
 	if (unlikely(!evt)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of unexpected event queue full");
@@ -418,7 +417,6 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
 	/* copy data in recvq slot */
-	recvq_slot = omx_find_next_recvq_slot(endpoint);
 	err = skb_copy_bits(skb, sizeof(struct omx_hdr), recvq_slot, frag_length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
@@ -502,7 +500,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
 	if (unlikely(!evt)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet because of unexpected event queue full");
@@ -586,7 +584,7 @@ omx_recv_notify(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
 	if (unlikely(!evt)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet because of unexpected event queue full");
@@ -670,7 +668,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint);
+	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
 	if (unlikely(!evt)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "NACK LIB packet because of unexpected event queue full");

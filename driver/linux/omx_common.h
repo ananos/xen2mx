@@ -80,8 +80,7 @@ extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uin
 /* events */
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);
 extern union omx_evt * omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint);
-extern union omx_evt * omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint);
-extern char * omx_find_next_recvq_slot(struct omx_endpoint *endpoint);
+extern union omx_evt * omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint, char ** recvq_slot);
 
 /* sending */
 extern struct sk_buff * omx_new_skb(struct net_device *ifp, unsigned long len);

@@ -62,7 +62,8 @@ omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint)
 }
 
 union omx_evt *
-omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint)
+omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint,
+				char ** recvq_slot_p)
 {
 	/* FIXME: need locking */
 	union omx_evt *slot = endpoint->next_unexp_eventq_slot;
@@ -83,13 +84,10 @@ omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint)
 		+ (((void *) slot - endpoint->unexp_eventq)
 		   << (OMX_RECVQ_ENTRY_SHIFT - OMX_EVENTQ_ENTRY_SHIFT));
 
-	return slot;
-}
+	if (recvq_slot_p)
+		*recvq_slot_p = endpoint->next_recvq_slot;
 
-char *
-omx_find_next_recvq_slot(struct omx_endpoint *endpoint)
-{
-	return endpoint->next_recvq_slot;
+	return slot;
 }
 
 /*
