@@ -23,58 +23,6 @@
 #include "omx_hal.h"
 #include "omx_wire_access.h"
 
-/******************************
- * Manage event and data slots
- */
-
-union omx_evt *
-omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint)
-{
-	/* FIXME: need locking */
-	union omx_evt *slot = endpoint->next_exp_eventq_slot;
-	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
-		dprintk(EVENT,
-			"Open-MX: Expected event queue full, no event slot available for endpoint %d\n",
-			endpoint->endpoint_index);
-		return NULL;
-	}
-
-	endpoint->next_exp_eventq_slot = slot + 1;
-	if (unlikely((void *) endpoint->next_exp_eventq_slot >= endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE))
-		endpoint->next_exp_eventq_slot = endpoint->exp_eventq;
-
-	return slot;
-}
-
-union omx_evt *
-omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint)
-{
-	/* FIXME: need locking */
-	union omx_evt *slot = endpoint->next_unexp_eventq_slot;
-	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
-		dprintk(EVENT,
-			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
-			endpoint->endpoint_index);
-		return NULL;
-	}
-
-	endpoint->next_unexp_eventq_slot = slot + 1;
-	if (unlikely((void *) endpoint->next_unexp_eventq_slot >= endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
-		endpoint->next_unexp_eventq_slot = endpoint->unexp_eventq;
-
-	/* recvq slot is at same index for now */
-	endpoint->next_recvq_slot = endpoint->recvq
-		+ (((void *) slot - endpoint->unexp_eventq) << (OMX_RECVQ_ENTRY_SHIFT - OMX_EVENTQ_ENTRY_SHIFT));
-
-	return slot;
-}
-
-static inline char *
-omx_find_next_recvq_slot(struct omx_endpoint *endpoint)
-{
-	return endpoint->next_recvq_slot;
-}
-
 /***************************
  * Event reporting routines
  */

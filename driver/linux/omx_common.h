@@ -52,8 +52,6 @@ extern int omx_iface_attach_endpoint(struct omx_endpoint * endpoint);
 extern void omx_iface_detach_endpoint(struct omx_endpoint * endpoint, int ifacelocked);
 extern int __omx_endpoint_close(struct omx_endpoint * endpoint, int ifacelocked);
 extern struct omx_endpoint * omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index);
-extern union omx_evt * omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint);
-extern union omx_evt * omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint);
 extern void omx_endpoint_release(struct omx_endpoint * endpoint);
 extern int omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index, uint32_t * closed, uint32_t * pid, char * command, size_t len);
 
@@ -78,6 +76,12 @@ extern int omx_check_recv_peer_index(uint16_t peer_index);
 extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *hostname);
 extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t *index);
 extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uint32_t *index);
+
+/* events */
+extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);
+extern union omx_evt * omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint);
+extern union omx_evt * omx_find_next_unexp_eventq_slot(struct omx_endpoint *endpoint);
+extern char * omx_find_next_recvq_slot(struct omx_endpoint *endpoint);
 
 /* sending */
 extern struct sk_buff * omx_new_skb(struct net_device *ifp, unsigned long len);

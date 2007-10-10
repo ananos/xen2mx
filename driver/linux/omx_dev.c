@@ -37,7 +37,6 @@
 static int
 omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 {
-	union omx_evt * evt;
 	struct page ** sendq_pages;
 	char * buffer;
 	int i;
@@ -74,19 +73,8 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	}
 	endpoint->sendq_pages = sendq_pages;
 
-	for(evt = endpoint->exp_eventq;
-	    (void *) evt < endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE;
-	    evt++)
-		evt->generic.type = OMX_EVT_NONE;
-	endpoint->next_exp_eventq_slot = endpoint->exp_eventq;
-
-	for(evt = endpoint->unexp_eventq;
-	    (void *) evt < endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE;
-	    evt++)
-		evt->generic.type = OMX_EVT_NONE;
-	endpoint->next_unexp_eventq_slot = endpoint->unexp_eventq;
-
-	endpoint->next_recvq_slot = endpoint->recvq;
+	/* finish initializing queues */
+	omx_endpoint_queues_init(endpoint);
 
 	/* initialize user regions */
 	omx_endpoint_user_regions_init(endpoint);
