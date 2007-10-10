@@ -251,7 +251,18 @@ mx_irecv(mx_endpoint_t endpoint,
 
 #define mx_context omx_context
 
-/* FIXME: mx_line_speed_t mx_net_type */
+enum mx_net_type {
+  MX_NET_MYRI,
+  MX_NET_ETHER,
+};
+typedef enum mx_net_type mx_net_type_t;
+
+enum mx_line_speed {
+  MX_SPEED_2G,
+  MX_SPEED_10G,
+  MX_SPEED_OPEN_MX,
+};
+typedef enum mx_line_speed mx_line_speed_t;
 
 enum mx_get_info_key {
   MX_NIC_COUNT = 1,
@@ -323,10 +334,13 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
     return MX_BAD_BAD_BAD; /* TODO */
 
   case MX_NET_TYPE:
-    return MX_BAD_BAD_BAD; /* TODO */
+    * (uint32_t *) out_val = MX_NET_ETHER;
+    return MX_SUCCESS;
 
   case MX_LINE_SPEED:
-    return MX_BAD_BAD_BAD; /* TODO */
+    * (uint32_t *) out_val = MX_SPEED_OPEN_MX;
+    return MX_SUCCESS;
+
   }
 
   return MX_BAD_INFO_KEY;
