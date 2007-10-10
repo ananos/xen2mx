@@ -227,14 +227,24 @@ mx_irecv(mx_endpoint_t endpoint,
 
 #define mx_cancel omx_cancel
 
-#define mx_test omx_test
-#define mx_wait(endpoint,request,timeout, status,result) omx_wait(endpoint,request,status,result)
-#define mx_test_any omx_test_any
-#define mx_wait_any(endpoint,timeout,match_info,match_mask,status,result) omx_wait_any(endpoint,match_info,match_mask,status,result)
+#define mx_test(endpoint, request, status, result) \
+ omx_test(endpoint, request, (struct omx_status *) status, result)
+#define mx_wait(endpoint, request, timeout, status, result) \
+ omx_wait(endpoint, request, (struct omx_status *) status, result)
+
+#define mx_test_any(endpoint, match_info, match_mask, status, result) \
+ omx_test_any(endpoint, match_info, match_mask, (struct omx_status *) status, result)
+#define mx_wait_any(endpoint, timeout, match_info, match_mask, status, result) \
+ omx_wait_any(endpoint, match_info, match_mask, (struct omx_status *) status, result)
+
 #define mx_ipeek omx_ipeek
-#define mx_peek(endpoint,timeout,request,result) omx_peek(endpoint,request,result)
-#define mx_iprobe omx_iprobe
-#define mx_probe(endpoint,timeout,match_info,match_mask,status,result) omx_probe(endpoint,match_info,match_mask,status,result)
+#define mx_peek(endpoint, timeout, request, result) \
+ omx_peek(endpoint, request, result)
+
+#define mx_iprobe(endpoint, match_info, match_mask, status, result) \
+ omx_iprobe(endpoint, match_info, match_mask, (struct omx_status *) status, result)
+#define mx_probe(endpoint, timeout, match_info, match_mask, status, result) \
+ omx_probe(endpoint, match_info, match_mask, (struct omx_status *) status, result)
 
 /* FIXME: mx_ibuffered */
 /* FIXME: mx_buffered */
