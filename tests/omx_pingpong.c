@@ -27,6 +27,7 @@
 #include <getopt.h>
 #include <assert.h>
 #include <malloc.h>	/* memalign() */
+#include <arpa/inet.h>
 
 #include "open-mx.h"
 
@@ -204,13 +205,13 @@ int main(int argc, char *argv[])
       }
 
     /* send the param message */
-    param.iter = iter;
-    param.warmup = warmup;
-    param.min = min;
-    param.max = max;
-    param.multiplier = multiplier;
-    param.increment = increment;
-    param.align = align;
+    param.iter = htonl(iter);
+    param.warmup = htonl(warmup);
+    param.min = htonl(min);
+    param.max = htonl(max);
+    param.multiplier = htonl(multiplier);
+    param.increment = htonl(increment);
+    param.align = htonl(align);
     param.unidir = unidir;
     ret = omx_isend(ep, &param, sizeof(param),
 		    addr, 0x1234567887654321ULL,
@@ -251,9 +252,9 @@ int main(int argc, char *argv[])
 	length < max;
 	length = next_length(length, multiplier, increment)) {
 
-      if (align) 
+      if (align)
 	buffer = memalign(BUFFER_ALIGN, length);
-      else 
+      else
         buffer = malloc(length);
       if (!buffer) {
 	perror("buffer malloc");
@@ -352,13 +353,13 @@ int main(int argc, char *argv[])
     }
 
     /* retrieve parameters */
-    iter = param.iter;
-    warmup = param.warmup;
-    min = param.min;
-    max = param.max;
-    multiplier = param.multiplier;
-    increment = param.increment;
-    align = param.align;
+    iter = ntohl(param.iter);
+    warmup = ntohl(param.warmup);
+    min = ntohl(param.min);
+    max = ntohl(param.max);
+    multiplier = ntohl(param.multiplier);
+    increment = ntohl(param.increment);
+align = ntohl(param.align);
     unidir = param.unidir;
 
     ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
@@ -413,9 +414,9 @@ int main(int argc, char *argv[])
 	length < max;
 	length = next_length(length, multiplier, increment)) {
 
-      if (align) 
+      if (align)
 	buffer = memalign(BUFFER_ALIGN, length);
-      else 
+      else
         buffer = malloc(length);
       if (!buffer) {
 	perror("buffer malloc");
