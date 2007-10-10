@@ -242,8 +242,85 @@ mx_irecv(mx_endpoint_t endpoint,
 #define mx_context omx_context
 
 /* FIXME: mx_line_speed_t mx_net_type */
-/* FIXME: mx_get_info_key_t */
-/* FIXME: mx_get_info */
+
+enum mx_get_info_key {
+  MX_NIC_COUNT = 1,
+  MX_NIC_IDS = 2,
+  MX_MAX_NATIVE_ENDPOINTS = 3,
+  MX_NATIVE_REQUESTS = 4,
+  MX_COUNTERS_COUNT = 5,
+  MX_COUNTERS_LABELS = 6,
+  MX_COUNTERS_VALUES = 7,
+  MX_PRODUCT_CODE = 8,
+  MX_PART_NUMBER = 9,
+  MX_SERIAL_NUMBER = 10,
+  MX_PORT_COUNT = 11,
+  MX_PIO_SEND_MAX = 12,
+  MX_COPY_SEND_MAX = 13,
+  MX_NUMA_NODE = 14,
+#define MX_HAS_NET_TYPE
+  MX_NET_TYPE = 15,
+  MX_LINE_SPEED = 16
+};
+typedef enum mx_get_info_key mx_get_info_key_t;
+
+static inline mx_return_t
+mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
+	    void *in_val, uint32_t in_len,
+	    void *out_val, uint32_t out_len)
+{
+  switch (key) {
+  case MX_NIC_COUNT:
+    return omx_get_info(ep, OMX_INFO_BOARD_COUNT, in_val, in_len, out_val, out_len);
+
+  case MX_NIC_IDS:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_MAX_NATIVE_ENDPOINTS:
+    return omx_get_info(ep, OMX_INFO_ENDPOINT_MAX, in_val, in_len, out_val, out_len);
+
+  case MX_NATIVE_REQUESTS:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_COUNTERS_COUNT:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_COUNTERS_LABELS:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_COUNTERS_VALUES:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_PRODUCT_CODE:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_PART_NUMBER:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_SERIAL_NUMBER:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_PORT_COUNT:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_PIO_SEND_MAX:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_COPY_SEND_MAX:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_NUMA_NODE:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_NET_TYPE:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_LINE_SPEED:
+    return MX_BAD_BAD_BAD; /* TODO */
+  }
+
+  return MX_BAD_INFO_KEY;
+}
 
 #define MX_MAX_HOSTNAME_LEN 80
 
