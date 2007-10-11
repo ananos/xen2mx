@@ -37,6 +37,7 @@ assertions(void)
   CHECK(PAGE_SIZE%OMX_RECVQ_ENTRY_SIZE == 0);
   CHECK(OMX_SENDQ_ENTRY_SIZE <= OMX_RECVQ_ENTRY_SIZE);
   CHECK(sizeof(union omx_evt) == OMX_EVENTQ_ENTRY_SIZE);
+  CHECK(OMX_UNEXP_EVENTQ_ENTRY_NR == OMX_RECVQ_ENTRY_NR);
   CHECK((unsigned) OMX_PKT_TYPE_MAX == (1<<(sizeof(((struct omx_pkt_msg*)NULL)->ptype)*8)) - 1);
 
   CHECK(OMX_EVT_NACK_LIB_BAD_ENDPT == OMX_NACK_TYPE_BAD_ENDPT);

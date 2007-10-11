@@ -21,6 +21,10 @@
 #include "omx_io.h"
 #include "omx_common.h"
 
+/*****************
+ * Initialization
+ */
+
 void
 omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 {
@@ -48,6 +52,10 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 
 	spin_lock_init(&endpoint->event_lock);
 }
+
+/******************************************
+ * Report an expected event to users-space
+ */
 
 int
 omx_notify_exp_event(struct omx_endpoint *endpoint,
@@ -84,6 +92,11 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 
 	return 0;
 }
+
+/********************************************
+ * Report an unexpected event to users-space
+ * without any recvq slot needed
+ */
 
 int
 omx_notify_unexp_event(struct omx_endpoint *endpoint,
@@ -128,9 +141,19 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 	return 0;
 }
 
-/*
- * Reserve one more slot and returns the corresponding recvq slot to the caller
+/********************************************
+ * Report an unexpected event to users-space
+ * with a recvq slot needed
  */
+
+/*
+ * The recvq accounting is trivial since there are as many recvq slot
+ * than unexp event slot, the latter are accounted, and we allocate only
+ * one recvq slot per prepare()/commit() functions below (and no slot
+ * in notify() above).
+ */
+
+/* Reserve one more slot and returns the corresponding recvq slot to the caller */
 int
 omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 					  char ** recvq_slot_p)
