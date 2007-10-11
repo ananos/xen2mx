@@ -59,6 +59,8 @@ omx_peers_clear(void)
 {
 	int i;
 
+	dprintk(PEER, "clearing all peers\n");
+
 	spin_lock(&omx_peer_lock);
 	for(i=0; i<omx_peers_nr; i++) {
 		struct omx_peer * peer = omx_peer_array[i];
@@ -114,9 +116,12 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	peer->index = omx_peers_nr;
 
 	if (omx_peer_is_local(board_addr)) {
-		printk("peer %d addr %llx is local\n", peer->index, (unsigned long long) board_addr);
+		dprintk(PEER, "adding peer %d with addr %012llx (local peer)\n",
+			peer->index, (unsigned long long) board_addr);
 		peer->reverse_index = peer->index;
 	} else {
+		dprintk(PEER, "adding peer %d with addr %012llx\n",
+			peer->index, (unsigned long long) board_addr);
 		peer->reverse_index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 	}
 
