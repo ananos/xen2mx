@@ -36,7 +36,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	    evt++)
 		evt->generic.type = OMX_EVT_NONE;
 	/* set the first expected event slot */
-	endpoint->next_exp_eventq_slot = endpoint->exp_eventq;
+	endpoint->next_exp_eventq_offset = 0;
 
 	/* initialize all unexpected events to none */
 	for(evt = endpoint->unexp_eventq;
@@ -44,8 +44,8 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	    evt++)
 		evt->generic.type = OMX_EVT_NONE;
 	/* set the first free and reserved unexpected event slot */
-	endpoint->next_free_unexp_eventq_slot = endpoint->unexp_eventq;
-	endpoint->next_reserved_unexp_eventq_slot = endpoint->unexp_eventq;
+	endpoint->next_free_unexp_eventq_offset = 0;
+	endpoint->next_reserved_unexp_eventq_offset = 0;
 
 	/* set the first recvq slot */
 	endpoint->next_recvq_slot = endpoint->recvq;
@@ -65,7 +65,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 
 	spin_lock(&endpoint->event_lock);
 
-	slot = endpoint->next_exp_eventq_slot;
+	slot = endpoint->exp_eventq + endpoint->next_exp_eventq_offset;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
 		/* the application sucks, it did not check
 		 * the expected eventq before posting requests
@@ -78,10 +78,9 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 	}
 
 	/* update the queue */
-	endpoint->next_exp_eventq_slot = slot + 1;
-	if (unlikely((void *) endpoint->next_exp_eventq_slot
-		     >= endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE))
-		endpoint->next_exp_eventq_slot = endpoint->exp_eventq;
+	endpoint->next_exp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
+	if (unlikely(endpoint->next_exp_eventq_offset >= OMX_EXP_EVENTQ_SIZE))
+		endpoint->next_exp_eventq_offset = 0;
 
 	spin_unlock(&endpoint->event_lock);
 
@@ -106,7 +105,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 
 	spin_lock(&endpoint->event_lock);
 
-	slot = endpoint->next_free_unexp_eventq_slot;
+	slot = endpoint->unexp_eventq + endpoint->next_free_unexp_eventq_offset;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
 		/* the application sucks, it did not check
 		 * the unexpected eventq before posting requests
@@ -119,17 +118,15 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 	}
 
 	/* update the next free slot in the queue */
-	endpoint->next_free_unexp_eventq_slot = slot + 1;
-	if (unlikely((void *) endpoint->next_free_unexp_eventq_slot
-		     >= endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
-		endpoint->next_free_unexp_eventq_slot = endpoint->unexp_eventq;
+	endpoint->next_free_unexp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
+	if (unlikely(endpoint->next_free_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
+		endpoint->next_free_unexp_eventq_offset = 0;
 
 	/* find and update the next reserved slot in the queue */
-	slot = endpoint->next_reserved_unexp_eventq_slot;
-	endpoint->next_reserved_unexp_eventq_slot = slot + 1;
-	if (unlikely((void *) endpoint->next_reserved_unexp_eventq_slot
-		     >= endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
-		endpoint->next_reserved_unexp_eventq_slot = endpoint->unexp_eventq;
+	slot = endpoint->unexp_eventq + endpoint->next_reserved_unexp_eventq_offset;
+	endpoint->next_reserved_unexp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
+	if (unlikely(endpoint->next_reserved_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
+		endpoint->next_reserved_unexp_eventq_offset = 0;
 
 	spin_unlock(&endpoint->event_lock);
 
@@ -163,7 +160,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	spin_lock(&endpoint->event_lock);
 
 	/* check that there's a slot available and reserve it */
-	slot = endpoint->next_free_unexp_eventq_slot;
+	slot = endpoint->unexp_eventq + endpoint->next_free_unexp_eventq_offset;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
 		dprintk(EVENT,
 			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
@@ -173,10 +170,9 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	}
 
 	/* update the next free slot in the queue */
-	endpoint->next_free_unexp_eventq_slot = slot + 1;
-	if (unlikely((void *) endpoint->next_free_unexp_eventq_slot
-		     >= endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
-		endpoint->next_free_unexp_eventq_slot = endpoint->unexp_eventq;
+	endpoint->next_free_unexp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
+	if (unlikely(endpoint->next_free_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
+		endpoint->next_free_unexp_eventq_offset = 0;
 
 	/* take the next recvq slot and return it now */
 	endpoint->next_recvq_slot = endpoint->recvq
@@ -202,14 +198,13 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	spin_lock(&endpoint->event_lock);
 
 	/* the caller should have called prepare() earlier */
-	BUG_ON(endpoint->next_reserved_unexp_eventq_slot == endpoint->next_free_unexp_eventq_slot);
+	BUG_ON(endpoint->next_reserved_unexp_eventq_offset == endpoint->next_free_unexp_eventq_offset);
 
 	/* update the next reserved slot in the queue */
-	slot = endpoint->next_reserved_unexp_eventq_slot;
-	endpoint->next_reserved_unexp_eventq_slot = slot + 1;
-	if (unlikely((void *) endpoint->next_reserved_unexp_eventq_slot
-		     >= endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
-		endpoint->next_reserved_unexp_eventq_slot = endpoint->unexp_eventq;
+	slot = endpoint->unexp_eventq + endpoint->next_reserved_unexp_eventq_offset;
+	endpoint->next_reserved_unexp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
+	if (unlikely(endpoint->next_reserved_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
+		endpoint->next_reserved_unexp_eventq_offset = 0;
 
 	spin_unlock(&endpoint->event_lock);
 

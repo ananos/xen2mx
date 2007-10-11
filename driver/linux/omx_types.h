@@ -75,8 +75,8 @@ struct omx_endpoint {
 	struct omx_iface * iface;
 
 	void * sendq, * recvq, * exp_eventq, * unexp_eventq;
-	union omx_evt * next_exp_eventq_slot;
-	union omx_evt * next_free_unexp_eventq_slot, * next_reserved_unexp_eventq_slot;
+	unsigned long next_exp_eventq_offset;
+	unsigned long next_free_unexp_eventq_offset, next_reserved_unexp_eventq_offset;
 	char * next_recvq_slot;
 	spinlock_t event_lock;
 

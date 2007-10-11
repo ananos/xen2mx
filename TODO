@@ -24,6 +24,8 @@
 * truc messages
 * retransmission
 
+* fix oops when removing the module while some pull handle are busy
+
 * requeue pull (and the second one?) in the timer callback
 * add nack_mcp for OMX_NACK_TYPE_BAD_RDMAWIN
 
