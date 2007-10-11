@@ -134,9 +134,10 @@ omx_endpoint_acquire_by_iface_index_error_to_nack_type(void * errptr)
 		return OMX_NACK_TYPE_BAD_ENDPT;
 	case -ENOENT:
 		return OMX_NACK_TYPE_ENDPT_CLOSED;
-	default:
-		BUG();
 	}
+
+	BUG();
+	return 0; /* shut-up the compiler */
 }
 
 /* manage addresses */
