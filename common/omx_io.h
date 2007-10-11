@@ -459,18 +459,21 @@ union omx_evt {
 			} tiny;
 
 			struct {
+				uint32_t recvq_offset;
 				uint16_t length;
-				uint16_t pad[19];
+				uint16_t pad[17];
 				/* 40 */
 			} small;
 
 			struct {
+				uint32_t recvq_offset;
 				uint32_t msg_length;
+				/* 8 */
 				uint16_t frag_length;
 				uint8_t frag_seqnum;
 				uint8_t frag_pipeline;
-				/* 8 */
-				uint64_t pad[4];
+				/* 12 */
+				uint32_t pad[7];
 				/* 40 */
 			} medium;
 

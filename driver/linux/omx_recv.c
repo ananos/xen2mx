@@ -42,8 +42,7 @@ omx_recv_connect(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(connect_n->src_endpoint);
 	uint16_t reverse_peer_index = OMX_FROM_PKT_FIELD(connect_n->src_dst_peer_index);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(connect_n->lib_seqnum);
-	union omx_evt *evt;
-	struct omx_evt_recv_connect *event;
+	struct omx_evt_recv_connect event;
 	int err = 0;
 
 	/* check packet length */
@@ -88,31 +87,28 @@ omx_recv_connect(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
-	if (unlikely(!evt)) {
+	err = omx_prepare_notify_unexp_event(endpoint, NULL);
+	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "CONNECT packet because of unexpected event queue full");
-		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_connect;
 
 	/* fill event */
-	event->peer_index = peer_index;
-	event->src_endpoint = src_endpoint;
-	event->length = length;
-	event->seqnum = lib_seqnum;
+	event.peer_index = peer_index;
+	event.src_endpoint = src_endpoint;
+	event.length = length;
+	event.seqnum = lib_seqnum;
 
 	omx_recv_dprintk(eh, "CONNECT data length %ld", (unsigned long) length);
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event->data, length);
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
-	/* set the type at the end so that user-space does not find the slot on error */
-	wmb();
-	event->type = OMX_EVT_RECV_CONNECT;
+	/* notify the event */
+	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT, &event, sizeof(event));
 
 	omx_endpoint_release(endpoint);
 
@@ -137,8 +133,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(tiny_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(tiny_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(tiny_n->lib_seqnum);
-	union omx_evt *evt;
-	struct omx_evt_recv_msg *event;
+	struct omx_evt_recv_msg event;
 	int err = 0;
 
 	/* check packet length */
@@ -189,32 +184,29 @@ omx_recv_tiny(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
-	if (unlikely(!evt)) {
+	err = omx_prepare_notify_unexp_event(endpoint, NULL);
+	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "TINY packet because of unexpected event queue full");
-		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_msg;
 
 	/* fill event */
-	event->peer_index = peer_index;
-	event->src_endpoint = src_endpoint;
-	event->match_info = OMX_FROM_PKT_MATCH_INFO(tiny_n);
-	event->seqnum = lib_seqnum;
-	event->specific.tiny.length = length;
+	event.peer_index = peer_index;
+	event.src_endpoint = src_endpoint;
+	event.match_info = OMX_FROM_PKT_MATCH_INFO(tiny_n);
+	event.seqnum = lib_seqnum;
+	event.specific.tiny.length = length;
 
 	omx_recv_dprintk(&mh->head.eth, "TINY length %ld", (unsigned long) length);
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event->specific.tiny.data, length);
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.specific.tiny.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
-	/* set the type at the end so that user-space does not find the slot on error */
-	wmb();
-	event->type = OMX_EVT_RECV_TINY;
+	/* notify the event */
+	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
 
 	omx_endpoint_release(endpoint);
 
@@ -239,8 +231,7 @@ omx_recv_small(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(small_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(small_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
-	union omx_evt *evt;
-	struct omx_evt_recv_msg *event;
+	struct omx_evt_recv_msg event;
 	char *recvq_slot;
 	int err;
 
@@ -292,21 +283,20 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint, &recvq_slot);
-	if (unlikely(!evt)) {
+	err = omx_prepare_notify_unexp_event(endpoint, &recvq_slot);
+	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet because of unexpected event queue full");
-		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_msg;
 
 	/* fill event */
-	event->peer_index = peer_index;
-	event->src_endpoint = src_endpoint;
-	event->match_info = OMX_FROM_PKT_MATCH_INFO(small_n);
-	event->seqnum = lib_seqnum;
-	event->specific.small.length = length;
+	event.peer_index = peer_index;
+	event.src_endpoint = src_endpoint;
+	event.match_info = OMX_FROM_PKT_MATCH_INFO(small_n);
+	event.seqnum = lib_seqnum;
+	event.specific.small.length = length;
+	event.specific.small.recvq_offset = recvq_slot - (char *) endpoint->recvq;
 
 	omx_recv_dprintk(&mh->head.eth, "SMALL length %ld", (unsigned long) length);
 
@@ -315,9 +305,8 @@ omx_recv_small(struct omx_iface * iface,
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
-	/* set the type at the end so that user-space does not find the slot on error */
-	wmb();
-	event->type = OMX_EVT_RECV_SMALL;
+	/* notify the event */
+	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
 
 	omx_endpoint_release(endpoint);
 
@@ -342,8 +331,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(medium_n->msg.session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(medium_n->msg.lib_seqnum);
-	union omx_evt *evt;
-	struct omx_evt_recv_msg *event;
+	struct omx_evt_recv_msg event;
 	char *recvq_slot;
 	int err;
 
@@ -395,24 +383,23 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint, &recvq_slot);
-	if (unlikely(!evt)) {
+	err = omx_prepare_notify_unexp_event(endpoint, &recvq_slot);
+	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of unexpected event queue full");
-		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_msg;
 
 	/* fill event */
-	event->peer_index = peer_index;
-	event->src_endpoint = src_endpoint;
-	event->match_info = OMX_FROM_PKT_MATCH_INFO(&medium_n->msg);
-	event->seqnum = lib_seqnum;
-	event->specific.medium.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
-	event->specific.medium.frag_length = frag_length;
-	event->specific.medium.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
-	event->specific.medium.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
+	event.peer_index = peer_index;
+	event.src_endpoint = src_endpoint;
+	event.match_info = OMX_FROM_PKT_MATCH_INFO(&medium_n->msg);
+	event.seqnum = lib_seqnum;
+	event.specific.medium.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
+	event.specific.medium.frag_length = frag_length;
+	event.specific.medium.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
+	event.specific.medium.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
+	event.specific.medium.recvq_offset = recvq_slot - (char *) endpoint->recvq;
 
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
@@ -421,9 +408,8 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
-	/* set the type at the end so that user-space does not find the slot on error */
-	wmb();
-	event->type = OMX_EVT_RECV_MEDIUM;
+	/* notify the event */
+	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_MEDIUM, &event, sizeof(event));
 
 	omx_endpoint_release(endpoint);
 
@@ -448,8 +434,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(rndv_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(rndv_n->lib_seqnum);
-	union omx_evt *evt;
-	struct omx_evt_recv_msg *event;
+	struct omx_evt_recv_msg event;
 	int err = 0;
 
 	/* check packet length */
@@ -500,32 +485,29 @@ omx_recv_rndv(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
-	if (unlikely(!evt)) {
+	err = omx_prepare_notify_unexp_event(endpoint, NULL);
+	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet because of unexpected event queue full");
-		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_msg;
 
 	/* fill event */
-	event->peer_index = peer_index;
-	event->src_endpoint = src_endpoint;
-	event->match_info = OMX_FROM_PKT_MATCH_INFO(rndv_n);
-	event->seqnum = lib_seqnum;
-	event->specific.rndv.length = length;
+	event.peer_index = peer_index;
+	event.src_endpoint = src_endpoint;
+	event.match_info = OMX_FROM_PKT_MATCH_INFO(rndv_n);
+	event.seqnum = lib_seqnum;
+	event.specific.rndv.length = length;
 
 	omx_recv_dprintk(&mh->head.eth, "RNDV length %ld", (unsigned long) length);
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event->specific.rndv.data, length);
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.specific.rndv.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
-	/* set the type at the end so that user-space does not find the slot on error */
-	wmb();
-	event->type = OMX_EVT_RECV_RNDV;
+	/* notify the event */
+	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));
 
 	omx_endpoint_release(endpoint);
 
@@ -549,8 +531,7 @@ omx_recv_notify(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(notify_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(notify_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(notify_n->lib_seqnum);
-	union omx_evt *evt;
-	struct omx_evt_recv_msg *event;
+	struct omx_evt_recv_msg event;
 	int err = 0;
 
 	/* check the peer index */
@@ -584,28 +565,25 @@ omx_recv_notify(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
-	if (unlikely(!evt)) {
+	err = omx_prepare_notify_unexp_event(endpoint, NULL);
+	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet because of unexpected event queue full");
-		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_msg;
 
 	/* fill event */
-	event->peer_index = peer_index;
-	event->src_endpoint = src_endpoint;
-	event->seqnum = lib_seqnum;
-	event->specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
-	event->specific.notify.puller_rdma_id = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_id);
-	event->specific.notify.puller_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_seqnum);
+	event.peer_index = peer_index;
+	event.src_endpoint = src_endpoint;
+	event.seqnum = lib_seqnum;
+	event.specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
+	event.specific.notify.puller_rdma_id = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_id);
+	event.specific.notify.puller_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_seqnum);
 
 	omx_recv_dprintk(&mh->head.eth, "NOTIFY");
 
-	/* set the type at the end so that user-space does not find the slot on error */
-	wmb();
-	event->type = OMX_EVT_RECV_NOTIFY;
+	/* notify the event */
+	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));
 
 	omx_endpoint_release(endpoint);
 
@@ -630,8 +608,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->src_endpoint);
 	enum omx_nack_type nack_type = OMX_FROM_PKT_FIELD(nack_lib_n->nack_type);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(nack_lib_n->lib_seqnum);
-	union omx_evt *evt;
-	struct omx_evt_recv_nack_lib *event;
+	struct omx_evt_recv_nack_lib event;
 	int err = 0;
 
 	/* check the peer index */
@@ -668,29 +645,26 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	evt = omx_find_next_unexp_eventq_slot(endpoint, NULL);
-	if (unlikely(!evt)) {
+	err = omx_prepare_notify_unexp_event(endpoint, NULL);
+	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "NACK LIB packet because of unexpected event queue full");
-		err = -EBUSY;
 		goto out_with_endpoint;
 	}
-	event = &evt->recv_nack_lib;
 
 	/* fill event */
-	event->peer_index = peer_index;
-	event->src_endpoint = src_endpoint;
-	event->seqnum = lib_seqnum;
-	event->nack_type = nack_type; /* types are different, values are the same */
+	event.peer_index = peer_index;
+	event.src_endpoint = src_endpoint;
+	event.seqnum = lib_seqnum;
+	event.nack_type = nack_type; /* types are different, values are the same */
 
 	/* FIXME: nack type as a status */
 
 	omx_recv_dprintk(eh, "NACK LIB type %s",
 			 omx_strnacktype(nack_type));
 
-	/* set the type at the end so that user-space does not find the slot on error */
-	wmb();
-	event->type = OMX_EVT_RECV_NACK_LIB;
+	/* notify the event */
+	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
 
 	omx_endpoint_release(endpoint);
 

@@ -29,12 +29,6 @@
  * Event processing
  */
 
-static INLINE char *
-omx__recvq_slot_of_unexp_eventq(struct omx_endpoint * ep, union omx_evt * evt)
-{
-  return ep->recvq + (((char *) evt - (char *) ep->unexp_eventq) << (OMX_RECVQ_ENTRY_SHIFT-OMX_EVENTQ_ENTRY_SHIFT));
-}
-
 static omx_return_t
 omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 {
@@ -58,7 +52,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
   case OMX_EVT_RECV_SMALL: {
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    char * recvq_buffer = omx__recvq_slot_of_unexp_eventq(ep, evt);
+    char * recvq_buffer = ep->recvq + msg->specific.small.recvq_offset;
     ret = omx__process_recv(ep,
 			    msg, recvq_buffer, msg->specific.small.length,
 			    omx__process_recv_small);
@@ -67,7 +61,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
   case OMX_EVT_RECV_MEDIUM: {
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    char * recvq_buffer = omx__recvq_slot_of_unexp_eventq(ep, evt);
+    char * recvq_buffer = ep->recvq + msg->specific.medium.recvq_offset;
     ret = omx__process_recv(ep,
 			    msg, recvq_buffer, msg->specific.medium.msg_length,
 			    omx__process_recv_medium_frag);
