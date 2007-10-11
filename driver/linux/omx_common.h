@@ -80,8 +80,9 @@ extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uin
 /* events */
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);
 extern int omx_notify_exp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
-extern int omx_prepare_notify_unexp_event(struct omx_endpoint *endpoint, char ** recvq_slot);
-extern void omx_commit_notify_unexp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
+extern int omx_notify_unexp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
+extern int omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, char ** recvq_slot);
+extern void omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
 
 /* sending */
 extern struct sk_buff * omx_new_skb(struct net_device *ifp, unsigned long len);

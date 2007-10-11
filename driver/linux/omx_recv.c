@@ -86,13 +86,7 @@ omx_recv_connect(struct omx_iface * iface,
 		goto out;
 	}
 
-	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event(endpoint, NULL);
-	if (unlikely(err < 0)) {
-		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_drop_dprintk(eh, "CONNECT packet because of unexpected event queue full");
-		goto out_with_endpoint;
-	}
+	omx_recv_dprintk(eh, "CONNECT data length %ld", (unsigned long) length);
 
 	/* fill event */
 	event.peer_index = peer_index;
@@ -100,15 +94,18 @@ omx_recv_connect(struct omx_iface * iface,
 	event.length = length;
 	event.seqnum = lib_seqnum;
 
-	omx_recv_dprintk(eh, "CONNECT data length %ld", (unsigned long) length);
-
 	/* copy data in event data */
 	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
 	/* notify the event */
-	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT, &event, sizeof(event));
+	if (unlikely(err < 0)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(eh, "CONNECT packet because of unexpected event queue full");
+		goto out_with_endpoint;
+	}
 
 	omx_endpoint_release(endpoint);
 
@@ -183,13 +180,7 @@ omx_recv_tiny(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event(endpoint, NULL);
-	if (unlikely(err < 0)) {
-		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_drop_dprintk(&mh->head.eth, "TINY packet because of unexpected event queue full");
-		goto out_with_endpoint;
-	}
+	omx_recv_dprintk(&mh->head.eth, "TINY length %ld", (unsigned long) length);
 
 	/* fill event */
 	event.peer_index = peer_index;
@@ -198,15 +189,18 @@ omx_recv_tiny(struct omx_iface * iface,
 	event.seqnum = lib_seqnum;
 	event.specific.tiny.length = length;
 
-	omx_recv_dprintk(&mh->head.eth, "TINY length %ld", (unsigned long) length);
-
 	/* copy data in event data */
 	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.specific.tiny.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
 	/* notify the event */
-	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
+	if (unlikely(err < 0)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(&mh->head.eth, "TINY packet because of unexpected event queue full");
+		goto out_with_endpoint;
+	}
 
 	omx_endpoint_release(endpoint);
 
@@ -283,7 +277,7 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event(endpoint, &recvq_slot);
+	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_slot);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet because of unexpected event queue full");
@@ -306,7 +300,7 @@ omx_recv_small(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* notify the event */
-	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
+	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
 
 	omx_endpoint_release(endpoint);
 
@@ -383,7 +377,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event(endpoint, &recvq_slot);
+	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_slot);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of unexpected event queue full");
@@ -409,7 +403,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* notify the event */
-	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_MEDIUM, &event, sizeof(event));
+	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_MEDIUM, &event, sizeof(event));
 
 	omx_endpoint_release(endpoint);
 
@@ -484,13 +478,7 @@ omx_recv_rndv(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event(endpoint, NULL);
-	if (unlikely(err < 0)) {
-		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_drop_dprintk(&mh->head.eth, "RNDV packet because of unexpected event queue full");
-		goto out_with_endpoint;
-	}
+	omx_recv_dprintk(&mh->head.eth, "RNDV length %ld", (unsigned long) length);
 
 	/* fill event */
 	event.peer_index = peer_index;
@@ -499,15 +487,18 @@ omx_recv_rndv(struct omx_iface * iface,
 	event.seqnum = lib_seqnum;
 	event.specific.rndv.length = length;
 
-	omx_recv_dprintk(&mh->head.eth, "RNDV length %ld", (unsigned long) length);
-
 	/* copy data in event data */
 	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.specific.rndv.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
 	/* notify the event */
-	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));
+	if (unlikely(err < 0)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(&mh->head.eth, "RNDV packet because of unexpected event queue full");
+		goto out_with_endpoint;
+	}
 
 	omx_endpoint_release(endpoint);
 
@@ -564,13 +555,7 @@ omx_recv_notify(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event(endpoint, NULL);
-	if (unlikely(err < 0)) {
-		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet because of unexpected event queue full");
-		goto out_with_endpoint;
-	}
+	omx_recv_dprintk(&mh->head.eth, "NOTIFY");
 
 	/* fill event */
 	event.peer_index = peer_index;
@@ -580,10 +565,13 @@ omx_recv_notify(struct omx_iface * iface,
 	event.specific.notify.puller_rdma_id = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_id);
 	event.specific.notify.puller_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_seqnum);
 
-	omx_recv_dprintk(&mh->head.eth, "NOTIFY");
-
 	/* notify the event */
-	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));
+	if (unlikely(err < 0)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet because of unexpected event queue full");
+		goto out_with_endpoint;
+	}
 
 	omx_endpoint_release(endpoint);
 
@@ -644,13 +632,8 @@ omx_recv_nack_lib(struct omx_iface * iface,
 		goto out;
 	}
 
-	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event(endpoint, NULL);
-	if (unlikely(err < 0)) {
-		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_drop_dprintk(eh, "NACK LIB packet because of unexpected event queue full");
-		goto out_with_endpoint;
-	}
+	omx_recv_dprintk(eh, "NACK LIB type %s",
+			 omx_strnacktype(nack_type));
 
 	/* fill event */
 	event.peer_index = peer_index;
@@ -658,13 +641,13 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	event.seqnum = lib_seqnum;
 	event.nack_type = nack_type; /* types are different, values are the same */
 
-	/* FIXME: nack type as a status */
-
-	omx_recv_dprintk(eh, "NACK LIB type %s",
-			 omx_strnacktype(nack_type));
-
 	/* notify the event */
-	omx_commit_notify_unexp_event(endpoint, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
+	if (unlikely(err < 0)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		omx_drop_dprintk(eh, "NACK LIB packet because of unexpected event queue full");
+		goto out_with_endpoint;
+	}
 
 	omx_endpoint_release(endpoint);
 
