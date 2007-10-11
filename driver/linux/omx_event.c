@@ -48,7 +48,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	endpoint->next_reserved_unexp_eventq_offset = 0;
 
 	/* set the first recvq slot */
-	endpoint->next_recvq_slot = endpoint->recvq;
+	endpoint->next_recvq_offset = 0;
 
 	spin_lock_init(&endpoint->event_lock);
 }
@@ -153,7 +153,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 /* Reserve one more slot and returns the corresponding recvq slot to the caller */
 int
 omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
-					  char ** recvq_slot_p)
+					  unsigned long *recvq_offset_p)
 {
 	union omx_evt *slot;
 
@@ -175,10 +175,10 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 		endpoint->next_free_unexp_eventq_offset = 0;
 
 	/* take the next recvq slot and return it now */
-	endpoint->next_recvq_slot = endpoint->recvq
-		+ (((void *) slot - endpoint->unexp_eventq)
-		   << (OMX_RECVQ_ENTRY_SHIFT - OMX_EVENTQ_ENTRY_SHIFT));
-	*recvq_slot_p = endpoint->next_recvq_slot;
+	*recvq_offset_p = endpoint->next_recvq_offset;
+	endpoint->next_recvq_offset += OMX_RECVQ_ENTRY_SIZE;
+	if (unlikely(endpoint->next_recvq_offset >= OMX_RECVQ_SIZE))
+		endpoint->next_recvq_offset = 0;
 
 	spin_unlock(&endpoint->event_lock);
 	return 0;

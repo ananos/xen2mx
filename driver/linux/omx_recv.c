@@ -226,7 +226,7 @@ omx_recv_small(struct omx_iface * iface,
 	uint32_t session_id = OMX_FROM_PKT_FIELD(small_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
 	struct omx_evt_recv_msg event;
-	char *recvq_slot;
+	unsigned long recvq_offset;
 	int err;
 
 	/* check packet length */
@@ -277,7 +277,7 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_slot);
+	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_offset);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet because of unexpected event queue full");
@@ -290,12 +290,12 @@ omx_recv_small(struct omx_iface * iface,
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(small_n);
 	event.seqnum = lib_seqnum;
 	event.specific.small.length = length;
-	event.specific.small.recvq_offset = recvq_slot - (char *) endpoint->recvq;
+	event.specific.small.recvq_offset = recvq_offset;
 
 	omx_recv_dprintk(&mh->head.eth, "SMALL length %ld", (unsigned long) length);
 
 	/* copy data in recvq slot */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), recvq_slot, length);
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), endpoint->recvq + recvq_offset, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
@@ -326,7 +326,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	uint32_t session_id = OMX_FROM_PKT_FIELD(medium_n->msg.session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(medium_n->msg.lib_seqnum);
 	struct omx_evt_recv_msg event;
-	char *recvq_slot;
+	unsigned long recvq_offset;
 	int err;
 
 	/* check packet length */
@@ -377,7 +377,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_slot);
+	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_offset);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of unexpected event queue full");
@@ -393,12 +393,12 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event.specific.medium.frag_length = frag_length;
 	event.specific.medium.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
 	event.specific.medium.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
-	event.specific.medium.recvq_offset = recvq_slot - (char *) endpoint->recvq;
+	event.specific.medium.recvq_offset = recvq_offset;
 
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
 	/* copy data in recvq slot */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), recvq_slot, frag_length);
+	err = skb_copy_bits(skb, sizeof(struct omx_hdr), endpoint->recvq + recvq_offset, frag_length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 

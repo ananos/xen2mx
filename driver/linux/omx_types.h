@@ -77,7 +77,7 @@ struct omx_endpoint {
 	void * sendq, * recvq, * exp_eventq, * unexp_eventq;
 	unsigned long next_exp_eventq_offset;
 	unsigned long next_free_unexp_eventq_offset, next_reserved_unexp_eventq_offset;
-	char * next_recvq_slot;
+	unsigned long next_recvq_offset;
 	spinlock_t event_lock;
 
 	struct page ** sendq_pages;
