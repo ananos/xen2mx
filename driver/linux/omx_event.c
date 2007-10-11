@@ -45,14 +45,17 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 
 	/* set the first recvq slot */
 	endpoint->next_recvq_slot = endpoint->recvq;
+
+	spin_lock_init(&endpoint->event_lock);
 }
 
 int
 omx_notify_exp_event(struct omx_endpoint *endpoint,
 		     uint8_t type, void *event, int length)
 {
-	/* FIXME: need locking */
 	union omx_evt *slot;
+
+	spin_lock(&endpoint->event_lock);
 
 	slot = endpoint->next_exp_eventq_slot;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
@@ -62,6 +65,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 		dprintk(EVENT,
 			"Open-MX: Expected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
+		spin_unlock(&endpoint->event_lock);
 		return -EBUSY;
 	}
 
@@ -76,6 +80,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 		     >= endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE))
 		endpoint->next_exp_eventq_slot = endpoint->exp_eventq;
 
+	spin_unlock(&endpoint->event_lock);
 	return 0;
 }
 
@@ -88,7 +93,7 @@ omx_prepare_notify_unexp_event(struct omx_endpoint *endpoint,
 {
 	union omx_evt *slot;
 
-	/* FIXME: need locking */
+	spin_lock(&endpoint->event_lock);
 
 	/* check that there's a slot available and reserve it */
 	slot = endpoint->next_free_unexp_eventq_slot;
@@ -96,6 +101,7 @@ omx_prepare_notify_unexp_event(struct omx_endpoint *endpoint,
 		dprintk(EVENT,
 			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
+		spin_unlock(&endpoint->event_lock);
 		return -EBUSY;
 	}
 
@@ -113,6 +119,7 @@ omx_prepare_notify_unexp_event(struct omx_endpoint *endpoint,
 	if (recvq_slot_p)
 		*recvq_slot_p = endpoint->next_recvq_slot;
 
+	spin_unlock(&endpoint->event_lock);
 	return 0;
 }
 
@@ -125,8 +132,9 @@ void
 omx_commit_notify_unexp_event(struct omx_endpoint *endpoint,
 			      uint8_t type, void *event, int length)
 {
-	/* FIXME: need locking */
 	union omx_evt *slot;
+
+	spin_lock(&endpoint->event_lock);
 
 	/* the caller should have called prepare() earlier */
 	BUG_ON(endpoint->next_reserved_unexp_eventq_slot == endpoint->next_free_unexp_eventq_slot);
@@ -144,7 +152,7 @@ omx_commit_notify_unexp_event(struct omx_endpoint *endpoint,
 		     >= endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
 		endpoint->next_reserved_unexp_eventq_slot = endpoint->unexp_eventq;
 
-	return 0;
+	spin_unlock(&endpoint->event_lock);
 }
 
 /*

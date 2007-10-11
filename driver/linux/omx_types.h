@@ -78,6 +78,7 @@ struct omx_endpoint {
 	union omx_evt * next_exp_eventq_slot;
 	union omx_evt * next_free_unexp_eventq_slot, * next_reserved_unexp_eventq_slot;
 	char * next_recvq_slot;
+	spinlock_t event_lock;
 
 	struct page ** sendq_pages;
 

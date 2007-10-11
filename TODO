@@ -1,3 +1,5 @@
+* rework event structures to copy less in notify functions in the driver
+
 * cannot use del_timer_sync in BH
   + make sure the timer ends after pull and delete the handle in the timer?
   + move to a queue when done and call del_timer_sync from a thread?
