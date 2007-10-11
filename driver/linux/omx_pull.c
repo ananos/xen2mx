@@ -872,26 +872,15 @@ static void
 omx_pull_handle_done_notify(struct omx_pull_handle * handle)
 {
 	struct omx_endpoint *endpoint = handle->endpoint;
-	union omx_evt *evt;
-	struct omx_evt_pull_done *event;
+	struct omx_evt_pull_done event;
 
-	/* get the eventq slot */
-	evt = omx_find_next_exp_eventq_slot(endpoint);
-	if (unlikely(!evt)) {
-		/* the application sucks, it did not check the expected eventq before posting requests */
-		printk(KERN_INFO "Open-MX: Failed to complete send of PULL packet because of expected event queue full\n");
-		return;
-	}
-	event = &evt->pull_done;
-
-	/* fill event */
-	event->lib_cookie = handle->lib_cookie;
-	event->pulled_length = handle->total_length - handle->remaining_length;
-	event->local_rdma_id = handle->region->id;
-
-	/* set the type at the end so that user-space does not find the slot on error */
-	wmb();
-	event->type = OMX_EVT_PULL_DONE;
+	/* notify event */
+	event.lib_cookie = handle->lib_cookie;
+	event.pulled_length = handle->total_length - handle->remaining_length;
+	event.local_rdma_id = handle->region->id;
+	omx_notify_exp_event(endpoint,
+			     OMX_EVT_PULL_DONE,
+			     &event, sizeof(event));
 
 	/* make sure the handle will be released, in case we are reporting truncation */
 	handle->frame_missing_bitmap = 0;

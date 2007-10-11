@@ -41,24 +41,36 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	endpoint->next_recvq_slot = endpoint->recvq;
 }
 
-union omx_evt *
-omx_find_next_exp_eventq_slot(struct omx_endpoint *endpoint)
+int
+omx_notify_exp_event(struct omx_endpoint *endpoint,
+		     uint8_t type, void *event, int length)
 {
 	/* FIXME: need locking */
-	union omx_evt *slot = endpoint->next_exp_eventq_slot;
+	union omx_evt *slot;
+
+	slot = endpoint->next_exp_eventq_slot;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
+		/* the application sucks, it did not check
+		 * the expected eventq before posting requests
+		 */
 		dprintk(EVENT,
 			"Open-MX: Expected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
-		return NULL;
+		return -1;
 	}
 
+	/* store the event */
+	memcpy(slot, event, length);
+	wmb();
+	((struct omx_evt_generic *) slot)->type = type;
+
+	/* update the queue */
 	endpoint->next_exp_eventq_slot = slot + 1;
 	if (unlikely((void *) endpoint->next_exp_eventq_slot
 		     >= endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE))
 		endpoint->next_exp_eventq_slot = endpoint->exp_eventq;
 
-	return slot;
+	return 0;
 }
 
 union omx_evt *

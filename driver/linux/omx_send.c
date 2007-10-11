@@ -62,7 +62,7 @@ omx_new_skb(struct net_device *ifp, unsigned long len)
 
 struct omx_deferred_event {
 	struct omx_endpoint *endpoint;
-	union omx_evt evt;
+	struct omx_evt_send_medium_frag_done evt;
 };
 
 /* medium frag skb destructor to release sendq pages */
@@ -71,20 +71,11 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 {
 	struct omx_deferred_event * defevent = (void *) skb->sk;
 	struct omx_endpoint * endpoint = defevent->endpoint;
-	union omx_evt * evt;
 
-	/* get the eventq slot */
-	evt = omx_find_next_exp_eventq_slot(endpoint);
-	if (unlikely(!evt) ){
-		/* the application sucks, it did not check the expected eventq before posting requests */
-		printk(KERN_INFO "Open-MX: Failed to complete send of MEDIUM packet because of expected event queue full\n");
-		return;
-	}
-
-	/* report the event to user-space (fortunately memcpy will write the ending type after everything
-	 * else so that the application detects the event once it is fully copied)
-	 */
-	memcpy(&evt->send_medium_frag_done, &defevent->evt, sizeof(struct omx_evt_send_medium_frag_done));
+	/* report the event to user-space */
+	omx_notify_exp_event(endpoint,
+			     OMX_EVT_SEND_MEDIUM_FRAG_DONE,
+			     &defevent->evt, sizeof(defevent->evt));
 
 	/* release objects now */
 	omx_endpoint_release(endpoint);
@@ -269,7 +260,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	struct net_device * ifp = iface->eth_ifp;
 	uint16_t sendq_page_offset;
 	struct page * page;
-	struct omx_deferred_event * event;
+	struct omx_deferred_event * defevent;
 	int ret;
 	uint32_t frag_length;
 
@@ -296,8 +287,8 @@ omx_send_medium(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	event = kmalloc(sizeof(*event), GFP_KERNEL);
-	if (unlikely(!event)) {
+	defevent = kmalloc(sizeof(*defevent), GFP_KERNEL);
+	if (unlikely(!defevent)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate event\n");
 		ret = -ENOMEM;
 		goto out;
@@ -360,11 +351,9 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	}
 
 	/* prepare the deferred event now that we cannot fail anymore */
-	event->endpoint = endpoint;
-	event->evt.send_medium_frag_done.sendq_page_offset = cmd.sendq_page_offset;
-	/* no need to enforce the type at the end since we don't write to user-space yet */
-	event->evt.generic.type = OMX_EVT_SEND_MEDIUM_FRAG_DONE;
-	skb->sk = (void *) event;
+	defevent->endpoint = endpoint;
+	defevent->evt.sendq_page_offset = cmd.sendq_page_offset;
+	skb->sk = (void *) defevent;
 	skb->destructor = omx_medium_frag_skb_destructor;
 
 	dev_queue_xmit(skb);
@@ -377,7 +366,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
  out_with_skb:
 	dev_kfree_skb(skb);
  out_with_event:
-	kfree(event);
+	kfree(defevent);
  out:
 	return ret;
 }
@@ -675,7 +664,6 @@ omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
-	union omx_evt *evt;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_cmd_bench_hdr cmd;
@@ -743,19 +731,12 @@ omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_ACQU)
 		goto out_with_endpoint;
 
-	evt = omx_find_next_exp_eventq_slot(endpoint);
-	if (unlikely(!evt)) {
-		dprintk(IOCTL, "BENCH command failed of expected event queue full");
-		ret = -EBUSY;
-		goto out_with_endpoint;
-	}
+	omx_notify_exp_event(endpoint, OMX_EVT_NONE, NULL, 0);
 
-	/* level 12: recv alloc */
-	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_ALLOC)
+	/* level 12: recv notify */
+	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_NOTIFY)
 		goto out_with_endpoint;
 
-	memcpy(evt->generic.pad, data, OMX_TINY_MAX);
-	evt->generic.type = OMX_EVT_NONE;
 	omx_endpoint_release(endpoint);
 
 	/* level 13: recv done */

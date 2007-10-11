@@ -91,14 +91,14 @@ main(void)
   printf("+ recv acquire:   +%lld ns =>\t%lld ns (%lld us for %d iter)\n", delay-olddelay, delay, total, ITER);
   olddelay = delay;
 
-  cmd.hdr.type = OMX_CMD_BENCH_TYPE_RECV_ALLOC;
+  cmd.hdr.type = OMX_CMD_BENCH_TYPE_RECV_NOTIFY;
   gettimeofday(&tv1, NULL);
   for(i=0; i<ITER; i++)
     err = ioctl(ep->fd, OMX_CMD_BENCH, &cmd);
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
-  printf("+ recv alloc:     +%lld ns =>\t%lld ns (%lld us for %d iter)\n", delay-olddelay, delay, total, ITER);
+  printf("+ recv notify:    +%lld ns =>\t%lld ns (%lld us for %d iter)\n", delay-olddelay, delay, total, ITER);
   olddelay = delay;
 
   cmd.hdr.type = OMX_CMD_BENCH_TYPE_RECV_DONE;
