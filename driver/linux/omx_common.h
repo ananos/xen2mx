@@ -83,6 +83,7 @@ extern int omx_notify_exp_event(struct omx_endpoint *endpoint, uint8_t type, voi
 extern int omx_notify_unexp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
 extern int omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, unsigned long *recvq_offset);
 extern void omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
+extern int omx_wait_event(struct omx_endpoint * endpoint, void __user * uparam);
 
 /* sending */
 extern struct sk_buff * omx_new_skb(struct net_device *ifp, unsigned long len);

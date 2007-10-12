@@ -98,6 +98,7 @@ struct omx_cmd_region_segment {
 #define OMX_CMD_REGISTER_REGION		0x87
 #define OMX_CMD_DEREGISTER_REGION	0x88
 #define OMX_CMD_SEND_CONNECT		0x89
+#define OMX_CMD_WAIT_EVENT		0x90
 
 static inline const char *
 omx_strcmd(unsigned cmd)
@@ -151,6 +152,8 @@ omx_strcmd(unsigned cmd)
 		return "Deregister Region";
 	case OMX_CMD_SEND_CONNECT:
 		return "Send Connect";
+	case OMX_CMD_WAIT_EVENT:
+		return "Wait Event";
 	default:
 		return "** Unknown **";
 	}
@@ -332,6 +335,20 @@ struct omx_cmd_register_region {
 
 struct omx_cmd_deregister_region {
 	uint32_t id;
+};
+
+#define OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE	((uint32_t) -1)
+
+#define OMX_CMD_WAIT_EVENT_STATUS_EVENT		0x01 /* some event arrived */
+#define OMX_CMD_WAIT_EVENT_STATUS_INTR		0x02 /* interrupted by a signal without any event */
+#define OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT	0x03 /* timeout expired without any event */
+#define OMX_CMD_WAIT_EVENT_STATUS_RACE		0x04 /* some events arrived in the meantime, need to go back to user-space and check them first */
+
+struct omx_cmd_wait_event {
+	uint8_t status;
+	uint32_t timeout; /* milliseconds */
+	uint32_t next_exp_event_offset;
+	uint32_t next_unexp_event_offset;
 };
 
 /************************

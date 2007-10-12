@@ -17,6 +17,7 @@
  */
 
 #include <stdint.h>
+#include <sys/ioctl.h>
 
 #include "omx_lib.h"
 #include "omx_request.h"
@@ -54,17 +55,45 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	 uint32_t timeout)
 {
   union omx_request * req = *requestp;
+  struct omx_cmd_wait_event wait_param;
   uint32_t ctxid;
   omx_return_t ret = OMX_SUCCESS;
 
-  while (1) {
+  ret = omx__progress(ep);
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out;
+
+  wait_param.timeout = timeout;
+
+  while (likely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
+    int err;
+
+    omx__debug_printf("going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+
+    wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
+    wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+
+    omx__debug_printf("woken up\n");
+
+    if (unlikely(err < 0)) {
+      ret = omx__errno_to_return("ioctl WAIT_EVENT");
+      goto out;
+    }
+
+    omx__debug_printf("wait event result %d\n", wait_param.status);
+
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
       goto out;
-    /* FIXME: sleep */
 
-    if (likely(req->generic.state & OMX_REQUEST_STATE_DONE))
-      break;
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
+        || wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
+      if (unlikely(req->generic.state & OMX_REQUEST_STATE_DONE))
+	break;
+      *result = 0;
+      goto out;
+    }
   }
 
   ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);

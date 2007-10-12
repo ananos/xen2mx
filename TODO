@@ -49,13 +49,12 @@
     - and synchronize with user-space which takes care of acking
     - share mapping of peer-index based array of recv seqnums between kernel and user-space?
 
-* true sleeping in the kernel
-  - pass the eventq index in the ioctl to avoid races
-  - always wakeup on event?
-  - wake up only one and have it wake up the right one ?
+* sleep on various event type to not wake up everybody
+* thread safety
+* omx_wakeup
 * progress thread sleeps on a special queue
   - some event wakeup both queues (force_wakeup)
-  - other events wakeup the progress thread only no one on the regular queue
+  - other events wakeup the progress thread only if no one on the regular queue
 
 * MX_VERBOSE level in the lib, only for --enable--debug
 

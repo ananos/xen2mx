@@ -21,6 +21,11 @@
 #include "omx_io.h"
 #include "omx_common.h"
 
+struct omx_event_waiter {
+	wait_queue_t wq;
+	uint8_t status;
+};
+
 /*****************
  * Initialization
  */
@@ -50,6 +55,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	/* set the first recvq slot */
 	endpoint->next_recvq_offset = 0;
 
+	init_waitqueue_head(&endpoint->waiters);
 	spin_lock_init(&endpoint->event_lock);
 }
 
@@ -81,6 +87,9 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 	endpoint->next_exp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
 	if (unlikely(endpoint->next_exp_eventq_offset >= OMX_EXP_EVENTQ_SIZE))
 		endpoint->next_exp_eventq_offset = 0;
+
+	dprintk(EVENT, "notify_exp waking up everybody1\n");
+	wake_up_all(&endpoint->waiters);
 
 	spin_unlock(&endpoint->event_lock);
 
@@ -127,6 +136,9 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 	endpoint->next_reserved_unexp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
 	if (unlikely(endpoint->next_reserved_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
 		endpoint->next_reserved_unexp_eventq_offset = 0;
+
+	dprintk(EVENT, "notify_unexp waking up everybody\n");
+	wake_up_all(&endpoint->waiters);
 
 	spin_unlock(&endpoint->event_lock);
 
@@ -206,12 +218,102 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	if (unlikely(endpoint->next_reserved_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
 		endpoint->next_reserved_unexp_eventq_offset = 0;
 
+	dprintk(EVENT, "commit_notify_unexp waking up everybody\n");
+	wake_up_all(&endpoint->waiters);
+
 	spin_unlock(&endpoint->event_lock);
 
 	/* store the event */
 	memcpy(slot, event, length);
 	wmb();
 	((struct omx_evt_generic *) slot)->type = type;
+}
+
+/***********
+ * Sleeping
+ */
+
+static int
+omx_autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key)
+{
+	struct omx_event_waiter *waiter = container_of(wait, struct omx_event_waiter, wq);
+	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
+	return autoremove_wake_function(wait, mode, sync, key);
+}
+
+int
+omx_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
+{
+	struct omx_cmd_wait_event cmd;
+	struct omx_event_waiter waiter;
+	int err = 0;
+
+	err = copy_from_user(&cmd, uparam, sizeof(cmd));
+	if (unlikely(err != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read wait event cmd hdr\n");
+		err = -EFAULT;
+		goto out;
+	}
+
+	/* FIXME: wait on some event type only */
+
+	waiter.status = OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT;
+	init_waitqueue_entry(&waiter.wq, current);
+	waiter.wq.func = &omx_autoremove_wake_function;
+
+	spin_lock(&endpoint->event_lock);
+
+	/* check for race conditions */
+	if ((cmd.next_exp_event_offset != endpoint->next_exp_eventq_offset)
+	    || (cmd.next_unexp_event_offset != endpoint->next_reserved_unexp_eventq_offset)) {
+		dprintk(EVENT, "wait event race (%ld,%ld) != (%ld,%ld)\n",
+			(unsigned long) cmd.next_exp_event_offset,
+			(unsigned long) cmd.next_unexp_event_offset,
+			endpoint->next_exp_eventq_offset,
+			endpoint->next_reserved_unexp_eventq_offset);
+		spin_unlock(&endpoint->event_lock);
+		cmd.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
+		goto race;
+	}
+
+	add_wait_queue(&endpoint->waiters, &waiter.wq);
+	set_current_state(TASK_INTERRUPTIBLE);
+	spin_unlock(&endpoint->event_lock);
+
+	dprintk(EVENT, "going to sleep\n");
+	if (cmd.timeout != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE) {
+		unsigned long jiffies_timeout = msecs_to_jiffies(cmd.timeout);
+		jiffies_timeout = schedule_timeout(jiffies_timeout);
+		cmd.timeout = jiffies_to_msecs(jiffies_timeout);
+	} else {
+		schedule();
+	}
+	dprintk(EVENT, "waking up from sleep\n");
+
+	remove_wait_queue(&endpoint->waiters, &waiter.wq);
+
+	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
+		/* status didn't changed,
+		 * we didn't get woken up by an event */
+		if (cmd.timeout != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE
+		    && cmd.timeout != 0) {
+			/* if there was a timeout, and it didn't expire,
+			 * we have been interrupted */
+			waiter.status = OMX_CMD_WAIT_EVENT_STATUS_INTR;
+		}
+	}
+
+	cmd.status = waiter.status;
+
+ race:
+	err = copy_to_user(uparam, &cmd, sizeof(cmd));
+	if (unlikely(err != 0))
+		printk(KERN_ERR "Open-MX: Failed to write wait event cmd result\n");
+
+	return 0;
+
+ out:
+	return err;
 }
 
 /*
