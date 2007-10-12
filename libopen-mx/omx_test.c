@@ -108,13 +108,31 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   return ret;
 }
 
+static inline uint32_t
+omx__test_any_common(struct omx_endpoint *ep,
+		     uint64_t match_info, uint64_t match_mask,
+		     omx_status_t *status)
+{
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
+  union omx_request * req;
+
+  omx__foreach_request(&ep->ctxid[ctxid].done_req_q, req) {
+    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
+      omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
+      memcpy(status, &req->generic.status, sizeof(*status));
+      omx__request_free(req);
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 omx_return_t
 omx_test_any(struct omx_endpoint *ep,
 	     uint64_t match_info, uint64_t match_mask,
 	     omx_status_t *status, uint32_t *result)
 {
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
-  union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -132,16 +150,7 @@ omx_test_any(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
-  omx__foreach_request(&ep->ctxid[ctxid].done_req_q, req) {
-    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
-      omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
-      memcpy(status, &req->generic.status, sizeof(*status));
-      omx__request_free(req);
-      *result = 1;
-      goto out;
-    }
-  }
-  *result = 0;
+  *result = omx__test_any_common(ep, match_info, match_mask, status);
 
  out:
   return ret;
@@ -153,8 +162,6 @@ omx_wait_any(struct omx_endpoint *ep,
 	     omx_status_t *status, uint32_t *result,
 	     uint32_t timeout)
 {
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
-  union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -174,20 +181,27 @@ omx_wait_any(struct omx_endpoint *ep,
       goto out;
     /* FIXME: sleep */
 
-    omx__foreach_request(&ep->ctxid[ctxid].done_req_q, req) {
-      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
-	omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
-	memcpy(status, &req->generic.status, sizeof(*status));
-	omx__request_free(req);
-	*result = 1;
-	goto out;
-      }
+    if (omx__test_any_common(ep, match_info, match_mask, status)) {
+      *result = 1;
+      goto out;
     }
   }
+
   *result = 0;
 
  out:
   return ret;
+}
+
+static inline uint32_t
+omx__ipeek_common(struct omx_endpoint *ep, union omx_request **requestp)
+{
+  if (unlikely(omx__queue_empty(&ep->ctxid[0].done_req_q))) {
+    return 0;
+  } else {
+    *requestp = omx__queue_first_request(&ep->ctxid[0].done_req_q);
+    return 1;
+  }
 }
 
 omx_return_t
@@ -205,12 +219,7 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
-  if (unlikely(omx__queue_empty(&ep->ctxid[0].done_req_q))) {
-    *result = 0;
-  } else {
-    *requestp = omx__queue_first_request(&ep->ctxid[0].done_req_q);
-    *result = 1;
-  }
+  *result = omx__ipeek_common(ep, requestp);
 
  out:
   return ret;
@@ -233,23 +242,40 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
       goto out;
     /* FIXME: sleep */
 
-    if (likely(!omx__queue_empty(&ep->ctxid[0].done_req_q)))
-      break;
+    if (omx__ipeek_common(ep, requestp)) {
+      *result = 1;
+      goto out;
+    }
   }
 
-  *requestp = omx__queue_first_request(&ep->ctxid[0].done_req_q);
-  *result = 1;
+  *result = 0;
 
  out:
   return ret;
+}
+
+static inline uint32_t
+omx__iprobe_common(struct omx_endpoint *ep,
+		   uint64_t match_info, uint64_t match_mask,
+		   omx_status_t *status)
+{
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
+  union omx_request * req;
+
+  omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
+    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
+      memcpy(status, &req->generic.status, sizeof(*status));
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 omx_return_t
 omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
 	   omx_status_t *status, uint32_t *result)
 {
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
-  union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -267,14 +293,7 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
-  omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
-    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
-      memcpy(status, &req->generic.status, sizeof(*status));
-      *result = 1;
-      goto out;
-    }
-  }
-  *result = 0;
+  *result = omx__iprobe_common(ep, match_info, match_mask, status);
 
  out:
   return ret;
@@ -286,8 +305,6 @@ omx_probe(struct omx_endpoint *ep,
 	  omx_status_t *status, uint32_t *result,
 	  uint32_t timeout)
 {
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
-  union omx_request * req;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -307,14 +324,12 @@ omx_probe(struct omx_endpoint *ep,
       goto out;
     /* FIXME: sleep */
 
-    omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
-      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
-	memcpy(status, &req->generic.status, sizeof(*status));
+    if (omx__iprobe_common(ep, match_info, match_mask, status)) {
 	*result = 1;
 	goto out;
-      }
     }
   }
+
   *result = 0;
 
  out:
