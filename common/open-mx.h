@@ -184,13 +184,16 @@ omx_irecv(omx_endpoint_t ep,
 omx_return_t
 omx_context(omx_request_t *request, void ** context);
 
+#define OMX_TIMEOUT_INFINITE ((uint32_t) -1)
+
 omx_return_t
 omx_test(omx_endpoint_t ep, omx_request_t * request,
 	 struct omx_status *status, uint32_t * result);
 
 omx_return_t
 omx_wait(omx_endpoint_t ep, omx_request_t * request,
-	 struct omx_status *status, uint32_t * result);
+	 struct omx_status *status, uint32_t * result,
+	 uint32_t timeout);
 
 omx_return_t
 omx_test_any(struct omx_endpoint *ep,
@@ -200,7 +203,8 @@ omx_test_any(struct omx_endpoint *ep,
 omx_return_t
 omx_wait_any(struct omx_endpoint *ep,
 	     uint64_t match_info, uint64_t match_mask,
-	     omx_status_t *status, uint32_t *result);
+	     omx_status_t *status, uint32_t *result,
+	     uint32_t timeout);
 
 omx_return_t
 omx_ipeek(omx_endpoint_t ep, omx_request_t * request,
@@ -208,7 +212,8 @@ omx_ipeek(omx_endpoint_t ep, omx_request_t * request,
 
 omx_return_t
 omx_peek(omx_endpoint_t ep, omx_request_t * request,
-	 uint32_t *result);
+	 uint32_t *result,
+	 uint32_t timeout);
 
 omx_return_t
 omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
@@ -216,7 +221,8 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
 
 omx_return_t
 omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
-	  omx_status_t *status, uint32_t *result);
+	  omx_status_t *status, uint32_t *result,
+	  uint32_t timeout);
 
 enum omx_unexp_handler_action {
   OMX_RECV_CONTINUE = 0,

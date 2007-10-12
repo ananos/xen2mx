@@ -159,8 +159,6 @@ struct mx_segment {
 };
 typedef struct mx_segment mx_segment_t;
 
-#define MX_INFINITE   0 /* FIXME */
-
 #define MX_MAX_SEGMENTS 1 /* FIXME */
 
 static inline mx_return_t
@@ -227,24 +225,26 @@ mx_irecv(mx_endpoint_t endpoint,
 
 #define mx_cancel omx_cancel
 
+#define MX_INFINITE OMX_TIMEOUT_INFINITE
+
 #define mx_test(endpoint, request, status, result) \
- omx_test(endpoint, request, (struct omx_status *) status, result)
+  omx_test(endpoint, request, (struct omx_status *) status, result)
 #define mx_wait(endpoint, request, timeout, status, result) \
- omx_wait(endpoint, request, (struct omx_status *) status, result)
+  omx_wait(endpoint, request, (struct omx_status *) status, result, timeout)
 
 #define mx_test_any(endpoint, match_info, match_mask, status, result) \
- omx_test_any(endpoint, match_info, match_mask, (struct omx_status *) status, result)
+  omx_test_any(endpoint, match_info, match_mask, (struct omx_status *) status, result)
 #define mx_wait_any(endpoint, timeout, match_info, match_mask, status, result) \
- omx_wait_any(endpoint, match_info, match_mask, (struct omx_status *) status, result)
+  omx_wait_any(endpoint, match_info, match_mask, (struct omx_status *) status, result, timeout)
 
 #define mx_ipeek omx_ipeek
 #define mx_peek(endpoint, timeout, request, result) \
- omx_peek(endpoint, request, result)
+  omx_peek(endpoint, request, result, timeout)
 
 #define mx_iprobe(endpoint, match_info, match_mask, status, result) \
- omx_iprobe(endpoint, match_info, match_mask, (struct omx_status *) status, result)
+  omx_iprobe(endpoint, match_info, match_mask, (struct omx_status *) status, result)
 #define mx_probe(endpoint, timeout, match_info, match_mask, status, result) \
- omx_probe(endpoint, match_info, match_mask, (struct omx_status *) status, result)
+  omx_probe(endpoint, match_info, match_mask, (struct omx_status *) status, result, timeout)
 
 /* FIXME: mx_ibuffered */
 /* FIXME: mx_buffered */

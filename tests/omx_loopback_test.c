@@ -80,7 +80,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
       goto out;
     }
 
-    ret = omx_wait(ep, &rreq[i], &status, &result);
+    ret = omx_wait(ep, &rreq[i], &status, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait for completion (%s)\n",
 	      omx_strerror(ret));
@@ -89,7 +89,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   }
 
   /* wait for the first send to complete */
-  ret = omx_wait(ep, &sreq[0], &status, &result);
+  ret = omx_wait(ep, &sreq[0], &status, &result, OMX_TIMEOUT_INFINITE);
   if (ret != OMX_SUCCESS || !result) {
     fprintf(stderr, "Failed to wait for completion (%s)\n",
             omx_strerror(ret));
@@ -98,7 +98,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 
   /* use peek to wait for the sends to complete */
   for(i=1; i<4; i++) {
-    ret = omx_peek(ep, &req, &result);
+    ret = omx_peek(ep, &req, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to peek (%s)\n",
               omx_strerror(ret));

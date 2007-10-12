@@ -54,6 +54,24 @@ next_length(int length, int multiplier, int increment)
     return 1;
 }
 
+omx_return_t
+omx_test_or_wait(int wait,
+		 omx_endpoint_t ep, omx_request_t * request,
+		 struct omx_status *status, uint32_t * result)
+{
+  if (wait)
+    return omx_wait(ep, request, status, result, OMX_TIMEOUT_INFINITE);
+  else {
+    omx_return_t ret;
+    do {
+      ret = omx_test(ep, request, status, result);
+      if (ret != OMX_SUCCESS)
+	return ret;
+    } while (!*result);
+    return OMX_SUCCESS;
+  }
+}
+
 static void
 usage(void)
 {
@@ -61,6 +79,7 @@ usage(void)
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
   fprintf(stderr, " -s\tswitch to slave receiver mode\n");
+  fprintf(stderr, " -w\tsleep instead of busy polling\n");
   fprintf(stderr, " -v\tverbose\n");
   fprintf(stderr, "Sender options:\n");
   fprintf(stderr, " -a\tuse aligned buffers on both hosts\n");
@@ -109,6 +128,7 @@ int main(int argc, char *argv[])
   int verbose = 0;
   char * buffer;
   int align = 0;
+  int wait = 0;
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -117,7 +137,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:sUva")) != EOF)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:swUva")) != EOF)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -158,6 +178,9 @@ int main(int argc, char *argv[])
       break;
     case 's':
       slave = 1;
+      break;
+    case 'w':
+      wait = 1;
       break;
     case 'v':
       verbose = 1;
@@ -221,7 +244,7 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
-    ret = omx_wait(ep, &req, &status, &result);
+    ret = omx_wait(ep, &req, &status, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait isend param message (%s)\n",
 	      omx_strerror(ret));
@@ -241,7 +264,7 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
-    ret = omx_wait(ep, &req, &status, &result);
+    ret = omx_wait(ep, &req, &status, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait param ack message (%s)\n",
 	      omx_strerror(ret));
@@ -277,7 +300,7 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = omx_wait(ep, &req, &status, &result);
+	ret = omx_test_or_wait(wait, ep, &req, &status, &result);
 	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));
@@ -293,7 +316,7 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = omx_wait(ep, &req, &status, &result);
+	ret = omx_test_or_wait(wait, ep, &req, &status, &result);
 	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));
@@ -345,7 +368,7 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
-    ret = omx_wait(ep, &req, &status, &result);
+    ret = omx_wait(ep, &req, &status, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait (%s)\n",
 	      omx_strerror(ret));
@@ -359,7 +382,7 @@ int main(int argc, char *argv[])
     max = ntohl(param.max);
     multiplier = ntohl(param.multiplier);
     increment = ntohl(param.increment);
-align = ntohl(param.align);
+    align = ntohl(param.align);
     unidir = param.unidir;
 
     ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
@@ -385,7 +408,7 @@ align = ntohl(param.align);
 	      omx_strerror(ret));
       goto out_with_ep;
     }
-    ret = omx_wait(ep, &req, &status, &result);
+    ret = omx_wait(ep, &req, &status, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait iconnect (%s)\n",
 	      omx_strerror(ret));
@@ -403,7 +426,7 @@ align = ntohl(param.align);
 	      omx_strerror(ret));
       goto out_with_ep;
     }
-    ret = omx_wait(ep, &req, &status, &result);
+    ret = omx_wait(ep, &req, &status, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait param ack message (%s)\n",
 	      omx_strerror(ret));
@@ -436,7 +459,7 @@ align = ntohl(param.align);
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = omx_wait(ep, &req, &status, &result);
+	ret = omx_test_or_wait(wait, ep, &req, &status, &result);
 	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));
@@ -452,7 +475,7 @@ align = ntohl(param.align);
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = omx_wait(ep, &req, &status, &result);
+	ret = omx_test_or_wait(wait, ep, &req, &status, &result);
 	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));

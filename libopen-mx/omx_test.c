@@ -50,7 +50,8 @@ omx_test(struct omx_endpoint *ep, union omx_request **requestp,
 
 omx_return_t
 omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
-	 struct omx_status *status, uint32_t * result)
+	 struct omx_status *status, uint32_t * result,
+	 uint32_t timeout)
 {
   union omx_request * req = *requestp;
   uint32_t ctxid;
@@ -120,7 +121,8 @@ omx_test_any(struct omx_endpoint *ep,
 omx_return_t
 omx_wait_any(struct omx_endpoint *ep,
 	     uint64_t match_info, uint64_t match_mask,
-	     omx_status_t *status, uint32_t *result)
+	     omx_status_t *status, uint32_t *result,
+	     uint32_t timeout)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
@@ -187,7 +189,7 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
 
 omx_return_t
 omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
-	 uint32_t *result)
+	 uint32_t *result, uint32_t timeout)
 {
   omx_return_t ret = OMX_SUCCESS;
 
@@ -250,8 +252,10 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
 }
 
 omx_return_t
-omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
-	  omx_status_t *status, uint32_t *result)
+omx_probe(struct omx_endpoint *ep,
+	  uint64_t match_info, uint64_t match_mask,
+	  omx_status_t *status, uint32_t *result,
+	  uint32_t timeout)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
