@@ -78,20 +78,20 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   while (1) {
     int err;
 
-    omx__debug_printf("going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+    omx__debug_printf("omx_wait going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
 
-    omx__debug_printf("woken up\n");
+    omx__debug_printf("omx_wait woken up\n");
 
     if (unlikely(err < 0)) {
       ret = omx__errno_to_return("ioctl WAIT_EVENT");
       goto out;
     }
 
-    omx__debug_printf("wait event result %d\n", wait_param.status);
+    omx__debug_printf("omx_wait wait event result %d\n", wait_param.status);
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
@@ -167,6 +167,7 @@ omx_wait_any(struct omx_endpoint *ep,
 	     omx_status_t *status, uint32_t *result,
 	     uint32_t timeout)
 {
+  struct omx_cmd_wait_event wait_param;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -180,19 +181,50 @@ omx_wait_any(struct omx_endpoint *ep,
     goto out;
   }
 
+  ret = omx__progress(ep);
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out;
+
+  if (omx__test_any_common(ep, match_info, match_mask, status)) {
+    *result = 1;
+    goto out;
+  }
+
+  wait_param.timeout = timeout;
+
   while (1) {
+    int err;
+
+    omx__debug_printf("omx_wait_any going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+
+    wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
+    wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+
+    omx__debug_printf("omx_wait_any woken up\n");
+
+    if (unlikely(err < 0)) {
+      ret = omx__errno_to_return("ioctl WAIT_EVENT");
+      goto out;
+    }
+
+    omx__debug_printf("omx_wait_any wait event result %d\n", wait_param.status);
+
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
       goto out;
-    /* FIXME: sleep */
 
     if (omx__test_any_common(ep, match_info, match_mask, status)) {
       *result = 1;
       goto out;
     }
-  }
 
-  *result = 0;
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
+        || wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
+      *result = 0;
+      goto out;
+    }
+  }
 
  out:
   return ret;
@@ -234,6 +266,7 @@ omx_return_t
 omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 	 uint32_t *result, uint32_t timeout)
 {
+  struct omx_cmd_wait_event wait_param;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(ep->ctxid_bits)) {
@@ -241,19 +274,50 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
     goto out;
   }
 
+  ret = omx__progress(ep);
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out;
+
+  if (omx__ipeek_common(ep, requestp)) {
+    *result = 1;
+    goto out;
+  }
+
+  wait_param.timeout = timeout;
+
   while (1) {
+    int err;
+
+    omx__debug_printf("omx_peek going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+
+    wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
+    wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+
+    omx__debug_printf("omx_peek woken up\n");
+
+    if (unlikely(err < 0)) {
+      ret = omx__errno_to_return("ioctl WAIT_EVENT");
+      goto out;
+    }
+
+    omx__debug_printf("omx_peek wait event result %d\n", wait_param.status);
+
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
       goto out;
-    /* FIXME: sleep */
 
     if (omx__ipeek_common(ep, requestp)) {
       *result = 1;
       goto out;
     }
-  }
 
-  *result = 0;
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
+        || wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
+      *result = 0;
+      goto out;
+    }
+  }
 
  out:
   return ret;
@@ -310,6 +374,7 @@ omx_probe(struct omx_endpoint *ep,
 	  omx_status_t *status, uint32_t *result,
 	  uint32_t timeout)
 {
+  struct omx_cmd_wait_event wait_param;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -323,19 +388,50 @@ omx_probe(struct omx_endpoint *ep,
     goto out;
   }
 
+  ret = omx__progress(ep);
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out;
+
+  if (omx__iprobe_common(ep, match_info, match_mask, status)) {
+    *result = 1;
+    goto out;
+  }
+
+  wait_param.timeout = timeout;
+
   while (1) {
+    int err;
+
+    omx__debug_printf("omx_probe going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+
+    wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
+    wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+
+    omx__debug_printf("omx_probe woken up\n");
+
+    if (unlikely(err < 0)) {
+      ret = omx__errno_to_return("ioctl WAIT_EVENT");
+      goto out;
+    }
+
+    omx__debug_printf("omx_probe wait event result %d\n", wait_param.status);
+
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
       goto out;
-    /* FIXME: sleep */
 
     if (omx__iprobe_common(ep, match_info, match_mask, status)) {
-	*result = 1;
-	goto out;
+      *result = 1;
+      goto out;
+    }
+
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
+        || wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
+      *result = 0;
+      goto out;
     }
   }
-
-  *result = 0;
 
  out:
   return ret;
