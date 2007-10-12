@@ -22,28 +22,35 @@
 #include "omx_lib.h"
 #include "omx_request.h"
 
+static inline uint32_t
+omx__test_common(struct omx_endpoint *ep, union omx_request **requestp,
+		 struct omx_status *status)
+{
+  union omx_request * req = *requestp;
+
+  if (unlikely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
+    return 0;
+  } else {
+    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+    omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
+    memcpy(status, &req->generic.status, sizeof(*status));
+    omx__request_free(req);
+    *requestp = NULL;
+    return 1;
+  }
+}
+
 omx_return_t
 omx_test(struct omx_endpoint *ep, union omx_request **requestp,
 	 struct omx_status *status, uint32_t * result)
 {
-  union omx_request * req = *requestp;
   omx_return_t ret = OMX_SUCCESS;
 
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
-  if (unlikely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
-    *result = 0;
-  } else {
-    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-    omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
-    memcpy(status, &req->generic.status, sizeof(*status));
-
-    omx__request_free(req);
-    *requestp = NULL;
-    *result = 1;
-  }
+  *result = omx__test_common(ep, requestp, status);
 
  out:
   return ret;
@@ -54,18 +61,21 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	 struct omx_status *status, uint32_t * result,
 	 uint32_t timeout)
 {
-  union omx_request * req = *requestp;
   struct omx_cmd_wait_event wait_param;
-  uint32_t ctxid;
   omx_return_t ret = OMX_SUCCESS;
 
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
+  if (omx__test_common(ep, requestp, status)) {
+    *result = 1;
+    goto out;
+  }
+
   wait_param.timeout = timeout;
 
-  while (likely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
+  while (1) {
     int err;
 
     omx__debug_printf("going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
@@ -87,22 +97,17 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
     if (unlikely(ret != OMX_SUCCESS))
       goto out;
 
+    if (omx__test_common(ep, requestp, status)) {
+      *result = 1;
+      goto out;
+    }
+
     if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
         || wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
-      if (unlikely(req->generic.state & OMX_REQUEST_STATE_DONE))
-	break;
       *result = 0;
       goto out;
     }
   }
-
-  ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-  omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
-  memcpy(status, &req->generic.status, sizeof(*status));
-
-  omx__request_free(req);
-  *requestp = NULL;
-  *result = 1;
 
  out:
   return ret;
