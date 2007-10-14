@@ -82,6 +82,8 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 #endif /* OMX_HAVE_REMAP_VMALLOC_RANGE */
 
 #ifdef OMX_HAVE_FOR_EACH_NETDEV
+#define omx_for_each_netdev(_ifp) for_each_netdev(&init_net, _ifp)
+#elif defined OMX_HAVE_FOR_EACH_NETDEV_WITHOUT_NS
 #define omx_for_each_netdev(_ifp) for_each_netdev(_ifp)
 #else /* OMX_HAVE_FOR_EACH_NETDEV */
 #define omx_for_each_netdev(_ifp) for ((_ifp) = dev_base; (_ifp) != NULL; (_ifp) = (_ifp)->next)

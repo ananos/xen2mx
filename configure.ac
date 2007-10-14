@@ -145,10 +145,16 @@ else
 fi
 
 # dev_base list replaced with for_each_netdev added in 2.6.22
+# and modified for net namespaces in 2.6.24
 AC_MSG_CHECKING(for_each_netdev availability)
 if grep "for_each_netdev *(" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
-  echo "#define OMX_HAVE_FOR_EACH_NETDEV 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(yes)
+  if grep "for_each_netdev *(.*,.*)" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
+    echo "#define OMX_HAVE_FOR_EACH_NETDEV 1" >> ${TMP_CHECKS_PATH}
+    AC_MSG_RESULT(yes)
+  else
+    echo "#define OMX_HAVE_FOR_EACH_NETDEV_WITHOUT_NS 1" >> ${TMP_CHECKS_PATH}
+    AC_MSG_RESULT([yes, without namespaces])
+  fi
 else
   AC_MSG_RESULT(no)
 fi
