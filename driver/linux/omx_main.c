@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
+#include <linux/timer.h>
 
 #include "omx_common.h"
 
@@ -61,6 +62,14 @@ MODULE_PARM_DESC(pull_packet_loss, "Explicit pull reply packet loss frequency");
  */
 
 struct omx_driver_desc * driver_desc = NULL;
+struct timer_list omx_driver_desc_update_timer;
+
+static void
+omx_driver_desc_update_handler(unsigned long data)
+{
+	driver_desc->jiffies = jiffies;
+	__mod_timer(&omx_driver_desc_update_timer, jiffies+1);
+}
 
 static __init int
 omx_init(void)
@@ -93,6 +102,11 @@ omx_init(void)
 	driver_desc->endpoint_max = omx_endpoint_max;
 	driver_desc->peer_max = omx_peer_max;
 	driver_desc->hz = HZ;
+	driver_desc->jiffies = jiffies;
+
+	/* setup a timer to update jiffies in the driver descriptor */
+	setup_timer(&omx_driver_desc_update_timer, omx_driver_desc_update_handler, 0);
+	__mod_timer(&omx_driver_desc_update_timer, jiffies+1);
 
 	ret = omx_dma_init();
 	if (ret < 0)
@@ -120,6 +134,7 @@ omx_init(void)
  out_with_dma:
 	omx_dma_exit();
  out_with_driver_desc:
+	del_timer_sync(&omx_driver_desc_update_timer);
 	vfree(driver_desc);
  out:
 	printk(KERN_ERR "Failed to initialize Open-MX\n");
@@ -135,6 +150,7 @@ omx_exit(void)
 	omx_net_exit();
 	omx_peers_init();
 	omx_dma_exit();
+	del_timer_sync(&omx_driver_desc_update_timer);
 	vfree(driver_desc);
 	printk(KERN_INFO "Open-MX terminated\n");
 }

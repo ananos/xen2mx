@@ -72,6 +72,7 @@ struct omx_cmd_region_segment {
 
 /* driver desc */
 struct omx_driver_desc {
+	uint64_t jiffies;
 	uint32_t hz;
 	uint32_t board_max;
 	uint32_t endpoint_max;
