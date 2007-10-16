@@ -93,7 +93,10 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 
 	spin_unlock(&endpoint->event_lock);
 
-	/* store the event */
+	/* set type to NONE for now */
+	((struct omx_evt_generic *) event)->type = OMX_EVT_NONE;
+
+	/* store the event and then the actual type */
 	memcpy(slot, event, length);
 	wmb();
 	((struct omx_evt_generic *) slot)->type = type;
@@ -142,7 +145,10 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 
 	spin_unlock(&endpoint->event_lock);
 
-	/* store the event */
+	/* set type to NONE for now */
+	((struct omx_evt_generic *) event)->type = OMX_EVT_NONE;
+
+	/* store the event and then the actual type */
 	memcpy(slot, event, length);
 	wmb();
 	((struct omx_evt_generic *) slot)->type = type;
@@ -223,7 +229,10 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 
 	spin_unlock(&endpoint->event_lock);
 
-	/* store the event */
+	/* set type to none for now */
+	((struct omx_evt_generic *) event)->type = OMX_EVT_NONE;
+
+	/* store the event and then the actual type */
 	memcpy(slot, event, length);
 	wmb();
 	((struct omx_evt_generic *) slot)->type = type;
