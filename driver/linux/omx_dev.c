@@ -616,7 +616,10 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 	if (endpoint == NULL)
 		return -EINVAL;
 
-	if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
+	if (offset == OMX_DRIVER_DESC_FILE_OFFSET && size == PAGE_ALIGN(OMX_DRIVER_DESC_SIZE))
+		return omx_remap_vmalloc_range(vma, driver_desc, 0);
+
+	else if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
 					       0);
 	else if (offset == OMX_RECVQ_FILE_OFFSET && size == OMX_RECVQ_SIZE)
@@ -629,7 +632,7 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
 					       (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EXP_EVENTQ_SIZE) >> PAGE_SHIFT);
 	else {
-		printk(KERN_ERR "Open-MX: Cannot mmap %lx at %lx\n", size, offset);
+		printk(KERN_ERR "Open-MX: Cannot mmap 0x%lx at 0x%lx\n", size, offset);
 		return -EINVAL;
 	}
 }

@@ -77,6 +77,7 @@
  */
 
 extern struct omx__globals omx__globals;
+extern struct omx_driver_desc * omx__driver_desc;
 
 /*********************
  * Internal functions

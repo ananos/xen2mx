@@ -20,10 +20,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
+#include <sys/mman.h>
 
 #include "omx_lib.h"
 
 struct omx__globals omx__globals = { 0 };
+struct omx_driver_desc * omx__driver_desc = NULL;
 
 omx_return_t
 omx__init_api(int api)
@@ -40,6 +42,13 @@ omx__init_api(int api)
     return omx__errno_to_return("init open control fd");
 
   omx__globals.control_fd = err;
+
+  omx__driver_desc = mmap(NULL, OMX_DRIVER_DESC_SIZE, PROT_READ, MAP_SHARED,
+			  omx__globals.control_fd, OMX_DRIVER_DESC_FILE_OFFSET);
+  if (omx__driver_desc == MAP_FAILED) {
+    ret = omx__errno_to_return("mmap driver descriptor");
+    goto out_with_fd;
+  }
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_MAX, &omx__globals.board_max);
   if (err < 0) {

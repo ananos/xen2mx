@@ -60,6 +60,8 @@ MODULE_PARM_DESC(pull_packet_loss, "Explicit pull reply packet loss frequency");
  * Main Module Init/Exit
  */
 
+struct omx_driver_desc * driver_desc = NULL;
+
 static __init int
 omx_init(void)
 {
@@ -79,9 +81,17 @@ omx_init(void)
 		       omx_pull_packet_loss);
 #endif
 
+	driver_desc = vmalloc_user(sizeof(struct omx_driver_desc));
+	if (!driver_desc) {
+		printk(KERN_ERR "Open-MX: failed to allocate driver descriptor\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+	driver_desc->hz = HZ;
+
 	ret = omx_dma_init();
 	if (ret < 0)
-		goto out;
+		goto out_with_driver_desc;
 
 	ret = omx_peers_init();
 	if (ret < 0)
@@ -104,6 +114,8 @@ omx_init(void)
 	omx_peers_init();
  out_with_dma:
 	omx_dma_exit();
+ out_with_driver_desc:
+	vfree(driver_desc);
  out:
 	printk(KERN_ERR "Failed to initialize Open-MX\n");
 	return ret;
@@ -118,6 +130,7 @@ omx_exit(void)
 	omx_net_exit();
 	omx_peers_init();
 	omx_dma_exit();
+	vfree(driver_desc);
 	printk(KERN_INFO "Open-MX terminated\n");
 }
 module_exit(omx_exit);

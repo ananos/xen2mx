@@ -70,6 +70,14 @@ struct omx_cmd_region_segment {
 	uint32_t pad;
 };
 
+/* driver desc */
+struct omx_driver_desc {
+	uint32_t hz;
+};
+
+#define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
+#define OMX_DRIVER_DESC_FILE_OFFSET	(4096*4096)
+
 /************************
  * IOCTL commands
  */
