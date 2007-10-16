@@ -146,7 +146,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   default:
-    printf("unknown type\n");
+    printf("unknown type %d\n", evt->generic.type);
     assert(0);
   }
 
