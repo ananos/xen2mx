@@ -99,17 +99,11 @@ omx_return_t
 omx__get_board_index_by_name(const char * name, uint8_t * index)
 {
   omx_return_t ret = OMX_SUCCESS;
-  uint32_t max;
+  uint32_t max = omx__driver_desc->board_max;
   int err, i;
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
-    goto out;
-  }
-
-  err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_MAX, &max);
-  if (err < 0) {
-    ret = omx__errno_to_return("ioctl GET_BOARD_MAX");
     goto out;
   }
 
@@ -143,17 +137,11 @@ omx_return_t
 omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
 {
   omx_return_t ret = OMX_SUCCESS;
-  uint32_t max;
+  uint32_t max = omx__driver_desc->board_max;
   int err, i;
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
-    goto out;
-  }
-
-  err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_MAX, &max);
-  if (err < 0) {
-    ret = omx__errno_to_return("ioctl GET_BOARD_MAX");
     goto out;
   }
 
@@ -194,7 +182,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       return OMX_NOT_INITIALIZED;
     if (out_len < sizeof(uint32_t))
       return OMX_INVALID_PARAMETER;
-    *(uint32_t *) out_val = omx__globals.board_max;
+    *(uint32_t *) out_val = omx__driver_desc->board_max;
     return OMX_SUCCESS;
 
   case OMX_INFO_ENDPOINT_MAX:
@@ -202,7 +190,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       return OMX_NOT_INITIALIZED;
     if (out_len < sizeof(uint32_t))
       return OMX_INVALID_PARAMETER;
-    *(uint32_t *) out_val = omx__globals.endpoint_max;
+    *(uint32_t *) out_val = omx__driver_desc->endpoint_max;
     return OMX_SUCCESS;
 
   case OMX_INFO_BOARD_COUNT:

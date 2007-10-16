@@ -73,7 +73,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->next_frag_recv_seq = 0;
 
   partner_index = ((uint32_t) endpoint_index)
-    + ((uint32_t) peer_index) * omx__globals.endpoint_max;
+    + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
   ep->partners[partner_index] = partner;
 
   *partnerp = partner;
@@ -90,7 +90,7 @@ omx__partner_lookup(struct omx_endpoint *ep,
   uint32_t partner_index;
 
   partner_index = ((uint32_t) endpoint_index)
-    + ((uint32_t) peer_index) * omx__globals.endpoint_max;
+    + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
 
   if (unlikely(!ep->partners[partner_index])) {
     uint64_t board_addr;
@@ -129,7 +129,7 @@ omx__partner_lookup_by_addr(struct omx_endpoint *ep,
   }
 
   partner_index = ((uint32_t) endpoint_index)
-    + ((uint32_t) peer_index) * omx__globals.endpoint_max;
+    + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
 
   if (unlikely(!ep->partners[partner_index]))
     return omx__partner_create(ep, peer_index, board_addr, endpoint_index, partnerp);
@@ -147,7 +147,7 @@ omx__partner_recv_lookup(struct omx_endpoint *ep,
   struct omx__partner * partner;
 
   partner_index = ((uint32_t) endpoint_index)
-    + ((uint32_t) peer_index) * omx__globals.endpoint_max;
+    + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
   partner = ep->partners[partner_index];
   assert(partner);
 

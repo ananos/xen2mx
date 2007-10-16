@@ -126,7 +126,7 @@ omx__peers_dump(const char * format)
   omx_return_t ret;
   int i;
 
-  for(i=0; i<omx__globals.peer_max; i++) {
+  for(i=0; i<omx__driver_desc->peer_max; i++) {
     char hostname[OMX_HOSTNAMELEN_MAX];
     uint64_t board_addr = 0;
     char addr_str[OMX_BOARD_ADDR_STRLEN];

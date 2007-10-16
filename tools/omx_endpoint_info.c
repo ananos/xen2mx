@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
   }
 
   /* get endpoint max */
-  emax = omx__globals.endpoint_max;
+  emax = omx__driver_desc->endpoint_max;
 
   while ((c = getopt(argc, argv, "b:h")) != EOF)
     switch (c) {

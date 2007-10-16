@@ -128,14 +128,14 @@ omx__open_endpoint(int fd,
 
   if (*board_index_p == OMX_ANY_NIC) {
     board_start = 0;
-    board_end = omx__globals.board_max-1;
+    board_end = omx__driver_desc->board_max-1;
   } else {
     board_start = board_end = *board_index_p;
   }
 
   if (*endpoint_index_p == OMX_ANY_ENDPOINT) {
     endpoint_start = 0;
-    endpoint_end = omx__globals.endpoint_max-1;
+    endpoint_end = omx__driver_desc->endpoint_max-1;
   } else {
     endpoint_start = endpoint_end = *endpoint_index_p;
   }
@@ -261,7 +261,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 	 ep->hostname, ep->ifacename, board_addr_str);
 
   /* allocate partners */
-  ep->partners = calloc(omx__globals.peer_max * omx__globals.endpoint_max,
+  ep->partners = calloc(omx__driver_desc->peer_max * omx__driver_desc->endpoint_max,
 			sizeof(*ep->partners));
   if (!ep->partners) {
     ret = OMX_NO_RESOURCES;

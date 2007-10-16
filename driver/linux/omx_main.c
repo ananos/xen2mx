@@ -87,6 +87,11 @@ omx_init(void)
 		ret = -ENOMEM;
 		goto out;
 	}
+
+	/* fill the driver descriptor */
+	driver_desc->board_max = omx_iface_max;
+	driver_desc->endpoint_max = omx_endpoint_max;
+	driver_desc->peer_max = omx_peer_max;
 	driver_desc->hz = HZ;
 
 	ret = omx_dma_init();

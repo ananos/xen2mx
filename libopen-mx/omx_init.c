@@ -50,24 +50,6 @@ omx__init_api(int api)
     goto out_with_fd;
   }
 
-  err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_MAX, &omx__globals.board_max);
-  if (err < 0) {
-    ret = omx__errno_to_return("ioctl GET_BOARD_MAX");
-    goto out_with_fd;
-  }
-
-  err = ioctl(omx__globals.control_fd, OMX_CMD_GET_ENDPOINT_MAX, &omx__globals.endpoint_max);
-  if (err < 0) {
-    ret = omx__errno_to_return("ioctl GET_ENDPOINT_MAX");
-    goto out_with_fd;
-  }
-
-  err = ioctl(omx__globals.control_fd, OMX_CMD_GET_PEER_MAX, &omx__globals.peer_max);
-  if (err < 0) {
-    ret = omx__errno_to_return("ioctl GET_PEER_MAX");
-    goto out_with_fd;
-  }
-
   omx__globals.verbose = 0;
   env = getenv("OMX_VERBOSE");
   if (env)

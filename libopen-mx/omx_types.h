@@ -237,9 +237,6 @@ struct omx__globals {
   int initialized;
   int control_fd;
   int verbose;
-  uint32_t board_max;
-  uint32_t endpoint_max;
-  uint32_t peer_max;
 };
 
 #endif /* __omx_types_h__ */

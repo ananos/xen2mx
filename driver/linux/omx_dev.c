@@ -355,39 +355,6 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 
 	switch (cmd) {
 
-	case OMX_CMD_GET_BOARD_MAX: {
-		uint32_t max = omx_iface_max;
-
-		ret = copy_to_user((void __user *) arg, &max,
-				   sizeof(max));
-		if (ret < 0)
-			printk(KERN_ERR "Open-MX: Failed to write get_board_max command result, error %d\n", ret);
-
-		break;
-	}
-
-	case OMX_CMD_GET_ENDPOINT_MAX: {
-		uint32_t max = omx_endpoint_max;
-
-		ret = copy_to_user((void __user *) arg, &max,
-				   sizeof(max));
-		if (ret < 0)
-			printk(KERN_ERR "Open-MX: Failed to write get_endpoint_max command result, error %d\n", ret);
-
-		break;
-	}
-
-	case OMX_CMD_GET_PEER_MAX: {
-		uint32_t max = omx_peer_max;
-
-		ret = copy_to_user((void __user *) arg, &max,
-				   sizeof(max));
-		if (ret < 0)
-			printk(KERN_ERR "Open-MX: Failed to write get_peer_max command result, error %d\n", ret);
-
-		break;
-	}
-
 	case OMX_CMD_GET_BOARD_COUNT: {
 		uint32_t count = omx_ifaces_get_count();
 

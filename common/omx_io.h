@@ -73,6 +73,9 @@ struct omx_cmd_region_segment {
 /* driver desc */
 struct omx_driver_desc {
 	uint32_t hz;
+	uint32_t board_max;
+	uint32_t endpoint_max;
+	uint32_t peer_max;
 };
 
 #define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
@@ -83,9 +86,6 @@ struct omx_driver_desc {
  */
 
 #define OMX_CMD_BENCH			0x00
-#define OMX_CMD_GET_BOARD_MAX		0x01
-#define OMX_CMD_GET_ENDPOINT_MAX	0x02
-#define OMX_CMD_GET_PEER_MAX		0x03
 #define OMX_CMD_GET_BOARD_COUNT		0x04
 #define OMX_CMD_GET_BOARD_ID		0x05
 #define OMX_CMD_GET_ENDPOINT_INFO	0x06
@@ -114,12 +114,6 @@ omx_strcmd(unsigned cmd)
 	switch (cmd) {
 	case OMX_CMD_BENCH:
 		return "Command Benchmark";
-	case OMX_CMD_GET_BOARD_MAX:
-		return "Get Board Max";
-	case OMX_CMD_GET_ENDPOINT_MAX:
-		return "Get Endpoint Max";
-	case OMX_CMD_GET_PEER_MAX:
-		return "Get Peer Max";
 	case OMX_CMD_GET_BOARD_COUNT:
 		return "Get Board Count";
 	case OMX_CMD_GET_BOARD_ID:

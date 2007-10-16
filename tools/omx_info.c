@@ -36,8 +36,8 @@ int main(void)
   }
 
   /* get board and endpoint max */
-  max = omx__globals.board_max;
-  emax = omx__globals.endpoint_max;
+  max = omx__driver_desc->board_max;
+  emax = omx__driver_desc->endpoint_max;
 
   /* get board count */
   ret = omx__get_board_count(&count);
