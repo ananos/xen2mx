@@ -584,7 +584,7 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 		return -EINVAL;
 
 	if (offset == OMX_DRIVER_DESC_FILE_OFFSET && size == PAGE_ALIGN(OMX_DRIVER_DESC_SIZE))
-		return omx_remap_vmalloc_range(vma, driver_desc, 0);
+		return omx_remap_vmalloc_range(vma, omx_driver_desc, 0);
 
 	else if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,

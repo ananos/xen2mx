@@ -61,13 +61,13 @@ MODULE_PARM_DESC(pull_packet_loss, "Explicit pull reply packet loss frequency");
  * Main Module Init/Exit
  */
 
-struct omx_driver_desc * driver_desc = NULL;
+struct omx_driver_desc * omx_driver_desc = NULL;
 struct timer_list omx_driver_desc_update_timer;
 
 static void
 omx_driver_desc_update_handler(unsigned long data)
 {
-	driver_desc->jiffies = jiffies;
+	omx_driver_desc->jiffies = jiffies;
 	__mod_timer(&omx_driver_desc_update_timer, jiffies+1);
 }
 
@@ -90,19 +90,19 @@ omx_init(void)
 		       omx_pull_packet_loss);
 #endif
 
-	driver_desc = vmalloc_user(sizeof(struct omx_driver_desc));
-	if (!driver_desc) {
+	omx_driver_desc = vmalloc_user(sizeof(struct omx_driver_desc));
+	if (!omx_driver_desc) {
 		printk(KERN_ERR "Open-MX: failed to allocate driver descriptor\n");
 		ret = -ENOMEM;
 		goto out;
 	}
 
 	/* fill the driver descriptor */
-	driver_desc->board_max = omx_iface_max;
-	driver_desc->endpoint_max = omx_endpoint_max;
-	driver_desc->peer_max = omx_peer_max;
-	driver_desc->hz = HZ;
-	driver_desc->jiffies = jiffies;
+	omx_driver_desc->board_max = omx_iface_max;
+	omx_driver_desc->endpoint_max = omx_endpoint_max;
+	omx_driver_desc->peer_max = omx_peer_max;
+	omx_driver_desc->hz = HZ;
+	omx_driver_desc->jiffies = jiffies;
 
 	/* setup a timer to update jiffies in the driver descriptor */
 	setup_timer(&omx_driver_desc_update_timer, omx_driver_desc_update_handler, 0);
@@ -135,7 +135,7 @@ omx_init(void)
 	omx_dma_exit();
  out_with_driver_desc:
 	del_timer_sync(&omx_driver_desc_update_timer);
-	vfree(driver_desc);
+	vfree(omx_driver_desc);
  out:
 	printk(KERN_ERR "Failed to initialize Open-MX\n");
 	return ret;
@@ -151,7 +151,7 @@ omx_exit(void)
 	omx_peers_init();
 	omx_dma_exit();
 	del_timer_sync(&omx_driver_desc_update_timer);
-	vfree(driver_desc);
+	vfree(omx_driver_desc);
 	printk(KERN_INFO "Open-MX terminated\n");
 }
 module_exit(omx_exit);
