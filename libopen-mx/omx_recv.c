@@ -398,13 +398,20 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 				  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
 				  omx__process_recv_func_t recv_func)
 {
-  omx_return_t ret;
+  omx_return_t ret = OMX_SUCCESS;
 
   if (likely(seqnum == partner->next_match_recv_seq)) {
-    /* expected seqnum, do the matching */
-    ret = omx__try_match_next_recv(ep, partner, seqnum,
-				   msg, data, msg_length,
-				   recv_func);
+    /* expected seqnum */
+
+    if (unlikely(msg->type == OMX_EVT_RECV_NOTIFY)) {
+      /* internal message, no matching to do, just a recv+seqnum to handle */
+      (*recv_func)(ep, partner, NULL, msg, NULL, 0);
+    } else {
+      /* regular message, do the matching */
+      ret = omx__try_match_next_recv(ep, partner, seqnum,
+				     msg, data, msg_length,
+				     recv_func);
+    }
 
     if (ret == OMX_SUCCESS) {
       /* we matched this seqnum, we now expect the next one */

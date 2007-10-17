@@ -78,8 +78,10 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_NOTIFY: {
-
-    omx__process_recv_notify(ep, &evt->recv_msg);
+    struct omx_evt_recv_msg * msg = &evt->recv_msg;
+    ret = omx__process_recv(ep,
+			    msg, NULL, 0,
+			    omx__process_recv_notify);
     break;
   }
 

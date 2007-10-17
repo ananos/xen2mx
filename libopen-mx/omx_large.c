@@ -250,6 +250,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   struct omx__large_region * region;
   struct omx__partner * partner;
   struct omx_cmd_send_notify notify_param;
+  omx__seqnum_t seqnum;
   omx_return_t ret;
   int err;
 
@@ -267,11 +268,13 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx__dequeue_request(&ep->pull_req_q, req);
   omx__deregister_region(ep, req->recv.specific.large.local_region);
 
+  seqnum = partner->next_send_seq;
+
   notify_param.peer_index = partner->peer_index;
   notify_param.dest_endpoint = partner->endpoint_index;
   notify_param.total_length = xfer_length;
   notify_param.session_id = partner->session_id;
-  /* FIXME: seqnum */
+  notify_param.seqnum = seqnum;
   notify_param.piggyack = partner->next_frag_recv_seq - 1;
   notify_param.puller_rdma_id = req->recv.specific.large.target_rdma_id;
   notify_param.puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
@@ -281,6 +284,9 @@ omx__process_pull_done(struct omx_endpoint * ep,
     ret = omx__errno_to_return("ioctl SEND_NOTIFY");
     goto out;
   }
+
+  /* increase at the end, to avoid having to decrease back in case of error */
+  partner->next_send_seq++;
 
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
   req->generic.state |= OMX_REQUEST_STATE_DONE;
@@ -294,14 +300,15 @@ omx__process_pull_done(struct omx_endpoint * ep,
   return ret;
 }
 
-omx_return_t
-omx__process_recv_notify(struct omx_endpoint * ep,
-			 struct omx_evt_recv_msg * msg)
+void
+omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
+			 union omx_request *req /* ignored */,
+			 struct omx_evt_recv_msg *msg,
+			 void *data /* unused */, uint32_t msg_length /* unused */)
 {
   uint32_t xfer_length = msg->specific.notify.length;
   uint8_t region_id = msg->specific.notify.puller_rdma_id;
   struct omx__large_region * region;
-  union omx_request * req;
 
   /* FIXME: check region id */
   region = &ep->large_region_map.array[region_id].region;
@@ -317,6 +324,4 @@ omx__process_recv_notify(struct omx_endpoint * ep,
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
   req->generic.state |= OMX_REQUEST_STATE_DONE;
   omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
-
-  return OMX_SUCCESS;
 }
