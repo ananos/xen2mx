@@ -644,7 +644,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	OMX_PKT_FIELD_FROM(mh->body.nack_lib.dst_endpoint, dst_endpoint);
 	OMX_PKT_FIELD_FROM(mh->body.nack_lib.ptype, OMX_PKT_TYPE_NACK_LIB);
 	OMX_PKT_FIELD_FROM(mh->body.nack_lib.nack_type, nack_type);
-	OMX_PKT_FIELD_FROM(mh->body.tiny.lib_seqnum, lib_seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.nack_lib.lib_seqnum, lib_seqnum);
 
 	omx_send_dprintk(eh, "NACK LIB type %d", nack_type);
 
