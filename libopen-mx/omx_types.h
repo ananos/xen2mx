@@ -51,6 +51,8 @@ struct omx__large_region_map {
   } * array;
 };
 
+#define OMX__SEQNUM_MAX 0xffffU
+#define OMX__PENDING_SEQNUM_MAX (OMX__SEQNUM_MAX/2)
 typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
 
 struct omx__partner {
@@ -70,6 +72,9 @@ struct omx__partner {
 
   /* seqnum of the next send */
   omx__seqnum_t next_send_seq;
+
+  /* seqnum of the last send acked by the partner */
+  omx__seqnum_t last_acked_send_seq;
 
   /* seqnum of the next entire message to match
    * used to know to accumulate/match/defer a fragment

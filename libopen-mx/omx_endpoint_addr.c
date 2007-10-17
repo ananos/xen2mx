@@ -69,6 +69,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   INIT_LIST_HEAD(&partner->earlyq);
   partner->session_id = 0; /* will be initialized when the partner will connect to me */
   partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
+  partner->last_acked_send_seq = -1;
   partner->next_match_recv_seq = 0;
   partner->next_frag_recv_seq = 0;
 
@@ -545,9 +546,19 @@ omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
 
 omx_return_t
 omx__handle_ack(struct omx_endpoint *ep,
-		struct omx__partner *partner, omx__seqnum_t ack)
+		struct omx__partner *partner, omx__seqnum_t last_to_ack)
 {
-  omx__debug_printf("acked up to %d\n", (unsigned) ack);
+  /* take care of the seqnum wrap around by casting differences into omx__seqnum_t */
+  omx__seqnum_t missing_acks = partner->next_send_seq - 1 - partner->last_acked_send_seq;
+  omx__seqnum_t new_acks = last_to_ack - partner->last_acked_send_seq;
+
+  if (!new_acks || new_acks > missing_acks) {
+    omx__debug_printf("obsolete ack up to %d\n", (unsigned) last_to_ack);
+  } else {
+    omx__debug_printf("ack up to %d\n", (unsigned) last_to_ack);
+    /* FIXME mark requests acked */
+    partner->last_acked_send_seq = last_to_ack;
+  }
 
   return OMX_SUCCESS;
 }
