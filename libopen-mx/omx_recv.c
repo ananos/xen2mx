@@ -406,9 +406,11 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 				   msg, data, msg_length,
 				   recv_func);
 
-    /* we matched this seqnum, we now expect the next one */
-    partner->next_match_recv_seq++;
-    omx__update_partner_next_frag_recv_seq(ep, partner);
+    if (ret == OMX_SUCCESS) {
+      /* we matched this seqnum, we now expect the next one */
+      partner->next_match_recv_seq++;
+      omx__update_partner_next_frag_recv_seq(ep, partner);
+    }
 
   } else if (likely(msg->type == OMX_EVT_RECV_MEDIUM
 		    && seqnum >= partner->next_frag_recv_seq)) {
