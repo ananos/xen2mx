@@ -130,6 +130,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(tiny_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(tiny_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(tiny_n->lib_seqnum);
+	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(tiny_n->lib_piggyack);
 	struct omx_evt_recv_msg event;
 	int err = 0;
 
@@ -187,6 +188,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	event.src_endpoint = src_endpoint;
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(tiny_n);
 	event.seqnum = lib_seqnum;
+	event.piggyack = lib_piggyack;
 	event.specific.tiny.length = length;
 
 	/* copy data in event data */
@@ -225,6 +227,7 @@ omx_recv_small(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(small_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(small_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
+	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(small_n->lib_piggyack);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
 	int err;
@@ -289,6 +292,7 @@ omx_recv_small(struct omx_iface * iface,
 	event.src_endpoint = src_endpoint;
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(small_n);
 	event.seqnum = lib_seqnum;
+	event.piggyack = lib_piggyack;
 	event.specific.small.length = length;
 	event.specific.small.recvq_offset = recvq_offset;
 
@@ -325,6 +329,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(medium_n->msg.session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(medium_n->msg.lib_seqnum);
+	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->msg.lib_piggyack);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
 	int err;
@@ -389,6 +394,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event.src_endpoint = src_endpoint;
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(&medium_n->msg);
 	event.seqnum = lib_seqnum;
+	event.piggyack = lib_piggyack;
 	event.specific.medium.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
 	event.specific.medium.frag_length = frag_length;
 	event.specific.medium.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
@@ -428,6 +434,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(rndv_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(rndv_n->lib_seqnum);
+	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(rndv_n->lib_piggyack);
 	struct omx_evt_recv_msg event;
 	int err = 0;
 
@@ -485,6 +492,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	event.src_endpoint = src_endpoint;
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(rndv_n);
 	event.seqnum = lib_seqnum;
+	event.piggyack = lib_piggyack;
 	event.specific.rndv.length = length;
 
 	/* copy data in event data */
@@ -522,6 +530,7 @@ omx_recv_notify(struct omx_iface * iface,
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(notify_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(notify_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(notify_n->lib_seqnum);
+	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(notify_n->lib_piggyack);
 	struct omx_evt_recv_msg event;
 	int err = 0;
 
@@ -561,6 +570,7 @@ omx_recv_notify(struct omx_iface * iface,
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
 	event.seqnum = lib_seqnum;
+	event.piggyack = lib_piggyack;
 	event.specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
 	event.specific.notify.puller_rdma_id = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_id);
 	event.specific.notify.puller_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_seqnum);

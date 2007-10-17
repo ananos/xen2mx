@@ -144,6 +144,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(mh->body.tiny.ptype, OMX_PKT_TYPE_TINY);
 	OMX_PKT_FIELD_FROM(mh->body.tiny.length, length);
 	OMX_PKT_FIELD_FROM(mh->body.tiny.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.tiny.lib_piggyack, cmd.piggyack);
 	OMX_PKT_FIELD_FROM(mh->body.tiny.session, cmd.session_id);
 	OMX_PKT_MATCH_INFO_FROM(&mh->body.tiny, cmd.match_info);
 
@@ -225,6 +226,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(mh->body.small.ptype, OMX_PKT_TYPE_SMALL);
 	OMX_PKT_FIELD_FROM(mh->body.small.length, length);
 	OMX_PKT_FIELD_FROM(mh->body.small.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.small.lib_piggyack, cmd.piggyack);
 	OMX_PKT_FIELD_FROM(mh->body.small.session, cmd.session_id);
 	OMX_PKT_MATCH_INFO_FROM(& mh->body.small, cmd.match_info);
 
@@ -326,6 +328,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(mh->body.medium.msg.ptype, OMX_PKT_TYPE_MEDIUM);
 	OMX_PKT_FIELD_FROM(mh->body.medium.msg.length, cmd.msg_length);
 	OMX_PKT_FIELD_FROM(mh->body.medium.msg.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.medium.msg.lib_piggyack, cmd.piggyack);
 	OMX_PKT_FIELD_FROM(mh->body.medium.msg.session, cmd.session_id);
 	OMX_PKT_MATCH_INFO_FROM(& mh->body.medium.msg, cmd.match_info);
 	OMX_PKT_FIELD_FROM(mh->body.medium.frag_length, frag_length);
@@ -429,6 +432,7 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(mh->body.rndv.ptype, OMX_PKT_TYPE_RNDV);
 	OMX_PKT_FIELD_FROM(mh->body.rndv.length, length);
 	OMX_PKT_FIELD_FROM(mh->body.rndv.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.rndv.lib_piggyack, cmd.piggyack);
 	OMX_PKT_FIELD_FROM(mh->body.rndv.session, cmd.session_id);
 	OMX_PKT_MATCH_INFO_FROM(& mh->body.rndv, cmd.match_info);
 
@@ -582,6 +586,7 @@ omx_send_notify(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(mh->body.notify.ptype, OMX_PKT_TYPE_NOTIFY);
 	OMX_PKT_FIELD_FROM(mh->body.notify.total_length, cmd.total_length);
 	OMX_PKT_FIELD_FROM(mh->body.notify.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(mh->body.notify.lib_piggyack, cmd.piggyack);
 	OMX_PKT_FIELD_FROM(mh->body.notify.session, cmd.session_id);
 	OMX_PKT_FIELD_FROM(mh->body.notify.puller_rdma_id, cmd.puller_rdma_id);
 	OMX_PKT_FIELD_FROM(mh->body.notify.puller_rdma_seqnum, cmd.puller_rdma_seqnum);

@@ -220,8 +220,9 @@ struct omx_cmd_send_tiny {
 		uint32_t session_id;
 		/* 8 */
 		uint16_t seqnum;
+		uint16_t piggyack;
 		uint8_t length;
-		uint8_t pad2[5];
+		uint8_t pad2[3];
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
@@ -237,8 +238,9 @@ struct omx_cmd_send_small {
 	uint32_t session_id;
 	/* 8 */
 	uint16_t seqnum;
+	uint16_t piggyack;
 	uint16_t length;
-	uint32_t pad2;
+	uint16_t pad2;
 	/* 16 */
 	uint64_t vaddr;
 	/* 24 */
@@ -252,14 +254,15 @@ struct omx_cmd_send_medium {
 	uint8_t pad1;
 	uint32_t session_id;
 	/* 8 */
-	uint32_t msg_length;
 	uint16_t seqnum;
+	uint16_t piggyack;
 	uint16_t sendq_page_offset;
+	uint16_t pad2;
 	/* 16 */
+	uint32_t msg_length;
 	uint16_t frag_length;
 	uint8_t frag_seqnum;
 	uint8_t frag_pipeline;
-	uint32_t pad2;
 	/* 24 */
 	uint64_t match_info;
 	/* 32 */
@@ -273,8 +276,9 @@ struct omx_cmd_send_rndv {
 		uint32_t session_id;
 		/* 8 */
 		uint16_t seqnum;
+		uint16_t piggyack;
 		uint8_t length;
-		uint8_t pad2[5];
+		uint8_t pad2[3];
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
@@ -321,10 +325,13 @@ struct omx_cmd_send_notify {
 	uint32_t session_id;
 	/* 8 */
 	uint32_t total_length;
+	uint16_t seqnum;
+	uint16_t piggyack;
+	/* 16 */
 	uint8_t puller_rdma_id;
 	uint8_t puller_rdma_seqnum;
-	uint16_t seqnum;
-	/* 16 */
+	uint8_t pad2[6];
+	/* 24 */
 };
 
 struct omx_cmd_register_region {
@@ -465,7 +472,7 @@ union omx_evt {
 		uint8_t src_endpoint;
 		uint8_t pad1;
 		uint16_t seqnum;
-		uint16_t pad2;
+		uint16_t piggyack;
 		/* 8 */
 		uint64_t match_info;
 		/* 16 */
