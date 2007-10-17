@@ -294,7 +294,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     /* FIXME: signal */
     if (ret == OMX_RECV_FINISHED)
       /* the handler took care of the message, we now discard it */
-      goto out_discard;
+      return OMX_SUCCESS;
 
     assert(ret == OMX_RECV_CONTINUE);
     /* the unexp has been noticed check if a recv has been posted */
@@ -349,12 +349,13 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
   }
 
- out_discard:
+  return OMX_SUCCESS;
+}
 
-  /* FIXME: do that below, but only if necessary */
-  /* we matched this seqnum, we now expect the next one */
-  partner->next_match_recv_seq++;
-
+static INLINE void
+omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
+				       struct omx__partner * partner)
+{
   /* update the seqnum of the next partial fragment to expect
    * if no more partner partial request, we expect a frag for the new seqnum,
    * if not, we expect the fragment for at least the first partial seqnum
@@ -365,8 +366,6 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     union omx_request *req = omx__partner_queue_first_request(partner);
     partner->next_frag_recv_seq = req->recv.seqnum;
   }
-
-  return OMX_SUCCESS;
 }
 
 static INLINE omx_return_t
@@ -385,17 +384,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
 			   req);
       omx__process_recv_medium_frag(ep, partner, req,
 				    msg, data, msg_length);
-
-      /* if no more partner partial request, we expect a frag for the new seqnum,
-       * if not, we expect the fragment for at least the first partial seqnum
-       */
-      if (omx__partner_queue_empty(partner)) {
-	partner->next_frag_recv_seq = partner->next_match_recv_seq;
-      } else {
-	union omx_request *req = omx__partner_queue_first_request(partner);
-	partner->next_frag_recv_seq = req->recv.seqnum;
-      }
-
+      omx__update_partner_next_frag_recv_seq(ep, partner);
       return OMX_SUCCESS;
     }
   }
@@ -416,6 +405,10 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
     ret = omx__try_match_next_recv(ep, partner, seqnum,
 				   msg, data, msg_length,
 				   recv_func);
+
+    /* we matched this seqnum, we now expect the next one */
+    partner->next_match_recv_seq++;
+    omx__update_partner_next_frag_recv_seq(ep, partner);
 
   } else if (likely(msg->type == OMX_EVT_RECV_MEDIUM
 		    && seqnum >= partner->next_frag_recv_seq)) {
