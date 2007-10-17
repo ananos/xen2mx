@@ -437,6 +437,7 @@ omx__process_recv(struct omx_endpoint *ep,
 		  omx__process_recv_func_t recv_func)
 {
   omx__seqnum_t seqnum = msg->seqnum;
+  omx__seqnum_t piggyack = msg->piggyack;
   struct omx__partner * partner;
   omx_return_t ret;
 
@@ -447,6 +448,8 @@ omx__process_recv(struct omx_endpoint *ep,
 
   omx__debug_printf("got seqnum %d, expected match at %d, frag at %d\n",
 		    seqnum, partner->next_match_recv_seq, partner->next_frag_recv_seq);
+
+  omx__handle_ack(ep, partner, piggyack);
 
   if (likely(seqnum <= partner->next_match_recv_seq)) {
     /* either the new expected seqnum (to match)

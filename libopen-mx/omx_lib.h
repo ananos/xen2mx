@@ -183,6 +183,10 @@ extern omx_return_t
 omx__process_pull_done(struct omx_endpoint * ep,
 		       struct omx_evt_pull_done * event);
 
+extern omx_return_t
+omx__handle_ack(struct omx_endpoint *ep,
+		struct omx__partner *partner, omx__seqnum_t ack);
+
 static inline int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)
 {

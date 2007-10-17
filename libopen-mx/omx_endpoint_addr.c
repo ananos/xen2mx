@@ -539,3 +539,15 @@ omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
   return OMX_SUCCESS;
 }
 
+/*******
+ * Acks
+ */
+
+omx_return_t
+omx__handle_ack(struct omx_endpoint *ep,
+		struct omx__partner *partner, omx__seqnum_t ack)
+{
+  omx__debug_printf("acked up to %d\n", (unsigned) ack);
+
+  return OMX_SUCCESS;
+}

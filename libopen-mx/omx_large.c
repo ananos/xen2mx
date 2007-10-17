@@ -272,6 +272,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   notify_param.total_length = xfer_length;
   notify_param.session_id = partner->session_id;
   /* FIXME: seqnum */
+  notify_param.piggyack = partner->next_frag_recv_seq - 1;
   notify_param.puller_rdma_id = req->recv.specific.large.target_rdma_id;
   notify_param.puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
 

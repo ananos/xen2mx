@@ -64,6 +64,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   tiny_param.hdr.match_info = match_info;
   tiny_param.hdr.length = length;
   tiny_param.hdr.seqnum = seqnum;
+  tiny_param.hdr.piggyack = partner->next_frag_recv_seq - 1;
   tiny_param.hdr.session_id = partner->session_id;
   memcpy(tiny_param.data, buffer, length);
 
@@ -118,6 +119,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   small_param.length = length;
   small_param.vaddr = (uintptr_t) buffer;
   small_param.seqnum = seqnum;
+  small_param.piggyack = partner->next_frag_recv_seq - 1;
   small_param.session_id = partner->session_id;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &small_param);
@@ -177,6 +179,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   medium_param.frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
   medium_param.msg_length = length;
   medium_param.seqnum = req->send.seqnum;
+  medium_param.piggyack = partner->next_frag_recv_seq - 1;
   medium_param.session_id = partner->session_id;
 
   for(i=0; i<frags; i++) {
@@ -292,6 +295,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   rndv_param.hdr.match_info = match_info;
   rndv_param.hdr.length = 8;
   rndv_param.hdr.seqnum = seqnum;
+  rndv_param.hdr.piggyack = partner->next_frag_recv_seq - 1;
   rndv_param.hdr.session_id = partner->session_id;
 
   *(uint32_t *) &(rndv_param.data[0]) = length;
