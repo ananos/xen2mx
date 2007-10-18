@@ -98,6 +98,16 @@ omx__postpone_early_packet(struct omx__partner * partner,
     break;
   }
 
+  case OMX_EVT_RECV_RNDV: {
+    uint32_t msg_length = *(uint32_t *) &(msg->specific.tiny.data[0]);
+    early->msg_length = msg_length;
+    break;
+  }
+
+  case OMX_EVT_RECV_NOTIFY: {
+    break;
+  }
+
   default:
     assert(0);
   }

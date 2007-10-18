@@ -6,8 +6,6 @@
   + make sure acks are correctly flushed when closing endpoints
 * add FORGOTTEN state for omx_forget, ...
 
-* handle rndv/notify/... in early ?
-
 * rework event structures to copy less in notify functions in the driver
 
 * cannot use del_timer_sync in BH
