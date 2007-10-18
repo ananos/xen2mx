@@ -87,9 +87,9 @@ struct omx_driver_desc {
  */
 
 #define OMX_CMD_BENCH			0x00
-#define OMX_CMD_GET_BOARD_COUNT		0x04
-#define OMX_CMD_GET_BOARD_ID		0x05
-#define OMX_CMD_GET_ENDPOINT_INFO	0x06
+#define OMX_CMD_GET_BOARD_COUNT		0x01
+#define OMX_CMD_GET_BOARD_ID		0x02
+#define OMX_CMD_GET_ENDPOINT_INFO	0x03
 #define OMX_CMD_PEERS_CLEAR		0x10
 #define OMX_CMD_PEER_ADD		0x11
 #define OMX_CMD_PEER_FROM_INDEX		0x12
@@ -104,10 +104,10 @@ struct omx_driver_desc {
 #define OMX_CMD_SEND_RNDV		0x84
 #define OMX_CMD_SEND_PULL		0x85
 #define OMX_CMD_SEND_NOTIFY		0x86
-#define OMX_CMD_REGISTER_REGION		0x87
-#define OMX_CMD_DEREGISTER_REGION	0x88
-#define OMX_CMD_SEND_CONNECT		0x89
-#define OMX_CMD_WAIT_EVENT		0x90
+#define OMX_CMD_SEND_CONNECT		0x87
+#define OMX_CMD_REGISTER_REGION		0x90
+#define OMX_CMD_DEREGISTER_REGION	0x91
+#define OMX_CMD_WAIT_EVENT		0x92
 
 static inline const char *
 omx_strcmd(unsigned cmd)
@@ -149,12 +149,12 @@ omx_strcmd(unsigned cmd)
 		return "Send Pull";
 	case OMX_CMD_SEND_NOTIFY:
 		return "Send Notify";
+	case OMX_CMD_SEND_CONNECT:
+		return "Send Connect";
 	case OMX_CMD_REGISTER_REGION:
 		return "Register Region";
 	case OMX_CMD_DEREGISTER_REGION:
 		return "Deregister Region";
-	case OMX_CMD_SEND_CONNECT:
-		return "Send Connect";
 	case OMX_CMD_WAIT_EVENT:
 		return "Wait Event";
 	default:
