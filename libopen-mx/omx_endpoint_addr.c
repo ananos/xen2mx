@@ -73,6 +73,8 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->next_match_recv_seq = 0;
   partner->next_frag_recv_seq = 0;
 
+  partner->oldest_recv_time_not_acked = 0;
+
   partner_index = ((uint32_t) endpoint_index)
     + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
   ep->partners[partner_index] = partner;
@@ -558,6 +560,24 @@ omx__handle_ack(struct omx_endpoint *ep,
     omx__debug_printf("ack up to %d\n", (unsigned) last_to_ack);
     /* FIXME mark requests acked */
     partner->last_acked_send_seq = last_to_ack;
+  }
+
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx__process_partners_to_ack(struct omx_endpoint *ep)
+{
+  struct omx__partner *partner, *next;
+  uint64_t now = omx__driver_desc->jiffies;
+  uint32_t hz = omx__driver_desc->hz;
+
+  list_for_each_entry_safe(partner, next,
+			   &ep->partners_to_ack, endpoint_partners_to_ack_elt) {
+    if (now - partner->oldest_recv_time_not_acked > hz) {
+      printf("need to ack partner back (%lld>>%lld)\n",
+	     now, partner->oldest_recv_time_not_acked);
+    }
   }
 
   return OMX_SUCCESS;

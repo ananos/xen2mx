@@ -287,6 +287,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
 
   /* increase at the end, to avoid having to decrease back in case of error */
   partner->next_send_seq++;
+  omx__partner_ack_sent(ep, partner);
 
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
   req->generic.state |= OMX_REQUEST_STATE_DONE;

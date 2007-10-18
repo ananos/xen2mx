@@ -189,6 +189,30 @@ extern omx_return_t
 omx__handle_ack(struct omx_endpoint *ep,
 		struct omx__partner *partner, omx__seqnum_t ack);
 
+
+extern omx_return_t
+omx__process_partners_to_ack(struct omx_endpoint *ep);
+
+static inline void
+omx__partner_needs_to_ack(struct omx_endpoint *ep,
+			  struct omx__partner *partner)
+{
+  if (!partner->oldest_recv_time_not_acked) {
+    partner->oldest_recv_time_not_acked = omx__driver_desc->jiffies;
+    list_add_tail(&partner->endpoint_partners_to_ack_elt, &ep->partners_to_ack);
+  }
+}
+
+static inline void
+omx__partner_ack_sent(struct omx_endpoint *ep,
+		      struct omx__partner *partner)
+{
+  if (partner->oldest_recv_time_not_acked) {
+    partner->oldest_recv_time_not_acked = 0;
+    list_del(&partner->endpoint_partners_to_ack_elt);
+  }
+}
+
 static inline int
 omx__board_addr_sprintf(char * buffer, uint64_t addr)
 {

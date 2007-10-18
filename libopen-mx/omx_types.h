@@ -101,6 +101,11 @@ struct omx__partner {
    * if changing next_frag_recv_seq, ack all the previous seqnums
    */
 
+  /* acks */
+  uint64_t oldest_recv_time_not_acked;
+  struct list_head endpoint_partners_to_ack_elt;
+
+  /* user private data for get/set_endpoint_addr_context */
   void * user_context;
 };
 
@@ -146,6 +151,8 @@ struct omx_endpoint {
   struct omx__large_region_map large_region_map;
   struct omx__partner ** partners;
   struct omx__partner * myself;
+
+  struct list_head partners_to_ack;
 };
 
 enum omx__request_type {

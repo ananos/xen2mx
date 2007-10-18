@@ -167,6 +167,8 @@ omx__progress(struct omx_endpoint * ep)
   if (unlikely(ep->in_handler))
     return OMX_SUCCESS;
 
+  omx__process_partners_to_ack(ep);
+
   /* process unexpected events first,
    * to release the pressure coming from the network
    */

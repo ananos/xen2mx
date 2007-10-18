@@ -75,6 +75,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   }
   /* no need to wait for a done event, tiny is synchronous */
 
+  omx__partner_ack_sent(ep, partner);
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;
@@ -129,6 +130,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   }
   /* no need to wait for a done event, small is synchronous */
 
+  omx__partner_ack_sent(ep, partner);
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;
@@ -219,6 +221,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   }
 
  posted:
+  omx__partner_ack_sent(ep, partner);
   req->generic.state = OMX_REQUEST_STATE_IN_DRIVER;
   omx__enqueue_request(&ep->sent_req_q, req);
 
@@ -313,6 +316,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   req->send.specific.large.region = region;
   region->user = req;
 
+  omx__partner_ack_sent(ep, partner);
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->send.seqnum = seqnum;

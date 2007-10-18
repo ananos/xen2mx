@@ -479,6 +479,9 @@ omx__process_recv(struct omx_endpoint *ep,
       }
     }
 
+    /* FIXME: do that only if the frag or match seqnum got increased */
+    omx__partner_needs_to_ack(ep, partner);
+
   } else {
     /* early fragment or message, postpone it */
     ret = omx__postpone_early_packet(partner,
