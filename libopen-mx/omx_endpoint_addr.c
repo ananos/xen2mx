@@ -569,6 +569,12 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
   uint32_t hz = omx__driver_desc->hz;
   omx_return_t ret = OMX_SUCCESS;
 
+  /* no need to bother looking in the queue if the time didn't change */
+  static uint64_t last_invokation = 0;
+  if (now == last_invokation)
+    return OMX_SUCCESS;
+  last_invokation = now;
+
   list_for_each_entry_safe(partner, next,
 			   &ep->partners_to_ack, endpoint_partners_to_ack_elt) {
     if (now - partner->oldest_recv_time_not_acked < hz)
