@@ -57,6 +57,7 @@
 #define OMX_MEDIUM_MAX		(8*4096)
 #define OMX_RNDV_DATA_MAX	8
 #define OMX_CONNECT_DATA_MAX	32
+#define OMX_TRUC_DATA_MAX	32
 
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16
@@ -105,6 +106,7 @@ struct omx_driver_desc {
 #define OMX_CMD_SEND_PULL		0x85
 #define OMX_CMD_SEND_NOTIFY		0x86
 #define OMX_CMD_SEND_CONNECT		0x87
+#define OMX_CMD_SEND_TRUC		0x88
 #define OMX_CMD_REGISTER_REGION		0x90
 #define OMX_CMD_DEREGISTER_REGION	0x91
 #define OMX_CMD_WAIT_EVENT		0x92
@@ -151,6 +153,8 @@ omx_strcmd(unsigned cmd)
 		return "Send Notify";
 	case OMX_CMD_SEND_CONNECT:
 		return "Send Connect";
+	case OMX_CMD_SEND_TRUC:
+		return "Send Truc";
 	case OMX_CMD_REGISTER_REGION:
 		return "Register Region";
 	case OMX_CMD_DEREGISTER_REGION:
@@ -334,6 +338,19 @@ struct omx_cmd_send_notify {
 	/* 24 */
 };
 
+struct omx_cmd_send_truc {
+	uint16_t peer_index;
+	uint8_t dest_endpoint;
+	uint8_t pad1;
+	uint32_t session_id;
+	/* 8 */
+	uint8_t length;
+	uint8_t pad[7];
+	/* 16 */
+	char data[OMX_TRUC_DATA_MAX];
+	/* 48 */
+};
+
 struct omx_cmd_register_region {
 	uint32_t nr_segments;
 	uint32_t id;
@@ -374,6 +391,7 @@ struct omx_cmd_wait_event {
 #define OMX_EVT_RECV_MEDIUM		0x14
 #define OMX_EVT_RECV_RNDV		0x15
 #define OMX_EVT_RECV_NOTIFY		0x16
+#define OMX_EVT_RECV_TRUC		0x17
 #define OMX_EVT_RECV_NACK_LIB		0x20
 
 #define OMX_EVT_NACK_LIB_BAD_ENDPT	0x01
@@ -402,6 +420,8 @@ omx_strevt(unsigned type)
 		return "Receive Rendez-vous";
 	case OMX_EVT_RECV_NOTIFY:
 		return "Receive Notify";
+	case OMX_EVT_RECV_TRUC:
+		return "Receive Truc";
 	case OMX_EVT_RECV_NACK_LIB:
 		return "Receive Nack Lib";
 	default:
@@ -523,6 +543,14 @@ union omx_evt {
 				uint64_t pad2[4];
 				/* 40 */
 			} notify;
+
+			struct {
+				uint8_t length;
+				uint8_t pad[7];
+				/* 8 */
+				char data[OMX_TRUC_DATA_MAX];
+				/* 40 */
+			} truc;
 
 			/* 40 */;
 		} specific;

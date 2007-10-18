@@ -231,6 +231,16 @@ struct omx_pkt_nack_lib {
 	uint16_t lib_seqnum;
 };
 
+struct omx_pkt_truc {
+	uint8_t ptype;
+	uint8_t dst_endpoint;
+	uint8_t src_endpoint;
+	uint8_t src_generation; /* FIXME: unused ? */
+	uint8_t length;
+	uint8_t pad[3];
+	uint32_t session;
+};
+
 struct omx_hdr {
 	struct omx_pkt_head head;
 	/* 32 */
@@ -245,6 +255,7 @@ struct omx_hdr {
 		struct omx_pkt_notify notify;
 		struct omx_pkt_connect connect;
 		struct omx_pkt_nack_lib nack_lib;
+		struct omx_pkt_truc truc;
 	} body;
 };
 

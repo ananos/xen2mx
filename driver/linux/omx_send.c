@@ -603,6 +603,85 @@ omx_send_notify(struct omx_endpoint * endpoint,
 	return ret;
 }
 
+int
+omx_send_truc(struct omx_endpoint * endpoint,
+	      void __user * uparam)
+{
+	struct sk_buff *skb;
+	struct omx_hdr *mh;
+	struct ethhdr *eh;
+	struct omx_cmd_send_truc cmd;
+	struct omx_iface * iface = endpoint->iface;
+	struct net_device * ifp = iface->eth_ifp;
+	uint8_t length;
+	int ret;
+
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send truc cmd hdr\n");
+		ret = -EFAULT;
+		goto out;
+	}
+
+	length = cmd.length;
+	if (unlikely(length > OMX_TRUC_DATA_MAX)) {
+		printk(KERN_ERR "Open-MX: Cannot send more than %d as truc data (tried %d)\n",
+		       OMX_TRUC_DATA_MAX, length);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	skb = omx_new_skb(ifp,
+			  /* pad to ETH_ZLEN */
+			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
+	if (unlikely(skb == NULL)) {
+		printk(KERN_INFO "Open-MX: Failed to create truc skb\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* locate headers */
+	mh = omx_hdr(skb);
+	eh = &mh->head.eth;
+
+	/* fill ethernet header */
+	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, cmd.peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in truc header\n");
+		goto out_with_skb;
+	}
+
+	/* fill omx header */
+	OMX_PKT_FIELD_FROM(mh->body.truc.src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(mh->body.truc.dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.truc.ptype, OMX_PKT_TYPE_TRUC);
+	OMX_PKT_FIELD_FROM(mh->body.truc.length, length);
+	OMX_PKT_FIELD_FROM(mh->body.truc.session, cmd.session_id);
+
+	omx_send_dprintk(eh, "TRUC length %ld", (unsigned long) length);
+
+	/* copy the data right after the header */
+	ret = copy_from_user(mh+1, &((struct omx_cmd_send_truc __user *) uparam)->data, length);
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send truc cmd data\n");
+		ret = -EFAULT;
+		goto out_with_skb;
+	}
+
+	dev_queue_xmit(skb);
+
+	return 0;
+
+ out_with_skb:
+	dev_kfree_skb(skb);
+ out:
+	return ret;
+}
+
 void
 omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type,
 		  uint8_t src_endpoint, uint8_t dst_endpoint, uint16_t lib_seqnum)
