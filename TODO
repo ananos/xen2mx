@@ -1,11 +1,12 @@
 * add retransmission
-  + add liback messages
-  + queue a liback when oldest_non_acked is too old
-  + cancel a liback if sending a message before
+  + wakeup earlier if sleeping to send delayed acks
+  + cancel a liback if sending a message before, or send liback after dequeuing request
   + add non-acked request in a per partner request queue sorted by seqnum
   + handle nacks correctly using seqnums and partner's pending queues
   + make sure acks are correctly flushed when closing endpoints
 * add FORGOTTEN state for omx_forget, ...
+
+* handle rndv/notify/... in early ?
 
 * rework event structures to copy less in notify functions in the driver
 

@@ -18,6 +18,8 @@
 
 #include "omx_lib.h"
 #include "omx_request.h"
+#include "omx_wire_access.h"
+#include "omx_lib_wire.h"
 
 /*********************
  * Receive completion
@@ -492,6 +494,39 @@ omx__process_recv(struct omx_endpoint *ep,
   }
 
   return ret;
+}
+
+/***********************
+ * Truc Message Receive
+ */
+
+omx_return_t
+omx__process_recv_truc(struct omx_endpoint *ep,
+		       struct omx_evt_recv_msg *msg)
+{
+  union omx__truc_data *data_n = (void *) msg->specific.truc.data;
+  uint8_t truc_type = OMX_FROM_PKT_FIELD(data_n->type);
+  struct omx__partner *partner;
+  omx_return_t ret;
+
+  ret = omx__partner_recv_lookup(ep, msg->peer_index, msg->src_endpoint,
+				   &partner);
+  if (unlikely(ret != OMX_SUCCESS))
+    return ret;
+
+  switch (truc_type) {
+  case OMX__TRUC_DATA_TYPE_ACK: {
+    omx__seqnum_t ack = OMX_FROM_PKT_FIELD(data_n->ack.lib_seqnum);
+    /* FIXME: check acknum */
+    printf("got a ack up to %d\n", (unsigned) ack);
+    omx__handle_ack(ep, partner, ack);
+    break;
+  }
+  default:
+    assert(0);
+  }
+
+  return OMX_SUCCESS;
 }
 
 /**************************

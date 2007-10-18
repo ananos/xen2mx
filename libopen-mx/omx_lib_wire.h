@@ -53,4 +53,22 @@ struct omx__connect_reply_data {
 
 /* FIXME: assertions so that is_reply is at the same offset/size */
 
+union omx__truc_data {
+  uint8_t type;
+  struct {
+    uint8_t type;
+    uint8_t pad;
+    uint16_t lib_seqnum;
+    uint32_t session_id;
+    uint32_t acknum;
+    uint16_t send_seq;
+    uint8_t requeued;
+    uint8_t pad1;
+  } ack;
+};
+
+enum omx__truc_data_type {
+  OMX__TRUC_DATA_TYPE_ACK = 0x55,
+};
+
 #endif /* __omx_lib_wire_h__ */

@@ -113,6 +113,11 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     break;
   }
 
+  case OMX_EVT_RECV_TRUC: {
+    ret = omx__process_recv_truc(ep, &evt->recv_msg);
+    break;
+  }
+
   case OMX_EVT_RECV_NACK_LIB: {
     struct omx_evt_recv_nack_lib * nack_lib = &evt->recv_nack_lib;
     uint16_t peer_index = nack_lib->peer_index;
