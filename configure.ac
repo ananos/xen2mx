@@ -276,6 +276,16 @@ else
   AC_DEFINE_UNQUOTED(ETH_P_OMX, $ethertype, [Define to change the Ethertype])
 fi
 
+AC_ARG_ENABLE(endian, [  --disable-endian		disable endian-independent networking],
+	      enable_endian=$enableval, enable_endian=yes)
+AC_MSG_CHECKING(if endian-independent networking is enabled)
+if test x$enable_endian = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_ENDIAN_COMPAT, 1, [Define to enable endian-independent networking])
+else
+  AC_MSG_RESULT(no)
+fi
+
 AC_ARG_WITH(device, [  --with-device=<path>:<group>:<mode>	change device node name, group and/or mode],
 	    device_attrs=$withval, device_attrs="")
 DEVICE_NAME=/dev/open-mx

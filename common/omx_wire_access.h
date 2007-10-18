@@ -19,6 +19,8 @@
 #ifndef __omx_wire_access_h__
 #define __omx_wire_access_h__
 
+#ifdef OMX_ENDIAN_COMPAT
+
 #ifndef __KERNEL__
 #include <arpa/inet.h>
 #endif
@@ -41,6 +43,14 @@ do {										\
       : ntohl(_pkt_field)		\
      )					\
 )
+
+#else /* !OMX_ENDIAN_COMPAT */
+
+#define OMX_PKT_FIELD_FROM(_pkt_field, _field)	_pkt_field = (typeof(_pkt_field)) (_field)
+#define OMX_FROM_PKT_FIELD(_pkt_field)	(_pkt_field)
+
+#endif /* !OMX_ENDIAN_COMPAT */
+
 
 #define OMX_PKT_MATCH_INFO_FROM(_pkt, _match_info)					\
 do {											\
