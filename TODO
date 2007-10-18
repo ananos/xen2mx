@@ -1,3 +1,12 @@
+* add retransmission
+  + add liback messages
+  + queue a liback when oldest_non_acked is too old
+  + cancel a liback if sending a message before
+  + add non-acked request in a per partner request queue sorted by seqnum
+  + handle nacks correctly using seqnums and partner's pending queues
+  + make sure acks are correctly flushed when closing endpoints
+* add FORGOTTEN state for omx_forget, ...
+
 * rework event structures to copy less in notify functions in the driver
 
 * cannot use del_timer_sync in BH
@@ -38,10 +47,6 @@
 * write parameter in ioctl to register a region, check it when reading/writing from/to the region
 * what if too many small segments are in the same pull frame? (skb frags limit) copy in a linear skb or assume 
   the other side knows how to deal with smaller pull frames ?
-
-* add retransmission
-* add FORGOTTEN state for omx_forget, ...
-* handle nacks correctly using seqnums and partner's pending queues
 
 * abort after too many pull retransmist retry? how to handle set_request_timeout?
 * or add an ioctl to drop a pull from the lib after timeout?

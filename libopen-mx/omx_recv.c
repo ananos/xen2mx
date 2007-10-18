@@ -385,6 +385,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
       omx__process_recv_medium_frag(ep, partner, req,
 				    msg, data, msg_length);
       omx__update_partner_next_frag_recv_seq(ep, partner);
+      omx__partner_needs_to_ack(ep, partner);
       return OMX_SUCCESS;
     }
   }
@@ -417,6 +418,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
       /* we matched this seqnum, we now expect the next one */
       partner->next_match_recv_seq++;
       omx__update_partner_next_frag_recv_seq(ep, partner);
+      omx__partner_needs_to_ack(ep, partner);
     }
 
   } else if (likely(msg->type == OMX_EVT_RECV_MEDIUM
@@ -441,6 +443,7 @@ omx__process_recv(struct omx_endpoint *ep,
   omx__seqnum_t seqnum = msg->seqnum;
   omx__seqnum_t piggyack = msg->piggyack;
   struct omx__partner * partner;
+  omx__seqnum_t old_next_match_recv_seq;
   omx_return_t ret;
 
   ret = omx__partner_recv_lookup(ep, msg->peer_index, msg->src_endpoint,
@@ -453,7 +456,9 @@ omx__process_recv(struct omx_endpoint *ep,
 
   omx__handle_ack(ep, partner, piggyack);
 
-  if (likely(seqnum <= partner->next_match_recv_seq)) {
+  old_next_match_recv_seq = partner->next_match_recv_seq;
+
+  if (likely(seqnum <= old_next_match_recv_seq)) {
     /* either the new expected seqnum (to match)
      * or a incomplete previous multi-fragment medium messages (to accumulate)
      * or an old obsolete duplicate packet (to drop)
@@ -462,9 +467,8 @@ omx__process_recv(struct omx_endpoint *ep,
 					    msg, data, msg_length,
 					    recv_func);
 
-    /* FIXME: do that only if the match seqnum got increased */
     /* process early packets in case they match the new expected seqnum */
-    {
+    if (likely(old_next_match_recv_seq != partner->next_match_recv_seq)) {
       struct omx__early_packet * early, * next;
       omx__foreach_partner_early_packet_safe(partner, early, next) {
 	if (early->msg.seqnum <= partner->next_match_recv_seq) {
@@ -478,9 +482,6 @@ omx__process_recv(struct omx_endpoint *ep,
 	}
       }
     }
-
-    /* FIXME: do that only if the frag or match seqnum got increased */
-    omx__partner_needs_to_ack(ep, partner);
 
   } else {
     /* early fragment or message, postpone it */

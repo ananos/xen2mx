@@ -575,8 +575,8 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
   list_for_each_entry_safe(partner, next,
 			   &ep->partners_to_ack, endpoint_partners_to_ack_elt) {
     if (now - partner->oldest_recv_time_not_acked > hz) {
-      printf("need to ack partner back (%lld>>%lld)\n",
-	     now, partner->oldest_recv_time_not_acked);
+      omx__debug_printf("need to ack partner back (%lld>>%lld)\n",
+			now, partner->oldest_recv_time_not_acked);
     }
   }
 
