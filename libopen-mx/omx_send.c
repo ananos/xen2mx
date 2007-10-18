@@ -20,6 +20,8 @@
 
 #include "omx_lib.h"
 #include "omx_request.h"
+#include "omx_lib_wire.h"
+#include "omx_wire_access.h"
 
 void
 omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
@@ -279,6 +281,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
 {
   union omx_request * req;
   struct omx_cmd_send_rndv rndv_param;
+  struct omx__rndv_data * data_n = (void *) rndv_param.data;
   struct omx__large_region *region;
   omx_return_t ret;
   int err;
@@ -301,10 +304,10 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   rndv_param.hdr.piggyack = partner->next_frag_recv_seq - 1;
   rndv_param.hdr.session_id = partner->session_id;
 
-  *(uint32_t *) &(rndv_param.data[0]) = length;
-  *(uint8_t *) &(rndv_param.data[4]) = region->id;
-  *(uint8_t *) &(rndv_param.data[5]) = region->seqnum;
-  *(uint16_t *) &(rndv_param.data[6]) = region->offset;
+  OMX_PKT_FIELD_FROM(data_n->msg_length, length);
+  OMX_PKT_FIELD_FROM(data_n->rdma_id, region->id);
+  OMX_PKT_FIELD_FROM(data_n->rdma_seqnum, region->seqnum);
+  OMX_PKT_FIELD_FROM(data_n->rdma_offset, region->offset);
 
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, &rndv_param);
   if (unlikely(err < 0)) {

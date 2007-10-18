@@ -21,6 +21,13 @@
 
 #include <stdint.h>
 
+struct omx__rndv_data {
+  uint32_t msg_length;
+  uint8_t rdma_id;
+  uint8_t rdma_seqnum;
+  uint16_t rdma_offset;
+};
+
 struct omx__connect_request_data {
   /* the sender's session id (so that we know when the connect has been sent) */
   uint32_t src_session_id;
