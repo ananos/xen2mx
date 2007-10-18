@@ -22,6 +22,7 @@
 #include "omx_lib.h"
 #include "omx_request.h"
 #include "omx_wire_access.h"
+#include "omx_lib_wire.h"
 
 /******************************
  * Endpoint address management
@@ -203,38 +204,6 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
 /*************
  * Connection
  */
-
-struct omx__connect_request_data {
-  /* the sender's session id (so that we know when the connect has been sent) */
-  uint32_t src_session_id;
-  /* the application level key in the request */
-  uint32_t app_key;
-
-  uint16_t pad1;
-  /* is this a request ot a reply? 0 here */
-  uint8_t is_reply;
-  /* sequence number of this connect request (in case multiple have been sent/lost) */
-  uint8_t connect_seqnum;
-
-  uint8_t pad2;
-};
-
-struct omx__connect_reply_data {
-  /* the sender's session id (so that we know when the connect has been sent) */
-  uint32_t src_session_id;
-  /* the target session_id (so that we can send right after this connect) */
-  uint32_t target_session_id;
-  /* the target next recv seqnum in the reply (so that we know our next send seqnum) */
-  uint16_t target_recv_seqnum_start;
-  /* is this a request ot a reply? 1 here */
-  uint8_t is_reply;
-  /* sequence number of this connect request (in case multiple have been sent/lost) */
-  uint8_t connect_seqnum;
-  /* the target connect matching status (only in the reply) */
-  uint8_t status_code;
-};
-
-/* FIXME: assertions so that is_reply is at the same offset/size */
 
 /*
  * Start the connection process to another peer
