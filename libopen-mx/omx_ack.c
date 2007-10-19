@@ -109,7 +109,6 @@ omx_return_t
 omx__flush_partners_to_ack(struct omx_endpoint *ep)
 {
   struct omx__partner *partner, *next;
-  uint64_t now = omx__driver_desc->jiffies;
   omx_return_t ret = OMX_SUCCESS;
 
   list_for_each_entry_safe(partner, next,
