@@ -739,6 +739,62 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	return;
 }
 
+void
+omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type,
+		  uint8_t src_endpoint, uint32_t src_pull_handle, uint32_t src_magic)
+{
+	struct sk_buff *skb;
+	struct omx_hdr *mh;
+	struct ethhdr *eh;
+	struct net_device * ifp = iface->eth_ifp;
+	int ret;
+
+	skb = omx_new_skb(ifp,
+			  /* pad to ETH_ZLEN */
+			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
+	if (unlikely(skb == NULL)) {
+		printk(KERN_INFO "Open-MX: Failed to create nack mcp skb\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* locate headers */
+	mh = omx_hdr(skb);
+	eh = &mh->head.eth;
+
+	/* fill ethernet header */
+	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(mh, peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in notify header\n");
+		/* FIXME: BUG? */
+		goto out_with_skb;
+	}
+
+	/* fill omx header */
+	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.src_endpoint, src_endpoint);
+	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.ptype, OMX_PKT_TYPE_NACK_MCP);
+	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.nack_type, nack_type);
+	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.src_pull_handle, src_pull_handle);
+	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.src_magic, src_magic);
+
+	omx_send_dprintk(eh, "NACK MCP type %d", nack_type);
+
+	dev_queue_xmit(skb);
+
+	return;
+
+ out_with_skb:
+	dev_kfree_skb(skb);
+ out:
+	/* just forget about it, it will be resent anyway */
+	/* return ret; */
+	return;
+}
+
 /*
  * Command to benchmark commands
  */

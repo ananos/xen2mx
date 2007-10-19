@@ -697,6 +697,7 @@ omx_recv_pull(struct omx_iface * iface,
 	struct ethhdr *pull_eh = &pull_mh->head.eth;
 	struct omx_pkt_pull_request *pull_request_n = &pull_mh->body.pull;
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(pull_request_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(pull_request_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(pull_request_n->session);
 	uint32_t block_length = OMX_FROM_PKT_FIELD(pull_request_n->block_length);
 	uint32_t src_pull_handle = OMX_FROM_PKT_FIELD(pull_request_n->src_pull_handle);
@@ -705,6 +706,7 @@ omx_recv_pull(struct omx_iface * iface,
 	uint32_t first_frame_offset = OMX_FROM_PKT_FIELD(pull_request_n->first_frame_offset);
 	uint32_t pulled_rdma_id = OMX_FROM_PKT_FIELD(pull_request_n->pulled_rdma_id);
 	uint32_t pulled_rdma_offset = OMX_FROM_PKT_FIELD(pull_request_n->pulled_rdma_offset);
+	uint16_t peer_index = OMX_FROM_PKT_FIELD(pull_mh->head.dst_src_peer_index);
 	struct omx_pkt_pull_reply *pull_reply_n;
 	struct omx_hdr *reply_mh;
 	struct ethhdr *reply_eh;
@@ -715,12 +717,22 @@ omx_recv_pull(struct omx_iface * iface,
 	int replies, i;
 	int err = 0;
 
+        /* check the peer index */
+	err = omx_check_recv_peer_index(peer_index);
+	if (unlikely(err < 0)) {
+		omx_drop_dprintk(pull_eh, "PULL packet with unknown peer index %d",
+				 (unsigned) peer_index);
+		goto out;
+	}
+
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_drop_dprintk(pull_eh, "PULL packet for unknown endpoint %d",
 				 dst_endpoint);
-		/* omx_send_nack_mcp(..., OMX_NACK_TYPE_BAD_RDMAWIN, ...); */
+		omx_send_nack_mcp(iface, peer_index,
+				  omx_endpoint_acquire_by_iface_index_error_to_nack_type(endpoint),
+				  src_endpoint, src_pull_handle, src_magic);
 		err = PTR_ERR(endpoint);
 		goto out;
 	}
@@ -728,6 +740,9 @@ omx_recv_pull(struct omx_iface * iface,
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(pull_eh, "PULL packet with bad session");
+		omx_send_nack_mcp(iface, peer_index,
+				  OMX_NACK_TYPE_BAD_SESSION,
+				  src_endpoint, src_pull_handle, src_magic);
 		err = -EINVAL;
 		goto out_with_endpoint;
 	}
@@ -752,8 +767,13 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* get the rdma window once */
 	region = omx_user_region_acquire(endpoint, pulled_rdma_id);
-	if (unlikely(!region))
+	if (unlikely(!region)) {
+		omx_drop_dprintk(pull_eh, "PULL packet with bad region");
+		omx_send_nack_mcp(iface, peer_index,
+				  OMX_NACK_TYPE_BAD_RDMAWIN,
+				  src_endpoint, src_pull_handle, src_magic);
 		goto out_with_endpoint;
+	}
 
 	/* initialize pull reply fields */
 	current_frame_seqnum = frame_index;
@@ -1092,6 +1112,66 @@ omx_recv_pull_reply(struct omx_iface * iface,
  out_with_handle:
 	/* FIXME: report what has already been tranferred? */
 	omx_pull_handle_done_notify(handle);
+ out:
+	return err;
+}
+
+int
+omx_recv_nack_mcp(struct omx_iface * iface,
+		  struct omx_hdr * mh,
+		  struct sk_buff * skb)
+{
+	struct omx_endpoint * endpoint;
+	struct ethhdr *eh = &mh->head.eth;
+	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	struct omx_pkt_nack_mcp *nack_mcp_n = &mh->body.nack_mcp;
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(nack_mcp_n->src_endpoint);
+	enum omx_nack_type nack_type = OMX_FROM_PKT_FIELD(nack_mcp_n->nack_type);
+	uint32_t dst_pull_handle = OMX_FROM_PKT_FIELD(nack_mcp_n->src_pull_handle);
+	uint32_t dst_magic = OMX_FROM_PKT_FIELD(nack_mcp_n->src_magic);
+	struct omx_pull_handle * handle;
+	int err = 0;
+
+	/* check the peer index */
+	err = omx_check_recv_peer_index(peer_index);
+	if (unlikely(err < 0)) {
+		/* FIXME: impossible? in non MX-wire compatible only? */
+		uint32_t src_addr_peer_index;
+		uint64_t src_addr;
+
+		if (peer_index != (uint16_t)-1) {
+			omx_drop_dprintk(eh, "NACK MCP with bad peer index %d",
+					 (unsigned) peer_index);
+			goto out;
+		}
+
+		src_addr = omx_board_addr_from_ethhdr_src(eh);
+		err = omx_peer_lookup_by_addr(src_addr, NULL, &src_addr_peer_index);
+		if (err < 0) {
+			omx_drop_dprintk(eh, "NACK MCP with unknown peer index and unknown address");
+			goto out;
+		}
+
+		peer_index = src_addr_peer_index;
+	}
+
+	/* acquire the handle and endpoint */
+	handle = omx_pull_handle_acquire_by_wire(iface, dst_magic, dst_pull_handle);
+	if (unlikely(!handle)) {
+		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet unknown handle %d magic %d",
+				 dst_pull_handle, dst_magic);
+		/* no need to nack this */
+		err = -EINVAL;
+		goto out;
+	}
+
+	omx_recv_dprintk(eh, "NACK MCP type %s",
+			 omx_strnacktype(nack_type));
+
+	omx_pull_handle_done_notify(handle);
+
+	return 0;
+
  out:
 	return err;
 }

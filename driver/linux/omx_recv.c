@@ -810,7 +810,7 @@ omx_pkt_type_handlers_init(void)
 	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL_REPLY] = omx_recv_pull_reply;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_NOTIFY] = omx_recv_notify;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_LIB] = omx_recv_nack_lib;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_MCP] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_MCP] = omx_recv_nack_mcp;
 }
 
 /***********************

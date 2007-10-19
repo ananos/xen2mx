@@ -97,12 +97,14 @@ extern int omx_send_notify(struct omx_endpoint * endpoint, void __user * uparam)
 extern int omx_send_connect(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_send_truc(struct omx_endpoint * endpoint, void __user * uparam);
 extern void omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type, uint8_t src_endpoint, uint8_t dst_endpoint, uint16_t lib_seqnum);
+extern void omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type, uint8_t src_endpoint, uint32_t src_pull_handle, uint32_t src_magic);
 
 /* receiving */
 extern void omx_pkt_type_handlers_init(void);
 extern struct packet_type omx_pt;
 extern int omx_recv_pull(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 extern int omx_recv_pull_reply(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
+extern int omx_recv_nack_mcp(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 
 /* pull */
 extern int omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint);
