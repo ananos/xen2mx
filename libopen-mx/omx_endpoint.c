@@ -329,6 +329,8 @@ omx_close_endpoint(struct omx_endpoint *ep)
   if (!ep->in_handler)
     return OMX_NOT_SUPPORTED_IN_HANDLER;
 
+  omx__flush_partners_to_ack(ep);
+
   free(ep->partners);
   omx__endpoint_large_region_map_exit(ep);
   munmap(ep->sendq, OMX_SENDQ_SIZE);

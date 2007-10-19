@@ -197,6 +197,9 @@ omx__handle_ack(struct omx_endpoint *ep,
 extern omx_return_t
 omx__process_partners_to_ack(struct omx_endpoint *ep);
 
+extern omx_return_t
+omx__flush_partners_to_ack(struct omx_endpoint *ep);
+
 static inline void
 omx__partner_needs_to_ack(struct omx_endpoint *ep,
 			  struct omx__partner *partner)

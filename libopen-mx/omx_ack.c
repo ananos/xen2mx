@@ -105,3 +105,27 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
 
   return ret;
 }
+
+omx_return_t
+omx__flush_partners_to_ack(struct omx_endpoint *ep)
+{
+  struct omx__partner *partner, *next;
+  uint64_t now = omx__driver_desc->jiffies;
+  uint32_t hz = omx__driver_desc->hz;
+  omx_return_t ret = OMX_SUCCESS;
+
+  list_for_each_entry_safe(partner, next,
+			   &ep->partners_to_ack, endpoint_partners_to_ack_elt) {
+    omx__debug_printf("forcing ack back partner (%lld>>%lld)\n",
+		      now, partner->oldest_recv_time_not_acked);
+
+    ret = omx__submit_send_liback(ep, partner);
+    if (ret != OMX_SUCCESS)
+      /* failed to send one liback, too bad for this peer */
+      continue;
+
+    omx__partner_ack_sent(ep, partner);
+  }
+
+  return ret;
+}
