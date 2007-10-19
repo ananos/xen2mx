@@ -249,6 +249,8 @@ struct omx__globals {
   int initialized;
   int control_fd;
   int verbose;
+  unsigned ack_delay;
+  unsigned resend_delay;
 };
 
 #endif /* __omx_types_h__ */

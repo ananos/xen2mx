@@ -50,6 +50,9 @@ omx__init_api(int api)
     goto out_with_fd;
   }
 
+  omx__globals.ack_delay = omx__driver_desc->hz / 100 + 1;
+  omx__globals.resend_delay = omx__driver_desc->hz / 2 + 1;
+
   omx__globals.verbose = 0;
   env = getenv("OMX_VERBOSE");
   if (env)
