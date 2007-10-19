@@ -54,6 +54,8 @@ enum omx_status_code {
   OMX_STATUS_BAD_SESSION,
   OMX_STATUS_BAD_KEY,
   OMX_STATUS_BAD_ENDPOINT,
+  OMX_STATUS_BAD_RDMAWIN,
+  OMX_STATUS_ABORTED,
 };
 typedef enum omx_status_code omx_status_code_t;
 

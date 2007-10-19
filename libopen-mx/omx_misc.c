@@ -112,6 +112,10 @@ omx_strstatus(omx_status_code_t code)
     return "Bad Connection Key";
   case OMX_STATUS_BAD_ENDPOINT:
     return "Bad Endpoint";
+  case OMX_STATUS_BAD_RDMAWIN:
+    return "Bad RDMA Window";
+  case OMX_STATUS_ABORTED:
+    return "Aborted";
   }
   assert(0);
 }

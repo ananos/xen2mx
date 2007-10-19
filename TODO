@@ -32,11 +32,7 @@
 
 * fix oops when removing the module while some pull handle are busy
 
-* requeue pull (and the second one?) in the timer callback
-* add nack_mcp for OMX_NACK_TYPE_BAD_RDMAWIN
-
 * hide region id in lib_cookies since region might be used for something else?
-* handle pull status/length
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered
 * export rdma_get and rdma window management functions
 * rdma_put

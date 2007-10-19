@@ -250,11 +250,14 @@ omx__process_pull_done(struct omx_endpoint * ep,
   struct omx__large_region * region;
   struct omx__partner * partner;
   struct omx_cmd_send_notify notify_param;
+  omx_status_code_t status;
   omx__seqnum_t seqnum;
   omx_return_t ret;
   int err;
 
   /* FIXME: use cookie since region might be used for something else? */
+
+  omx__debug_printf("pull done with status %d\n", event->status);
 
   /* FIXME: check region id */
   region = &ep->large_region_map.array[region_id].region;
@@ -289,9 +292,33 @@ omx__process_pull_done(struct omx_endpoint * ep,
   partner->next_send_seq++;
   omx__partner_ack_sent(ep, partner);
 
+  switch (event->status) {
+  case OMX_EVT_PULL_DONE_SUCCESS:
+    status = OMX_STATUS_SUCCESS;
+    break;
+  case OMX_EVT_PULL_DONE_BAD_ENDPT:
+    status = OMX_STATUS_BAD_ENDPOINT;
+    break;
+  case OMX_EVT_PULL_DONE_ENDPT_CLOSED:
+    status = OMX_STATUS_ENDPOINT_CLOSED;
+    break;
+  case OMX_EVT_PULL_DONE_BAD_SESSION:
+    status = OMX_STATUS_BAD_SESSION;
+    break;
+  case OMX_EVT_PULL_DONE_BAD_RDMAWIN:
+    status = OMX_STATUS_BAD_RDMAWIN;
+    break;
+  case OMX_EVT_PULL_DONE_TRUNCATED:
+    status = OMX_STATUS_ABORTED;
+    break;
+  default:
+    assert(0);
+    break;
+  }
+
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
   req->generic.state |= OMX_REQUEST_STATE_DONE;
-  omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+  omx__recv_complete(ep, req, status);
 
   return OMX_SUCCESS;
 
