@@ -398,6 +398,13 @@ struct omx_cmd_wait_event {
 #define OMX_EVT_NACK_LIB_ENDPT_CLOSED	0x02
 #define OMX_EVT_NACK_LIB_BAD_SESSION	0x03
 
+#define OMX_EVT_PULL_DONE_SUCCESS	0x00
+#define OMX_EVT_PULL_DONE_BAD_ENDPT	0x01
+#define OMX_EVT_PULL_DONE_ENDPT_CLOSED	0x02
+#define OMX_EVT_PULL_DONE_BAD_SESSION	0x03
+#define OMX_EVT_PULL_DONE_BAD_RDMAWIN	0x04
+#define OMX_EVT_PULL_DONE_TRUNCATED	0x05
+
 static inline const char *
 omx_strevt(unsigned type)
 {
@@ -456,7 +463,8 @@ union omx_evt {
 		uint32_t pulled_length;
 		uint32_t pad1;
 		/* 16 */
-		uint8_t pad2[47];
+		uint8_t status;
+		uint8_t pad2[46];
 		uint8_t type;
 		/* 64 */
 	} pull_done;

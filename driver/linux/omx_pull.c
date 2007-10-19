@@ -889,12 +889,14 @@ omx_recv_pull(struct omx_iface * iface,
 }
 
 static void
-omx_pull_handle_done_notify(struct omx_pull_handle * handle)
+omx_pull_handle_done_notify(struct omx_pull_handle * handle,
+			    uint8_t status)
 {
 	struct omx_endpoint *endpoint = handle->endpoint;
 	struct omx_evt_pull_done event;
 
 	/* notify event */
+	event.status = status;
 	event.lib_cookie = handle->lib_cookie;
 	event.pulled_length = handle->total_length - handle->remaining_length;
 	event.local_rdma_id = handle->region->id;
@@ -996,7 +998,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* the other peer is sending crap, close the handle and report truncated to userspace */
 		/* FIXME: make sure a new pull is not queued too, so that the handle is dropped */
 		/* FIXME: report what has already been tranferred? */
-		omx_pull_handle_done_notify(handle); /* FIXME: needs the handle to be held! */
+		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TRUNCATED); /* FIXME: needs the handle to be held! */
 		goto out;
 	}
 
@@ -1052,6 +1054,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (IS_ERR(skb)) {
 			err = PTR_ERR(skb);
+			/* FIXME: should not report an error here, let the timeout expire */
 			goto out_with_handle;
 		}
 
@@ -1086,6 +1089,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		if (IS_ERR(skb2)) {
 			err = PTR_ERR(skb2);
 			dev_kfree_skb(skb);
+			/* FIXME: should not report an error here, let the timeout expire */
 			goto out_with_handle;
 		}
 
@@ -1104,14 +1108,14 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	} else {
 		/* last block is done, notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
-		omx_pull_handle_done_notify(handle);
+		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_SUCCESS);
 	}
 
 	return 0;
 
  out_with_handle:
 	/* FIXME: report what has already been tranferred? */
-	omx_pull_handle_done_notify(handle);
+	omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TRUNCATED);
  out:
 	return err;
 }
@@ -1121,11 +1125,9 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		  struct omx_hdr * mh,
 		  struct sk_buff * skb)
 {
-	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_nack_mcp *nack_mcp_n = &mh->body.nack_mcp;
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(nack_mcp_n->src_endpoint);
 	enum omx_nack_type nack_type = OMX_FROM_PKT_FIELD(nack_mcp_n->nack_type);
 	uint32_t dst_pull_handle = OMX_FROM_PKT_FIELD(nack_mcp_n->src_pull_handle);
 	uint32_t dst_magic = OMX_FROM_PKT_FIELD(nack_mcp_n->src_magic);
@@ -1168,7 +1170,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	omx_recv_dprintk(eh, "NACK MCP type %s",
 			 omx_strnacktype(nack_type));
 
-	omx_pull_handle_done_notify(handle);
+	omx_pull_handle_done_notify(handle, nack_type);
 
 	return 0;
 
