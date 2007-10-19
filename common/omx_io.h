@@ -403,7 +403,7 @@ struct omx_cmd_wait_event {
 #define OMX_EVT_PULL_DONE_ENDPT_CLOSED	0x02
 #define OMX_EVT_PULL_DONE_BAD_SESSION	0x03
 #define OMX_EVT_PULL_DONE_BAD_RDMAWIN	0x04
-#define OMX_EVT_PULL_DONE_TRUNCATED	0x05
+#define OMX_EVT_PULL_DONE_ABORTED	0x05
 
 static inline const char *
 omx_strevt(unsigned type)

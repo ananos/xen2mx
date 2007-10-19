@@ -998,7 +998,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* the other peer is sending crap, close the handle and report truncated to userspace */
 		/* FIXME: make sure a new pull is not queued too, so that the handle is dropped */
 		/* FIXME: report what has already been tranferred? */
-		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TRUNCATED); /* FIXME: needs the handle to be held! */
+		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED); /* FIXME: needs the handle to be held! */
 		goto out;
 	}
 

@@ -308,7 +308,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   case OMX_EVT_PULL_DONE_BAD_RDMAWIN:
     status = OMX_STATUS_BAD_RDMAWIN;
     break;
-  case OMX_EVT_PULL_DONE_TRUNCATED:
+  case OMX_EVT_PULL_DONE_ABORTED:
     status = OMX_STATUS_ABORTED;
     break;
   default:
