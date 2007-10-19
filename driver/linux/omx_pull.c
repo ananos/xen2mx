@@ -663,7 +663,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	    && !OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 		/* request the first block again */
 		skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-		if (skb)
+		if (!IS_ERR(skb))
 			dev_queue_xmit(skb);
 		handle->already_requeued_first = 0;
 	}
@@ -672,7 +672,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	    && !OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
 		/* request the second block again */
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
-		if (skb)
+		if (!IS_ERR(skb))
 			dev_queue_xmit(skb);
 	}
 }
@@ -1019,7 +1019,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 				handle);
 
 			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-			if (skb)
+			if (!IS_ERR(skb))
 				dev_queue_xmit(skb);
 
 			handle->already_requeued_first = 1;
@@ -1034,7 +1034,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		 */
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
-		struct sk_buff * skb, * skb2;
+		struct sk_buff * skb = NULL, * skb2 = NULL;
 		uint32_t block_length;
 
 		/* current first block request is done */
@@ -1053,9 +1053,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		handle->second_desc.valid = 1;
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (IS_ERR(skb)) {
-			err = PTR_ERR(skb);
-			/* FIXME: should not report an error here, let the timeout expire */
-			goto out_with_handle;
+			BUG_ON(PTR_ERR(skb) != -ENOMEM);
+			/* let the timeout expire and resend */
+			skb = NULL;
+			goto skbs_ready;
 		}
 
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
@@ -1063,7 +1064,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* the second current block (now first) request might be done too
 		 * (in case of out-or-order packets)
 		 */
-		skb2 = NULL;
 		if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle))
 			goto skbs_ready;
 
@@ -1087,10 +1087,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		handle->second_desc.valid = 1;
 		skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (IS_ERR(skb2)) {
-			err = PTR_ERR(skb2);
-			dev_kfree_skb(skb);
-			/* FIXME: should not report an error here, let the timeout expire */
-			goto out_with_handle;
+			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
+			/* let the timeout expire and resend */
+			skb2 = NULL;
+			goto skbs_ready;
 		}
 
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
@@ -1101,7 +1101,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		 */
 		omx_pull_handle_release(handle);
 
-		dev_queue_xmit(skb);
+		if (skb)
+			dev_queue_xmit(skb);
 		if (skb2)
 			dev_queue_xmit(skb2);
 
@@ -1113,9 +1114,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	return 0;
 
- out_with_handle:
-	/* FIXME: report what has already been tranferred? */
-	omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TRUNCATED);
  out:
 	return err;
 }
