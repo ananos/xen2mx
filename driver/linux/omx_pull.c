@@ -888,6 +888,7 @@ omx_recv_pull(struct omx_iface * iface,
 	return err;
 }
 
+/* must be called with the handle held, and we will release it here */
 static void
 omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 			    uint8_t status)
@@ -995,24 +996,29 @@ omx_recv_pull_reply(struct omx_iface * iface,
 					 frame_length);
 	if (unlikely(err < 0)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
-		/* the other peer is sending crap, close the handle and report truncated to userspace */
-		/* FIXME: make sure a new pull is not queued too, so that the handle is dropped */
-		/* FIXME: report what has already been tranferred? */
-		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED); /* FIXME: needs the handle to be held! */
+		/* the other peer is sending crap, close the handle and report truncated to userspace
+		 * we do not really care about what have been tranfered since it's crap
+		 */
+		omx_pull_handle_reacquire(handle);
+		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED);
 		goto out;
 	}
 
-	/* FIXME: release instead of destroy if not done */
 	omx_pull_handle_reacquire(handle);
 
 	handle->frame_copying_bitmap &= ~bitmap_mask;
 
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
-		/* current first block not done, just release the handle */
+		/* current first block not done, we basically just need to release the handle */
 
 		if (OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
 		    && handle->second_desc.valid
 		    && !handle->already_requeued_first) {
+			/* the second block is done without the first one,
+			 * we assume some packet got lost in the first one,
+			 * so we request the first one again
+			 */
+
 			struct sk_buff *skb;
 
 			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
@@ -1027,11 +1033,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 		dprintk(PULL, "block not done, just releasing\n");
 		omx_pull_handle_release(handle);
-
-		/* FIXME: if the second block is done without the first one,
-		 * we could resend the first request,
-		 * but the retransmit timer will take care of this in the end
-		 */
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
 		struct sk_buff * skb = NULL, * skb2 = NULL;
