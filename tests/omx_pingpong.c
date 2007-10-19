@@ -492,6 +492,7 @@ int main(int argc, char *argv[])
       goto slave_starts_again;
   }
 
+  omx_close_endpoint(ep);
   return 0;
 
  out_with_ep:

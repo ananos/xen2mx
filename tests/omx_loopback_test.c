@@ -266,6 +266,7 @@ int main(int argc, char *argv[])
   printf("large latency %lld us\n",
 	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
+  omx_close_endpoint(ep);
   return 0;
 
  out_with_ep:
