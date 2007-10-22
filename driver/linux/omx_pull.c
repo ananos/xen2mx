@@ -38,7 +38,7 @@ struct omx_pull_block_desc {
 };
 
 struct omx_pull_handle {
-	struct list_head endpoint_pull_handles;
+	struct list_head list_elt;
 	uint32_t idr_index;
 	spinlock_t lock;
 
@@ -166,6 +166,35 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	handle->already_requeued_first = 0;
 }
 
+/************************
+ * Kthread Deferred Work
+ */
+
+/* del_timer_sync cannot be called from BH, so we just
+ * let the cleanup thread take care of it by moving
+ * pull handles to a cleanup list first
+ */
+static spinlock_t omx_pull_handles_cleanup_lock = SPIN_LOCK_UNLOCKED;
+static LIST_HEAD(omx_pull_handles_cleanup_list);
+
+void
+omx_pull_handles_cleanup(void)
+{
+	struct omx_pull_handle * handle, * next;
+
+	spin_lock_bh(&omx_pull_handles_cleanup_lock);
+
+	list_for_each_entry_safe(handle, next,
+				 &omx_pull_handles_cleanup_list,
+				 list_elt) {
+		del_timer_sync(&handle->retransmit_timer);
+		list_del(&handle->list_elt);
+		kfree(handle);
+	}
+
+	spin_unlock_bh(&omx_pull_handles_cleanup_lock);
+}
+
 /******************************
  * Per-endpoint pull handles management
  */
@@ -185,10 +214,13 @@ omx_pull_handle_destroy(struct omx_pull_handle * handle)
 {
 	struct omx_endpoint * endpoint = handle->endpoint;
 
-	del_timer_sync(&handle->retransmit_timer);
-	list_del(&handle->endpoint_pull_handles);
+	/* remove from the idr so that nobody can't find it anymore */
 	idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
-	kfree(handle);
+
+	/* move to the cleanup queue so that the timer is deleted in a safe context */
+	spin_lock(&omx_pull_handles_cleanup_lock);
+	list_move(&handle->list_elt, &omx_pull_handles_cleanup_list);
+	spin_unlock(&omx_pull_handles_cleanup_lock);
 }
 
 void
@@ -201,7 +233,7 @@ omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 	/* release all pull handles of endpoint */
 	list_for_each_entry_safe(handle, next,
 				 &endpoint->pull_handle_list,
-				 endpoint_pull_handles) {
+				 list_elt) {
 		omx_pull_handle_destroy(handle);
 	}
 
@@ -372,7 +404,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	/* queue and acquire the handle */
-	list_add_tail(&handle->endpoint_pull_handles,
+	list_add_tail(&handle->list_elt,
 		      &endpoint->pull_handle_list);
 	spin_lock(&handle->lock);
 

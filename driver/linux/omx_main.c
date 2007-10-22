@@ -85,6 +85,8 @@ omx_kthread_func(void *dummy)
 			break;
 
 		msleep(1000);
+
+		omx_pull_handles_cleanup();
 	}
 
 	printk(KERN_INFO "Open-MX: kthread stopping\n");

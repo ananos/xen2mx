@@ -6,10 +6,6 @@
   + make sure acks are correctly flushed when closing endpoints
 * add FORGOTTEN state for omx_forget, ...
 
-* cannot use del_timer_sync in BH
-  + make sure the timer ends after pull and delete the handle in the timer?
-  + move to a queue when done and call del_timer_sync from a thread?
-
 * cleanup BH locking in pull ?
   + add a pull_handle_done_release with a BH param?
 

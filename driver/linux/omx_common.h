@@ -109,6 +109,7 @@ extern int omx_recv_nack_mcp(struct omx_iface * iface, struct omx_hdr * mh, stru
 /* pull */
 extern int omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint);
 extern void omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint);
+extern void omx_pull_handles_cleanup(void);
 
 /* user regions */
 extern void omx_endpoint_user_regions_init(struct omx_endpoint * endpoint);
