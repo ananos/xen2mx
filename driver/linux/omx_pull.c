@@ -68,7 +68,7 @@ struct omx_pull_handle {
 	struct omx_hdr pkt_hdr;
 };
 
-static void omx_pull_handle_timeout_handler(unsigned long timer_addr);
+static void omx_pull_handle_timeout_handler(unsigned long data);
 
 /*
  * Notes about locking:

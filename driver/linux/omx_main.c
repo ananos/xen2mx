@@ -65,7 +65,7 @@ MODULE_PARM_DESC(pull_packet_loss, "Explicit pull reply packet loss frequency");
  */
 
 struct omx_driver_desc * omx_driver_desc = NULL;
-struct timer_list omx_driver_desc_update_timer;
+static struct timer_list omx_driver_desc_update_timer;
 static struct task_struct * omx_kthread_task = NULL;
 
 static void

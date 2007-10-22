@@ -11,6 +11,9 @@
   + move to a queue when done and call del_timer_sync from a thread?
 
 * cleanup BH locking in pull ?
+  + add a pull_handle_done_release with a BH param?
+
+* do not destroy a lock while holding it? preempt_count would be buggy
 
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
@@ -22,6 +25,7 @@
 * /etc/init.d/open-mx script with IFACES variable in /etc/open-mx.conf
 * sethostname ioctl
 * ioctls to change board indexes?
+* ifconfig up interfaces on load
 
 * check pingpong contents
 
@@ -31,6 +35,9 @@
 * retransmission
 
 * fix oops when removing the module while some pull handle are busy
+* writing --iface removes it by force
+* disable force until it does not oops?
+* cleanup vfree in the cleanup thread so that it is not done in irq context?
 
 * hide region id in lib_cookies since region might be used for something else?
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered
@@ -47,6 +54,7 @@
 * move recv lib in the kernel
   + limit unexpq size to avoid memory starvation
     - or allocate default unexp buffers upto 32kB
+    - use a usual recv queue for unexp?
   + need to keep partner's recv_seqnum in the kernel
     - and synchronize with user-space which takes care of acking
     - share mapping of peer-index based array of recv seqnums between kernel and user-space?
@@ -58,7 +66,7 @@
   - some event wakeup both queues (force_wakeup)
   - other events wakeup the progress thread only if no one on the regular queue
 
-* MX_VERBOSE level in the lib, only for --enable--debug
+* MX_VERBOSE level in the lib, only for --enable-debug
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
@@ -67,7 +75,7 @@
 
 * optimizations
   - single ioctl for multiple medium frags ?
-  - no need to pad event to 64 ? no need to put the type at the end, but write it after the rest
+  - if sending a medium in the regcache, use 0-copy
   - optimize shared comms between boards from within the driver
     + reject sends if no place in the target eventq so that we requeue them
       instead of dropping them and needing to ack them later ?
@@ -92,6 +100,11 @@
     struct dma_client client.event_callback
     dma_async_client_register(client)
     dma_async_client_chan_request(client)
+  + for recv large, wait for the last completion before reporting pull 
+    done completion. or send copy the last frag manually without IOAT
+  + for medium, how to report an event and wakeup userspace efficiently
+    if we are not notified of the IOAT completion end?
+  + might be easier medium with kernel matching?
 
 * use valgrind memory hooks
 * add valgrind ioctl hooks
