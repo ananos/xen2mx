@@ -21,6 +21,8 @@
 #include <linux/moduleparam.h>
 #include <linux/timer.h>
 #include <linux/vmalloc.h>
+#include <linux/kthread.h>
+#include <linux/delay.h>
 
 #include "omx_common.h"
 
@@ -64,12 +66,29 @@ MODULE_PARM_DESC(pull_packet_loss, "Explicit pull reply packet loss frequency");
 
 struct omx_driver_desc * omx_driver_desc = NULL;
 struct timer_list omx_driver_desc_update_timer;
+static struct task_struct * omx_kthread_task = NULL;
 
 static void
 omx_driver_desc_update_handler(unsigned long data)
 {
 	omx_driver_desc->jiffies = jiffies;
 	__mod_timer(&omx_driver_desc_update_timer, jiffies+1);
+}
+
+static int
+omx_kthread_func(void *dummy)
+{
+	printk(KERN_INFO "Open-MX: kthread starting\n");
+
+	while (1) {
+		if (kthread_should_stop())
+			break;
+
+		msleep(1000);
+	}
+
+	printk(KERN_INFO "Open-MX: kthread stopping\n");
+	return 0;
 }
 
 static __init int
@@ -121,13 +140,21 @@ omx_init(void)
 	if (ret < 0)
 		goto out_with_peers;
 
+	omx_kthread_task = kthread_run(omx_kthread_func, NULL, "open-mxd");
+	if (IS_ERR(omx_kthread_func)) {
+		ret = PTR_ERR(omx_kthread_task);
+		goto out_with_net;
+	}
+
 	ret = omx_dev_init();
 	if (ret < 0)
-		goto out_with_net;
+		goto out_with_kthread;
 
 	printk(KERN_INFO "Open-MX initialized\n");
 	return 0;
 
+ out_with_kthread:
+	kthread_stop(omx_kthread_task);
  out_with_net:
 	omx_net_exit();
  out_with_peers:
@@ -148,6 +175,7 @@ omx_exit(void)
 {
 	printk(KERN_INFO "Open-MX terminating...\n");
 	omx_dev_exit();
+	kthread_stop(omx_kthread_task);
 	omx_net_exit();
 	omx_peers_init();
 	omx_dma_exit();
