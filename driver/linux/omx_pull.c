@@ -44,6 +44,7 @@ struct omx_pull_handle {
 
 	/* timer for retransmission */
 	struct timer_list retransmit_timer;
+	uint64_t last_retransmit_jiffies;
 
 	/* global pull fields */
 	struct omx_endpoint * endpoint;
@@ -69,6 +70,7 @@ struct omx_pull_handle {
 };
 
 static void omx_pull_handle_timeout_handler(unsigned long data);
+static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t status);
 
 /*
  * Notes about locking:
@@ -391,6 +393,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
 	handle->already_requeued_first = 0;
+	handle->last_retransmit_jiffies = cmd->retransmit_delay_jiffies + jiffies;
 
 	/* initialize cached header */
 	err = omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
@@ -687,6 +690,14 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	struct sk_buff * skb;
 
 	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
+
+	if (jiffies > handle->last_retransmit_jiffies) {
+		dprintk(PULL, "pull handle last retransmit time reached, reporting an error\n");
+		omx_pull_handle_reacquire(handle);
+		omx_endpoint_reacquire(handle->endpoint);
+		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
+		return;
+	}
 
 	mod_timer(&handle->retransmit_timer,
 		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);

@@ -52,6 +52,7 @@ omx__init_api(int api)
 
   omx__globals.ack_delay = omx__driver_desc->hz / 100 + 1;
   omx__globals.resend_delay = omx__driver_desc->hz / 2 + 1;
+  omx__globals.retransmits_max = 1000;
 
   omx__globals.verbose = 0;
   env = getenv("OMX_VERBOSE");

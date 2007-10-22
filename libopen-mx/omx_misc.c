@@ -106,6 +106,8 @@ omx_strstatus(omx_status_code_t code)
     return "Failed";
   case OMX_STATUS_ENDPOINT_CLOSED:
     return "Endpoint Closed";
+  case OMX_STATUS_ENDPOINT_UNREACHABLE:
+    return "Endpoint Unreachable";
   case OMX_STATUS_BAD_SESSION:
     return "Bad Session";
   case OMX_STATUS_BAD_KEY:

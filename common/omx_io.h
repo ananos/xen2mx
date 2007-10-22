@@ -320,6 +320,8 @@ struct omx_cmd_send_pull {
 	uint32_t remote_rdma_id;
 	uint32_t remote_offset; /* FIXME: 64bits ? */
 	/* 32 */
+	uint32_t retransmit_delay_jiffies;
+	/* 36 */
 };
 
 struct omx_cmd_send_notify {
@@ -404,6 +406,7 @@ struct omx_cmd_wait_event {
 #define OMX_EVT_PULL_DONE_BAD_SESSION	0x03
 #define OMX_EVT_PULL_DONE_BAD_RDMAWIN	0x04
 #define OMX_EVT_PULL_DONE_ABORTED	0x05
+#define OMX_EVT_PULL_DONE_TIMEOUT	0x06
 
 static inline const char *
 omx_strevt(unsigned type)

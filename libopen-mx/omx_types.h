@@ -251,6 +251,7 @@ struct omx__globals {
   int verbose;
   unsigned ack_delay;
   unsigned resend_delay;
+  unsigned retransmits_max;
 };
 
 #endif /* __omx_types_h__ */

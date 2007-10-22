@@ -202,6 +202,7 @@ omx__post_pull(struct omx_endpoint * ep,
   /* FIXME: seqnum */
   pull_param.remote_rdma_id = req->recv.specific.large.target_rdma_id;
   pull_param.remote_offset = req->recv.specific.large.target_rdma_offset;
+  pull_param.retransmit_delay_jiffies = omx__globals.resend_delay * omx__globals.retransmits_max;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_PULL, &pull_param);
   if (unlikely(err < 0)) {
@@ -310,6 +311,9 @@ omx__process_pull_done(struct omx_endpoint * ep,
     break;
   case OMX_EVT_PULL_DONE_ABORTED:
     status = OMX_STATUS_ABORTED;
+    break;
+  case OMX_EVT_PULL_DONE_TIMEOUT:
+    status = OMX_STATUS_ENDPOINT_UNREACHABLE;
     break;
   default:
     assert(0);
