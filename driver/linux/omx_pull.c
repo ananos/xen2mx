@@ -240,6 +240,8 @@ omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 	}
 
 	write_unlock_bh(&endpoint->pull_handle_lock);
+
+	idr_destroy(&endpoint->pull_handle_idr);
 }
 
 /******************************
