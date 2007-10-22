@@ -482,56 +482,71 @@ omx_pull_handle_reacquire(struct omx_pull_handle * handle)
 }
 
 /*
- * Takes a locked pull handle and unlocked it if it is not done yet,
- * or destroy it if it is done.
+ * Takes a locked pull handle, unlock it without releasing the endpoint.
  *
- * Maybe be called by the bottom half.
+ * Called by the BH before copying a just-received pull reply frame.
+ */
+static inline void
+omx_pull_handle_release_during_copy(struct omx_pull_handle * handle)
+{
+	dprintk(PULL, "releasing pull handle %p\n", handle);
+
+	/* some frames are being copied,
+	 * release the handle but keep the reference on the endpoint
+	 * since it will be reacquired later
+	 */
+	spin_unlock(&handle->lock);
+
+	dprintk(PULL, "some frames are being copied, just release the handle\n");
+}
+
+/*
+ * Takes a locked pull handle, unlock it and release the endpoint.
+ *
+ * Maybe be called by the bottom half when the receiving a pull reply
+ * is done, or within an ioctl to post a pull.
  */
 static inline void
 omx_pull_handle_release(struct omx_pull_handle * handle)
 {
 	struct omx_endpoint * endpoint = handle->endpoint;
-	struct omx_user_region * region = handle->region;
 
 	dprintk(PULL, "releasing pull handle %p\n", handle);
 
-	/* FIXME: add likely/unlikely */
-	if (handle->frame_copying_bitmap != handle->frame_missing_bitmap) {
-		/* some frames are being copied,
-		 * release the handle but keep the reference on the endpoint
-		 * since it will be reacquired later
-		 */
-		spin_unlock(&handle->lock);
+	/* current block not done (no frames are being copied but some are missing),
+	 * release the handle and the endpoint
+	 */
+	spin_unlock(&handle->lock);
 
-		dprintk(PULL, "some frames are being copied, just release the handle\n");
+	/* release the endpoint */
+	omx_endpoint_release(endpoint);
 
-	} else if (handle->frame_copying_bitmap != 0) {
-		/* current block not done (no frames are being copied but some are missing),
-		 * release the handle and the endpoint
-		 */
-		spin_unlock(&handle->lock);
+	dprintk(PULL, "some frames are missing, release the handle and the endpoint\n");
+}
 
-		/* release the endpoint */
-		omx_endpoint_release(endpoint);
+/*
+ * Takes a locked pull handle and complete it.
+ *
+ * May be called by the BH after receiving a pull reply or a nack,
+ * by the retransmit timer when expired, or within an ioctl if the
+ * posting of a pull failed.
+ */
+static inline void
+omx_pull_handle_done_release(struct omx_pull_handle * handle)
+{
+	struct omx_endpoint * endpoint = handle->endpoint;
+	struct omx_user_region * region = handle->region;
 
-		dprintk(PULL, "some frames are missing, release the handle and the endpoint\n");
+	/* destroy the handle */
+	write_lock_bh(&endpoint->pull_handle_lock);
+	omx_pull_handle_destroy(handle);
+	write_unlock_bh(&endpoint->pull_handle_lock);
 
-	} else {
-		/* transfer is done,
-		 * destroy the handle and release the region and endpoint */
+	/* release the region and endpoint */
+	omx_user_region_release(region);
+	omx_endpoint_release(endpoint);
 
-		/* destroy the handle */
-		write_lock_bh(&endpoint->pull_handle_lock);
-		omx_pull_handle_destroy(handle);
-		write_unlock_bh(&endpoint->pull_handle_lock);
-
-		/* release the region and endpoint */
-		omx_user_region_release(region);
-		omx_endpoint_release(endpoint);
-
-		dprintk(PULL, "frame are all done, destroy the handle and release the endpoint\n");
-
-	}
+	dprintk(PULL, "frame are all done, destroy the handle and release the endpoint\n");
 }
 
 /******************************
@@ -676,11 +691,10 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_handle:
-	/* make sure the handle will be released */
-	handle->frame_missing_bitmap = 0;
-	handle->frame_copying_bitmap = 0;
-	handle->remaining_length = 0;
-	omx_pull_handle_release(handle);
+	/* we failed to send the first pull requests,
+	 * report an error to the user right now
+	 */
+	omx_pull_handle_done_release(handle);
  out:
 	return err;
 }
@@ -933,7 +947,14 @@ omx_recv_pull(struct omx_iface * iface,
 	return err;
 }
 
-/* must be called with the handle held, and we will release it here */
+/*
+ * Notify the completion of a pull handle.
+ *
+ * Must be called with the handle held, and we will release it here.
+ *
+ * May be called by the BH after receiving a pull reply or a nack,
+ * and by the retransmit timer when expired.
+ */
 static void
 omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 			    uint8_t status)
@@ -954,7 +975,7 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
 	handle->remaining_length = 0;
-	omx_pull_handle_release(handle);
+	omx_pull_handle_done_release(handle);
 }
 
 int
@@ -1028,7 +1049,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->frame_missing_bitmap &= ~bitmap_mask;
 
 	/* release the handle during the copy */
-	omx_pull_handle_release(handle);
+	omx_pull_handle_release_during_copy(handle);
 
 	/* fill segment pages */
 	dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
