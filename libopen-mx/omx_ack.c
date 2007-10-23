@@ -92,7 +92,8 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
       break;
 
     omx__debug_printf("acking back partner (%lld>>%lld)\n",
-		      now, partner->oldest_recv_time_not_acked);
+		      (unsigned long long) now,
+		      (unsigned long long) partner->oldest_recv_time_not_acked);
 
     ret = omx__submit_send_liback(ep, partner);
     if (ret != OMX_SUCCESS)
@@ -114,7 +115,8 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
   list_for_each_entry_safe(partner, next,
 			   &ep->partners_to_ack, endpoint_partners_to_ack_elt) {
     omx__debug_printf("forcing ack back partner (%lld>>%lld)\n",
-		      omx__driver_desc->jiffies, partner->oldest_recv_time_not_acked);
+		      (unsigned long long) omx__driver_desc->jiffies,
+		      (unsigned long long) partner->oldest_recv_time_not_acked);
 
     ret = omx__submit_send_liback(ep, partner);
     if (ret != OMX_SUCCESS)
