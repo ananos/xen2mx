@@ -204,6 +204,7 @@ union omx_request {
 	uint32_t frags_pending_nr;
       } medium;
       struct {
+	void * buffer;
 	struct omx__large_region * region;
       } large;
     } specific;

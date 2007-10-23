@@ -229,6 +229,10 @@ omx__progress(struct omx_endpoint * ep)
       omx__debug_printf("reposting queued send medium request %p\n", req);
       ret = omx__post_isend_medium(ep, req);
       break;
+    case OMX_REQUEST_TYPE_SEND_LARGE:
+      omx__debug_printf("reposting queued send medium request %p\n", req);
+      ret = omx__post_isend_rndv(ep, req);
+      break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
       omx__debug_printf("reposting queued recv large request %p\n", req);
       ret = omx__post_pull(ep, req);

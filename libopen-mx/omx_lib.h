@@ -131,6 +131,10 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 		       union omx_request *req);
 
 omx_return_t
+omx__post_isend_rndv(struct omx_endpoint *ep,
+		     union omx_request *req);
+
+omx_return_t
 omx__post_pull(struct omx_endpoint * ep,
 	       union omx_request * req);
 

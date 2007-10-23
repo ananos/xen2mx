@@ -272,36 +272,28 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   return ret;
 }
 
-static INLINE omx_return_t
-omx__submit_isend_large(struct omx_endpoint *ep,
-			void *buffer, size_t length,
-			struct omx__partner * partner, omx__seqnum_t seqnum,
-			uint64_t match_info,
-			void *context, union omx_request **requestp)
+omx_return_t
+omx__post_isend_rndv(struct omx_endpoint *ep,
+		     union omx_request *req)
 {
-  union omx_request * req;
   struct omx_cmd_send_rndv rndv_param;
   struct omx__rndv_data * data_n = (void *) rndv_param.data;
   struct omx__large_region *region;
+  struct omx__partner * partner = req->generic.partner;
+  void * buffer = req->send.specific.large.buffer;
+  uint32_t length = req->generic.status.msg_length;
   omx_return_t ret;
   int err;
 
-  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_LARGE);
-  if (unlikely(!req)) {
-    ret = OMX_NO_RESOURCES;
-    goto out;
-  }
-
   ret = omx__get_region(ep, buffer, length, &region);
   if (unlikely(ret != OMX_SUCCESS))
-    /* FIXME: queue */
-    goto out_with_req;
+    goto out;
 
   rndv_param.hdr.peer_index = partner->peer_index;
   rndv_param.hdr.dest_endpoint = partner->endpoint_index;
-  rndv_param.hdr.match_info = match_info;
-  rndv_param.hdr.length = 8;
-  rndv_param.hdr.seqnum = seqnum;
+  rndv_param.hdr.match_info = req->generic.status.match_info;
+  rndv_param.hdr.length = sizeof(struct omx__rndv_data);
+  rndv_param.hdr.seqnum = req->send.seqnum;
   rndv_param.hdr.piggyack = partner->next_frag_recv_seq - 1;
   rndv_param.hdr.session_id = partner->session_id;
 
@@ -321,24 +313,52 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   region->user = req;
 
   omx__partner_ack_sent(ep, partner);
-  req->generic.partner = partner;
-  omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->send.seqnum = seqnum;
-  req->generic.status.context = context;
-  req->generic.status.match_info = match_info;
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY;
-  req->generic.status.msg_length = length;
-  /* will set xfer_length when receiving the notify */
-
   omx__enqueue_request(&ep->large_send_req_q, req);
 
-  *requestp = req;
   return OMX_SUCCESS;
 
  out_with_reg:
   omx__put_region(ep, region);
- out_with_req:
-  omx__request_free(req);
+ out:
+  return ret;
+}
+
+static INLINE omx_return_t
+omx__submit_isend_large(struct omx_endpoint *ep,
+			void *buffer, size_t length,
+			struct omx__partner * partner, omx__seqnum_t seqnum,
+			uint64_t match_info,
+			void *context, union omx_request **requestp)
+{
+  union omx_request * req;
+  omx_return_t ret;
+
+  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_LARGE);
+  if (unlikely(!req)) {
+    ret = OMX_NO_RESOURCES;
+    goto out;
+  }
+
+  req->generic.partner = partner;
+  omx__partner_to_addr(partner, &req->generic.status.addr);
+  req->send.seqnum = seqnum;
+  req->send.specific.large.buffer = buffer;
+  req->generic.status.context = context;
+  req->generic.status.match_info = match_info;
+  req->generic.status.msg_length = length;
+  /* will set xfer_length when receiving the notify */
+
+  ret = omx__post_isend_rndv(ep, req);
+  if (unlikely(ret != OMX_SUCCESS)) {
+    omx__debug_printf("queueing large send request %p\n", req);
+    req->generic.state = OMX_REQUEST_STATE_QUEUED;
+    omx__enqueue_request(&ep->queued_send_req_q, req);
+  }
+
+  *requestp = req;
+  return OMX_SUCCESS;
+
  out:
   return ret;
 }
