@@ -43,8 +43,12 @@ struct omx__large_region_map {
   struct omx__large_region_slot {
     int next_free;
     struct omx__large_region {
+      struct list_head regcache_elt;
+      struct list_head regcache_unused_elt;
+      int use_count;
       uint8_t id;
       uint8_t seqnum;
+      struct omx_cmd_region_segment *segs;
       uint16_t offset;
       void * user;
     } region;
@@ -153,6 +157,9 @@ struct omx_endpoint {
   struct omx__partner * myself;
 
   struct list_head partners_to_ack;
+
+  struct list_head regcache_list; /* list of registered windows */
+  struct list_head regcache_unused_list; /* list of unused registered window, LRU in front */
 };
 
 enum omx__request_type {
@@ -249,6 +256,7 @@ struct omx__globals {
   int initialized;
   int control_fd;
   int verbose;
+  int regcache;
   unsigned ack_delay;
   unsigned resend_delay;
   unsigned retransmits_max;

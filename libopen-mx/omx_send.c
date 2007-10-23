@@ -292,8 +292,9 @@ omx__submit_isend_large(struct omx_endpoint *ep,
     goto out;
   }
 
-  ret = omx__register_region(ep, buffer, length, &region);
+  ret = omx__get_region(ep, buffer, length, &region);
   if (unlikely(ret != OMX_SUCCESS))
+    /* FIXME: queue */
     goto out_with_req;
 
   rndv_param.hdr.peer_index = partner->peer_index;
@@ -335,7 +336,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 
  out_with_reg:
-  omx__deregister_region(ep, region);
+  omx__put_region(ep, region);
  out_with_req:
   omx__request_free(req);
  out:

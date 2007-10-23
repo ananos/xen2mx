@@ -118,13 +118,13 @@ extern void
 omx__endpoint_large_region_map_exit(struct omx_endpoint * ep);
 
 omx_return_t
-omx__register_region(struct omx_endpoint *ep,
-		     char * buffer, size_t length,
-		     struct omx__large_region **regionp);
+omx__get_region(struct omx_endpoint *ep,
+		char * buffer, size_t length,
+		struct omx__large_region **regionp);
 
 omx_return_t
-omx__deregister_region(struct omx_endpoint *ep,
-		       struct omx__large_region *region);
+omx__put_region(struct omx_endpoint *ep,
+		struct omx__large_region *region);
 
 omx_return_t
 omx__post_isend_medium(struct omx_endpoint *ep,

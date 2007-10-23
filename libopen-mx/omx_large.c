@@ -80,6 +80,7 @@ omx__endpoint_large_region_alloc(struct omx_endpoint * ep,
   omx__debug_assert(array[index].region.user == NULL);
   omx__debug_instr(array[index].next_free = -1);
 
+  array[index].region.use_count = 0;
   *regionp = &array[index].region;
 
   ep->large_region_map.first_free = next_free;
@@ -97,6 +98,7 @@ omx__endpoint_large_region_free(struct omx_endpoint * ep,
 
   array = ep->large_region_map.array;
 
+  omx__debug_assert(array[index].region.use_count == 0);
   omx__debug_assert(array[index].next_free == -1);
 
   array[index].region.user = NULL;
@@ -105,54 +107,31 @@ omx__endpoint_large_region_free(struct omx_endpoint * ep,
   ep->large_region_map.nr_free++;
 }
 
-/******************************
- * Registration/Deregistration
+/****************************************
+ * Low-level Registration/Deregistration
  */
 
-omx_return_t
+static omx_return_t
 omx__register_region(struct omx_endpoint *ep,
-		     char * buffer, size_t length,
-		     struct omx__large_region **regionp)
+		     struct omx__large_region *region)
 {
-  struct omx_cmd_region_segment seg;
   struct omx_cmd_register_region reg;
-  uint32_t rdma_length;
-  uint16_t offset;
-  omx_return_t ret;
   int err;
 
-  ret = omx__endpoint_large_region_alloc(ep, regionp);
-  if (unlikely(ret != OMX_SUCCESS))
-    goto out;
-
-  offset = ((uintptr_t) buffer) & 4095;
-  rdma_length = (offset + length + 4095) & ~4095;
-  (*regionp)->offset = offset;
-
-  seg.vaddr = ((uintptr_t) buffer) & ~4095;
-  seg.len = rdma_length;
-
   reg.nr_segments = 1;
-  reg.id = (*regionp)->id;
-  reg.seqnum = (*regionp)->seqnum;
+  reg.id = region->id;
+  reg.seqnum = region->seqnum;
   reg.memory_context = 0ULL; /* FIXME */
-  reg.segments = (uintptr_t) &seg;
+  reg.segments = (uintptr_t) region->segs;
 
   err = ioctl(ep->fd, OMX_CMD_REGISTER_REGION, &reg);
-  if (unlikely(err < 0)) {
-    ret = omx__errno_to_return("ioctl REGISTER");
-    goto out_with_region;
-  }
+  if (unlikely(err < 0))
+    return omx__errno_to_return("ioctl REGISTER");
 
   return OMX_SUCCESS;
-
- out_with_region:
-  omx__endpoint_large_region_free(ep, *regionp);
- out:
-  return ret;
 }
 
-omx_return_t
+static omx_return_t
 omx__deregister_region(struct omx_endpoint *ep,
 		       struct omx__large_region *region)
 {
@@ -165,7 +144,127 @@ omx__deregister_region(struct omx_endpoint *ep,
   if (unlikely(err < 0))
     return omx__errno_to_return("ioctl REGISTER");
 
+  return OMX_SUCCESS;
+}
+
+/***************************
+ * Registration Cache Layer
+ */
+
+static void
+omx__destroy_region(struct omx_endpoint *ep,
+		    struct omx__large_region *region)
+{
+  omx_return_t ret;
+
+  ret = omx__deregister_region(ep, region);
+  assert(ret == OMX_SUCCESS);
+
+  list_del(&region->regcache_elt);
+  free(region->segs);
   omx__endpoint_large_region_free(ep, region);
+}
+
+static omx_return_t
+omx__create_region(struct omx_endpoint *ep,
+		   uint64_t vaddr, uint32_t rdma_length, uint16_t offset,
+		   struct omx__large_region **regionp)
+{
+  struct omx__large_region *region = NULL;
+  struct omx_cmd_region_segment *segs;
+  omx_return_t ret;
+
+  ret = omx__endpoint_large_region_alloc(ep, &region);
+  if (unlikely(ret == OMX_NO_RESOURCES
+	       && omx__globals.regcache)) {
+    /* try to free some unused region in the cache */
+    if (!list_empty(&ep->regcache_unused_list)) {
+      region = list_first_entry(&ep->regcache_unused_list, struct omx__large_region, regcache_unused_elt);
+      omx__debug_printf("regcache releasing unused region %d\n", region->id);
+      list_del(&region->regcache_unused_elt);
+      omx__destroy_region(ep, region);
+      ret = omx__endpoint_large_region_alloc(ep, &region);
+    }
+  }
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out;
+
+  segs = malloc(sizeof(*segs));
+  if (!segs) {
+    ret = omx__errno_to_return("alloc register segments");
+    goto out_with_region;
+  }
+
+  segs[0].vaddr = vaddr;
+  segs[0].len = rdma_length;
+
+  region->offset = offset;
+  region->segs = segs;
+
+  ret = omx__register_region(ep, region);
+  if (ret != OMX_SUCCESS)
+    goto out_with_segments;
+
+  list_add_tail(&region->regcache_elt, &ep->regcache_list);
+  *regionp = region;
+  return OMX_SUCCESS;
+
+ out_with_segments:
+  free(segs);
+ out_with_region:
+  omx__endpoint_large_region_free(ep, region);
+ out:
+  return ret;
+}
+
+omx_return_t
+omx__get_region(struct omx_endpoint *ep,
+		char * buffer, size_t length,
+		struct omx__large_region **regionp)
+{
+  struct omx__large_region *region = NULL;
+  uint64_t vaddr;
+  uint32_t rdma_length;
+  uint16_t offset;
+  omx_return_t ret;
+
+  vaddr = ((uintptr_t) buffer) & ~4095;
+  offset = ((uintptr_t) buffer) & 4095;
+  rdma_length = (offset + length + 4095) & ~4095;
+
+  if (omx__globals.regcache) {
+    list_for_each_entry(region, &ep->regcache_list, regcache_elt) {
+      if (region->segs[0].vaddr == vaddr
+	  && region->segs[0].len >= rdma_length
+	  && region->offset == offset) {
+
+	if (!(region->use_count++))
+	  list_del(&region->regcache_unused_elt);
+	*regionp = region;
+	return OMX_SUCCESS;
+      }
+    }
+  }
+
+  ret = omx__create_region(ep, vaddr, rdma_length, offset, &region);
+  if (ret != OMX_SUCCESS)
+    return ret;
+
+  region->use_count++;
+  *regionp = region;
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx__put_region(struct omx_endpoint *ep,
+		struct omx__large_region *region)
+{
+  if (omx__globals.regcache) {
+    if (!--region->use_count)
+      list_add_tail(&region->regcache_unused_elt, &ep->regcache_unused_list);
+  } else {
+    omx__destroy_region(ep, region);
+  }
 
   return OMX_SUCCESS;
 }
@@ -188,7 +287,7 @@ omx__post_pull(struct omx_endpoint * ep,
   if (unlikely(ep->avail_exp_events < 1))
     return OMX_NO_RESOURCES;
 
-  ret = omx__register_region(ep, req->recv.buffer, xfer_length, &region);
+  ret = omx__get_region(ep, req->recv.buffer, xfer_length, &region);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
@@ -212,7 +311,7 @@ omx__post_pull(struct omx_endpoint * ep,
       assert(0);
     }
 
-    omx__deregister_region(ep, region);
+    omx__put_region(ep, region);
     return ret;
   }
   ep->avail_exp_events--;
@@ -270,7 +369,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   /* FIXME: check length, update req->generic.status.xfer_length and status */
 
   omx__dequeue_request(&ep->pull_req_q, req);
-  omx__deregister_region(ep, req->recv.specific.large.local_region);
+  omx__put_region(ep, req->recv.specific.large.local_region);
 
   seqnum = partner->next_send_seq;
 
@@ -350,7 +449,7 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
 
   omx__dequeue_request(&ep->large_send_req_q, req);
-  omx__deregister_region(ep, req->send.specific.large.region);
+  omx__put_region(ep, req->send.specific.large.region);
   req->generic.status.xfer_length = xfer_length;
 
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
