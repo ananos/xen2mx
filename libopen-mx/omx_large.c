@@ -259,8 +259,9 @@ omx_return_t
 omx__put_region(struct omx_endpoint *ep,
 		struct omx__large_region *region)
 {
+  region->use_count--;
   if (omx__globals.regcache) {
-    if (!--region->use_count)
+    if (!region->use_count)
       list_add_tail(&region->regcache_unused_elt, &ep->regcache_unused_list);
   } else {
     omx__destroy_region(ep, region);
