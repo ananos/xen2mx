@@ -25,6 +25,7 @@
 #include <linux/delay.h>
 
 #include "omx_common.h"
+#include "omx_hal.h"
 
 /********************
  * Module parameters
