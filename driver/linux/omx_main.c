@@ -112,7 +112,7 @@ omx_init(void)
 		       omx_pull_packet_loss);
 #endif
 
-	omx_driver_desc = vmalloc_user(sizeof(struct omx_driver_desc));
+	omx_driver_desc = omx_vmalloc_user(sizeof(struct omx_driver_desc));
 	if (!omx_driver_desc) {
 		printk(KERN_ERR "Open-MX: failed to allocate driver descriptor\n");
 		ret = -ENOMEM;
