@@ -1,3 +1,6 @@
+* option for omx_pingpong with issend
+  + used with regcache to mesure possible medium perf
+
 * add retransmission
   + wakeup earlier if sleeping to send delayed acks
   + cancel a liback if sending a message before, or send liback after dequeuing request
@@ -31,10 +34,16 @@
 * retransmission
 
 * fix oops when removing the module while some pull handle are busy
-* writing --iface removes it by force
 * disable force until it does not oops?
 * cleanup vfree in the cleanup thread so that it is not done in irq context?
 
+* use large region id in the lib, only allocate uint8_t id for the wire when
+  posting the rndv message or the pull request
+* overlap registration with rndv and pull
+  + mark the window as valid but not ready during registration
+  + drop the pull request if it arrives
+  + make the window status consistent during registration so that first pages
+    may be used while the end is not registered yet
 * hide region id in lib_cookies since region might be used for something else?
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered
 * export rdma_get and rdma window management functions

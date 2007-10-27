@@ -374,11 +374,15 @@ omx_ifaces_store(const char *buf, size_t size)
 		*ptr = '\0';
 
 	if (buf[0] == '-') {
+		int force = 0;
 		int i;
 		/* if none matches, we return -EINVAL.
 		 * if one matches, it sets ret accordingly.
 		 */
 		int ret = -EINVAL;
+
+		if (copy[0] == '-')
+			force = 1;
 
 		write_lock(&omx_iface_lock);
 		for(i=0; i<omx_iface_max; i++) {
@@ -389,14 +393,14 @@ omx_ifaces_store(const char *buf, size_t size)
 				continue;
 
 			ifp = iface->eth_ifp;
-			if (strcmp(ifp->name, copy))
+			if (strcmp(ifp->name, copy+force))
 				continue;
 
 			/* disable incoming packets while removing the iface
 			 * to prevent races
 			 */
 			dev_remove_pack(&omx_pt);
-			ret = omx_iface_detach(iface);
+			ret = __omx_iface_detach(iface, force);
 			dev_add_pack(&omx_pt);
 
 			/* release the interface now */
