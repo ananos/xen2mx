@@ -539,6 +539,8 @@ omx_pull_handle_done_release(struct omx_pull_handle * handle)
 
 	/* destroy the handle */
 	write_lock_bh(&endpoint->pull_handle_lock);
+	/* release the lock first to avoid leaking preempt count */
+	spin_unlock(&handle->lock);
 	omx_pull_handle_destroy(handle);
 	write_unlock_bh(&endpoint->pull_handle_lock);
 

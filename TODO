@@ -12,8 +12,6 @@
 * cleanup BH locking in pull ?
   + add a pull_handle_done_release with a BH param?
 
-* do not destroy a lock while holding it? preempt_count would be buggy
-
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
   + omx_disconnect
@@ -29,9 +27,6 @@
 * check pingpong contents
 
 * vectorial support, through isendv/irecvv
-
-* truc messages
-* retransmission
 
 * fix oops when removing the module while some pull handle are busy
 * disable force until it does not oops?
