@@ -582,9 +582,7 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 	unsigned long offset = vma->vm_pgoff << PAGE_SHIFT;
 	unsigned long size = vma->vm_end - vma->vm_start;
 
-	if (endpoint == NULL)
-		return -EINVAL;
-
+	/* endpoint-less ioctl */
 	if (offset == OMX_DRIVER_DESC_FILE_OFFSET && size == PAGE_ALIGN(OMX_DRIVER_DESC_SIZE)) {
 		if (vma->vm_flags & (VM_WRITE|VM_MAYWRITE))
 			return -EPERM;
@@ -592,7 +590,13 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 		return omx_remap_vmalloc_range(vma, omx_driver_desc, 0);
 	}
 
-	else if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
+	/* the other ioctl require the endpoint to be open */
+	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
+		printk(KERN_INFO "Open-MX: Cannot map endpoint resources from a closed endpoint\n");
+		return -EINVAL;
+	}
+
+	if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
 					       0);
 	else if (offset == OMX_RECVQ_FILE_OFFSET && size == OMX_RECVQ_SIZE)
