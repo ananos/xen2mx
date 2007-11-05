@@ -171,6 +171,7 @@ omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
   union omx_request *req , *next;
+  uint64_t driver_status;
 
   if (unlikely(ep->in_handler))
     return OMX_SUCCESS;
@@ -250,7 +251,18 @@ omx__progress(struct omx_endpoint * ep)
     }
   }
 
-  printf("desc status is %llx\n", ep->desc->status);
+  driver_status = ep->desc->status;
+  if (driver_status) {
+    if (driver_status & OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL) {
+      printf("Driver reporting expected event queue full\n");
+      assert(0);
+    }
+    if (driver_status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL) {
+      printf("Driver reporting unexpected event queue full\n");
+      printf("Some packets are being dropped, they will be resent by the sender\n");
+    }
+    ep->desc->status = 0;
+  }
 
   return OMX_SUCCESS;
 }

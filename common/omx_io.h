@@ -91,6 +91,9 @@ struct omx_endpoint_desc {
 #define OMX_ENDPOINT_DESC_SIZE	sizeof(struct omx_endpoint_desc)
 #define OMX_ENDPOINT_DESC_FILE_OFFSET	(2*4096*4096)
 
+#define OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL (1ULL << 0)
+#define OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL (1ULL << 1)
+
 /************************
  * IOCTL commands
  */
