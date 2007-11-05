@@ -62,7 +62,6 @@ enum omx_endpoint_status {
 struct omx_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
-	uint32_t session_id;
 
 	pid_t opener_pid;
 	char opener_comm[TASK_COMM_LEN];

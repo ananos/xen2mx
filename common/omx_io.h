@@ -86,6 +86,7 @@ struct omx_driver_desc {
 /* endpoint desc */
 struct omx_endpoint_desc {
 	uint64_t status;
+	uint32_t session_id;
 };
 
 #define OMX_ENDPOINT_DESC_SIZE	sizeof(struct omx_endpoint_desc)
@@ -109,7 +110,6 @@ struct omx_endpoint_desc {
 #define OMX_CMD_PEER_FROM_HOSTNAME	0x14
 #define OMX_CMD_OPEN_ENDPOINT		0x71
 #define OMX_CMD_CLOSE_ENDPOINT		0x72
-#define OMX_CMD_GET_ENDPOINT_SESSION_ID	0x73
 #define OMX_CMD_SEND_TINY		0x81
 #define OMX_CMD_SEND_SMALL		0x82
 #define OMX_CMD_SEND_MEDIUM		0x83
@@ -148,8 +148,6 @@ omx_strcmd(unsigned cmd)
 		return "Open Endpoint";
 	case OMX_CMD_CLOSE_ENDPOINT:
 		return "Close Endpoint";
-	case OMX_CMD_GET_ENDPOINT_SESSION_ID:
-		return "Get Endpoint Session ID";
 	case OMX_CMD_SEND_TINY:
 		return "Send Tiny";
 	case OMX_CMD_SEND_SMALL:

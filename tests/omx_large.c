@@ -90,9 +90,9 @@ int main(void)
   int fd, ret;
   struct omx_cmd_open_endpoint open_param;
   volatile union omx_evt * evt;
+  struct omx_endpoint_desc *desc;
   void * recvq, * sendq, * exp_eventq;
   char * send_buffer, * recv_buffer;
-  uint32_t session_id;
   //  int i;
   //  struct timeval tv1, tv2;
 
@@ -111,13 +111,8 @@ int main(void)
     goto out_with_fd;
   }
 
-  ret = ioctl(fd, OMX_CMD_GET_ENDPOINT_SESSION_ID, &session_id);
-  if (ret < 0) {
-    perror("get session id");
-    goto out_with_fd;
-  }
-
   /* mmap */
+  desc = mmap(0, OMX_ENDPOINT_DESC_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_ENDPOINT_DESC_FILE_OFFSET);
   sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
   recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
   exp_eventq = mmap(0, OMX_EXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EXP_EVENTQ_FILE_OFFSET);
@@ -160,7 +155,7 @@ int main(void)
   }
 
   /* send a message */
-  ret = send_pull(fd, session_id);
+  ret = send_pull(fd, desc->session_id);
   if (ret < 0)
     goto out_with_recv_register;
 

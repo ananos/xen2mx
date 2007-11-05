@@ -43,9 +43,6 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	int i;
 	int ret;
 
-	/* generate the session id */
-	get_random_bytes(&endpoint->session_id, sizeof(endpoint->session_id));
-
 	/* create the user descriptor */
 	desc = omx_vmalloc_user(sizeof(struct omx_endpoint_desc));
 	if (!desc) {
@@ -55,6 +52,9 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	}
 	desc->status = 0;
 	endpoint->desc = desc;
+
+	/* generate the session id */
+	get_random_bytes(&endpoint->desc->session_id, sizeof(endpoint->desc->session_id));
 
 	/* alloc and init user queues */
 	ret = -ENOMEM;
@@ -525,26 +525,6 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		BUG_ON(!endpoint);
 
 		ret = omx_endpoint_close(endpoint);
-
-		break;
-	}
-
-	case OMX_CMD_GET_ENDPOINT_SESSION_ID: {
-		struct omx_endpoint * endpoint = file->private_data;
-		uint32_t session_id;
-
-		ret = omx_endpoint_acquire_from_ioctl(endpoint);
-		if (unlikely(ret < 0))
-			goto out;
-
-		session_id = endpoint->session_id;
-
-		ret = copy_to_user((void __user *) arg, &session_id,
-				   sizeof(session_id));
-		if (ret < 0)
-			printk(KERN_ERR "Open-MX: Failed to write get_endpoint_session_id command result, error %d\n", ret);
-
-		omx_endpoint_release(endpoint);
 
 		break;
 	}

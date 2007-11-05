@@ -799,7 +799,7 @@ omx_recv_pull(struct omx_iface * iface,
 	}
 
 	/* check the session */
-	if (unlikely(session_id != endpoint->session_id)) {
+	if (unlikely(session_id != endpoint->desc->session_id)) {
 		omx_drop_dprintk(pull_eh, "PULL packet with bad session");
 		omx_send_nack_mcp(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,

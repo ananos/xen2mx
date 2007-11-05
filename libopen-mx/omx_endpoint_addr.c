@@ -196,7 +196,7 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
   if (ret != OMX_SUCCESS)
     return ret;
 
-  omx__connect_partner(ep->myself, ep->session_id, 0);
+  omx__connect_partner(ep->myself, ep->desc->session_id, 0);
 
   return OMX_SUCCESS;
 }
@@ -230,7 +230,7 @@ omx__connect_common(omx_endpoint_t ep,
   connect_param.hdr.dest_endpoint = partner->endpoint_index;
   connect_param.hdr.seqnum = 0;
   connect_param.hdr.length = sizeof(*data_n);
-  OMX_PKT_FIELD_FROM(data_n->src_session_id, ep->session_id);
+  OMX_PKT_FIELD_FROM(data_n->src_session_id, ep->desc->session_id);
   OMX_PKT_FIELD_FROM(data_n->app_key, key);
   OMX_PKT_FIELD_FROM(data_n->connect_seqnum, connect_seqnum);
   OMX_PKT_FIELD_FROM(data_n->is_reply, 0);
@@ -244,7 +244,7 @@ omx__connect_common(omx_endpoint_t ep,
 
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY;
   req->generic.partner = partner;
-  req->connect.session_id = ep->session_id;
+  req->connect.session_id = ep->desc->session_id;
   req->connect.connect_seqnum = connect_seqnum;
   omx__enqueue_request(&ep->connect_req_q, req);
 
@@ -369,7 +369,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     /* check the endpoint session (so that the endpoint didn't close/reopen in the meantime)
      * and the partner and the connection seqnum given by this partner
      */
-    if (src_session_id == ep->session_id
+    if (src_session_id == ep->desc->session_id
 	&& partner == req->generic.partner
 	&& connect_seqnum == req->connect.connect_seqnum) {
       goto found;
@@ -456,7 +456,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   reply_param.hdr.seqnum = 0;
   reply_param.hdr.length = sizeof(*reply_data_n);
   OMX_PKT_FIELD_FROM(reply_data_n->is_reply, 1);
-  OMX_PKT_FIELD_FROM(reply_data_n->target_session_id, ep->session_id);
+  OMX_PKT_FIELD_FROM(reply_data_n->target_session_id, ep->desc->session_id);
   OMX_PKT_FIELD_FROM(reply_data_n->src_session_id, OMX_FROM_PKT_FIELD(request_data_n->src_session_id));
   OMX_PKT_FIELD_FROM(reply_data_n->connect_seqnum, OMX_FROM_PKT_FIELD(request_data_n->connect_seqnum));
   OMX_PKT_FIELD_FROM(reply_data_n->status_code, status_code);
