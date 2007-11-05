@@ -38,6 +38,7 @@ static int
 omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 {
 	struct page ** sendq_pages;
+	struct omx_endpoint_desc *desc;
 	char * buffer;
 	int i;
 	int ret;
@@ -45,12 +46,22 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	/* generate the session id */
 	get_random_bytes(&endpoint->session_id, sizeof(endpoint->session_id));
 
+	/* create the user descriptor */
+	desc = omx_vmalloc_user(sizeof(struct omx_endpoint_desc));
+	if (!desc) {
+		printk(KERN_ERR "Open-MX: failed to allocate endpoint descriptor\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+	desc->status = 0;
+	endpoint->desc = desc;
+
 	/* alloc and init user queues */
 	ret = -ENOMEM;
 	buffer = omx_vmalloc_user(OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EXP_EVENTQ_SIZE + OMX_UNEXP_EVENTQ_SIZE);
 	if (!buffer) {
 		printk(KERN_ERR "Open-MX: failed to allocate queues\n");
-		goto out;
+		goto out_with_desc;
 	}
 	endpoint->sendq = buffer;
 	endpoint->recvq = endpoint->sendq + OMX_SENDQ_SIZE;
@@ -86,6 +97,8 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 
  out_with_userq:
 	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
+ out_with_desc:
+	vfree(endpoint->desc);
  out:
 	return ret;
 }
@@ -97,6 +110,7 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 	omx_endpoint_user_regions_exit(endpoint);
 	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
+	vfree(endpoint->desc);
 }
 
 /******************************
@@ -596,7 +610,10 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 		return -EINVAL;
 	}
 
-	if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
+	if (offset == OMX_ENDPOINT_DESC_FILE_OFFSET && size == PAGE_ALIGN(OMX_ENDPOINT_DESC_SIZE))
+		return omx_remap_vmalloc_range(vma, endpoint->desc, 0);
+
+	else if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
 					       0);
 	else if (offset == OMX_RECVQ_FILE_OFFSET && size == OMX_RECVQ_SIZE)

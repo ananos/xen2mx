@@ -157,6 +157,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   /* FIXME: add parameters to choose the board name? */
   struct omx_endpoint * ep;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+  struct omx_endpoint_desc * desc;
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   uint64_t board_addr;
   uint8_t ctxid_bits = 0, ctxid_shift = 0;
@@ -215,18 +216,22 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_attached;
 
   /* mmap */
+  desc = mmap(0, OMX_ENDPOINT_DESC_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_ENDPOINT_DESC_FILE_OFFSET);
   sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
   recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
   exp_eventq = mmap(0, OMX_EXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EXP_EVENTQ_FILE_OFFSET);
   unexp_eventq = mmap(0, OMX_UNEXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_UNEXP_EVENTQ_FILE_OFFSET);
-  if (sendq == (void *) -1
+
+  if (desc == (void *) -1
+      || sendq == (void *) -1
       || recvq == (void *) -1
       || exp_eventq == (void *) -1
       || unexp_eventq == (void *) -1) {
     ret = omx__errno_to_return("mmap");
     goto out_with_sendq_map;
   }
-  printf("sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n", sendq, recvq, exp_eventq, unexp_eventq);
+  printf("desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
+	 desc, sendq, recvq, exp_eventq, unexp_eventq);
 
   /* prepare the large regions */
   ret = omx__endpoint_large_region_map_init(ep);
@@ -235,6 +240,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   /* init driver specific fields */
   ep->fd = fd;
+  ep->desc = desc;
   ep->sendq = sendq;
   ep->recvq = recvq;
   ep->exp_eventq = ep->next_exp_event = exp_eventq;

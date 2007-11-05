@@ -89,6 +89,9 @@ struct omx_endpoint {
 	rwlock_t pull_handle_lock;
 	struct idr pull_handle_idr;
 	struct list_head pull_handle_list;
+
+	/* descriptor exported to user-space */
+	struct omx_endpoint_desc * desc;
 };
 
 

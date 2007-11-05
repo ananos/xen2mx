@@ -250,6 +250,8 @@ omx__progress(struct omx_endpoint * ep)
     }
   }
 
+  printf("desc status is %llx\n", ep->desc->status);
+
   return OMX_SUCCESS;
 }
 

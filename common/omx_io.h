@@ -83,6 +83,14 @@ struct omx_driver_desc {
 #define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
 #define OMX_DRIVER_DESC_FILE_OFFSET	(4096*4096)
 
+/* endpoint desc */
+struct omx_endpoint_desc {
+	uint64_t status;
+};
+
+#define OMX_ENDPOINT_DESC_SIZE	sizeof(struct omx_endpoint_desc)
+#define OMX_ENDPOINT_DESC_FILE_OFFSET	(2*4096*4096)
+
 /************************
  * IOCTL commands
  */
