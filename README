@@ -20,6 +20,11 @@ a. Build and install Open-MX in /opt/open-mx
    $ make
    $ make install
 
+   Note that if building from SVN, you might need to generate the
+   configure script first. autoconf and autoheader are required,
+   autoreconf will take care of running them:
+   $ autoreconf -ifv
+
 b. Load the open-mx kernel module and tell it which interface to use
      $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
    See section II and III for details.

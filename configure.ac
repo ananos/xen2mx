@@ -18,7 +18,7 @@ AC_INIT([Open-MX],
         0.0.0,
         [http://gforge.inria.fr/projects/open-mx],
         open-mx)
-AC_PREREQ(2.53)
+AC_PREREQ(2.60)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/open-mx)
 
