@@ -86,11 +86,18 @@ load_omx() {
     fi
 }
 
+usage () {
+	echo $"Usage: $0 {start|stop|status|restart} [module load params]"
+	exit 1
+}
+
+[ $# -eq 0 ] && usage
+
 cmd="$1"
 shift
 
 case "$cmd" in
-    start|"")
+    start)
 	load_omx "$@"
 	;;
     stop)
@@ -108,9 +115,7 @@ case "$cmd" in
 	load_omx "$@"
         ;;
     *)
-	echo $"Usage: $0 {start|stop|status|restart}"
-	exit 1
+	usage
 esac
 
 exit 0
-
