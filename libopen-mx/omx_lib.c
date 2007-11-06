@@ -167,11 +167,40 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
  * Progression
  */
 
+static INLINE void
+omx__check_endpoint_desc(struct omx_endpoint * ep)
+{
+  static uint64_t last_check = 0;
+  uint64_t now = omx__driver_desc->jiffies;
+  uint64_t driver_status;
+
+  /* check once every second */
+  if (now - last_check < omx__driver_desc->hz)
+    return;
+
+  driver_status = ep->desc->status;
+  if (!driver_status)
+    return;
+
+  if (driver_status & OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL) {
+    printf("Driver reporting expected event queue full\n");
+    assert(0);
+  }
+  if (driver_status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL) {
+    printf("Driver reporting unexpected event queue full\n");
+    printf("Some packets are being dropped, they will be resent by the sender\n");
+  }
+
+  /* could be racy... could be fixed using atomic ops... */
+  ep->desc->status = 0;
+
+  last_check = now;
+}
+
 omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
   union omx_request *req , *next;
-  uint64_t driver_status;
 
   if (unlikely(ep->in_handler))
     return OMX_SUCCESS;
@@ -251,18 +280,7 @@ omx__progress(struct omx_endpoint * ep)
     }
   }
 
-  driver_status = ep->desc->status;
-  if (driver_status) {
-    if (driver_status & OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL) {
-      printf("Driver reporting expected event queue full\n");
-      assert(0);
-    }
-    if (driver_status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL) {
-      printf("Driver reporting unexpected event queue full\n");
-      printf("Some packets are being dropped, they will be resent by the sender\n");
-    }
-    ep->desc->status = 0;
-  }
+  omx__check_endpoint_desc(ep);
 
   return OMX_SUCCESS;
 }
