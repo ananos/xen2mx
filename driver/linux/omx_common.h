@@ -38,7 +38,7 @@ extern int omx_endpoint_max;
 extern int omx_peer_max;
 extern int omx_copybench;
 extern unsigned long omx_pull_packet_loss;
-extern struct omx_driver_desc * omx_driver_desc;
+extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */
 
 /* main net */
 extern int omx_net_init(const char * ifnames);

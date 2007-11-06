@@ -172,7 +172,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	}
 
 	/* check the session */
-	if (unlikely(session_id != endpoint->desc->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "TINY packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -270,7 +270,7 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* check the session */
-	if (unlikely(session_id != endpoint->desc->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -372,7 +372,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* check the session */
-	if (unlikely(session_id != endpoint->desc->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -476,7 +476,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	}
 
 	/* check the session */
-	if (unlikely(session_id != endpoint->desc->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -555,7 +555,7 @@ omx_recv_notify(struct omx_iface * iface,
 	}
 
 	/* check the session */
-	if (unlikely(session_id != endpoint->desc->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -644,7 +644,7 @@ omx_recv_truc(struct omx_iface * iface,
 	}
 
 	/* check the session */
-	if (unlikely(session_id != endpoint->desc->session_id)) {
+	if (unlikely(session_id != endpoint->session_id)) {
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet with bad session");
 		/* no nack for truc messages, just drop */
 		err = -EINVAL;

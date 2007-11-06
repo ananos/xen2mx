@@ -62,6 +62,7 @@ enum omx_endpoint_status {
 struct omx_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
+	uint32_t session_id;
 
 	pid_t opener_pid;
 	char opener_comm[TASK_COMM_LEN];
@@ -89,8 +90,11 @@ struct omx_endpoint {
 	struct idr pull_handle_idr;
 	struct list_head pull_handle_list;
 
-	/* descriptor exported to user-space */
-	struct omx_endpoint_desc * desc;
+	/* descriptor exported to user-space, modified by user-space and the driver,
+	 * so we can export some info to user-space by writing into it, but we
+	 * cannot rely on reading from it
+	 */
+	struct omx_endpoint_desc * userdesc;
 };
 
 

@@ -38,23 +38,24 @@ static int
 omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 {
 	struct page ** sendq_pages;
-	struct omx_endpoint_desc *desc;
+	struct omx_endpoint_desc *userdesc;
 	char * buffer;
 	int i;
 	int ret;
 
+	/* generate the session id */
+	get_random_bytes(&endpoint->session_id, sizeof(endpoint->session_id));
+
 	/* create the user descriptor */
-	desc = omx_vmalloc_user(sizeof(struct omx_endpoint_desc));
-	if (!desc) {
-		printk(KERN_ERR "Open-MX: failed to allocate endpoint descriptor\n");
+	userdesc = omx_vmalloc_user(sizeof(struct omx_endpoint_desc));
+	if (!userdesc) {
+		printk(KERN_ERR "Open-MX: failed to allocate endpoint user descriptor\n");
 		ret = -ENOMEM;
 		goto out;
 	}
-	desc->status = 0;
-	endpoint->desc = desc;
-
-	/* generate the session id */
-	get_random_bytes(&endpoint->desc->session_id, sizeof(endpoint->desc->session_id));
+	userdesc->status = 0;
+	userdesc->session_id = endpoint->session_id;
+	endpoint->userdesc = userdesc;
 
 	/* alloc and init user queues */
 	ret = -ENOMEM;
@@ -98,7 +99,7 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
  out_with_userq:
 	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
  out_with_desc:
-	vfree(endpoint->desc);
+	vfree(endpoint->userdesc);
  out:
 	return ret;
 }
@@ -110,7 +111,7 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 	omx_endpoint_user_regions_exit(endpoint);
 	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
-	vfree(endpoint->desc);
+	vfree(endpoint->userdesc);
 }
 
 /******************************
@@ -581,7 +582,7 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 		if (vma->vm_flags & (VM_WRITE|VM_MAYWRITE))
 			return -EPERM;
 
-		return omx_remap_vmalloc_range(vma, omx_driver_desc, 0);
+		return omx_remap_vmalloc_range(vma, omx_driver_userdesc, 0);
 	}
 
 	/* the other ioctl require the endpoint to be open */
@@ -591,7 +592,7 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 	}
 
 	if (offset == OMX_ENDPOINT_DESC_FILE_OFFSET && size == PAGE_ALIGN(OMX_ENDPOINT_DESC_SIZE))
-		return omx_remap_vmalloc_range(vma, endpoint->desc, 0);
+		return omx_remap_vmalloc_range(vma, endpoint->userdesc, 0);
 
 	else if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE)
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
