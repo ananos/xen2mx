@@ -173,19 +173,23 @@ enum omx__request_type {
   OMX_REQUEST_TYPE_RECV_LARGE,
 };
 
+/* Request states:
+ * It's a bitmask of pending things.
+ * When 0 (no state), the request is done.
+ */
 enum omx__request_state {
-  /* posted receive that didn't get match yet */
-  OMX_REQUEST_STATE_RECV_NEED_MATCHING = (1<<1),
-  /* queued for sending */
-  OMX_REQUEST_STATE_QUEUED = (1<<2),
+  /* placed on a queue for sending through the driver soon */
+  OMX_REQUEST_STATE_QUEUED = (1<<0),
   /* posted to the driver, not done sending yet */
-  OMX_REQUEST_STATE_IN_DRIVER = (1<<3),
-  /* needs an explicit reply from the peer */
-  OMX_REQUEST_STATE_NEED_REPLY = (1<<4),
-  /* unexpected receive */
-  OMX_REQUEST_STATE_RECV_UNEXPECTED = (1<<5),
+  OMX_REQUEST_STATE_IN_DRIVER = (1<<1),
+  /* posted receive that didn't get match yet */
+  OMX_REQUEST_STATE_RECV_NEED_MATCHING = (1<<2),
   /* partially received medium */
-  OMX_REQUEST_STATE_RECV_PARTIAL = (1<<6),
+  OMX_REQUEST_STATE_RECV_PARTIAL = (1<<3),
+  /* unexpected receive, needs to match a non-yet-posted receive */
+  OMX_REQUEST_STATE_RECV_UNEXPECTED = (1<<4),
+  /* needs an explicit reply from the peer */
+  OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
 };
 
 struct omx__generic_request {
