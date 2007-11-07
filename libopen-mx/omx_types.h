@@ -69,10 +69,10 @@ struct omx__partner {
   uint8_t connect_seqnum;
 
   /* list of request matched but not entirely received */
-  struct list_head partialq;
+  struct list_head partial_recv_req_q;
 
   /* early packets */
-  struct list_head earlyq;
+  struct list_head early_recv_q;
 
   /* seqnum of the next send */
   omx__seqnum_t next_send_seq;

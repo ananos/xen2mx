@@ -118,7 +118,7 @@ static inline void
 omx__enqueue_partner_request(struct omx__partner *partner,
 			     union omx_request *req)
 {
-  list_add_tail(&req->generic.partner_elt, &partner->partialq);
+  list_add_tail(&req->generic.partner_elt, &partner->partial_recv_req_q);
 }
 
 static inline void
@@ -127,7 +127,7 @@ omx__dequeue_partner_request(struct omx__partner *partner,
 {
 #ifdef OMX_DEBUG
   struct list_head *e;
-  list_for_each(e, &partner->partialq)
+  list_for_each(e, &partner->partial_recv_req_q)
     if (req == list_entry(e, union omx_request, generic.partner_elt))
       goto found;
   assert(0);
@@ -140,17 +140,17 @@ omx__dequeue_partner_request(struct omx__partner *partner,
 static inline union omx_request *
 omx__partner_queue_first_request(struct omx__partner *partner)
 {
-  return list_first_entry(&partner->partialq, union omx_request, generic.partner_elt);
+  return list_first_entry(&partner->partial_recv_req_q, union omx_request, generic.partner_elt);
 }
 
 static inline int
 omx__partner_queue_empty(struct omx__partner *partner)
 {
-  return list_empty(&partner->partialq);
+  return list_empty(&partner->partial_recv_req_q);
 }
 
 #define omx__foreach_partner_request(partner, req)		\
-list_for_each_entry(req, &partner->partialq, generic.partner_elt)
+list_for_each_entry(req, &partner->partial_recv_req_q, generic.partner_elt)
 
 /*****************************************
  * Partner early packets queue management
@@ -168,7 +168,7 @@ omx__enqueue_partner_early_packet(struct omx__partner *partner,
   struct omx__early_packet * current, * next = NULL;
 
   /* FIXME: should start from the end to optimize */
-  list_for_each_entry(current, &partner->earlyq, partner_elt) {
+  list_for_each_entry(current, &partner->early_recv_q, partner_elt) {
     if (unlikely(current->msg.seqnum > seqnum)) {
       next = current;
       break;
@@ -180,7 +180,7 @@ omx__enqueue_partner_early_packet(struct omx__partner *partner,
     list_add_tail(&early->partner_elt, &next->partner_elt);
   } else {
     /* insert at the end */
-    list_add_tail(&early->partner_elt, &partner->earlyq);
+    list_add_tail(&early->partner_elt, &partner->early_recv_q);
   }
 }
 
@@ -193,7 +193,7 @@ omx__dequeue_partner_early_packet(struct omx__partner *partner,
 }
 
 #define omx__foreach_partner_early_packet_safe(partner, early, next)	\
-list_for_each_entry_safe(early, next, &partner->earlyq, partner_elt)
+list_for_each_entry_safe(early, next, &partner->early_recv_q, partner_elt)
 
 
 #endif /* __omx_request_h__ */
