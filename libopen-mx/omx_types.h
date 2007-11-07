@@ -68,9 +68,10 @@ struct omx__partner {
   /* seq num of the last connect request to this partner */
   uint8_t connect_seqnum;
 
+  /* list of non-acked request */
+  struct list_head non_acked_req_q;
   /* list of request matched but not entirely received */
   struct list_head partial_recv_req_q;
-
   /* early packets */
   struct list_head early_recv_q;
 
@@ -138,18 +139,29 @@ struct omx_endpoint {
 
   /* context id array for multiplexed queues */
   struct {
+    /* unexpected receive, may be partial */
     struct list_head unexp_req_q;
+    /* posted non-matched receive */
     struct list_head recv_req_q;
+    /* done requests */
     struct list_head done_req_q;
   } * ctxid;
 
   /* non multiplexed queues */
-  struct list_head queued_send_req_q; /* SEND req with state = QUEUED */
-  struct list_head sent_req_q; /* SEND req with state = IN_DRIVER */
-  struct list_head multifrag_medium_recv_req_q; /* RECV req with state = PARTIAL */
-  struct list_head large_send_req_q; /* SEND req with state = NEED_REPLY */
-  struct list_head pull_req_q; /* RECV_LARGE req with state = IN_DRIVER */
-  struct list_head connect_req_q; /* CONNECT req with state = NEED_REPLY */
+  /* SEND req with state = QUEUED */
+  struct list_head queued_send_req_q;
+  /* SEND req with state = IN_DRIVER */
+  struct list_head sent_req_q;
+  /* RECV MEDIUM req with state = PARTIAL */
+  struct list_head multifrag_medium_recv_req_q;
+  /* SEND LARGE req with state = NEED_REPLY and already acked */
+  struct list_head large_send_req_q;
+  /* RECV_LARGE req with state = IN_DRIVER */
+  struct list_head pull_req_q;
+  /* CONNECT req with state = NEED_REPLY */
+  struct list_head connect_req_q;
+  /* any request that needs to be resent, thus NEED_ACK, and is not IN DRIVER */
+  struct list_head non_acked_req_q;
 
   struct omx__sendq_map sendq_map;
   struct omx__large_region_map large_region_map;
@@ -190,11 +202,37 @@ enum omx__request_state {
   OMX_REQUEST_STATE_RECV_UNEXPECTED = (1<<4),
   /* needs an explicit reply from the peer */
   OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
+  /* needs a ack from the peer */
+  OMX_REQUEST_STATE_NEED_ACK = (1<<6),
 };
 
+/* Request states and queueing
+ *
+ * SEND_TINY and SEND_SMALL:
+ *   NEED_ACK: non_acked_req_q
+ * SEND_MEDIUM:
+ *   IN_DRIVER|NEED_ACK: sent_req_q
+ *   NEED_ACK: non_acked_req_q
+ *   IN_DRIVER: sent_req_q (unlikely)
+ * SEND_LARGE:
+ *   NEED_REPLY|NEED_ACK: non_acked_req_q
+ *   NEED_REPLY: large_send_req_q
+ *   NEED_ACK: impossible, the reply must ack at least up to the rndv, and we process acks first
+ * RECV_LARGE:
+ *   IN_DRIVER: pull_req_q
+ *   NEED_ACK: non_acked_req_q
+ *   IN_DRIVER|NEED_ACK: impossible, we switch from one to the other in pull_done
+ * CONNECT:
+ *   NEED_REPLY: connect_req_q
+ */
+
 struct omx__generic_request {
+  /* main queue elt, linked to one of the endpoint queues */
   struct list_head queue_elt;
+
+  /* partner specific queue elt, either for partial receive, or for non-acked request (cannot be both) */
   struct list_head partner_elt;
+
   struct omx__partner * partner;
   enum omx__request_type type;
   omx__seqnum_t send_seqnum; /* seqnum of the sent message associated with the request, either for a usual send request, or the notify message for recv large */

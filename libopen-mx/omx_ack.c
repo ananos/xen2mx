@@ -21,10 +21,54 @@
 #include "omx_lib.h"
 #include "omx_lib_wire.h"
 #include "omx_wire_access.h"
+#include "omx_request.h"
 
 /*******
  * Acks
  */
+
+static void
+omx__mark_request_acked(struct omx_endpoint *ep,
+			union omx_request *req)
+{
+  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_ACK);
+  req->generic.state &= ~OMX_REQUEST_STATE_NEED_ACK;
+
+  switch (req->generic.type) {
+
+  case OMX_REQUEST_TYPE_SEND_TINY:
+  case OMX_REQUEST_TYPE_SEND_SMALL:
+    omx__dequeue_request(&ep->non_acked_req_q, req);
+    omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+    break;
+
+  case OMX_REQUEST_TYPE_SEND_MEDIUM:
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_IN_DRIVER)) {
+      /* keep in the sent_req_q for now */
+    } else {
+      omx__dequeue_request(&ep->non_acked_req_q, req);
+      omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+    }
+    break;
+
+  case OMX_REQUEST_TYPE_SEND_LARGE:
+    /* if the request was already replied, it would have been acked at the same time */
+    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
+
+    omx__dequeue_request(&ep->non_acked_req_q, req);
+    omx__enqueue_request(&ep->large_send_req_q, req);
+    break;
+
+  case OMX_REQUEST_TYPE_RECV_LARGE:
+    omx__dequeue_request(&ep->non_acked_req_q, req);
+    omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+    break;
+
+  default:
+    printf("trying to ack unexpected request type %d\n", req->generic.type);
+    assert(0);
+  }
+}
 
 omx_return_t
 omx__handle_ack(struct omx_endpoint *ep,
@@ -37,8 +81,18 @@ omx__handle_ack(struct omx_endpoint *ep,
   if (!new_acks || new_acks > missing_acks) {
     omx__debug_printf("obsolete ack up to %d\n", (unsigned) last_to_ack);
   } else {
+    union omx_request *req, *next;
+
     omx__debug_printf("ack up to %d\n", (unsigned) last_to_ack);
-    /* FIXME mark requests acked */
+
+    omx__foreach_partner_non_acked_request_safe(partner, req, next) {
+      if (req->generic.send_seqnum > last_to_ack)
+	break;
+
+      omx__dequeue_partner_non_acked_request(partner, req);
+      omx__mark_request_acked(ep, req);
+    }
+
     partner->last_acked_send_seq = last_to_ack;
   }
 

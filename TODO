@@ -1,16 +1,18 @@
+* change assert in omx_fatal or omx__debug_assert
+* make assert configurable into a SEGV with OMX_ASSERT_SEGV
+
 * option for omx_pingpong with issend
   + used with regcache to mesure possible medium perf
 
 * add retransmission
   + wakeup earlier if sleeping to send delayed acks
   + cancel a liback if sending a message before, or send liback after dequeuing request
-  + add non-acked request in a per partner request queue sorted by seqnum
-  + add non-acked request to a resend_list (except those in the driver)
-  + move them to the right queue when acked
   + handle nacks correctly using seqnums and partner's pending queues
   + resend for real
+  + resend connect too
+  + split partner pendind queue in four quarter to prevent wrap around, and add throttling
   + buffer tiny and small for real
-  + make sure acks are correctly flushed when closing endpoints
+  + make sure acks are correctly flushed when closing endpoints, so that we don't hang
 * add FORGOTTEN state for omx_forget, ...
 
 * cleanup BH locking in pull ?

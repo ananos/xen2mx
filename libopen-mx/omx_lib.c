@@ -101,10 +101,14 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     if (unlikely(--req->send.specific.medium.frags_pending_nr))
       break;
 
+    req->generic.state &= ~OMX_REQUEST_STATE_IN_DRIVER;
     omx__dequeue_request(&ep->sent_req_q, req);
 
-    req->generic.state &= ~OMX_REQUEST_STATE_IN_DRIVER;
-    omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+    if (likely(req->generic.state & OMX_REQUEST_STATE_NEED_ACK))
+      omx__enqueue_request(&ep->non_acked_req_q, req);
+    else
+      omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+
     break;
   }
 

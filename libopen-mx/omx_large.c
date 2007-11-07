@@ -422,7 +422,9 @@ omx__process_pull_done(struct omx_endpoint * ep,
 
   req->generic.send_seqnum = seqnum;
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
-  omx__recv_complete(ep, req, status);
+  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
+  omx__enqueue_partner_non_acked_request(partner, req);
 
   return OMX_SUCCESS;
 
@@ -448,6 +450,8 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   assert(req);
   assert(req->generic.type == OMX_REQUEST_TYPE_SEND_LARGE);
   assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
+  omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_NEED_ACK));
+  /* there should be a ack in the notify message, and we processed it before coming here */
 
   omx__dequeue_request(&ep->large_send_req_q, req);
   omx__put_region(ep, req->send.specific.large.region);
