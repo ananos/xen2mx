@@ -420,6 +420,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
     break;
   }
 
+  req->generic.send_seqnum = seqnum;
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
   omx__recv_complete(ep, req, status);
 

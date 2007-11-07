@@ -80,7 +80,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   omx__partner_ack_sent(ep, partner);
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->send.seqnum = seqnum;
+  req->generic.send_seqnum = seqnum;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
@@ -135,7 +135,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   omx__partner_ack_sent(ep, partner);
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->send.seqnum = seqnum;
+  req->generic.send_seqnum = seqnum;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
@@ -182,7 +182,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   medium_param.match_info = req->generic.status.match_info;
   medium_param.frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
   medium_param.msg_length = length;
-  medium_param.seqnum = req->send.seqnum;
+  medium_param.seqnum = req->generic.send_seqnum;
   medium_param.piggyack = partner->next_frag_recv_seq - 1;
   medium_param.session_id = partner->session_id;
 
@@ -251,7 +251,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
    */
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->send.seqnum = seqnum;
+  req->generic.send_seqnum = seqnum;
   req->send.specific.medium.buffer = buffer;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
@@ -293,7 +293,7 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   rndv_param.hdr.dest_endpoint = partner->endpoint_index;
   rndv_param.hdr.match_info = req->generic.status.match_info;
   rndv_param.hdr.length = sizeof(struct omx__rndv_data);
-  rndv_param.hdr.seqnum = req->send.seqnum;
+  rndv_param.hdr.seqnum = req->generic.send_seqnum;
   rndv_param.hdr.piggyack = partner->next_frag_recv_seq - 1;
   rndv_param.hdr.session_id = partner->session_id;
 
@@ -342,7 +342,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->send.seqnum = seqnum;
+  req->generic.send_seqnum = seqnum;
   req->send.specific.large.buffer = buffer;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;

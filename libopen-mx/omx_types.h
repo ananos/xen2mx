@@ -197,6 +197,7 @@ struct omx__generic_request {
   struct list_head partner_elt;
   struct omx__partner * partner;
   enum omx__request_type type;
+  omx__seqnum_t send_seqnum; /* seqnum of the sent message associated with the request, either for a usual send request, or the notify message for recv large */
   uint32_t state;
   struct omx_status status;
 };
@@ -206,7 +207,6 @@ union omx_request {
 
   struct {
     struct omx__generic_request generic;
-    omx__seqnum_t seqnum;
     union {
       struct {
 	void * buffer;
@@ -225,7 +225,7 @@ union omx_request {
     unsigned long length;
     uint64_t match_info;
     uint64_t match_mask;
-    omx__seqnum_t seqnum;
+    omx__seqnum_t seqnum; /* seqnum of the incoming matched send */
     union {
       struct {
 	uint32_t frags_received_mask;
