@@ -85,7 +85,8 @@ omx__dequeue_request(struct list_head *head,
   list_for_each(e, head)
     if (req == list_entry(e, union omx_request, generic.queue_elt))
       goto found;
-  assert(0);
+
+  omx__abort("Failed to find request in queue for dequeueing\n");
 
  found:
 #endif /* OMX_DEBUG */
@@ -130,7 +131,8 @@ omx__dequeue_partner_non_acked_request(struct omx__partner *partner,
   list_for_each(e, &partner->non_acked_req_q)
     if (req == list_entry(e, union omx_request, generic.partner_elt))
       goto found;
-  assert(0);
+
+  omx__abort("Failed to find request in partner non-acked queue for dequeueing\n");
 
  found:
 #endif /* OMX_DEBUG */
@@ -160,7 +162,8 @@ omx__dequeue_partner_partial_request(struct omx__partner *partner,
   list_for_each(e, &partner->partial_recv_req_q)
     if (req == list_entry(e, union omx_request, generic.partner_elt))
       goto found;
-  assert(0);
+
+  omx__abort("Failed to find request in partner partial queue for dequeueing\n");
 
  found:
 #endif /* OMX_DEBUG */

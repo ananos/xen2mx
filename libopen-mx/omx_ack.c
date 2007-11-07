@@ -65,8 +65,8 @@ omx__mark_request_acked(struct omx_endpoint *ep,
     break;
 
   default:
-    printf("trying to ack unexpected request type %d\n", req->generic.type);
-    assert(0);
+    omx__abort("Failed to to ack unexpected request type %d\n",
+	       req->generic.type);
   }
 }
 

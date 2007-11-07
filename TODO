@@ -1,4 +1,3 @@
-* change assert in omx_fatal or omx__debug_assert
 * make assert configurable into a SEGV with OMX_ASSERT_SEGV
 
 * option for omx_pingpong with issend

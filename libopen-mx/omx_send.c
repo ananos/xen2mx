@@ -204,8 +204,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 
       ret = omx__errno_to_return("ioctl SEND_MEDIUM");
       if (unlikely(ret != OMX_NO_SYSTEM_RESOURCES)) {
-	/* FIXME: error message, something went wrong in the driver */
-	assert(0);
+	omx__abort("Failed to post SEND MEDIUM, driver replied %m\n");
       }
 
       /* release resources that were not used */

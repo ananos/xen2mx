@@ -45,6 +45,8 @@
 #define omx__debug_printf(args...) /* nothing */
 #endif
 
+#define omx__abort(args...) do { fprintf(stderr, "Open-MX fatal error: " args); assert(0); } while (0)
+
 /*************
  * Optimizing
  */

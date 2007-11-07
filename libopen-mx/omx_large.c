@@ -67,8 +67,8 @@ omx__endpoint_large_region_alloc(struct omx_endpoint * ep,
   struct omx__large_region_slot * array;
   int index, next_free;
 
-  assert((ep->large_region_map.first_free == -1)
-	 == (ep->large_region_map.nr_free == 0));
+  omx__debug_assert((ep->large_region_map.first_free == -1)
+		    == (ep->large_region_map.nr_free == 0));
 
   index = ep->large_region_map.first_free;
   if (unlikely(index == -1))
@@ -158,7 +158,7 @@ omx__destroy_region(struct omx_endpoint *ep,
   omx_return_t ret;
 
   ret = omx__deregister_region(ep, region);
-  assert(ret == OMX_SUCCESS);
+  omx__debug_assert(ret == OMX_SUCCESS);
 
   list_del(&region->regcache_elt);
   free(region->segs);
@@ -308,8 +308,7 @@ omx__post_pull(struct omx_endpoint * ep,
   if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_PULL");
     if (ret != OMX_NO_SYSTEM_RESOURCES) {
-      /* FIXME: error message, something went wrong in the driver */
-      assert(0);
+      omx__abort("Failed to post SEND PULL, driver replied %m\n");
     }
 
     omx__put_region(ep, region);
@@ -363,8 +362,8 @@ omx__process_pull_done(struct omx_endpoint * ep,
   /* FIXME: check region id */
   region = &ep->large_region_map.array[region_id].region;
   req = region->user;
-  assert(req);
-  assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
+  omx__debug_assert(req);
+  omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
 
   partner = req->generic.partner;
   /* FIXME: check length, update req->generic.status.xfer_length and status */
@@ -416,8 +415,8 @@ omx__process_pull_done(struct omx_endpoint * ep,
     status = OMX_STATUS_ENDPOINT_UNREACHABLE;
     break;
   default:
-    assert(0);
-    break;
+    omx__abort("Failed to handle NACK status %d\n",
+	       event->status);
   }
 
   req->generic.send_seqnum = seqnum;
@@ -447,9 +446,9 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   /* FIXME: check region id */
   region = &ep->large_region_map.array[region_id].region;
   req = region->user;
-  assert(req);
-  assert(req->generic.type == OMX_REQUEST_TYPE_SEND_LARGE);
-  assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
+  omx__debug_assert(req);
+  omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_SEND_LARGE);
+  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
   omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_NEED_ACK));
   /* there should be a ack in the notify message, and we processed it before coming here */
 

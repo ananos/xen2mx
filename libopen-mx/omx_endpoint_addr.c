@@ -154,7 +154,7 @@ omx__partner_recv_lookup(struct omx_endpoint *ep,
   partner_index = ((uint32_t) endpoint_index)
     + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
   partner = ep->partners[partner_index];
-  assert(partner);
+  omx__debug_assert(partner);
 
   *partnerp = partner;
   return OMX_SUCCESS;
@@ -299,7 +299,8 @@ omx_connect(omx_endpoint_t ep,
     ret = OMX_BAD_CONNECTION_KEY;
     break;
   default:
-    assert(0);
+    omx__abort("Failed to handle connect status %s\n",
+	       omx_strstatus(req->generic.status.code));
   }
 
   return ret;

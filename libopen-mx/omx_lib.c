@@ -19,7 +19,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
 #include "omx_io.h"
 #include "omx_lib.h"
@@ -92,8 +91,8 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     uint16_t sendq_page_offset = evt->send_medium_frag_done.sendq_page_offset;
     union omx_request * req = omx__endpoint_sendq_map_put(ep, sendq_page_offset);
 
-    assert(req);
-    assert(req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM);
+    omx__debug_assert(req);
+    omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM);
 
     ep->avail_exp_events++;
 
@@ -147,20 +146,18 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
       status = OMX_STATUS_BAD_SESSION;
       break;
     default:
-      fprintf(stderr, "Got a NACK with unknown type (%d) from peer %s (index %d) seqnum %d\n",
-	      (unsigned) nack_type, board_addr_str, (unsigned) peer_index, (unsigned) seqnum);
-      assert(0);
+      omx__abort("Failed to handle NACK with unknown type (%d) from peer %s (index %d) seqnum %d\n",
+		 (unsigned) nack_type, board_addr_str, (unsigned) peer_index, (unsigned) seqnum);
     }
 
-    printf("got a NACK (%s) from peer %s (index %d) seqnum %d\n",
-	   omx_strstatus(status), board_addr_str,(unsigned) peer_index, (unsigned) seqnum);
-    assert(0);
-    break;
+    /* FIXME */
+    omx__abort("got a NACK (%s) from peer %s (index %d) seqnum %d\n",
+	       omx_strstatus(status), board_addr_str,(unsigned) peer_index, (unsigned) seqnum);
   }
 
   default:
-    printf("unknown type %d\n", evt->generic.type);
-    assert(0);
+    omx__abort("Failed to handle event with unknown type %d\n",
+	       evt->generic.type);
   }
 
   return ret;
@@ -186,8 +183,7 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     return;
 
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL) {
-    printf("Driver reporting expected event queue full\n");
-    assert(0);
+    omx__abort("Driver reporting expected event queue full\n");
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL) {
     printf("Driver reporting unexpected event queue full\n");
@@ -271,7 +267,8 @@ omx__progress(struct omx_endpoint * ep)
       ret = omx__post_pull(ep, req);
       break;
     default:
-      assert(0);
+      omx__abort("Failed to handle queued request with type %d\n",
+		 req->generic.type);
     }
 
     if (unlikely(ret != OMX_SUCCESS)) {

@@ -110,7 +110,8 @@ omx__postpone_early_packet(struct omx__partner * partner,
   }
 
   default:
-    assert(0);
+    omx__abort("Failed to handle early packet with type %d\n",
+	       msg->type);
   }
 
   omx__debug_printf("postponing early packet with seqnum %d\n",
@@ -307,7 +308,11 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       /* the handler took care of the message, we now discard it */
       return OMX_SUCCESS;
 
-    assert(ret == OMX_RECV_CONTINUE);
+    /* if not FINISHED, return MUST be CONTINUE */
+    if (ret == OMX_RECV_CONTINUE) {
+      omx__abort("The unexpected handler must return either OMX_RECV_FINISHED and OMX_RECV_CONTINUE\n");
+    }
+
     /* the unexp has been noticed check if a recv has been posted */
     ret = omx__match_recv(ep, msg, &req);
     if (unlikely(ret != OMX_SUCCESS))
@@ -403,7 +408,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
     }
   }
 
-  assert(0);
+  omx__abort("Failed to find partial request to continue with new medium fragment\n");
 }
 
 static INLINE omx_return_t
@@ -534,7 +539,7 @@ omx__process_recv_truc(struct omx_endpoint *ep,
     break;
   }
   default:
-    assert(0);
+    omx__abort("Failed to handle truc message with type %d\n", truc_type);
   }
 
   return OMX_SUCCESS;

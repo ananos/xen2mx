@@ -18,7 +18,6 @@
 
 #include <stdio.h>
 #include <errno.h>
-#include <assert.h>
 
 #include "omx_lib.h"
 #include "omx_request.h"
@@ -46,9 +45,8 @@ omx__errno_to_return(char * caller)
   case EBUSY:
     return OMX_BUSY;
   default:
-    fprintf(stderr, "Open-MX: %s got unexpected errno %d (%m)\n",
-	    caller, errno);
-    return OMX_BAD_ERROR;
+    omx__abort("%s got unexpected errno %d (%m)\n",
+	       caller, errno);
   }
 }
 
@@ -91,7 +89,8 @@ omx_strerror(omx_return_t ret)
   case OMX_CANCEL_NOT_SUPPORTED:
     return "Cancel not supported for this request";
   }
-  assert(0);
+  omx__abort("Failed to stringify unknown return value %d\n",
+	     ret);
 }
 
 const char *
@@ -119,7 +118,8 @@ omx_strstatus(omx_status_code_t code)
   case OMX_STATUS_ABORTED:
     return "Aborted";
   }
-  assert(0);
+  omx__abort("Failed to stringify unknown status code %d\n",
+	     code);
 }
 
 /*************************
