@@ -110,19 +110,19 @@ list_for_each_entry(req, head, generic.queue_elt)
 #define omx__foreach_request_safe(head, req, next)	\
 list_for_each_entry_safe(req, next, head, generic.queue_elt)
 
-/***********************************
- * Partner request queue management
+/*******************************************
+ * Partner partial request queue management
  */
 
 static inline void
-omx__enqueue_partner_request(struct omx__partner *partner,
+omx__enqueue_partial_request(struct omx__partner *partner,
 			     union omx_request *req)
 {
   list_add_tail(&req->generic.partner_elt, &partner->partial_recv_req_q);
 }
 
 static inline void
-omx__dequeue_partner_request(struct omx__partner *partner,
+omx__dequeue_partial_request(struct omx__partner *partner,
 			     union omx_request *req)
 {
 #ifdef OMX_DEBUG
@@ -138,18 +138,18 @@ omx__dequeue_partner_request(struct omx__partner *partner,
 }
 
 static inline union omx_request *
-omx__partner_queue_first_request(struct omx__partner *partner)
+omx__partial_queue_first_request(struct omx__partner *partner)
 {
   return list_first_entry(&partner->partial_recv_req_q, union omx_request, generic.partner_elt);
 }
 
 static inline int
-omx__partner_queue_empty(struct omx__partner *partner)
+omx__partial_queue_empty(struct omx__partner *partner)
 {
   return list_empty(&partner->partial_recv_req_q);
 }
 
-#define omx__foreach_partner_request(partner, req)		\
+#define omx__foreach_partial_request(partner, req)		\
 list_for_each_entry(req, &partner->partial_recv_req_q, generic.partner_elt)
 
 /*****************************************
