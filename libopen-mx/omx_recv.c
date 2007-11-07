@@ -325,7 +325,9 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     omx__partner_to_addr(partner, &req->generic.status.addr);
     req->recv.seqnum = seqnum;
     req->generic.status.match_info = msg->match_info;
-    req->generic.state |= OMX_REQUEST_STATE_MATCHED;
+
+    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_NEED_MATCHING);
+    req->generic.state &= ~OMX_REQUEST_STATE_RECV_NEED_MATCHING;
 
     req->generic.status.msg_length = msg_length;
     xfer_length = req->recv.length < msg_length ? req->recv.length : msg_length;
@@ -576,7 +578,6 @@ omx_irecv(struct omx_endpoint *ep,
 	length = req->generic.status.msg_length;
       req->generic.status.xfer_length = length;
 
-      req->generic.state |= OMX_REQUEST_STATE_MATCHED;
       omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED);
       req->generic.state &= ~OMX_REQUEST_STATE_RECV_UNEXPECTED;
 
@@ -612,7 +613,7 @@ omx_irecv(struct omx_endpoint *ep,
     goto out;
   }
 
-  req->generic.state = 0;
+  req->generic.state = OMX_REQUEST_STATE_RECV_NEED_MATCHING;
   req->generic.status.context = context;
   req->recv.buffer = buffer;
   req->recv.length = length;

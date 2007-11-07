@@ -174,12 +174,19 @@ enum omx__request_type {
 };
 
 enum omx__request_state {
+  /* request complete */
   OMX_REQUEST_STATE_DONE = (1<<0),
-  OMX_REQUEST_STATE_MATCHED = (1<<1),
+  /* posted receive that didn't get match yet */
+  OMX_REQUEST_STATE_RECV_NEED_MATCHING = (1<<1),
+  /* queued for sending */
   OMX_REQUEST_STATE_QUEUED = (1<<2),
+  /* posted to the driver, not done sending yet */
   OMX_REQUEST_STATE_IN_DRIVER = (1<<3),
+  /* needs an explicit reply from the peer */
   OMX_REQUEST_STATE_NEED_REPLY = (1<<4),
+  /* unexpected receive */
   OMX_REQUEST_STATE_RECV_UNEXPECTED = (1<<5),
+  /* partially received medium */
   OMX_REQUEST_STATE_RECV_PARTIAL = (1<<6),
 };
 

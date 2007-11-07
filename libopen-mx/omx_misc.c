@@ -145,16 +145,16 @@ omx_cancel(omx_endpoint_t ep,
 
   switch (req->generic.type) {
   case OMX_REQUEST_TYPE_RECV: {
-    if (req->generic.state & OMX_REQUEST_STATE_MATCHED) {
-      /* already matched, too late */
-      *result = 0;
-    } else {
+    if (req->generic.state & OMX_REQUEST_STATE_RECV_NEED_MATCHING) {
       /* not matched, still in the recv queue */
       uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
       omx__dequeue_request(&ep->ctxid[ctxid].recv_req_q, req);
       omx__request_free(req);
       *request = 0;
       *result = 1;
+    } else {
+      /* already matched, too late */
+      *result = 0;
     }
     break;
   }

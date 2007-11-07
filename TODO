@@ -5,7 +5,11 @@
   + wakeup earlier if sleeping to send delayed acks
   + cancel a liback if sending a message before, or send liback after dequeuing request
   + add non-acked request in a per partner request queue sorted by seqnum
+  + add non-acked request to a resend_list (except those in the driver)
+  + move them to the right queue when acked
   + handle nacks correctly using seqnums and partner's pending queues
+  + resend for real
+  + buffer tiny and small for real
   + make sure acks are correctly flushed when closing endpoints
 * add FORGOTTEN state for omx_forget, ...
 
