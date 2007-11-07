@@ -28,7 +28,7 @@ omx__test_common(struct omx_endpoint *ep, union omx_request **requestp,
 {
   union omx_request * req = *requestp;
 
-  if (unlikely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
+  if (unlikely(req->generic.state)) {
     return 0;
   } else {
     uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);

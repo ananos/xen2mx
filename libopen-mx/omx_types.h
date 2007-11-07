@@ -174,8 +174,6 @@ enum omx__request_type {
 };
 
 enum omx__request_state {
-  /* request complete */
-  OMX_REQUEST_STATE_DONE = (1<<0),
   /* posted receive that didn't get match yet */
   OMX_REQUEST_STATE_RECV_NEED_MATCHING = (1<<1),
   /* queued for sending */

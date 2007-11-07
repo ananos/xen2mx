@@ -135,7 +135,6 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 
   memcpy(req->recv.buffer, msg->specific.tiny.data, msg_length);
 
-  req->generic.state |= OMX_REQUEST_STATE_DONE;
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   else
@@ -152,7 +151,6 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 
   memcpy(req->recv.buffer, data, msg_length);
 
-  req->generic.state |= OMX_REQUEST_STATE_DONE;
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   else
@@ -196,7 +194,6 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
       omx__dequeue_partner_request(partner, req);
 
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
-    req->generic.state |= OMX_REQUEST_STATE_DONE;
     if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
       omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
     else
@@ -593,10 +590,11 @@ omx_irecv(struct omx_endpoint *ep,
 	memcpy(buffer, req->recv.buffer, length);
 	free(req->recv.buffer);
 
-	if (likely(req->generic.state & OMX_REQUEST_STATE_DONE)) {
-	  omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
-	} else {
+	if (unlikely(req->generic.state)) {
+	  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);
 	  omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
+	} else {
+	  omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
 	}
       }
 

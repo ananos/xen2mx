@@ -86,7 +86,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  req->generic.state = OMX_REQUEST_STATE_DONE;
+  req->generic.state = 0;
   omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
 
   *requestp = req;
@@ -141,7 +141,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  req->generic.state = OMX_REQUEST_STATE_DONE;
+  req->generic.state = 0;
   omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
 
   *requestp = req;

@@ -421,7 +421,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
   }
 
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
-  req->generic.state |= OMX_REQUEST_STATE_DONE;
   omx__recv_complete(ep, req, status);
 
   return OMX_SUCCESS;
@@ -454,6 +453,5 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   req->generic.status.xfer_length = xfer_length;
 
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
-  req->generic.state |= OMX_REQUEST_STATE_DONE;
   omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
 }
