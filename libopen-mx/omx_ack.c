@@ -23,13 +23,14 @@
 #include "omx_wire_access.h"
 #include "omx_request.h"
 
-/***********************
- * Handle Received Acks
+/*************************************
+ * Apply a ack or a nack to a request
  */
 
 static void
 omx__mark_request_acked(struct omx_endpoint *ep,
-			union omx_request *req)
+			union omx_request *req,
+			omx_status_code_t status)
 {
   omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_ACK);
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_ACK;
@@ -39,15 +40,18 @@ omx__mark_request_acked(struct omx_endpoint *ep,
   case OMX_REQUEST_TYPE_SEND_TINY:
   case OMX_REQUEST_TYPE_SEND_SMALL:
     omx__dequeue_request(&ep->non_acked_req_q, req);
-    omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+    omx__send_complete(ep, req, status);
     break;
 
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
     if (unlikely(req->generic.state & OMX_REQUEST_STATE_IN_DRIVER)) {
-      /* keep in the driver_posted_req_q for now */
+      /* keep the request in the driver_posted_req_q for now until it returns from the driver */
+      if (req->generic.status.code == OMX_STATUS_SUCCESS)
+	/* set the status (success for ack, error for nack) only if there has been no error early */
+	req->generic.status.code = status;
     } else {
       omx__dequeue_request(&ep->non_acked_req_q, req);
-      omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+      omx__send_complete(ep, req, status);
     }
     break;
 
@@ -56,12 +60,15 @@ omx__mark_request_acked(struct omx_endpoint *ep,
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
 
     omx__dequeue_request(&ep->non_acked_req_q, req);
-    omx__enqueue_request(&ep->large_send_req_q, req);
+    if (status != OMX_STATUS_SUCCESS)
+      /* the request has been nacked, there won't be any reply */
+      req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
+    omx__send_complete(ep, req, status);
     break;
 
   case OMX_REQUEST_TYPE_RECV_LARGE:
     omx__dequeue_request(&ep->non_acked_req_q, req);
-    omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+    omx__recv_complete(ep, req, status);
     break;
 
   default:
@@ -69,6 +76,10 @@ omx__mark_request_acked(struct omx_endpoint *ep,
 	       req->generic.type);
   }
 }
+
+/***********************
+ * Handle Received Acks
+ */
 
 omx_return_t
 omx__handle_ack(struct omx_endpoint *ep,
@@ -90,7 +101,7 @@ omx__handle_ack(struct omx_endpoint *ep,
 	break;
 
       omx__dequeue_partner_non_acked_request(partner, req);
-      omx__mark_request_acked(ep, req);
+      omx__mark_request_acked(ep, req, OMX_STATUS_SUCCESS);
     }
 
     partner->last_acked_send_seq = last_to_ack;
@@ -102,53 +113,6 @@ omx__handle_ack(struct omx_endpoint *ep,
 /************************
  * Handle Received Nacks
  */
-
-static void
-omx__mark_request_nacked(struct omx_endpoint *ep,
-			 union omx_request *req,
-			 omx_status_code_t status)
-{
-  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_ACK);
-  req->generic.state &= ~OMX_REQUEST_STATE_NEED_ACK;
-
-  switch (req->generic.type) {
-
-  case OMX_REQUEST_TYPE_SEND_TINY:
-  case OMX_REQUEST_TYPE_SEND_SMALL:
-    omx__dequeue_request(&ep->non_acked_req_q, req);
-    omx__send_complete(ep, req, status);
-    break;
-
-  case OMX_REQUEST_TYPE_SEND_MEDIUM:
-    if (unlikely(req->generic.state & OMX_REQUEST_STATE_IN_DRIVER)) {
-      /* set the status to error and keep the request in the driver_posted_req_q for now */
-      if (req->generic.status.code == OMX_STATUS_SUCCESS)
-	req->generic.status.code = status;
-    } else {
-      omx__dequeue_request(&ep->non_acked_req_q, req);
-      omx__send_complete(ep, req, status);
-    }
-    break;
-
-  case OMX_REQUEST_TYPE_SEND_LARGE:
-    /* if the request was already replied, it would have been acked at the same time */
-    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
-
-    omx__dequeue_request(&ep->non_acked_req_q, req);
-    req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
-    omx__send_complete(ep, req, status);
-    break;
-
-  case OMX_REQUEST_TYPE_RECV_LARGE:
-    omx__dequeue_request(&ep->non_acked_req_q, req);
-    omx__recv_complete(ep, req, status);
-    break;
-
-  default:
-    omx__abort("Failed to to ack unexpected request type %d\n",
-	       req->generic.type);
-  }
-}
 
 omx_return_t
 omx__handle_nack(struct omx_endpoint *ep,
@@ -163,7 +127,7 @@ omx__handle_nack(struct omx_endpoint *ep,
       break;
     if (req->generic.send_seqnum == seqnum) {
       omx__dequeue_partner_non_acked_request(partner, req);
-      omx__mark_request_nacked(ep, req, status);
+      omx__mark_request_acked(ep, req, status);
       return OMX_SUCCESS;
     }
   }
