@@ -155,18 +155,28 @@ omx__handle_nack(struct omx_endpoint *ep,
 {
   union omx_request *req;
 
+  /* look in the list of pending real messages */
   omx__foreach_partner_non_acked_request(partner, req) {
-    if (req->generic.send_seqnum < seqnum)
-      continue;
+    if (req->generic.send_seqnum > seqnum)
+      break;
     if (req->generic.send_seqnum == seqnum) {
       omx__dequeue_partner_non_acked_request(partner, req);
       omx__mark_request_nacked(ep, req, status);
       return OMX_SUCCESS;
     }
-    break;
   }
 
-  omx__abort("Failed to find request to nack for seqnum %d, was it a connect?\n", seqnum);
+  /* look in the list of pending connect requests */
+  omx__foreach_partner_connect_request(partner, req) {
+    if (req->connect.connect_seqnum > seqnum)
+      break;
+    if (req->connect.connect_seqnum == seqnum) {
+      omx__connect_complete(ep, req, status);
+      return OMX_SUCCESS;
+    }
+  }
+
+  omx__abort("Failed to find request to nack for seqnum %d\n", seqnum);
 }
 
 /**********************

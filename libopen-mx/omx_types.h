@@ -70,6 +70,8 @@ struct omx__partner {
 
   /* list of non-acked request */
   struct list_head non_acked_req_q;
+  /* pending connect requests */
+  struct list_head pending_connect_req_q;
   /* list of request matched but not entirely received */
   struct list_head partial_recv_req_q;
   /* early packets */

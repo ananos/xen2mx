@@ -113,6 +113,10 @@ extern omx_return_t
 omx__process_recv_connect(struct omx_endpoint *ep,
 			  struct omx_evt_recv_connect *event);
 
+extern void
+omx__connect_complete(struct omx_endpoint *ep, union omx_request *req,
+		      omx_status_code_t status);
+
 extern omx_return_t
 omx__endpoint_large_region_map_init(struct omx_endpoint * ep);
 

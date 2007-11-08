@@ -36,6 +36,7 @@ enum omx_return {
   OMX_NO_SYSTEM_RESOURCES,
   OMX_INVALID_PARAMETER,
   OMX_NOT_IMPLEMENTED,
+  OMX_CONNECTION_FAILED, /* FIXME: various error codes for bad endpoint id and closed endpoint */
   OMX_BAD_CONNECTION_KEY,
   OMX_BUSY,
   OMX_BAD_MATCH_MASK,

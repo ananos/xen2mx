@@ -74,6 +74,8 @@ omx_strerror(omx_return_t ret)
     return "Invalid parameter";
   case OMX_NOT_IMPLEMENTED:
     return "Not implemented";
+  case OMX_CONNECTION_FAILED:
+    return "Connection Failed";
   case OMX_BAD_CONNECTION_KEY:
     return "Bad Connection Key";
   case OMX_BUSY:

@@ -67,6 +67,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->peer_index = peer_index;
   partner->connect_seqnum = 0;
   INIT_LIST_HEAD(&partner->non_acked_req_q);
+  INIT_LIST_HEAD(&partner->pending_connect_req_q);
   INIT_LIST_HEAD(&partner->partial_recv_req_q);
   INIT_LIST_HEAD(&partner->early_recv_q);
   partner->session_id = 0; /* will be initialized when the partner will connect to me */
@@ -248,6 +249,7 @@ omx__connect_common(omx_endpoint_t ep,
   req->connect.session_id = ep->desc->session_id;
   req->connect.connect_seqnum = connect_seqnum;
   omx__enqueue_request(&ep->connect_req_q, req);
+  omx__enqueue_partner_connect_request(partner, req);
 
   ret = omx__progress(ep);
   if (ret != OMX_SUCCESS)
@@ -298,6 +300,10 @@ omx_connect(omx_endpoint_t ep,
   case OMX_STATUS_BAD_KEY:
     ret = OMX_BAD_CONNECTION_KEY;
     break;
+  case OMX_STATUS_ENDPOINT_CLOSED:
+  case OMX_STATUS_BAD_ENDPOINT:
+    ret = OMX_CONNECTION_FAILED;
+    break;
   default:
     omx__abort("Failed to handle connect status %s\n",
 	       omx_strstatus(req->generic.status.code));
@@ -341,6 +347,33 @@ omx_iconnect(omx_endpoint_t ep,
   omx__request_free(req);
  out:
   return ret;
+}
+
+/*
+ * Complete the connect request
+ */
+void
+omx__connect_complete(struct omx_endpoint *ep,
+		      union omx_request * req, omx_status_code_t status)
+{
+  struct omx__partner *partner = req->generic.partner;
+
+  omx__dequeue_request(&ep->connect_req_q, req);
+  omx__dequeue_partner_connect_request(partner, req);
+  req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
+
+  if (likely(req->generic.status.code == OMX_STATUS_SUCCESS))
+    /* only set the status if it is not already set to an error */
+    req->generic.status.code = status;
+
+  if (status == OMX_STATUS_SUCCESS)
+    omx__partner_to_addr(partner, &req->generic.status.addr);
+
+  /* move iconnect request to the done queue */
+  if (!req->connect.is_synchronous) {
+    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+    omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
+  }
 }
 
 /*
@@ -392,18 +425,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   }
 
   /* complete the request */
-  omx__dequeue_request(&ep->connect_req_q, req);
-  req->generic.status.code = status_code;
-  if (req->generic.status.code == OMX_STATUS_SUCCESS)
-    omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
-
-  /* move iconnect request to the done queue */
-  if (!req->connect.is_synchronous) {
-    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-    omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
-  }
-
+  omx__connect_complete(ep, req, status_code);
   return OMX_SUCCESS;
 }
 

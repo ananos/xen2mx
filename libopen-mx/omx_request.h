@@ -145,6 +145,37 @@ list_for_each_entry(req, &partner->non_acked_req_q, generic.partner_elt)
 #define omx__foreach_partner_non_acked_request_safe(partner, req, next)		\
 list_for_each_entry_safe(req, next, &partner->non_acked_req_q, generic.partner_elt)
 
+/***************************************************
+ * Partner pending connect request queue management
+ */
+
+static inline void
+omx__enqueue_partner_connect_request(struct omx__partner *partner,
+				     union omx_request *req)
+{
+  list_add_tail(&req->generic.partner_elt, &partner->pending_connect_req_q);
+}
+
+static inline void
+omx__dequeue_partner_connect_request(struct omx__partner *partner,
+				     union omx_request *req)
+{
+#ifdef OMX_DEBUG
+  struct list_head *e;
+  list_for_each(e, &partner->pending_connect_req_q)
+    if (req == list_entry(e, union omx_request, generic.partner_elt))
+      goto found;
+
+  omx__abort("Failed to find request in partner pending connect queue for dequeueing\n");
+
+ found:
+#endif /* OMX_DEBUG */
+  list_del(&req->generic.partner_elt);
+}
+
+#define omx__foreach_partner_connect_request(partner, req)	\
+list_for_each_entry(req, &partner->pending_connect_req_q, generic.partner_elt)
+
 /*******************************************
  * Partner partial request queue management
  */
