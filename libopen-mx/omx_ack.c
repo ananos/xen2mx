@@ -67,10 +67,13 @@ omx__mark_request_acked(struct omx_endpoint *ep,
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
 
     omx__dequeue_request(queue, req);
-    if (status != OMX_STATUS_SUCCESS)
+    if (unlikely(status != OMX_STATUS_SUCCESS)) {
       /* the request has been nacked, there won't be any reply */
       req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
-    omx__send_complete(ep, req, status);
+      omx__send_complete(ep, req, status);
+    } else {
+      omx__enqueue_request(&ep->large_send_req_q, req);
+    }
     break;
 
   case OMX_REQUEST_TYPE_RECV_LARGE:
