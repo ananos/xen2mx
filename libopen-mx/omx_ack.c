@@ -122,7 +122,7 @@ omx__mark_request_nacked(struct omx_endpoint *ep,
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
     if (unlikely(req->generic.state & OMX_REQUEST_STATE_IN_DRIVER)) {
       /* set the status to error and keep the request in the driver_posted_req_q for now */
-      if (req->generic.status.code != OMX_STATUS_SUCCESS)
+      if (req->generic.status.code == OMX_STATUS_SUCCESS)
 	req->generic.status.code = status;
     } else {
       omx__dequeue_request(&ep->non_acked_req_q, req);
