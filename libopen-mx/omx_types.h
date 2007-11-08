@@ -153,7 +153,7 @@ struct omx_endpoint {
   /* SEND req with state = QUEUED */
   struct list_head queued_send_req_q;
   /* SEND req with state = IN_DRIVER */
-  struct list_head sent_req_q;
+  struct list_head driver_posted_req_q;
   /* RECV MEDIUM req with state = PARTIAL */
   struct list_head multifrag_medium_recv_req_q;
   /* SEND LARGE req with state = NEED_REPLY and already acked */
@@ -213,9 +213,9 @@ enum omx__request_state {
  * SEND_TINY and SEND_SMALL:
  *   NEED_ACK: non_acked_req_q
  * SEND_MEDIUM:
- *   IN_DRIVER|NEED_ACK: sent_req_q
+ *   IN_DRIVER|NEED_ACK: driver_posted_req_q
  *   NEED_ACK: non_acked_req_q
- *   IN_DRIVER: sent_req_q (unlikely)
+ *   IN_DRIVER: driver_posted_req_q (unlikely)
  * SEND_LARGE:
  *   NEED_REPLY|NEED_ACK: non_acked_req_q
  *   NEED_REPLY: large_send_req_q

@@ -101,7 +101,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
       break;
 
     req->generic.state &= ~OMX_REQUEST_STATE_IN_DRIVER;
-    omx__dequeue_request(&ep->sent_req_q, req);
+    omx__dequeue_request(&ep->driver_posted_req_q, req);
 
     if (likely(req->generic.state & OMX_REQUEST_STATE_NEED_ACK))
       omx__enqueue_request(&ep->non_acked_req_q, req);

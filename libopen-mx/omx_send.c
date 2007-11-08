@@ -226,7 +226,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
  posted:
   omx__partner_ack_sent(ep, partner);
   req->generic.state = OMX_REQUEST_STATE_IN_DRIVER|OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_request(&ep->sent_req_q, req);
+  omx__enqueue_request(&ep->driver_posted_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);
 
   return OMX_SUCCESS;
