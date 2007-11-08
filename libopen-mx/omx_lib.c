@@ -128,9 +128,15 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     uint16_t peer_index = nack_lib->peer_index;
     uint16_t seqnum = nack_lib->seqnum;
     uint8_t nack_type = nack_lib->nack_type;
+    struct omx__partner * partner;
     uint64_t board_addr = 0;
     char board_addr_str[OMX_BOARD_ADDR_STRLEN];
     omx_status_code_t status;
+
+    ret = omx__partner_recv_lookup(ep, peer_index, nack_lib->src_endpoint,
+				   &partner);
+    if (unlikely(ret != OMX_SUCCESS))
+      return ret;
 
     omx__peer_index_to_addr(peer_index, &board_addr);
     omx__board_addr_sprintf(board_addr_str, board_addr);
@@ -150,9 +156,8 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 		 (unsigned) nack_type, board_addr_str, (unsigned) peer_index, (unsigned) seqnum);
     }
 
-    /* FIXME */
-    omx__abort("got a NACK (%s) from peer %s (index %d) seqnum %d\n",
-	       omx_strstatus(status), board_addr_str,(unsigned) peer_index, (unsigned) seqnum);
+    ret = omx__handle_nack(ep, partner, seqnum, status);
+    break;
   }
 
   default:

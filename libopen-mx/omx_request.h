@@ -139,6 +139,9 @@ omx__dequeue_partner_non_acked_request(struct omx__partner *partner,
   list_del(&req->generic.partner_elt);
 }
 
+#define omx__foreach_partner_non_acked_request(partner, req)	\
+list_for_each_entry(req, &partner->non_acked_req_q, generic.partner_elt)
+
 #define omx__foreach_partner_non_acked_request_safe(partner, req, next)		\
 list_for_each_entry_safe(req, next, &partner->non_acked_req_q, generic.partner_elt)
 

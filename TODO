@@ -6,12 +6,11 @@
 * add retransmission
   + wakeup earlier if sleeping to send delayed acks
   + cancel a liback if sending a message before, or send liback after dequeuing request
-  + handle nacks correctly using seqnums and partner's pending queues
+  + handle nacks for connect too
   + resend for real
   + resend connect too
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
   + buffer tiny and small for real
-  + make sure acks are correctly flushed when closing endpoints, so that we don't hang
 * add FORGOTTEN state for omx_forget, ...
 
 * cleanup BH locking in pull ?
