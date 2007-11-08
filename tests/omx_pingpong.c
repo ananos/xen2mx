@@ -250,6 +250,11 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
+    if (status.code != OMX_STATUS_SUCCESS) {
+      fprintf(stderr, "isend param message failed with status (%s)\n",
+	      omx_strstatus(status.code));
+      goto out_with_ep;
+    }
 
     if (verbose)
       printf("Sent parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d, unidir=%d)\n",
@@ -268,6 +273,11 @@ int main(int argc, char *argv[])
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait param ack message (%s)\n",
 	      omx_strerror(ret));
+      goto out_with_ep;
+    }
+    if (status.code != OMX_STATUS_SUCCESS) {
+      fprintf(stderr, "param ack message failed with status (%s)\n",
+	      omx_strstatus(status.code));
       goto out_with_ep;
     }
 
@@ -306,6 +316,11 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
+	if (status.code != OMX_STATUS_SUCCESS) {
+	  fprintf(stderr, "isend failed with status (%s)\n",
+		  omx_strstatus(status.code));
+		  goto out_with_ep;
+	}
 
 	/* wait for an incoming message */
 	ret = omx_irecv(ep, buffer, unidir ? 0 : length,
@@ -321,6 +336,11 @@ int main(int argc, char *argv[])
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));
 	  goto out_with_ep;
+	}
+	if (status.code != OMX_STATUS_SUCCESS) {
+	  fprintf(stderr, "irecv failed with status (%s)\n",
+		  omx_strstatus(status.code));
+		  goto out_with_ep;
 	}
 
       }
@@ -374,6 +394,11 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
+    if (status.code != OMX_STATUS_SUCCESS) {
+      fprintf(stderr, "irecv param message failed with status (%s)\n",
+	      omx_strstatus(status.code));
+      goto out_with_ep;
+    }
 
     /* retrieve parameters */
     iter = ntohl(param.iter);
@@ -414,6 +439,12 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
+    if (status.code != OMX_STATUS_SUCCESS) {
+      fprintf(stderr, "send param ack message failed with status (%s)\n",
+	      omx_strstatus(status.code));
+      goto out_with_ep;
+    }
+
     assert(status.match_info == 0xabcddcbaabcddcbaULL);
     assert(status.context == (void*) 0xdeadbeef);
     addr = status.addr;
@@ -465,6 +496,11 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
+	if (status.code != OMX_STATUS_SUCCESS) {
+	  fprintf(stderr, "irecv failed with status (%s)\n",
+		  omx_strstatus(status.code));
+		  goto out_with_ep;
+	}
 
 	/* sending a message */
 	ret = omx_isend(ep, buffer, unidir ? 0 : length,
@@ -480,6 +516,11 @@ int main(int argc, char *argv[])
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));
 	  goto out_with_ep;
+	}
+	if (status.code != OMX_STATUS_SUCCESS) {
+	  fprintf(stderr, "isend failed with status (%s)\n",
+		  omx_strstatus(status.code));
+		  goto out_with_ep;
 	}
       }
       if (verbose)
