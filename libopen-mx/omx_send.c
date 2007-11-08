@@ -86,6 +86,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);
@@ -142,6 +143,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);
@@ -225,6 +227,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 
  posted:
   omx__partner_ack_sent(ep, partner);
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state = OMX_REQUEST_STATE_IN_DRIVER|OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->driver_posted_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);
@@ -315,6 +318,7 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   region->user = req;
 
   omx__partner_ack_sent(ep, partner);
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);

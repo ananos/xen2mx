@@ -251,6 +251,11 @@ omx__progress(struct omx_endpoint * ep)
     ep->next_exp_event = (void *) evt;
   }
 
+  /* requeued request that didn't get acked */
+  omx__process_non_acked_requests(ep);
+
+  /* FIXME: process requeued list */
+
   /* post queued requests */
   omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
     omx_return_t ret;

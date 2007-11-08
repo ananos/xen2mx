@@ -420,6 +420,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   }
 
   req->generic.send_seqnum = seqnum;
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);

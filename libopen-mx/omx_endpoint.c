@@ -301,6 +301,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   INIT_LIST_HEAD(&ep->connect_req_q);
   INIT_LIST_HEAD(&ep->partners_to_ack);
   INIT_LIST_HEAD(&ep->non_acked_req_q);
+  INIT_LIST_HEAD(&ep->requeued_send_req_q);
   INIT_LIST_HEAD(&ep->regcache_list);
   INIT_LIST_HEAD(&ep->regcache_unused_list);
 

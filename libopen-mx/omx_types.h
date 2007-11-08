@@ -164,6 +164,8 @@ struct omx_endpoint {
   struct list_head connect_req_q;
   /* any request that needs to be resent, thus NEED_ACK, and is not IN DRIVER */
   struct list_head non_acked_req_q;
+  /* any request that needs to be resent now, thus REQUEUED and NEED_ACK, not IN_DRIVER */
+  struct list_head requeued_send_req_q;
 
   struct omx__sendq_map sendq_map;
   struct omx__large_region_map large_region_map;
@@ -206,6 +208,8 @@ enum omx__request_state {
   OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
   /* needs a ack from the peer */
   OMX_REQUEST_STATE_NEED_ACK = (1<<6),
+  /* placed on a queue for resending through the driver soon */
+  OMX_REQUEST_STATE_REQUEUED = (1<<7),
 };
 
 /* Request states and queueing
@@ -238,6 +242,7 @@ struct omx__generic_request {
   struct omx__partner * partner;
   enum omx__request_type type;
   omx__seqnum_t send_seqnum; /* seqnum of the sent message associated with the request, either for a usual send request, or the notify message for recv large */
+  uint64_t last_send_jiffies;
   uint32_t state;
   struct omx_status status;
 };

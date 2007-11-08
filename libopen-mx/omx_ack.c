@@ -32,14 +32,21 @@ omx__mark_request_acked(struct omx_endpoint *ep,
 			union omx_request *req,
 			omx_status_code_t status)
 {
+  struct list_head *queue;
+
+  if (req->generic.state & OMX_REQUEST_STATE_REQUEUED)
+    queue = &ep->requeued_send_req_q;
+  else
+    queue = &ep->non_acked_req_q;
+
   omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_ACK);
-  req->generic.state &= ~OMX_REQUEST_STATE_NEED_ACK;
+  req->generic.state &= ~(OMX_REQUEST_STATE_NEED_ACK|OMX_REQUEST_STATE_REQUEUED);
 
   switch (req->generic.type) {
 
   case OMX_REQUEST_TYPE_SEND_TINY:
   case OMX_REQUEST_TYPE_SEND_SMALL:
-    omx__dequeue_request(&ep->non_acked_req_q, req);
+    omx__dequeue_request(queue, req);
     omx__send_complete(ep, req, status);
     break;
 
@@ -50,7 +57,7 @@ omx__mark_request_acked(struct omx_endpoint *ep,
 	/* set the status (success for ack, error for nack) only if there has been no error early */
 	req->generic.status.code = status;
     } else {
-      omx__dequeue_request(&ep->non_acked_req_q, req);
+      omx__dequeue_request(queue, req);
       omx__send_complete(ep, req, status);
     }
     break;
@@ -59,7 +66,7 @@ omx__mark_request_acked(struct omx_endpoint *ep,
     /* if the request was already replied, it would have been acked at the same time */
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
 
-    omx__dequeue_request(&ep->non_acked_req_q, req);
+    omx__dequeue_request(queue, req);
     if (status != OMX_STATUS_SUCCESS)
       /* the request has been nacked, there won't be any reply */
       req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
@@ -67,7 +74,7 @@ omx__mark_request_acked(struct omx_endpoint *ep,
     break;
 
   case OMX_REQUEST_TYPE_RECV_LARGE:
-    omx__dequeue_request(&ep->non_acked_req_q, req);
+    omx__dequeue_request(queue, req);
     omx__recv_complete(ep, req, status);
     break;
 
@@ -231,4 +238,25 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
   }
 
   return ret;
+}
+
+/********************************
+ * Prepare requests to be resent
+ */
+
+void
+omx__process_non_acked_requests(struct omx_endpoint *ep)
+{
+  union omx_request *req, *next;
+  uint64_t now = omx__driver_desc->jiffies;
+
+  omx__foreach_request_safe(&ep->non_acked_req_q, req, next) {
+    if (now - req->generic.last_send_jiffies > omx__globals.resend_delay)
+      /* the remaining ones are more recent, no need to resend them yet */
+      break;
+
+    omx__dequeue_request(&ep->non_acked_req_q, req);
+    req->generic.state |= OMX_REQUEST_STATE_REQUEUED;
+    omx__enqueue_request(&ep->requeued_send_req_q, req);
+  }
 }
