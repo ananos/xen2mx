@@ -329,7 +329,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 omx_return_t
 omx_close_endpoint(struct omx_endpoint *ep)
 {
-  if (!ep->in_handler)
+  if (ep->in_handler)
     return OMX_NOT_SUPPORTED_IN_HANDLER;
 
   omx__flush_partners_to_ack(ep);
