@@ -175,9 +175,13 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 		    (unsigned) frag_seqnum, (unsigned) frag_pipeline, (unsigned) chunk,
 		    (unsigned) offset, (unsigned) msg_length);
 
-  if (unlikely(req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum)))
-    /* already received this frag */
+  if (unlikely(req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum))) {
+    /* already received this frag, requeue back */
+    omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
+			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
+			 req);
     return;
+  }
 
   /* take care of the data chunk */
   if (unlikely(offset + chunk > msg_length))
