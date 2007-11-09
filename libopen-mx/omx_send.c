@@ -51,7 +51,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
 		       void *context, union omx_request **requestp)
 {
   union omx_request * req;
-  struct omx_cmd_send_tiny tiny_param;
+  struct omx_cmd_send_tiny * tiny_param;
   omx_return_t ret;
   int err;
 
@@ -61,16 +61,17 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
     goto out;
   }
 
-  tiny_param.hdr.peer_index = partner->peer_index;
-  tiny_param.hdr.dest_endpoint = partner->endpoint_index;
-  tiny_param.hdr.match_info = match_info;
-  tiny_param.hdr.length = length;
-  tiny_param.hdr.seqnum = seqnum;
-  tiny_param.hdr.piggyack = partner->next_frag_recv_seq - 1;
-  tiny_param.hdr.session_id = partner->session_id;
-  memcpy(tiny_param.data, buffer, length);
+  tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
+  tiny_param->hdr.peer_index = partner->peer_index;
+  tiny_param->hdr.dest_endpoint = partner->endpoint_index;
+  tiny_param->hdr.match_info = match_info;
+  tiny_param->hdr.length = length;
+  tiny_param->hdr.seqnum = seqnum;
+  tiny_param->hdr.piggyack = partner->next_frag_recv_seq - 1;
+  tiny_param->hdr.session_id = partner->session_id;
+  memcpy(tiny_param->data, buffer, length);
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_TINY, &tiny_param);
+  err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
   if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_TINY");
     goto out_with_req;
@@ -108,7 +109,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 			void *context, union omx_request **requestp)
 {
   union omx_request * req;
-  struct omx_cmd_send_small small_param;
+  struct omx_cmd_send_small * small_param;
   omx_return_t ret;
   int err;
 
@@ -118,16 +119,17 @@ omx__submit_isend_small(struct omx_endpoint *ep,
     goto out;
   }
 
-  small_param.peer_index = partner->peer_index;
-  small_param.dest_endpoint = partner->endpoint_index;
-  small_param.match_info = match_info;
-  small_param.length = length;
-  small_param.vaddr = (uintptr_t) buffer;
-  small_param.seqnum = seqnum;
-  small_param.piggyack = partner->next_frag_recv_seq - 1;
-  small_param.session_id = partner->session_id;
+  small_param = &req->send.specific.small.send_small_ioctl_param;
+  small_param->peer_index = partner->peer_index;
+  small_param->dest_endpoint = partner->endpoint_index;
+  small_param->match_info = match_info;
+  small_param->length = length;
+  small_param->vaddr = (uintptr_t) buffer;
+  small_param->seqnum = seqnum;
+  small_param->piggyack = partner->next_frag_recv_seq - 1;
+  small_param->session_id = partner->session_id;
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &small_param);
+  err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
   if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_SMALL");
     goto out_with_req;
@@ -161,7 +163,7 @@ omx_return_t
 omx__post_isend_medium(struct omx_endpoint *ep,
 		       union omx_request *req)
 {
-  struct omx_cmd_send_medium medium_param;
+  struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
   struct omx__partner * partner = req->generic.partner;
   void * buffer = req->send.specific.medium.buffer;
   uint32_t length = req->generic.status.xfer_length;
@@ -181,26 +183,26 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 	       || omx__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0))
     return OMX_NO_RESOURCES;
 
-  medium_param.peer_index = partner->peer_index;
-  medium_param.dest_endpoint = partner->endpoint_index;
-  medium_param.match_info = req->generic.status.match_info;
-  medium_param.frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
-  medium_param.msg_length = length;
-  medium_param.seqnum = req->generic.send_seqnum;
-  medium_param.piggyack = partner->next_frag_recv_seq - 1;
-  medium_param.session_id = partner->session_id;
+  medium_param->peer_index = partner->peer_index;
+  medium_param->dest_endpoint = partner->endpoint_index;
+  medium_param->match_info = req->generic.status.match_info;
+  medium_param->frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
+  medium_param->msg_length = length;
+  medium_param->seqnum = req->generic.send_seqnum;
+  medium_param->piggyack = partner->next_frag_recv_seq - 1;
+  medium_param->session_id = partner->session_id;
 
   for(i=0; i<frags; i++) {
     unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
       ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
-    medium_param.frag_length = chunk;
-    medium_param.frag_seqnum = i;
-    medium_param.sendq_page_offset = sendq_index[i];
+    medium_param->frag_length = chunk;
+    medium_param->frag_seqnum = i;
+    medium_param->sendq_page_offset = sendq_index[i];
     omx__debug_printf("sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 		      i, chunk, (unsigned long) length);
     memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, chunk);
 
-    err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, &medium_param);
+    err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
     if (unlikely(err < 0)) {
       int posted = i;
 
@@ -281,8 +283,8 @@ omx_return_t
 omx__post_isend_rndv(struct omx_endpoint *ep,
 		     union omx_request *req)
 {
-  struct omx_cmd_send_rndv rndv_param;
-  struct omx__rndv_data * data_n = (void *) rndv_param.data;
+  struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
+  struct omx__rndv_data * data_n = (void *) rndv_param->data;
   struct omx__large_region *region;
   struct omx__partner * partner = req->generic.partner;
   void * buffer = req->send.specific.large.buffer;
@@ -294,20 +296,20 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
-  rndv_param.hdr.peer_index = partner->peer_index;
-  rndv_param.hdr.dest_endpoint = partner->endpoint_index;
-  rndv_param.hdr.match_info = req->generic.status.match_info;
-  rndv_param.hdr.length = sizeof(struct omx__rndv_data);
-  rndv_param.hdr.seqnum = req->generic.send_seqnum;
-  rndv_param.hdr.piggyack = partner->next_frag_recv_seq - 1;
-  rndv_param.hdr.session_id = partner->session_id;
+  rndv_param->hdr.peer_index = partner->peer_index;
+  rndv_param->hdr.dest_endpoint = partner->endpoint_index;
+  rndv_param->hdr.match_info = req->generic.status.match_info;
+  rndv_param->hdr.length = sizeof(struct omx__rndv_data);
+  rndv_param->hdr.seqnum = req->generic.send_seqnum;
+  rndv_param->hdr.piggyack = partner->next_frag_recv_seq - 1;
+  rndv_param->hdr.session_id = partner->session_id;
 
   OMX_PKT_FIELD_FROM(data_n->msg_length, length);
   OMX_PKT_FIELD_FROM(data_n->rdma_id, region->id);
   OMX_PKT_FIELD_FROM(data_n->rdma_seqnum, region->seqnum);
   OMX_PKT_FIELD_FROM(data_n->rdma_offset, region->offset);
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, &rndv_param);
+  err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
   if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_RNDV");
     goto out_with_reg;

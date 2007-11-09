@@ -349,7 +349,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   uint32_t region_id = event->local_rdma_id;
   struct omx__large_region * region;
   struct omx__partner * partner;
-  struct omx_cmd_send_notify notify_param;
+  struct omx_cmd_send_notify * notify_param;
   omx_status_code_t status;
   omx__seqnum_t seqnum;
   omx_return_t ret;
@@ -373,16 +373,17 @@ omx__process_pull_done(struct omx_endpoint * ep,
 
   seqnum = partner->next_send_seq;
 
-  notify_param.peer_index = partner->peer_index;
-  notify_param.dest_endpoint = partner->endpoint_index;
-  notify_param.total_length = xfer_length;
-  notify_param.session_id = partner->session_id;
-  notify_param.seqnum = seqnum;
-  notify_param.piggyack = partner->next_frag_recv_seq - 1;
-  notify_param.puller_rdma_id = req->recv.specific.large.target_rdma_id;
-  notify_param.puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
+  notify_param = &req->recv.specific.large.send_notify_ioctl_param;
+  notify_param->peer_index = partner->peer_index;
+  notify_param->dest_endpoint = partner->endpoint_index;
+  notify_param->total_length = xfer_length;
+  notify_param->session_id = partner->session_id;
+  notify_param->seqnum = seqnum;
+  notify_param->piggyack = partner->next_frag_recv_seq - 1;
+  notify_param->puller_rdma_id = req->recv.specific.large.target_rdma_id;
+  notify_param->puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, &notify_param);
+  err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
   if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl SEND_NOTIFY");
     goto out;

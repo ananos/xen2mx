@@ -254,10 +254,18 @@ union omx_request {
     struct omx__generic_request generic;
     union {
       struct {
+	struct omx_cmd_send_tiny send_tiny_ioctl_param;
+      } tiny;
+      struct {
+	struct omx_cmd_send_small send_small_ioctl_param;
+      } small;
+      struct {
+	struct omx_cmd_send_medium send_medium_ioctl_param;
 	void * buffer;
 	uint32_t frags_pending_nr;
       } medium;
       struct {
+	struct omx_cmd_send_rndv send_rndv_ioctl_param;
 	void * buffer;
 	struct omx__large_region * region;
       } large;
@@ -277,6 +285,7 @@ union omx_request {
 	uint32_t accumulated_length;
       } medium;
       struct {
+	struct omx_cmd_send_notify send_notify_ioctl_param;
 	struct omx__large_region * local_region;
 	uint8_t target_rdma_id;
 	uint8_t target_rdma_seqnum;
