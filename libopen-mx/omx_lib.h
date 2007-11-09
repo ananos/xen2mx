@@ -335,20 +335,43 @@ omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
   return 0;
 }
 
-static inline void *
+static inline void
 omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
-			    int index)
+			    int nr, int *indexes)
+{
+  struct omx__sendq_entry * array = ep->sendq_map.array;
+  void * user;
+  int i;
+
+  user = array[indexes[0]].user;
+#ifdef OMX_DEBUG
+  for(i=1; i<nr; i++)
+    if (user != array[indexes[i]].user)
+      omx__abort("Tried to put some unrelated sendq map entries\n");
+#endif
+
+  omx__debug_assert(user != NULL);
+
+  for(i=0; i<nr; i++) {
+    omx__debug_assert(array[indexes[i]].next_free == -1);
+
+    array[indexes[i]].user = NULL;
+    array[indexes[i]].next_free = i ? indexes[i-1] : ep->sendq_map.first_free;
+  }
+
+  ep->sendq_map.first_free = indexes[nr-1];
+  ep->sendq_map.nr_free += nr;
+}
+
+static inline void *
+omx__endpoint_sendq_map_user(struct omx_endpoint * ep,
+			     int index)
 {
   struct omx__sendq_entry * array = ep->sendq_map.array;
   void * user = array[index].user;
 
   omx__debug_assert(user != NULL);
   omx__debug_assert(array[index].next_free == -1);
-
-  array[index].user = NULL;
-  array[index].next_free = ep->sendq_map.first_free;
-  ep->sendq_map.first_free = index;
-  ep->sendq_map.nr_free++;
 
   return user;
 }

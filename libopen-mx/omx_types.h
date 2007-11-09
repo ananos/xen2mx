@@ -262,7 +262,9 @@ union omx_request {
       struct {
 	struct omx_cmd_send_medium send_medium_ioctl_param;
 	void * buffer;
+	uint32_t frags_nr;
 	uint32_t frags_pending_nr;
+	int sendq_map_index[8]; /* FIXME #define NR_MEDIUM_FRAGS */
       } medium;
       struct {
 	struct omx_cmd_send_rndv send_rndv_ioctl_param;

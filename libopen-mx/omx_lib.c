@@ -89,7 +89,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
   case OMX_EVT_SEND_MEDIUM_FRAG_DONE: {
     uint16_t sendq_page_offset = evt->send_medium_frag_done.sendq_page_offset;
-    union omx_request * req = omx__endpoint_sendq_map_put(ep, sendq_page_offset);
+    union omx_request * req = omx__endpoint_sendq_map_user(ep, sendq_page_offset);
 
     omx__debug_assert(req);
     omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM);

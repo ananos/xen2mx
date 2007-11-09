@@ -10,6 +10,7 @@
   + resend connect too
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
   + buffer tiny and small for real
+  + on post error, complete the request
 * add FORGOTTEN state for omx_forget, ...
 
 * cleanup BH locking in pull ?

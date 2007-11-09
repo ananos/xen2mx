@@ -44,6 +44,9 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
     }
   }
 
+  if (req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM)
+    omx__endpoint_sendq_map_put(ep, req->send.specific.medium.frags_nr, req->send.specific.medium.sendq_map_index);
+
   omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
 }
 
@@ -270,17 +273,18 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   uint32_t remaining = length;
   uint32_t offset = 0;
   omx_return_t ret;
-  int sendq_index[8]; /* FIXME #define NR_MEDIUM_FRAGS */
-  int frags;
+  int * sendq_index = req->send.specific.medium.sendq_map_index;
+  int frags_nr;
   int err;
   int i;
 
-  frags = OMX_MEDIUM_FRAGS_NR(length);
-  omx__debug_assert(frags <= 8); /* for the sendq_index array above */
-  req->send.specific.medium.frags_pending_nr = frags;
+  frags_nr = OMX_MEDIUM_FRAGS_NR(length);
+  omx__debug_assert(frags_nr <= 8); /* for the sendq_index array above */
+  req->send.specific.medium.frags_pending_nr = frags_nr;
+  req->send.specific.medium.frags_nr = frags_nr;
 
-  if (unlikely(ep->avail_exp_events < frags
-	       || omx__endpoint_sendq_map_get(ep, frags, req, sendq_index) < 0))
+  if (unlikely(ep->avail_exp_events < frags_nr
+	       || omx__endpoint_sendq_map_get(ep, frags_nr, req, sendq_index) < 0))
     return OMX_NO_RESOURCES;
 
   medium_param->peer_index = partner->peer_index;
@@ -292,7 +296,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   medium_param->piggyack = partner->next_frag_recv_seq - 1;
   medium_param->session_id = partner->session_id;
 
-  for(i=0; i<frags; i++) {
+  for(i=0; i<frags_nr; i++) {
     unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
       ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
     medium_param->frag_length = chunk;
@@ -311,15 +315,14 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 	omx__abort("Failed to post SEND MEDIUM, driver replied %m\n");
       }
 
-      /* release resources that were not used */
-      for(i=posted; i<frags; i++)
-	omx__endpoint_sendq_map_put(ep, sendq_index[i]);
       /* if some frags posted, behave as if other frags were lost */
       req->send.specific.medium.frags_pending_nr = posted;
       if (posted)
 	goto posted;
-      else
+      else {
+	omx__endpoint_sendq_map_put(ep, frags_nr, sendq_index);
 	return OMX_NO_SYSTEM_RESOURCES;
+      }
     }
 
     ep->avail_exp_events--;
