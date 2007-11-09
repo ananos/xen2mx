@@ -23,6 +23,10 @@
 #include "omx_lib_wire.h"
 #include "omx_wire_access.h"
 
+/**************************
+ * Send Request Completion
+ */
+
 void
 omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
 		   omx_status_code_t status)
@@ -43,6 +47,10 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
   omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
 }
 
+/***********************************************
+ * Low-level Send Request Posting to the Driver
+ */
+
 omx_return_t
 omx__post_isend_tiny(struct omx_endpoint *ep,
 		     struct omx__partner *partner,
@@ -56,6 +64,28 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
   if (unlikely(err < 0)) {
     omx_return_t ret = omx__errno_to_return("ioctl SEND_TINY");
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      return ret;
+  }
+
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx__post_isend_small(struct omx_endpoint *ep,
+		      struct omx__partner *partner,
+		      union omx_request * req)
+{
+  struct omx_cmd_send_small * small_param = &req->send.specific.small.send_small_ioctl_param;
+  int err;
+
+  small_param->piggyack = partner->next_frag_recv_seq - 1;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
+  if (unlikely(err < 0)) {
+    omx_return_t ret = omx__errno_to_return("ioctl SEND_SMALL");
     if (ret != OMX_NO_SYSTEM_RESOURCES)
       return ret;
   }
@@ -108,6 +138,10 @@ omx__post_isend_notify(struct omx_endpoint *ep,
 
   return OMX_SUCCESS;
 }
+
+/****************************************************************
+ * Internal Allocation, Submission and Queueing of Send Requests
+ */
 
 static INLINE omx_return_t
 omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
@@ -164,28 +198,6 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   omx__request_free(req);
  out:
   return ret;
-}
-
-omx_return_t
-omx__post_isend_small(struct omx_endpoint *ep,
-		      struct omx__partner *partner,
-		      union omx_request * req)
-{
-  struct omx_cmd_send_small * small_param = &req->send.specific.small.send_small_ioctl_param;
-  int err;
-
-  small_param->piggyack = partner->next_frag_recv_seq - 1;
-
-  err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
-  if (unlikely(err < 0)) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_SMALL");
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      return ret;
-  }
-
-  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-
-  return OMX_SUCCESS;
 }
 
 static INLINE omx_return_t
@@ -458,6 +470,10 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
  out:
   return ret;
 }
+
+/*************************************
+ * API-Level Send Submission Routines
+ */
 
 omx_return_t
 omx_isend(struct omx_endpoint *ep,
