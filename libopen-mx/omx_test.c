@@ -66,6 +66,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
+    uint64_t last_jiffies = omx__driver_desc->jiffies + timeout/omx__driver_desc->hz;
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
@@ -75,6 +76,9 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	*result = 1;
 	goto out;
       }
+
+      if (omx__driver_desc->jiffies >= last_jiffies)
+	goto out;
     }
   }
 
@@ -197,6 +201,7 @@ omx_wait_any(struct omx_endpoint *ep,
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
+    uint64_t last_jiffies = omx__driver_desc->jiffies + timeout/omx__driver_desc->hz;
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
@@ -206,6 +211,9 @@ omx_wait_any(struct omx_endpoint *ep,
 	*result = 1;
 	goto out;
       }
+
+      if (omx__driver_desc->jiffies >= last_jiffies)
+	goto out;
     }
   }
 
@@ -304,6 +312,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
+    uint64_t last_jiffies = omx__driver_desc->jiffies + timeout/omx__driver_desc->hz;
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
@@ -313,6 +322,9 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 	*result = 1;
 	goto out;
       }
+
+      if (omx__driver_desc->jiffies >= last_jiffies)
+	goto out;
     }
   }
 
@@ -432,6 +444,7 @@ omx_probe(struct omx_endpoint *ep,
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
+    uint64_t last_jiffies = omx__driver_desc->jiffies + timeout/omx__driver_desc->hz;
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
@@ -441,6 +454,9 @@ omx_probe(struct omx_endpoint *ep,
 	*result = 1;
 	goto out;
       }
+
+      if (omx__driver_desc->jiffies >= last_jiffies)
+	goto out;
     }
   }
 
