@@ -254,7 +254,7 @@ omx__process_non_acked_requests(struct omx_endpoint *ep)
   uint64_t now = omx__driver_desc->jiffies;
 
   omx__foreach_request_safe(&ep->non_acked_req_q, req, next) {
-    if (now - req->generic.last_send_jiffies > omx__globals.resend_delay)
+    if (now - req->generic.last_send_jiffies < omx__globals.resend_delay)
       /* the remaining ones are more recent, no need to resend them yet */
       break;
 
