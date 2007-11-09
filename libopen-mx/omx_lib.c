@@ -254,7 +254,39 @@ omx__progress(struct omx_endpoint * ep)
   /* requeued request that didn't get acked */
   omx__process_non_acked_requests(ep);
 
-  /* FIXME: process requeued list */
+  /* repost requeued requests */
+  omx__foreach_request_safe(&ep->requeued_send_req_q, req, next) {
+    omx_return_t ret;
+
+    req->generic.state &= ~OMX_REQUEST_STATE_REQUEUED;
+    omx__dequeue_request(&ep->requeued_send_req_q, req);
+
+    switch (req->generic.type) {
+    case OMX_REQUEST_TYPE_SEND_TINY:
+      omx__debug_printf("reposting requeued send tiny request %p\n", req);
+      ret = omx__post_isend_tiny(ep, req);
+      req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+      omx__enqueue_request(&ep->non_acked_req_q, req);
+      break;
+    case OMX_REQUEST_TYPE_SEND_SMALL:
+      omx__debug_printf("reposting requeued send small request %p\n", req);
+      ret = omx__post_isend_small(ep, req);
+      req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+      omx__enqueue_request(&ep->non_acked_req_q, req);
+      break;
+    default:
+      omx__abort("Failed to handle requeued request with type %d\n",
+		 req->generic.type);
+    }
+
+    if (unlikely(ret != OMX_SUCCESS)) {
+      /* put back at the head of the queue */
+      omx__debug_printf("requeueing requeued request %p\n", req);
+      req->generic.state |= OMX_REQUEST_STATE_REQUEUED;
+      omx__requeue_request(&ep->requeued_send_req_q, req);
+      break;
+    }
+  }
 
   /* post queued requests */
   omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
@@ -283,7 +315,7 @@ omx__progress(struct omx_endpoint * ep)
 
     if (unlikely(ret != OMX_SUCCESS)) {
       /* put back at the head of the queue */
-      omx__debug_printf("requeueing medium request %p\n", req);
+      omx__debug_printf("requeueing queued request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_QUEUED;
       omx__requeue_request(&ep->queued_send_req_q, req);
       break;

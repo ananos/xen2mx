@@ -138,7 +138,6 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   union omx_request * req;
   struct omx_cmd_send_small * small_param;
   omx_return_t ret;
-  int err;
 
   req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_SMALL);
   if (unlikely(!req)) {
