@@ -353,7 +353,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx_status_code_t status;
   omx__seqnum_t seqnum;
   omx_return_t ret;
-  int err;
 
   /* FIXME: use cookie since region might be used for something else? */
 
@@ -379,15 +378,17 @@ omx__process_pull_done(struct omx_endpoint * ep,
   notify_param->total_length = xfer_length;
   notify_param->session_id = partner->session_id;
   notify_param->seqnum = seqnum;
-  notify_param->piggyack = partner->next_frag_recv_seq - 1;
   notify_param->puller_rdma_id = req->recv.specific.large.target_rdma_id;
   notify_param->puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
-  if (unlikely(err < 0)) {
-    ret = omx__errno_to_return("ioctl SEND_NOTIFY");
-    goto out;
+  ret = omx__post_isend_notify(ep, partner, req);
+  if (ret != OMX_SUCCESS) {
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      goto out;
+    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
+
+  /* no need to wait for a done event, tiny is synchronous */
 
   /* increase at the end, to avoid having to decrease back in case of error */
   partner->next_send_seq++;
@@ -421,7 +422,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
   }
 
   req->generic.send_seqnum = seqnum;
-  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);

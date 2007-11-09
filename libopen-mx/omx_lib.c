@@ -272,6 +272,16 @@ omx__progress(struct omx_endpoint * ep)
       ret = omx__post_isend_small(ep, req->generic.partner, req);
       omx__enqueue_request(&ep->non_acked_req_q, req);
       break;
+    case OMX_REQUEST_TYPE_SEND_LARGE:
+      omx__debug_printf("reposting requeued send rndv request %p\n", req);
+      ret = omx__post_isend_rndv(ep, req->generic.partner, req);
+      omx__enqueue_request(&ep->non_acked_req_q, req);
+      break;
+    case OMX_REQUEST_TYPE_RECV_LARGE:
+      omx__debug_printf("reposting requeued send notify request %p\n", req);
+      ret = omx__post_isend_notify(ep, req->generic.partner, req);
+      omx__enqueue_request(&ep->non_acked_req_q, req);
+      break;
     default:
       omx__abort("Failed to handle requeued request with type %d\n",
 		 req->generic.type);

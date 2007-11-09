@@ -65,6 +65,50 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
+omx_return_t
+omx__post_isend_rndv(struct omx_endpoint *ep,
+		     struct omx__partner *partner,
+		     union omx_request * req)
+{
+  struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
+  int err;
+
+  rndv_param->hdr.piggyack = partner->next_frag_recv_seq - 1;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
+  if (unlikely(err < 0)) {
+    omx_return_t ret = omx__errno_to_return("ioctl SEND_RNDV");
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      return ret;
+  }
+
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx__post_isend_notify(struct omx_endpoint *ep,
+		       struct omx__partner *partner,
+		       union omx_request * req)
+{
+  struct omx_cmd_send_notify * notify_param = &req->recv.specific.large.send_notify_ioctl_param;
+  int err;
+
+  notify_param->piggyack = partner->next_frag_recv_seq - 1;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
+  if (unlikely(err < 0)) {
+    omx_return_t ret = omx__errno_to_return("ioctl SEND_NOTIFY");
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      return ret;
+  }
+
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+
+  return OMX_SUCCESS;
+}
+
 static INLINE omx_return_t
 omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
 				void *buffer, size_t length,
@@ -334,7 +378,6 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   void * buffer = req->send.specific.large.buffer;
   uint32_t length = req->generic.status.msg_length;
   omx_return_t ret;
-  int err;
 
   ret = omx__get_region(ep, buffer, length, &region);
   if (unlikely(ret != OMX_SUCCESS))
@@ -345,7 +388,6 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   rndv_param->hdr.match_info = req->generic.status.match_info;
   rndv_param->hdr.length = sizeof(struct omx__rndv_data);
   rndv_param->hdr.seqnum = req->generic.send_seqnum;
-  rndv_param->hdr.piggyack = partner->next_frag_recv_seq - 1;
   rndv_param->hdr.session_id = partner->session_id;
 
   OMX_PKT_FIELD_FROM(data_n->msg_length, length);
@@ -353,18 +395,19 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   OMX_PKT_FIELD_FROM(data_n->rdma_seqnum, region->seqnum);
   OMX_PKT_FIELD_FROM(data_n->rdma_offset, region->offset);
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
-  if (unlikely(err < 0)) {
-    ret = omx__errno_to_return("ioctl SEND_RNDV");
-    goto out_with_reg;
+  ret = omx__post_isend_rndv(ep, partner, req);
+  if (ret != OMX_SUCCESS) {
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      goto out_with_reg;
+    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
-  /* no need to wait for a done event, rndv is synchronous */
+
+  /* no need to wait for a done event, tiny is synchronous */
 
   req->send.specific.large.region = region;
   region->user = req;
 
   omx__partner_ack_sent(ep, partner);
-  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);
