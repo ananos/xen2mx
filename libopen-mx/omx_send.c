@@ -43,6 +43,19 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
   omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
 }
 
+omx_return_t
+omx__post_isend_tiny(struct omx_endpoint *ep,
+		     union omx_request * req)
+{
+  int err;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_TINY, &req->send.specific.tiny.send_tiny_ioctl_param);
+  if (unlikely(err < 0))
+    return omx__errno_to_return("ioctl SEND_TINY");
+
+  return OMX_SUCCESS;
+}
+
 static INLINE omx_return_t
 omx__submit_isend_tiny(struct omx_endpoint *ep,
 		       void *buffer, size_t length,
@@ -53,7 +66,6 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   union omx_request * req;
   struct omx_cmd_send_tiny * tiny_param;
   omx_return_t ret;
-  int err;
 
   req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_TINY);
   if (unlikely(!req)) {
@@ -71,11 +83,13 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   tiny_param->hdr.session_id = partner->session_id;
   memcpy(tiny_param->data, buffer, length);
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
-  if (unlikely(err < 0)) {
-    ret = omx__errno_to_return("ioctl SEND_TINY");
-    goto out_with_req;
+  ret = omx__post_isend_tiny(ep, req);
+  if (ret != OMX_SUCCESS) {
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      goto out_with_req;
+    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
+
   /* no need to wait for a done event, tiny is synchronous */
 
   omx__partner_ack_sent(ep, partner);
@@ -99,6 +113,19 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   omx__request_free(req);
  out:
   return ret;
+}
+
+omx_return_t
+omx__post_isend_small(struct omx_endpoint *ep,
+		      union omx_request * req)
+{
+  int err;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &req->send.specific.small.send_small_ioctl_param);
+  if (unlikely(err < 0))
+    return omx__errno_to_return("ioctl SEND_TINY");
+
+  return OMX_SUCCESS;
 }
 
 static INLINE omx_return_t
@@ -129,11 +156,15 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   small_param->piggyack = partner->next_frag_recv_seq - 1;
   small_param->session_id = partner->session_id;
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
-  if (unlikely(err < 0)) {
-    ret = omx__errno_to_return("ioctl SEND_SMALL");
-    goto out_with_req;
+  /* FIXME: bufferize data */
+
+  ret = omx__post_isend_small(ep, req);
+  if (ret != OMX_SUCCESS) {
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      goto out_with_req;
+    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
+
   /* no need to wait for a done event, small is synchronous */
 
   omx__partner_ack_sent(ep, partner);
