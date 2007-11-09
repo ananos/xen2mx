@@ -368,6 +368,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   /* FIXME: check length, update req->generic.status.xfer_length and status */
 
   omx__dequeue_request(&ep->pull_req_q, req);
+  req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
   omx__put_region(ep, req->recv.specific.large.local_region);
 
   seqnum = partner->next_send_seq;
@@ -382,6 +383,10 @@ omx__process_pull_done(struct omx_endpoint * ep,
   notify_param->puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
 
   omx__post_isend_notify(ep, partner, req);
+
+  /* no need to wait for a done event, tiny is synchronous */
+  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_partner_non_acked_request(partner, req);
 
   switch (event->status) {
   case OMX_EVT_PULL_DONE_SUCCESS:
@@ -415,11 +420,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
 
   omx__partner_ack_sent(ep, partner);
   req->generic.send_seqnum = seqnum;
-  /* no need to wait for a done event, tiny is synchronous */
-  req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
-  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__enqueue_partner_non_acked_request(partner, req);
 
   return OMX_SUCCESS;
 }

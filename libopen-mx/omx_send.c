@@ -75,6 +75,7 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   }
 
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
 
   return OMX_SUCCESS;
 }
@@ -100,6 +101,7 @@ omx__post_isend_small(struct omx_endpoint *ep,
   }
 
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
 
   return OMX_SUCCESS;
 }
@@ -125,6 +127,7 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   }
 
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
 
   return OMX_SUCCESS;
 }
@@ -150,6 +153,7 @@ omx__post_isend_notify(struct omx_endpoint *ep,
   }
 
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
 
   return OMX_SUCCESS;
 }
@@ -183,6 +187,10 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
 
   omx__post_isend_tiny(ep, partner, req);
 
+  /* no need to wait for a done event, tiny is synchronous */
+  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_partner_non_acked_request(partner, req);
+
   omx__partner_ack_sent(ep, partner);
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
@@ -191,11 +199,6 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
-
-  /* no need to wait for a done event, tiny is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__enqueue_partner_non_acked_request(partner, req);
 
   *requestp = req;
   return OMX_SUCCESS;
@@ -228,6 +231,10 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 
   omx__post_isend_small(ep, partner, req);
 
+  /* no need to wait for a done event, small is synchronous */
+  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_partner_non_acked_request(partner, req);
+
   omx__partner_ack_sent(ep, partner);
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
@@ -236,11 +243,6 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
-
-  /* no need to wait for a done event, small is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__enqueue_partner_non_acked_request(partner, req);
 
   *requestp = req;
   return OMX_SUCCESS;
@@ -396,14 +398,13 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
 
   omx__post_isend_rndv(ep, partner, req);
 
+  /* no need to wait for a done event, tiny is synchronous */
+  req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_partner_non_acked_request(partner, req);
+
   omx__partner_ack_sent(ep, partner);
   req->send.specific.large.region = region;
   region->user = req;
-
-  /* no need to wait for a done event, tiny is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__enqueue_partner_non_acked_request(partner, req);
 
   return OMX_SUCCESS;
 }
