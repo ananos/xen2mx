@@ -747,7 +747,7 @@ omx_send_pull_reply_skb_destructor(struct sk_buff *skb)
 	omx_user_region_release(region);
 }
 
-unsigned long omx_pull_packet_loss_index = 0;
+static unsigned long omx_pull_packet_loss_index = 0;
 
 int
 omx_recv_pull(struct omx_iface * iface,

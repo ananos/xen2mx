@@ -56,9 +56,33 @@ unsigned long omx_debug = 0;
 module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(debug, "Bitmask of debugging messages to display");
 
+unsigned long omx_tiny_packet_loss = 0;
+module_param_named(tiny_packet_loss, omx_tiny_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(tiny_packet_loss, "Explicit tiny reply packet loss frequency");
+
+unsigned long omx_small_packet_loss = 0;
+module_param_named(small_packet_loss, omx_small_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(small_packet_loss, "Explicit small reply packet loss frequency");
+
+unsigned long omx_medium_packet_loss = 0;
+module_param_named(medium_packet_loss, omx_medium_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(medium_packet_loss, "Explicit medium reply packet loss frequency");
+
+unsigned long omx_rndv_packet_loss = 0;
+module_param_named(rndv_packet_loss, omx_rndv_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(rndv_packet_loss, "Explicit rndv reply packet loss frequency");
+
 unsigned long omx_pull_packet_loss = 0;
 module_param_named(pull_packet_loss, omx_pull_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(pull_packet_loss, "Explicit pull reply packet loss frequency");
+
+unsigned long omx_notify_packet_loss = 0;
+module_param_named(notify_packet_loss, omx_notify_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(notify_packet_loss, "Explicit notify reply packet loss frequency");
+
+unsigned long omx_connect_packet_loss = 0;
+module_param_named(connect_packet_loss, omx_connect_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(connect_packet_loss, "Explicit connect reply packet loss frequency");
 #endif
 
 /************************
