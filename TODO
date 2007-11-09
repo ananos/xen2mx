@@ -10,9 +10,6 @@
   + resend connect too
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
   + buffer tiny and small for real
-  + update piggyack before resending
-  + return SUCCESS from post/submit if failed on NO_SYSTEM_RESOURCES
-  + update last_send_jiffies after post if success
 * add FORGOTTEN state for omx_forget, ...
 
 * cleanup BH locking in pull ?

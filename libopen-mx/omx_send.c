@@ -45,13 +45,22 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
 
 omx_return_t
 omx__post_isend_tiny(struct omx_endpoint *ep,
+		     struct omx__partner *partner,
 		     union omx_request * req)
 {
+  struct omx_cmd_send_tiny * tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
   int err;
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_TINY, &req->send.specific.tiny.send_tiny_ioctl_param);
-  if (unlikely(err < 0))
-    return omx__errno_to_return("ioctl SEND_TINY");
+  tiny_param->hdr.piggyack = partner->next_frag_recv_seq - 1;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
+  if (unlikely(err < 0)) {
+    omx_return_t ret = omx__errno_to_return("ioctl SEND_TINY");
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      return ret;
+  }
+
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
 
   return OMX_SUCCESS;
 }
@@ -79,11 +88,10 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   tiny_param->hdr.match_info = match_info;
   tiny_param->hdr.length = length;
   tiny_param->hdr.seqnum = seqnum;
-  tiny_param->hdr.piggyack = partner->next_frag_recv_seq - 1;
   tiny_param->hdr.session_id = partner->session_id;
   memcpy(tiny_param->data, buffer, length);
 
-  ret = omx__post_isend_tiny(ep, req);
+  ret = omx__post_isend_tiny(ep, partner, req);
   if (ret != OMX_SUCCESS) {
     if (ret != OMX_NO_SYSTEM_RESOURCES)
       goto out_with_req;
@@ -101,7 +109,6 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);
@@ -117,13 +124,22 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
 
 omx_return_t
 omx__post_isend_small(struct omx_endpoint *ep,
+		      struct omx__partner *partner,
 		      union omx_request * req)
 {
+  struct omx_cmd_send_small * small_param = &req->send.specific.small.send_small_ioctl_param;
   int err;
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, &req->send.specific.small.send_small_ioctl_param);
-  if (unlikely(err < 0))
-    return omx__errno_to_return("ioctl SEND_TINY");
+  small_param->piggyack = partner->next_frag_recv_seq - 1;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
+  if (unlikely(err < 0)) {
+    omx_return_t ret = omx__errno_to_return("ioctl SEND_SMALL");
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      return ret;
+  }
+
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
 
   return OMX_SUCCESS;
 }
@@ -152,12 +168,11 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   small_param->length = length;
   small_param->vaddr = (uintptr_t) buffer;
   small_param->seqnum = seqnum;
-  small_param->piggyack = partner->next_frag_recv_seq - 1;
   small_param->session_id = partner->session_id;
 
   /* FIXME: bufferize data */
 
-  ret = omx__post_isend_small(ep, req);
+  ret = omx__post_isend_small(ep, partner, req);
   if (ret != OMX_SUCCESS) {
     if (ret != OMX_NO_SYSTEM_RESOURCES)
       goto out_with_req;
@@ -175,7 +190,6 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);

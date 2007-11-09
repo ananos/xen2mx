@@ -264,14 +264,12 @@ omx__progress(struct omx_endpoint * ep)
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:
       omx__debug_printf("reposting requeued send tiny request %p\n", req);
-      ret = omx__post_isend_tiny(ep, req);
-      req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+      ret = omx__post_isend_tiny(ep, req->generic.partner, req);
       omx__enqueue_request(&ep->non_acked_req_q, req);
       break;
     case OMX_REQUEST_TYPE_SEND_SMALL:
       omx__debug_printf("reposting requeued send small request %p\n", req);
-      ret = omx__post_isend_small(ep, req);
-      req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+      ret = omx__post_isend_small(ep, req->generic.partner, req);
       omx__enqueue_request(&ep->non_acked_req_q, req);
       break;
     default:
