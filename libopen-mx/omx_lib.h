@@ -143,20 +143,20 @@ omx__post_isend_small(struct omx_endpoint *ep,
 		      union omx_request * req);
 
 omx_return_t
-omx__post_isend_medium(struct omx_endpoint *ep,
+omx__submit_isend_medium(struct omx_endpoint *ep,
+			     union omx_request *req);
+
+omx_return_t
+omx__submit_isend_rndv(struct omx_endpoint *ep,
 		       union omx_request *req);
 
 omx_return_t
-omx__post_isend_rndv(struct omx_endpoint *ep,
-		     union omx_request *req);
-
-omx_return_t
-omx__post_pull(struct omx_endpoint * ep,
+omx__submit_pull(struct omx_endpoint * ep,
 	       union omx_request * req);
 
 extern omx_return_t
-omx__submit_pull(struct omx_endpoint * ep,
-		 union omx_request * req);
+omx__submit_or_queue_pull(struct omx_endpoint * ep,
+			  union omx_request * req);
 
 extern void
 omx__send_complete(struct omx_endpoint *ep, union omx_request *req,

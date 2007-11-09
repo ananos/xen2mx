@@ -275,8 +275,8 @@ omx__put_region(struct omx_endpoint *ep,
  */
 
 omx_return_t
-omx__post_pull(struct omx_endpoint * ep,
-	       union omx_request * req)
+omx__submit_pull(struct omx_endpoint * ep,
+		 union omx_request * req)
 {
   struct omx_cmd_send_pull pull_param;
   struct omx__large_region *region;
@@ -325,12 +325,12 @@ omx__post_pull(struct omx_endpoint * ep,
 }
 
 omx_return_t
-omx__submit_pull(struct omx_endpoint * ep,
-		 union omx_request * req)
+omx__submit_or_queue_pull(struct omx_endpoint * ep,
+			  union omx_request * req)
 {
   omx_return_t ret;
 
-  ret = omx__post_pull(ep, req);
+  ret = omx__submit_pull(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_printf("queueing large request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_QUEUED;

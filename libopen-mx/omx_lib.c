@@ -296,15 +296,15 @@ omx__progress(struct omx_endpoint * ep)
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
       omx__debug_printf("reposting queued send medium request %p\n", req);
-      ret = omx__post_isend_medium(ep, req);
+      ret = omx__submit_isend_medium(ep, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
       omx__debug_printf("reposting queued send medium request %p\n", req);
-      ret = omx__post_isend_rndv(ep, req);
+      ret = omx__submit_isend_rndv(ep, req);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
       omx__debug_printf("reposting queued recv large request %p\n", req);
-      ret = omx__post_pull(ep, req);
+      ret = omx__submit_pull(ep, req);
       break;
     default:
       omx__abort("Failed to handle queued request with type %d\n",
