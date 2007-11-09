@@ -321,6 +321,7 @@ struct omx__globals {
   int control_fd;
   int verbose;
   int regcache;
+  int waitspin;
   unsigned ack_delay;
   unsigned resend_delay;
   unsigned retransmits_max;

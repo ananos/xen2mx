@@ -64,6 +64,11 @@ omx__init_api(int api)
   if (env)
     omx__globals.verbose = 1;
 
+  omx__globals.waitspin = 1; /* FIXME: default until wait takes care of the progression timeout */
+  env = getenv("OMX_WAITSPIN");
+  if (env)
+    omx__globals.waitspin = atoi(env);
+
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
 

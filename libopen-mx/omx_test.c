@@ -64,6 +64,20 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   struct omx_cmd_wait_event wait_param;
   omx_return_t ret = OMX_SUCCESS;
 
+  if (omx__globals.waitspin) {
+    /* busy spin instead of sleeping */
+    while (1) {
+      ret = omx__progress(ep);
+      if (unlikely(ret != OMX_SUCCESS))
+	goto out;
+
+      if (omx__test_common(ep, requestp, status)) {
+	*result = 1;
+	goto out;
+      }
+    }
+  }
+
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
@@ -181,6 +195,20 @@ omx_wait_any(struct omx_endpoint *ep,
     goto out;
   }
 
+  if (omx__globals.waitspin) {
+    /* busy spin instead of sleeping */
+    while (1) {
+      ret = omx__progress(ep);
+      if (unlikely(ret != OMX_SUCCESS))
+	goto out;
+
+      if (omx__test_any_common(ep, match_info, match_mask, status)) {
+	*result = 1;
+	goto out;
+      }
+    }
+  }
+
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
@@ -272,6 +300,20 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
   if (unlikely(ep->ctxid_bits)) {
     ret = OMX_NOT_SUPPORTED_WITH_CONTEXT_ID;
     goto out;
+  }
+
+  if (omx__globals.waitspin) {
+    /* busy spin instead of sleeping */
+    while (1) {
+      ret = omx__progress(ep);
+      if (unlikely(ret != OMX_SUCCESS))
+	goto out;
+
+      if (omx__ipeek_common(ep, requestp)) {
+	*result = 1;
+	goto out;
+      }
+    }
   }
 
   ret = omx__progress(ep);
@@ -386,6 +428,20 @@ omx_probe(struct omx_endpoint *ep,
   if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
+  }
+
+  if (omx__globals.waitspin) {
+    /* busy spin instead of sleeping */
+    while (1) {
+      ret = omx__progress(ep);
+      if (unlikely(ret != OMX_SUCCESS))
+	goto out;
+
+      if (omx__iprobe_common(ep, match_info, match_mask, status)) {
+	*result = 1;
+	goto out;
+      }
+    }
   }
 
   ret = omx__progress(ep);
