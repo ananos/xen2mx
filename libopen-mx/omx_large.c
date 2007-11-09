@@ -352,7 +352,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
   struct omx_cmd_send_notify * notify_param;
   omx_status_code_t status;
   omx__seqnum_t seqnum;
-  omx_return_t ret;
 
   /* FIXME: use cookie since region might be used for something else? */
 
