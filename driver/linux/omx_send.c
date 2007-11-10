@@ -24,12 +24,14 @@
 #include "omx_hal.h"
 #include "omx_wire_access.h"
 
+#ifdef OMX_DEBUG
 static unsigned long omx_tiny_packet_loss_index = 0;
 static unsigned long omx_small_packet_loss_index = 0;
 static unsigned long omx_medium_packet_loss_index = 0;
 static unsigned long omx_rndv_packet_loss_index = 0;
 static unsigned long omx_notify_packet_loss_index = 0;
 static unsigned long omx_connect_packet_loss_index = 0;
+#endif
 
 /*************************************
  * Allocate and initialize a OMX skb
