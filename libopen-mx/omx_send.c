@@ -489,6 +489,49 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
+/***********************
+ * Send Queued Requests
+ */
+
+void
+omx__process_queued_requests(struct omx_endpoint *ep)
+{
+  union omx_request *req, *next;
+
+  omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
+    omx_return_t ret;
+
+    req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
+    omx__dequeue_request(&ep->queued_send_req_q, req);
+
+    switch (req->generic.type) {
+    case OMX_REQUEST_TYPE_SEND_MEDIUM:
+      omx__debug_printf("reposting queued send medium request %p\n", req);
+      ret = omx__submit_isend_medium(ep, req);
+      break;
+    case OMX_REQUEST_TYPE_SEND_LARGE:
+      omx__debug_printf("reposting queued send medium request %p\n", req);
+      ret = omx__submit_isend_rndv(ep, req);
+      break;
+    case OMX_REQUEST_TYPE_RECV_LARGE:
+      omx__debug_printf("reposting queued recv large request %p\n", req);
+      ret = omx__submit_pull(ep, req);
+      break;
+    default:
+      omx__abort("Failed to handle queued request with type %d\n",
+		 req->generic.type);
+    }
+
+    if (unlikely(ret != OMX_SUCCESS)) {
+      /* put back at the head of the queue */
+      omx__debug_printf("requeueing queued request %p\n", req);
+      req->generic.state |= OMX_REQUEST_STATE_QUEUED;
+      omx__requeue_request(&ep->queued_send_req_q, req);
+      break;
+    }
+  }
+}
+
 /*************************************
  * API-Level Send Submission Routines
  */

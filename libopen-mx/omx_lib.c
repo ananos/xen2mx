@@ -204,11 +204,10 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
 omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
-  union omx_request *req , *next;
-
   if (unlikely(ep->in_handler))
     return OMX_SUCCESS;
 
+  /* ack partners that didn't get acked recently */
   omx__process_partners_to_ack(ep);
 
   /* process unexpected events first,
@@ -254,81 +253,8 @@ omx__progress(struct omx_endpoint * ep)
   /* requeued request that didn't get acked */
   omx__process_non_acked_requests(ep);
 
-  /* repost requeued requests */
-  omx__foreach_request_safe(&ep->requeued_send_req_q, req, next) {
-    omx_return_t ret;
-
-    req->generic.state &= ~OMX_REQUEST_STATE_REQUEUED;
-    omx__dequeue_request(&ep->requeued_send_req_q, req);
-
-    switch (req->generic.type) {
-    case OMX_REQUEST_TYPE_SEND_TINY:
-      omx__debug_printf("reposting requeued send tiny request %p\n", req);
-      ret = omx__post_isend_tiny(ep, req->generic.partner, req);
-      break;
-    case OMX_REQUEST_TYPE_SEND_SMALL:
-      omx__debug_printf("reposting requeued send small request %p\n", req);
-      ret = omx__post_isend_small(ep, req->generic.partner, req);
-      break;
-    case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf("reposting requeued medium small request %p\n", req);
-      ret = omx__post_isend_medium(ep, req->generic.partner, req);
-      break;
-    case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf("reposting requeued send rndv request %p\n", req);
-      ret = omx__post_isend_rndv(ep, req->generic.partner, req);
-      break;
-    case OMX_REQUEST_TYPE_RECV_LARGE:
-      omx__debug_printf("reposting requeued send notify request %p\n", req);
-      ret = omx__post_isend_notify(ep, req->generic.partner, req);
-      break;
-    default:
-      omx__abort("Failed to handle requeued request with type %d\n",
-		 req->generic.type);
-    }
-
-    if (unlikely(ret != OMX_SUCCESS)) {
-      /* put back at the head of the queue */
-      omx__debug_printf("requeueing requeued request %p\n", req);
-      req->generic.state |= OMX_REQUEST_STATE_REQUEUED;
-      omx__requeue_request(&ep->requeued_send_req_q, req);
-      break;
-    }
-  }
-
   /* post queued requests */
-  omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
-    omx_return_t ret;
-
-    req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
-    omx__dequeue_request(&ep->queued_send_req_q, req);
-
-    switch (req->generic.type) {
-    case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf("reposting queued send medium request %p\n", req);
-      ret = omx__submit_isend_medium(ep, req);
-      break;
-    case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf("reposting queued send medium request %p\n", req);
-      ret = omx__submit_isend_rndv(ep, req);
-      break;
-    case OMX_REQUEST_TYPE_RECV_LARGE:
-      omx__debug_printf("reposting queued recv large request %p\n", req);
-      ret = omx__submit_pull(ep, req);
-      break;
-    default:
-      omx__abort("Failed to handle queued request with type %d\n",
-		 req->generic.type);
-    }
-
-    if (unlikely(ret != OMX_SUCCESS)) {
-      /* put back at the head of the queue */
-      omx__debug_printf("requeueing queued request %p\n", req);
-      req->generic.state |= OMX_REQUEST_STATE_QUEUED;
-      omx__requeue_request(&ep->queued_send_req_q, req);
-      break;
-    }
-  }
+  omx__process_queued_requests(ep);
 
   /* repost non-replied connect requests */
   omx__process_connect_requests(ep);
