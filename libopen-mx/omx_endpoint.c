@@ -330,12 +330,18 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 omx_return_t
 omx_close_endpoint(struct omx_endpoint *ep)
 {
+  int i;
+
   if (ep->in_handler)
     return OMX_NOT_SUPPORTED_IN_HANDLER;
 
   omx__flush_partners_to_ack(ep);
 
+  for(i=0; i<omx__driver_desc->peer_max * omx__driver_desc->endpoint_max; i++)
+    if (ep->partners[i])
+      free(ep->partners[i]);  
   free(ep->partners);
+  free(ep->ctxid);
   omx__endpoint_large_region_map_exit(ep);
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->recvq, OMX_RECVQ_SIZE);
