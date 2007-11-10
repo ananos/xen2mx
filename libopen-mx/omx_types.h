@@ -298,6 +298,7 @@ union omx_request {
 
   struct {
     struct omx__generic_request generic;
+    struct omx_cmd_send_connect send_connect_ioctl_param;
     uint32_t session_id;
     uint8_t connect_seqnum;
     int is_synchronous;

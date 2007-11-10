@@ -216,11 +216,10 @@ omx__connect_common(omx_endpoint_t ep,
 		    union omx_request * req)
 {
   struct omx__partner * partner;
-  struct omx_cmd_send_connect connect_param;
-  struct omx__connect_request_data * data_n = (void *) &connect_param.data;
+  struct omx_cmd_send_connect * connect_param = &req->connect.send_connect_ioctl_param;
+  struct omx__connect_request_data * data_n = (void *) &connect_param->data;
   uint8_t connect_seqnum;
   omx_return_t ret;
-  int err;
 
   ret = omx__partner_lookup_by_addr(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS)
@@ -228,37 +227,30 @@ omx__connect_common(omx_endpoint_t ep,
 
   connect_seqnum = partner->connect_seqnum++;
 
-  connect_param.hdr.peer_index = partner->peer_index;
-  connect_param.hdr.dest_endpoint = partner->endpoint_index;
-  connect_param.hdr.seqnum = 0;
-  connect_param.hdr.length = sizeof(*data_n);
+  connect_param->hdr.peer_index = partner->peer_index;
+  connect_param->hdr.dest_endpoint = partner->endpoint_index;
+  connect_param->hdr.seqnum = 0;
+  connect_param->hdr.length = sizeof(*data_n);
   OMX_PKT_FIELD_FROM(data_n->src_session_id, ep->desc->session_id);
   OMX_PKT_FIELD_FROM(data_n->app_key, key);
   OMX_PKT_FIELD_FROM(data_n->connect_seqnum, connect_seqnum);
   OMX_PKT_FIELD_FROM(data_n->is_reply, 0);
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &connect_param);
-  if (err < 0) {
-    ret = omx__errno_to_return("ioctl SEND_CONNECT");
-    goto out;
-  }
-  /* no need to wait for a done event, connect is synchronous */
+  omx__post_connect(ep, partner, req);
 
+  /* no need to wait for a done event, tiny is synchronous */
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY;
-  req->generic.partner = partner;
-  req->connect.session_id = ep->desc->session_id;
-  req->connect.connect_seqnum = connect_seqnum;
   omx__enqueue_request(&ep->connect_req_q, req);
   omx__enqueue_partner_connect_request(partner, req);
 
-  ret = omx__progress(ep);
-  if (ret != OMX_SUCCESS)
-    goto out_queued;
+  req->generic.partner = partner;
+  req->connect.session_id = ep->desc->session_id;
+  req->connect.connect_seqnum = connect_seqnum;
+
+  omx__progress(ep);
 
   return OMX_SUCCESS;
 
- out_queued:
-  omx__dequeue_request(&ep->connect_req_q, req);
  out:
   return ret;
 }

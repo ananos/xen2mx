@@ -227,6 +227,29 @@ omx__post_isend_notify(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
+omx_return_t
+omx__post_connect(struct omx_endpoint *ep,
+		  struct omx__partner *partner,
+		  union omx_request * req)
+{
+  struct omx_cmd_send_connect * connect_param = &req->connect.send_connect_ioctl_param;
+  int err;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, connect_param);
+  if (err < 0) {
+    omx_return_t ret = omx__errno_to_return("ioctl SEND_CONNECT");
+
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      omx__abort("ioctl SEND_CONNECT returned unexpected error %m\n");
+
+    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
+  }
+
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+
+  return OMX_SUCCESS;
+}
+
 /****************************************************************
  * Internal Allocation, Submission and Queueing of Send Requests
  */
