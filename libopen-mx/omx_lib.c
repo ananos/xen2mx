@@ -330,6 +330,10 @@ omx__progress(struct omx_endpoint * ep)
     }
   }
 
+  /* repost non-replied connect requests */
+  omx__process_connect_requests(ep);
+
+  /* check the endpoint descriptor */
   omx__check_endpoint_desc(ep);
 
   return OMX_SUCCESS;

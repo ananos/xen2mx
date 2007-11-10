@@ -245,6 +245,9 @@ omx__handle_nack(struct omx_endpoint *ep,
 extern void
 omx__process_non_acked_requests(struct omx_endpoint *ep);
 
+extern void
+omx__process_connect_requests(struct omx_endpoint *ep);
+
 extern omx_return_t
 omx__process_partners_to_ack(struct omx_endpoint *ep);
 
