@@ -19,6 +19,10 @@
 #ifndef __omx_lib_h__
 #define __omx_lib_h__
 
+#ifdef OMX_DEBUG
+#define MALLOC_CHECK_ 3
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

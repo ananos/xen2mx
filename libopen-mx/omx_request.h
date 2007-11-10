@@ -21,7 +21,7 @@
 
 #include <stdlib.h>
 
-#include "omx_types.h"
+#include "omx_lib.h"
 #include "omx_list.h"
 
 /*********************
