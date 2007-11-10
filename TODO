@@ -1,8 +1,5 @@
 * make assert configurable into a SEGV with OMX_ASSERT_SEGV
 
-* ignore nacks when no pending request matches, since there
-  can be multiple nacks for a medium
-
 * do something with the pull_done status
 
 * option for omx_pingpong with issend

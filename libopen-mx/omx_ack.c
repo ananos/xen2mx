@@ -152,7 +152,9 @@ omx__handle_nack(struct omx_endpoint *ep,
     }
   }
 
-  omx__abort("Failed to find request to nack for seqnum %d\n", seqnum);
+  omx__debug_printf("Failed to find request to nack for seqnum %d, could be a duplicate, ignoring\n",
+		    seqnum);
+  return OMX_SUCCESS;
 }
 
 /**********************
