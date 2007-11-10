@@ -41,6 +41,8 @@ omx__get_board_count(uint32_t * count)
     goto out;
   }
 
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(count, sizeof(*count));
+
  out:
   return ret;
 }
@@ -78,6 +80,10 @@ omx__get_board_id(struct omx_endpoint * ep, uint8_t * index,
     ret = omx__errno_to_return("ioctl GET_BOARD_ID");
     goto out;
   }
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(board_id.hostname, OMX_HOSTNAMELEN_MAX);
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(board_id.ifacename, OMX_IF_NAMESIZE);
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_id.board_index, sizeof(board_id.board_index));
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_id.board_addr, sizeof(board_id.board_addr));
 
   if (hostname)
     strncpy(hostname, board_id.hostname, OMX_HOSTNAMELEN_MAX);
@@ -118,6 +124,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
       if (ret != OMX_INVALID_PARAMETER)
 	goto out;
     }
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(board_id.hostname, OMX_HOSTNAMELEN_MAX);
 
     if (!strncmp(name, board_id.hostname, OMX_HOSTNAMELEN_MAX)) {
       ret = OMX_SUCCESS;
@@ -156,6 +163,7 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
       if (ret != OMX_INVALID_PARAMETER)
 	goto out;
     }
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_id.board_addr, sizeof(board_id.board_addr));
 
     if (addr == board_id.board_addr) {
       ret = OMX_SUCCESS;

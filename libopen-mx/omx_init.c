@@ -19,7 +19,6 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <sys/ioctl.h>
 #include <sys/mman.h>
 
 #include "omx_lib.h"

@@ -36,6 +36,7 @@ omx__driver_peer_add(uint64_t board_addr, char *hostname)
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_ADD, &peer_info);
   if (err < 0)
     return omx__errno_to_return("OMX_CMD_PEER_ADD");
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
   return OMX_SUCCESS;
 }
@@ -67,6 +68,7 @@ omx__driver_peer_from_index(uint32_t index, uint64_t *board_addr, char *hostname
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_INDEX, &peer_info);
   if (err < 0)
     return omx__errno_to_return("OMX_CMD_PEER_FROM_INDEX");
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
   if (board_addr)
     *board_addr = peer_info.board_addr;
@@ -87,6 +89,7 @@ omx__driver_peer_from_addr(uint64_t board_addr, char *hostname, uint32_t *index)
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_ADDR, &peer_info);
   if (err < 0)
     return omx__errno_to_return("OMX_CMD_PEER_FROM_ADDR");
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
   if (index)
     *index = peer_info.index;
@@ -107,6 +110,7 @@ omx__driver_peer_from_hostname(char *hostname, uint64_t *board_addr, uint32_t *i
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_HOSTNAME, &peer_info);
   if (err < 0)
     return omx__errno_to_return("OMX_CMD_PEER_FROM_HOSTNAME");
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
   if (index)
     *index = peer_info.index;

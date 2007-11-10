@@ -101,6 +101,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
     omx__debug_printf("omx_wait woken up\n");
 
@@ -236,6 +237,7 @@ omx_wait_any(struct omx_endpoint *ep,
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
     omx__debug_printf("omx_wait_any woken up\n");
 
@@ -347,6 +349,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
     omx__debug_printf("omx_peek woken up\n");
 
@@ -479,6 +482,7 @@ omx_probe(struct omx_endpoint *ep,
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
     omx__debug_printf("omx_probe woken up\n");
 

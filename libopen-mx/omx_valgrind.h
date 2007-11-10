@@ -35,13 +35,18 @@
 #define OMX_VALGRIND_MEMORY_MAKE_WRITABLE(p, s) VALGRIND_MAKE_WRITABLE(p, s)
 #define OMX_VALGRIND_MEMORY_MAKE_READABLE(p, s) VALGRIND_MAKE_READABLE(p, s)
 
-/* FIXME: ioctl pre/post hooks */
+/* Check that memory is defined or writable */
+#define OMX_VALGRIND_CHECK_DEFINED(p, s) VALGRIND_CHECK_DEFINED(p, s)
+#define OMX_VALGRIND_CHECK_WRITABLE(p, s) VALGRIND_CHECK_WRITABLE(p, s)
 
 #else /* !OMX_VALGRIND_DEBUG */
 
 #define OMX_VALGRIND_MEMORY_MAKE_NOACCESS(p, s) /* nothing */
 #define OMX_VALGRIND_MEMORY_MAKE_WRITABLE(p, s) /* nothing */
 #define OMX_VALGRIND_MEMORY_MAKE_READABLE(p, s) /* nothing */
+
+#define OMX_VALGRIND_CHECK_DEFINED(p, s) /* nothing */
+#define OMX_VALGRIND_CHECK_WRITABLE(p, s) /* nothing */
 
 #endif /* !OMX_VALGRIND_DEBUG */
 

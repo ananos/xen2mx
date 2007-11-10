@@ -87,6 +87,7 @@ int main(int argc, char *argv[])
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_ENDPOINT_INFO, &get_endpoint_info);
     if (err < 0)
       goto out;
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(&get_endpoint_info, sizeof(get_endpoint_info));
 
     if (get_endpoint_info.closed)
       printf("  %d\tnot open\n", i);
