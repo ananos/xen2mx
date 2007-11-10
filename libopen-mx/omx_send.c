@@ -50,11 +50,11 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
   omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
 }
 
-/***********************************************
- * Low-level Send Request Posting to the Driver
+/************
+ * Send Tiny
  */
 
-omx_return_t
+static INLINE void
 omx__post_isend_tiny(struct omx_endpoint *ep,
 		     struct omx__partner *partner,
 		     union omx_request * req)
@@ -77,11 +77,54 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__partner_ack_sent(ep, partner);
+}
 
+static INLINE omx_return_t
+omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
+				void *buffer, size_t length,
+				struct omx__partner * partner, omx__seqnum_t seqnum,
+				uint64_t match_info,
+				void *context, union omx_request **requestp)
+{
+  union omx_request * req;
+  struct omx_cmd_send_tiny * tiny_param;
+
+  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_TINY);
+  if (unlikely(!req))
+    return OMX_NO_RESOURCES;
+
+  tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
+  tiny_param->hdr.peer_index = partner->peer_index;
+  tiny_param->hdr.dest_endpoint = partner->endpoint_index;
+  tiny_param->hdr.match_info = match_info;
+  tiny_param->hdr.length = length;
+  tiny_param->hdr.seqnum = seqnum;
+  tiny_param->hdr.session_id = partner->session_id;
+  memcpy(tiny_param->data, buffer, length);
+
+  omx__post_isend_tiny(ep, partner, req);
+
+  /* no need to wait for a done event, tiny is synchronous */
+  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_partner_non_acked_request(partner, req);
+
+  req->generic.partner = partner;
+  omx__partner_to_addr(partner, &req->generic.status.addr);
+  req->generic.send_seqnum = seqnum;
+  req->generic.status.context = context;
+  req->generic.status.match_info = match_info;
+  req->generic.status.msg_length = length;
+  req->generic.status.xfer_length = length; /* truncation not notified to the sender */
+
+  *requestp = req;
   return OMX_SUCCESS;
 }
 
-omx_return_t
+/*************
+ * Send Small
+ */
+
+static INLINE void
 omx__post_isend_small(struct omx_endpoint *ep,
 		      struct omx__partner *partner,
 		      union omx_request * req)
@@ -104,11 +147,56 @@ omx__post_isend_small(struct omx_endpoint *ep,
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__partner_ack_sent(ep, partner);
+}
 
+static INLINE omx_return_t
+omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
+				 void *buffer, size_t length,
+				 struct omx__partner * partner, omx__seqnum_t seqnum,
+				 uint64_t match_info,
+				 void *context, union omx_request **requestp)
+{
+  union omx_request * req;
+  struct omx_cmd_send_small * small_param;
+
+  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_SMALL);
+  if (unlikely(!req))
+    return OMX_NO_RESOURCES;
+
+  small_param = &req->send.specific.small.send_small_ioctl_param;
+  small_param->peer_index = partner->peer_index;
+  small_param->dest_endpoint = partner->endpoint_index;
+  small_param->match_info = match_info;
+  small_param->length = length;
+  small_param->vaddr = (uintptr_t) buffer;
+  small_param->seqnum = seqnum;
+  small_param->session_id = partner->session_id;
+
+  /* FIXME: bufferize data */
+
+  omx__post_isend_small(ep, partner, req);
+
+  /* no need to wait for a done event, small is synchronous */
+  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_partner_non_acked_request(partner, req);
+
+  req->generic.partner = partner;
+  omx__partner_to_addr(partner, &req->generic.status.addr);
+  req->generic.send_seqnum = seqnum;
+  req->generic.status.context = context;
+  req->generic.status.match_info = match_info;
+  req->generic.status.msg_length = length;
+  req->generic.status.xfer_length = length; /* truncation not notified to the sender */
+
+  *requestp = req;
   return OMX_SUCCESS;
 }
 
-omx_return_t
+/**************
+ * Send Medium
+ */
+
+static void
 omx__post_isend_medium(struct omx_endpoint *ep,
 		       struct omx__partner *partner,
 		       union omx_request *req)
@@ -156,7 +244,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   omx__enqueue_request(&ep->driver_posted_req_q, req);
   omx__partner_ack_sent(ep, partner);
 
-  return OMX_SUCCESS;
+  return;
 
  err:
   ret = omx__errno_to_return("ioctl SEND_MEDIUM");
@@ -170,149 +258,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 
   omx__enqueue_request(&ep->non_acked_req_q, req);
 
-  return OMX_NO_SYSTEM_RESOURCES;
-}
-
-omx_return_t
-omx__post_isend_rndv(struct omx_endpoint *ep,
-		     struct omx__partner *partner,
-		     union omx_request * req)
-{
-  struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
-  int err;
-
-  rndv_param->hdr.piggyack = partner->next_frag_recv_seq - 1;
-
-  err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
-  if (unlikely(err < 0)) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_RNDV");
-
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("ioctl SEND_RNDV returned unexpected error %m\n");
-
-    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
-  }
-
-  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__partner_ack_sent(ep, partner);
-
-  return OMX_SUCCESS;
-}
-
-omx_return_t
-omx__post_isend_notify(struct omx_endpoint *ep,
-		       struct omx__partner *partner,
-		       union omx_request * req)
-{
-  struct omx_cmd_send_notify * notify_param = &req->recv.specific.large.send_notify_ioctl_param;
-  int err;
-
-  notify_param->piggyack = partner->next_frag_recv_seq - 1;
-
-  err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
-  if (unlikely(err < 0)) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_NOTIFY");
-
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("ioctl SEND_NOTIFY returned unexpected error %m\n");
-
-    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
-  }
-
-  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__partner_ack_sent(ep, partner);
-
-  return OMX_SUCCESS;
-}
-
-/****************************************************************
- * Internal Allocation, Submission and Queueing of Send Requests
- */
-
-static INLINE omx_return_t
-omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
-				void *buffer, size_t length,
-				struct omx__partner * partner, omx__seqnum_t seqnum,
-				uint64_t match_info,
-				void *context, union omx_request **requestp)
-{
-  union omx_request * req;
-  struct omx_cmd_send_tiny * tiny_param;
-
-  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_TINY);
-  if (unlikely(!req))
-    return OMX_NO_RESOURCES;
-
-  tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
-  tiny_param->hdr.peer_index = partner->peer_index;
-  tiny_param->hdr.dest_endpoint = partner->endpoint_index;
-  tiny_param->hdr.match_info = match_info;
-  tiny_param->hdr.length = length;
-  tiny_param->hdr.seqnum = seqnum;
-  tiny_param->hdr.session_id = partner->session_id;
-  memcpy(tiny_param->data, buffer, length);
-
-  omx__post_isend_tiny(ep, partner, req);
-
-  /* no need to wait for a done event, tiny is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
-
-  req->generic.partner = partner;
-  omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->generic.send_seqnum = seqnum;
-  req->generic.status.context = context;
-  req->generic.status.match_info = match_info;
-  req->generic.status.msg_length = length;
-  req->generic.status.xfer_length = length; /* truncation not notified to the sender */
-
-  *requestp = req;
-  return OMX_SUCCESS;
-}
-
-static INLINE omx_return_t
-omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
-				 void *buffer, size_t length,
-				 struct omx__partner * partner, omx__seqnum_t seqnum,
-				 uint64_t match_info,
-				 void *context, union omx_request **requestp)
-{
-  union omx_request * req;
-  struct omx_cmd_send_small * small_param;
-
-  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_SMALL);
-  if (unlikely(!req))
-    return OMX_NO_RESOURCES;
-
-  small_param = &req->send.specific.small.send_small_ioctl_param;
-  small_param->peer_index = partner->peer_index;
-  small_param->dest_endpoint = partner->endpoint_index;
-  small_param->match_info = match_info;
-  small_param->length = length;
-  small_param->vaddr = (uintptr_t) buffer;
-  small_param->seqnum = seqnum;
-  small_param->session_id = partner->session_id;
-
-  /* FIXME: bufferize data */
-
-  omx__post_isend_small(ep, partner, req);
-
-  /* no need to wait for a done event, small is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
-
-  req->generic.partner = partner;
-  omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->generic.send_seqnum = seqnum;
-  req->generic.status.context = context;
-  req->generic.status.match_info = match_info;
-  req->generic.status.msg_length = length;
-  req->generic.status.xfer_length = length; /* truncation not notified to the sender */
-
-  *requestp = req;
-  return OMX_SUCCESS;
+  return;
 }
 
 omx_return_t
@@ -324,7 +270,6 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   uint32_t length = req->generic.status.xfer_length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr;
-  omx_return_t ret;
 
   frags_nr = OMX_MEDIUM_FRAGS_NR(length);
   omx__debug_assert(frags_nr <= 8); /* for the sendq_index array above */
@@ -342,7 +287,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   medium_param->seqnum = req->generic.send_seqnum;
   medium_param->session_id = partner->session_id;
 
-  ret = omx__post_isend_medium(ep, partner, req);
+  omx__post_isend_medium(ep, partner, req);
 
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
@@ -390,6 +335,35 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
 
  out:
   return ret;
+}
+
+/************
+ * Send Rndv
+ */
+
+static INLINE void
+omx__post_isend_rndv(struct omx_endpoint *ep,
+		     struct omx__partner *partner,
+		     union omx_request * req)
+{
+  struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
+  int err;
+
+  rndv_param->hdr.piggyack = partner->next_frag_recv_seq - 1;
+
+  err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
+  if (unlikely(err < 0)) {
+    omx_return_t ret = omx__errno_to_return("ioctl SEND_RNDV");
+
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      omx__abort("ioctl SEND_RNDV returned unexpected error %m\n");
+
+    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
+  }
+
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
+  omx__partner_ack_sent(ep, partner);
 }
 
 omx_return_t
@@ -466,47 +440,33 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
-/***********************
- * Send Queued Requests
+/**************
+ * Send Notify
  */
 
 void
-omx__process_queued_requests(struct omx_endpoint *ep)
+omx__post_isend_notify(struct omx_endpoint *ep,
+		       struct omx__partner *partner,
+		       union omx_request * req)
 {
-  union omx_request *req, *next;
+  struct omx_cmd_send_notify * notify_param = &req->recv.specific.large.send_notify_ioctl_param;
+  int err;
 
-  omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
-    omx_return_t ret;
+  notify_param->piggyack = partner->next_frag_recv_seq - 1;
 
-    req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
-    omx__dequeue_request(&ep->queued_send_req_q, req);
+  err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
+  if (unlikely(err < 0)) {
+    omx_return_t ret = omx__errno_to_return("ioctl SEND_NOTIFY");
 
-    switch (req->generic.type) {
-    case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf("reposting queued send medium request %p\n", req);
-      ret = omx__submit_isend_medium(ep, req);
-      break;
-    case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf("reposting queued send medium request %p\n", req);
-      ret = omx__submit_isend_rndv(ep, req);
-      break;
-    case OMX_REQUEST_TYPE_RECV_LARGE:
-      omx__debug_printf("reposting queued recv large request %p\n", req);
-      ret = omx__submit_pull(ep, req);
-      break;
-    default:
-      omx__abort("Failed to handle queued request with type %d\n",
-		 req->generic.type);
-    }
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      omx__abort("ioctl SEND_NOTIFY returned unexpected error %m\n");
 
-    if (unlikely(ret != OMX_SUCCESS)) {
-      /* put back at the head of the queue */
-      omx__debug_printf("requeueing queued request %p\n", req);
-      req->generic.state |= OMX_REQUEST_STATE_QUEUED;
-      omx__requeue_request(&ep->queued_send_req_q, req);
-      break;
-    }
+    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
+
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
+  omx__partner_ack_sent(ep, partner);
 }
 
 /*************************************
@@ -596,4 +556,99 @@ omx_issend(struct omx_endpoint *ep,
   omx__progress(ep);
 
   return ret;
+}
+
+/***********************
+ * Send Queued Requests
+ */
+
+void
+omx__process_queued_requests(struct omx_endpoint *ep)
+{
+  union omx_request *req, *next;
+
+  omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
+    omx_return_t ret;
+
+    req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
+    omx__dequeue_request(&ep->queued_send_req_q, req);
+
+    switch (req->generic.type) {
+    case OMX_REQUEST_TYPE_SEND_MEDIUM:
+      omx__debug_printf("reposting queued send medium request %p\n", req);
+      ret = omx__submit_isend_medium(ep, req);
+      break;
+    case OMX_REQUEST_TYPE_SEND_LARGE:
+      omx__debug_printf("reposting queued send medium request %p\n", req);
+      ret = omx__submit_isend_rndv(ep, req);
+      break;
+    case OMX_REQUEST_TYPE_RECV_LARGE:
+      omx__debug_printf("reposting queued recv large request %p\n", req);
+      ret = omx__submit_pull(ep, req);
+      break;
+    default:
+      omx__abort("Failed to handle queued request with type %d\n",
+		 req->generic.type);
+    }
+
+    if (unlikely(ret != OMX_SUCCESS)) {
+      /* put back at the head of the queue */
+      omx__debug_printf("requeueing queued request %p\n", req);
+      req->generic.state |= OMX_REQUEST_STATE_QUEUED;
+      omx__requeue_request(&ep->queued_send_req_q, req);
+      break;
+    }
+  }
+}
+
+/******************
+ * Resent messages
+ */
+
+void
+omx__process_non_acked_requests(struct omx_endpoint *ep)
+{
+  union omx_request *req, *next;
+  uint64_t now = omx__driver_desc->jiffies;
+
+  omx__foreach_request_safe(&ep->non_acked_req_q, req, next) {
+    if (now - req->generic.last_send_jiffies < omx__globals.resend_delay)
+      /* the remaining ones are more recent, no need to resend them yet */
+      break;
+
+    omx__dequeue_request(&ep->non_acked_req_q, req);
+    req->generic.state |= OMX_REQUEST_STATE_REQUEUED;
+    omx__enqueue_request(&ep->requeued_send_req_q, req);
+  }
+
+  omx__foreach_request_safe(&ep->requeued_send_req_q, req, next) {
+    req->generic.state &= ~OMX_REQUEST_STATE_REQUEUED;
+    omx__dequeue_request(&ep->requeued_send_req_q, req);
+
+    switch (req->generic.type) {
+    case OMX_REQUEST_TYPE_SEND_TINY:
+      omx__debug_printf("reposting requeued send tiny request %p\n", req);
+      omx__post_isend_tiny(ep, req->generic.partner, req);
+      break;
+    case OMX_REQUEST_TYPE_SEND_SMALL:
+      omx__debug_printf("reposting requeued send small request %p\n", req);
+      omx__post_isend_small(ep, req->generic.partner, req);
+      break;
+    case OMX_REQUEST_TYPE_SEND_MEDIUM:
+      omx__debug_printf("reposting requeued medium small request %p\n", req);
+      omx__post_isend_medium(ep, req->generic.partner, req);
+      break;
+    case OMX_REQUEST_TYPE_SEND_LARGE:
+      omx__debug_printf("reposting requeued send rndv request %p\n", req);
+      omx__post_isend_rndv(ep, req->generic.partner, req);
+      break;
+    case OMX_REQUEST_TYPE_RECV_LARGE:
+      omx__debug_printf("reposting requeued send notify request %p\n", req);
+      omx__post_isend_notify(ep, req->generic.partner, req);
+      break;
+    default:
+      omx__abort("Failed to handle requeued request with type %d\n",
+		 req->generic.type);
+    }
+  }
 }
