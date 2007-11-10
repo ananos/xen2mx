@@ -596,8 +596,9 @@ omx_irecv(struct omx_endpoint *ep,
 
       } else {
 	/* it's a tiny/small/medium, copy the data back to our buffer */
-	memcpy(buffer, req->recv.buffer, length);
+	memcpy(buffer, req->recv.buffer, length); /* FIXME: could just copy what has been received */
 	free(req->recv.buffer);
+	req->recv.buffer = buffer;
 
 	if (unlikely(req->generic.state)) {
 	  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);
