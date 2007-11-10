@@ -309,6 +309,7 @@ omx_connect(omx_endpoint_t ep,
 	       omx_strstatus(req->generic.status.code));
   }
 
+  omx__request_free(req);
   return ret;
 
  out_with_req:
