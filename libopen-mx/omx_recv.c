@@ -177,6 +177,8 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
   if (unlikely(req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum))) {
     /* already received this frag, requeue back */
+    omx__debug_printf("got a duplicate frag seqnum %d for medium seqnum %d\n",
+		      (unsigned) frag_seqnum, (unsigned) req->recv.seqnum);
     omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
 			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			 req);

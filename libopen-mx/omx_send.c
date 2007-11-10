@@ -109,6 +109,71 @@ omx__post_isend_small(struct omx_endpoint *ep,
 }
 
 omx_return_t
+omx__post_isend_medium(struct omx_endpoint *ep,
+		       struct omx__partner *partner,
+		       union omx_request *req)
+{
+  struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
+  void * buffer = req->send.specific.medium.buffer;
+  uint32_t length = req->generic.status.xfer_length;
+  uint32_t remaining = length;
+  uint32_t offset = 0;
+  int * sendq_index = req->send.specific.medium.sendq_map_index;
+  int frags_nr = req->send.specific.medium.frags_nr;
+  omx_return_t ret;
+  int err;
+  int i;
+
+  medium_param->piggyack = partner->next_frag_recv_seq - 1;
+
+  for(i=0; i<frags_nr; i++) {
+    unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
+      ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
+    medium_param->frag_length = chunk;
+    medium_param->frag_seqnum = i;
+    medium_param->sendq_page_offset = sendq_index[i];
+    omx__debug_printf("sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+		      i, chunk, (unsigned long) length);
+
+    /* copy the data in the sendq only once */
+    if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED)))
+      memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, chunk);
+
+    err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
+    if (unlikely(err < 0))
+      goto err;
+
+    ep->avail_exp_events--;
+    remaining -= chunk;
+    offset += chunk;
+  }
+
+  req->send.specific.medium.frags_pending_nr = frags_nr;
+
+ ok:
+  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
+  req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
+  omx__enqueue_request(&ep->driver_posted_req_q, req);
+  omx__partner_ack_sent(ep, partner);
+
+  return OMX_SUCCESS;
+
+ err:
+  ret = omx__errno_to_return("ioctl SEND_MEDIUM");
+  if (unlikely(ret != OMX_NO_SYSTEM_RESOURCES))
+    omx__abort("Failed to post SEND MEDIUM, driver replied %m\n");
+
+  req->send.specific.medium.frags_pending_nr = i;
+  if (i)
+    /* if some frags were posted, behave as if other frags were lost */
+    goto ok;
+
+  omx__enqueue_request(&ep->non_acked_req_q, req);
+
+  return OMX_NO_SYSTEM_RESOURCES;
+}
+
+omx_return_t
 omx__post_isend_rndv(struct omx_endpoint *ep,
 		     struct omx__partner *partner,
 		     union omx_request * req)
@@ -256,19 +321,13 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 {
   struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
   struct omx__partner * partner = req->generic.partner;
-  void * buffer = req->send.specific.medium.buffer;
   uint32_t length = req->generic.status.xfer_length;
-  uint32_t remaining = length;
-  uint32_t offset = 0;
-  omx_return_t ret;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr;
-  int err;
-  int i;
+  omx_return_t ret;
 
   frags_nr = OMX_MEDIUM_FRAGS_NR(length);
   omx__debug_assert(frags_nr <= 8); /* for the sendq_index array above */
-  req->send.specific.medium.frags_pending_nr = frags_nr;
   req->send.specific.medium.frags_nr = frags_nr;
 
   if (unlikely(ep->avail_exp_events < frags_nr
@@ -281,48 +340,11 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   medium_param->frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
   medium_param->msg_length = length;
   medium_param->seqnum = req->generic.send_seqnum;
-  medium_param->piggyack = partner->next_frag_recv_seq - 1;
   medium_param->session_id = partner->session_id;
 
-  for(i=0; i<frags_nr; i++) {
-    unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
-      ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
-    medium_param->frag_length = chunk;
-    medium_param->frag_seqnum = i;
-    medium_param->sendq_page_offset = sendq_index[i];
-    omx__debug_printf("sending medium seqnum %d pipeline 2 length %d of total %ld\n",
-		      i, chunk, (unsigned long) length);
-    memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), buffer + offset, chunk);
+  ret = omx__post_isend_medium(ep, partner, req);
 
-    err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
-    if (unlikely(err < 0)) {
-      int posted = i;
-
-      ret = omx__errno_to_return("ioctl SEND_MEDIUM");
-      if (unlikely(ret != OMX_NO_SYSTEM_RESOURCES)) {
-	omx__abort("Failed to post SEND MEDIUM, driver replied %m\n");
-      }
-
-      /* if some frags posted, behave as if other frags were lost */
-      req->send.specific.medium.frags_pending_nr = posted;
-      if (posted)
-	goto posted;
-      else {
-	omx__endpoint_sendq_map_put(ep, frags_nr, sendq_index);
-	return OMX_NO_SYSTEM_RESOURCES;
-      }
-    }
-
-    ep->avail_exp_events--;
-    remaining -= chunk;
-    offset += chunk;
-  }
-
- posted:
-  omx__partner_ack_sent(ep, partner);
-  req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-  req->generic.state = OMX_REQUEST_STATE_IN_DRIVER|OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_request(&ep->driver_posted_req_q, req);
+  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
 
   return OMX_SUCCESS;

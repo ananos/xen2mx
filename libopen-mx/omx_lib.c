@@ -270,6 +270,10 @@ omx__progress(struct omx_endpoint * ep)
       omx__debug_printf("reposting requeued send small request %p\n", req);
       ret = omx__post_isend_small(ep, req->generic.partner, req);
       break;
+    case OMX_REQUEST_TYPE_SEND_MEDIUM:
+      omx__debug_printf("reposting requeued medium small request %p\n", req);
+      ret = omx__post_isend_medium(ep, req->generic.partner, req);
+      break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
       omx__debug_printf("reposting requeued send rndv request %p\n", req);
       ret = omx__post_isend_rndv(ep, req->generic.partner, req);

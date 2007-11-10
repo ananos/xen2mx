@@ -1,5 +1,8 @@
 * make assert configurable into a SEGV with OMX_ASSERT_SEGV
 
+* ignore nacks when no pending request matches, since there
+  can be multiple nacks for a medium
+
 * do something with the pull_done status
 
 * option for omx_pingpong with issend
@@ -8,11 +11,9 @@
 * add retransmission
   + wakeup earlier if sleeping to send delayed acks
   + cancel a liback if sending a message before, or send liback after dequeuing request
-  + resend for real
   + resend connect too
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
-  + buffer tiny and small for real
-  + on post error, complete the request
+  + buffer small for real
 * add FORGOTTEN state for omx_forget, ...
 
 * cleanup BH locking in pull ?
