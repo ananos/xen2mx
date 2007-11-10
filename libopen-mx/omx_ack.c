@@ -306,24 +306,3 @@ omx__process_non_acked_requests(struct omx_endpoint *ep)
     }
   }
 }
-
-/**************************
- * Resend connect requests
- */
-
-void
-omx__process_connect_requests(struct omx_endpoint *ep)
-{
-  union omx_request *req, *next;
-  uint64_t now = omx__driver_desc->jiffies;
-
-  omx__foreach_request_safe(&ep->connect_req_q, req, next) {
-    if (now - req->generic.last_send_jiffies < omx__globals.resend_delay)
-      /* the remaining ones are more recent, no need to resend them yet */
-      break;
-
-    omx__dequeue_request(&ep->connect_req_q, req);
-    omx__post_connect(ep, req->generic.partner, req);
-    omx__enqueue_request(&ep->connect_req_q, req);
-  } 
-}
