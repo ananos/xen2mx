@@ -287,4 +287,8 @@ omx_nic_id_to_hostname(uint64_t board_addr,
 omx_return_t
 omx_progress(omx_endpoint_t ep);
 
+omx_return_t
+omx_set_request_timeout(omx_endpoint_t endpoint,
+			omx_request_t request, uint32_t milliseconds);
+
 #endif /* __open_mx_h__ */

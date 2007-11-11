@@ -115,6 +115,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
+  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
@@ -191,6 +192,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
+  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
@@ -326,6 +328,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = partner->next_send_seq;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
+  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
   req->send.specific.medium.buffer = buffer;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
@@ -435,6 +438,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = partner->next_send_seq;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
+  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
   req->send.specific.large.buffer = buffer;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
@@ -625,6 +629,11 @@ omx__process_non_acked_requests(struct omx_endpoint *ep)
   omx__foreach_request_safe(&ep->requeued_send_req_q, req, next) {
     req->generic.state &= ~OMX_REQUEST_STATE_REQUEUED;
     omx__dequeue_request(&ep->requeued_send_req_q, req);
+
+    if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
+      omx__abort("Retransmit delay expired\n");
+      /* FIXME: disconnect */
+    }
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:

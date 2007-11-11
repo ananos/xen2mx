@@ -244,3 +244,23 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
 
   return ret;
 }
+
+/**********************************
+ * Set Request or Endpoint Timeout
+ */
+
+omx_return_t
+omx_set_request_timeout(struct omx_endpoint *ep,
+			union omx_request *request, uint32_t milliseconds)
+{
+  /* dividing by 1024 instead of 1000 is accurate enough, and avoid costly div */
+  uint32_t delay_jiffies = ((milliseconds * omx__driver_desc->hz) >> 10) + 1;
+
+  if (request)
+    request->generic.retransmit_delay_jiffies = delay_jiffies;
+  else
+    ep->retransmit_delay_jiffies = delay_jiffies;
+
+  return OMX_SUCCESS;
+}
+

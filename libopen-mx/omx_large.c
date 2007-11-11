@@ -302,7 +302,7 @@ omx__submit_pull(struct omx_endpoint * ep,
   /* FIXME: seqnum */
   pull_param.remote_rdma_id = req->recv.specific.large.target_rdma_id;
   pull_param.remote_offset = req->recv.specific.large.target_rdma_offset;
-  pull_param.retransmit_delay_jiffies = omx__globals.resend_delay * omx__globals.retransmits_max;
+  pull_param.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_PULL, &pull_param);
   if (unlikely(err < 0)) {
@@ -373,6 +373,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   seqnum = partner->next_send_seq++;
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
+  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
 
   notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   notify_param->peer_index = partner->peer_index;

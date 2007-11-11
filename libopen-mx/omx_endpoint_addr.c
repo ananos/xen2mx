@@ -265,6 +265,8 @@ omx__connect_common(omx_endpoint_t ep,
   omx__enqueue_partner_connect_request(partner, req);
 
   req->generic.partner = partner;
+  req->generic.submit_jiffies = omx__driver_desc->jiffies;
+  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
   req->connect.session_id = ep->desc->session_id;
   req->connect.connect_seqnum = connect_seqnum;
 
@@ -543,6 +545,12 @@ omx__process_connect_requests(struct omx_endpoint *ep)
       break;
 
     omx__dequeue_request(&ep->connect_req_q, req);
+
+    if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
+      omx__abort("Retransmit delay expired\n");
+      /* FIXME: disconnect */
+    }
+
     omx__post_connect(ep, req->generic.partner, req);
     omx__enqueue_request(&ep->connect_req_q, req);
   }

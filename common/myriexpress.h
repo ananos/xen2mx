@@ -360,4 +360,6 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
 #define mx_strerror omx_strerror
 #define mx_strstatus omx_strstatus
 
+#define mx_set_request_timeout omx_set_request_timeout
+
 #endif /* MYRIEXPRESS_H */

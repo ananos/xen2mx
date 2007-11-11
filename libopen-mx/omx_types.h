@@ -132,6 +132,7 @@ struct omx_endpoint {
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   void * next_exp_event, * next_unexp_event;
   uint32_t avail_exp_events;
+  uint32_t retransmit_delay_jiffies;
 
   /* context ids */
   uint8_t ctxid_bits;
@@ -244,6 +245,7 @@ struct omx__generic_request {
   omx__seqnum_t send_seqnum; /* seqnum of the sent message associated with the request, either for a usual send request, or the notify message for recv large */
   uint64_t submit_jiffies;
   uint64_t last_send_jiffies;
+  uint32_t retransmit_delay_jiffies;
   uint32_t state;
   struct omx_status status;
 };
