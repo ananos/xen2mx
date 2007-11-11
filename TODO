@@ -10,6 +10,7 @@
   + cancel a liback if sending a message before, or send liback after dequeuing request
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
   + buffer small for real
+  + omx_disconnect, call it when getting a nack or timeouting connect or send
 * add FORGOTTEN state for omx_forget, ...
 
 * cleanup BH locking in pull ?
@@ -17,7 +18,6 @@
 
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
-  + omx_disconnect
   + omx_set_error_handler - if the default is return, I do not need this 
 
 * omx_local_install and update INSTALL

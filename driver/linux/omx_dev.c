@@ -157,9 +157,6 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 	endpoint->opener_pid = current->pid;
 	strncpy(endpoint->opener_comm, current->comm, TASK_COMM_LEN);
 
-	printk(KERN_INFO "Open-MX: Successfully open board %d endpoint %d\n",
-	       endpoint->board_index, endpoint->endpoint_index);
-
 	return 0;
 
  out_with_resources:
