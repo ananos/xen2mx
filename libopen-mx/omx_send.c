@@ -89,7 +89,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   union omx_request * req;
   struct omx_cmd_send_tiny * tiny_param;
 
-  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_TINY);
+  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_TINY);
   if (unlikely(!req))
     return OMX_NO_RESOURCES;
 
@@ -159,7 +159,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   union omx_request * req;
   struct omx_cmd_send_small * small_param;
 
-  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_SMALL);
+  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_SMALL);
   if (unlikely(!req))
     return OMX_NO_RESOURCES;
 
@@ -305,7 +305,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   union omx_request * req;
   omx_return_t ret;
 
-  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_MEDIUM);
+  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_MEDIUM);
   if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
     goto out;
@@ -416,7 +416,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   union omx_request * req;
   omx_return_t ret;
 
-  req = omx__request_alloc(OMX_REQUEST_TYPE_SEND_LARGE);
+  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_LARGE);
   if (unlikely(!req))
     return OMX_NO_RESOURCES;
 

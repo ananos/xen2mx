@@ -285,7 +285,7 @@ omx_connect(omx_endpoint_t ep,
   union omx_request * req;
   omx_return_t ret;
 
-  req = omx__request_alloc(OMX_REQUEST_TYPE_CONNECT);
+  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_CONNECT);
   if (!req) {
     ret = OMX_NO_RESOURCES;
     goto out;
@@ -322,11 +322,11 @@ omx_connect(omx_endpoint_t ep,
 	       omx_strstatus(req->generic.status.code));
   }
 
-  omx__request_free(req);
+  omx__request_free(ep, req);
   return ret;
 
  out_with_req:
-  omx__request_free(req);
+  omx__request_free(ep, req);
  out:
   return ret;
 }
@@ -340,7 +340,7 @@ omx_iconnect(omx_endpoint_t ep,
   union omx_request * req;
   omx_return_t ret;
 
-  req = omx__request_alloc(OMX_REQUEST_TYPE_CONNECT);
+  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_CONNECT);
   if (!req) {
     ret = OMX_NO_RESOURCES;
     goto out;
@@ -358,7 +358,7 @@ omx_iconnect(omx_endpoint_t ep,
   return ret;
 
  out_with_req:
-  omx__request_free(req);
+  omx__request_free(ep, req);
  out:
   return ret;
 }

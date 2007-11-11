@@ -34,7 +34,7 @@ omx__test_common(struct omx_endpoint *ep, union omx_request **requestp,
     uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
     omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
     memcpy(status, &req->generic.status, sizeof(*status));
-    omx__request_free(req);
+    omx__request_free(ep, req);
     *requestp = NULL;
     return 1;
   }
@@ -144,7 +144,7 @@ omx__test_any_common(struct omx_endpoint *ep,
     if (likely((req->generic.status.match_info & match_mask) == match_info)) {
       omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
       memcpy(status, &req->generic.status, sizeof(*status));
-      omx__request_free(req);
+      omx__request_free(ep, req);
       return 1;
     }
   }

@@ -346,7 +346,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
   } else {
     /* unexpected, even after the handler */
 
-    req = omx__request_alloc(OMX_REQUEST_TYPE_RECV);
+    req = omx__request_alloc(ep, OMX_REQUEST_TYPE_RECV);
     if (unlikely(!req))
       return OMX_NO_RESOURCES;
 
@@ -355,7 +355,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       void *unexp_buffer = malloc(msg_length);
       if (unlikely(!unexp_buffer)) {
 	fprintf(stderr, "Failed to allocate buffer for unexpected messages, dropping\n");
-	omx__request_free(req);
+	omx__request_free(ep, req);
 	return OMX_NO_RESOURCES;
       }
       req->recv.buffer = unexp_buffer;
@@ -617,7 +617,7 @@ omx_irecv(struct omx_endpoint *ep,
   }
 
   /* allocate a new recv request */
-  req = omx__request_alloc(OMX_REQUEST_TYPE_RECV);
+  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_RECV);
   if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
     goto out;

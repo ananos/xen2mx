@@ -151,7 +151,7 @@ omx_cancel(omx_endpoint_t ep,
       /* not matched, still in the recv queue */
       uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
       omx__dequeue_request(&ep->ctxid[ctxid].recv_req_q, req);
-      omx__request_free(req);
+      omx__request_free(ep, req);
       *request = 0;
       *result = 1;
     } else {
@@ -172,7 +172,7 @@ omx_cancel(omx_endpoint_t ep,
       /* the request is pending on a queue */
       struct list_head * head = &ep->connect_req_q;
       omx__dequeue_request(head, req);
-      omx__request_free(req);
+      omx__request_free(ep, req);
       *request = 0;
       *result = 1;
     } else {

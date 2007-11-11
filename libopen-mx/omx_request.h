@@ -29,7 +29,7 @@
  */
 
 static inline union omx_request *
-omx__request_alloc(enum omx__request_type type)
+omx__request_alloc(struct omx_endpoint *ep, enum omx__request_type type)
 {
   union omx_request * req;
 
@@ -53,7 +53,7 @@ omx__request_alloc(enum omx__request_type type)
 }
 
 static inline void
-omx__request_free(union omx_request * req)
+omx__request_free(struct omx_endpoint *ep, union omx_request * req)
 {
   free(req);
 }
