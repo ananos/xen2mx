@@ -114,6 +114,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
+  req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
@@ -189,6 +190,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
+  req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
@@ -323,6 +325,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = partner->next_send_seq;
+  req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->send.specific.medium.buffer = buffer;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
@@ -431,6 +434,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = partner->next_send_seq;
+  req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->send.specific.large.buffer = buffer;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;

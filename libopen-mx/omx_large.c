@@ -372,6 +372,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
 
   seqnum = partner->next_send_seq++;
   req->generic.send_seqnum = seqnum;
+  req->generic.submit_jiffies = omx__driver_desc->jiffies;
 
   notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   notify_param->peer_index = partner->peer_index;
