@@ -370,7 +370,8 @@ omx__process_pull_done(struct omx_endpoint * ep,
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
   omx__put_region(ep, req->recv.specific.large.local_region);
 
-  seqnum = partner->next_send_seq;
+  seqnum = partner->next_send_seq++;
+  req->generic.send_seqnum = seqnum;
 
   notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   notify_param->peer_index = partner->peer_index;
@@ -413,11 +414,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
     omx__abort("Failed to handle NACK status %d\n",
 	       event->status);
   }
-
-  /* increase at the end, to avoid having to decrease back in case of error */
-  partner->next_send_seq++;
-
-  req->generic.send_seqnum = seqnum;
 
   return OMX_SUCCESS;
 }
