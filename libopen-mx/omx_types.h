@@ -261,6 +261,7 @@ union omx_request {
       } tiny;
       struct {
 	struct omx_cmd_send_small send_small_ioctl_param;
+	void *buffer;
       } small;
       struct {
 	struct omx_cmd_send_medium send_medium_ioctl_param;

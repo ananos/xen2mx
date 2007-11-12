@@ -9,7 +9,6 @@
   + wakeup earlier if sleeping to send delayed acks
   + cancel a liback if sending a message before, or send liback after dequeuing request
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
-  + buffer small for real
   + omx_disconnect, call it when getting a nack or timeouting connect or send
 * add FORGOTTEN state for omx_forget, ...
 

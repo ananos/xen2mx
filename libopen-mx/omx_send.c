@@ -44,8 +44,14 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
     }
   }
 
-  if (req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM)
+  switch (req->generic.type) {
+  case OMX_REQUEST_TYPE_SEND_SMALL:
+    free(req->send.specific.small.buffer);
+    break;
+  case OMX_REQUEST_TYPE_SEND_MEDIUM:
     omx__endpoint_sendq_map_put(ep, req->send.specific.medium.frags_nr, req->send.specific.medium.sendq_map_index);
+    break;
+  }
 
   omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
 }
@@ -163,11 +169,17 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 {
   union omx_request * req;
   struct omx_cmd_send_small * small_param;
+  void *copy;
   omx__seqnum_t seqnum;
 
   req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_SMALL);
   if (unlikely(!req))
     return OMX_NO_RESOURCES;
+  copy = malloc(length);
+  if (unlikely(!copy)) {
+    omx__request_free(ep, req);
+    return OMX_NO_RESOURCES;
+  }
 
   seqnum = partner->next_send_seq++;
 
@@ -180,9 +192,11 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   small_param->seqnum = seqnum;
   small_param->session_id = partner->session_id;
 
-  /* FIXME: bufferize data */
-
   omx__post_isend_small(ep, partner, req);
+
+  /* bufferize data for retransmission */
+  memcpy(copy, buffer, length);
+  small_param->vaddr = copy;
 
   /* no need to wait for a done event, small is synchronous */
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK;

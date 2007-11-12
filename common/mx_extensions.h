@@ -29,7 +29,8 @@
 #define MX_HAS_ICONNECT_V2 1
 #define mx_iconnect omx_iconnect
 #define mx_disconnect(...) MX_FAILURE
-#define mx_set_request_timeout(...) MX_SUCCESS
+
+#define mx_set_request_timeout omx_set_request_timeout
 
 #define MX_RECV_CONTINUE OMX_RECV_CONTINUE
 #define MX_RECV_FINISHED OMX_RECV_FINISHED
