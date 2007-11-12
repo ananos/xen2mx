@@ -51,6 +51,8 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
     omx__endpoint_sendq_map_put(ep, req->send.specific.medium.frags_nr, req->send.specific.medium.sendq_map_index);
     break;
+  default:
+    break;
   }
 
   omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
@@ -196,7 +198,8 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 
   /* bufferize data for retransmission */
   memcpy(copy, buffer, length);
-  small_param->vaddr = copy;
+  req->send.specific.small.buffer = copy;
+  small_param->vaddr = (uintptr_t) copy;
 
   /* no need to wait for a done event, small is synchronous */
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
