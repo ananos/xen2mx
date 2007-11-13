@@ -231,6 +231,9 @@ enum omx__request_state {
  *   IN_DRIVER|NEED_ACK: impossible, we switch from one to the other in pull_done
  * CONNECT:
  *   NEED_REPLY: connect_req_q
+ *
+ * if REQUEUED added, resend_req_q instead of non_acked_req_q
+ * if QUEUED, send_req_q
  */
 
 struct omx__generic_request {
