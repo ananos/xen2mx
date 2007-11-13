@@ -7,6 +7,8 @@ Contents:
 III. Kernel Module and /dev/open-mx Device Node
  IV. Attaching interfaces
   V. Peer Table File
+ VI. Performance tuning
+VII. Native MX Compatibility
 
 
 +----------------+
@@ -39,8 +41,8 @@ d. Make Open-MX use this file:
      $ /path/to/open-mx/bin/omx_init_peers /path/to/the/peers/file
    See Section IV for details.
 
-e. Make sure both interfaces are up
-     $ ifconfig eth2 up
+e. Make sure both interfaces are up with a large MTU
+     $ ifconfig eth2 up mtu 9000
 
 f. Run omx_info to see which interfaces are attached and which
    peers are accessible:
@@ -118,6 +120,7 @@ $ make installonly
 so that it really only installs things without checking whether the
 build is up-to-date.
 
+
 +-------------------------------------------------+
 | III. Kernel Module and /dev/open-mx Device Node |
 +-------------------------------------------------+
@@ -164,6 +167,11 @@ Note that these interfaces must be 'up' in order to work.
 $ ifconfig eth2 up
 However, having an IP address is not required.
 
+Also, the MTU should be large enough for Open-MX packets to transit.
+9000 will always be enough. Look in dmesg for the actual minimal MTU
+size, which may depend on the configuration.
+$ ifconfig eth2 mtu 9000
+
 
 +--------------------+
 | V. Peer Table File |
@@ -179,3 +187,87 @@ The contents of the file is one line per peer, each containing
 2 fields (seperated by spaces or tabs):
 * a mac address (6 colon-separated numbers)
 * a board hostname (<hostname>:<ifacenumber>)
+
+
++------------------------+
+| VI. Performance tuning |
++------------------------+
+
++-------------------------------
+| VI.a. Native MX compatibility
+
+If native MX compatibility is not required on the wire (see section VII),
+you might want to pass --disable-mx-wire to the configure command line so
+that larger packets are used for large messages.
+Note that the required MTU will jump from roughly 4kB to 8.
+
++------------------------------------------------
+| VI.b. Avoiding Linearizing on the receive side
+
+Multiple drivers are known to linearize (using a memory copy) all incoming
+packets except those that use a common Ethernet type for which the software
+stack is known to be able to receive without being linearize.
+
+Since the Open-MX Ethernet type is generally not part of these common types,
+linearizing might occur and cause an important performance degradation.
+To avoid this, if IPv6 is not in use, you might tell Open-MX to use the IPv6
+Ethernet type, which will not be linearized by the drivers. To do so, you
+should pass --with-ethertype=0x88B7 to the configure command line.
+
++--------------------------
+| VI.c. Registration Cache
+
+Achieving optimal performance requires to avoid memory copies as much
+as possible. This is done using memory registration, which pins buffers
+in physical memory. Since this operation is expensive, it is interesting
+to do only once per buffer when the buffer is used multiple times.
+To do so, you should set the OMX_RCACHE environment variable to 1.
+$ export OMX_RCACHE=1
+
+However, this configuration may be dangerous if the application frees
+the buffer in the meantime. Since Open-MX has no way to detect this
+for now, this registration cache should be used with caution.
+
++----------------------------
+| VI.d. Interrupt Coalescing
+
+Most Ethernet drivers use interrupt coalescing to avoid interrupting the
+host once per incoming packet. While this is good for the throughput, it
+increase the latency a lot, up to dozens of milliseconds.
+
+To get the best latency for Open-MX, interrupt coalescing should be reduced.
+The easiest way to do so is to disable it completely.
+$ ethtool -C eth2 rx-usecs 0
+
+However, it is often better to set it close to the latency so that the
+observed latency is as optimal while there is still a bit of coalescing
+for consecutive packets. So, assuming that you observe a N usecs latency
+with Open-MX when interrupt coalescing is disabled, a nice configuration
+would to set coalescing to N or N-1 usecs:
+$ ethtool -C eth2 rx-usecs <N-1>
+
+
++------------------------------+
+| VII. Native MX Compatibility |
++------------------------------+
+
+Open-MX provides API and wire compatibility with the native MX stack.
+
++---------------------------
+| VII.a. Wire-compatibility
+
+If you need some Open-MX hosts to talk to some MX hosts, you should
+keep the wire compatibility enabled (it is enabled by default).
+If you only have Open-MX hosts talking on the network, you can disable
+it to improve performance (see VI.a).
+
++--------------------------
+| VII.b. API-compatibility
+
+While the Open-MX API is slightly different from the MX one, it provides
+a compatibility layer which enables building of any MX application on
+top of Open-MX. To enable this layer, you should pass --enable-mx to
+the configure command line.
+
+Binary compatibility is not supported yet, which means you will always
+have to rebuild against Open-MX headers.
