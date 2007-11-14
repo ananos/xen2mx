@@ -14,7 +14,6 @@
   + omx_disconnect, call it when getting a nack or timeouting connect or send
 
 * limit the number of zombies
-* add OMX_ZOMBIE
 
 * add an internal state for connect?
 

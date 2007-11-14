@@ -68,6 +68,11 @@ omx__init_api(int api)
   if (env)
     omx__globals.waitspin = atoi(env);
 
+  omx__globals.zombies = 1;
+  env = getenv("OMX_ZOMBIE_SEND");
+  if (env)
+    omx__globals.zombies = atoi(env);
+
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
 

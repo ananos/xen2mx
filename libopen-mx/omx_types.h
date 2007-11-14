@@ -349,6 +349,7 @@ struct omx__globals {
   int verbose;
   int regcache;
   int waitspin;
+  int zombies;
   unsigned ack_delay;
   unsigned resend_delay;
   unsigned retransmits_max;

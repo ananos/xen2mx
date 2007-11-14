@@ -120,6 +120,9 @@ static inline void
 omx__notify_request_done_early(struct omx_endpoint *ep, uint32_t ctxid,
 			       union omx_request *req)
 {
+  if (unlikely(!omx__globals.zombies))
+    return;
+
   omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_DONE));
   omx__debug_assert(req->generic.state);
 
