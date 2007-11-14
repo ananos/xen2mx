@@ -12,9 +12,13 @@
   + cancel a liback if sending a message before, or send liback after dequeuing request
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
   + omx_disconnect, call it when getting a nack or timeouting connect or send
-* add FORGOTTEN state for omx_forget, ...
+
+* add mx_forget
+  + support isend/irecv/iconnect with requestp = NULL (does mx_forget)
   + limit the number of zombies
   + add OMX_ZOMBIE
+
+* add an internal state for connect?
 
 * cleanup BH locking in pull ?
   + add a pull_handle_done_release with a BH param?

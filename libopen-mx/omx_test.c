@@ -22,6 +22,23 @@
 #include "omx_lib.h"
 #include "omx_request.h"
 
+static inline void
+omx__test_success(struct omx_endpoint *ep, union omx_request *req,
+		  struct omx_status *status)
+{
+  memcpy(status, &req->generic.status, sizeof(*status));
+  omx__dequeue_done_request(ep, req);
+
+  if (likely(req->generic.state != OMX_REQUEST_STATE_DONE)) {
+    /* the request is not actually done, zombify it */
+    req->generic.state &= ~OMX_REQUEST_STATE_DONE;
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+  } else {
+    /* the request is done for real, delete it */
+    omx__request_free(ep, req);
+  }
+}
+
 static inline uint32_t
 omx__test_common(struct omx_endpoint *ep, union omx_request **requestp,
 		 struct omx_status *status)
@@ -29,9 +46,7 @@ omx__test_common(struct omx_endpoint *ep, union omx_request **requestp,
   union omx_request * req = *requestp;
 
   if (likely(req->generic.state & OMX_REQUEST_STATE_DONE)) {
-    omx__dequeue_done_request(ep, req);
-    memcpy(status, &req->generic.status, sizeof(*status));
-    omx__request_free(ep, req);
+    omx__test_success(ep, req, status);
     *requestp = NULL;
     return 1;
   } else {
@@ -141,9 +156,7 @@ omx__test_any_common(struct omx_endpoint *ep,
 
   omx__foreach_done_request(ep, ctxid, req) {
     if (likely((req->generic.status.match_info & match_mask) == match_info)) {
-      omx__dequeue_done_request(ep, req);
-      memcpy(status, &req->generic.status, sizeof(*status));
-      omx__request_free(ep, req);
+      omx__test_success(ep, req, status);
       return 1;
     }
   }
