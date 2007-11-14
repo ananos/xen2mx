@@ -250,6 +250,8 @@ enum omx__request_state {
   OMX_REQUEST_STATE_DONE = (1<<8),
   /* request has been completed by the application and should not be notified when done for real (including acked) */
   OMX_REQUEST_STATE_ZOMBIE = (1<<9),
+  /* request is internal, should not be queued in the doneq for peek/test_any */
+  OMX_REQUEST_STATE_INTERNAL = (1<<10),
 };
 
 struct omx__generic_request {
@@ -325,7 +327,6 @@ union omx_request {
     struct omx_cmd_send_connect send_connect_ioctl_param;
     uint32_t session_id;
     uint8_t connect_seqnum;
-    int is_synchronous;
   } connect;
 };
 

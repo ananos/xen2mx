@@ -260,7 +260,7 @@ omx__connect_common(omx_endpoint_t ep,
   omx__post_connect(ep, partner, req);
 
   /* no need to wait for a done event, tiny is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_REPLY;
+  req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY;
   omx__enqueue_request(&ep->connect_req_q, req);
   omx__enqueue_partner_connect_request(partner, req);
 
@@ -293,14 +293,14 @@ omx_connect(omx_endpoint_t ep,
     goto out;
   }
 
-  req->connect.is_synchronous = 1;
+  req->generic.state = OMX_REQUEST_STATE_INTERNAL;
 
   ret = omx__connect_common(ep, nic_id, endpoint_id, key, req);
   if (ret != OMX_SUCCESS)
     goto out_with_req;
 
   omx__debug_printf("waiting for connect reply\n");
-  while (!(req->generic.state & OMX_REQUEST_STATE_DONE)) {
+  while (req->generic.state != (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL)) {
     ret = omx__progress(ep);
     if (ret != OMX_SUCCESS)
       goto out; /* request is queued, do not try to free it */
@@ -348,7 +348,7 @@ omx_iconnect(omx_endpoint_t ep,
     goto out;
   }
 
-  req->connect.is_synchronous = 0;
+  req->generic.state = 0; /* iconnect is not INTERNAL */
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
 
@@ -392,7 +392,7 @@ omx__connect_complete(struct omx_endpoint *ep,
     omx__partner_to_addr(partner, &req->generic.status.addr);
 
   /* move iconnect request to the done queue */
-  omx__notify_request_done(ep, ctxid, req, req->connect.is_synchronous);
+  omx__notify_request_done(ep, ctxid, req);
 }
 
 /*

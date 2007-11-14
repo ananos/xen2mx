@@ -15,8 +15,6 @@
 
 * limit the number of zombies
 
-* add an internal state for connect?
-
 * cleanup BH locking in pull ?
   + add a pull_handle_done_release with a BH param?
 

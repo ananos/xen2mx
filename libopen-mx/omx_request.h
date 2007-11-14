@@ -132,9 +132,9 @@ omx__notify_request_done_early(struct omx_endpoint *ep, uint32_t ctxid,
 
 static inline void
 omx__notify_request_done(struct omx_endpoint *ep, uint32_t ctxid,
-			 union omx_request *req, int internal)
+			 union omx_request *req)
 {
-  if (unlikely(internal)) {
+  if (unlikely(req->generic.state & OMX_REQUEST_STATE_INTERNAL)) {
     /* no need to queue the request, just set the DONE status */
     omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_DONE));
     req->generic.state |= OMX_REQUEST_STATE_DONE;
