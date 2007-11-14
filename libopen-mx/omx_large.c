@@ -350,6 +350,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   struct omx__large_region * region;
   struct omx__partner * partner;
   struct omx_cmd_send_notify * notify_param;
+  uint32_t ctxid;
   omx_status_code_t status;
   omx__seqnum_t seqnum;
 
@@ -363,6 +364,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx__debug_assert(req);
   omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
 
+  ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
   partner = req->generic.partner;
   /* FIXME: check length, update req->generic.status.xfer_length and status */
 
@@ -389,6 +391,9 @@ omx__process_pull_done(struct omx_endpoint * ep,
   /* no need to wait for a done event, tiny is synchronous */
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
+
+  /* mark the request as done now, it will be resent/zombified later if necessary */
+  omx__notify_request_done_early(ep, ctxid, req);
 
   switch (event->status) {
   case OMX_EVT_PULL_DONE_SUCCESS:

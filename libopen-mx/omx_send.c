@@ -96,6 +96,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
 {
   union omx_request * req;
   struct omx_cmd_send_tiny * tiny_param;
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   omx__seqnum_t seqnum;
 
   req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_TINY);
@@ -118,6 +119,9 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   /* no need to wait for a done event, tiny is synchronous */
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
+
+  /* mark the request as done now, it will be resent/zombified later if necessary */
+  omx__notify_request_done_early(ep, ctxid, req);
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
@@ -171,6 +175,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 {
   union omx_request * req;
   struct omx_cmd_send_small * small_param;
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   void *copy;
   omx__seqnum_t seqnum;
 
@@ -196,14 +201,17 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 
   omx__post_isend_small(ep, partner, req);
 
+  /* no need to wait for a done event, small is synchronous */
+  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_partner_non_acked_request(partner, req);
+
   /* bufferize data for retransmission */
   memcpy(copy, buffer, length);
   req->send.specific.small.buffer = copy;
   small_param->vaddr = (uintptr_t) copy;
 
-  /* no need to wait for a done event, small is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
+  /* mark the request as done now, it will be resent/zombified later if necessary */
+  omx__notify_request_done_early(ep, ctxid, req);
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
@@ -294,6 +302,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 {
   struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
   struct omx__partner * partner = req->generic.partner;
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
   uint32_t length = req->generic.status.xfer_length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr;
@@ -318,6 +327,9 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
+
+  /* mark the request as done now, it will be resent/zombified later if necessary */
+  omx__notify_request_done_early(ep, ctxid, req);
 
   return OMX_SUCCESS;
 }

@@ -115,12 +115,25 @@ list_for_each_entry_safe(req, next, head, generic.queue_elt)
  * Done request queue management
  */
 
+/* mark the request as done while it is not done yet */
+static inline void
+omx__notify_request_done_early(struct omx_endpoint *ep, uint32_t ctxid,
+			       union omx_request *req)
+{
+  omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_DONE));
+  omx__debug_assert(req->generic.state);
+
+  req->generic.state |= OMX_REQUEST_STATE_DONE;
+  list_add_tail(&req->generic.done_elt, &ep->ctxid[ctxid].done_req_q);
+}
+
 static inline void
 omx__notify_request_done(struct omx_endpoint *ep, uint32_t ctxid,
 			 union omx_request *req, int internal)
 {
   if (unlikely(internal)) {
     /* no need to queue the request, just set the DONE status */
+    omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_DONE));
     req->generic.state |= OMX_REQUEST_STATE_DONE;
     omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE));
 
@@ -128,8 +141,8 @@ omx__notify_request_done(struct omx_endpoint *ep, uint32_t ctxid,
     /* request already completed by the application, just free it */
     omx__request_free(ep, req);
 
-  } else {
-    /* queue the request to the done queue */
+  } else if (unlikely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
+    /* queue the request to the done queue if not already done */
     req->generic.state |= OMX_REQUEST_STATE_DONE;
     list_add_tail(&req->generic.done_elt, &ep->ctxid[ctxid].done_req_q);
   }
