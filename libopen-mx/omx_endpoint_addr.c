@@ -356,7 +356,12 @@ omx_iconnect(omx_endpoint_t ep,
   if (ret != OMX_SUCCESS)
     goto out_with_req;
 
-  *requestp = req;
+  if (requestp) {
+    *requestp = req;
+  } else {
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+  }
+
   return ret;
 
  out_with_req:

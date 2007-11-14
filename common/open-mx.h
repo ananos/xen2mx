@@ -262,6 +262,9 @@ omx_return_t
 omx_cancel(omx_endpoint_t ep, omx_request_t *request, uint32_t *result);
 
 omx_return_t
+omx_forget(omx_endpoint_t ep, omx_request_t *request);
+
+omx_return_t
 omx_disable_progression(struct omx_endpoint *ep);
 
 omx_return_t

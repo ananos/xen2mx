@@ -39,6 +39,27 @@ omx__test_success(struct omx_endpoint *ep, union omx_request *req,
   }
 }
 
+omx_return_t
+omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
+{
+  union omx_request * req = *requestp;
+
+  if (!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE)) {
+    if (req->generic.state == OMX_REQUEST_STATE_DONE) {
+      /* want to forget a request that is ready to complete? just complete it and ignore the return value */
+      struct omx_status dummy;
+      omx__test_success(ep, req, &dummy);
+    } else {
+      /* mark as zombie and let the real completion delete it later */
+      req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+    }
+  }
+
+  *requestp = NULL;
+
+  return OMX_SUCCESS;
+}
+
 static inline uint32_t
 omx__test_common(struct omx_endpoint *ep, union omx_request **requestp,
 		 struct omx_status *status)

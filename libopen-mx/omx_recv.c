@@ -610,9 +610,7 @@ omx_irecv(struct omx_endpoint *ep,
 	}
       }
 
-      *requestp = req;
-
-      return OMX_SUCCESS;
+      goto ok;
     }
   }
 
@@ -633,7 +631,12 @@ omx_irecv(struct omx_endpoint *ep,
   omx__enqueue_request(&ep->ctxid[ctxid].recv_req_q, req);
   omx__progress(ep);
 
-  *requestp = req;
+ ok:
+  if (requestp) {
+    *requestp = req;
+  } else {
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+  }
 
   return OMX_SUCCESS;
 

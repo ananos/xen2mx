@@ -133,7 +133,12 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  *requestp = req;
+  if (requestp) {
+    *requestp = req;
+  } else {
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+  }
+
   return OMX_SUCCESS;
 }
 
@@ -223,7 +228,12 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  *requestp = req;
+  if (requestp) {
+    *requestp = req;
+  } else {
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+  }
+
   return OMX_SUCCESS;
 }
 
@@ -373,7 +383,12 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
     partner->next_send_seq++;
   }
 
-  *requestp = req;
+  if (requestp) {
+    *requestp = req;
+  } else {
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+  }
+
   return OMX_SUCCESS;
 
  out:
@@ -483,7 +498,12 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
     partner->next_send_seq++;
   }
 
-  *requestp = req;
+  if (requestp) {
+    *requestp = req;
+  } else {
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+  }
+
   return OMX_SUCCESS;
 }
 
