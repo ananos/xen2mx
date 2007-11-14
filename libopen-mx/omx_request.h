@@ -111,6 +111,65 @@ list_for_each_entry(req, head, generic.queue_elt)
 #define omx__foreach_request_safe(head, req, next)	\
 list_for_each_entry_safe(req, next, head, generic.queue_elt)
 
+/********************************
+ * Done request queue management
+ */
+
+static inline void
+omx__notify_request_done(struct omx_endpoint *ep, uint32_t ctxid,
+			 union omx_request *req, int internal)
+{
+  if (unlikely(internal)) {
+    /* no need to queue the request, just set the DONE status */
+    req->generic.state |= OMX_REQUEST_STATE_DONE;
+    omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE));
+
+  } else if (likely(req->generic.state & OMX_REQUEST_STATE_ZOMBIE)) {
+    /* request already completed by the application, just free it */
+    omx__request_free(ep, req);
+
+  } else {
+    /* queue the request to the done queue */
+    req->generic.state |= OMX_REQUEST_STATE_DONE;
+    list_add_tail(&req->generic.done_elt, &ep->ctxid[ctxid].done_req_q);
+  }
+}
+
+static inline void
+omx__dequeue_done_request(struct omx_endpoint *ep,
+			  union omx_request *req)
+{
+#ifdef OMX_DEBUG
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+  struct list_head *e;
+  list_for_each(e, &ep->ctxid[ctxid].done_req_q)
+    if (req == list_entry(e, union omx_request, generic.done_elt))
+      goto found;
+
+  omx__abort("Failed to find request in queue for dequeueing\n");
+
+ found:
+#endif /* OMX_DEBUG */
+  list_del(&req->generic.done_elt);
+}
+
+static inline union omx_request *
+omx__queue_first_done_request(struct omx_endpoint *ep,
+			      uint32_t ctxid)
+{
+  return list_first_entry(&ep->ctxid[ctxid].done_req_q, union omx_request, generic.done_elt);
+}
+
+static inline int
+omx__done_queue_empty(struct omx_endpoint *ep,
+		      uint32_t ctxid)
+{
+  return list_empty(&ep->ctxid[ctxid].done_req_q);
+}
+
+#define omx__foreach_done_request(ep, _ctxid, req)		\
+list_for_each_entry(req, &ep->ctxid[_ctxid].done_req_q, generic.done_elt)
+
 /*********************************************
  * Partner non-acked request queue management
  */

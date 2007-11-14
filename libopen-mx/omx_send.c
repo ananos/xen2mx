@@ -55,7 +55,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
     break;
   }
 
-  omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
+  omx__notify_request_done(ep, ctxid, req, 0);
 }
 
 /************

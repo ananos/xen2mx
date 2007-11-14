@@ -1,6 +1,8 @@
 * make assert configurable into a SEGV with OMX_ASSERT_SEGV
 
 * do something with the pull_done status
+* make sure 0-bytes issend work
+  + don't post any pull request?
 
 * option for omx_pingpong with issend
   + used with regcache to mesure possible medium perf
@@ -11,6 +13,8 @@
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
   + omx_disconnect, call it when getting a nack or timeouting connect or send
 * add FORGOTTEN state for omx_forget, ...
+  + limit the number of zombies
+  + add OMX_ZOMBIE
 
 * cleanup BH locking in pull ?
   + add a pull_handle_done_release with a BH param?

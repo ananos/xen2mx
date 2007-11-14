@@ -300,7 +300,7 @@ omx_connect(omx_endpoint_t ep,
     goto out_with_req;
 
   omx__debug_printf("waiting for connect reply\n");
-  while (req->generic.state) {
+  while (!(req->generic.state & OMX_REQUEST_STATE_DONE)) {
     ret = omx__progress(ep);
     if (ret != OMX_SUCCESS)
       goto out; /* request is queued, do not try to free it */
@@ -373,6 +373,7 @@ omx__connect_complete(struct omx_endpoint *ep,
 		      union omx_request * req, omx_status_code_t status)
 {
   struct omx__partner *partner = req->generic.partner;
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
 
   omx__dequeue_request(&ep->connect_req_q, req);
   omx__dequeue_partner_connect_request(partner, req);
@@ -386,10 +387,7 @@ omx__connect_complete(struct omx_endpoint *ep,
     omx__partner_to_addr(partner, &req->generic.status.addr);
 
   /* move iconnect request to the done queue */
-  if (!req->connect.is_synchronous) {
-    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-    omx__enqueue_request(&ep->ctxid[ctxid].done_req_q, req);
-  }
+  omx__notify_request_done(ep, ctxid, req, req->connect.is_synchronous);
 }
 
 /*

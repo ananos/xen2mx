@@ -28,15 +28,14 @@ omx__test_common(struct omx_endpoint *ep, union omx_request **requestp,
 {
   union omx_request * req = *requestp;
 
-  if (unlikely(req->generic.state)) {
-    return 0;
-  } else {
-    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-    omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
+  if (likely(req->generic.state & OMX_REQUEST_STATE_DONE)) {
+    omx__dequeue_done_request(ep, req);
     memcpy(status, &req->generic.status, sizeof(*status));
     omx__request_free(ep, req);
     *requestp = NULL;
     return 1;
+  } else {
+    return 0;
   }
 }
 
@@ -140,9 +139,9 @@ omx__test_any_common(struct omx_endpoint *ep,
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
 
-  omx__foreach_request(&ep->ctxid[ctxid].done_req_q, req) {
+  omx__foreach_done_request(ep, ctxid, req) {
     if (likely((req->generic.status.match_info & match_mask) == match_info)) {
-      omx__dequeue_request(&ep->ctxid[ctxid].done_req_q, req);
+      omx__dequeue_done_request(ep, req);
       memcpy(status, &req->generic.status, sizeof(*status));
       omx__request_free(ep, req);
       return 1;
@@ -271,10 +270,10 @@ omx_wait_any(struct omx_endpoint *ep,
 static inline uint32_t
 omx__ipeek_common(struct omx_endpoint *ep, union omx_request **requestp)
 {
-  if (unlikely(omx__queue_empty(&ep->ctxid[0].done_req_q))) {
+  if (unlikely(omx__done_queue_empty(ep, 0))) {
     return 0;
   } else {
-    *requestp = omx__queue_first_request(&ep->ctxid[0].done_req_q);
+    *requestp = omx__queue_first_done_request(ep, 0);
     return 1;
   }
 }

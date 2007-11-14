@@ -68,13 +68,13 @@ struct omx__partner {
   /* seq num of the last connect request to this partner */
   uint8_t connect_seqnum;
 
-  /* list of non-acked request */
+  /* list of non-acked request (queued by their partner_elt) */
   struct list_head non_acked_req_q;
-  /* pending connect requests */
+  /* pending connect requests (queued by their partner_elt) */
   struct list_head pending_connect_req_q;
-  /* list of request matched but not entirely received */
+  /* list of request matched but not entirely received (queued by their partner_elt) */
   struct list_head partial_recv_req_q;
-  /* early packets */
+  /* early packets (queued by their partner_elt) */
   struct list_head early_recv_q;
 
   /* seqnum of the next send */
@@ -142,30 +142,31 @@ struct omx_endpoint {
 
   /* context id array for multiplexed queues */
   struct {
-    /* unexpected receive, may be partial */
+    /* unexpected receive, may be partial (queued by their queue_elt) */
     struct list_head unexp_req_q;
-    /* posted non-matched receive */
+    /* posted non-matched receive (queued by their queue_elt) */
     struct list_head recv_req_q;
-    /* done requests */
+
+    /* done requests (queued by their done_elt) */
     struct list_head done_req_q;
   } * ctxid;
 
   /* non multiplexed queues */
-  /* SEND req with state = QUEUED */
+  /* SEND req with state = QUEUED (queued by their queue_elt) */
   struct list_head queued_send_req_q;
-  /* SEND req with state = IN_DRIVER */
+  /* SEND req with state = IN_DRIVER (queued by their queue_elt) */
   struct list_head driver_posted_req_q;
-  /* RECV MEDIUM req with state = PARTIAL */
+  /* RECV MEDIUM req with state = PARTIAL (queued by their queue_elt) */
   struct list_head multifrag_medium_recv_req_q;
-  /* SEND LARGE req with state = NEED_REPLY and already acked */
+  /* SEND LARGE req with state = NEED_REPLY and already acked (queued by their queue_elt) */
   struct list_head large_send_req_q;
-  /* RECV_LARGE req with state = IN_DRIVER */
+  /* RECV_LARGE req with state = IN_DRIVER (queued by their queue_elt) */
   struct list_head pull_req_q;
-  /* CONNECT req with state = NEED_REPLY */
+  /* CONNECT req with state = NEED_REPLY (queued by their queue_elt) */
   struct list_head connect_req_q;
-  /* any request that needs to be resent, thus NEED_ACK, and is not IN DRIVER */
+  /* any request that needs to be resent, thus NEED_ACK, and is not IN DRIVER (queued by their queue_elt) */
   struct list_head non_acked_req_q;
-  /* any request that needs to be resent now, thus REQUEUED and NEED_ACK, not IN_DRIVER */
+  /* any request that needs to be resent now, thus REQUEUED and NEED_ACK, not IN_DRIVER (queued by their queue_elt) */
   struct list_head requeued_send_req_q;
 
   struct omx__sendq_map sendq_map;
@@ -190,31 +191,16 @@ enum omx__request_type {
   OMX_REQUEST_TYPE_RECV_LARGE,
 };
 
-/* Request states:
- * It's a bitmask of pending things.
- * When 0 (no state), the request is done.
- */
-enum omx__request_state {
-  /* placed on a queue for sending through the driver soon */
-  OMX_REQUEST_STATE_QUEUED = (1<<0),
-  /* posted to the driver, not done sending yet */
-  OMX_REQUEST_STATE_IN_DRIVER = (1<<1),
-  /* posted receive that didn't get match yet */
-  OMX_REQUEST_STATE_RECV_NEED_MATCHING = (1<<2),
-  /* partially received medium */
-  OMX_REQUEST_STATE_RECV_PARTIAL = (1<<3),
-  /* unexpected receive, needs to match a non-yet-posted receive */
-  OMX_REQUEST_STATE_RECV_UNEXPECTED = (1<<4),
-  /* needs an explicit reply from the peer */
-  OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
-  /* needs a ack from the peer */
-  OMX_REQUEST_STATE_NEED_ACK = (1<<6),
-  /* placed on a queue for resending through the driver soon */
-  OMX_REQUEST_STATE_REQUEUED = (1<<7),
-};
-
-/* Request states and queueing
+/* Request states and queueing:
+ * The request contains 3 queue elt:
+ * + queue_elt: depends on the network state (need ack, need reply, posted to the driver, ...).
+ *              used to queue the request on various endpoint queues (except the done_req_q)
+ * + done_elt: used to queue the request on the endpoint done_req_q when the request is ready
+ *             to be completed by by the application. It may happen before it is actually acked,
+ *             and thus it is unrelated to where queue_elt is queued
+ * + partner_elt: used to queue the request in the partner when it has not been acked yet
  *
+ * The network state of the request determines where the queue_elt is queued:
  * SEND_TINY and SEND_SMALL:
  *   NEED_ACK: non_acked_req_q
  * SEND_MEDIUM:
@@ -234,12 +220,43 @@ enum omx__request_state {
  *
  * if REQUEUED added, resend_req_q instead of non_acked_req_q
  * if QUEUED, send_req_q
+ *
+ * The DONE qnd ZOMBIE states of the request determines whether the done_elt
+ * is queued in the endpoint done_req_q:
+ *   DONE: the done_elt is in the done_req_q and the request may complete it
+ *   ZOMBIE: the done_elt has been removed from the done_req_q by the application completing
+ *           the request earlier. the request is still waiting for some acks. it will not go back
+ *           to the done_req_q when it arrives, it will just be freed.
  */
+
+enum omx__request_state {
+  /* placed on a queue for sending through the driver soon */
+  OMX_REQUEST_STATE_QUEUED = (1<<0),
+  /* posted to the driver, not done sending yet */
+  OMX_REQUEST_STATE_IN_DRIVER = (1<<1),
+  /* posted receive that didn't get match yet */
+  OMX_REQUEST_STATE_RECV_NEED_MATCHING = (1<<2),
+  /* partially received medium */
+  OMX_REQUEST_STATE_RECV_PARTIAL = (1<<3),
+  /* unexpected receive, needs to match a non-yet-posted receive */
+  OMX_REQUEST_STATE_RECV_UNEXPECTED = (1<<4),
+  /* needs an explicit reply from the peer */
+  OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
+  /* needs a ack from the peer */
+  OMX_REQUEST_STATE_NEED_ACK = (1<<6),
+  /* placed on a queue for resending through the driver soon */
+  OMX_REQUEST_STATE_REQUEUED = (1<<7),
+  /* request can already be completed by the application, even if not acked yet */
+  OMX_REQUEST_STATE_DONE = (1<<8),
+  /* request has been completed by the application and should not be notified when done for real (including acked) */
+  OMX_REQUEST_STATE_ZOMBIE = (1<<9),
+};
 
 struct omx__generic_request {
   /* main queue elt, linked to one of the endpoint queues */
   struct list_head queue_elt;
-
+  /* done queue elt, queued to the endpoint doneq when ready to be completed */
+  struct list_head done_elt;
   /* partner specific queue elt, either for partial receive, or for non-acked request (cannot be both) */
   struct list_head partner_elt;
 
