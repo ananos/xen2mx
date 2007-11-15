@@ -122,7 +122,9 @@ int main(int argc, char *argv[])
   int increment = INCREMENT;
   int unidir = UNIDIR;
   int slave = 0;
-  char dest_name[OMX_HOSTNAMELEN_MAX];
+  char my_hostname[OMX_HOSTNAMELEN_MAX];
+  char my_ifacename[OMX_BOARD_ADDR_STRLEN];
+  char dest_hostname[OMX_HOSTNAMELEN_MAX];
   uint64_t dest_addr;
   int sender = 0;
   int verbose = 0;
@@ -146,11 +148,11 @@ int main(int argc, char *argv[])
       eid = atoi(optarg);
       break;
     case 'd':
-      strncpy(dest_name, optarg, OMX_HOSTNAMELEN_MAX);
-      dest_name[OMX_HOSTNAMELEN_MAX-1] = '\0';
-      ret = omx_hostname_to_nic_id(dest_name, &dest_addr);
+      strncpy(dest_hostname, optarg, OMX_HOSTNAMELEN_MAX);
+      dest_hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+      ret = omx_hostname_to_nic_id(dest_hostname, &dest_addr);
       if (ret != OMX_SUCCESS) {
-	fprintf(stderr, "Cannot find peer name %s\n", dest_name);
+	fprintf(stderr, "Cannot find peer name %s\n", dest_hostname);
 	goto out;
       }
       sender = 1;
@@ -205,6 +207,27 @@ int main(int argc, char *argv[])
     goto out;
   }
 
+  ret = omx_get_info(ep, OMX_INFO_BOARD_HOSTNAME,
+		     NULL, 0,
+		     my_hostname, sizeof(my_hostname));
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to get endpoint hostname (%s)\n",
+	    omx_strerror(ret));
+    goto out;
+  }
+
+  ret = omx_get_info(ep, OMX_INFO_BOARD_IFACENAME,
+		     NULL, 0,
+		     my_ifacename, sizeof(my_ifacename));
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to get endpoint iface name (%s)\n",
+	    omx_strerror(ret));
+    goto out;
+  }
+
+  printf("Successfully open endpoint %d for hostname '%s' iface '%s'\n",
+	 eid, my_hostname, my_ifacename);
+
   if (sender) {
     /* sender */
 
@@ -218,14 +241,14 @@ int main(int argc, char *argv[])
     int length;
     int i;
 
-    printf("Starting sender to %s...\n", dest_name);
+    printf("Starting sender to '%s'...\n", dest_hostname);
 
     ret = omx_connect(ep, dest_addr, rid, 0x12345678, 0, &addr);
     if (ret != OMX_SUCCESS) {
 	fprintf(stderr, "Failed to connect (%s)\n",
 		omx_strerror(ret));
 	goto out_with_ep;
-      }
+    }
 
     /* send the param message */
     param.iter = htonl(iter);
@@ -417,13 +440,13 @@ int main(int argc, char *argv[])
       goto out_with_ep;
     }
 
-    ret = omx_nic_id_to_hostname(board_addr, dest_name);
+    ret = omx_nic_id_to_hostname(board_addr, dest_hostname);
     if (ret != OMX_SUCCESS)
-      strcpy(dest_name, "<unknown peer>");
+      strcpy(dest_hostname, "<unknown peer>");
 
     if (verbose)
       printf("Got parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d, unidir=%d) from peer %s\n",
-	     iter, warmup, min, max, multiplier, increment, unidir, dest_name);
+	     iter, warmup, min, max, multiplier, increment, unidir, dest_hostname);
 
     /* connect back, using iconnect for fun */
     ret = omx_iconnect(ep, board_addr, endpoint_index, 0x12345678,
