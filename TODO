@@ -1,8 +1,6 @@
 * make assert configurable into a SEGV with OMX_ASSERT_SEGV
 
 * do something with the pull_done status
-* make sure 0-bytes issend work
-  + don't post any pull request?
 
 * option for omx_pingpong with issend
   + used with regcache to mesure possible medium perf

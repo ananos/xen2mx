@@ -153,6 +153,10 @@ omx_return_t
 omx__submit_notify(struct omx_endpoint *ep,
 		   union omx_request *req);
 
+void
+omx__queue_notify(struct omx_endpoint *ep,
+		  union omx_request *req);
+
 omx_return_t
 omx__submit_pull(struct omx_endpoint * ep,
 	       union omx_request * req);

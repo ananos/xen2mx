@@ -330,11 +330,24 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
 {
   omx_return_t ret;
 
-  ret = omx__submit_pull(ep, req);
-  if (unlikely(ret != OMX_SUCCESS)) {
-    omx__debug_printf("queueing large request %p\n", req);
-    req->generic.state |= OMX_REQUEST_STATE_QUEUED;
-    omx__enqueue_request(&ep->queued_send_req_q, req);
+  if (req->generic.status.xfer_length) {
+    /* we need to pull some data */
+    ret = omx__submit_pull(ep, req);
+    if (unlikely(ret != OMX_SUCCESS)) {
+      omx__debug_printf("queueing large request %p\n", req);
+      req->generic.state |= OMX_REQUEST_STATE_QUEUED;
+      omx__enqueue_request(&ep->queued_send_req_q, req);
+    }
+
+  } else {
+    /* nothing to transfer, just send the notify.
+     * but we want to piggyack the rndv here too,
+     * so we queue, let progression finish processing events,
+     * and then send the notify as a queued request with correct piggyack
+     */
+    omx__debug_printf("large length 0, submitting request %p notify directly\n", req);
+    req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
+    omx__queue_notify(ep, req);
   }
 
   return OMX_SUCCESS;

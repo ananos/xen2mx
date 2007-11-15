@@ -574,6 +574,14 @@ omx__submit_notify(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
+void
+omx__queue_notify(struct omx_endpoint *ep,
+		  union omx_request *req)
+{
+  req->generic.state |= OMX_REQUEST_STATE_QUEUED;
+  omx__enqueue_request(&ep->queued_send_req_q, req);
+}
+
 /*************************************
  * API-Level Send Submission Routines
  */
@@ -675,8 +683,15 @@ omx__process_queued_requests(struct omx_endpoint *ep)
       ret = omx__submit_isend_rndv(ep, req);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
-      omx__debug_printf("reposting queued recv large request %p\n", req);
-      ret = omx__submit_pull(ep, req);
+      if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
+	/* if partial, we need to post the pull request to the driver */
+	omx__debug_printf("reposting queued recv large request %p\n", req);
+	ret = omx__submit_pull(ep, req);
+      } else {
+	/* if not partial, the pull is already done, we need to send the notify */
+	omx__debug_printf("reposting queued recv large request notify message %p\n", req);
+	ret = omx__submit_notify(ep, req);
+      }
       break;
     default:
       omx__abort("Failed to handle queued request with type %d\n",
