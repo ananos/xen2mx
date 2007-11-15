@@ -540,7 +540,6 @@ omx_return_t
 omx__submit_notify(struct omx_endpoint *ep,
 		   union omx_request *req)
 {
-  struct omx__large_region * region;
   struct omx__partner * partner;
   struct omx_cmd_send_notify * notify_param;
   uint32_t ctxid;
@@ -557,7 +556,7 @@ omx__submit_notify(struct omx_endpoint *ep,
   notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   notify_param->peer_index = partner->peer_index;
   notify_param->dest_endpoint = partner->endpoint_index;
-  notify_param->total_length = xfer_length;
+  notify_param->total_length = req->generic.status.xfer_length;
   notify_param->session_id = partner->session_id;
   notify_param->seqnum = seqnum;
   notify_param->puller_rdma_id = req->recv.specific.large.target_rdma_id;

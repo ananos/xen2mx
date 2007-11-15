@@ -347,6 +347,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   union omx_request * req;
   uint32_t xfer_length = event->pulled_length;
   uint32_t region_id = event->local_rdma_id;
+  struct omx__large_region * region;
   omx_status_code_t status;
 
   /* FIXME: use cookie since region might be used for something else? */
@@ -380,19 +381,22 @@ omx__process_pull_done(struct omx_endpoint * ep,
 	       event->status);
   }
 
-  /* FIXME: check length, update req->generic.status.xfer_length and status */
-
   /* FIXME: check region id */
   region = &ep->large_region_map.array[region_id].region;
   req = region->user;
   omx__debug_assert(req);
   omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
 
+  /* FIXME: check length and status, update request xfer_length only on error */
+  req->generic.status.xfer_length = xfer_length;
+
   omx__put_region(ep, req->recv.specific.large.local_region);
   omx__dequeue_request(&ep->pull_req_q, req);
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
 
   omx__submit_notify(ep, req);
+
+  return OMX_SUCCESS;
 }
 
 void
