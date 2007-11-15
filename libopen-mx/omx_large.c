@@ -433,13 +433,15 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   omx__debug_assert(req);
   omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_SEND_LARGE);
   omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
-  omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_NEED_ACK));
-  /* there should be a ack in the notify message, and we processed it before coming here */
 
-  omx__dequeue_request(&ep->large_send_req_q, req);
   omx__put_region(ep, req->send.specific.large.region);
   req->generic.status.xfer_length = xfer_length;
 
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
-  omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+  if (req->generic.state & OMX_REQUEST_STATE_NEED_ACK) {
+    /* keep the request in the non_acked_req_q */
+  } else {
+    omx__dequeue_request(&ep->large_send_req_q, req);
+    omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+  }
 }

@@ -210,7 +210,7 @@ enum omx__request_type {
  * SEND_LARGE:
  *   NEED_REPLY|NEED_ACK: non_acked_req_q
  *   NEED_REPLY: large_send_req_q
- *   NEED_ACK: impossible, the reply must ack at least up to the rndv, and we process acks first
+ *   NEED_ACK: non_acked_req_q
  * RECV_LARGE:
  *   IN_DRIVER: pull_req_q
  *   NEED_ACK: non_acked_req_q
