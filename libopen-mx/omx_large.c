@@ -400,8 +400,13 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx__debug_assert(req);
   omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
 
-  /* FIXME: check length and status, update request xfer_length only on error */
-  req->generic.status.xfer_length = xfer_length;
+  if (unlikely(status != OMX_STATUS_SUCCESS)) {
+    req->generic.status.xfer_length = 0;
+  } else if (unlikely(req->generic.status.xfer_length != xfer_length)) {
+    omx__abort("pull success returns length %ld instead of %ld\n",
+	       (unsigned long) xfer_length,
+	       (unsigned long) req->generic.status.xfer_length);
+  }
 
   omx__put_region(ep, req->recv.specific.large.local_region);
   omx__dequeue_request(&ep->pull_req_q, req);

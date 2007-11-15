@@ -1,6 +1,6 @@
 * make assert configurable into a SEGV with OMX_ASSERT_SEGV
 
-* do something with the pull_done status
+* if pulling outside of the remote window, send a nack?
 
 * option for omx_pingpong with issend
   + used with regcache to mesure possible medium perf
