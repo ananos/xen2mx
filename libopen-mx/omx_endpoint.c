@@ -230,8 +230,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = omx__errno_to_return("mmap");
     goto out_with_sendq_map;
   }
-  printf("desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
-	 desc, sendq, recvq, exp_eventq, unexp_eventq);
+  omx__debug_printf("desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
+		    desc, sendq, recvq, exp_eventq, unexp_eventq);
 
   /* prepare the large regions */
   ret = omx__endpoint_large_region_map_init(ep);
@@ -257,9 +257,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_large_regions;
 
   omx__board_addr_sprintf(board_addr_str, board_addr);
-  printf("Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
-	 (unsigned long) endpoint_index, (unsigned long) board_index,
-	 ep->hostname, ep->ifacename, board_addr_str);
+  omx__debug_printf("Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
+		    (unsigned long) endpoint_index, (unsigned long) board_index,
+		    ep->hostname, ep->ifacename, board_addr_str);
 
   /* allocate partners */
   ep->partners = calloc(omx__driver_desc->peer_max * omx__driver_desc->endpoint_max,
