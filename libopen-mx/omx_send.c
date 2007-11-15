@@ -512,9 +512,9 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
  */
 
 void
-omx__post_isend_notify(struct omx_endpoint *ep,
-		       struct omx__partner *partner,
-		       union omx_request * req)
+omx__post_notify(struct omx_endpoint *ep,
+		 struct omx__partner *partner,
+		 union omx_request * req)
 {
   struct omx_cmd_send_notify * notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   int err;
@@ -534,6 +534,45 @@ omx__post_isend_notify(struct omx_endpoint *ep,
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__partner_ack_sent(ep, partner);
+}
+
+omx_return_t
+omx__submit_notify(struct omx_endpoint *ep,
+		   union omx_request *req)
+{
+  struct omx__large_region * region;
+  struct omx__partner * partner;
+  struct omx_cmd_send_notify * notify_param;
+  uint32_t ctxid;
+  omx__seqnum_t seqnum;
+
+  ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+  partner = req->generic.partner;
+
+  seqnum = partner->next_send_seq++;
+  req->generic.send_seqnum = seqnum;
+  req->generic.submit_jiffies = omx__driver_desc->jiffies;
+  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
+
+  notify_param = &req->recv.specific.large.send_notify_ioctl_param;
+  notify_param->peer_index = partner->peer_index;
+  notify_param->dest_endpoint = partner->endpoint_index;
+  notify_param->total_length = xfer_length;
+  notify_param->session_id = partner->session_id;
+  notify_param->seqnum = seqnum;
+  notify_param->puller_rdma_id = req->recv.specific.large.target_rdma_id;
+  notify_param->puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
+
+  omx__post_notify(ep, partner, req);
+
+  /* no need to wait for a done event, tiny is synchronous */
+  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_partner_non_acked_request(partner, req);
+
+  /* mark the request as done now, it will be resent/zombified later if necessary */
+  omx__notify_request_done_early(ep, ctxid, req);
+
+  return OMX_SUCCESS;
 }
 
 /*************************************
@@ -703,7 +742,7 @@ omx__process_non_acked_requests(struct omx_endpoint *ep)
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
       omx__debug_printf("reposting requeued send notify request %p\n", req);
-      omx__post_isend_notify(ep, req->generic.partner, req);
+      omx__post_notify(ep, req->generic.partner, req);
       break;
     default:
       omx__abort("Failed to handle requeued request with type %d\n",

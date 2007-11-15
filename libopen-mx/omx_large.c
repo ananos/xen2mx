@@ -347,53 +347,11 @@ omx__process_pull_done(struct omx_endpoint * ep,
   union omx_request * req;
   uint32_t xfer_length = event->pulled_length;
   uint32_t region_id = event->local_rdma_id;
-  struct omx__large_region * region;
-  struct omx__partner * partner;
-  struct omx_cmd_send_notify * notify_param;
-  uint32_t ctxid;
   omx_status_code_t status;
-  omx__seqnum_t seqnum;
 
   /* FIXME: use cookie since region might be used for something else? */
 
   omx__debug_printf("pull done with status %d\n", event->status);
-
-  /* FIXME: check region id */
-  region = &ep->large_region_map.array[region_id].region;
-  req = region->user;
-  omx__debug_assert(req);
-  omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
-
-  ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-  partner = req->generic.partner;
-  /* FIXME: check length, update req->generic.status.xfer_length and status */
-
-  omx__dequeue_request(&ep->pull_req_q, req);
-  req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
-  omx__put_region(ep, req->recv.specific.large.local_region);
-
-  seqnum = partner->next_send_seq++;
-  req->generic.send_seqnum = seqnum;
-  req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
-
-  notify_param = &req->recv.specific.large.send_notify_ioctl_param;
-  notify_param->peer_index = partner->peer_index;
-  notify_param->dest_endpoint = partner->endpoint_index;
-  notify_param->total_length = xfer_length;
-  notify_param->session_id = partner->session_id;
-  notify_param->seqnum = seqnum;
-  notify_param->puller_rdma_id = req->recv.specific.large.target_rdma_id;
-  notify_param->puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
-
-  omx__post_isend_notify(ep, partner, req);
-
-  /* no need to wait for a done event, tiny is synchronous */
-  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
-
-  /* mark the request as done now, it will be resent/zombified later if necessary */
-  omx__notify_request_done_early(ep, ctxid, req);
 
   switch (event->status) {
   case OMX_EVT_PULL_DONE_SUCCESS:
@@ -422,7 +380,19 @@ omx__process_pull_done(struct omx_endpoint * ep,
 	       event->status);
   }
 
-  return OMX_SUCCESS;
+  /* FIXME: check length, update req->generic.status.xfer_length and status */
+
+  /* FIXME: check region id */
+  region = &ep->large_region_map.array[region_id].region;
+  req = region->user;
+  omx__debug_assert(req);
+  omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
+
+  omx__put_region(ep, req->recv.specific.large.local_region);
+  omx__dequeue_request(&ep->pull_req_q, req);
+  req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
+
+  omx__submit_notify(ep, req);
 }
 
 void

@@ -137,9 +137,9 @@ omx__put_region(struct omx_endpoint *ep,
 		struct omx__large_region *region);
 
 void
-omx__post_isend_notify(struct omx_endpoint *ep,
-		       struct omx__partner *partner,
-		       union omx_request * req);
+omx__post_notify(struct omx_endpoint *ep,
+		 struct omx__partner *partner,
+		 union omx_request * req);
 
 omx_return_t
 omx__submit_isend_medium(struct omx_endpoint *ep,
@@ -148,6 +148,10 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 omx_return_t
 omx__submit_isend_rndv(struct omx_endpoint *ep,
 		       union omx_request *req);
+
+omx_return_t
+omx__submit_notify(struct omx_endpoint *ep,
+		   union omx_request *req);
 
 omx_return_t
 omx__submit_pull(struct omx_endpoint * ep,
