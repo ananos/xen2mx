@@ -733,8 +733,9 @@ omx__process_non_acked_requests(struct omx_endpoint *ep)
     omx__dequeue_request(&ep->requeued_send_req_q, req);
 
     if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
-      omx__abort("Retransmit delay expired\n");
-      /* FIXME: disconnect */
+      /* Disconnect the peer (and drop the requests) */
+      omx__partner_cleanup(ep, req->generic.partner, 1);
+      continue;
     }
 
     switch (req->generic.type) {

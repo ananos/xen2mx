@@ -105,6 +105,10 @@ omx__partner_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
   OMX_VALGRIND_MEMORY_MAKE_READABLE(addr, sizeof(*addr));
 }
 
+extern void
+omx__partner_cleanup(struct omx_endpoint *ep,
+		     struct omx__partner *partner, int disconnect);
+
 extern omx_return_t
 omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr);
 

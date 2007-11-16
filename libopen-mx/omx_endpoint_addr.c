@@ -559,8 +559,9 @@ omx__process_connect_requests(struct omx_endpoint *ep)
     omx__dequeue_request(&ep->connect_req_q, req);
 
     if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
-      omx__abort("Retransmit delay expired\n");
-      /* FIXME: disconnect */
+      /* Disconnect the peer (and drop the requests) */
+      omx__partner_cleanup(ep, req->generic.partner, 1);
+      continue;
     }
 
     omx__post_connect(ep, req->generic.partner, req);
@@ -589,3 +590,120 @@ omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
   *context = partner->user_context;
   return OMX_SUCCESS;
 }
+
+/*******************************
+ * Disconnecting from a partner
+ */
+
+void
+omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int disconnect)
+{
+  char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+  union omx_request *req, *next;
+  uint32_t ctxid;
+  int count;
+
+  omx__board_addr_sprintf(board_addr_str, partner->board_addr);
+  printf("Cleaning partner %s endpoint %d\n", board_addr_str, partner->endpoint_index);
+
+#if 0
+  /* TODO */
+  /* complete pending send/recv with an error status
+   * (they should get nacked earlier most of the times)
+   */
+  count = 0;
+  omx__foreach_partner_non_acked_request_safe(partner, req, next) {
+    /* FIXME: add printf */
+
+    omx__abort_sent_request(ep, partner, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    count++;
+  }
+  /* FIXME: printf count */
+
+  /* FIXME: pending connect requests too */
+#endif
+
+  /* complete partially received request with an error status
+   */
+  count = 0;
+  while (!omx__partner_partial_queue_empty(partner)) {
+    uint32_t ctxid;
+
+    req = omx__partner_partial_queue_first_request(partner);
+    ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+
+    /* FIXME: add printf */
+
+    /* dequeue and complete with status error */
+    omx__dequeue_partner_partial_request(partner, req);
+    omx__dequeue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
+                         ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
+                         req);
+    req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
+    omx__recv_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    count++;
+  }
+  printf("Dropped %d partially received messages from partner\n", count);
+
+  /* drop early fragments
+   */
+  count = 0;
+  while (!omx__partner_early_queue_empty(partner)) {
+    struct omx__early_packet *early = omx__partner_first_early_packet(partner);
+
+    /* FIXME: add printf */
+
+    omx__dequeue_partner_early_packet(partner, early);
+    if (early->data)
+      free(early->data);
+    free(early);
+    count++;
+  }
+  printf("Dropped %d early received packets from partner\n", count);
+
+  /* drop unexpected from this peer
+   */
+  count = 0;
+  for(ctxid=0; ctxid < ep->ctxid_max; ctxid++) {
+    struct list_head *head = &ep->ctxid[ctxid].unexp_req_q;
+    list_for_each_entry_safe(req, next, head, generic.queue_elt) {
+      if (req->generic.partner != partner)
+        continue;
+
+      /* FIXME: add printf */
+
+      /* drop it and that's it */
+      omx__dequeue_request(head, req);
+      if (req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE)
+	free(req->recv.buffer);
+      omx__request_free(ep, req);
+
+      count++;
+    }
+  }
+  printf("Dropped %d unexpected message from partner\n", count);
+
+  /* reset everything else to zero
+   */
+  omx__partner_reset(partner);
+
+  /* change recv_seq to something very different for safety
+   */
+  if (disconnect) {
+    partner->next_match_recv_seq ^= 0xb0f0;
+    partner->next_frag_recv_seq ^= 0xcf0f;
+  }
+}
+
+omx_return_t
+omx_disconnect(omx_endpoint_t ep, omx_endpoint_addr_t addr)
+{
+  struct omx__partner * partner;
+
+  omx__progress(ep);
+  partner = omx__partner_from_addr(&addr);
+  omx__partner_cleanup(ep, partner, 1);
+
+  return OMX_SUCCESS;  
+}
+

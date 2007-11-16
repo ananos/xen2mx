@@ -154,6 +154,9 @@ omx_iconnect(omx_endpoint_t ep,
 	     void *context, omx_request_t *request);
 
 omx_return_t
+omx_disconnect(omx_endpoint_t ep, omx_endpoint_addr_t addr);
+
+omx_return_t
 omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
 			    uint64_t *nic_id, uint32_t *endpoint_id);
 
