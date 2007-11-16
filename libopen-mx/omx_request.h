@@ -334,6 +334,18 @@ omx__dequeue_partner_early_packet(struct omx__partner *partner,
   list_del(&early->partner_elt);
 }
 
+static inline struct omx__early_packet *
+omx__partner_first_early_packet(struct omx__partner *partner)
+{
+  return list_first_entry(&partner->early_recv_q, struct omx__early_packet, partner_elt);
+}
+
+static inline int
+omx__partner_early_queue_empty(struct omx__partner *partner)
+{
+  return list_empty(&partner->early_recv_q);
+}
+
 #define omx__foreach_partner_early_packet_safe(partner, early, next)	\
 list_for_each_entry_safe(early, next, &partner->early_recv_q, partner_elt)
 
