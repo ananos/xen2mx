@@ -50,6 +50,26 @@ omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
  * Partner management
  */
 
+void
+omx__partner_reset(struct omx__partner *partner)
+{
+  INIT_LIST_HEAD(&partner->non_acked_req_q);
+  INIT_LIST_HEAD(&partner->pending_connect_req_q);
+  INIT_LIST_HEAD(&partner->partial_recv_req_q);
+  INIT_LIST_HEAD(&partner->early_recv_q);
+
+  partner->session_id = 0; /* will be initialized when the partner will connect to me */
+  partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
+  partner->last_acked_send_seq = -1;
+  partner->next_match_recv_seq = 0;
+  partner->next_frag_recv_seq = 0;
+  partner->connect_seqnum = 0;
+
+  /* FIXME: remove the endpoint_partners_to_ack_elt if necessary */
+
+  partner->oldest_recv_time_not_acked = 0;
+}
+
 omx_return_t
 omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
 		    uint64_t board_addr, uint8_t endpoint_index,
@@ -65,18 +85,8 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->board_addr = board_addr;
   partner->endpoint_index = endpoint_index;
   partner->peer_index = peer_index;
-  partner->connect_seqnum = 0;
-  INIT_LIST_HEAD(&partner->non_acked_req_q);
-  INIT_LIST_HEAD(&partner->pending_connect_req_q);
-  INIT_LIST_HEAD(&partner->partial_recv_req_q);
-  INIT_LIST_HEAD(&partner->early_recv_q);
-  partner->session_id = 0; /* will be initialized when the partner will connect to me */
-  partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
-  partner->last_acked_send_seq = -1;
-  partner->next_match_recv_seq = 0;
-  partner->next_frag_recv_seq = 0;
 
-  partner->oldest_recv_time_not_acked = 0;
+  omx__partner_reset(partner);
 
   partner_index = ((uint32_t) endpoint_index)
     + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
@@ -530,7 +540,6 @@ omx__process_recv_connect(struct omx_endpoint *ep,
   else
     return omx__process_recv_connect_request(ep, event);
 }
-
 
 /**************************
  * Resend connect requests
