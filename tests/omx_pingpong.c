@@ -42,6 +42,7 @@
 #define INCREMENT 0
 #define BUFFER_ALIGN (64*1024) /* page-aligned on any arch */
 #define UNIDIR 0
+#define SYNC 0
 
 static int
 next_length(int length, int multiplier, int increment)
@@ -54,7 +55,7 @@ next_length(int length, int multiplier, int increment)
     return 1;
 }
 
-omx_return_t
+static inline omx_return_t
 omx_test_or_wait(int wait,
 		 omx_endpoint_t ep, omx_request_t * request,
 		 struct omx_status *status, uint32_t * result)
@@ -70,6 +71,20 @@ omx_test_or_wait(int wait,
     } while (!*result);
     return OMX_SUCCESS;
   }
+}
+
+static inline omx_return_t
+omx_isend_or_issend(int sync,
+		    omx_endpoint_t ep,
+		    void *buffer, size_t length,
+		    omx_endpoint_addr_t dest_endpoint,
+		    uint64_t match_info,
+		    void * context, omx_request_t * request)
+{
+  if (sync)
+    return omx_issend(ep, buffer, length, dest_endpoint, match_info, context, request);
+  else
+    return omx_isend(ep, buffer, length, dest_endpoint, match_info, context, request);
 }
 
 static void
@@ -92,6 +107,7 @@ usage(void)
   fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
   fprintf(stderr, " -W <n>\tchange number of warmup iterations [%d]\n", WARMUP);
   fprintf(stderr, " -U\tswitch to undirectional mode (receiver sends 0-byte replies)\n");
+  fprintf(stderr, " -Y\tswitch to synchronous communication mode\n");
 }
 
 struct param {
@@ -103,6 +119,7 @@ struct param {
   uint32_t increment;
   uint32_t align;
   uint8_t unidir;
+  uint8_t sync;
 };
 
 int main(int argc, char *argv[])
@@ -121,6 +138,7 @@ int main(int argc, char *argv[])
   int multiplier = MULTIPLIER;
   int increment = INCREMENT;
   int unidir = UNIDIR;
+  int sync = SYNC;
   int slave = 0;
   char my_hostname[OMX_HOSTNAMELEN_MAX];
   char my_ifacename[OMX_BOARD_ADDR_STRLEN];
@@ -139,7 +157,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:swUva")) != EOF)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:swUYva")) != EOF)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -192,6 +210,9 @@ int main(int argc, char *argv[])
       break;
     case 'U':
       unidir = 1;
+      break;
+    case 'Y':
+      sync = 1;
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
@@ -259,6 +280,7 @@ int main(int argc, char *argv[])
     param.increment = htonl(increment);
     param.align = htonl(align);
     param.unidir = unidir;
+    param.sync = sync;
     ret = omx_isend(ep, &param, sizeof(param),
 		    addr, 0x1234567887654321ULL,
 		    NULL, &req);
@@ -325,11 +347,12 @@ int main(int argc, char *argv[])
 	  gettimeofday(&tv1, NULL);
 
 	/* sending a message */
-	ret = omx_isend(ep, buffer, length,
-			addr, 0x1234567887654321ULL,
-			NULL, &req);
+	ret = omx_isend_or_issend(sync,
+				  ep, buffer, length,
+				  addr, 0x1234567887654321ULL,
+				  NULL, &req);
 	if (ret != OMX_SUCCESS) {
-	  fprintf(stderr, "Failed to isend (%s)\n",
+	  fprintf(stderr, "Failed to send (%s)\n",
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
@@ -340,7 +363,7 @@ int main(int argc, char *argv[])
 	  goto out_with_ep;
 	}
 	if (status.code != OMX_STATUS_SUCCESS) {
-	  fprintf(stderr, "isend failed with status (%s)\n",
+	  fprintf(stderr, "send failed with status (%s)\n",
 		  omx_strstatus(status.code));
 		  goto out_with_ep;
 	}
@@ -432,6 +455,7 @@ int main(int argc, char *argv[])
     increment = ntohl(param.increment);
     align = ntohl(param.align);
     unidir = param.unidir;
+    sync = param.sync;
 
     ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
     if (ret != OMX_SUCCESS) {
@@ -526,11 +550,12 @@ int main(int argc, char *argv[])
 	}
 
 	/* sending a message */
-	ret = omx_isend(ep, buffer, unidir ? 0 : length,
-			addr, 0x1234567887654321ULL,
-			NULL, &req);
+	ret = omx_isend_or_issend(sync,
+				  ep, buffer, unidir ? 0 : length,
+				  addr, 0x1234567887654321ULL,
+				  NULL, &req);
 	if (ret != OMX_SUCCESS) {
-	  fprintf(stderr, "Failed to isend (%s)\n",
+	  fprintf(stderr, "Failed to send (%s)\n",
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
@@ -541,7 +566,7 @@ int main(int argc, char *argv[])
 	  goto out_with_ep;
 	}
 	if (status.code != OMX_STATUS_SUCCESS) {
-	  fprintf(stderr, "isend failed with status (%s)\n",
+	  fprintf(stderr, "send failed with status (%s)\n",
 		  omx_strstatus(status.code));
 		  goto out_with_ep;
 	}

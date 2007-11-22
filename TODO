@@ -2,9 +2,6 @@
 
 * if pulling outside of the remote window, send a nack?
 
-* option for omx_pingpong with issend
-  + used with regcache to mesure possible medium perf
-
 * add retransmission
   + wakeup earlier if sleeping to send delayed acks
   + cancel a liback if sending a message before, or send liback after dequeuing request
