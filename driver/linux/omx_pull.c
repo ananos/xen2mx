@@ -717,9 +717,6 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		return;
 	}
 
-	mod_timer(&handle->retransmit_timer,
-		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
-
 	if (handle->first_desc.valid
 	    && !OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 		/* request the first block again */
@@ -736,6 +733,9 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		if (!IS_ERR(skb))
 			dev_queue_xmit(skb);
 	}
+
+	mod_timer(&handle->retransmit_timer,
+		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 }
 
 /* pull reply skb destructor to release the user region */
