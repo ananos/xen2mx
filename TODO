@@ -1,6 +1,3 @@
-* stop memset req->recv.specific
-* stop calloc'ing requests
-
 * alloc seqnum even when queueing to preserve in-order matching?
 
 * don't alloc unexp buffer if 0bytes

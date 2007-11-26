@@ -33,7 +33,11 @@ omx__request_alloc(struct omx_endpoint *ep)
 {
   union omx_request * req;
 
+#ifdef OMX_DEBUG
   req = calloc(1, sizeof(*req));
+#else
+  req = malloc(sizeof(*req));
+#endif
   if (unlikely(!req))
     return NULL;
 
