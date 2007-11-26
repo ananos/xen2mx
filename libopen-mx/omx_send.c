@@ -602,6 +602,9 @@ omx_isend(struct omx_endpoint *ep,
   omx__debug_printf("sending %ld bytes using seqnum %d\n",
 		    (unsigned long) length, partner->next_send_seq);
 
+  if (partner == ep->myself)
+    omx__abort("Communication to myself not supported\n");
+
   if (likely(length <= OMX_TINY_MAX)) {
     ret = omx__submit_or_queue_isend_tiny(ep,
 					  buffer, length,
@@ -647,6 +650,9 @@ omx_issend(struct omx_endpoint *ep,
   partner = omx__partner_from_addr(&dest_endpoint);
   omx__debug_printf("sending %ld bytes using seqnum %d\n",
 		    (unsigned long) length, partner->next_send_seq);
+
+  if (partner == ep->myself)
+    omx__abort("Communication to myself not supported\n");
 
   ret = omx__submit_or_queue_isend_large(ep,
 					 buffer, length,
