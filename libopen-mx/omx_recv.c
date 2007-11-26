@@ -257,7 +257,7 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
  * Main packet receive processing
  */
 
-static INLINE omx_return_t
+static INLINE void
 omx__match_recv(struct omx_endpoint *ep,
 		uint64_t match_info,
 		union omx_request **reqp)
@@ -270,10 +270,8 @@ omx__match_recv(struct omx_endpoint *ep,
       /* matched a posted recv */
       omx__dequeue_request(&ep->ctxid[ctxid].recv_req_q, req);
       *reqp = req;
-      return OMX_SUCCESS;
+      return;
     }
-
-  return OMX_SUCCESS;
 }
 
 static INLINE omx_return_t
@@ -284,12 +282,9 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 {
   union omx_request * req = NULL;
   omx_unexp_handler_t handler = ep->unexp_handler;
-  omx_return_t ret;
 
   /* try to match */
-  ret = omx__match_recv(ep, msg->match_info, &req);
-  if (unlikely(ret != OMX_SUCCESS))
-    return ret;
+  omx__match_recv(ep, msg->match_info, &req);
 
   /* if no match, try the unexpected handler */
   if (unlikely(handler && !req)) {
@@ -321,9 +316,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     }
 
     /* the unexp has been noticed check if a recv has been posted */
-    ret = omx__match_recv(ep, msg->match_info, &req);
-    if (unlikely(ret != OMX_SUCCESS))
-      return ret;
+    omx__match_recv(ep, msg->match_info, &req);
   }
 
   if (likely(req)) {
