@@ -316,6 +316,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   uint32_t length = req->generic.status.xfer_length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr;
+  omx__seqnum_t seqnum;
 
   frags_nr = OMX_MEDIUM_FRAGS_NR(length);
   omx__debug_assert(frags_nr <= 8); /* for the sendq_index array above */
@@ -325,12 +326,17 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 	       || omx__endpoint_sendq_map_get(ep, frags_nr, req, sendq_index) < 0))
     return OMX_NO_RESOURCES;
 
+  seqnum = partner->next_send_seq++;
+  req->generic.send_seqnum = seqnum;
+  req->generic.submit_jiffies = omx__driver_desc->jiffies;
+  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
+
   medium_param->peer_index = partner->peer_index;
   medium_param->dest_endpoint = partner->endpoint_index;
   medium_param->match_info = req->generic.status.match_info;
   medium_param->frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
   medium_param->msg_length = length;
-  medium_param->seqnum = req->generic.send_seqnum;
+  medium_param->seqnum = seqnum;
   medium_param->session_id = partner->session_id;
 
   omx__post_isend_medium(ep, partner, req);
@@ -365,9 +371,6 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
    */
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->generic.send_seqnum = partner->next_send_seq;
-  req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
   req->send.specific.medium.buffer = buffer;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
@@ -379,8 +382,6 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
     omx__debug_printf("queueing medium request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
-  } else {
-    partner->next_send_seq++;
   }
 
   if (requestp) {
@@ -434,17 +435,23 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   struct omx__partner * partner = req->generic.partner;
   void * buffer = req->send.specific.large.buffer;
   uint32_t length = req->generic.status.msg_length;
+  omx__seqnum_t seqnum;
   omx_return_t ret;
 
   ret = omx__get_region(ep, buffer, length, &region);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
+  seqnum = partner->next_send_seq++;
+  req->generic.send_seqnum = seqnum;
+  req->generic.submit_jiffies = omx__driver_desc->jiffies;
+  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
+
   rndv_param->hdr.peer_index = partner->peer_index;
   rndv_param->hdr.dest_endpoint = partner->endpoint_index;
   rndv_param->hdr.match_info = req->generic.status.match_info;
   rndv_param->hdr.length = sizeof(struct omx__rndv_data);
-  rndv_param->hdr.seqnum = req->generic.send_seqnum;
+  rndv_param->hdr.seqnum = seqnum;
   rndv_param->hdr.session_id = partner->session_id;
 
   OMX_PKT_FIELD_FROM(data_n->msg_length, length);
@@ -480,9 +487,6 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->generic.send_seqnum = partner->next_send_seq;
-  req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
   req->send.specific.large.buffer = buffer;
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
@@ -494,8 +498,6 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
     omx__debug_printf("queueing large send request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
-  } else {
-    partner->next_send_seq++;
   }
 
   if (requestp) {
