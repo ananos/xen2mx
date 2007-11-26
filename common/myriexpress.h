@@ -362,4 +362,9 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
 #define mx_strerror omx_strerror
 #define mx_strstatus omx_strstatus
 
+/* macros to help printing uint64_t's */
+#define MX_U32(x) \
+((sizeof (x) == 8) ? ((uint32_t)((uint64_t)(x) >> 32)) : ((void)(x),0))
+#define MX_L32(x) ((uint32_t)(x))
+
 #endif /* MYRIEXPRESS_H */
