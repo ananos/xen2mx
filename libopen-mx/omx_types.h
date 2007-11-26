@@ -168,6 +168,8 @@ struct omx_endpoint {
   struct list_head non_acked_req_q;
   /* any request that needs to be resent now, thus REQUEUED and NEED_ACK, not IN_DRIVER (queued by their queue_elt) */
   struct list_head requeued_send_req_q;
+  /* send to self waiting for the matching */
+  struct list_head send_self_unexp_req_q;
 
   struct omx__sendq_map sendq_map;
   struct omx__large_region_map large_region_map;
@@ -189,6 +191,8 @@ enum omx__request_type {
   OMX_REQUEST_TYPE_SEND_LARGE,
   OMX_REQUEST_TYPE_RECV,
   OMX_REQUEST_TYPE_RECV_LARGE,
+  OMX_REQUEST_TYPE_SEND_SELF,
+  OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED,
 };
 
 /* Request states and queueing:
@@ -252,6 +256,8 @@ enum omx__request_state {
   OMX_REQUEST_STATE_ZOMBIE = (1<<9),
   /* request is internal, should not be queued in the doneq for peek/test_any */
   OMX_REQUEST_STATE_INTERNAL = (1<<10),
+  /* request is a send to myself, needs to wait for the recv to match */
+  OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED = (1<<11),
 };
 
 struct omx__generic_request {
@@ -319,6 +325,9 @@ union omx_request {
 	uint8_t target_rdma_seqnum;
 	uint16_t target_rdma_offset;
       } large;
+      struct {
+	union omx_request *sreq;
+      } self_unexp;
     } specific;
   } recv;
 

@@ -169,6 +169,13 @@ extern omx_return_t
 omx__submit_or_queue_pull(struct omx_endpoint * ep,
 			  union omx_request * req);
 
+extern omx_return_t
+omx__process_self_send(struct omx_endpoint *ep,
+		       union omx_request *sreq,
+		       void *sbuffer, size_t msg_length,
+		       uint64_t match_info,
+		       void *context);
+
 extern void
 omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
 		   omx_status_code_t status);

@@ -571,10 +571,10 @@ omx_isend(struct omx_endpoint *ep,
   if (unlikely(!req))
     return OMX_NO_RESOURCES;
 
-  if (partner == ep->myself)
-    omx__abort("Communication to myself not supported\n");
-
-  if (likely(length <= OMX_TINY_MAX)) {
+  if (unlikely(partner == ep->myself)) {
+    ret = omx__process_self_send(ep, req, buffer, length,
+				 match_info, context);
+  } else if (likely(length <= OMX_TINY_MAX)) {
     ret = omx__submit_or_queue_isend_tiny(ep, req,
 					  buffer, length,
 					  partner,
@@ -627,18 +627,20 @@ omx_issend(struct omx_endpoint *ep,
   omx__debug_printf("sending %ld bytes using seqnum %d\n",
 		    (unsigned long) length, partner->next_send_seq);
 
-  if (partner == ep->myself)
-    omx__abort("Communication to myself not supported\n");
-
   req = omx__request_alloc(ep);
   if (unlikely(!req))
     return OMX_NO_RESOURCES;
 
-  ret = omx__submit_or_queue_isend_large(ep, req,
-					 buffer, length,
-					 partner,
-					 match_info,
-					 context);
+  if (unlikely(partner == ep->myself)) {
+    ret = omx__process_self_send(ep, req, buffer, length,
+				 match_info, context);
+  } else {
+    ret = omx__submit_or_queue_isend_large(ep, req,
+					   buffer, length,
+					   partner,
+					   match_info,
+					   context);
+  }
 
   if (requestp) {
     *requestp = req;

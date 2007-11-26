@@ -1,3 +1,10 @@
+* stop memset req->recv.specific
+* stop calloc'ing requests
+
+* alloc seqnum even when queueing to preserve in-order matching?
+
+* don't alloc unexp buffer if 0bytes
+
 * make assert configurable into a SEGV with OMX_ASSERT_SEGV
 
 * if pulling outside of the remote window, send a nack?
