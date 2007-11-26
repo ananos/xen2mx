@@ -160,6 +160,13 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
     omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
 }
 
+static inline void
+omx__init_process_recv_medium(union omx_request *req)
+{
+  req->recv.specific.medium.frags_received_mask = 0;
+  req->recv.specific.medium.accumulated_length = 0;
+}
+
 void
 omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *partner,
 			      union omx_request *req,
@@ -335,6 +342,9 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     xfer_length = req->recv.length < msg_length ? req->recv.length : msg_length;
     req->generic.status.xfer_length = xfer_length;
 
+    if (msg->type == OMX_EVT_RECV_MEDIUM)
+      omx__init_process_recv_medium(req);
+
     (*recv_func)(ep, partner, req, msg, data, xfer_length);
 
   } else {
@@ -345,6 +355,9 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       return OMX_NO_RESOURCES;
 
     req->generic.type = OMX_REQUEST_TYPE_RECV;
+
+    if (msg->type == OMX_EVT_RECV_MEDIUM)
+      omx__init_process_recv_medium(req);
 
     if (likely(msg->type != OMX_EVT_RECV_RNDV)) {
       /* alloc unexpected buffer, except for rndv since they have no data */
