@@ -212,6 +212,16 @@ fi
 ###############
 # Other config
 
+AC_ARG_ENABLE(self, [  --disable-self		disable communication to myself],
+	      enable_self=$enableval, enable_self=yes)
+AC_MSG_CHECKING(if self communication is enabled)
+if test x$enable_self = xyes; then
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+  AC_DEFINE(OMX_DISABLE_SELF, [1], [Define to disable communication to myself])
+fi
+
 AC_ARG_ENABLE(debug, [  --enable-debug		enable debugging features],
 	      enable_debug=$enableval, enable_debug=no)
 AC_MSG_CHECKING(if debug is enabled)

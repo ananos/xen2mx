@@ -360,6 +360,7 @@ struct omx__globals {
   int regcache;
   int waitspin;
   int zombies;
+  int selfcomms;
   unsigned ack_delay;
   unsigned resend_delay;
   unsigned retransmits_max;

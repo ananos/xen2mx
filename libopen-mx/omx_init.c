@@ -73,6 +73,11 @@ omx__init_api(int api)
   if (env)
     omx__globals.zombies = atoi(env);
 
+  omx__globals.selfcomms = 1;
+  env = getenv("OMX_DISABLE_SELF");
+  if (env)
+    omx__globals.selfcomms = !atoi(env);
+
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
 

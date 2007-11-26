@@ -571,10 +571,13 @@ omx_isend(struct omx_endpoint *ep,
   if (unlikely(!req))
     return OMX_NO_RESOURCES;
 
-  if (unlikely(partner == ep->myself)) {
+#ifndef OMX_DISABLE_SELF
+  if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
     ret = omx__process_self_send(ep, req, buffer, length,
 				 match_info, context);
-  } else if (likely(length <= OMX_TINY_MAX)) {
+  } else
+#endif
+    if (likely(length <= OMX_TINY_MAX)) {
     ret = omx__submit_or_queue_isend_tiny(ep, req,
 					  buffer, length,
 					  partner,
@@ -633,10 +636,13 @@ omx_issend(struct omx_endpoint *ep,
   if (unlikely(!req))
     return OMX_NO_RESOURCES;
 
-  if (unlikely(partner == ep->myself)) {
+#ifndef OMX_DISABLE_SELF
+  if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
     ret = omx__process_self_send(ep, req, buffer, length,
 				 match_info, context);
-  } else {
+  } else
+#endif
+    {
     ret = omx__submit_or_queue_isend_large(ep, req,
 					   buffer, length,
 					   partner,
