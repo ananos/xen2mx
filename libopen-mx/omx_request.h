@@ -29,7 +29,7 @@
  */
 
 static inline union omx_request *
-omx__request_alloc(struct omx_endpoint *ep, enum omx__request_type type)
+omx__request_alloc(struct omx_endpoint *ep)
 {
   union omx_request * req;
 
@@ -37,17 +37,7 @@ omx__request_alloc(struct omx_endpoint *ep, enum omx__request_type type)
   if (unlikely(!req))
     return NULL;
 
-  req->generic.type = type;
   req->generic.status.code = OMX_STATUS_SUCCESS;
-
-  switch (type) {
-  case OMX_REQUEST_TYPE_RECV:
-    memset(&req->recv.specific, 0, sizeof(req->recv.specific));
-    break;
-  default:
-    /* nothing */
-    break;
-  }
 
   return req;
 }

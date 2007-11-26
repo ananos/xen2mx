@@ -340,9 +340,12 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
   } else {
     /* unexpected, even after the handler */
 
-    req = omx__request_alloc(ep, OMX_REQUEST_TYPE_RECV);
+    req = omx__request_alloc(ep);
     if (unlikely(!req))
       return OMX_NO_RESOURCES;
+
+    req->generic.type = OMX_REQUEST_TYPE_RECV;
+    memset(&req->recv.specific, 0, sizeof(req->recv.specific));
 
     if (likely(msg->type != OMX_EVT_RECV_RNDV)) {
       /* alloc unexpected buffer, except for rndv since they have no data */
@@ -611,12 +614,14 @@ omx_irecv(struct omx_endpoint *ep,
   }
 
   /* allocate a new recv request */
-  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_RECV);
+  req = omx__request_alloc(ep);
   if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
     goto out;
   }
 
+  req->generic.type = OMX_REQUEST_TYPE_RECV;
+  memset(&req->recv.specific, 0, sizeof(req->recv.specific));
   req->generic.state = OMX_REQUEST_STATE_RECV_NEED_MATCHING;
   req->generic.status.context = context;
   req->recv.buffer = buffer;

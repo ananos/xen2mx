@@ -89,19 +89,17 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
 
 static INLINE omx_return_t
 omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
+				union omx_request * req,
 				void *buffer, size_t length,
 				struct omx__partner * partner,
 				uint64_t match_info,
-				void *context, union omx_request **requestp)
+				void *context)
 {
-  union omx_request * req;
   struct omx_cmd_send_tiny * tiny_param;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   omx__seqnum_t seqnum;
 
-  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_TINY);
-  if (unlikely(!req))
-    return OMX_NO_RESOURCES;
+  req->generic.type = OMX_REQUEST_TYPE_SEND_TINY;
 
   seqnum = partner->next_send_seq++;
 
@@ -132,12 +130,6 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
-
-  if (requestp) {
-    *requestp = req;
-  } else {
-    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-  }
 
   return OMX_SUCCESS;
 }
@@ -173,20 +165,19 @@ omx__post_isend_small(struct omx_endpoint *ep,
 
 static INLINE omx_return_t
 omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
+				 union omx_request *req,
 				 void *buffer, size_t length,
 				 struct omx__partner * partner,
 				 uint64_t match_info,
-				 void *context, union omx_request **requestp)
+				 void *context)
 {
-  union omx_request * req;
   struct omx_cmd_send_small * small_param;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   void *copy;
   omx__seqnum_t seqnum;
 
-  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_SMALL);
-  if (unlikely(!req))
-    return OMX_NO_RESOURCES;
+  req->generic.type = OMX_REQUEST_TYPE_SEND_SMALL;
+
   copy = malloc(length);
   if (unlikely(!copy)) {
     omx__request_free(ep, req);
@@ -227,12 +218,6 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
-
-  if (requestp) {
-    *requestp = req;
-  } else {
-    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-  }
 
   return OMX_SUCCESS;
 }
@@ -352,19 +337,15 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 
 static INLINE omx_return_t
 omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
+				  union omx_request *req,
 				  void *buffer, size_t length,
 				  struct omx__partner * partner,
 				  uint64_t match_info,
-				  void *context, union omx_request **requestp)
+				  void *context)
 {
-  union omx_request * req;
   omx_return_t ret;
 
-  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_MEDIUM);
-  if (unlikely(!req)) {
-    ret = OMX_NO_RESOURCES;
-    goto out;
-  }
+  req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
 
   /* need to wait for a done event, since the sendq pages
    * might still be in use
@@ -384,16 +365,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
 
-  if (requestp) {
-    *requestp = req;
-  } else {
-    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-  }
-
   return OMX_SUCCESS;
-
- out:
-  return ret;
 }
 
 /************
@@ -473,17 +445,15 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
 
 static INLINE omx_return_t
 omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
+				 union omx_request *req,
 				 void *buffer, size_t length,
 				 struct omx__partner * partner,
 				 uint64_t match_info,
-				 void *context, union omx_request **requestp)
+				 void *context)
 {
-  union omx_request * req;
   omx_return_t ret;
 
-  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_SEND_LARGE);
-  if (unlikely(!req))
-    return OMX_NO_RESOURCES;
+  req->generic.type = OMX_REQUEST_TYPE_SEND_LARGE;
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
@@ -498,12 +468,6 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
     omx__debug_printf("queueing large send request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
-  }
-
-  if (requestp) {
-    *requestp = req;
-  } else {
-    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
   }
 
   return OMX_SUCCESS;
@@ -596,39 +560,50 @@ omx_isend(struct omx_endpoint *ep,
 	  void *context, union omx_request **requestp)
 {
   struct omx__partner * partner;
+  union omx_request *req;
   omx_return_t ret;
 
   partner = omx__partner_from_addr(&dest_endpoint);
   omx__debug_printf("sending %ld bytes using seqnum %d\n",
 		    (unsigned long) length, partner->next_send_seq);
 
+  req = omx__request_alloc(ep);
+  if (unlikely(!req))
+    return OMX_NO_RESOURCES;
+
   if (partner == ep->myself)
     omx__abort("Communication to myself not supported\n");
 
   if (likely(length <= OMX_TINY_MAX)) {
-    ret = omx__submit_or_queue_isend_tiny(ep,
+    ret = omx__submit_or_queue_isend_tiny(ep, req,
 					  buffer, length,
 					  partner,
 					  match_info,
-					  context, requestp);
+					  context);
   } else if (length <= OMX_SMALL_MAX) {
-    ret = omx__submit_or_queue_isend_small(ep,
+    ret = omx__submit_or_queue_isend_small(ep, req,
 					   buffer, length,
 					   partner,
 					   match_info,
-					   context, requestp);
+					   context);
   } else if (length <= OMX_MEDIUM_MAX) {
-    ret = omx__submit_or_queue_isend_medium(ep,
+    ret = omx__submit_or_queue_isend_medium(ep, req,
 					    buffer, length,
 					    partner,
 					    match_info,
-					    context, requestp);
+					    context);
   } else {
-    ret = omx__submit_or_queue_isend_large(ep,
+    ret = omx__submit_or_queue_isend_large(ep, req,
 					   buffer, length,
 					   partner,
 					   match_info,
-					   context, requestp);
+					   context);
+  }
+
+  if (requestp) {
+    *requestp = req;
+  } else {
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
   }
 
   /* progress a little bit */
@@ -645,6 +620,7 @@ omx_issend(struct omx_endpoint *ep,
 	   void *context, union omx_request **requestp)
 {
   struct omx__partner * partner;
+  union omx_request *req;
   omx_return_t ret;
 
   partner = omx__partner_from_addr(&dest_endpoint);
@@ -654,11 +630,21 @@ omx_issend(struct omx_endpoint *ep,
   if (partner == ep->myself)
     omx__abort("Communication to myself not supported\n");
 
-  ret = omx__submit_or_queue_isend_large(ep,
+  req = omx__request_alloc(ep);
+  if (unlikely(!req))
+    return OMX_NO_RESOURCES;
+
+  ret = omx__submit_or_queue_isend_large(ep, req,
 					 buffer, length,
 					 partner,
 					 match_info,
-					 context, requestp);
+					 context);
+
+  if (requestp) {
+    *requestp = req;
+  } else {
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+  }
 
   /* progress a little bit */
   omx__progress(ep);

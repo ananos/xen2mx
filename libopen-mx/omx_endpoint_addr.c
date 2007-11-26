@@ -297,12 +297,13 @@ omx_connect(omx_endpoint_t ep,
   union omx_request * req;
   omx_return_t ret;
 
-  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_CONNECT);
+  req = omx__request_alloc(ep);
   if (!req) {
     ret = OMX_NO_RESOURCES;
     goto out;
   }
 
+  req->generic.type = OMX_REQUEST_TYPE_CONNECT;
   req->generic.state = OMX_REQUEST_STATE_INTERNAL;
 
   ret = omx__connect_common(ep, nic_id, endpoint_id, key, req);
@@ -352,12 +353,13 @@ omx_iconnect(omx_endpoint_t ep,
   union omx_request * req;
   omx_return_t ret;
 
-  req = omx__request_alloc(ep, OMX_REQUEST_TYPE_CONNECT);
+  req = omx__request_alloc(ep);
   if (!req) {
     ret = OMX_NO_RESOURCES;
     goto out;
   }
 
+  req->generic.type = OMX_REQUEST_TYPE_CONNECT;
   req->generic.state = 0; /* iconnect is not INTERNAL */
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
