@@ -600,14 +600,16 @@ omx_isend(struct omx_endpoint *ep,
 					   context);
   }
 
-  if (requestp) {
-    *requestp = req;
-  } else {
-    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-  }
+  if (ret == OMX_SUCCESS) {
+    if (requestp) {
+      *requestp = req;
+    } else {
+      req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+    }
 
-  /* progress a little bit */
-  omx__progress(ep);
+    /* progress a little bit */
+    omx__progress(ep);
+  }
 
   return ret;
 }
@@ -642,14 +644,16 @@ omx_issend(struct omx_endpoint *ep,
 					   context);
   }
 
-  if (requestp) {
-    *requestp = req;
-  } else {
-    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-  }
+  if (ret == OMX_SUCCESS) {
+    if (requestp) {
+      *requestp = req;
+    } else {
+      req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+    }
 
-  /* progress a little bit */
-  omx__progress(ep);
+    /* progress a little bit */
+    omx__progress(ep);
+  }
 
   return ret;
 }
