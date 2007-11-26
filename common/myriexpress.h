@@ -25,9 +25,11 @@
 #define MYRIEXPRESS_H
 
 #include <assert.h>
+#include <inttypes.h>
+
 #include "open-mx.h"
 
-#define MX_API OMX_API
+#define MX_API 0x301
 
 typedef omx_endpoint_t mx_endpoint_t;
 
