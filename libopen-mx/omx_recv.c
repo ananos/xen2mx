@@ -259,10 +259,9 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
 
 static INLINE omx_return_t
 omx__match_recv(struct omx_endpoint *ep,
-		struct omx_evt_recv_msg *msg,
+		uint64_t match_info,
 		union omx_request **reqp)
 {
-  uint64_t match_info = msg->match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
 
@@ -288,7 +287,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
   omx_return_t ret;
 
   /* try to match */
-  ret = omx__match_recv(ep, msg, &req);
+  ret = omx__match_recv(ep, msg->match_info, &req);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
@@ -322,7 +321,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     }
 
     /* the unexp has been noticed check if a recv has been posted */
-    ret = omx__match_recv(ep, msg, &req);
+    ret = omx__match_recv(ep, msg->match_info, &req);
     if (unlikely(ret != OMX_SUCCESS))
       return ret;
   }
