@@ -379,7 +379,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     omx__partner_to_addr(partner, &req->generic.status.addr);
     req->recv.seqnum = seqnum;
     req->generic.status.match_info = msg->match_info;
-    req->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED;
+    req->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED; /* the state of unexpected recv is always set here */
 
     req->generic.status.msg_length = msg_length;
 
@@ -607,7 +607,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 
     memcpy(rreq->recv.buffer, sbuffer, xfer_length);
 
-    sreq->generic.state = 0;
+    sreq->generic.state = 0; /* the state of expected self send is always set here */
     omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
     omx__recv_complete(ep, rreq, OMX_STATUS_SUCCESS);
 
@@ -639,13 +639,13 @@ omx__process_self_send(struct omx_endpoint *ep,
     rreq->recv.specific.self_unexp.sreq = sreq;
     memcpy(unexp_buffer, sbuffer, msg_length);
 
-    rreq->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED;
+    rreq->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED; /* the state of unexpected self send is always set here */
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, rreq);
 
     /* self communication are always synchronous,
      * the send will be completed on matching
      */
-    sreq->generic.state = OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED;
+    sreq->generic.state = OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED; /* the state of unexpected self recv is always set here */
     omx__enqueue_request(&ep->send_self_unexp_req_q, sreq);
   }
 
@@ -775,7 +775,7 @@ omx_irecv(struct omx_endpoint *ep,
   }
 
   req->generic.type = OMX_REQUEST_TYPE_RECV;
-  req->generic.state = OMX_REQUEST_STATE_RECV_NEED_MATCHING;
+  req->generic.state = OMX_REQUEST_STATE_RECV_NEED_MATCHING; /* the state of non-matched recv is always set here */
   req->generic.status.context = context;
   req->recv.buffer = buffer;
   req->recv.length = recv_length;

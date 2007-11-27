@@ -115,21 +115,22 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   omx__post_isend_tiny(ep, partner, req);
 
   /* no need to wait for a done event, tiny is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
-
-  /* mark the request as done now, it will be resent/zombified later if necessary */
-  omx__notify_request_done_early(ep, ctxid, req);
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
+  req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send tiny is always initialized here */
+  omx__enqueue_partner_non_acked_request(partner, req);
+
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
+
+  /* mark the request as done now, it will be resent/zombified later if necessary */
+  omx__notify_request_done_early(ep, ctxid, req);
 
   return OMX_SUCCESS;
 }
@@ -198,26 +199,27 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   omx__post_isend_small(ep, partner, req);
 
   /* no need to wait for a done event, small is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
 
   /* bufferize data for retransmission */
   memcpy(copy, buffer, length);
   req->send.specific.small.buffer = copy;
   small_param->vaddr = (uintptr_t) copy;
 
-  /* mark the request as done now, it will be resent/zombified later if necessary */
-  omx__notify_request_done_early(ep, ctxid, req);
-
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
+  req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send small is always initialized here */
+  omx__enqueue_partner_non_acked_request(partner, req);
+
   req->generic.status.context = context;
   req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
+
+  /* mark the request as done now, it will be resent/zombified later if necessary */
+  omx__notify_request_done_early(ep, ctxid, req);
 
   return OMX_SUCCESS;
 }
@@ -315,6 +317,8 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
+  req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is initialized here and modified in post() (or set to QUEUED in submit_or_queue()) */
+  omx__enqueue_partner_non_acked_request(partner, req);
 
   medium_param->peer_index = partner->peer_index;
   medium_param->dest_endpoint = partner->endpoint_index;
@@ -325,9 +329,6 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   medium_param->session_id = partner->session_id;
 
   omx__post_isend_medium(ep, partner, req);
-
-  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
   omx__notify_request_done_early(ep, ctxid, req);
@@ -361,7 +362,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   ret = omx__submit_isend_medium(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_printf("queueing medium request %p\n", req);
-    req->generic.state = OMX_REQUEST_STATE_QUEUED;
+    req->generic.state = OMX_REQUEST_STATE_QUEUED; /* the state of send medium is initialized here (or in submit() above) */
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
 
@@ -418,6 +419,8 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
+  req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is always initialized here */
+  omx__enqueue_partner_non_acked_request(partner, req);
 
   rndv_param->hdr.peer_index = partner->peer_index;
   rndv_param->hdr.dest_endpoint = partner->endpoint_index;
@@ -434,8 +437,6 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   omx__post_isend_rndv(ep, partner, req);
 
   /* no need to wait for a done event, tiny is synchronous */
-  req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
 
   req->send.specific.large.region = region;
   region->user = req;
