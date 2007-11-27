@@ -233,7 +233,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 {
   struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
   void * buffer = req->send.specific.medium.buffer;
-  uint32_t length = req->generic.status.xfer_length;
+  uint32_t length = req->generic.status.msg_length;
   uint32_t remaining = length;
   uint32_t offset = 0;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
@@ -298,7 +298,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
   struct omx__partner * partner = req->generic.partner;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-  uint32_t length = req->generic.status.xfer_length;
+  uint32_t length = req->generic.status.msg_length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr;
   omx__seqnum_t seqnum;
