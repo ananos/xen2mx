@@ -1,7 +1,5 @@
 * alloc seqnum even when queueing to preserve in-order matching?
 
-* make assert configurable into a SEGV with OMX_ASSERT_SEGV
-
 * if pulling outside of the remote window, send a nack?
 
 * add retransmission
