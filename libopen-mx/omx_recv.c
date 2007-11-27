@@ -550,6 +550,12 @@ omx__process_self_send(struct omx_endpoint *ep,
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
 
   sreq->generic.type = OMX_REQUEST_TYPE_SEND_SELF;
+  sreq->generic.partner = ep->myself;
+  omx__partner_to_addr(ep->myself, &sreq->generic.status.addr);
+  sreq->generic.status.context = context;
+  sreq->generic.status.match_info = match_info;
+  sreq->generic.status.msg_length = msg_length;
+  /* xfer_length will be set on matching */
 
   /* try to match */
   omx__match_recv(ep, match_info, &rreq);
@@ -558,14 +564,11 @@ omx__process_self_send(struct omx_endpoint *ep,
   if (unlikely(handler && !rreq)) {
     void * context = ep->unexp_handler_context;
     omx_unexp_handler_action_t ret;
-    omx_endpoint_addr_t source;
     void * data_if_available = sbuffer;
-
-    omx__partner_to_addr(ep->myself, &source);
 
     ep->in_handler = 1;
     /* FIXME: lock */
-    ret = handler(context, source, match_info,
+    ret = handler(context, sreq->generic.status.addr, match_info,
 		  msg_length, data_if_available);
     /* FIXME: unlock */
     ep->in_handler = 0;
@@ -604,6 +607,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 
     memcpy(rreq->recv.buffer, sbuffer, xfer_length);
 
+    sreq->generic.state = 0;
     omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
     omx__recv_complete(ep, rreq, OMX_STATUS_SUCCESS);
 
