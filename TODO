@@ -2,6 +2,9 @@
 
 * if pulling outside of the remote window, send a nack?
 
+* before the first release
+  + where/how to report bugs and ask questions
+
 * add retransmission
   + wakeup earlier if sleeping to send delayed acks
   + cancel a liback if sending a message before, or send liback after dequeuing request

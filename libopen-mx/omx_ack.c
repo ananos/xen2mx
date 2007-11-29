@@ -102,13 +102,17 @@ omx__handle_ack(struct omx_endpoint *ep,
 
   if (!new_acks || new_acks > missing_acks) {
     omx__debug_printf("obsolete ack up to %d\n", (unsigned) last_to_ack);
+
   } else {
     union omx_request *req, *next;
 
     omx__debug_printf("ack up to %d\n", (unsigned) last_to_ack);
 
     omx__foreach_partner_non_acked_request_safe(partner, req, next) {
-      if (req->generic.send_seqnum > last_to_ack)
+      /* take care of the seqnum wrap around here too */
+      omx__seqnum_t req_index = req->generic.send_seqnum - partner->last_acked_send_seq;
+
+      if (req_index > new_acks)
 	break;
 
       omx__dequeue_partner_non_acked_request(partner, req);
