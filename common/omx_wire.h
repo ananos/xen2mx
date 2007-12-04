@@ -202,17 +202,17 @@ struct omx_pkt_pull_request {
 	uint8_t pad[3];
 	uint32_t pulled_rdma_offset; /* FIXME: we could use 64bits ? */
 #endif
-	uint32_t src_pull_handle; /* sender's handle id */
-	uint32_t src_magic; /* sender's endpoint magic */
+	uint32_t src_pull_handle; /* sender's handle id, MX's src_send_handle */
+	uint32_t src_magic; /* sender's endpoint magic, MX's magic */
 #ifdef OMX_MX_WIRE_COMPAT
-	uint16_t first_frame_offset; /* pull iteration offset in the first frame (for the first iteration, set to pulled_rdma_offset) */
-	uint16_t block_length; /* current pull block length (nr * pagesize - target offset) */
+	uint16_t first_frame_offset; /* pull iteration offset in the first frame (for the first iteration, set to pulled_rdma_offset), MX's offset */
+	uint16_t block_length; /* current pull block length (nr * pagesize - target offset), MX's pull_length */
 #else
 	uint32_t first_frame_offset;
 	uint32_t block_length;
 #endif
-	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull) */
-	/* 32 */
+	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull), MX's index */
+	/* 32 in MX wire compat mode */
 };
 
 struct omx_pkt_pull_reply {
@@ -249,7 +249,7 @@ struct omx_pkt_nack_lib {
 	uint32_t pad;
 	uint8_t pad0;
 	uint8_t dst_endpoint;
-	uint16_t dst_src_peer_index;
+	uint16_t dst_src_peer_index; /* MX's dest_peer_index */
 	uint16_t lib_seqnum;
 	uint16_t pad1;
 	/* 16 */

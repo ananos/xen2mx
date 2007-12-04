@@ -1,3 +1,9 @@
+* wire compat
+  + what's in src_generation ? unset/unchecked in OMX
+  + is connect.pad0 used for src_mac_low32 ?
+  + no rdmawin_seqnum set/checked
+  + pull_reply.frame_seqnum not set/used
+
 * optimize mediums
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
 
@@ -37,6 +43,7 @@
 
 * vectorial support, through isendv/irecvv
 
+* acquire the iface (or ifp?) ptr in ioctl so that we can detach an endpoint later
 * fix oops when removing the module while some pull handle are busy
 * disable force until it does not oops?
 * cleanup vfree in the cleanup thread so that it is not done in irq context?
