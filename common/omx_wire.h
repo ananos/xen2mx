@@ -192,21 +192,20 @@ struct omx_pkt_pull_request {
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint32_t session;
 	uint32_t total_length; /* total pull length */
+	uint32_t pulled_rdma_id; /* FIXME: MX wants uint8_t */
+	uint8_t pulled_rdma_seqnum; /* FIXME: unused ? */
+	uint32_t pulled_rdma_offset; /* FIXME: MX wants uint16_t, we could use 64bits ? */
+	uint32_t src_pull_handle; /* sender's handle id */
+	uint32_t src_magic; /* sender's endpoint magic */
 	/* current pull block length (nr * pagesize - target offset) */
+	uint32_t first_frame_offset; /* FIXME: MX wants uint16_t, pull iteration offset in the first frame (for the first iteration, set to pulled_rdma_offset) */
 #ifdef OMX_MX_WIRE_COMPAT
 	uint16_t block_length;
 #else
 	uint32_t block_length;
 #endif
 	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull) */
-	uint32_t first_frame_offset; /* pull iteration offset in the first frame (for the first iteration, set to pulled_rdma_offset) */
-	uint32_t pulled_rdma_id;
-	uint32_t pulled_rdma_offset; /* FIXME: 64bits ? */
-	uint32_t src_pull_handle; /* sender's handle id */
-	uint32_t src_magic; /* sender's endpoint magic */
-#if 0
-	uint8_t rdmawin_seqnum; /* target window seqnum */
-#endif
+	/* 32 */
 };
 
 struct omx_pkt_pull_reply {
@@ -214,10 +213,9 @@ struct omx_pkt_pull_reply {
 	uint8_t frame_seqnum; /* sender's pull index + page number in this frame, %256 */
 	uint16_t frame_length; /* pagesize - frame_offset */
 	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
-	uint32_t dst_magic; /* sender's endpoint magic */
 	uint32_t dst_pull_handle; /* sender's handle id */
-	uint32_t puller_rdma_id;
-	/* 20 */
+	uint32_t dst_magic; /* sender's endpoint magic */
+	/* 16 */
 };
 
 struct omx_pkt_notify {
