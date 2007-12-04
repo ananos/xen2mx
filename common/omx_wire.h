@@ -145,6 +145,20 @@ struct omx_pkt_truc {
 	uint8_t length;
 	uint8_t pad[3];
 	uint32_t session;
+	/* 12 */
+};
+
+struct omx_pkt_connect {
+	uint8_t ptype;
+	uint8_t dst_endpoint;
+	uint8_t src_endpoint;
+	uint8_t src_generation; /* FIXME: unused ? */
+	uint8_t length;
+	uint8_t pad[3];
+	uint16_t lib_seqnum;
+	uint16_t src_dst_peer_index;
+	uint32_t src_mac_low32;
+	/* 16 */
 };
 
 struct omx_pkt_msg {
@@ -160,19 +174,6 @@ struct omx_pkt_msg {
 	uint32_t match_b;
 	uint32_t session;
 	/* 24 */
-};
-
-/* 16 Bytes */
-struct omx_pkt_connect {
-	uint8_t ptype;
-	uint8_t dst_endpoint;
-	uint8_t src_endpoint;
-	uint8_t src_generation; /* FIXME: unused ? */
-	uint8_t length;
-	uint8_t pad[3];
-	uint16_t lib_seqnum;
-	uint16_t src_dst_peer_index;
-	uint32_t src_mac_low32;
 };
 
 struct omx_pkt_medium_frag {
