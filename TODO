@@ -1,3 +1,6 @@
+* optimize mediums
+  + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
+
 * alloc seqnum even when queueing to preserve in-order matching?
 
 * if pulling outside of the remote window, send a nack?

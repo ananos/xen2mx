@@ -40,17 +40,17 @@ enum omx_pkt_type {
 	OMX_PKT_TYPE_ETHER_UNICAST = 32, /* FIXME: todo */
 	OMX_PKT_TYPE_ETHER_MULTICAST, /* FIXME: todo */
 	OMX_PKT_TYPE_ETHER_NATIVE, /* FIXME: todo */
-	OMX_PKT_TYPE_TRUC, /* FIXME: todo */
-	OMX_PKT_TYPE_CONNECT, /* FIXME: todo */
+	OMX_PKT_TYPE_TRUC,
+	OMX_PKT_TYPE_CONNECT,
 	OMX_PKT_TYPE_TINY,
 	OMX_PKT_TYPE_SMALL,
 	OMX_PKT_TYPE_MEDIUM,
 	OMX_PKT_TYPE_RNDV,
 	OMX_PKT_TYPE_PULL,
 	OMX_PKT_TYPE_PULL_REPLY,
-	OMX_PKT_TYPE_NOTIFY, /* FIXME: todo */
-	OMX_PKT_TYPE_NACK_LIB, /* FIXME: todo */
-	OMX_PKT_TYPE_NACK_MCP, /* FIXME: todo */
+	OMX_PKT_TYPE_NOTIFY,
+	OMX_PKT_TYPE_NACK_LIB,
+	OMX_PKT_TYPE_NACK_MCP,
 
 	OMX_PKT_TYPE_MAX=255,
 };
@@ -102,12 +102,49 @@ omx_strpkttype(enum omx_pkt_type ptype)
 	}
 }
 
+enum omx_nack_type {
+	OMX_NACK_TYPE_NONE = 0,
+	OMX_NACK_TYPE_BAD_ENDPT,
+	OMX_NACK_TYPE_ENDPT_CLOSED,
+	OMX_NACK_TYPE_BAD_SESSION,
+	OMX_NACK_TYPE_BAD_RDMAWIN,
+};
+
+static inline const char*
+omx_strnacktype(enum omx_nack_type ntype)
+{
+	switch (ntype) {
+	case OMX_NACK_TYPE_NONE:
+		return "None";
+	case OMX_NACK_TYPE_BAD_ENDPT:
+		return "Bad Endpoint";
+	case OMX_NACK_TYPE_ENDPT_CLOSED:
+		return "Endpoint Closed";
+	case OMX_NACK_TYPE_BAD_SESSION:
+		return "Bad Session";
+	case OMX_NACK_TYPE_BAD_RDMAWIN:
+		return "Bad RDMA Window";
+	default:
+		return "** Unknown **";
+	}
+}
+
 #include <linux/if_ether.h>
 
 struct omx_pkt_head {
 	struct ethhdr eth;
 	uint16_t dst_src_peer_index;
 	/* 16 */
+};
+
+struct omx_pkt_truc {
+	uint8_t ptype;
+	uint8_t dst_endpoint;
+	uint8_t src_endpoint;
+	uint8_t src_generation; /* FIXME: unused ? */
+	uint8_t length;
+	uint8_t pad[3];
+	uint32_t session;
 };
 
 struct omx_pkt_msg {
@@ -194,33 +231,6 @@ struct omx_pkt_notify {
 	uint16_t lib_piggyack; /* FIXME: unused ? */
 };
 
-enum omx_nack_type {
-	OMX_NACK_TYPE_NONE = 0,
-	OMX_NACK_TYPE_BAD_ENDPT,
-	OMX_NACK_TYPE_ENDPT_CLOSED,
-	OMX_NACK_TYPE_BAD_SESSION,
-	OMX_NACK_TYPE_BAD_RDMAWIN,
-};
-
-static inline const char*
-omx_strnacktype(enum omx_nack_type ntype)
-{
-	switch (ntype) {
-	case OMX_NACK_TYPE_NONE:
-		return "None";
-	case OMX_NACK_TYPE_BAD_ENDPT:
-		return "Bad Endpoint";
-	case OMX_NACK_TYPE_ENDPT_CLOSED:
-		return "Endpoint Closed";
-	case OMX_NACK_TYPE_BAD_SESSION:
-		return "Bad Session";
-	case OMX_NACK_TYPE_BAD_RDMAWIN:
-		return "Bad RDMA Window";
-	default:
-		return "** Unknown **";
-	}
-}
-
 struct omx_pkt_nack_lib {
 	uint8_t ptype;
 	uint8_t dst_endpoint;
@@ -238,16 +248,6 @@ struct omx_pkt_nack_mcp {
 	enum omx_nack_type nack_type;
 	uint32_t src_pull_handle;
 	uint32_t src_magic;
-};
-
-struct omx_pkt_truc {
-	uint8_t ptype;
-	uint8_t dst_endpoint;
-	uint8_t src_endpoint;
-	uint8_t src_generation; /* FIXME: unused ? */
-	uint8_t length;
-	uint8_t pad[3];
-	uint32_t session;
 };
 
 struct omx_hdr {
