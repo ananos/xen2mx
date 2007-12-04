@@ -133,7 +133,7 @@ omx_strnacktype(enum omx_nack_type ntype)
 
 struct omx_pkt_head {
 	struct ethhdr eth;
-	uint16_t dst_src_peer_index;
+	uint16_t dst_src_peer_index; /* MX's sender_peer_index */
 	/* 16 */
 };
 
@@ -156,8 +156,8 @@ struct omx_pkt_connect {
 	uint8_t length;
 	uint8_t pad[3];
 	uint16_t lib_seqnum;
-	uint16_t src_dst_peer_index;
-	uint32_t src_mac_low32;
+	uint16_t src_dst_peer_index; /* MX's dest_peer_index */
+	uint32_t src_mac_low32; /* it's a pad in MX?? */
 	/* 16 */
 };
 
@@ -167,21 +167,22 @@ struct omx_pkt_msg {
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint16_t length;
-	uint16_t pad2;
+	uint16_t pad;
 	uint16_t lib_seqnum;
-	uint16_t lib_piggyack; /* FIXME: unused ? */
+	uint16_t lib_piggyack;
 	uint32_t match_a;
 	uint32_t match_b;
 	uint32_t session;
 	/* 24 */
 };
 
-struct omx_pkt_medium_frag {
+struct omx_pkt_medium_frag { /* similar to MX's pkt_msg_t + pkt_frame_t */
 	struct omx_pkt_msg msg;
 	uint16_t frag_length;
 	uint8_t frag_seqnum;
 	uint8_t frag_pipeline;
 	uint32_t pad;
+	/* 24+8 */
 };
 
 struct omx_pkt_pull_request {
@@ -210,13 +211,13 @@ struct omx_pkt_pull_request {
 
 struct omx_pkt_pull_reply {
 	uint8_t ptype;
-	uint8_t pad[3];
-	uint16_t frame_length; /* pagesize - frame_offset */
-	uint32_t puller_rdma_id;
-	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
-	uint32_t dst_pull_handle; /* sender's handle id */
-	uint32_t dst_magic; /* sender's endpoint magic */
 	uint8_t frame_seqnum; /* sender's pull index + page number in this frame, %256 */
+	uint16_t frame_length; /* pagesize - frame_offset */
+	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
+	uint32_t dst_magic; /* sender's endpoint magic */
+	uint32_t dst_pull_handle; /* sender's handle id */
+	uint32_t puller_rdma_id;
+	/* 20 */
 };
 
 struct omx_pkt_notify {
@@ -228,8 +229,11 @@ struct omx_pkt_notify {
 	uint32_t total_length;
 	uint8_t puller_rdma_id;
 	uint8_t puller_rdma_seqnum;
+	uint16_t pad0[2];
 	uint16_t lib_seqnum;
-	uint16_t lib_piggyack; /* FIXME: unused ? */
+	uint16_t lib_piggyack;
+	uint16_t pad1;
+	/* 24 */
 };
 
 struct omx_pkt_nack_lib {
@@ -247,8 +251,10 @@ struct omx_pkt_nack_mcp {
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	enum omx_nack_type nack_type;
+	uint32_t pad;
 	uint32_t src_pull_handle;
 	uint32_t src_magic;
+	/* 16 */
 };
 
 struct omx_hdr {
