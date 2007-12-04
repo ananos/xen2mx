@@ -238,12 +238,16 @@ struct omx_pkt_notify {
 
 struct omx_pkt_nack_lib {
 	uint8_t ptype;
-	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	enum omx_nack_type nack_type;
+	uint32_t pad;
+	uint8_t pad0;
+	uint8_t dst_endpoint;
 	uint16_t dst_src_peer_index;
 	uint16_t lib_seqnum;
+	uint16_t pad1;
+	/* 16 */
 };
 
 struct omx_pkt_nack_mcp {
