@@ -327,10 +327,11 @@ struct omx_cmd_send_pull {
 	uint32_t local_offset; /* FIXME: 64bits ? */
 	/* 24 */
 	uint32_t remote_rdma_id;
-	uint32_t remote_offset; /* FIXME: 64bits ? */
+	uint32_t remote_rdma_seqnum;
 	/* 32 */
+	uint32_t remote_offset; /* FIXME: 64bits ? */
 	uint32_t retransmit_delay_jiffies;
-	/* 36 */
+	/* 40 */
 };
 
 struct omx_cmd_send_notify {

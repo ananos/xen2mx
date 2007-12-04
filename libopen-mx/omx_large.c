@@ -44,7 +44,7 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
     array[i].next_free = i+1;
     array[i].region.id = i;
     array[i].region.user = NULL;
-    /* FIXME: seqnum */
+    array[i].region.seqnum = 0; /* FIXME */
   }
   array[OMX_USER_REGION_MAX-1].next_free = -1;
   ep->large_region_map.first_free = 0;
@@ -299,8 +299,8 @@ omx__submit_pull(struct omx_endpoint * ep,
   /* FIXME: cookie */
   pull_param.local_rdma_id = region->id;
   pull_param.local_offset = region->offset;
-  /* FIXME: seqnum */
   pull_param.remote_rdma_id = req->recv.specific.large.target_rdma_id;
+  pull_param.remote_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
   pull_param.remote_offset = req->recv.specific.large.target_rdma_offset;
   pull_param.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
 
