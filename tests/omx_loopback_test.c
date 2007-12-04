@@ -161,6 +161,9 @@ int main(int argc, char *argv[])
   int i;
   omx_return_t ret;
 
+  if (!getenv("OMX_DISABLE_SELF"))
+    putenv("OMX_DISABLE_SELF=1");
+
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to initialize (%s)\n",
