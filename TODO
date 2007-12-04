@@ -1,4 +1,5 @@
 * stop looking for partial multifrag if the previous one has a too high seqnum already
+* factorize early and msg seqnum index computing (cache them?)
 
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
