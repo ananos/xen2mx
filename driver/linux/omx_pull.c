@@ -25,6 +25,12 @@
 #include "omx_hal.h"
 #include "omx_wire_access.h"
 
+#ifdef OMX_MX_WIRE_COMPAT
+#if OMX_PULL_REPLY_LENGTH_MAX >= 65536
+#error Cannot store rdma offsets > 65535 in 16bits offsets on the wire
+#endif
+#endif
+
 #define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
 
 #define OMX_PULL_RETRANSMIT_TIMEOUT_MS	1000
@@ -313,9 +319,9 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(pull_n->src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(pull_n->dst_endpoint, cmd->dest_endpoint);
 	OMX_PKT_FIELD_FROM(pull_n->session, cmd->session_id);
-	OMX_PKT_FIELD_FROM(pull_n->total_length, cmd->length);
+	OMX_PKT_FIELD_FROM(pull_n->total_length, handle->total_length);
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_id, cmd->remote_rdma_id);
-	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_offset, cmd->remote_offset);
+	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_offset, handle->pulled_rdma_offset);
 	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->idr_index);
 	OMX_PKT_FIELD_FROM(pull_n->src_magic, omx_endpoint_pull_magic(endpoint));
 
