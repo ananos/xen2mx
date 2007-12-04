@@ -426,9 +426,13 @@ omx__continue_partial_request(struct omx_endpoint *ep,
       omx__partner_needs_to_ack(ep, partner);
       return OMX_SUCCESS;
     }
+    /* FIXME: if higher seqnum (with wrap-around), exit */
   }
 
-  omx__abort("Failed to find partial request to continue with new medium fragment\n");
+  /* just ignore the packet, it can be a duplicate of already completed
+   * medium with seqnum higher than a non-completed medium
+   */
+  return OMX_SUCCESS;
 }
 
 static INLINE omx_return_t

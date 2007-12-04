@@ -1,3 +1,5 @@
+* stop looking for partial multifrag if the previous one has a too high seqnum already
+
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
   + is connect.pad0 used for src_mac_low32 ?
