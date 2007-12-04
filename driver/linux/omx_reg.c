@@ -27,6 +27,12 @@
 #include "omx_io.h"
 #include "omx_common.h"
 
+#ifdef OMX_MX_WIRE_COMPAT
+#if OMX_USER_REGION_MAX > 256
+#error Cannot store region id > 255 in 8bit id on the wire
+#endif
+#endif
+
 /***************************
  * User region registration
  */
