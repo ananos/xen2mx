@@ -125,6 +125,17 @@ omx__handle_ack(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
+void
+omx__handle_truc_ack(struct omx_endpoint *ep,
+		     struct omx__partner *partner,
+		     struct omx__truc_ack_data *ack_n)
+{
+  omx__seqnum_t ack = OMX_FROM_PKT_FIELD(ack_n->lib_seqnum);
+  /* FIXME: check acknum */
+  omx__debug_printf("got a ack up to %d\n", (unsigned) ack);
+  omx__handle_ack(ep, partner, ack);
+}
+
 /************************
  * Handle Received Nacks
  */

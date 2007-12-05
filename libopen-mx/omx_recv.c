@@ -688,10 +688,7 @@ omx__process_recv_truc(struct omx_endpoint *ep,
 
   switch (truc_type) {
   case OMX__TRUC_DATA_TYPE_ACK: {
-    omx__seqnum_t ack = OMX_FROM_PKT_FIELD(data_n->ack.lib_seqnum);
-    /* FIXME: check acknum */
-    omx__debug_printf("got a ack up to %d\n", (unsigned) ack);
-    omx__handle_ack(ep, partner, ack);
+    omx__handle_truc_ack(ep, partner, &data_n->ack);
     break;
   }
   default:

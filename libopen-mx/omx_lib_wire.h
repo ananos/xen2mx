@@ -62,7 +62,7 @@ struct omx__connect_reply_data {
 
 union omx__truc_data {
   uint8_t type;
-  struct {
+  struct omx__truc_ack_data {
     uint8_t type;
     uint8_t pad;
     uint16_t lib_seqnum;

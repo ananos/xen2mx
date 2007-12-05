@@ -30,6 +30,7 @@
 
 #include "open-mx.h"
 #include "omx_types.h"
+#include "omx_lib_wire.h"
 #include "omx_io.h"
 #include "omx_valgrind.h"
 
@@ -231,7 +232,12 @@ extern omx_return_t
 omx__handle_ack(struct omx_endpoint *ep,
 		struct omx__partner *partner, omx__seqnum_t ack);
 
-omx_return_t
+extern void
+omx__handle_truc_ack(struct omx_endpoint *ep,
+		     struct omx__partner *partner,
+		     struct omx__truc_ack_data *ack_n);
+
+extern omx_return_t
 omx__handle_nack(struct omx_endpoint *ep,
                  struct omx__partner *partner, omx__seqnum_t seqnum,
                  omx_status_code_t status);
