@@ -64,6 +64,8 @@ omx__partner_reset(struct omx__partner *partner)
   partner->next_match_recv_seq = 0;
   partner->next_frag_recv_seq = 0;
   partner->connect_seqnum = 0;
+  partner->next_send_acknum = 0;
+  partner->next_recv_acknum = 0;
 
   /* FIXME: remove the endpoint_partners_to_ack_elt if necessary */
 
