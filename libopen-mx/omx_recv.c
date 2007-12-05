@@ -414,9 +414,11 @@ omx__continue_partial_request(struct omx_endpoint *ep,
   uint64_t match_info = msg->match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req = NULL;
+  omx__seqnum_t new_index = seqnum - partner->next_frag_recv_seq;
 
   omx__foreach_partner_partial_request(partner, req) {
-    if (likely(req->recv.seqnum == seqnum)) {
+    omx__seqnum_t req_index = req->recv.seqnum - partner->next_frag_recv_seq;
+    if (likely(req_index == new_index)) {
       omx__dequeue_request(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED
 			   ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			   req);
@@ -425,8 +427,9 @@ omx__continue_partial_request(struct omx_endpoint *ep,
       omx__update_partner_next_frag_recv_seq(ep, partner);
       omx__partner_needs_to_ack(ep, partner);
       return OMX_SUCCESS;
+    } else if (req_index > new_index) {
+      break;
     }
-    /* FIXME: if higher seqnum (with wrap-around), exit */
   }
 
   /* just ignore the packet, it can be a duplicate of already completed
