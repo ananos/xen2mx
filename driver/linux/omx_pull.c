@@ -716,6 +716,11 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 
 	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
 
+	/* FIXME: if endpoint closing, exit? */
+
+	if (OMX_PULL_HANDLE_DONE(handle))
+		return;
+
 	if (jiffies > handle->last_retransmit_jiffies) {
 		dprintk(PULL, "pull handle last retransmit time reached, reporting an error\n");
 		omx_pull_handle_reacquire(handle);
