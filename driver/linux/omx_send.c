@@ -548,7 +548,6 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(mh->body.connect.length, length);
 	OMX_PKT_FIELD_FROM(mh->body.connect.lib_seqnum, cmd.seqnum);
 	OMX_PKT_FIELD_FROM(mh->body.connect.src_dst_peer_index, cmd.peer_index);
-	OMX_PKT_FIELD_FROM(mh->body.connect.src_mac_low32, (uint32_t) omx_board_addr_from_netdevice(ifp));
 
 	omx_send_dprintk(eh, "CONNECT length %ld", (unsigned long) length);
 

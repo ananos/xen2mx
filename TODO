@@ -3,7 +3,6 @@
 
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
-  + is connect.pad0 used for src_mac_low32 ?
   + no rdmawin_seqnum set/checked
 
 * optimize mediums

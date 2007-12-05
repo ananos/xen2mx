@@ -157,7 +157,7 @@ struct omx_pkt_connect {
 	uint8_t pad[3];
 	uint16_t lib_seqnum;
 	uint16_t src_dst_peer_index; /* MX's dest_peer_index */
-	uint32_t src_mac_low32; /* it's a pad in MX?? */
+	uint32_t pad0;
 	/* 16 */
 };
 
