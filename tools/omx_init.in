@@ -71,7 +71,7 @@ load_omx() {
     fi
 
     # set device node mode and group
-    echo "Setting group '$GROUP' and mode '$MODE' or device '$DEVICE'"
+    echo "Setting group '$GROUP' and mode '$MODE' on device '$DEVICE'"
     chgrp "$GROUP" "$DEVICE" \
 	|| echo "[ERROR] Failed to set mode"
     chmod "$MODE" "$DEVICE" \
