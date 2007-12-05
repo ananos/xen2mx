@@ -40,7 +40,6 @@ struct omx_pull_block_desc {
 	uint32_t frame_index;
 	uint32_t block_length;
 	uint32_t first_frame_offset;
-	uint32_t valid;
 };
 
 struct omx_pull_handle {
@@ -170,7 +169,6 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	handle->block_frames -= OMX_PULL_REPLY_PER_BLOCK;
 	memcpy(&handle->first_desc, &handle->second_desc,
 	       sizeof(struct omx_pull_block_desc));
-	handle->second_desc.valid = 0;
 	handle->already_requeued_first = 0;
 }
 
@@ -397,8 +395,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->frame_index = 0;
 	handle->next_frame_index = 0;
 	handle->block_frames = 0;
-	handle->first_desc.valid = 0;
-	handle->second_desc.valid = 0;
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
 	handle->already_requeued_first = 0;
@@ -654,7 +650,6 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	handle->first_desc.frame_index = handle->next_frame_index;
 	handle->first_desc.block_length = block_length;
 	handle->first_desc.first_frame_offset = first_frame_offset;
-	handle->first_desc.valid = 1;
 	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 	if (IS_ERR(skb)) {
 		err = PTR_ERR(skb);
@@ -677,7 +672,6 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	handle->second_desc.frame_index = handle->next_frame_index;
 	handle->second_desc.block_length = block_length;
 	handle->second_desc.first_frame_offset = 0;
-	handle->second_desc.valid = 1;
 	skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
 	if (IS_ERR(skb2)) {
 		err = PTR_ERR(skb2);
@@ -729,8 +723,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		return;
 	}
 
-	if (handle->first_desc.valid
-	    && !OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
+	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 		/* request the first block again */
 		skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 		if (!IS_ERR(skb))
@@ -738,8 +731,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		handle->already_requeued_first = 0;
 	}
 
-	if (handle->second_desc.valid
-	    && !OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
+	if (!OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
 		/* request the second block again */
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (!IS_ERR(skb))
@@ -1008,6 +1000,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	uint32_t frame_seqnum_offset; /* unsigned to make seqnum offset easy to check */
 	struct omx_pull_handle * handle;
 	uint64_t bitmap_mask;
+	int frame_from_second_block = 0;
 	int err = 0;
 
 	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld frame seqnum %ld length %ld skb length %ld",
@@ -1090,12 +1083,15 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	handle->frame_copying_bitmap &= ~bitmap_mask;
 
+	if (frame_seqnum_offset >= OMX_PULL_REPLY_PER_BLOCK)
+		frame_from_second_block = 1;		
+
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 
 		/* current first block not done, we basically just need to release the handle */
 
-		if (OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
-		    && handle->second_desc.valid
+		if (frame_from_second_block
+		    && OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
 		    && !handle->already_requeued_first) {
 
 			/* the second block is done without the first one,
@@ -1137,7 +1133,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		handle->second_desc.frame_index = handle->next_frame_index;
 		handle->second_desc.block_length = block_length;
 		handle->second_desc.first_frame_offset = 0;
-		handle->second_desc.valid = 1;
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (IS_ERR(skb)) {
 			BUG_ON(PTR_ERR(skb) != -ENOMEM);
@@ -1171,7 +1166,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		handle->second_desc.frame_index = handle->next_frame_index;
 		handle->second_desc.block_length = block_length;
 		handle->second_desc.first_frame_offset = 0;
-		handle->second_desc.valid = 1;
 		skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (IS_ERR(skb2)) {
 			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
