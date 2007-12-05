@@ -3,6 +3,7 @@
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
   + no rdmawin_seqnum set/checked
+  + lib ack contents
 
 * optimize mediums
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
