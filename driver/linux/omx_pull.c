@@ -1091,11 +1091,13 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->frame_copying_bitmap &= ~bitmap_mask;
 
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
+
 		/* current first block not done, we basically just need to release the handle */
 
 		if (OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
 		    && handle->second_desc.valid
 		    && !handle->already_requeued_first) {
+
 			/* the second block is done without the first one,
 			 * we assume some packet got lost in the first one,
 			 * so we request the first one again
@@ -1117,10 +1119,12 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_release(handle);
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
+
+		/* current first block request is done */
+
 		struct sk_buff * skb = NULL, * skb2 = NULL;
 		uint32_t block_length;
 
-		/* current first block request is done */
 		omx_pull_handle_first_block_done(handle);
 
 		/* start the next block */
@@ -1190,7 +1194,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			dev_queue_xmit(skb2);
 
 	} else {
+
 		/* last block is done, notify the completion */
+
 		dprintk(PULL, "notifying pull completion\n");
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_SUCCESS);
 	}
