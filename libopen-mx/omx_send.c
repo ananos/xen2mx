@@ -609,6 +609,7 @@ omx_isend(struct omx_endpoint *ep,
       *requestp = req;
     } else {
       req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+      ep->zombies++;
     }
 
     /* progress a little bit */
@@ -656,6 +657,7 @@ omx_issend(struct omx_endpoint *ep,
       *requestp = req;
     } else {
       req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+      ep->zombies++;
     }
 
     /* progress a little bit */

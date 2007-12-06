@@ -114,7 +114,7 @@ static inline void
 omx__notify_request_done_early(struct omx_endpoint *ep, uint32_t ctxid,
 			       union omx_request *req)
 {
-  if (unlikely(!omx__globals.zombies))
+  if (unlikely(ep->zombies >= ep->zombie_max))
     return;
 
   omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_DONE));
@@ -137,6 +137,7 @@ omx__notify_request_done(struct omx_endpoint *ep, uint32_t ctxid,
   } else if (likely(req->generic.state & OMX_REQUEST_STATE_ZOMBIE)) {
     /* request already completed by the application, just free it */
     omx__request_free(ep, req);
+    ep->zombies--;
 
   } else if (unlikely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
     /* queue the request to the done queue if not already done */

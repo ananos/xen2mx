@@ -23,6 +23,8 @@
 
 #include "omx_lib.h"
 
+#define OMX_ZOMBIE_MAX_DEFAULT 512
+
 struct omx__globals omx__globals = { 0 };
 struct omx_driver_desc * omx__driver_desc = NULL;
 
@@ -68,10 +70,10 @@ omx__init_api(int api)
   if (env)
     omx__globals.waitspin = atoi(env);
 
-  omx__globals.zombies = 1;
+  omx__globals.zombie_max = OMX_ZOMBIE_MAX_DEFAULT;
   env = getenv("OMX_ZOMBIE_SEND");
   if (env)
-    omx__globals.zombies = atoi(env);
+    omx__globals.zombie_max = atoi(env);
 
   omx__globals.selfcomms = 1;
   env = getenv("OMX_DISABLE_SELF");

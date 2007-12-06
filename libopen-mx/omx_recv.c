@@ -803,6 +803,7 @@ omx_irecv(struct omx_endpoint *ep,
     *requestp = req;
   } else {
     req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+    ep->zombies++;
   }
 
   return OMX_SUCCESS;

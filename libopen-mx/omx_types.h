@@ -137,6 +137,7 @@ struct omx_endpoint {
   void * next_exp_event, * next_unexp_event;
   uint32_t avail_exp_events;
   uint32_t retransmit_delay_jiffies;
+  uint32_t zombies, zombie_max;
 
   /* context ids */
   uint8_t ctxid_bits;
@@ -363,7 +364,7 @@ struct omx__globals {
   int verbose;
   int regcache;
   int waitspin;
-  int zombies;
+  int zombie_max;
   int selfcomms;
   unsigned ack_delay;
   unsigned resend_delay;

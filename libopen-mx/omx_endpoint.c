@@ -250,6 +250,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->endpoint_index = endpoint_index;
   ep->app_key = key;
   ep->retransmit_delay_jiffies = omx__globals.resend_delay * omx__globals.retransmits_max;
+  ep->zombie_max = omx__globals.zombie_max;
+  ep->zombies = 0;
 
   /* get some info */
   ret = omx__get_board_id(ep, NULL, &board_addr, ep->hostname, ep->ifacename);

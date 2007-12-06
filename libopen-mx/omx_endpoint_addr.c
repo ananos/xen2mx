@@ -374,6 +374,7 @@ omx_iconnect(omx_endpoint_t ep,
     *requestp = req;
   } else {
     req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+    ep->zombies++;
   }
 
   return ret;

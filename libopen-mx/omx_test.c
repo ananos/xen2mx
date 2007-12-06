@@ -33,6 +33,7 @@ omx__test_success(struct omx_endpoint *ep, union omx_request *req,
     /* the request is not actually done, zombify it */
     req->generic.state &= ~OMX_REQUEST_STATE_DONE;
     req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+    ep->zombies++;
   } else {
     /* the request is done for real, delete it */
     omx__request_free(ep, req);
@@ -52,6 +53,7 @@ omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
     } else {
       /* mark as zombie and let the real completion delete it later */
       req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+      ep->zombies++;
     }
   }
 
