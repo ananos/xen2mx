@@ -177,6 +177,9 @@ omx_iface_attach(struct net_device * ifp)
 
 	printk(KERN_INFO "Open-MX: Attaching %sEthernet device '%s' as #%i, MTU=%d\n",
 	       (ifp->type == ARPHRD_ETHER ? "" : "non-"), ifp->name, i, mtu);
+	if (!(dev_get_flags(ifp) & IFF_UP))
+		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' is not up\n",
+		       ifp->name);
 	if (mtu < OMX_MTU_MIN)
 		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
 		       ifp->name, OMX_MTU_MIN, mtu);
