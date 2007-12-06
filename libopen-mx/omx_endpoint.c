@@ -307,7 +307,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   INIT_LIST_HEAD(&ep->regcache_list);
   INIT_LIST_HEAD(&ep->regcache_unused_list);
 
-  /* FIXME: check status */
+  omx__progress(ep);
 
   *epp = ep;
 
