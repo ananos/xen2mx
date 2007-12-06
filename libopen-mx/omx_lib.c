@@ -194,6 +194,12 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     printf("Driver reporting unexpected event queue full\n");
     printf("Some packets are being dropped, they will be resent by the sender\n");
   }
+  if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN) {
+    printf("WARNING: Driver reporting interface of the endpoint NOT up\n");
+  }
+  if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU) {
+    printf("WARNING: Driver reporting too small MTU for endpoint, check dmesg\n");
+  }
 
   /* could be racy... could be fixed using atomic ops... */
   ep->desc->status = 0;

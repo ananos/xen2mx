@@ -122,6 +122,7 @@ static int
 omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 {
 	struct omx_cmd_open_endpoint param;
+	struct net_device *ifp;
 	int ret;
 
 	ret = copy_from_user(&param, uparam, sizeof(param));
@@ -156,6 +157,13 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 
 	endpoint->opener_pid = current->pid;
 	strncpy(endpoint->opener_comm, current->comm, TASK_COMM_LEN);
+
+	/* check iface status */
+	ifp = endpoint->iface->eth_ifp;
+	if (!(dev_get_flags(ifp) & IFF_UP))
+		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN;
+	if (ifp->mtu < OMX_MTU_MIN)
+		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU;
 
 	return 0;
 

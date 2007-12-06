@@ -94,6 +94,8 @@ struct omx_endpoint_desc {
 
 #define OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL (1ULL << 0)
 #define OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL (1ULL << 1)
+#define OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN (1ULL << 2)
+#define OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU (1ULL << 3)
 
 /************************
  * IOCTL commands
