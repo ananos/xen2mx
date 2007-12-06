@@ -195,10 +195,12 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     printf("Some packets are being dropped, they will be resent by the sender\n");
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN) {
-    printf("WARNING: Driver reporting interface of the endpoint NOT up\n");
+    printf("Open-MX WARNING: Driver reporting that interface %s (%s) for endpoint %d is NOT up, check dmesg\n",
+	   ep->ifacename, ep->hostname, ep->endpoint_index);
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU) {
-    printf("WARNING: Driver reporting too small MTU for endpoint, check dmesg\n");
+    printf("Open-MX WARNING: Driver reporting too small MTU for interface %s (%s) for endpoint %d, check dmesg\n",
+	   ep->ifacename, ep->hostname, ep->endpoint_index);
   }
 
   /* could be racy... could be fixed using atomic ops... */
