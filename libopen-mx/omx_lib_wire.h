@@ -29,12 +29,12 @@ struct omx__rndv_data {
 };
 
 struct omx__connect_request_data {
-  /* the sender's session id (so that we know when the connect has been sent) */
+  /* the sender's session id (so that the connected know when the connect has been sent) */
   uint32_t src_session_id;
-  /* the application level key in the request */
+  /* the application level key in the request that the connected will check */
   uint32_t app_key;
-
-  uint16_t pad1;
+  /* the target next recv seqnum (so the connected knows our next send seqnum) */
+  uint16_t target_recv_seqnum_start;
   /* is this a request ot a reply? 0 here */
   uint8_t is_reply;
   /* sequence number of this connect request (in case multiple have been sent/lost) */
@@ -46,15 +46,15 @@ struct omx__connect_request_data {
 struct omx__connect_reply_data {
   /* the sender's session id (so that we know when the connect has been sent) */
   uint32_t src_session_id;
-  /* the target session_id (so that we can send right after this connect) */
+  /* the target session_id (so that the connecter can send right after this connect) */
   uint32_t target_session_id;
-  /* the target next recv seqnum in the reply (so that we know our next send seqnum) */
+  /* the target next recv seqnum (so that the connecter know our next send seqnum) */
   uint16_t target_recv_seqnum_start;
   /* is this a request ot a reply? 1 here */
   uint8_t is_reply;
   /* sequence number of this connect request (in case multiple have been sent/lost) */
   uint8_t connect_seqnum;
-  /* the target connect matching status (only in the reply) */
+  /* the status code to return in the connecter request */
   uint8_t status_code;
 };
 
