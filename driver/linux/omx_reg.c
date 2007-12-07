@@ -510,7 +510,7 @@ omx_user_region_fill_pages(struct omx_user_region * region,
 			   unsigned long length)
 {
 	unsigned long segment_offset = region_offset;
-	unsigned long skb_offset = sizeof(struct omx_hdr);
+	unsigned long skb_offset = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_reply);
 	unsigned long copied = 0;
 	unsigned long remaining = length;
 	int iseg;

@@ -571,10 +571,11 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 	struct sk_buff * skb;
 	struct omx_hdr * mh;
 	struct omx_pkt_pull_request * pull_n;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_request);
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
-			  max_t(unsigned long, sizeof(*mh), ETH_ZLEN));
+			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create pull skb\n");
 		return ERR_PTR(-ENOMEM);
@@ -777,6 +778,7 @@ omx_recv_pull(struct omx_iface * iface,
 	struct omx_pkt_pull_reply *pull_reply_n;
 	struct omx_hdr *reply_mh;
 	struct ethhdr *reply_eh;
+	size_t reply_hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_reply);
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_user_region *region;
 	struct sk_buff *skb = NULL;
@@ -857,7 +859,7 @@ omx_recv_pull(struct omx_iface * iface,
 						  /* only allocate space for the header now,
 						   * we'll attach pages and pad to ETH_ZLEN later
 						   */
-						  sizeof(*reply_mh));
+						  reply_hdr_len);
 		if (unlikely(skb == NULL)) {
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
 			err = -ENOMEM;
