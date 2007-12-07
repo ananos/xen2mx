@@ -992,6 +992,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		    struct sk_buff * skb)
 {
 	struct omx_pkt_pull_reply *pull_reply_n = &mh->body.pull_reply;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_reply);
 	uint32_t dst_pull_handle = OMX_FROM_PKT_FIELD(pull_reply_n->dst_pull_handle);
 	uint32_t dst_magic = OMX_FROM_PKT_FIELD(pull_reply_n->dst_magic);
 	uint32_t frame_length = OMX_FROM_PKT_FIELD(pull_reply_n->frame_length);
@@ -1008,12 +1009,12 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			 (unsigned long) dst_magic,
 			 (unsigned long) frame_seqnum,
 			 (unsigned long) frame_length,
-			 (unsigned long) skb->len - sizeof(struct omx_hdr));
+			 (unsigned long) skb->len - hdr_len);
 
 	/* check actual data length */
-	if (unlikely(frame_length > skb->len - sizeof(struct omx_hdr))) {
+	if (unlikely(frame_length > skb->len - hdr_len)) {
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with %ld bytes instead of %d",
-				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) frame_length);
 		err = -EINVAL;
 		goto out;

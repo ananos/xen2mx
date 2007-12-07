@@ -55,9 +55,9 @@ omx_recv_connect(struct omx_iface * iface,
 	}
 
 	/* check actual data length */
-	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
+	if (unlikely(length > skb->len - hdr_len)) {
 		omx_drop_dprintk(eh, "CONNECT packet data with %ld bytes instead of %d",
-				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
@@ -145,9 +145,9 @@ omx_recv_tiny(struct omx_iface * iface,
 	}
 
 	/* check actual data length */
-	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
+	if (unlikely(length > skb->len - hdr_len)) {
 		omx_drop_dprintk(&mh->head.eth, "TINY packet with %ld bytes instead of %d",
-				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
@@ -244,9 +244,9 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* check actual data length */
-	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
+	if (unlikely(length > skb->len - hdr_len)) {
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet with %ld bytes instead of %d",
-				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
@@ -347,9 +347,9 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* check actual data length */
-	if (unlikely(frag_length > skb->len - sizeof(struct omx_hdr))) {
+	if (unlikely(frag_length > skb->len - hdr_len)) {
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM fragment with %ld bytes instead of %d",
-				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) frag_length);
 		err = -EINVAL;
 		goto out;
@@ -452,9 +452,9 @@ omx_recv_rndv(struct omx_iface * iface,
 	}
 
 	/* check actual data length */
-	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
+	if (unlikely(length > skb->len - hdr_len)) {
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet with %ld bytes instead of %d",
-				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
@@ -623,9 +623,9 @@ omx_recv_truc(struct omx_iface * iface,
 	}
 
 	/* check actual data length */
-	if (unlikely(length > skb->len - sizeof(struct omx_hdr))) {
+	if (unlikely(length > skb->len - hdr_len)) {
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet with %ld bytes instead of %d",
-				 (unsigned long) skb->len - sizeof(struct omx_hdr),
+				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
 		err = -EINVAL;
 		goto out;
