@@ -202,8 +202,8 @@ omx__submit_send_liback(struct omx_endpoint *ep,
   OMX_PKT_FIELD_FROM(data_n->type, OMX__TRUC_DATA_TYPE_ACK);
   OMX_PKT_FIELD_FROM(data_n->ack.acknum, partner->last_send_acknum);
   OMX_PKT_FIELD_FROM(data_n->ack.session_id, partner->back_session_id);
-  OMX_PKT_FIELD_FROM(data_n->ack.lib_seqnum, partner->next_frag_recv_seq - 1);
-  OMX_PKT_FIELD_FROM(data_n->ack.send_seq, partner->next_frag_recv_seq - 1); /* FIXME? partner->send_seq */
+  OMX_PKT_FIELD_FROM(data_n->ack.lib_seqnum, partner->last_full_recv_seq);
+  OMX_PKT_FIELD_FROM(data_n->ack.send_seq, partner->last_full_recv_seq); /* FIXME? partner->send_seq */
   OMX_PKT_FIELD_FROM(data_n->ack.requeued, 0); /* FIXME? partner->requeued */
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TRUC, &truc_param);

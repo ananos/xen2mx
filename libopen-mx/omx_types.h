@@ -93,29 +93,29 @@ struct omx__partner {
   /* seqnum of the last send acked by the partner */
   omx__seqnum_t last_acked_send_seq;
 
-  /* seqnum of the next entire message to match
+  /* seqnum of the last new message matched
    * used to know to accumulate/match/defer a fragment
    */
-  omx__seqnum_t next_match_recv_seq;
+  omx__seqnum_t last_match_recv_seq;
 
-  /* seqnum of the next fragment to recv
-   * next_frag_recv_seq < next_match_recv_seq in case of partially received medium
+  /* seqnum of the last fully received messages
+   * last_full_recv_seq < last_match_recv_seq in case of partially received medium
    * used to ack back to the partner
-   * (all seqnum < next_frag_recv_seq have been entirely received)
+   * (all seqnum < last_full_recv_seq have been entirely received)
    */
-  omx__seqnum_t next_frag_recv_seq;
+  omx__seqnum_t last_full_recv_seq;
 
   /*
    * when matching, increase recv_seq
-   * when event, compare message seqnum with next_match_recv_seq:
+   * when event, compare message seqnum with last_match_recv_seq:
    * - if == , matching
    * - if < , find partial receive in partner's queue
    * - if < , queue as a early fragment
    *
-   * when completing an event, recompute next_frag_recv_seq
+   * when completing an event, recompute last_full_recv_seq
    * - if partial receive (ordered), use its seqnum
-   * - if no partial receive, use next_match_recv_seq
-   * if changing next_frag_recv_seq, ack all the previous seqnums
+   * - if no partial receive, use last_match_recv_seq
+   * if changing last_full_recv_seq, ack all the previous seqnums
    */
 
   /* acks */
