@@ -195,7 +195,7 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
   if (ret != OMX_SUCCESS)
     return ret;
 
-  ep->myself->last_send_seq = - 1;
+  ep->myself->last_send_seq = 0;
   ep->myself->true_session_id = ep->desc->session_id;
   ep->myself->back_session_id = ep->desc->session_id;
 
@@ -253,7 +253,7 @@ omx__connect_common(omx_endpoint_t ep,
   connect_param->hdr.length = sizeof(*data_n);
   OMX_PKT_FIELD_FROM(data_n->src_session_id, ep->desc->session_id);
   OMX_PKT_FIELD_FROM(data_n->app_key, key);
-  OMX_PKT_FIELD_FROM(data_n->target_recv_seqnum_start, partner->next_match_recv_seq);
+  OMX_PKT_FIELD_FROM(data_n->target_recv_seqnum_start, partner->next_match_recv_seq - 1);
   OMX_PKT_FIELD_FROM(data_n->is_reply, 0);
   OMX_PKT_FIELD_FROM(data_n->connect_seqnum, connect_seqnum);
 
@@ -410,7 +410,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   uint32_t src_session_id = OMX_FROM_PKT_FIELD(reply_data_n->src_session_id);
   uint8_t connect_seqnum = OMX_FROM_PKT_FIELD(reply_data_n->connect_seqnum);
   uint32_t target_session_id = OMX_FROM_PKT_FIELD(reply_data_n->target_session_id);
-  uint16_t target_recv_seqnum_start = OMX_FROM_PKT_FIELD(reply_data_n->target_recv_seqnum_start);
+  uint16_t target_recv_seqnum_start = OMX_FROM_PKT_FIELD(reply_data_n->target_recv_seqnum_start - 1);
   uint8_t status_code = OMX_FROM_PKT_FIELD(reply_data_n->status_code);
   union omx_request * req;
   omx_return_t ret;
@@ -449,8 +449,8 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
     if (partner->true_session_id != target_session_id) {
       /* either the first connect, or a new instance, reset seqnums */
-      partner->last_send_seq = target_recv_seqnum_start - 1;
-      partner->last_acked_send_seq = target_recv_seqnum_start - 1;
+      partner->last_send_seq = target_recv_seqnum_start;
+      partner->last_acked_send_seq = target_recv_seqnum_start;
     }
 
     partner->true_session_id = target_session_id;
@@ -511,8 +511,8 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   if (partner->true_session_id != -1
       && partner->true_session_id != src_session_id) {
     /* we were connected to this partner, and it changed, reset the seqnums */
-    partner->last_send_seq = target_recv_seqnum_start - 1;
-    partner->last_acked_send_seq = target_recv_seqnum_start - 1;
+    partner->last_send_seq = target_recv_seqnum_start;
+    partner->last_acked_send_seq = target_recv_seqnum_start;
   }
 
   partner->true_session_id  = src_session_id;
