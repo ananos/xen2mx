@@ -81,8 +81,8 @@ struct omx__partner {
   /* early packets (queued by their partner_elt) */
   struct list_head early_recv_q;
 
-  /* seqnum of the next send */
-  omx__seqnum_t next_send_seq;
+  /* seqnum of the last sent */
+  omx__seqnum_t last_send_seq;
 
   /* seqnum of the last send acked by the partner */
   omx__seqnum_t last_acked_send_seq;

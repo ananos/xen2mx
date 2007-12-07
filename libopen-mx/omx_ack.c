@@ -97,7 +97,7 @@ omx__handle_ack(struct omx_endpoint *ep,
 		struct omx__partner *partner, omx__seqnum_t last_to_ack)
 {
   /* take care of the seqnum wrap around by casting differences into omx__seqnum_t */
-  omx__seqnum_t missing_acks = partner->next_send_seq - 1 - partner->last_acked_send_seq;
+  omx__seqnum_t missing_acks = partner->last_send_seq - partner->last_acked_send_seq;
   omx__seqnum_t new_acks = last_to_ack - partner->last_acked_send_seq;
 
   if (!new_acks || new_acks > missing_acks) {

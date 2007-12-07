@@ -59,7 +59,7 @@ omx__partner_reset(struct omx__partner *partner)
   INIT_LIST_HEAD(&partner->early_recv_q);
 
   partner->session_id = 0; /* will be initialized when the partner will connect to me */
-  partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
+  partner->last_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   partner->last_acked_send_seq = -1;
   partner->next_match_recv_seq = 0;
   partner->next_frag_recv_seq = 0;
@@ -183,7 +183,7 @@ omx__connect_partner(struct omx__partner * partner,
 {
   if (partner->session_id != target_session_id) {
     /* this is the first connect, only update seqnums here */
-    partner->next_send_seq = target_recv_seqnum_start;
+    partner->last_send_seq = target_recv_seqnum_start - 1;
   }
 
   partner->session_id = target_session_id;
