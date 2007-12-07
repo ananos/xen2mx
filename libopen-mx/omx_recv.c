@@ -470,7 +470,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
     }
 
   } else if (likely(msg->type == OMX_EVT_RECV_MEDIUM
-		    && frag_index <= frag_index_max)) {
+		    && frag_index < frag_index_max)) {
     /* fragment of already matched but incomplete medium message */
     ret = omx__continue_partial_request(ep, partner, seqnum,
 					msg, data, msg_length);
