@@ -37,6 +37,7 @@ omx_recv_connect(struct omx_iface * iface,
 	uint64_t src_addr = omx_board_addr_from_ethhdr_src(eh);
 	uint32_t peer_index;
 	struct omx_pkt_connect *connect_n = &mh->body.connect;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_connect);
 	uint8_t length = OMX_FROM_PKT_FIELD(connect_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(connect_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(connect_n->src_endpoint);
@@ -95,7 +96,7 @@ omx_recv_connect(struct omx_iface * iface,
 	event.seqnum = lib_seqnum;
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.data, length);
+	err = skb_copy_bits(skb, hdr_len, event.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
@@ -125,6 +126,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_msg *tiny_n = &mh->body.tiny;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
 	uint16_t length = OMX_FROM_PKT_FIELD(tiny_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(tiny_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(tiny_n->src_endpoint);
@@ -192,7 +194,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	event.specific.tiny.length = length;
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.specific.tiny.data, length);
+	err = skb_copy_bits(skb, hdr_len, event.specific.tiny.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
@@ -222,6 +224,7 @@ omx_recv_small(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_msg *small_n = &mh->body.small;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
 	uint16_t length =  OMX_FROM_PKT_FIELD(small_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(small_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(small_n->src_endpoint);
@@ -299,7 +302,7 @@ omx_recv_small(struct omx_iface * iface,
 	omx_recv_dprintk(&mh->head.eth, "SMALL length %ld", (unsigned long) length);
 
 	/* copy data in recvq slot */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), endpoint->recvq + recvq_offset, length);
+	err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
@@ -324,6 +327,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_medium_frag *medium_n = &mh->body.medium;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag);
 	uint16_t frag_length = OMX_FROM_PKT_FIELD(medium_n->frag_length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.src_endpoint);
@@ -404,7 +408,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
 	/* copy data in recvq slot */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), endpoint->recvq + recvq_offset, frag_length);
+	err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset, frag_length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
@@ -429,6 +433,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_msg *rndv_n = &mh->body.rndv;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
 	uint16_t length = OMX_FROM_PKT_FIELD(rndv_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(rndv_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->src_endpoint);
@@ -496,7 +501,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	event.specific.rndv.length = length;
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.specific.rndv.data, length);
+	err = skb_copy_bits(skb, hdr_len, event.specific.rndv.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 
@@ -601,6 +606,7 @@ omx_recv_truc(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_truc *truc_n = &mh->body.truc;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_truc);
 	uint8_t length = OMX_FROM_PKT_FIELD(truc_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(truc_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(truc_n->src_endpoint);
@@ -659,7 +665,7 @@ omx_recv_truc(struct omx_iface * iface,
 	event.specific.truc.length = length;
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, sizeof(struct omx_hdr), event.specific.truc.data, length);
+	err = skb_copy_bits(skb, hdr_len, event.specific.truc.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 

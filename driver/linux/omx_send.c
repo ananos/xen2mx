@@ -105,6 +105,8 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_tiny_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
+	char * data;
 	int ret;
 	uint8_t length;
 
@@ -125,7 +127,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
-			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
+			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create tiny skb\n");
 		ret = -ENOMEM;
@@ -135,6 +137,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	/* locate headers */
 	mh = omx_hdr(skb);
 	eh = &mh->head.eth;
+	data = ((char*)mh) + hdr_len;
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -160,7 +163,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	omx_send_dprintk(eh, "TINY length %ld", (unsigned long) length);
 
 	/* copy the data right after the header */
-	ret = copy_from_user(mh+1, &((struct omx_cmd_send_tiny __user *) uparam)->data, length);
+	ret = copy_from_user(data, &((struct omx_cmd_send_tiny __user *) uparam)->data, length);
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read send tiny cmd data\n");
 		ret = -EFAULT;
@@ -193,6 +196,8 @@ omx_send_small(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_small cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
+	char * data;
 	int ret;
 	uint32_t length;
 
@@ -213,7 +218,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
-			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
+			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create small skb\n");
 		ret = -ENOMEM;
@@ -223,6 +228,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 	/* locate headers */
 	mh = omx_hdr(skb);
 	eh = &mh->head.eth;
+	data = ((char*)mh) + hdr_len;
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -248,7 +254,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 	omx_send_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
 	/* copy the data right after the header */
-	ret = copy_from_user(mh+1, (void *)(unsigned long) cmd.vaddr, length);
+	ret = copy_from_user(data, (void *)(unsigned long) cmd.vaddr, length);
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read send small cmd data\n");
 		ret = -EFAULT;
@@ -284,6 +290,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	uint16_t sendq_page_offset;
 	struct page * page;
 	struct omx_deferred_event * defevent;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag);
 	int ret;
 	uint32_t frag_length;
 
@@ -321,7 +328,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 			  /* only allocate space for the header now,
 			   * we'll attach pages and pad to ETH_ZLEN later
 			   */
-			   sizeof(*mh));
+			   hdr_len);
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create medium skb\n");
 		ret = -ENOMEM;
@@ -411,6 +418,8 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_rndv_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
+	char * data;
 	int ret;
 	uint8_t length;
 
@@ -431,7 +440,7 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
-			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
+			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create rndv skb\n");
 		ret = -ENOMEM;
@@ -441,6 +450,7 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 	/* locate headers */
 	mh = omx_hdr(skb);
 	eh = &mh->head.eth;
+	data = ((char*)mh) + hdr_len;
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -466,7 +476,7 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 	omx_send_dprintk(eh, "RNDV length %ld", (unsigned long) length);
 
 	/* copy the data right after the header */
-	ret = copy_from_user(mh+1, &((struct omx_cmd_send_rndv __user *) uparam)->data, length);
+	ret = copy_from_user(data, &((struct omx_cmd_send_rndv __user *) uparam)->data, length);
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read send rndv cmd data\n");
 		ret = -EFAULT;
@@ -499,6 +509,8 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_connect_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_connect);
+	char * data;
 	int ret;
 	uint8_t length;
 
@@ -519,7 +531,7 @@ omx_send_connect(struct omx_endpoint * endpoint,
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
-			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
+			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create connect skb\n");
 		ret = -ENOMEM;
@@ -529,6 +541,7 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	/* locate headers */
 	mh = omx_hdr(skb);
 	eh = &mh->head.eth;
+	data = ((char*)mh) + hdr_len;
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -552,7 +565,7 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	omx_send_dprintk(eh, "CONNECT length %ld", (unsigned long) length);
 
 	/* copy the data right after the header */
-	ret = copy_from_user(mh+1, &((struct omx_cmd_send_connect __user *) uparam)->data, length);
+	ret = copy_from_user(data, &((struct omx_cmd_send_connect __user *) uparam)->data, length);
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read send connect cmd data\n");
 		ret = -EFAULT;
@@ -657,6 +670,8 @@ omx_send_truc(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_truc cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_truc);
+	char * data;
 	uint8_t length;
 	int ret;
 
@@ -677,7 +692,7 @@ omx_send_truc(struct omx_endpoint * endpoint,
 
 	skb = omx_new_skb(ifp,
 			  /* pad to ETH_ZLEN */
-			  max_t(unsigned long, sizeof(struct omx_hdr) + length, ETH_ZLEN));
+			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create truc skb\n");
 		ret = -ENOMEM;
@@ -687,6 +702,7 @@ omx_send_truc(struct omx_endpoint * endpoint,
 	/* locate headers */
 	mh = omx_hdr(skb);
 	eh = &mh->head.eth;
+	data = ((char*)mh) + hdr_len;
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -709,7 +725,7 @@ omx_send_truc(struct omx_endpoint * endpoint,
 	omx_send_dprintk(eh, "TRUC length %ld", (unsigned long) length);
 
 	/* copy the data right after the header */
-	ret = copy_from_user(mh+1, &((struct omx_cmd_send_truc __user *) uparam)->data, length);
+	ret = copy_from_user(data, &((struct omx_cmd_send_truc __user *) uparam)->data, length);
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read send truc cmd data\n");
 		ret = -EFAULT;
