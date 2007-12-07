@@ -196,10 +196,10 @@ omx__submit_send_liback(struct omx_endpoint *ep,
   truc_param.peer_index = partner->peer_index;
   truc_param.dest_endpoint = partner->endpoint_index;
   truc_param.length = sizeof(union omx__truc_data);
-  truc_param.session_id = partner->session_id;
+  truc_param.session_id = partner->back_session_id;
   OMX_PKT_FIELD_FROM(data_n->type, OMX__TRUC_DATA_TYPE_ACK);
   OMX_PKT_FIELD_FROM(data_n->ack.acknum, partner->next_send_acknum);
-  OMX_PKT_FIELD_FROM(data_n->ack.session_id, partner->session_id);
+  OMX_PKT_FIELD_FROM(data_n->ack.session_id, partner->back_session_id);
   OMX_PKT_FIELD_FROM(data_n->ack.lib_seqnum, partner->next_frag_recv_seq - 1);
   OMX_PKT_FIELD_FROM(data_n->ack.send_seq, partner->next_frag_recv_seq - 1); /* FIXME? partner->send_seq */
   OMX_PKT_FIELD_FROM(data_n->ack.requeued, 0); /* FIXME? partner->requeued */

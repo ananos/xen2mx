@@ -63,7 +63,13 @@ struct omx__partner {
   uint64_t board_addr;
   uint16_t peer_index;
   uint8_t endpoint_index;
-  uint32_t session_id;
+
+  /* the main session id, obtained from the our actual connect */
+  uint32_t true_session_id;
+  /* another session id that we get from the connect request and use for
+   * messages that can go back before we connect back (ack, pull and notify)
+   */
+  uint32_t back_session_id;  
 
   /* seq num of the last connect request to this partner */
   uint8_t connect_seqnum;

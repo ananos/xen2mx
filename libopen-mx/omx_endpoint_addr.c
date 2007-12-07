@@ -58,7 +58,8 @@ omx__partner_reset(struct omx__partner *partner)
   INIT_LIST_HEAD(&partner->partial_recv_req_q);
   INIT_LIST_HEAD(&partner->early_recv_q);
 
-  partner->session_id = 0; /* will be initialized when the partner will connect to me */
+  partner->true_session_id = -1; /* will be initialized when we will be connected to the peer */
+  partner->back_session_id = -1; /* will be initialized when the partner will connect to me */
   partner->last_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   partner->last_acked_send_seq = -1;
   partner->next_match_recv_seq = 0;
@@ -173,22 +174,6 @@ omx__partner_recv_lookup(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
-/*
- * Actually initialize connected partner
- */
-static INLINE void
-omx__connect_partner(struct omx__partner * partner,
-		     uint32_t target_session_id,
-		     omx__seqnum_t target_recv_seqnum_start)
-{
-  if (partner->session_id != target_session_id) {
-    /* this is the first connect, only update seqnums here */
-    partner->last_send_seq = target_recv_seqnum_start - 1;
-  }
-
-  partner->session_id = target_session_id;
-}
-
 omx_return_t
 omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
 {
@@ -210,7 +195,9 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
   if (ret != OMX_SUCCESS)
     return ret;
 
-  omx__connect_partner(ep->myself, ep->desc->session_id, 0);
+  ep->myself->last_send_seq = - 1;
+  ep->myself->true_session_id = ep->desc->session_id;
+  ep->myself->back_session_id = ep->desc->session_id;
 
   return OMX_SUCCESS;
 }
@@ -454,9 +441,19 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
   if (status_code == OMX_STATUS_SUCCESS) {
     /* connection successfull, initialize stuff */
-    omx__connect_partner(partner,
-			 target_session_id,
-			 target_recv_seqnum_start);
+
+    if (partner->back_session_id != target_session_id) {
+      /* this partner changed since last time it talked to us, cleanup the stuff */
+      /* FIXME: cleanup stuff */
+    }
+
+    if (partner->true_session_id != target_session_id) {
+      /* either the first connect, or a new instance, reset seqnums */
+      partner->last_send_seq = target_recv_seqnum_start - 1;
+      partner->last_acked_send_seq = target_recv_seqnum_start - 1;
+    }
+
+    partner->true_session_id = target_session_id;
   }
 
   /* complete the request */
@@ -477,6 +474,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   struct omx__connect_reply_data * reply_data_n = (void *) reply_param.data;
   uint32_t app_key = OMX_FROM_PKT_FIELD(request_data_n->app_key);
   uint32_t src_session_id = OMX_FROM_PKT_FIELD(request_data_n->src_session_id);
+  uint16_t target_recv_seqnum_start = OMX_FROM_PKT_FIELD(request_data_n->target_recv_seqnum_start);
   omx_return_t ret;
   omx_status_code_t status_code;
   int err;
@@ -498,8 +496,9 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   omx__debug_printf("got a connect, replying\n");
 
-  if (partner->session_id != -1
-      && partner->session_id != src_session_id) {
+  if (partner->back_session_id != src_session_id
+      && partner->true_session_id != -1
+      && partner->true_session_id != src_session_id) {
     /* new instance of the partner */
 
     omx__debug_printf("connect from a new instance of a partner\n");
@@ -508,6 +507,16 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     partner->next_frag_recv_seq = 0;
     /* FIXME: drop other stuff */
   }
+
+  if (partner->true_session_id != -1
+      && partner->true_session_id != src_session_id) {
+    /* we were connected to this partner, and it changed, reset the seqnums */
+    partner->last_send_seq = target_recv_seqnum_start - 1;
+    partner->last_acked_send_seq = target_recv_seqnum_start - 1;
+  }
+
+  partner->true_session_id  = src_session_id;
+  partner->back_session_id  = src_session_id;
 
   reply_param.hdr.peer_index = partner->peer_index;
   reply_param.hdr.dest_endpoint = partner->endpoint_index;

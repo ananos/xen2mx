@@ -295,7 +295,7 @@ omx__submit_pull(struct omx_endpoint * ep,
   pull_param.peer_index = partner->peer_index;
   pull_param.dest_endpoint = partner->endpoint_index;
   pull_param.length = xfer_length;
-  pull_param.session_id = partner->session_id;
+  pull_param.session_id = partner->back_session_id;
   /* FIXME: cookie */
   pull_param.local_rdma_id = region->id;
   pull_param.local_offset = region->offset;

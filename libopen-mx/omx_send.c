@@ -109,7 +109,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   tiny_param->hdr.match_info = match_info;
   tiny_param->hdr.length = length;
   tiny_param->hdr.seqnum = seqnum;
-  tiny_param->hdr.session_id = partner->session_id;
+  tiny_param->hdr.session_id = partner->true_session_id;
   memcpy(tiny_param->data, buffer, length);
 
   omx__post_isend_tiny(ep, partner, req);
@@ -194,7 +194,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   small_param->length = length;
   small_param->vaddr = (uintptr_t) buffer;
   small_param->seqnum = seqnum;
-  small_param->session_id = partner->session_id;
+  small_param->session_id = partner->true_session_id;
 
   omx__post_isend_small(ep, partner, req);
 
@@ -326,7 +326,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   medium_param->frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
   medium_param->msg_length = length;
   medium_param->seqnum = seqnum;
-  medium_param->session_id = partner->session_id;
+  medium_param->session_id = partner->true_session_id;
 
   omx__post_isend_medium(ep, partner, req);
 
@@ -427,7 +427,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   rndv_param->hdr.match_info = req->generic.status.match_info;
   rndv_param->hdr.length = sizeof(struct omx__rndv_data);
   rndv_param->hdr.seqnum = seqnum;
-  rndv_param->hdr.session_id = partner->session_id;
+  rndv_param->hdr.session_id = partner->true_session_id;
 
   OMX_PKT_FIELD_FROM(data_n->msg_length, length);
   OMX_PKT_FIELD_FROM(data_n->rdma_id, region->id);
@@ -524,7 +524,7 @@ omx__submit_notify(struct omx_endpoint *ep,
   notify_param->peer_index = partner->peer_index;
   notify_param->dest_endpoint = partner->endpoint_index;
   notify_param->total_length = req->generic.status.xfer_length;
-  notify_param->session_id = partner->session_id;
+  notify_param->session_id = partner->back_session_id;
   notify_param->seqnum = seqnum;
   notify_param->puller_rdma_id = req->recv.specific.large.target_rdma_id;
   notify_param->puller_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
