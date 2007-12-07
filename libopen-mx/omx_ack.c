@@ -133,12 +133,12 @@ omx__handle_truc_ack(struct omx_endpoint *ep,
   omx__seqnum_t ack = OMX_FROM_PKT_FIELD(ack_n->lib_seqnum);
   uint32_t acknum = OMX_FROM_PKT_FIELD(ack_n->acknum);
 
-  if (acknum < partner->next_recv_acknum) {
-    omx__debug_printf("got obsolete acknum %d, expected %d\n",
-		      (unsigned) acknum, (unsigned) partner->next_recv_acknum);
+  if (acknum <= partner->last_recv_acknum) {
+    omx__debug_printf("got obsolete acknum %d, expected more than %d\n",
+		      (unsigned) acknum, (unsigned) partner->last_recv_acknum);
     return;
   }
-  partner->next_recv_acknum = acknum+1;
+  partner->last_recv_acknum = acknum;
 
   omx__debug_printf("got a ack up to %d\n", (unsigned) ack);
   omx__handle_ack(ep, partner, ack);
@@ -193,12 +193,14 @@ omx__submit_send_liback(struct omx_endpoint *ep,
   union omx__truc_data *data_n = (void *) &truc_param.data;
   int err;
 
+  partner->last_send_acknum++;
+
   truc_param.peer_index = partner->peer_index;
   truc_param.dest_endpoint = partner->endpoint_index;
   truc_param.length = sizeof(union omx__truc_data);
   truc_param.session_id = partner->back_session_id;
   OMX_PKT_FIELD_FROM(data_n->type, OMX__TRUC_DATA_TYPE_ACK);
-  OMX_PKT_FIELD_FROM(data_n->ack.acknum, partner->next_send_acknum);
+  OMX_PKT_FIELD_FROM(data_n->ack.acknum, partner->last_send_acknum);
   OMX_PKT_FIELD_FROM(data_n->ack.session_id, partner->back_session_id);
   OMX_PKT_FIELD_FROM(data_n->ack.lib_seqnum, partner->next_frag_recv_seq - 1);
   OMX_PKT_FIELD_FROM(data_n->ack.send_seq, partner->next_frag_recv_seq - 1); /* FIXME? partner->send_seq */
@@ -209,8 +211,6 @@ omx__submit_send_liback(struct omx_endpoint *ep,
     return omx__errno_to_return("ioctl SEND_TINY");
 
   /* no need to wait for a done event, tiny is synchronous */
-
-  partner->next_send_acknum++;
 
   return OMX_SUCCESS;
 }

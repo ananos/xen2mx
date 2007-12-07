@@ -74,9 +74,9 @@ struct omx__partner {
   /* seq num of the last connect request to this partner */
   uint8_t connect_seqnum;
 
-  /* ack seqnums of next sent and last recv explicit ack */
-  uint32_t next_send_acknum;
-  uint32_t next_recv_acknum;
+  /* ack seqnums of last sent and recv explicit ack */
+  uint32_t last_send_acknum;
+  uint32_t last_recv_acknum;
 
   /* list of non-acked request (queued by their partner_elt) */
   struct list_head non_acked_req_q;
