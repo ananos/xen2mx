@@ -4,6 +4,8 @@
   + what's in src_generation ? unset/unchecked in OMX
   + no rdmawin_seqnum set/checked
   + lib ack contents
+  + seqnum_start in both connect request and reply, with idempotency through best session id?
+  + data alignment right after packet specific body on the wire
 
 * optimize mediums
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback

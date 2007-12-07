@@ -66,30 +66,30 @@ omx_strerror(omx_return_t ret)
     return "No device";
   case OMX_ACCESS_DENIED:
     return "Access denied";
+  case OMX_BAD_MATCH_MASK:
+    return "Bad match mask.";
   case OMX_NO_RESOURCES:
     return "No resources available";
-  case OMX_NO_SYSTEM_RESOURCES:
-    return "No resources available in the system";
-  case OMX_INVALID_PARAMETER:
-    return "Invalid parameter";
-  case OMX_NOT_IMPLEMENTED:
-    return "Not implemented";
+  case OMX_BUSY:
+    return "Resource Busy";
   case OMX_CONNECTION_FAILED:
     return "Connection Failed";
   case OMX_BAD_CONNECTION_KEY:
     return "Bad Connection Key";
-  case OMX_BUSY:
-    return "Resource Busy";
-  case OMX_BAD_MATCH_MASK:
-    return "Bad match mask.";
+  case OMX_CANCEL_NOT_SUPPORTED:
+    return "Cancel not supported for this request";
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return "Matching info does not respect context id mask";
   case OMX_NOT_SUPPORTED_WITH_CONTEXT_ID:
     return "Operation not supported when context id are enabled";
   case OMX_NOT_SUPPORTED_IN_HANDLER:
     return "Operation not supported in the handler";
-  case OMX_CANCEL_NOT_SUPPORTED:
-    return "Cancel not supported for this request";
+  case OMX_NO_SYSTEM_RESOURCES:
+    return "No resources available in the system";
+  case OMX_INVALID_PARAMETER:
+    return "Invalid parameter";
+  case OMX_NOT_IMPLEMENTED:
+    return "Not implemented";
   }
   omx__abort("Failed to stringify unknown return value %d\n",
 	     ret);
@@ -103,8 +103,6 @@ omx_strstatus(omx_status_code_t code)
     return "Success";
   case OMX_STATUS_TRUNCATED:
     return "Message Truncated";
-  case OMX_STATUS_FAILED:
-    return "Failed";
   case OMX_STATUS_ENDPOINT_CLOSED:
     return "Endpoint Closed";
   case OMX_STATUS_ENDPOINT_UNREACHABLE:
