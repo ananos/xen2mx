@@ -61,9 +61,9 @@ omx__partner_reset(struct omx__partner *partner)
   partner->true_session_id = -1; /* will be initialized when we will be connected to the peer */
   partner->back_session_id = -1; /* will be initialized when the partner will connect to me */
   partner->last_send_seq = -1; /* will be initialized when the partner will reply to my connect */
-  partner->last_acked_send_seq = -1;
-  partner->last_match_recv_seq = -1;
-  partner->last_full_recv_seq = -1;
+  partner->last_acked_send_seq = -1; /* will be initialized when the partner will reply to my connect */
+  partner->last_match_recv_seq = 0; /* will force the sender's send seq through the connect */
+  partner->last_full_recv_seq = 0; /* will force the sender's send seq through the connect */
   partner->connect_seqnum = 0;
   partner->last_send_acknum = 0;
   partner->last_recv_acknum = 0;
