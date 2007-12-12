@@ -196,6 +196,7 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
     return ret;
 
   ep->myself->last_send_seq = 0;
+  ep->myself->last_acked_send_seq = 0;
   ep->myself->true_session_id = ep->desc->session_id;
   ep->myself->back_session_id = ep->desc->session_id;
 
