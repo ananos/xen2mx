@@ -1,3 +1,5 @@
+* drop duplicate early
+
 * factorize early and msg seqnum index computing (cache them?)
 
 * wire compat
