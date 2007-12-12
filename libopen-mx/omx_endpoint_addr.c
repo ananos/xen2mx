@@ -444,6 +444,8 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
     if (partner->back_session_id != target_session_id) {
       /* this partner changed since last time it talked to us, cleanup the stuff */
+      omx__debug_assert(partner->true_session_id != target_session_id);
+
       /* FIXME: cleanup stuff */
     }
 
@@ -508,8 +510,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     /* FIXME: drop other stuff */
   }
 
-  if (partner->true_session_id != -1
-      && partner->true_session_id != src_session_id) {
+  if (partner->true_session_id != src_session_id) {
     /* we were connected to this partner, and it changed, reset the seqnums */
     partner->last_send_seq = target_recv_seqnum_start;
     partner->last_acked_send_seq = target_recv_seqnum_start;
