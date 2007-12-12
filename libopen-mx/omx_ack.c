@@ -97,8 +97,8 @@ omx__handle_ack(struct omx_endpoint *ep,
 		struct omx__partner *partner, omx__seqnum_t last_to_ack)
 {
   /* take care of the seqnum wrap around by casting differences into omx__seqnum_t */
-  omx__seqnum_t missing_acks = partner->last_send_seq - partner->last_acked_send_seq;
-  omx__seqnum_t new_acks = last_to_ack - partner->last_acked_send_seq;
+  omx__seqnum_t missing_acks = OMX__SEQNUM(partner->last_send_seq - partner->last_acked_send_seq);
+  omx__seqnum_t new_acks = OMX__SEQNUM(last_to_ack - partner->last_acked_send_seq);
 
   if (!new_acks || new_acks > missing_acks) {
     omx__debug_printf("obsolete ack up to %d\n", (unsigned) last_to_ack);
@@ -110,7 +110,7 @@ omx__handle_ack(struct omx_endpoint *ep,
 
     omx__foreach_partner_non_acked_request_safe(partner, req, next) {
       /* take care of the seqnum wrap around here too */
-      omx__seqnum_t req_index = req->generic.send_seqnum - partner->last_acked_send_seq;
+      omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->last_acked_send_seq);
 
       if (req_index > new_acks)
 	break;
@@ -119,7 +119,7 @@ omx__handle_ack(struct omx_endpoint *ep,
       omx__mark_request_acked(ep, req, OMX_STATUS_SUCCESS);
     }
 
-    partner->last_acked_send_seq = last_to_ack;
+    partner->last_acked_send_seq = OMX__SEQNUM(last_to_ack);
   }
 
   return OMX_SUCCESS;

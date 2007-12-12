@@ -62,8 +62,8 @@ omx__partner_reset(struct omx__partner *partner)
   partner->back_session_id = -1; /* will be initialized when the partner will connect to me */
   partner->last_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   partner->last_acked_send_seq = -1; /* will be initialized when the partner will reply to my connect */
-  partner->last_match_recv_seq = 0; /* will force the sender's send seq through the connect */
-  partner->last_full_recv_seq = 0; /* will force the sender's send seq through the connect */
+  partner->last_match_recv_seq = OMX__SEQNUM(0); /* will force the sender's send seq through the connect */
+  partner->last_full_recv_seq = OMX__SEQNUM(0); /* will force the sender's send seq through the connect */
   partner->connect_seqnum = 0;
   partner->last_send_acknum = 0;
   partner->last_recv_acknum = 0;
@@ -195,8 +195,8 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
   if (ret != OMX_SUCCESS)
     return ret;
 
-  ep->myself->last_send_seq = 0;
-  ep->myself->last_acked_send_seq = 0;
+  ep->myself->last_send_seq = OMX__SEQNUM(0);
+  ep->myself->last_acked_send_seq = OMX__SEQNUM(0);
   ep->myself->true_session_id = ep->desc->session_id;
   ep->myself->back_session_id = ep->desc->session_id;
 
@@ -453,7 +453,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     if (partner->true_session_id != target_session_id) {
       /* either the first connect, or a new instance, reset seqnums */
       partner->last_send_seq = target_recv_seqnum_start;
-      partner->last_acked_send_seq = target_recv_seqnum_start;
+      partner->last_acked_send_seq = partner->last_send_seq;
     }
 
     partner->true_session_id = target_session_id;
@@ -506,8 +506,8 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
     omx__debug_printf("connect from a new instance of a partner\n");
 
-    partner->last_match_recv_seq = -1;
-    partner->last_full_recv_seq = -1;
+    partner->last_match_recv_seq = OMX__SEQNUM(-1);
+    partner->last_full_recv_seq = OMX__SEQNUM(-1);
     /* FIXME: drop other stuff */
   }
 
@@ -707,8 +707,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   /* change recv_seq to something very different for safety
    */
   if (disconnect) {
-    partner->last_match_recv_seq ^= 0xb0f0;
-    partner->last_full_recv_seq ^= 0xcf0f;
+    partner->last_match_recv_seq ^= OMX__SEQNUM(0xb0f0) ;
+    partner->last_full_recv_seq ^= OMX__SEQNUM(0xcf0f);
   }
 }
 

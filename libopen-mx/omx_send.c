@@ -101,7 +101,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_TINY;
 
-  seqnum = ++partner->last_send_seq;
+  seqnum = partner->last_send_seq = OMX__SEQNUM(partner->last_send_seq + 1);
 
   tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
   tiny_param->hdr.peer_index = partner->peer_index;
@@ -185,7 +185,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
     return OMX_NO_RESOURCES;
   }
 
-  seqnum = ++partner->last_send_seq;
+  seqnum = partner->last_send_seq = OMX__SEQNUM(partner->last_send_seq + 1);
 
   small_param = &req->send.specific.small.send_small_ioctl_param;
   small_param->peer_index = partner->peer_index;
@@ -313,7 +313,8 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 	       || omx__endpoint_sendq_map_get(ep, frags_nr, req, sendq_index) < 0))
     return OMX_NO_RESOURCES;
 
-  seqnum = ++partner->last_send_seq;
+  seqnum = partner->last_send_seq = OMX__SEQNUM(partner->last_send_seq + 1);
+
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
@@ -415,7 +416,8 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
-  seqnum = ++partner->last_send_seq;
+  seqnum = partner->last_send_seq = OMX__SEQNUM(partner->last_send_seq + 1);
+
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
@@ -515,7 +517,8 @@ omx__submit_notify(struct omx_endpoint *ep,
   ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
   partner = req->generic.partner;
 
-  seqnum = ++partner->last_send_seq;
+  seqnum = partner->last_send_seq = OMX__SEQNUM(partner->last_send_seq + 1);
+
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;

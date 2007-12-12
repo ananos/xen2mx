@@ -55,9 +55,16 @@ struct omx__large_region_map {
   } * array;
 };
 
-#define OMX__SEQNUM_MAX 0xffffU
-#define OMX__PENDING_SEQNUM_MAX (OMX__SEQNUM_MAX/2)
 typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
+/* 14 bits for sequence numbers */
+#define OMX__SEQNUM_BITS 14
+#define OMX__SEQNUM_MASK ((1UL<<OMX__SEQNUM_BITS)-1)
+#define OMX__SEQNUM(x) ((x) & OMX__SEQNUM_MASK)
+/* remaining bits for a partner session */
+#define OMX__SESNUM_BITS (16-OMX__SEQNUM_BITS)
+#define OMX__SESNUM_ONE (1UL<<OMX__SEQNUM_BITS)
+#define OMX__SESNUM_MASK (((1UL<<OMX__SESNUM_BITS)-1)<<OMX__SEQNUM_BITS)
+#define OMX__SESNUM(x) ((x) & OMX__SESNUM_MASK)
 
 struct omx__partner {
   uint64_t board_addr;
