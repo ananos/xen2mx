@@ -177,7 +177,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   unsigned long chunk = msg->specific.medium.frag_length;
   unsigned long frag_seqnum = msg->specific.medium.frag_seqnum;
   unsigned long frag_pipeline = msg->specific.medium.frag_pipeline;
-  unsigned long offset = frag_seqnum << (OMX_MEDIUM_FRAG_PIPELINE_BASE + frag_pipeline);
+  unsigned long offset = frag_seqnum << frag_pipeline;
   int new = (req->recv.specific.medium.frags_received_mask == 0);
 
   omx__debug_printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
