@@ -70,7 +70,7 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   struct omx_cmd_send_tiny * tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
   int err;
 
-  tiny_param->hdr.piggyack = partner->last_full_recv_seq;
+  tiny_param->hdr.piggyack = OMX__SEQNUM(partner->last_full_recv_seq + 1);
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
   if (unlikely(err < 0)) {
@@ -147,7 +147,7 @@ omx__post_isend_small(struct omx_endpoint *ep,
   struct omx_cmd_send_small * small_param = &req->send.specific.small.send_small_ioctl_param;
   int err;
 
-  small_param->piggyack = partner->last_full_recv_seq;
+  small_param->piggyack = OMX__SEQNUM(partner->last_full_recv_seq + 1);
 
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
   if (unlikely(err < 0)) {
@@ -244,7 +244,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   int err;
   int i;
 
-  medium_param->piggyack = partner->last_full_recv_seq;
+  medium_param->piggyack = OMX__SEQNUM(partner->last_full_recv_seq + 1);
 
   for(i=0; i<frags_nr; i++) {
     unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
@@ -382,7 +382,7 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
   int err;
 
-  rndv_param->hdr.piggyack = partner->last_full_recv_seq;
+  rndv_param->hdr.piggyack = OMX__SEQNUM(partner->last_full_recv_seq + 1);
 
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
   if (unlikely(err < 0)) {
@@ -488,7 +488,7 @@ omx__post_notify(struct omx_endpoint *ep,
   struct omx_cmd_send_notify * notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   int err;
 
-  notify_param->piggyack = partner->last_full_recv_seq;
+  notify_param->piggyack = OMX__SEQNUM(partner->last_full_recv_seq + 1);
 
   err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
   if (unlikely(err < 0)) {

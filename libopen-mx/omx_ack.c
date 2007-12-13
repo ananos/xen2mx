@@ -94,9 +94,10 @@ omx__mark_request_acked(struct omx_endpoint *ep,
 
 omx_return_t
 omx__handle_ack(struct omx_endpoint *ep,
-		struct omx__partner *partner, omx__seqnum_t last_to_ack)
+		struct omx__partner *partner, omx__seqnum_t ack_before)
 {
   /* take care of the seqnum wrap around by casting differences into omx__seqnum_t */
+  omx__seqnum_t last_to_ack = OMX__SEQNUM(ack_before - 1);
   omx__seqnum_t missing_acks = OMX__SEQNUM(partner->last_send_seq - partner->last_acked_send_seq);
   omx__seqnum_t new_acks = OMX__SEQNUM(last_to_ack - partner->last_acked_send_seq);
 
@@ -120,7 +121,7 @@ omx__handle_ack(struct omx_endpoint *ep,
       omx__mark_request_acked(ep, req, OMX_STATUS_SUCCESS);
     }
 
-    partner->last_acked_send_seq = OMX__SEQNUM(last_to_ack);
+    partner->last_acked_send_seq = last_to_ack;
   }
 
   return OMX_SUCCESS;
@@ -203,8 +204,8 @@ omx__submit_send_liback(struct omx_endpoint *ep,
   OMX_PKT_FIELD_FROM(data_n->type, OMX__TRUC_DATA_TYPE_ACK);
   OMX_PKT_FIELD_FROM(data_n->ack.acknum, partner->last_send_acknum);
   OMX_PKT_FIELD_FROM(data_n->ack.session_id, partner->back_session_id);
-  OMX_PKT_FIELD_FROM(data_n->ack.lib_seqnum, partner->last_full_recv_seq);
-  OMX_PKT_FIELD_FROM(data_n->ack.send_seq, partner->last_full_recv_seq); /* FIXME? partner->send_seq */
+  OMX_PKT_FIELD_FROM(data_n->ack.lib_seqnum, OMX__SEQNUM(partner->last_full_recv_seq + 1));
+  OMX_PKT_FIELD_FROM(data_n->ack.send_seq, OMX__SEQNUM(partner->last_full_recv_seq + 1)); /* FIXME? partner->send_seq */
   OMX_PKT_FIELD_FROM(data_n->ack.requeued, 0); /* FIXME? partner->requeued */
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TRUC, &truc_param);
