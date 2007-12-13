@@ -101,7 +101,8 @@ omx__handle_ack(struct omx_endpoint *ep,
   omx__seqnum_t new_acks = OMX__SEQNUM(last_to_ack - partner->last_acked_send_seq);
 
   if (!new_acks || new_acks > missing_acks) {
-    omx__debug_printf("obsolete ack up to %d\n", (unsigned) last_to_ack);
+    omx__debug_printf("obsolete ack up to %d, %d new for %d missing\n",
+		      (unsigned) last_to_ack, (unsigned) new_acks, (unsigned) missing_acks);
 
   } else {
     union omx_request *req, *next;
