@@ -1,11 +1,13 @@
-* drop duplicate early
-
 * factorize early and msg seqnum index computing (cache them?)
+* revert some of the switch from next_foo to last_foo?
 
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
   + no rdmawin_seqnum set/checked
   + lib ack contents
+  + truc from mxoe dropped with length too big (40)?
+  + nack lib
+  + nack mcp
 
 * optimize mediums
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback

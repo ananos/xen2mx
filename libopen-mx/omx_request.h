@@ -293,34 +293,6 @@ list_for_each_entry(req, &partner->partial_recv_req_q, generic.partner_elt)
  * Partner early packets queue management
  */
 
-/*
- * Insert a early packet in the partner's early queue,
- * right before the first early with a higher seqnum
- */
-static inline void
-omx__enqueue_partner_early_packet(struct omx__partner *partner,
-				  struct omx__early_packet *early,
-				  omx__seqnum_t seqnum)
-{
-  struct omx__early_packet * current, * next = NULL;
-
-  /* FIXME: should start from the end to optimize */
-  list_for_each_entry(current, &partner->early_recv_q, partner_elt) {
-    if (unlikely(current->msg.seqnum > seqnum)) {
-      next = current;
-      break;
-    }
-  }
-
-  if (unlikely(next)) {
-    /* insert right before next */
-    list_add_tail(&early->partner_elt, &next->partner_elt);
-  } else {
-    /* insert at the end */
-    list_add_tail(&early->partner_elt, &partner->early_recv_q);
-  }
-}
-
 static inline void
 omx__dequeue_partner_early_packet(struct omx__partner *partner,
 				  struct omx__early_packet *early)
@@ -333,6 +305,12 @@ static inline struct omx__early_packet *
 omx__partner_first_early_packet(struct omx__partner *partner)
 {
   return list_first_entry(&partner->early_recv_q, struct omx__early_packet, partner_elt);
+}
+
+static inline struct omx__early_packet *
+omx__partner_last_early_packet(struct omx__partner *partner)
+{
+  return list_last_entry(&partner->early_recv_q, struct omx__early_packet, partner_elt);
 }
 
 static inline int

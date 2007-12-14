@@ -49,12 +49,97 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
  * Early packets
  */
 
+static INLINE struct list_head *
+omx__find_previous_early(struct omx__partner * partner,
+			 struct omx_evt_recv_msg *msg)
+{
+  omx__seqnum_t seqnum = msg->seqnum;
+  omx__seqnum_t last_match_recv_seq = partner->last_match_recv_seq;
+  struct omx__early_packet * current;
+  omx__seqnum_t new_index;
+  omx__seqnum_t current_index;
+
+  /* trivial case, early queue is empty */
+  if (list_empty(&partner->early_recv_q)) {
+    omx__debug_printf("insert early in empty queue\n");
+    return &partner->early_recv_q;
+  }
+
+  new_index = OMX__SEQNUM(seqnum - last_match_recv_seq);
+
+  /* a little bit less trivial case, append at the beginning */
+  current = omx__partner_first_early_packet(partner);
+  current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
+  if (new_index < current_index) {
+    omx__debug_printf("inserting early at the beginning of queue\n");
+    return &partner->early_recv_q;
+  }
+
+  /* a little bit less trivial case, append at the end */
+  current = omx__partner_last_early_packet(partner);
+  current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
+  if (new_index > current_index) {
+    omx__debug_printf("inserting early at the end of queue\n");
+    return partner->early_recv_q.prev;
+  }
+
+  /* general case, add at the right position, and drop if duplicate */
+  list_for_each_entry(current, &partner->early_recv_q, partner_elt) {
+    current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
+
+    if (new_index < current_index) {
+      /* found a bigger one, insert before it */
+      omx__debug_printf("inserting early before another one\n");
+      return current->partner_elt.prev;
+    }
+
+    if (new_index > current_index) {
+      /* earlier one, look further */
+      omx__debug_printf("not inserting early before this one\n");
+      continue;
+    }
+
+    if (msg->type == OMX_EVT_RECV_MEDIUM) {
+      /* medium early, check the frag num */
+      unsigned long current_frag_seqnum = current->msg.specific.medium.frag_seqnum;
+      unsigned long new_frag_seqnum = msg->specific.medium.frag_seqnum;
+
+      if (new_frag_seqnum < current_frag_seqnum) {
+	/* found a bigger one, insert before it */
+	omx__debug_printf("inserting early before this medium\n");
+	return current->partner_elt.prev;
+      }
+
+      if (new_frag_seqnum > current_frag_seqnum) {
+	/* earlier one, look further */
+	omx__debug_printf("not inserting early before this medium\n");
+	continue;
+      }
+
+      /* that's a duplicate medium frag, drop it */
+      omx__debug_printf("dropping duplicate early medium\n");
+      return NULL;
+    }
+
+    /* that's a duplicate, drop it */
+    omx__debug_printf("dropping duplicate early\n");
+    return NULL;
+  }
+
+  omx__abort("Found no previous early");
+}
+
 static INLINE omx_return_t
 omx__postpone_early_packet(struct omx__partner * partner,
 			   struct omx_evt_recv_msg *msg, void *data,
 			   omx__process_recv_func_t recv_func)
 {
   struct omx__early_packet * early;
+  struct list_head * prev;
+
+  prev = omx__find_previous_early(partner, msg);
+  if (!prev)
+    return OMX_SUCCESS;
 
   early = malloc(sizeof(*early));
   if (unlikely(!early))
@@ -119,7 +204,7 @@ omx__postpone_early_packet(struct omx__partner * partner,
   omx__debug_printf("postponing early packet with seqnum %d\n",
 		    msg->seqnum);
 
-  omx__enqueue_partner_early_packet(partner, early, msg->seqnum);
+  list_add(&early->partner_elt, prev);
 
   return OMX_SUCCESS;
 }
