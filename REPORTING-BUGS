@@ -3,3 +3,21 @@ In case of problem, make sure you read the README first :)
 Bugs should be reported on http://open-mx.gforge.inria.fr
 or sent to open-mx-devel@lists.gforge.inria.fr .
 Questions may be asked there too.
+
+When reporting a problem, make sure you include:
+* the version number of Open-MX
+  (or the SVN revision if you checkouted the SVN repository)
+* a description of the ethernet interfaces that you are trying
+  to use, with the whole outputs of:
+  + lspci
+  + lsmod
+  + dmesg
+  + ifconfig -a
+  + ethtool -c <iface>
+* a description of your network topology:
+  + how are the interfaces connected?
+  + through what switch(es)?
+* the whole output of the program if a program did not work
+  as expected
+* the whole output of configure, config.log and omx_check.h,
+  and of the compilation if reporting a kernel build problem
