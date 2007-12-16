@@ -49,6 +49,9 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
  * Early packets
  */
 
+/* find which early which need to queue the new one after,
+ * or drop if duplicate
+ */
 static INLINE struct list_head *
 omx__find_previous_early(struct omx__partner * partner,
 			 struct omx_evt_recv_msg *msg)
@@ -67,14 +70,6 @@ omx__find_previous_early(struct omx__partner * partner,
 
   new_index = OMX__SEQNUM(seqnum - last_match_recv_seq);
 
-  /* a little bit less trivial case, append at the beginning */
-  current = omx__partner_first_early_packet(partner);
-  current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
-  if (new_index < current_index) {
-    omx__debug_printf("inserting early at the beginning of queue\n");
-    return &partner->early_recv_q;
-  }
-
   /* a little bit less trivial case, append at the end */
   current = omx__partner_last_early_packet(partner);
   current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
@@ -83,19 +78,27 @@ omx__find_previous_early(struct omx__partner * partner,
     return partner->early_recv_q.prev;
   }
 
+  /* a little bit less trivial case, append at the beginning */
+  current = omx__partner_first_early_packet(partner);
+  current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
+  if (new_index < current_index) {
+    omx__debug_printf("inserting early at the beginning of queue\n");
+    return &partner->early_recv_q;
+  }
+
   /* general case, add at the right position, and drop if duplicate */
-  list_for_each_entry(current, &partner->early_recv_q, partner_elt) {
+  list_for_each_entry_reverse(current, &partner->early_recv_q, partner_elt) {
     current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
 
-    if (new_index < current_index) {
-      /* found a bigger one, insert before it */
-      omx__debug_printf("inserting early before another one\n");
-      return current->partner_elt.prev;
+    if (new_index > current_index) {
+      /* found an earlier one, insert after it */
+      omx__debug_printf("inserting early after another one\n");
+      return &current->partner_elt;
     }
 
-    if (new_index > current_index) {
-      /* earlier one, look further */
-      omx__debug_printf("not inserting early before this one\n");
+    if (new_index < current_index) {
+      /* later one, look further */
+      omx__debug_printf("not inserting early after this one\n");
       continue;
     }
 
@@ -104,15 +107,15 @@ omx__find_previous_early(struct omx__partner * partner,
       unsigned long current_frag_seqnum = current->msg.specific.medium.frag_seqnum;
       unsigned long new_frag_seqnum = msg->specific.medium.frag_seqnum;
 
-      if (new_frag_seqnum < current_frag_seqnum) {
-	/* found a bigger one, insert before it */
-	omx__debug_printf("inserting early before this medium\n");
-	return current->partner_elt.prev;
+      if (new_frag_seqnum > current_frag_seqnum) {
+	/* found an earlier one, insert after it */
+	omx__debug_printf("inserting early after this medium\n");
+	return &current->partner_elt;
       }
 
-      if (new_frag_seqnum > current_frag_seqnum) {
-	/* earlier one, look further */
-	omx__debug_printf("not inserting early before this medium\n");
+      if (new_frag_seqnum < current_frag_seqnum) {
+	/* later one, look further */
+	omx__debug_printf("not inserting early after this medium\n");
 	continue;
       }
 
