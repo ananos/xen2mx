@@ -155,13 +155,17 @@ omx__handle_nack(struct omx_endpoint *ep,
 		 struct omx__partner *partner, omx__seqnum_t seqnum,
 		 omx_status_code_t status)
 {
+  omx__seqnum_t nack_index = OMX__SEQNUM(seqnum - partner->last_acked_send_seq);
   union omx_request *req;
 
   /* look in the list of pending real messages */
   omx__foreach_partner_non_acked_request(partner, req) {
-    if (req->generic.send_seqnum > seqnum)
+    omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->last_acked_send_seq);
+
+    if (nack_index < req_index)
       break;
-    if (req->generic.send_seqnum == seqnum) {
+
+    if (nack_index == req_index) {
       omx__dequeue_partner_non_acked_request(partner, req);
       omx__mark_request_acked(ep, req, status);
       return OMX_SUCCESS;
@@ -170,8 +174,10 @@ omx__handle_nack(struct omx_endpoint *ep,
 
   /* look in the list of pending connect requests */
   omx__foreach_partner_connect_request(partner, req) {
-    if (req->connect.connect_seqnum > seqnum)
-      break;
+    /* FIXME: if > then break,
+     * but take care of the wrap around using partner->connect_seqnum
+     * but this protocol is crap so far since we can't distinguish between nacks for send and connect
+     */
     if (req->connect.connect_seqnum == seqnum) {
       omx__connect_complete(ep, req, status);
       return OMX_SUCCESS;
