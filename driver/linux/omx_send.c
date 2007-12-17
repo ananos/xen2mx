@@ -171,7 +171,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	}
 
 #ifdef OMX_DEBUG
-	if (++omx_tiny_packet_loss_index == omx_tiny_packet_loss) {
+	if (++omx_tiny_packet_loss_index >= omx_tiny_packet_loss) {
 		kfree_skb(skb);
 		omx_tiny_packet_loss_index = 0;
 	} else
@@ -262,7 +262,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 	}
 
 #ifdef OMX_DEBUG
-	if (++omx_small_packet_loss_index == omx_small_packet_loss) {
+	if (++omx_small_packet_loss_index >= omx_small_packet_loss) {
 		kfree_skb(skb);
 		omx_small_packet_loss_index = 0;
 	} else
@@ -388,7 +388,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	skb->destructor = omx_medium_frag_skb_destructor;
 
 #ifdef OMX_DEBUG
-	if (++omx_medium_packet_loss_index == omx_medium_packet_loss) {
+	if (++omx_medium_packet_loss_index >= omx_medium_packet_loss) {
 		kfree_skb(skb);
 		omx_medium_packet_loss_index = 0;
 	} else
@@ -484,7 +484,7 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 	}
 
 #ifdef OMX_DEBUG
-	if (++omx_rndv_packet_loss_index == omx_rndv_packet_loss) {
+	if (++omx_rndv_packet_loss_index >= omx_rndv_packet_loss) {
 		kfree_skb(skb);
 		omx_rndv_packet_loss_index = 0;
 	} else
@@ -573,7 +573,7 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	}
 
 #ifdef OMX_DEBUG
-	if (++omx_connect_packet_loss_index == omx_connect_packet_loss) {
+	if (++omx_connect_packet_loss_index >= omx_connect_packet_loss) {
 		kfree_skb(skb);
 		omx_connect_packet_loss_index = 0;
 	} else
@@ -645,7 +645,7 @@ omx_send_notify(struct omx_endpoint * endpoint,
 	omx_send_dprintk(eh, "NOTIFY");
 
 #ifdef OMX_DEBUG
-	if (++omx_notify_packet_loss_index == omx_notify_packet_loss) {
+	if (++omx_notify_packet_loss_index >= omx_notify_packet_loss) {
 		kfree_skb(skb);
 		omx_notify_packet_loss_index = 0;
 	} else
