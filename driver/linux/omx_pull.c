@@ -1126,6 +1126,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 		omx_pull_handle_first_block_done(handle);
 
+		if (!handle->remaining_length)
+			goto skbs_ready;
+
 		/* start the next block */
 		dprintk(PULL, "queueing next pull block request\n");
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
