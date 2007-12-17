@@ -926,7 +926,8 @@ omx_recv_pull(struct omx_iface * iface,
 		 * so that we don't try to free it in case of error later
 		 */
 #ifdef OMX_DEBUG
-		if (++omx_pull_packet_loss_index >= omx_pull_packet_loss) {
+		if (omx_pull_packet_loss &&
+		    (++omx_pull_packet_loss_index >= omx_pull_packet_loss)) {
 			kfree_skb(skb);
 			omx_pull_packet_loss_index = 0;
 		} else
