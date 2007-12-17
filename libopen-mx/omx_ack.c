@@ -107,7 +107,7 @@ omx__handle_ack(struct omx_endpoint *ep,
   } else {
     union omx_request *req, *next;
 
-    omx__debug_printf("ack up to %d\n", (unsigned) last_to_ack);
+    omx__debug_printf("ack up to %d\n", (unsigned) OMX__SEQNUM(ack_before - 1));
 
     omx__foreach_partner_non_acked_request_safe(partner, req, next) {
       /* take care of the seqnum wrap around here too */
