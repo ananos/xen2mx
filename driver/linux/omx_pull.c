@@ -731,7 +731,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 			dev_queue_xmit(skb);
 		handle->already_requeued_first = 0;
 	}
-
+	else
 	if (!OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
 		/* request the second block again */
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
