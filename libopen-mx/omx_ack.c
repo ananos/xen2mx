@@ -98,8 +98,8 @@ omx__handle_ack(struct omx_endpoint *ep,
 {
   /* take care of the seqnum wrap around by casting differences into omx__seqnum_t */
   omx__seqnum_t last_to_ack = OMX__SEQNUM(ack_before - 1);
-  omx__seqnum_t missing_acks = OMX__SEQNUM(partner->last_send_seq - partner->last_acked_send_seq);
-  omx__seqnum_t new_acks = OMX__SEQNUM(last_to_ack - partner->last_acked_send_seq);
+  omx__seqnum_t missing_acks = OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq);
+  omx__seqnum_t new_acks = OMX__SEQNUM(ack_before - partner->next_acked_send_seq);
 
   if (!new_acks || new_acks > missing_acks) {
     omx__debug_printf("obsolete ack up to %d, %d new for %d missing\n",
@@ -112,16 +112,17 @@ omx__handle_ack(struct omx_endpoint *ep,
 
     omx__foreach_partner_non_acked_request_safe(partner, req, next) {
       /* take care of the seqnum wrap around here too */
-      omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->last_acked_send_seq);
+      omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->next_acked_send_seq);
 
-      if (req_index > new_acks)
+      /* ack req_index from 0 to new_acks-1 */
+      if (req_index >= new_acks)
 	break;
 
       omx__dequeue_partner_non_acked_request(partner, req);
       omx__mark_request_acked(ep, req, OMX_STATUS_SUCCESS);
     }
 
-    partner->last_acked_send_seq = last_to_ack;
+    partner->next_acked_send_seq = ack_before;
   }
 
   return OMX_SUCCESS;
@@ -155,12 +156,12 @@ omx__handle_nack(struct omx_endpoint *ep,
 		 struct omx__partner *partner, omx__seqnum_t seqnum,
 		 omx_status_code_t status)
 {
-  omx__seqnum_t nack_index = OMX__SEQNUM(seqnum - partner->last_acked_send_seq);
+  omx__seqnum_t nack_index = OMX__SEQNUM(seqnum - partner->next_acked_send_seq);
   union omx_request *req;
 
   /* look in the list of pending real messages */
   omx__foreach_partner_non_acked_request(partner, req) {
-    omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->last_acked_send_seq);
+    omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->next_acked_send_seq);
 
     if (nack_index < req_index)
       break;

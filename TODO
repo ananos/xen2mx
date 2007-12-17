@@ -1,5 +1,5 @@
-* last_send_seq -> next_
-* last_acked_send_seq -> next_
+* fix seqnum wraparound in nacks
+
 * last_full_recv_seq -> next_
 * last_match_recv_seq ??
 

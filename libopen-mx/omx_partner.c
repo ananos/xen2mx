@@ -60,8 +60,8 @@ omx__partner_reset(struct omx__partner *partner)
 
   partner->true_session_id = -1; /* will be initialized when we will be connected to the peer */
   partner->back_session_id = -1; /* will be initialized when the partner will connect to me */
-  partner->last_send_seq = -1; /* will be initialized when the partner will reply to my connect */
-  partner->last_acked_send_seq = -1; /* will be initialized when the partner will reply to my connect */
+  partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
+  partner->next_acked_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   partner->last_match_recv_seq = OMX__SEQNUM(0); /* will force the sender's send seq through the connect */
   partner->last_full_recv_seq = OMX__SEQNUM(0); /* will force the sender's send seq through the connect */
   partner->connect_seqnum = 0;
@@ -195,8 +195,8 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
   if (ret != OMX_SUCCESS)
     return ret;
 
-  ep->myself->last_send_seq = OMX__SEQNUM(0);
-  ep->myself->last_acked_send_seq = OMX__SEQNUM(0);
+  ep->myself->next_send_seq = OMX__SEQNUM(1);
+  ep->myself->next_acked_send_seq = OMX__SEQNUM(1);
   ep->myself->true_session_id = ep->desc->session_id;
   ep->myself->back_session_id = ep->desc->session_id;
 
@@ -452,8 +452,8 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
     if (partner->true_session_id != target_session_id) {
       /* either the first connect, or a new instance, reset seqnums */
-      partner->last_send_seq = OMX__SEQNUM(target_recv_seqnum_start - 1);
-      partner->last_acked_send_seq = partner->last_send_seq;
+      partner->next_send_seq = target_recv_seqnum_start;
+      partner->next_acked_send_seq = target_recv_seqnum_start;
     }
 
     partner->true_session_id = target_session_id;
@@ -513,8 +513,8 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   if (partner->true_session_id != src_session_id) {
     /* we were connected to this partner, and it changed, reset the seqnums */
-    partner->last_send_seq = OMX__SEQNUM(target_recv_seqnum_start - 1);
-    partner->last_acked_send_seq = partner->last_send_seq;
+    partner->next_send_seq = target_recv_seqnum_start;
+    partner->next_acked_send_seq = target_recv_seqnum_start;
   }
 
   partner->true_session_id  = src_session_id;
