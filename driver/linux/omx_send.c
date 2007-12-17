@@ -170,13 +170,8 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-#ifdef OMX_DEBUG
-	if (++omx_tiny_packet_loss_index >= omx_tiny_packet_loss) {
-		kfree_skb(skb);
-		omx_tiny_packet_loss_index = 0;
-	} else
-#endif
-		dev_queue_xmit(skb);
+	OMX_DEBUG_PACKET_LOSS(tiny, skb, 0);
+	dev_queue_xmit(skb);
 
 	return 0;
 
@@ -261,13 +256,8 @@ omx_send_small(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-#ifdef OMX_DEBUG
-	if (++omx_small_packet_loss_index >= omx_small_packet_loss) {
-		kfree_skb(skb);
-		omx_small_packet_loss_index = 0;
-	} else
-#endif
-		dev_queue_xmit(skb);
+	OMX_DEBUG_PACKET_LOSS(small, skb, 0);
+	dev_queue_xmit(skb);
 
 	return 0;
 
@@ -387,13 +377,8 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	skb->sk = (void *) defevent;
 	skb->destructor = omx_medium_frag_skb_destructor;
 
-#ifdef OMX_DEBUG
-	if (++omx_medium_packet_loss_index >= omx_medium_packet_loss) {
-		kfree_skb(skb);
-		omx_medium_packet_loss_index = 0;
-	} else
-#endif
-		dev_queue_xmit(skb);
+	OMX_DEBUG_PACKET_LOSS(medium, skb, 1);
+	dev_queue_xmit(skb);
 
 	/* return>0 to tell the caller to not release the endpoint,
 	 * we will do it when releasing the skb in the destructor
@@ -483,13 +468,8 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-#ifdef OMX_DEBUG
-	if (++omx_rndv_packet_loss_index >= omx_rndv_packet_loss) {
-		kfree_skb(skb);
-		omx_rndv_packet_loss_index = 0;
-	} else
-#endif
-		dev_queue_xmit(skb);
+	OMX_DEBUG_PACKET_LOSS(rndv, skb, 0);
+	dev_queue_xmit(skb);
 
 	return 0;
 
@@ -572,13 +552,8 @@ omx_send_connect(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-#ifdef OMX_DEBUG
-	if (++omx_connect_packet_loss_index >= omx_connect_packet_loss) {
-		kfree_skb(skb);
-		omx_connect_packet_loss_index = 0;
-	} else
-#endif
-		dev_queue_xmit(skb);
+	OMX_DEBUG_PACKET_LOSS(connect, skb, 0);
+	dev_queue_xmit(skb);
 
 	return 0;
 
@@ -644,13 +619,8 @@ omx_send_notify(struct omx_endpoint * endpoint,
 
 	omx_send_dprintk(eh, "NOTIFY");
 
-#ifdef OMX_DEBUG
-	if (++omx_notify_packet_loss_index >= omx_notify_packet_loss) {
-		kfree_skb(skb);
-		omx_notify_packet_loss_index = 0;
-	} else
-#endif
-		dev_queue_xmit(skb);
+	OMX_DEBUG_PACKET_LOSS(notify, skb, 0);
+	dev_queue_xmit(skb);
 
 	return 0;
 

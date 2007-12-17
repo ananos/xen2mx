@@ -205,8 +205,17 @@ extern unsigned long omx_debug;
 
 #define dprintk(type, x...) do { if (omx_debug_type_enabled(type)) printk(KERN_INFO x); } while (0)
 
+#define OMX_DEBUG_PACKET_LOSS(type, skb, ret)				\
+	if (omx_##type##_packet_loss &&					\
+	    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) { \
+		kfree_skb(skb);						\
+		omx_##type##_packet_loss_index = 0;			\
+		return ret;						\
+	}
+
 #else
 #define dprintk(type, x...) do { /* nothing */ } while (0)
+#define OMX_DEBUG_PACKET_LOSS(type, skb, ret) do { /* nothing */ } while (0)
 #endif
 
 #define omx_send_dprintk(_eh, _format, ...) \
