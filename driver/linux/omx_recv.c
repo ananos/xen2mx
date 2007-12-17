@@ -611,7 +611,7 @@ omx_recv_truc(struct omx_iface * iface,
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(truc_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(truc_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(truc_n->session);
-	struct omx_evt_recv_msg event;
+	struct omx_evt_recv_truc event;
 	int err = 0;
 
 	/* check packet length */
@@ -662,10 +662,10 @@ omx_recv_truc(struct omx_iface * iface,
 	/* fill event */
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
-	event.specific.truc.length = length;
+	event.length = length;
 
 	/* copy data in event data */
-	err = skb_copy_bits(skb, hdr_len, event.specific.truc.data, length);
+	err = skb_copy_bits(skb, hdr_len, event.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 

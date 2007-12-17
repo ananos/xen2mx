@@ -762,14 +762,14 @@ omx__process_self_send(struct omx_endpoint *ep,
 
 omx_return_t
 omx__process_recv_truc(struct omx_endpoint *ep,
-		       struct omx_evt_recv_msg *msg)
+		       struct omx_evt_recv_truc *truc)
 {
-  union omx__truc_data *data_n = (void *) msg->specific.truc.data;
+  union omx__truc_data *data_n = (void *) truc->data;
   uint8_t truc_type = OMX_FROM_PKT_FIELD(data_n->type);
   struct omx__partner *partner;
   omx_return_t ret;
 
-  ret = omx__partner_recv_lookup(ep, msg->peer_index, msg->src_endpoint,
+  ret = omx__partner_recv_lookup(ep, truc->peer_index, truc->src_endpoint,
 				   &partner);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;

@@ -57,7 +57,7 @@
 #define OMX_MEDIUM_MAX		(8*4096)
 #define OMX_RNDV_DATA_MAX	8
 #define OMX_CONNECT_DATA_MAX	32
-#define OMX_TRUC_DATA_MAX	32
+#define OMX_TRUC_DATA_MAX	48
 
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16
@@ -499,6 +499,18 @@ union omx_evt {
 		uint8_t type;
 	} recv_connect;
 
+	struct omx_evt_recv_truc {
+		uint16_t peer_index;
+		uint8_t src_endpoint;
+		uint8_t length;
+		uint8_t pad2[4];
+		/* 8 */
+		char data[OMX_TRUC_DATA_MAX];
+		/* 56 */
+		uint8_t pad3[7];
+		uint8_t type;
+	} recv_truc;
+
 	struct omx_evt_recv_nack_lib {
 		uint16_t peer_index;
 		uint8_t src_endpoint;
@@ -566,14 +578,6 @@ union omx_evt {
 				uint64_t pad2[4];
 				/* 40 */
 			} notify;
-
-			struct {
-				uint8_t length;
-				uint8_t pad[7];
-				/* 8 */
-				char data[OMX_TRUC_DATA_MAX];
-				/* 40 */
-			} truc;
 
 			/* 40 */;
 		} specific;
