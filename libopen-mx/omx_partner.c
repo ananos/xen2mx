@@ -62,8 +62,8 @@ omx__partner_reset(struct omx__partner *partner)
   partner->back_session_id = -1; /* will be initialized when the partner will connect to me */
   partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   partner->next_acked_send_seq = -1; /* will be initialized when the partner will reply to my connect */
-  partner->last_match_recv_seq = OMX__SEQNUM(0); /* will force the sender's send seq through the connect */
-  partner->last_full_recv_seq = OMX__SEQNUM(0); /* will force the sender's send seq through the connect */
+  partner->next_match_recv_seq = OMX__SEQNUM(1); /* will force the sender's send seq through the connect */
+  partner->next_frag_recv_seq = OMX__SEQNUM(1); /* will force the sender's send seq through the connect */
   partner->connect_seqnum = 0;
   partner->last_send_acknum = 0;
   partner->last_recv_acknum = 0;
@@ -254,7 +254,7 @@ omx__connect_common(omx_endpoint_t ep,
   connect_param->hdr.length = sizeof(*data_n);
   OMX_PKT_FIELD_FROM(data_n->src_session_id, ep->desc->session_id);
   OMX_PKT_FIELD_FROM(data_n->app_key, key);
-  OMX_PKT_FIELD_FROM(data_n->target_recv_seqnum_start, OMX__SEQNUM(partner->last_match_recv_seq + 1));
+  OMX_PKT_FIELD_FROM(data_n->target_recv_seqnum_start, partner->next_match_recv_seq);
   OMX_PKT_FIELD_FROM(data_n->is_reply, 0);
   OMX_PKT_FIELD_FROM(data_n->connect_seqnum, connect_seqnum);
 
@@ -506,8 +506,8 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
     omx__debug_printf("connect from a new instance of a partner\n");
 
-    partner->last_match_recv_seq = OMX__SEQNUM(-1);
-    partner->last_full_recv_seq = OMX__SEQNUM(-1);
+    partner->next_match_recv_seq = OMX__SEQNUM(0);
+    partner->next_frag_recv_seq = OMX__SEQNUM(0);
     /* FIXME: drop other stuff */
   }
 
@@ -526,7 +526,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   reply_param.hdr.length = sizeof(*reply_data_n);
   reply_data_n->src_session_id = request_data_n->src_session_id;
   OMX_PKT_FIELD_FROM(reply_data_n->target_session_id, ep->desc->session_id);
-  OMX_PKT_FIELD_FROM(reply_data_n->target_recv_seqnum_start, OMX__SEQNUM(partner->last_match_recv_seq + 1));
+  OMX_PKT_FIELD_FROM(reply_data_n->target_recv_seqnum_start, partner->next_match_recv_seq);
   OMX_PKT_FIELD_FROM(reply_data_n->is_reply, 1);
   reply_data_n->connect_seqnum = request_data_n->connect_seqnum;
   OMX_PKT_FIELD_FROM(reply_data_n->status_code, status_code);
@@ -707,8 +707,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   /* change recv_seq to something very different for safety
    */
   if (disconnect) {
-    partner->last_match_recv_seq ^= OMX__SEQNUM(0xb0f0) ;
-    partner->last_full_recv_seq ^= OMX__SEQNUM(0xcf0f);
+    partner->next_match_recv_seq ^= OMX__SEQNUM(0xb0f0) ;
+    partner->next_frag_recv_seq ^= OMX__SEQNUM(0xcf0f);
   }
 }
 
@@ -721,6 +721,6 @@ omx_disconnect(omx_endpoint_t ep, omx_endpoint_addr_t addr)
   partner = omx__partner_from_addr(&addr);
   omx__partner_cleanup(ep, partner, 1);
 
-  return OMX_SUCCESS;  
+  return OMX_SUCCESS;
 }
 

@@ -57,7 +57,7 @@ omx__find_previous_early(struct omx__partner * partner,
 			 struct omx_evt_recv_msg *msg)
 {
   omx__seqnum_t seqnum = msg->seqnum;
-  omx__seqnum_t last_match_recv_seq = partner->last_match_recv_seq;
+  omx__seqnum_t next_match_recv_seq = partner->next_match_recv_seq;
   struct omx__early_packet * current;
   omx__seqnum_t new_index;
   omx__seqnum_t current_index;
@@ -68,11 +68,11 @@ omx__find_previous_early(struct omx__partner * partner,
     return &partner->early_recv_q;
   }
 
-  new_index = OMX__SEQNUM(seqnum - last_match_recv_seq);
+  new_index = OMX__SEQNUM(seqnum - next_match_recv_seq);
 
   /* a little bit less trivial case, append at the end */
   current = omx__partner_last_early_packet(partner);
-  current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
+  current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index > current_index) {
     omx__debug_printf("inserting early at the end of queue\n");
     return partner->early_recv_q.prev;
@@ -80,7 +80,7 @@ omx__find_previous_early(struct omx__partner * partner,
 
   /* a little bit less trivial case, append at the beginning */
   current = omx__partner_first_early_packet(partner);
-  current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
+  current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index < current_index) {
     omx__debug_printf("inserting early at the beginning of queue\n");
     return &partner->early_recv_q;
@@ -88,7 +88,7 @@ omx__find_previous_early(struct omx__partner * partner,
 
   /* general case, add at the right position, and drop if duplicate */
   list_for_each_entry_reverse(current, &partner->early_recv_q, partner_elt) {
-    current_index = OMX__SEQNUM(current->msg.seqnum - last_match_recv_seq);
+    current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
 
     if (new_index > current_index) {
       /* found an earlier one, insert after it */
@@ -487,10 +487,10 @@ omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
    * if not, we expect the fragment for at least the first partial seqnum
    */
   if (omx__partner_partial_queue_empty(partner)) {
-    partner->last_full_recv_seq = partner->last_match_recv_seq;
+    partner->next_frag_recv_seq = partner->next_match_recv_seq;
   } else {
     union omx_request *req = omx__partner_partial_queue_first_request(partner);
-    partner->last_full_recv_seq = OMX__SEQNUM(req->recv.seqnum - 1);
+    partner->next_frag_recv_seq = req->recv.seqnum;
   }
 }
 
@@ -502,10 +502,10 @@ omx__continue_partial_request(struct omx_endpoint *ep,
   uint64_t match_info = msg->match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req = NULL;
-  omx__seqnum_t new_index = OMX__SEQNUM(seqnum - partner->last_full_recv_seq - 1);
+  omx__seqnum_t new_index = OMX__SEQNUM(seqnum - partner->next_frag_recv_seq);
 
   omx__foreach_partner_partial_request(partner, req) {
-    omx__seqnum_t req_index = OMX__SEQNUM(req->recv.seqnum - partner->last_full_recv_seq - 1);
+    omx__seqnum_t req_index = OMX__SEQNUM(req->recv.seqnum - partner->next_frag_recv_seq);
     if (likely(req_index == new_index)) {
       omx__dequeue_request(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED
 			   ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
@@ -533,9 +533,9 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 				  omx__process_recv_func_t recv_func)
 {
   omx_return_t ret = OMX_SUCCESS;
-  omx__seqnum_t match_index = OMX__SEQNUM(seqnum - partner->last_match_recv_seq - 1);
-  omx__seqnum_t frag_index = OMX__SEQNUM(seqnum - partner->last_full_recv_seq - 1);
-  omx__seqnum_t frag_index_max = OMX__SEQNUM(partner->last_match_recv_seq - partner->last_full_recv_seq);
+  omx__seqnum_t match_index = OMX__SEQNUM(seqnum - partner->next_match_recv_seq);
+  omx__seqnum_t frag_index = OMX__SEQNUM(seqnum - partner->next_frag_recv_seq);
+  omx__seqnum_t frag_index_max = OMX__SEQNUM(partner->next_match_recv_seq - partner->next_frag_recv_seq);
 
   if (likely(match_index == 0)) {
     /* expected seqnum */
@@ -552,7 +552,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 
     if (ret == OMX_SUCCESS) {
       /* we matched this seqnum, we now expect the next one */
-      partner->last_match_recv_seq = OMX__SEQNUM(partner->last_match_recv_seq + 1);
+      partner->next_match_recv_seq = OMX__SEQNUM(partner->next_match_recv_seq + 1);
       omx__update_partner_next_frag_recv_seq(ep, partner);
       omx__partner_needs_to_ack(ep, partner);
     }
@@ -579,7 +579,7 @@ omx__process_recv(struct omx_endpoint *ep,
   omx__seqnum_t seqnum = msg->seqnum;
   omx__seqnum_t piggyack = msg->piggyack;
   struct omx__partner * partner;
-  omx__seqnum_t old_last_match_recv_seq;
+  omx__seqnum_t old_next_match_recv_seq;
   omx__seqnum_t frag_index;
   omx__seqnum_t frag_index_max;
   omx_return_t ret;
@@ -589,14 +589,14 @@ omx__process_recv(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
-  omx__debug_printf("got seqnum %d, expected match after %d, frag after %d\n",
-		    seqnum, partner->last_match_recv_seq, partner->last_full_recv_seq);
+  omx__debug_printf("got seqnum %d, expected match at %d, frag at %d\n",
+		    seqnum, partner->next_match_recv_seq, partner->next_frag_recv_seq);
 
   omx__handle_ack(ep, partner, piggyack);
 
-  old_last_match_recv_seq = partner->last_match_recv_seq;
-  frag_index = OMX__SEQNUM(seqnum - partner->last_full_recv_seq - 1);
-  frag_index_max = OMX__SEQNUM(old_last_match_recv_seq - partner->last_full_recv_seq);
+  old_next_match_recv_seq = partner->next_match_recv_seq;
+  frag_index = OMX__SEQNUM(seqnum - partner->next_frag_recv_seq);
+  frag_index_max = OMX__SEQNUM(old_next_match_recv_seq - partner->next_frag_recv_seq);
 
   if (likely(frag_index <= frag_index_max)) {
     /* either the new expected seqnum (to match)
@@ -608,11 +608,11 @@ omx__process_recv(struct omx_endpoint *ep,
 					    recv_func);
 
     /* process early packets in case they match the new expected seqnum */
-    if (likely(old_last_match_recv_seq != partner->last_match_recv_seq)) {
-      omx__seqnum_t early_index_max = OMX__SEQNUM(partner->last_match_recv_seq - old_last_match_recv_seq);
+    if (likely(old_next_match_recv_seq != partner->next_match_recv_seq)) {
+      omx__seqnum_t early_index_max = OMX__SEQNUM(partner->next_match_recv_seq - old_next_match_recv_seq);
       struct omx__early_packet * early, * next;
       omx__foreach_partner_early_packet_safe(partner, early, next) {
-	omx__seqnum_t early_index = OMX__SEQNUM(early->msg.seqnum - old_last_match_recv_seq - 1);
+	omx__seqnum_t early_index = OMX__SEQNUM(early->msg.seqnum - old_next_match_recv_seq);
 	if (early_index <= early_index_max) {
 	  omx__dequeue_partner_early_packet(partner, early);
 	  omx__debug_printf("processing early packet with seqnum %d\n",

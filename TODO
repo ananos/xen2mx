@@ -2,9 +2,6 @@
 * truc loss
 * reacquire endpoint in send_medium for clarity?
 
-* last_full_recv_seq -> next_
-* last_match_recv_seq ??
-
 * factorize early and msg seqnum index computing (cache them?)
 
 * wire compat
