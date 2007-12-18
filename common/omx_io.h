@@ -654,6 +654,101 @@ enum omx_counter_index {
 	OMX_COUNTER_INDEX_MAX,
 };
 
+static inline const char *
+omx_strcounter(enum omx_counter_index index)
+{
+	switch (index) {
+	case OMX_COUNTER_SEND_TINY:
+		return "Send Tiny";
+	case OMX_COUNTER_SEND_SMALL:
+		return "Send Small";
+	case OMX_COUNTER_SEND_MEDIUM_FRAG:
+		return "Send Medium Frag";
+	case OMX_COUNTER_SEND_RNDV:
+		return "Send Rndv";
+	case OMX_COUNTER_SEND_NOTIFY:
+		return "Send Notify";
+	case OMX_COUNTER_SEND_CONNECT:
+		return "Send Connect";
+	case OMX_COUNTER_SEND_TRUC:
+		return "Send Truc";
+	case OMX_COUNTER_SEND_NACK_LIB:
+		return "Send Nack Lib";
+	case OMX_COUNTER_SEND_NACK_MCP:
+		return "Send Nack MCP";
+	case OMX_COUNTER_SEND_PULL:
+		return "Send Pull";
+	case OMX_COUNTER_SEND_PULL_REPLY:
+		return "Send Pull Reply";
+	case OMX_COUNTER_RECV_TINY:
+		return "Recv Tiny";
+	case OMX_COUNTER_RECV_SMALL:
+		return "Recv Small";
+	case OMX_COUNTER_RECV_MEDIUM_FRAG:
+		return "Recv Medium Frag";
+	case OMX_COUNTER_RECV_RNDV:
+		return "Recv Rndv";
+	case OMX_COUNTER_RECV_NOTIFY:
+		return "Recv Notify";
+	case OMX_COUNTER_RECV_CONNECT:
+		return "Recv Connect";
+	case OMX_COUNTER_RECV_TRUC:
+		return "Recv Truc";
+	case OMX_COUNTER_RECV_NACK_LIB:
+		return "Recv Nack Lib";
+	case OMX_COUNTER_RECV_NACK_MCP:
+		return "Recv Nack MCP";
+	case OMX_COUNTER_RECV_PULL:
+		return "Recv Pull";
+	case OMX_COUNTER_RECV_PULL_REPLY:
+		return "Recv Pull Reply";
+	case OMX_COUNTER_EXP_EVENTQ_FULL:
+		return "Expected Event Queue Full";
+	case OMX_COUNTER_UNEXP_EVENTQ_FULL:
+		return "Unexpected Event Queue Full";
+	case OMX_COUNTER_SEND_NOMEM_SKB:
+		return "Send Skbuff Alloc Failed";
+	case OMX_COUNTER_SEND_NOMEM_MEDIUM_DEFEVENT:
+		return "Send Medium Deferred Event Alloc Failed";
+	case OMX_COUNTER_PULL_TIMEOUT_HANDLER:
+		return "Pull Timeout Handler";
+	case OMX_COUNTER_PULL_TIMEOUT_ABORT:
+		return "Pull Timeout Abort";
+	case OMX_COUNTER_PULL_REPLY_APPEND_FAIL:
+		return "Pull Reply Send Append Pages Failed";
+	case OMX_COUNTER_PULL_REPLY_FILL_FAILED:
+		return "Pull Reply Recv Fill Pages Failed";
+	case OMX_COUNTER_DROP_BAD_DATALEN:
+		return "Drop Bad Data Length";
+	case OMX_COUNTER_DROP_BAD_SKBLEN:
+		return "Drop Bad Skbuff Length";
+	case OMX_COUNTER_DROP_BAD_PEER_INDEX:
+		return "Drop Bad Peer Index";
+	case OMX_COUNTER_DROP_BAD_ENDPOINT:
+		return "Drop Bad Endpoint";
+	case OMX_COUNTER_DROP_BAD_SESSION:
+		return "Drop Bad Session";
+	case OMX_COUNTER_DROP_PULL_BAD_REPLIES:
+		return "Drop Pull Bad Number of Replies";
+	case OMX_COUNTER_DROP_PULL_BAD_REGION:
+		return "Drop Pull Bad Region";
+	case OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC:
+		return "Drop Pull Reply Bad Magic";
+	case OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM:
+		return "Drop Pull Reply Bad Frame SeqNum";
+	case OMX_COUNTER_DROP_PULL_REPLY_DUPLICATE:
+		return "Drop Pull Reply Duplicate";
+	case OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC:
+		return "Drop Nack MCP Bad Magic";
+	case OMX_COUNTER_DROP_NOSYS_TYPE:
+		return "Drop Not Implemented Packet Type";
+	case OMX_COUNTER_DROP_UNKNOWN_TYPE:
+		return "Drop Unknown Packet Type";
+	default:
+		return "** Unknown **";
+	}	
+}
+
 #endif /* __omx_io_h__ */
 
 /*

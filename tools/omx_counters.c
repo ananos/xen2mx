@@ -97,11 +97,11 @@ int main(int argc, char *argv[])
 
   printf("%s (board #%d name %s addr %s)\n",
 	 hostname, board_index, ifacename, board_addr_str);
-  printf("==============================================\n");
+  printf("=======================================================\n");
 
   for(i=0; i<OMX_COUNTER_INDEX_MAX; i++)
     if (counters[i] || !non_null)
-      printf("counter #%03d: %ld\n", i, (unsigned long) counters[i]);
+      printf("%03d: % 9ld %s\n", i, (unsigned long) counters[i], omx_strcounter(i));
 
   return 0;
 

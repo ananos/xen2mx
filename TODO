@@ -2,6 +2,11 @@
 
 * factorize early and msg seqnum index computing (cache them?)
 
+* way too many pull request sent?
+* pingpong hangs at 32kB?
+* pull replies with bad magic
+* pull replies with bad frame seqnum
+
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
   + no rdmawin_seqnum set/checked
