@@ -119,7 +119,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_TRUC: {
-    ret = omx__process_recv_truc(ep, &evt->recv_msg);
+    ret = omx__process_recv_truc(ep, &evt->recv_truc);
     break;
   }
 
