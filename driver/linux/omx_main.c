@@ -74,15 +74,31 @@ MODULE_PARM_DESC(rndv_packet_loss, "Explicit rndv reply packet loss frequency");
 
 unsigned long omx_pull_packet_loss = 0;
 module_param_named(pull_packet_loss, omx_pull_packet_loss, ulong, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(pull_packet_loss, "Explicit pull reply packet loss frequency");
+MODULE_PARM_DESC(pull_packet_loss, "Explicit pull packet loss frequency");
+
+unsigned long omx_pull_reply_packet_loss = 0;
+module_param_named(pull_reply_packet_loss, omx_pull_reply_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(pull_reply_packet_loss, "Explicit pull reply packet loss frequency");
 
 unsigned long omx_notify_packet_loss = 0;
 module_param_named(notify_packet_loss, omx_notify_packet_loss, ulong, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(notify_packet_loss, "Explicit notify reply packet loss frequency");
+MODULE_PARM_DESC(notify_packet_loss, "Explicit notify packet loss frequency");
 
 unsigned long omx_connect_packet_loss = 0;
 module_param_named(connect_packet_loss, omx_connect_packet_loss, ulong, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(connect_packet_loss, "Explicit connect reply packet loss frequency");
+MODULE_PARM_DESC(connect_packet_loss, "Explicit connect packet loss frequency");
+
+unsigned long omx_truc_packet_loss = 0;
+module_param_named(truc_packet_loss, omx_truc_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(truc_packet_loss, "Explicit truc packet loss frequency");
+
+unsigned long omx_nack_lib_packet_loss = 0;
+module_param_named(nack_lib_packet_loss, omx_nack_lib_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(nack_lib_packet_loss, "Explicit nack lib packet loss frequency");
+
+unsigned long omx_nack_mcp_packet_loss = 0;
+module_param_named(nack_mcp_packet_loss, omx_nack_mcp_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(nack_mcp_packet_loss, "Explicit nack mcp packet loss frequency");
 #endif
 
 /************************

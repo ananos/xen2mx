@@ -1,5 +1,3 @@
-* pull_reply loss
-* truc loss
 * reacquire endpoint in send_medium for clarity?
 
 * factorize early and msg seqnum index computing (cache them?)

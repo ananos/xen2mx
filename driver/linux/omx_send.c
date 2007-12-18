@@ -31,6 +31,9 @@ static unsigned long omx_medium_packet_loss_index = 0;
 static unsigned long omx_rndv_packet_loss_index = 0;
 static unsigned long omx_notify_packet_loss_index = 0;
 static unsigned long omx_connect_packet_loss_index = 0;
+static unsigned long omx_truc_packet_loss_index = 0;
+static unsigned long omx_nack_lib_packet_loss_index = 0;
+static unsigned long omx_nack_mcp_packet_loss_index = 0;
 #endif
 
 /*************************************
@@ -696,7 +699,7 @@ omx_send_truc(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	dev_queue_xmit(skb); /* FIXME: packet loss */
+	omx_queue_xmit(skb, truc);
 
 	return 0;
 
@@ -751,7 +754,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	omx_send_dprintk(eh, "NACK LIB type %d", nack_type);
 
-	dev_queue_xmit(skb); /* FIXME: packet loss */
+	omx_queue_xmit(skb, nack_lib);
 
 	return;
 
@@ -807,7 +810,7 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	omx_send_dprintk(eh, "NACK MCP type %d", nack_type);
 
-	dev_queue_xmit(skb); /* FIXME: packet loss */
+	omx_queue_xmit(skb, nack_mcp);
 
 	return;
 
@@ -882,7 +885,7 @@ omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	if (cmd.type == OMX_CMD_BENCH_TYPE_SEND_FILL)
 		goto out_with_skb;
 
-	dev_queue_xmit(skb);
+	dev_queue_xmit(skb); /* no need to use omx_queue_xmit here */
 
 	/* level 05: send done */
 	if (cmd.type == OMX_CMD_BENCH_TYPE_SEND_DONE)

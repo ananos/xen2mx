@@ -118,6 +118,11 @@ static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t
  * So the timeout doesn't need to be short, 1 second is enough.
  */
 
+#ifdef OMX_DEBUG
+static unsigned long omx_pull_packet_loss_index = 0;
+static unsigned long omx_pull_reply_packet_loss_index = 0;
+#endif
+
 /********************************
  * Pull handle bitmap management
  */
@@ -688,9 +693,9 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	 */
 	omx_pull_handle_release(handle);
 
-	dev_queue_xmit(skb); /* FIXME: packet loss */
+	omx_queue_xmit(skb, pull);
 	if (skb2)
-		dev_queue_xmit(skb2); /* FIXME: packet loss */
+		omx_queue_xmit(skb2, pull);
 
 	return 0;
 
@@ -728,7 +733,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		/* request the first block again */
 		skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 		if (!IS_ERR(skb))
-			dev_queue_xmit(skb); /* FIXME: packet loss */
+			omx_queue_xmit(skb, pull);
 		handle->already_requeued_first = 0;
 	}
 	else
@@ -736,7 +741,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		/* request the second block again */
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (!IS_ERR(skb))
-			dev_queue_xmit(skb); /* FIXME: packet loss */
+			omx_queue_xmit(skb, pull);
 	}
 
 	mod_timer(&handle->retransmit_timer,
@@ -751,10 +756,6 @@ omx_send_pull_reply_skb_destructor(struct sk_buff *skb)
 
 	omx_user_region_release(region);
 }
-
-#ifdef OMX_DEBUG
-static unsigned long omx_pull_packet_loss_index = 0;
-#endif
 
 int
 omx_recv_pull(struct omx_iface * iface,
@@ -925,7 +926,7 @@ omx_recv_pull(struct omx_iface * iface,
 		/* now that the skb is ready, remove it from the array
 		 * so that we don't try to free it in case of error later
 		 */
-		omx_queue_xmit(skb, pull);
+		omx_queue_xmit(skb, pull_reply);
 
 		/* update fields now */
 		current_frame_seqnum++;
@@ -1081,7 +1082,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->frame_copying_bitmap &= ~bitmap_mask;
 
 	if (frame_seqnum_offset >= OMX_PULL_REPLY_PER_BLOCK)
-		frame_from_second_block = 1;		
+		frame_from_second_block = 1;
 
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 
@@ -1103,7 +1104,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 			if (!IS_ERR(skb))
-				dev_queue_xmit(skb); /* FIXME: packet loss */
+				omx_queue_xmit(skb, pull);
 
 			handle->already_requeued_first = 1;
 		}
@@ -1183,9 +1184,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_release(handle);
 
 		if (skb)
-			dev_queue_xmit(skb); /* FIXME: packet loss */
+			omx_queue_xmit(skb, pull);
 		if (skb2)
-			dev_queue_xmit(skb2); /* FIXME: packet loss */
+			omx_queue_xmit(skb2, pull);
 
 	} else {
 

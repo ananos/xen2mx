@@ -44,8 +44,12 @@ extern unsigned long omx_small_packet_loss;
 extern unsigned long omx_medium_packet_loss;
 extern unsigned long omx_rndv_packet_loss;
 extern unsigned long omx_pull_packet_loss;
+extern unsigned long omx_pull_reply_packet_loss;
 extern unsigned long omx_notify_packet_loss;
 extern unsigned long omx_connect_packet_loss;
+extern unsigned long omx_truc_packet_loss;
+extern unsigned long omx_nack_lib_packet_loss;
+extern unsigned long omx_nack_mcp_packet_loss;
 
 /* main net */
 extern int omx_net_init(const char * ifnames);
@@ -141,14 +145,17 @@ extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
 
 /* queue a skb for xmit, or eventually drop it */
 #ifdef OMX_DEBUG
-#define omx_queue_xmit(skb, type)					\
-if (omx_##type##_packet_loss &&						\
-    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) {	\
-	kfree_skb(skb);							\
-	omx_##type##_packet_loss_index = 0;				\
-} else {								\
-	dev_queue_xmit(skb);						\
-}
+#define omx_queue_xmit(skb, type)						\
+	do {									\
+	if (omx_##type##_packet_loss &&						\
+	    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) {	\
+		kfree_skb(skb);							\
+		omx_##type##_packet_loss_index = 0;				\
+	} else {								\
+		dev_queue_xmit(skb);						\
+	}									\
+} while (0)
+
 #else /* OMX_DEBUG */
 #define omx_queue_xmit(skb, type) dev_queue_xmit(skb);
 #endif /* OMX_DEBUG */
