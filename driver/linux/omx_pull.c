@@ -582,7 +582,7 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 			  /* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_PULL_NOMEM_SKB);
+		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create pull skb\n");
 		return ERR_PTR(-ENOMEM);
 	}
@@ -885,7 +885,7 @@ omx_recv_pull(struct omx_iface * iface,
 						   */
 						  reply_hdr_len);
 		if (unlikely(skb == NULL)) {
-			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL_REPLY_NOMEM_SKB);
+			omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
 			err = -ENOMEM;
 			goto out_with_region_once;
@@ -929,7 +929,7 @@ omx_recv_pull(struct omx_iface * iface,
 		err = omx_user_region_append_pages(region, current_msg_offset + pulled_rdma_offset,
 						   skb, frame_length);
 		if (unlikely(err < 0)) {
-			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL_REPLY_APPEND_FAIL);
+			omx_counter_inc(iface, OMX_COUNTER_PULL_REPLY_APPEND_FAIL);
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
 			/* pages will be released in dev_kfree_skb() */
 			goto out_with_skb_and_region_twice;
@@ -1100,7 +1100,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 					 skb,
 					 frame_length);
 	if (unlikely(err < 0)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_REPLY_FILL_FAILED);
+		omx_counter_inc(iface, OMX_COUNTER_PULL_REPLY_FILL_FAILED);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
 		/* the other peer is sending crap, close the handle and report truncated to userspace
 		 * we do not really care about what have been tranfered since it's crap

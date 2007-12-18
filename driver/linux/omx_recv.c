@@ -108,11 +108,11 @@ omx_recv_connect(struct omx_iface * iface,
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_counter_inc(iface, OMX_COUNTER_DROP_UNEXP_EVENTQ_FULL);
 		omx_drop_dprintk(eh, "CONNECT packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_CONNECT);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -212,11 +212,11 @@ omx_recv_tiny(struct omx_iface * iface,
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_counter_inc(iface, OMX_COUNTER_DROP_UNEXP_EVENTQ_FULL);
 		omx_drop_dprintk(&mh->head.eth, "TINY packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_TINY);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -302,7 +302,6 @@ omx_recv_small(struct omx_iface * iface,
 	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_offset);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_counter_inc(iface, OMX_COUNTER_DROP_UNEXP_EVENTQ_FULL);
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
@@ -326,6 +325,7 @@ omx_recv_small(struct omx_iface * iface,
 	/* notify the event */
 	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_SMALL);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -411,7 +411,6 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_offset);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_counter_inc(iface, OMX_COUNTER_DROP_UNEXP_EVENTQ_FULL);
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
@@ -438,6 +437,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* notify the event */
 	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_MEDIUM, &event, sizeof(event));
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_MEDIUM_FRAG);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -537,11 +537,11 @@ omx_recv_rndv(struct omx_iface * iface,
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_counter_inc(iface, OMX_COUNTER_DROP_UNEXP_EVENTQ_FULL);
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_RNDV);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -616,11 +616,11 @@ omx_recv_notify(struct omx_iface * iface,
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_counter_inc(iface, OMX_COUNTER_DROP_UNEXP_EVENTQ_FULL);
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_NOTIFY);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -711,11 +711,11 @@ omx_recv_truc(struct omx_iface * iface,
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_TRUC, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_counter_inc(iface, OMX_COUNTER_DROP_UNEXP_EVENTQ_FULL);
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_TRUC);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -789,11 +789,11 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		omx_counter_inc(iface, OMX_COUNTER_DROP_UNEXP_EVENTQ_FULL);
 		omx_drop_dprintk(eh, "NACK LIB packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_NACK_LIB);
 	omx_endpoint_release(endpoint);
 
 	return 0;
