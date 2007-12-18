@@ -450,6 +450,34 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		break;
 	}
 
+	case OMX_CMD_GET_COUNTERS: {
+		struct omx_cmd_get_counters get_counters;
+
+		ret = copy_from_user(&get_counters, (void __user *) arg,
+				     sizeof(get_counters));
+		if (ret < 0) {
+			printk(KERN_ERR "Open-MX: Failed to read get_counters command argument, error %d\n", ret);
+			goto out;
+		}
+
+		ret = -EPERM;
+		if (get_counters.clear && !capable(CAP_SYS_ADMIN))
+			goto out;
+
+		ret = omx_iface_get_counters(get_counters.board_index,
+					     get_counters.clear,
+					     get_counters.buffer_addr, get_counters.buffer_length);
+		if (ret < 0)
+			goto out;
+
+		ret = copy_to_user((void __user *) arg, &get_counters,
+				   sizeof(get_counters));
+		if (ret < 0)
+			printk(KERN_ERR "Open-MX: Failed to write get_counters command result, error %d\n", ret);
+
+		break;
+	}
+
 	case OMX_CMD_PEERS_CLEAR: {
 
 		ret = -EPERM;

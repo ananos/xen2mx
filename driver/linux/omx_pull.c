@@ -582,6 +582,7 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 			  /* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
+		omx_counter_inc(iface, OMX_COUNTER_SEND_PULL_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create pull skb\n");
 		return ERR_PTR(-ENOMEM);
 	}
@@ -618,6 +619,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 {
 	struct omx_cmd_send_pull cmd;
 	struct omx_pull_handle * handle;
+	struct omx_iface * iface = endpoint->iface;
 	struct sk_buff * skb, * skb2;
 	uint32_t block_length, first_frame_offset;
 	int err = 0;
@@ -661,6 +663,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		err = PTR_ERR(skb);
 		goto out_with_handle;
 	}
+	omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 
 	omx_pull_handle_append_needed_frames(handle,
 					     block_length, first_frame_offset);
@@ -684,6 +687,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		dev_kfree_skb(skb);
 		goto out_with_handle;
 	}
+	omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 
 	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
@@ -694,8 +698,11 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	omx_pull_handle_release(handle);
 
 	omx_queue_xmit(skb, pull);
-	if (skb2)
+	omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
+	if (skb2) {
 		omx_queue_xmit(skb2, pull);
+		omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
+	}
 
 	return 0;
 
@@ -712,6 +719,8 @@ omx_send_pull(struct omx_endpoint * endpoint,
 static void omx_pull_handle_timeout_handler(unsigned long data)
 {
 	struct omx_pull_handle * handle = (void *) data;
+	struct omx_endpoint * endpoint = handle->endpoint;
+	struct omx_iface * iface = endpoint->iface;
 	struct sk_buff * skb;
 
 	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
@@ -721,10 +730,13 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	if (OMX_PULL_HANDLE_DONE(handle))
 		return;
 
+	omx_counter_inc(iface, OMX_COUNTER_PULL_TIMEOUT_HANDLER);
+
 	if (jiffies > handle->last_retransmit_jiffies) {
+		omx_counter_inc(iface, OMX_COUNTER_PULL_TIMEOUT_ABORT);
 		dprintk(PULL, "pull handle last retransmit time reached, reporting an error\n");
 		omx_pull_handle_reacquire(handle);
-		omx_endpoint_reacquire(handle->endpoint);
+		omx_endpoint_reacquire(endpoint);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
 		return;
 	}
@@ -732,16 +744,20 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 		/* request the first block again */
 		skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-		if (!IS_ERR(skb))
+		if (!IS_ERR(skb)) {
+			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 			omx_queue_xmit(skb, pull);
+		}
 		handle->already_requeued_first = 0;
 	}
 	else
 	if (!OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
 		/* request the second block again */
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
-		if (!IS_ERR(skb))
+		if (!IS_ERR(skb)) {
+			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 			omx_queue_xmit(skb, pull);
+		}
 	}
 
 	mod_timer(&handle->retransmit_timer,
@@ -787,9 +803,12 @@ omx_recv_pull(struct omx_iface * iface,
 	int replies, i;
 	int err = 0;
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_PULL);
+
         /* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(pull_eh, "PULL packet with unknown peer index %d",
 				 (unsigned) peer_index);
 		goto out;
@@ -798,6 +817,7 @@ omx_recv_pull(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(pull_eh, "PULL packet for unknown endpoint %d",
 				 dst_endpoint);
 		omx_send_nack_mcp(iface, peer_index,
@@ -809,6 +829,7 @@ omx_recv_pull(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SESSION);
 		omx_drop_dprintk(pull_eh, "PULL packet with bad session");
 		omx_send_nack_mcp(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -829,6 +850,7 @@ omx_recv_pull(struct omx_iface * iface,
 	replies = (first_frame_offset + block_length
 		   + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
 	if (unlikely(replies > OMX_PULL_REPLY_PER_BLOCK)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_BAD_REPLIES);
 		omx_drop_dprintk(pull_eh, "PULL packet for %d REPLY (%d max)",
 				 replies, OMX_PULL_REPLY_PER_BLOCK);
 		err = -EINVAL;
@@ -838,6 +860,7 @@ omx_recv_pull(struct omx_iface * iface,
 	/* get the rdma window once */
 	region = omx_user_region_acquire(endpoint, pulled_rdma_id);
 	if (unlikely(!region)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_BAD_REGION);
 		omx_drop_dprintk(pull_eh, "PULL packet with bad region");
 		omx_send_nack_mcp(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_RDMAWIN,
@@ -862,6 +885,7 @@ omx_recv_pull(struct omx_iface * iface,
 						   */
 						  reply_hdr_len);
 		if (unlikely(skb == NULL)) {
+			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL_REPLY_NOMEM_SKB);
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
 			err = -ENOMEM;
 			goto out_with_region_once;
@@ -905,6 +929,7 @@ omx_recv_pull(struct omx_iface * iface,
 		err = omx_user_region_append_pages(region, current_msg_offset + pulled_rdma_offset,
 						   skb, frame_length);
 		if (unlikely(err < 0)) {
+			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL_REPLY_APPEND_FAIL);
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
 			/* pages will be released in dev_kfree_skb() */
 			goto out_with_skb_and_region_twice;
@@ -927,6 +952,7 @@ omx_recv_pull(struct omx_iface * iface,
 		 * so that we don't try to free it in case of error later
 		 */
 		omx_queue_xmit(skb, pull_reply);
+		omx_counter_inc(iface, OMX_COUNTER_SEND_PULL_REPLY);
 
 		/* update fields now */
 		current_frame_seqnum++;
@@ -1001,6 +1027,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	int frame_from_second_block = 0;
 	int err = 0;
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_PULL_REPLY);
+
 	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld frame seqnum %ld length %ld skb length %ld",
 			 (unsigned long) dst_pull_handle,
 			 (unsigned long) dst_magic,
@@ -1010,6 +1038,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(frame_length > skb->len - hdr_len)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SKBLEN);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with %ld bytes instead of %d",
 				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) frame_length);
@@ -1020,6 +1049,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* acquire the handle and endpoint */
 	handle = omx_pull_handle_acquire_by_wire(iface, dst_magic, dst_pull_handle);
 	if (unlikely(!handle)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown handle %d magic %d",
 				 dst_pull_handle, dst_magic);
 		/* no need to nack this */
@@ -1034,6 +1064,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* check that the frame is from this block, and handle wrap around 256 */
 	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
 	if (unlikely(frame_seqnum_offset >= handle->block_frames)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (should be within %ld-%ld)",
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) handle->frame_index,
@@ -1046,6 +1077,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* check that the frame is not a duplicate */
 	bitmap_mask = 1ULL << frame_seqnum_offset;
 	if (unlikely((handle->frame_missing_bitmap & bitmap_mask) == 0)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_REPLY_DUPLICATE);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with duplicate seqnum %ld in current block %ld",
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) handle->frame_index);
@@ -1068,6 +1100,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 					 skb,
 					 frame_length);
 	if (unlikely(err < 0)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_REPLY_FILL_FAILED);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
 		/* the other peer is sending crap, close the handle and report truncated to userspace
 		 * we do not really care about what have been tranfered since it's crap
@@ -1103,8 +1136,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 				handle);
 
 			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-			if (!IS_ERR(skb))
+			if (!IS_ERR(skb)) {
 				omx_queue_xmit(skb, pull);
+				omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
+			}
 
 			handle->already_requeued_first = 1;
 		}
@@ -1183,10 +1218,14 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		 */
 		omx_pull_handle_release(handle);
 
-		if (skb)
+		if (skb) {
 			omx_queue_xmit(skb, pull);
-		if (skb2)
+			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
+		}
+		if (skb2) {
 			omx_queue_xmit(skb2, pull);
+			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
+		}
 
 	} else {
 
@@ -1216,6 +1255,8 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	struct omx_pull_handle * handle;
 	int err = 0;
 
+	omx_counter_inc(iface, OMX_COUNTER_RECV_NACK_MCP);
+
 	/* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
@@ -1242,6 +1283,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	/* acquire the handle and endpoint */
 	handle = omx_pull_handle_acquire_by_wire(iface, dst_magic, dst_pull_handle);
 	if (unlikely(!handle)) {
+		omx_counter_inc(iface, OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC);
 		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet unknown handle %d magic %d",
 				 dst_pull_handle, dst_magic);
 		/* no need to nack this */

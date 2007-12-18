@@ -76,6 +76,7 @@ extern int omx_ifaces_store(const char *buf, size_t size);
 extern int omx_ifaces_get_count(void);
 extern int omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, char * ifacename);
 extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);
+extern int omx_iface_get_counters(uint8_t board_index, int clear, uint64_t buffer_addr, uint32_t buffer_length);
 
 /* manage peers */
 extern int omx_peers_init(void);
@@ -139,6 +140,9 @@ extern int omx_user_region_fill_pages(struct omx_user_region * region, unsigned 
 /* device */
 extern int omx_dev_init(void);
 extern void omx_dev_exit(void);
+
+/* counters */
+static inline void omx_counter_inc(struct omx_iface * iface, enum omx_counter_index index) { iface->counters[index]++; }
 
 /* misc */
 extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);

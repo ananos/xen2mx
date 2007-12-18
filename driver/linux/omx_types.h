@@ -46,6 +46,8 @@ struct omx_iface {
 	wait_queue_head_t noendpoint_queue;
 
 	enum omx_iface_status status;
+
+	uint32_t counters[OMX_COUNTER_INDEX_MAX];
 };
 
 enum omx_endpoint_status {
