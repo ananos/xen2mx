@@ -29,7 +29,7 @@
 static void
 usage(int argc, char *argv[])
 {
-  fprintf(stderr, "%s options:\n", argv[0]);
+  fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange board id [%d]\n", BID);
   fprintf(stderr, " -c\tclear counters\n");
   fprintf(stderr, " -q\tonly display non-null counters\n");
@@ -70,6 +70,7 @@ int main(int argc, char *argv[])
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
+    case 'h':
       usage(argc, argv);
       exit(-1);
       break;

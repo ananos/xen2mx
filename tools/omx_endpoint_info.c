@@ -27,9 +27,9 @@
 #define BID 0
 
 static void
-usage(void)
+usage(int argc, char *argv[])
 {
-  fprintf(stderr, "Common options:\n");
+  fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange board id [%d]\n", BID);
 }
 
@@ -62,7 +62,8 @@ int main(int argc, char *argv[])
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
-      usage();
+    case 'h':
+      usage(argc, argv);
       exit(-1);
       break;
     }

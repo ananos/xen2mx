@@ -1,13 +1,39 @@
+/*
+ * Open-MX
+ * Copyright © INRIA 2007 (see AUTHORS file)
+ *
+ * The development of this software has been funded by Myricom, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License in COPYING.GPL for more details.
+ */
+
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <getopt.h>
+#include <stdlib.h>
 
 #include "omx_lib.h"
 #include "omx_io.h"
 
 #define ITER 1000000
 
+static void
+usage(int argc, char *argv[])
+{
+  fprintf(stderr, "%s [options]\n", argv[0]);
+}
+
 int
-main(void)
+main(int argc, char *argv[])
 {
   omx_endpoint_t ep;
   omx_return_t ret;
@@ -15,9 +41,20 @@ main(void)
   struct omx_cmd_bench cmd;
   unsigned long long total, delay, olddelay;
   int i, err;
+  char c;
 
   ret = omx_init();
   assert(ret == OMX_SUCCESS);
+
+  while ((c = getopt(argc, argv, "h")) != EOF)
+    switch (c) {
+    default:
+      fprintf(stderr, "Unknown option -%c\n", c);
+    case 'h':
+      usage(argc, argv);
+      exit(-1);
+      break;
+    }
 
   ret = omx_open_endpoint(0, 0, 0, NULL, 0, &ep);
   assert(ret == OMX_SUCCESS);

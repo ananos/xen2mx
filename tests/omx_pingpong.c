@@ -88,8 +88,9 @@ omx_isend_or_issend(int sync,
 }
 
 static void
-usage(void)
+usage(int argc, char *argv[])
 {
+  fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, "Common options:\n");
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
@@ -157,7 +158,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:swUYva")) != EOF)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:swUYvah")) != EOF)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -216,7 +217,8 @@ int main(int argc, char *argv[])
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
-      usage();
+    case 'h':
+      usage(argc, argv);
       exit(-1);
       break;
     }

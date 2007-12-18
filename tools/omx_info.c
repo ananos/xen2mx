@@ -18,15 +18,24 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <getopt.h>
+#include <stdlib.h>
 #include <assert.h>
 
 #include "omx_lib.h"
 
-int main(void)
+static void
+usage(int argc, char *argv[])
+{
+  fprintf(stderr, "%s [options]\n", argv[0]);
+}
+
+int main(int argc, char *argv[])
 {
   omx_return_t ret;
   uint32_t max, emax, count;
   int found, i;
+  char c;
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -34,6 +43,16 @@ int main(void)
             omx_strerror(ret));
     goto out;
   }
+
+  while ((c = getopt(argc, argv, "h")) != EOF)
+    switch (c) {
+    default:
+      fprintf(stderr, "Unknown option -%c\n", c);
+    case 'h':
+      usage(argc, argv);
+      exit(-1);
+      break;
+    }
 
   /* get board and endpoint max */
   max = omx__driver_desc->board_max;

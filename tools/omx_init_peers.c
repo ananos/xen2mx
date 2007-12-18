@@ -119,6 +119,7 @@ main(int argc, char *argv[])
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
+    case 'h':
       usage(argc, argv);
       exit(-1);
       break;
