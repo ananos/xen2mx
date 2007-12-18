@@ -170,8 +170,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	OMX_DEBUG_PACKET_LOSS(tiny, skb, 0);
-	dev_queue_xmit(skb);
+	omx_queue_xmit(skb, tiny);
 
 	return 0;
 
@@ -256,8 +255,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	OMX_DEBUG_PACKET_LOSS(small, skb, 0);
-	dev_queue_xmit(skb);
+	omx_queue_xmit(skb, small);
 
 	return 0;
 
@@ -377,8 +375,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	skb->sk = (void *) defevent;
 	skb->destructor = omx_medium_frag_skb_destructor;
 
-	OMX_DEBUG_PACKET_LOSS(medium, skb, 1);
-	dev_queue_xmit(skb);
+	omx_queue_xmit(skb, medium);
 
 	/* return>0 to tell the caller to not release the endpoint,
 	 * we will do it when releasing the skb in the destructor
@@ -468,8 +465,7 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	OMX_DEBUG_PACKET_LOSS(rndv, skb, 0);
-	dev_queue_xmit(skb);
+	omx_queue_xmit(skb, rndv);
 
 	return 0;
 
@@ -552,8 +548,7 @@ omx_send_connect(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	OMX_DEBUG_PACKET_LOSS(connect, skb, 0);
-	dev_queue_xmit(skb);
+	omx_queue_xmit(skb, connect);
 
 	return 0;
 
@@ -619,8 +614,7 @@ omx_send_notify(struct omx_endpoint * endpoint,
 
 	omx_send_dprintk(eh, "NOTIFY");
 
-	OMX_DEBUG_PACKET_LOSS(notify, skb, 0);
-	dev_queue_xmit(skb);
+	omx_queue_xmit(skb, notify);
 
 	return 0;
 
@@ -702,7 +696,7 @@ omx_send_truc(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	dev_queue_xmit(skb);
+	dev_queue_xmit(skb); /* FIXME: packet loss */
 
 	return 0;
 
@@ -757,7 +751,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	omx_send_dprintk(eh, "NACK LIB type %d", nack_type);
 
-	dev_queue_xmit(skb);
+	dev_queue_xmit(skb); /* FIXME: packet loss */
 
 	return;
 
@@ -813,7 +807,7 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	omx_send_dprintk(eh, "NACK MCP type %d", nack_type);
 
-	dev_queue_xmit(skb);
+	dev_queue_xmit(skb); /* FIXME: packet loss */
 
 	return;
 

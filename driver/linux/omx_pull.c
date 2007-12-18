@@ -688,9 +688,9 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	 */
 	omx_pull_handle_release(handle);
 
-	dev_queue_xmit(skb);
+	dev_queue_xmit(skb); /* FIXME: packet loss */
 	if (skb2)
-		dev_queue_xmit(skb2);
+		dev_queue_xmit(skb2); /* FIXME: packet loss */
 
 	return 0;
 
@@ -728,7 +728,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		/* request the first block again */
 		skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 		if (!IS_ERR(skb))
-			dev_queue_xmit(skb);
+			dev_queue_xmit(skb); /* FIXME: packet loss */
 		handle->already_requeued_first = 0;
 	}
 	else
@@ -736,7 +736,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		/* request the second block again */
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (!IS_ERR(skb))
-			dev_queue_xmit(skb);
+			dev_queue_xmit(skb); /* FIXME: packet loss */
 	}
 
 	mod_timer(&handle->retransmit_timer,
@@ -925,14 +925,7 @@ omx_recv_pull(struct omx_iface * iface,
 		/* now that the skb is ready, remove it from the array
 		 * so that we don't try to free it in case of error later
 		 */
-#ifdef OMX_DEBUG
-		if (omx_pull_packet_loss &&
-		    (++omx_pull_packet_loss_index >= omx_pull_packet_loss)) {
-			kfree_skb(skb);
-			omx_pull_packet_loss_index = 0;
-		} else
-#endif
-			dev_queue_xmit(skb);
+		omx_queue_xmit(skb, pull);
 
 		/* update fields now */
 		current_frame_seqnum++;
@@ -1110,7 +1103,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 			if (!IS_ERR(skb))
-				dev_queue_xmit(skb);
+				dev_queue_xmit(skb); /* FIXME: packet loss */
 
 			handle->already_requeued_first = 1;
 		}
@@ -1190,9 +1183,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_release(handle);
 
 		if (skb)
-			dev_queue_xmit(skb);
+			dev_queue_xmit(skb); /* FIXME: packet loss */
 		if (skb2)
-			dev_queue_xmit(skb2);
+			dev_queue_xmit(skb2); /* FIXME: packet loss */
 
 	} else {
 

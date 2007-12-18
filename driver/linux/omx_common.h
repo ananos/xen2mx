@@ -139,6 +139,20 @@ extern void omx_dev_exit(void);
 /* misc */
 extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
 
+/* queue a skb for xmit, or eventually drop it */
+#ifdef OMX_DEBUG
+#define omx_queue_xmit(skb, type)					\
+if (omx_##type##_packet_loss &&						\
+    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) {	\
+	kfree_skb(skb);							\
+	omx_##type##_packet_loss_index = 0;				\
+} else {								\
+	dev_queue_xmit(skb);						\
+}
+#else /* OMX_DEBUG */
+#define omx_queue_xmit(skb, type) dev_queue_xmit(skb);
+#endif /* OMX_DEBUG */
+
 /* translate omx_endpoint_acquire_by_iface_index return values into nack type */
 static inline enum omx_nack_type
 omx_endpoint_acquire_by_iface_index_error_to_nack_type(void * errptr)
@@ -201,22 +215,12 @@ omx_board_addr_to_ethhdr_dst(struct ethhdr * eh, uint64_t board_addr)
 
 extern unsigned long omx_debug;
 #define omx_debug_type_enabled(type) (OMX_DEBUG_##type & omx_debug)
-//#define omx_debug_type_enabled(type) (type & omx_debug)
 
 #define dprintk(type, x...) do { if (omx_debug_type_enabled(type)) printk(KERN_INFO x); } while (0)
 
-#define OMX_DEBUG_PACKET_LOSS(type, skb, ret)				\
-	if (omx_##type##_packet_loss &&					\
-	    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) { \
-		kfree_skb(skb);						\
-		omx_##type##_packet_loss_index = 0;			\
-		return ret;						\
-	}
-
-#else
+#else /* OMX_DEBUG */
 #define dprintk(type, x...) do { /* nothing */ } while (0)
-#define OMX_DEBUG_PACKET_LOSS(type, skb, ret) do { /* nothing */ } while (0)
-#endif
+#endif /* OMX_DEBUG */
 
 #define omx_send_dprintk(_eh, _format, ...) \
 dprintk(SEND, \
