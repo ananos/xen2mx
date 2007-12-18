@@ -453,7 +453,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 	case OMX_CMD_PEERS_CLEAR: {
 
 		ret = -EPERM;
-		if (!capable(CAP_SYS_CHROOT))
+		if (!capable(CAP_SYS_ADMIN))
 			goto out;
 
 		omx_peers_clear();
@@ -466,7 +466,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		struct omx_cmd_misc_peer_info peer_info;
 
 		ret = -EPERM;
-		if (!capable(CAP_SYS_CHROOT))
+		if (!capable(CAP_SYS_ADMIN))
 			goto out;
 
 		ret = copy_from_user(&peer_info, (void __user *) arg,
