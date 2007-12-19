@@ -305,7 +305,6 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   uint32_t length = req->generic.status.msg_length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr;
-  omx__seqnum_t seqnum;
 
   frags_nr = OMX_MEDIUM_FRAGS_NR(length);
   omx__debug_assert(frags_nr <= 8); /* for the sendq_index array above */
@@ -315,10 +314,6 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 	       || omx__endpoint_sendq_map_get(ep, frags_nr, req, sendq_index) < 0))
     return OMX_NO_RESOURCES;
 
-  seqnum = partner->next_send_seq;
-  partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
-
-  req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is initialized here and modified in post() (or set to QUEUED in submit_or_queue()) */
@@ -329,7 +324,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   medium_param->match_info = req->generic.status.match_info;
   medium_param->frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
   medium_param->msg_length = length;
-  medium_param->seqnum = seqnum;
+  medium_param->seqnum = req->generic.send_seqnum;
   medium_param->session_id = partner->true_session_id;
 
   omx__post_isend_medium(ep, partner, req);
@@ -349,8 +344,13 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
 				  void *context)
 {
   omx_return_t ret;
+  omx__seqnum_t seqnum;
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
+
+  seqnum = partner->next_send_seq;
+  partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
+  req->generic.send_seqnum = seqnum;
 
   /* need to wait for a done event, since the sendq pages
    * might still be in use
@@ -412,17 +412,12 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   struct omx__partner * partner = req->generic.partner;
   void * buffer = req->send.specific.large.buffer;
   uint32_t length = req->generic.status.msg_length;
-  omx__seqnum_t seqnum;
   omx_return_t ret;
 
   ret = omx__get_region(ep, buffer, length, &region);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
-  seqnum = partner->next_send_seq;
-  partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
-
-  req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
   req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is always initialized here */
@@ -432,7 +427,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   rndv_param->hdr.dest_endpoint = partner->endpoint_index;
   rndv_param->hdr.match_info = req->generic.status.match_info;
   rndv_param->hdr.length = sizeof(struct omx__rndv_data);
-  rndv_param->hdr.seqnum = seqnum;
+  rndv_param->hdr.seqnum = req->generic.send_seqnum;
   rndv_param->hdr.session_id = partner->true_session_id;
 
   OMX_PKT_FIELD_FROM(data_n->msg_length, length);
@@ -459,8 +454,13 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
 				 void *context)
 {
   omx_return_t ret;
+  omx__seqnum_t seqnum;
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_LARGE;
+
+  seqnum = partner->next_send_seq;
+  partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
+  req->generic.send_seqnum = seqnum;
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
