@@ -663,7 +663,6 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		err = PTR_ERR(skb);
 		goto out_with_handle;
 	}
-	omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 
 	omx_pull_handle_append_needed_frames(handle,
 					     block_length, first_frame_offset);
@@ -687,7 +686,6 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		dev_kfree_skb(skb);
 		goto out_with_handle;
 	}
-	omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 
 	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
@@ -745,8 +743,8 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		/* request the first block again */
 		skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 		if (!IS_ERR(skb)) {
-			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 			omx_queue_xmit(skb, pull);
+			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 		}
 		handle->already_requeued_first = 0;
 	}
@@ -755,8 +753,8 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		/* request the second block again */
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (!IS_ERR(skb)) {
-			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 			omx_queue_xmit(skb, pull);
+			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 		}
 	}
 

@@ -33,7 +33,6 @@
 * /etc/init.d/open-mx script with IFACES variable in /etc/open-mx.conf
 * sethostname ioctl
 * ioctls to change board indexes?
-* ifconfig up interfaces on load
 
 * check pingpong contents
 
