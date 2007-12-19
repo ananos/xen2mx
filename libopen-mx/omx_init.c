@@ -71,8 +71,32 @@ omx__init_api(int api)
 
   omx__globals.verbose = 0;
   env = getenv("OMX_VERBOSE");
-  if (env)
-    omx__globals.verbose = atoi(env);
+  if (env) {
+    char *next;
+    unsigned long val = strtoul(env, &next, 0);
+    if (env == next) {
+      int i;
+      val = OMX_VERBOSE_MAIN;
+      for(i=0; env[i]!='\0'; i++) {
+	switch (env[i]) {
+	case 'P': val |= OMX_VERBOSE_ENDPOINT; break;
+	case 'C': val |= OMX_VERBOSE_CONNECT; break;
+	case 'S': val |= OMX_VERBOSE_SEND; break;
+	case 'L': val |= OMX_VERBOSE_LARGE; break;
+	case 'M': val |= OMX_VERBOSE_MEDIUM; break;
+	case 'Q': val |= OMX_VERBOSE_SEQNUM; break;
+	case 'R': val |= OMX_VERBOSE_RECV; break;
+	case 'U': val |= OMX_VERBOSE_UNEXP; break;
+	case 'E': val |= OMX_VERBOSE_EARLY; break;
+	case 'A': val |= OMX_VERBOSE_ACK; break;
+	case 'V': val |= OMX_VERBOSE_EVENT; break;
+	case 'W': val |= OMX_VERBOSE_WAIT; break;
+	default: omx__abort("Unknown verbose character '%c'\n", env[i]);
+	}
+      }
+    }
+    omx__globals.verbose = val;
+  }
 
   omx__globals.waitspin = 1; /* FIXME: default until wait takes care of the progression timeout */
   env = getenv("OMX_WAITSPIN");
