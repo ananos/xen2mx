@@ -1,7 +1,5 @@
 * factorize early and msg seqnum index computing (cache them?)
 
-* notify cannot be early
-
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
   + no rdmawin_seqnum set/checked

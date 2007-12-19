@@ -196,6 +196,7 @@ omx__postpone_early_packet(struct omx__partner * partner,
   }
 
   case OMX_EVT_RECV_NOTIFY: {
+    /* cannot be unexpected but can still be early if the previous messages got lost */
     break;
   }
 
