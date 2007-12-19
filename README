@@ -268,8 +268,9 @@ it to improve performance (see VI.a).
 
 While the Open-MX API is slightly different from the MX one, it provides
 a compatibility layer which enables building of any MX application on
-top of Open-MX. To enable this layer, you should pass --enable-mx to
-the configure command line.
+top of Open-MX. This layer is enabled by default and should not cause
+any problem, it just installs more files. To disable it, you should pass
+--disable-mx to the configure command line.
 
 Binary compatibility is not supported yet, which means you will always
 have to rebuild against Open-MX headers.

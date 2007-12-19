@@ -254,8 +254,8 @@ if test x$with_peers_file != xnone; then
 fi
 AC_SUBST(PEERS_FILE, $with_peers_file)
 
-AC_ARG_ENABLE(mx, [  --enable-mx	enable MX API compatibility wrappers],
-	      enable_mx=$enableval, enable_mx=no)
+AC_ARG_ENABLE(mx, [  --disable-mx	disable MX API compatibility wrappers],
+	      enable_mx=$enableval, enable_mx=yes)
 AC_MSG_CHECKING(if MX API compatibility wrappers are enabled)
 if test x$enable_mx = xyes; then
   AC_MSG_RESULT(yes)
