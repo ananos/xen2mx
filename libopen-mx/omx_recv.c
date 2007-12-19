@@ -627,12 +627,14 @@ omx__process_recv(struct omx_endpoint *ep,
       }
     }
 
-  } else {
+  } else if (frag_index <= frag_index_max + OMX__EARLY_PACKET_OFFSET_MAX) {
     /* early fragment or message, postpone it */
     ret = omx__postpone_early_packet(partner,
 				     msg, data,
 				     recv_func);
 
+  } else {
+    omx__debug_printf("obsolete message %d\n", seqnum);
   }
 
   return ret;

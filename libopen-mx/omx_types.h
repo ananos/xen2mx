@@ -66,6 +66,11 @@ typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
 #define OMX__SESNUM_MASK (((1UL<<OMX__SESNUM_BITS)-1)<<OMX__SEQNUM_BITS)
 #define OMX__SESNUM(x) ((x) & OMX__SESNUM_MASK)
 
+/* limit the seqnum offset of early packets,
+ * and drop the other ones as obsolete from the previous wrap-around
+ */
+#define OMX__EARLY_PACKET_OFFSET_MAX 0xff
+
 struct omx__partner {
   uint64_t board_addr;
   uint16_t peer_index;

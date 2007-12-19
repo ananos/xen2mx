@@ -1,18 +1,11 @@
-* reacquire endpoint in send_medium for clarity?
-
 * factorize early and msg seqnum index computing (cache them?)
 
-* way too many pull request sent?
-* pingpong hangs at 32kB?
-* pull replies with bad magic
-* pull replies with bad frame seqnum
+* notify cannot be early
 
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
   + no rdmawin_seqnum set/checked
   + lib ack contents
-  + nack lib
-  + nack mcp
 
 * optimize mediums
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
