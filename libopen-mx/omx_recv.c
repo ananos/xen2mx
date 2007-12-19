@@ -64,7 +64,7 @@ omx__find_previous_early(struct omx__partner * partner,
 
   /* trivial case, early queue is empty */
   if (list_empty(&partner->early_recv_q)) {
-    omx__debug_printf("insert early in empty queue\n");
+    omx__debug_printf(EARLY, "insert early in empty queue\n");
     return &partner->early_recv_q;
   }
 
@@ -74,7 +74,7 @@ omx__find_previous_early(struct omx__partner * partner,
   current = omx__partner_last_early_packet(partner);
   current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index > current_index) {
-    omx__debug_printf("inserting early at the end of queue\n");
+    omx__debug_printf(EARLY, "inserting early at the end of queue\n");
     return partner->early_recv_q.prev;
   }
 
@@ -82,7 +82,7 @@ omx__find_previous_early(struct omx__partner * partner,
   current = omx__partner_first_early_packet(partner);
   current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index < current_index) {
-    omx__debug_printf("inserting early at the beginning of queue\n");
+    omx__debug_printf(EARLY, "inserting early at the beginning of queue\n");
     return &partner->early_recv_q;
   }
 
@@ -92,13 +92,13 @@ omx__find_previous_early(struct omx__partner * partner,
 
     if (new_index > current_index) {
       /* found an earlier one, insert after it */
-      omx__debug_printf("inserting early after another one\n");
+      omx__debug_printf(EARLY, "inserting early after another one\n");
       return &current->partner_elt;
     }
 
     if (new_index < current_index) {
       /* later one, look further */
-      omx__debug_printf("not inserting early after this one\n");
+      omx__debug_printf(EARLY, "not inserting early after this one\n");
       continue;
     }
 
@@ -109,23 +109,23 @@ omx__find_previous_early(struct omx__partner * partner,
 
       if (new_frag_seqnum > current_frag_seqnum) {
 	/* found an earlier one, insert after it */
-	omx__debug_printf("inserting early after this medium\n");
+	omx__debug_printf(EARLY, "inserting early after this medium\n");
 	return &current->partner_elt;
       }
 
       if (new_frag_seqnum < current_frag_seqnum) {
 	/* later one, look further */
-	omx__debug_printf("not inserting early after this medium\n");
+	omx__debug_printf(EARLY, "not inserting early after this medium\n");
 	continue;
       }
 
       /* that's a duplicate medium frag, drop it */
-      omx__debug_printf("dropping duplicate early medium\n");
+      omx__debug_printf(EARLY, "dropping duplicate early medium\n");
       return NULL;
     }
 
     /* that's a duplicate, drop it */
-    omx__debug_printf("dropping duplicate early\n");
+    omx__debug_printf(EARLY, "dropping duplicate early\n");
     return NULL;
   }
 
@@ -205,7 +205,7 @@ omx__postpone_early_packet(struct omx__partner * partner,
 	       msg->type);
   }
 
-  omx__debug_printf("postponing early packet with seqnum %d\n",
+  omx__debug_printf(EARLY, "postponing early packet with seqnum %d\n",
 		    msg->seqnum);
 
   list_add(&early->partner_elt, prev);
@@ -269,13 +269,13 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   unsigned long offset = frag_seqnum << frag_pipeline;
   int new = (req->recv.specific.medium.frags_received_mask == 0);
 
-  omx__debug_printf("got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
+  omx__debug_printf(MEDIUM, "got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
 		    (unsigned) frag_seqnum, (unsigned) frag_pipeline, (unsigned) chunk,
 		    (unsigned) offset, (unsigned) msg_length);
 
   if (unlikely(req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum))) {
     /* already received this frag, requeue back */
-    omx__debug_printf("got a duplicate frag seqnum %d for medium seqnum %d\n",
+    omx__debug_printf(MEDIUM, "got a duplicate frag seqnum %d for medium seqnum %d\n",
 		      (unsigned) frag_seqnum, (unsigned) req->recv.seqnum);
     omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
 			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
@@ -292,7 +292,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
   if (likely(req->recv.specific.medium.accumulated_length == msg_length)) {
     /* was the last frag */
-    omx__debug_printf("got last frag of seqnum %d\n", req->recv.seqnum);
+    omx__debug_printf(MEDIUM, "got last frag of seqnum %d\n", req->recv.seqnum);
 
     /* if there were previous frags, remove from the partialq */
     if (unlikely(!new))
@@ -306,7 +306,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
   } else {
     /* more frags missing */
-    omx__debug_printf("got one frag of seqnum %d\n", req->recv.seqnum);
+    omx__debug_printf(MEDIUM, "got one frag of seqnum %d\n", req->recv.seqnum);
 
     if (unlikely(new)) {
       req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
@@ -331,7 +331,7 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
   uint8_t rdma_seqnum = OMX_FROM_PKT_FIELD(data_n->rdma_seqnum);
   uint16_t rdma_offset = OMX_FROM_PKT_FIELD(data_n->rdma_offset);
 
-  omx__debug_printf("got a rndv req for rdma id %d seqnum %d offset %d length %d\n",
+  omx__debug_printf(LARGE, "got a rndv req for rdma id %d seqnum %d offset %d length %d\n",
 		    (unsigned) rdma_id, (unsigned) rdma_seqnum, (unsigned) rdma_offset,
 		    (unsigned) msg_length);
 
@@ -590,7 +590,7 @@ omx__process_recv(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
-  omx__debug_printf("got seqnum %d, expected match at %d, frag at %d\n",
+  omx__debug_printf(SEQNUM, "got seqnum %d, expected match at %d, frag at %d\n",
 		    seqnum, partner->next_match_recv_seq, partner->next_frag_recv_seq);
 
   omx__handle_ack(ep, partner, piggyack);
@@ -616,7 +616,7 @@ omx__process_recv(struct omx_endpoint *ep,
 	omx__seqnum_t early_index = OMX__SEQNUM(early->msg.seqnum - old_next_match_recv_seq);
 	if (early_index <= early_index_max) {
 	  omx__dequeue_partner_early_packet(partner, early);
-	  omx__debug_printf("processing early packet with seqnum %d\n",
+	  omx__debug_printf(EARLY, "processing early packet with seqnum %d\n",
 			    early->msg.seqnum);
 	  ret = omx__process_partner_ordered_recv(ep, partner, early->msg.seqnum,
 						  &early->msg, early->data, early->msg_length,
@@ -635,7 +635,7 @@ omx__process_recv(struct omx_endpoint *ep,
 				     recv_func);
 
   } else {
-    omx__debug_printf("obsolete message %d\n", seqnum);
+    omx__debug_printf(SEQNUM, "obsolete message %d\n", seqnum);
   }
 
   return ret;

@@ -39,16 +39,35 @@
  */
 
 #ifdef OMX_DEBUG
+
+#define OMX_VERBOSE_MAIN (1<<0)
+#define OMX_VERBOSE_ENDPOINT (1<<1)
+#define OMX_VERBOSE_CONNECT (1<<2)
+#define OMX_VERBOSE_SEND (1<<3)
+#define OMX_VERBOSE_LARGE (1<<4)
+#define OMX_VERBOSE_MEDIUM (1<<5)
+#define OMX_VERBOSE_SEQNUM (1<<6)
+#define OMX_VERBOSE_RECV (1<<7)
+#define OMX_VERBOSE_UNEXP (1<<8)
+#define OMX_VERBOSE_EARLY (1<<9)
+#define OMX_VERBOSE_ACK (1<<10)
+#define OMX_VERBOSE_EVENT (1<<11)
+#define OMX_VERBOSE_WAIT (1<<12)
+#define omx__verbose_type_enabled(type) (OMX_VERBOSE_##type & omx__globals.verbose)
+
 #define INLINE
 #define omx__debug_assert(x) assert(x)
 #define omx__debug_instr(x) do { x; } while (0)
-#define omx__debug_printf(args...) do { if (omx__globals.verbose) fprintf(stderr, args); } while (0)
-#else
+#define omx__debug_printf(type,args...) do { if (omx__verbose_type_enabled(type)) fprintf(stderr, args); } while (0)
+
+#else /* OMX_DEBUG */
+
 #define INLINE inline
 #define omx__debug_assert(x) /* nothing */
 #define omx__debug_instr(x) /* nothing */
-#define omx__debug_printf(args...) /* nothing */
-#endif
+#define omx__debug_printf(type,args...) /* nothing */
+
+#endif /* OMX_DEBUG */
 
 #define omx__abort(args...) do { fprintf(stderr, "Open-MX fatal error: " args); assert(0); } while (0)
 

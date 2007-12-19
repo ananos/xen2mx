@@ -133,21 +133,21 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   while (1) {
     int err;
 
-    omx__debug_printf("omx_wait going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+    omx__debug_printf(WAIT, "omx_wait going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
-    omx__debug_printf("omx_wait woken up\n");
+    omx__debug_printf(WAIT, "omx_wait woken up\n");
 
     if (unlikely(err < 0)) {
       ret = omx__errno_to_return("ioctl WAIT_EVENT");
       goto out;
     }
 
-    omx__debug_printf("omx_wait wait event result %d\n", wait_param.status);
+    omx__debug_printf(WAIT, "omx_wait wait event result %d\n", wait_param.status);
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
@@ -267,21 +267,21 @@ omx_wait_any(struct omx_endpoint *ep,
   while (1) {
     int err;
 
-    omx__debug_printf("omx_wait_any going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+    omx__debug_printf(WAIT, "omx_wait_any going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
-    omx__debug_printf("omx_wait_any woken up\n");
+    omx__debug_printf(WAIT, "omx_wait_any woken up\n");
 
     if (unlikely(err < 0)) {
       ret = omx__errno_to_return("ioctl WAIT_EVENT");
       goto out;
     }
 
-    omx__debug_printf("omx_wait_any wait event result %d\n", wait_param.status);
+    omx__debug_printf(WAIT, "omx_wait_any wait event result %d\n", wait_param.status);
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
@@ -379,21 +379,21 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
   while (1) {
     int err;
 
-    omx__debug_printf("omx_peek going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+    omx__debug_printf(WAIT, "omx_peek going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
-    omx__debug_printf("omx_peek woken up\n");
+    omx__debug_printf(WAIT, "omx_peek woken up\n");
 
     if (unlikely(err < 0)) {
       ret = omx__errno_to_return("ioctl WAIT_EVENT");
       goto out;
     }
 
-    omx__debug_printf("omx_peek wait event result %d\n", wait_param.status);
+    omx__debug_printf(WAIT, "omx_peek wait event result %d\n", wait_param.status);
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
@@ -512,21 +512,21 @@ omx_probe(struct omx_endpoint *ep,
   while (1) {
     int err;
 
-    omx__debug_printf("omx_probe going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+    omx__debug_printf(WAIT, "omx_probe going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
-    omx__debug_printf("omx_probe woken up\n");
+    omx__debug_printf(WAIT, "omx_probe woken up\n");
 
     if (unlikely(err < 0)) {
       ret = omx__errno_to_return("ioctl WAIT_EVENT");
       goto out;
     }
 
-    omx__debug_printf("omx_probe wait event result %d\n", wait_param.status);
+    omx__debug_printf(WAIT, "omx_probe wait event result %d\n", wait_param.status);
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))

@@ -35,7 +35,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 {
   omx_return_t ret = OMX_SUCCESS;
 
-  omx__debug_printf("received type %d\n", evt->generic.type);
+  omx__debug_printf(EVENT, "received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
 
   case OMX_EVT_RECV_CONNECT: {

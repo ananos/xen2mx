@@ -68,7 +68,7 @@ omx__open_one_endpoint(int fd,
   struct omx_cmd_open_endpoint open_param;
   int err;
 
-  omx__debug_printf("trying to open board #%d endpoint #%d\n",
+  omx__debug_printf(ENDPOINT, "trying to open board #%d endpoint #%d\n",
 		    board_index, endpoint_index);
 
   open_param.board_index = board_index;
@@ -90,7 +90,7 @@ omx__open_endpoint_in_range(int fd,
   uint32_t board, endpoint;
   omx_return_t ret;
 
-  omx__debug_printf("trying to open board [%d,%d] endpoint [%d,%d]\n",
+  omx__debug_printf(ENDPOINT, "trying to open board [%d,%d] endpoint [%d,%d]\n",
 		    board_start, board_end, endpoint_start, endpoint_end);
 
   /* loop on the board first, to distribute the load,
@@ -105,7 +105,7 @@ omx__open_endpoint_in_range(int fd,
 
       /* if success or error, return. if busy or nodev, try the next one */
       if (ret == OMX_SUCCESS) {
-	omx__debug_printf("successfully open board #%d endpoint #%d\n",
+	omx__debug_printf(ENDPOINT, "successfully open board #%d endpoint #%d\n",
 			  board, endpoint);
 	*board_found_p = board;
 	*endpoint_found_p = endpoint;
@@ -230,7 +230,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = omx__errno_to_return("mmap");
     goto out_with_sendq_map;
   }
-  omx__debug_printf("desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
+  omx__debug_printf(ENDPOINT, "desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
 		    desc, sendq, recvq, exp_eventq, unexp_eventq);
 
   /* prepare the large regions */
@@ -259,7 +259,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_large_regions;
 
   omx__board_addr_sprintf(board_addr_str, board_addr);
-  omx__debug_printf("Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
+  omx__debug_printf(ENDPOINT, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
 		    (unsigned long) endpoint_index, (unsigned long) board_index,
 		    ep->hostname, ep->ifacename, board_addr_str);
 

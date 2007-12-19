@@ -96,7 +96,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   ep->partners[partner_index] = partner;
 
   *partnerp = partner;
-  omx__debug_printf("created peer %d %d\n", peer_index, endpoint_index);
+  omx__debug_printf(CONNECT, "created peer %d %d\n", peer_index, endpoint_index);
 
   return OMX_SUCCESS;
 }
@@ -301,13 +301,13 @@ omx_connect(omx_endpoint_t ep,
   if (ret != OMX_SUCCESS)
     goto out_with_req;
 
-  omx__debug_printf("waiting for connect reply\n");
+  omx__debug_printf(CONNECT, "waiting for connect reply\n");
   while (req->generic.state != (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL)) {
     ret = omx__progress(ep);
     if (ret != OMX_SUCCESS)
       goto out; /* request is queued, do not try to free it */
   }
-  omx__debug_printf("connect done\n");
+  omx__debug_printf(CONNECT, "connect done\n");
 
   switch (req->generic.status.code) {
   case OMX_STATUS_SUCCESS:
@@ -438,7 +438,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 
  found:
-  omx__debug_printf("waking up on connect reply\n");
+  omx__debug_printf(CONNECT, "waking up on connect reply\n");
 
   if (status_code == OMX_STATUS_SUCCESS) {
     /* connection successfull, initialize stuff */
@@ -497,14 +497,14 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     status_code = OMX_STATUS_BAD_KEY;
   }
 
-  omx__debug_printf("got a connect, replying\n");
+  omx__debug_printf(CONNECT, "got a connect, replying\n");
 
   if (partner->back_session_id != src_session_id
       && partner->true_session_id != -1
       && partner->true_session_id != src_session_id) {
     /* new instance of the partner */
 
-    omx__debug_printf("connect from a new instance of a partner\n");
+    omx__debug_printf(CONNECT, "connect from a new instance of a partner\n");
 
     partner->next_match_recv_seq = OMX__SEQNUM(0);
     partner->next_frag_recv_seq = OMX__SEQNUM(0);

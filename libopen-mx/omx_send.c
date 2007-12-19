@@ -254,7 +254,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
     medium_param->frag_length = chunk;
     medium_param->frag_seqnum = i;
     medium_param->sendq_page_offset = sendq_index[i];
-    omx__debug_printf("sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+    omx__debug_printf(MEDIUM, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 		      i, chunk, (unsigned long) length);
 
     /* copy the data in the sendq only once */
@@ -365,7 +365,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
 
   ret = omx__submit_isend_medium(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
-    omx__debug_printf("queueing medium request %p\n", req);
+    omx__debug_printf(MEDIUM, "queueing medium request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED; /* the state of send medium is initialized here (or in submit() above) */
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
@@ -472,7 +472,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
 
   ret = omx__submit_isend_rndv(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
-    omx__debug_printf("queueing large send request %p\n", req);
+    omx__debug_printf(LARGE, "queueing large send request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
@@ -573,7 +573,7 @@ omx_isend(struct omx_endpoint *ep,
   omx_return_t ret;
 
   partner = omx__partner_from_addr(&dest_endpoint);
-  omx__debug_printf("sending %ld bytes using seqnum %d\n",
+  omx__debug_printf(SEND, "sending %ld bytes using seqnum %d\n",
 		    (unsigned long) length, partner->next_send_seq);
 
   req = omx__request_alloc(ep);
@@ -639,7 +639,7 @@ omx_issend(struct omx_endpoint *ep,
   omx_return_t ret;
 
   partner = omx__partner_from_addr(&dest_endpoint);
-  omx__debug_printf("sending %ld bytes using seqnum %d\n",
+  omx__debug_printf(SEND, "ssending %ld bytes using seqnum %d\n",
 		    (unsigned long) length, partner->next_send_seq);
 
   req = omx__request_alloc(ep);
@@ -692,21 +692,21 @@ omx__process_queued_requests(struct omx_endpoint *ep)
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf("reposting queued send medium request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting queued send medium request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
       ret = omx__submit_isend_medium(ep, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf("reposting queued send medium request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting queued send medium request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
       ret = omx__submit_isend_rndv(ep, req);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
       if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
 	/* if partial, we need to post the pull request to the driver */
-	omx__debug_printf("reposting queued recv large request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+	omx__debug_printf(SEND, "reposting queued recv large request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
 	ret = omx__submit_pull(ep, req);
       } else {
 	/* if not partial, the pull is already done, we need to send the notify */
-	omx__debug_printf("reposting queued recv large request notify message %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+	omx__debug_printf(SEND, "reposting queued recv large request notify message %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
 	ret = omx__submit_notify(ep, req);
       }
       break;
@@ -717,7 +717,7 @@ omx__process_queued_requests(struct omx_endpoint *ep)
 
     if (unlikely(ret != OMX_SUCCESS)) {
       /* put back at the head of the queue */
-      omx__debug_printf("requeueing queued request %p\n", req);
+      omx__debug_printf(SEND, "requeueing queued request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_QUEUED;
       omx__requeue_request(&ep->queued_send_req_q, req);
       break;
@@ -757,23 +757,23 @@ omx__process_non_acked_requests(struct omx_endpoint *ep)
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:
-      omx__debug_printf("reposting requeued send tiny request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued send tiny request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
       omx__post_isend_tiny(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_SMALL:
-      omx__debug_printf("reposting requeued send small request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued send small request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
       omx__post_isend_small(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf("reposting requeued medium small request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued medium small request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
       omx__post_isend_medium(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf("reposting requeued send rndv request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued send rndv request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
       omx__post_isend_rndv(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
-      omx__debug_printf("reposting requeued send notify request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued send notify request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
       omx__post_notify(ep, req->generic.partner, req);
       break;
     default:

@@ -180,7 +180,7 @@ omx__create_region(struct omx_endpoint *ep,
     /* try to free some unused region in the cache */
     if (!list_empty(&ep->regcache_unused_list)) {
       region = list_first_entry(&ep->regcache_unused_list, struct omx__large_region, regcache_unused_elt);
-      omx__debug_printf("regcache releasing unused region %d\n", region->id);
+      omx__debug_printf(LARGE, "regcache releasing unused region %d\n", region->id);
       list_del(&region->regcache_unused_elt);
       omx__destroy_region(ep, region);
       ret = omx__endpoint_large_region_alloc(ep, &region);
@@ -334,7 +334,7 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
     /* we need to pull some data */
     ret = omx__submit_pull(ep, req);
     if (unlikely(ret != OMX_SUCCESS)) {
-      omx__debug_printf("queueing large request %p\n", req);
+      omx__debug_printf(LARGE, "queueing large request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_QUEUED;
       omx__enqueue_request(&ep->queued_send_req_q, req);
     }
@@ -345,7 +345,7 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
      * so we queue, let progression finish processing events,
      * and then send the notify as a queued request with correct piggyack
      */
-    omx__debug_printf("large length 0, submitting request %p notify directly\n", req);
+    omx__debug_printf(LARGE, "large length 0, submitting request %p notify directly\n", req);
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
     omx__queue_notify(ep, req);
   }
@@ -365,7 +365,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
 
   /* FIXME: use cookie since region might be used for something else? */
 
-  omx__debug_printf("pull done with status %d\n", event->status);
+  omx__debug_printf(LARGE, "pull done with status %d\n", event->status);
 
   switch (event->status) {
   case OMX_EVT_PULL_DONE_SUCCESS:

@@ -75,8 +75,6 @@
   - some event wakeup both queues (force_wakeup)
   - other events wakeup the progress thread only if no one on the regular queue
 
-* MX_VERBOSE level in the lib, only for --enable-debug
-
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
 * mapper (open-mxd)

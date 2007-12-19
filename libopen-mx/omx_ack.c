@@ -101,13 +101,13 @@ omx__handle_ack(struct omx_endpoint *ep,
   omx__seqnum_t new_acks = OMX__SEQNUM(ack_before - partner->next_acked_send_seq);
 
   if (!new_acks || new_acks > missing_acks) {
-    omx__debug_printf("obsolete ack up to %d, %d new for %d missing\n",
+    omx__debug_printf(ACK, "obsolete ack up to %d, %d new for %d missing\n",
 		      (unsigned) OMX__SEQNUM(ack_before - 1), (unsigned) new_acks, (unsigned) missing_acks);
 
   } else {
     union omx_request *req, *next;
 
-    omx__debug_printf("ack up to %d\n", (unsigned) OMX__SEQNUM(ack_before - 1));
+    omx__debug_printf(ACK, "ack up to %d\n", (unsigned) OMX__SEQNUM(ack_before - 1));
 
     omx__foreach_partner_non_acked_request_safe(partner, req, next) {
       /* take care of the seqnum wrap around here too */
@@ -136,13 +136,13 @@ omx__handle_truc_ack(struct omx_endpoint *ep,
   uint32_t acknum = OMX_FROM_PKT_FIELD(ack_n->acknum);
 
   if (acknum <= partner->last_recv_acknum) {
-    omx__debug_printf("got obsolete acknum %d, expected more than %d\n",
+    omx__debug_printf(ACK, "got obsolete acknum %d, expected more than %d\n",
 		      (unsigned) acknum, (unsigned) partner->last_recv_acknum);
     return;
   }
   partner->last_recv_acknum = acknum;
 
-  omx__debug_printf("got a ack up to %d\n", (unsigned) ack);
+  omx__debug_printf(ACK, "got a ack up to %d\n", (unsigned) ack);
   omx__handle_ack(ep, partner, ack);
 }
 
@@ -184,7 +184,7 @@ omx__handle_nack(struct omx_endpoint *ep,
     }
   }
 
-  omx__debug_printf("Failed to find request to nack for seqnum %d, could be a duplicate, ignoring\n",
+  omx__debug_printf(ACK, "Failed to find request to nack for seqnum %d, could be a duplicate, ignoring\n",
 		    seqnum);
   return OMX_SUCCESS;
 }
@@ -242,7 +242,7 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
       /* the remaining ones are more recent, no need to ack them yet */
       break;
 
-    omx__debug_printf("acking back partner (%lld>>%lld)\n",
+    omx__debug_printf(ACK, "acking back partner (%lld>>%lld)\n",
 		      (unsigned long long) now,
 		      (unsigned long long) partner->oldest_recv_time_not_acked);
 
@@ -265,7 +265,7 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
 
   list_for_each_entry_safe(partner, next,
 			   &ep->partners_to_ack, endpoint_partners_to_ack_elt) {
-    omx__debug_printf("forcing ack back partner (%lld>>%lld)\n",
+    omx__debug_printf(ACK, "forcing ack back partner (%lld>>%lld)\n",
 		      (unsigned long long) omx__driver_desc->jiffies,
 		      (unsigned long long) partner->oldest_recv_time_not_acked);
 
