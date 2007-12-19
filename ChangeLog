@@ -1,0 +1,19 @@
+Open-MX 0.1.0 (December 20th 2007)
+==================================
+* First official release.
+* API compatibility with MX 1.2 (almost complete).
+* Wire compatibility with MX 1.2 (under development).
+* Message retransmission.
+* Support for kernel >= 2.6.17 (and some modified earlier kernels).
+
+Caveats:
+* Node disconnection not well recovered (some requests will remain
+  uncompleted for ever)
+* Large message retransmission seem to cause some kernel hang under
+  heavy message loss rate.
+* Blocking function will busy poll by default to avoid breaking
+  retransmission and progression. Use OMX_WAITSPIN=1 to force
+  sleeping.
+* No background progression or retransmission is done if the
+  application does not invoke an Open-MX routine explicitly.
+
