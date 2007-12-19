@@ -121,7 +121,6 @@ enum mx_status_code { /* FIXME */
 };
 typedef enum mx_status_code mx_status_code_t;
 
-#if 1
 /* need to be redefined entirely since some fields are renamed,
  * there are some compile-time assertions to check compatibility
  */
@@ -134,9 +133,6 @@ struct mx_status {
   void *context;
 };
 typedef struct mx_status mx_status_t;
-#else
-typedef omx_status_t mx_status_t;
-#endif
 
 #define mx__init_api omx__init_api
 #define mx_init() mx__init_api(MX_API)
