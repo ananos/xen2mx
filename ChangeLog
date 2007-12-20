@@ -26,7 +26,7 @@ Caveats:
 * Large message retransmission seem to cause some kernel hang under
   heavy message loss rate.
 * Blocking function will busy poll by default to avoid breaking
-  retransmission and progression. Use OMX_WAITSPIN=1 to force
+  retransmission and progression. Use OMX_WAITSPIN=0 to force
   sleeping.
 * No background progression or retransmission is done if the
   application does not invoke an Open-MX routine explicitly.
