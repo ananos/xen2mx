@@ -46,10 +46,10 @@ LINUX_BUILD="/lib/modules/"`uname -r`"/build"
 # If the user changes the source, use it as build by default
 # If it changes the build, do not use it as the source by default
 AC_ARG_WITH(linux,
-	[  --with-linux=<dir>	location of the Linux kernel source],
+	[  --with-linux=<dir>			location of the Linux kernel source],
 	LINUX_SRC="$withval"; LINUX_BUILD="$withval")
 AC_ARG_WITH(linux-build,
-	[  --with-linux-build=<dir>	location of the Linux kernel build tree],
+	[  --with-linux-build=<dir>		location of the Linux kernel build tree],
 	LINUX_BUILD="$withval")
 AC_ARG_WITH(linux-release,
 	[  --with-linux-release=<version>	release number of the target kernel],
@@ -234,7 +234,7 @@ else
   AC_SUBST(OMX_DEBUG, 0)
 fi
 
-AC_ARG_ENABLE(valgrind, [  --enable-valgrind	enable Valgrind hooks in the library ],
+AC_ARG_ENABLE(valgrind, [  --enable-valgrind		enable Valgrind hooks in the library ],
 	      enable_valgrind=$enableval, enable_valgrind=maybe)
 AC_MSG_CHECKING(if valgrind hooks are enabled)
 if test x$enable_valgrind != xno -a x$enable_debug = xyes; then
@@ -247,14 +247,14 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_ARG_WITH(peers-file, [  --with-peers-file	use argument as a static peers file],
+AC_ARG_WITH(peers-file, [  --with-peers-file=<path>		use argument as a static peers file],
 	    with_peers_file=$withval, with_peers_file=none)
 if test x$with_peers_file != xnone; then
   AC_MSG_NOTICE(using static peers file in $with_peers_file)
 fi
 AC_SUBST(PEERS_FILE, $with_peers_file)
 
-AC_ARG_ENABLE(mx, [  --disable-mx	disable MX API compatibility wrappers],
+AC_ARG_ENABLE(mx, [  --disable-mx			disable MX API compatibility wrappers],
 	      enable_mx=$enableval, enable_mx=yes)
 AC_MSG_CHECKING(if MX API compatibility wrappers are enabled)
 if test x$enable_mx = xyes; then
@@ -276,7 +276,7 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_ARG_WITH(ethertype, [  --with-ethertype=<value>	change Ethertype (default is 0x86DF)],
+AC_ARG_WITH(ethertype, [  --with-ethertype=<value>		change Ethertype (default is 0x86DF)],
 	    ethertype=$withval, ethertype=default)
 AC_MSG_CHECKING(the Ethertype to use)
 if test x$ethertype = xdefault; then
