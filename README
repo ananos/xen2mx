@@ -84,6 +84,19 @@ By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
 the configure line to change this (or set prefix on the 'make install'
 command line).
 
+To simplify Open-MX startup, you might want to install the initialization
+script on each node:
+    $ sbin/omx_local_install
+Then Open-MX may be started with:
+    $ /etc/init.d/open-mx start
+You might want to configure your system to auto-load this script at
+startup.
+
+The /etc/open-mx/open-mx.conf may be modified to configure which
+interfaces should be attached at startup.
+The /etc/open-mx/peers file may be created and filled with a static
+peers table (see V).
+
 +---------------------
 | II.b. Kernel Module
 
@@ -181,10 +194,13 @@ $ ifconfig eth2 mtu 9000
 +--------------------+
 
 A file listing peers must be provided to store the list of hostnames
-and mac addresses in the driver. You should the omx_init_peers tool
-to setup this list. Or the --with-peers-file=<path> configure option
-may be used so that the omx_init startup script takes care of running
-omx_init_peers automatically.
+and mac addresses in the driver. The omx_init_peers tool may be used to
+setup this list.
+
+The omx_init startup script takes care of running omx_init_peers
+automatically using /etc/open-mx/peers when it exists.
+The --with-peers-file=<path> configure option may be used to change
+the location of this default peers file to load in omx_init.
 
 The contents of the file is one line per peer, each containing
 2 fields (seperated by spaces or tabs):

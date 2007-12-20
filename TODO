@@ -29,8 +29,6 @@
   + thread safety (including omx_wakeup)
   + omx_set_error_handler - if the default is return, I do not need this 
 
-* omx_local_install and update INSTALL
-* /etc/init.d/open-mx script with IFACES variable in /etc/open-mx.conf
 * sethostname ioctl
 * ioctls to change board indexes?
 

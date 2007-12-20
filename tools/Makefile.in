@@ -64,6 +64,11 @@ installonly:
 		-e 's£@omx_peers_file@£@PEERS_FILE@£' \
 		< @srcdir@/omx_init.in > omx_init
 	$(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/
+	$(SED)	-e 's£@omx_install_prefix@£$(prefix)£' \
+		< @srcdir@/omx_local_install.in > omx_local_install
+	$(INSTALL) -m 0755 omx_local_install $(DESTDIR)$(sbindir)/
+	cp @srcdir@/open-mx.conf open-mx.conf
+	$(INSTALL) -m 0644 open-mx.conf $(DESTDIR)$(sbindir)/
 
 install: all installonly
 

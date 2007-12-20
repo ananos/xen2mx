@@ -19,6 +19,7 @@ GROUP=@omx_device_group@
 MODE=@omx_device_mode@
 PEERS_FILE=@omx_peers_file@
 
+OMX_CONFIG=/etc/open-mx/open-mx.conf
 LINUX_RELEASE=$(uname -r)
 
 set -e
@@ -28,6 +29,9 @@ if test ! -d ${OMX_PREFIX}; then
     echo "OMX_PREFIX isn't pointing to a valid directory"
     exit 1
 fi
+
+test -f ${OMX_CONFIG} && source ${OMX_CONFIG}
+OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${IFACES}"
 
 # Remove the Open-MX module if loaded
 unload_omx() {
@@ -78,11 +82,11 @@ load_omx() {
 	|| echo "[ERROR] Failed to set group"
 
     # initialize peers
-    if test x${PEERS_FILE} != xnone; then
+    if test -f ${PEERS_FILE}; then
 	echo "Initializing peers using file '${PEERS_FILE}'"
 	${OMX_PREFIX}/bin/omx_init_peers -c "${PEERS_FILE}"
     else
-	echo "Not initializing peers, remember to run omx_peers_init"
+	echo "Peers file ${PEERS_FILE} does not exist, remember to run omx_peers_init with the correct file"
     fi
 }
 

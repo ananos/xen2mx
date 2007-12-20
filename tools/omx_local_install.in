@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Note that this is replaced by make install, not configure!
+OMX_PREFIX=@omx_install_prefix@
+
+OMX_INIT_SCRIPT=${OMX_PREFIX}/sbin/omx_init
+OMX_INIT_SCRIPT_DEST=/etc/init.d/open-mx
+
+OMX_CONFIG_STUB=${OMX_PREFIX}/sbin/open-mx.conf
+OMX_CONFIG_DIR=/etc/open-mx
+OMX_CONFIG_DEST=${OMX_CONFIG_DIR}/open-mx.conf
+
+set -e
+
+if test ! -d ${OMX_PREFIX}; then
+    echo "Something bad happened with the install script"
+    echo "OMX_PREFIX isn't pointing to a valid directory"
+    exit 1
+fi
+
+DATE=$(date +%Y%m%d.%H%M%S)
+
+if test -f ${OMX_INIT_SCRIPT_DEST} ; then
+	echo "Saving the old ${OMX_INIT_SCRIPT_DEST} into ${OMX_INIT_SCRIPT_DEST}.${DATE}..."
+	mv ${OMX_INIT_SCRIPT_DEST} ${OMX_INIT_SCRIPT_DEST}.${DATE}
+fi
+echo "Installing ${OMX_INIT_SCRIPT_DEST}..."
+cp ${OMX_INIT_SCRIPT} ${OMX_INIT_SCRIPT_DEST}
+
+if test ! -f ${OMX_CONFIG_DIR} ; then
+	echo "Creating ${OMX_CONFIG_DIR} directory..."
+	mkdir ${OMX_CONFIG_DIR}
+fi
+
+if test -f ${OMX_CONFIG_DEST} ; then
+	echo "Saving the old ${OMX_CONFIG_DEST} into ${OMX_CONFIG_DEST}.${DATE}..."
+	mv ${OMX_CONFIG_DEST} ${OMX_CONFIG_DEST}.${DATE}
+fi
+echo "Installing a stub ${OMX_CONFIG_DEST}..."
+cp ${OMX_CONFIG_STUB} ${OMX_CONFIG_DEST}

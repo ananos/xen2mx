@@ -1,3 +1,10 @@
+
+* Add sbin/omx_local_install in the install directory to setup the
+  /etc/init.d/open-mx startup script on each node, with the
+  /etc/open-mx/open-mx.conf configuration file.
+  The default static peers file is now /etc/open-mx/peers.
+
+
 Open-MX 0.1.0 (December 20th 2007)
 ==================================
 First official release.

@@ -248,10 +248,8 @@ else
 fi
 
 AC_ARG_WITH(peers-file, [  --with-peers-file=<path>		use argument as a static peers file],
-	    with_peers_file=$withval, with_peers_file=none)
-if test x$with_peers_file != xnone; then
-  AC_MSG_NOTICE(using static peers file in $with_peers_file)
-fi
+	    with_peers_file=$withval, with_peers_file=/etc/open-mx/peers)
+AC_MSG_NOTICE(using static peers file in $with_peers_file)
 AC_SUBST(PEERS_FILE, $with_peers_file)
 
 AC_ARG_ENABLE(mx, [  --disable-mx			disable MX API compatibility wrappers],
