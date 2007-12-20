@@ -23,8 +23,6 @@ all:
 		echo Linking kernel module source files to local directory ; \
 		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || $(LN_S) $$file ; done ; \
 	fi
-	@echo Running compile-time assertions
-	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) CC=$(KCC) omx__assertions.o
 	@echo Building kernel module
 	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) CC=$(KCC)
 

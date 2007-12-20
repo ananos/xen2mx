@@ -133,8 +133,8 @@ The omx_init script takes care of loading the module
 $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
 
 This module works at least on Linux kernels 2.6.17 to 2.6.24 on i386
-and x86_64 architectures. Some modified earlier kernels are not to
-also work.
+and x86_64 architectures. It also builds fine with kernels up to 2.6.15
+but has not been tested intensively on these.
 
 Once the module is loaded, udev creates a /dev/open-mx file which is
 used by user-space libraries and programs. Additionally, the Open-MX

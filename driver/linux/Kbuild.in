@@ -6,3 +6,5 @@ open-mx-objs	:=	omx_main.o omx_dev.o omx_peer.o \
 			omx_net.o omx_send.o omx_recv.o \
 			omx_reg.o omx_pull.o omx_dma.o \
 			omx_event.o
+
+obj-m	+=	omx__assertions.o

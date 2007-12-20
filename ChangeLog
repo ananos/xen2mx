@@ -4,7 +4,7 @@ Open-MX 0.1.0 (December 20th 2007)
 * API compatibility with MX 1.2 (almost complete).
 * Wire compatibility with MX 1.2 (under development).
 * Message retransmission.
-* Support for kernel >= 2.6.17 (and some modified earlier kernels).
+* Support for kernel >= 2.6.15.
 
 Caveats:
 * Node disconnection not well recovered (some requests will remain
