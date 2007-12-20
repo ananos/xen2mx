@@ -15,7 +15,7 @@
 # See the GNU General Public License in COPYING.GPL for more details.
 
 AC_INIT([Open-MX],
-        0.0.0,
+        0.1.0,
         [http://gforge.inria.fr/projects/open-mx],
         open-mx)
 AC_PREREQ(2.60)

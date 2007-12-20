@@ -112,8 +112,6 @@
     if we are not notified of the IOAT completion end?
   + might be easier medium with kernel matching?
 
-* add a VERSION file and a script to update MODULE_VERSION, COPYING and file headers ?
-
 * non MXoE compatible extensions:
   + rdma in both direction with optional notification containing the target window id ?
   + no notify message, report event on rdma get completion ?
