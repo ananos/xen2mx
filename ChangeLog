@@ -1,7 +1,8 @@
 Open-MX 0.1.0 (December 20th 2007)
 ==================================
+First official release.
+
 Status:
-* First official release.
 * API compatibility with MX 1.2 (almost complete).
 * Wire compatibility with MX 1.2 (still under development).
 * Message retransmission.
@@ -30,3 +31,122 @@ Caveats:
 * No background progression or retransmission is done if the
   application does not invoke an Open-MX routine explicitly.
 
+
+
+
+
+Open-MX alpha 2007-12-03 23:37 (svn r815)
+=========================================
+This release works well up-to 32kB but still has problems above. MPICH-MX
+completes the full IMB benchmark suite if using less than 32kB max.
+
+Changes:
+* Add retransmission support
+  + Using piggyack or delayed explicit acks in the lib
+  + Using kernel timers for pull in the driver
+  + All requests have a default timeout of 1000s
+    - It may be configured with the new omx_set_request_timeout()
+  + Add omx_forget() to avoid getting a completion event from a request
+  + Allow buffered send to be completed before being acked, and OMX_ZOMBIE_SEND=0 to disable it
+  + Add incomplete omx_disconnect() support
+  + Add nacks on bad sessions, endpoints, or rdma windows
+  + Add some module parameters to simulate packet loss
+* Add support for communication to self
+  + May be disabled with --disable-self or OMX_DISABLE_SELF=1
+* Add sleeping support
+  + Disabled for now unless OMX_WAITSPIN=0 is set since it prevents progression from happening
+* Add timeout support for blocking functions in the API
+* More MX API compat wrapper fixes to help mpich-mx work
+* Add Linux 2.6.24 support
+* Drop OMX_PEERS_FILENAME and add tools/omx_init_peers to load/clear the table
+* Configuration enhancements
+  + Add a trivial registration cache, disabled by default, enabled through OMX_RCACHE=1
+  + Drop omx_ prefix from module parameters and add description for modinfo output
+  + More options to omx_pingpong
+* Miscellaneous optimizations
+  + Reduce useless memsetting of request structure to 0
+  + Do not post a pull request if length is 0
+  + Add --disable-endian to reduce overhead on homogeneous architectures
+* Debugging improvements
+  + Add valgrind ioctl hooks
+  + Only print verbose messages in the lib when --enable-debug is passed and OMX_VERBOSE is set
+  + No debug messages by default in the driver
+* Improve communication between the lib and the driver
+  + Rework event reporting from the driver so that event queue full are easier to handle
+  + Add shared mappings between the lib and driver to exchange various info instead of using ioctl
+* Fix various memory leaks and minor bugs
+
+Open-MX alpha 2007-10-01 10:53
+==============================
+Changes:
+* Improve kernel module management
+  + Add an omx_init script to start/stop
+  + Create the /dev/open-mx with correct group and permissions in omx_init
+    . Add --with-device to configure it
+  + Fix the way we retrieve LINUX_RELEASE to support some non-vanilla kernels
+    . Add --with-linux-release to override it
+* Non MX-wire compatible improvements
+  + Add --disable-mx-wire to disable native MX wire compatibility
+  + Add --with-ethertype to change the Ethernet packet type
+  + Send 31*8kB instead of 8*4kB in non-MX-wire compatible
+  + Display several configuration options when loading the driver
+* Large messages fixes
+  + Fix pull seqnum wrap-around for very large messages
+  + Fix RDMA id boundaries confusion between the lib and the driver
+  + Complete the right large send when a notify arrives
+* Event management improvements
+  + Split event queue into expected and unexpected queues to avoid losing expected events in case of event queue full
+  + Support queueing of medium send and large receive to manage the expected event queue properly
+* Build improvements
+  + Support overriding CC/AR/... on the configure or  make command line.
+  + Support overriding the kernel module compiler with KCC
+  + Fix configure.ac script for some strange autoconf version
+* Lib improvements
+  + Cleanup request state bitmask
+  + Optimize the lib with likely/unlikely when built with GCC
+  + Fix memory leak caused by requests never being freed
+  + Add support for 0-segments in the MX API compat wrappers
+* Change packet contents into network order to support multiple endian-different architectures
+* Add minimal NACK support to detect wrong or closed endpoints on connect
+* Make kernel debug messages runtime configurable through sysfs and only enable the important ones by default if --enable-debug was passed
+* Add omx_endpoint_info
+
+Open-MX alpha 2007-09-19 11:58
+==============================
+Changes:
+* New functions
+  + omx_cancel
+  + omx_progress
+  + omx_disable/reenable_progression
+  + omx_context
+* Pipeline 2 pull block request during large messages
+* Fix completion of requests with correct status and lengths, and handle truncation.
+* Improve MX API compatibility wrappers
+* Fix dependencies in libopen-mx/
+
+Open-MX alpha 2007-09-08 21:00
+==============================
+Changes:
+* New functions:
+  + omx_issend
+  + omx_test_any, omx_wait_any
+  + omx_iprobe, omx_probe
+  + omx_iconnect
+  + omx_get/set_endpoint_addr_context
+  + omx_register_unexp_handler
+* Endpoint parameters
+  + Support for context ids
+* Preliminary wrappers for MX API compatibility
+* Support reconnection from a new instance of a peer
+* Cleanup omx_pingpong behavior
+* Make sure make clean does not delete driver source files
+* Various minor fixes
+
+Open-MX alpha 2007-09-05 12:05
+==============================
+Changes:
+* Board hostnames are now MX-compatible (<hostname>:<boardnumber>)
+
+Open-MX alpha 2007-09-04 11:47
+==============================
+First release with support for all message sizes.
