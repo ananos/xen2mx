@@ -32,6 +32,8 @@
 
 #define OMX_MTU_MIN ((unsigned)(sizeof(struct omx_hdr)+max(OMX_PULL_REPLY_LENGTH_MAX,OMX_SENDQ_ENTRY_SIZE)))
 
+#define OMX_IFNAMES_DEFAULT "all"
+
 /* globals */
 extern int omx_iface_max;
 extern int omx_endpoint_max;

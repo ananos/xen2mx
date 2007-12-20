@@ -733,7 +733,7 @@ omx_net_init(const char * ifnames)
 		goto out_with_notifier;
 	}
 
-	if (ifnames) {
+	if (strcmp(ifnames, OMX_IFNAMES_DEFAULT)) {
 		/* attach ifaces whose name are in ifnames (limited to omx_iface_max) */
 		char * copy = kstrdup(ifnames, GFP_KERNEL);
 		char * ifname;

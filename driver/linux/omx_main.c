@@ -31,7 +31,7 @@
  * Module parameters
  */
 
-static char * omx_ifnames = NULL;
+static char * omx_ifnames = OMX_IFNAMES_DEFAULT;
 module_param_named(ifnames, omx_ifnames, charp, S_IRUGO); /* modifiable by the attached sysfs file */
 MODULE_PARM_DESC(ifnames, "Interfaces to attach on startup");
 
