@@ -215,7 +215,7 @@ Since the Open-MX Ethernet type is generally not part of these common types,
 linearizing might occur and cause an important performance degradation.
 To avoid this, if IPv6 is not in use, you might tell Open-MX to use the IPv6
 Ethernet type, which will not be linearized by the drivers. To do so, you
-should pass --with-ethertype=0x88B7 to the configure command line.
+should pass --with-ethertype=0x86DD to the configure command line.
 
 +--------------------------
 | VI.c. Registration Cache
