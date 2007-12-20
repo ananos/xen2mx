@@ -1,10 +1,23 @@
 Open-MX 0.1.0 (December 20th 2007)
 ==================================
+Status:
 * First official release.
 * API compatibility with MX 1.2 (almost complete).
-* Wire compatibility with MX 1.2 (under development).
+* Wire compatibility with MX 1.2 (still under development).
 * Message retransmission.
 * Support for kernel >= 2.6.15.
+
+Other improvements from previous snapshot:
+* Warn in user-space when opening an endpoint if its interface is not
+  up or does not have a large enough MTU.
+* Fix sequence number wrap-around all over the library code to handle
+  long-term connections better.
+* Ignore some packets instead of aborting in case of high-level of
+  reordering on the network.
+* Limit zombie send requests to 512 by default.
+* Add various per-interface countersin the driver and the omx_counters
+  tool to display/clear them.
+* Make OMX_VERBOSE configurable to select which debug messages to show.
 
 Caveats:
 * Node disconnection not well recovered (some requests will remain
