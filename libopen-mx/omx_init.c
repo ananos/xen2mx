@@ -69,6 +69,7 @@ omx__init_api(int api)
   if (env)
     omx__globals.regcache = 1;
 
+#ifdef OMX_DEBUG
   omx__globals.verbose = 0;
   env = getenv("OMX_VERBOSE");
   if (env) {
@@ -97,6 +98,7 @@ omx__init_api(int api)
     }
     omx__globals.verbose = val;
   }
+#endif /* OMX_DEBUG */
 
   omx__globals.waitspin = 1; /* FIXME: default until wait takes care of the progression timeout */
   env = getenv("OMX_WAITSPIN");
