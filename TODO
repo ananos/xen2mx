@@ -1,7 +1,5 @@
 * cleanup skb allocation and init
-  + no memset in new_skb
-  + do not init skb->sk in new_skb
-  + move skb->skb in queue_xmit
+  + move skb->dev in queue_xmit
   + store dev->dev_addr in iface
 
 * factorize early and msg seqnum index computing (cache them?)

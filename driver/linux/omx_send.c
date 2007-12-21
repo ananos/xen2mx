@@ -51,7 +51,6 @@ omx_new_skb(struct net_device *ifp, unsigned long len)
 		skb->protocol = __constant_htons(ETH_P_OMX);
 		skb->priority = 0;
 		skb_put(skb, len);
-		memset(skb->head, 0, len);
 		skb->next = skb->prev = NULL;
 		skb->dev = ifp;
 
@@ -59,9 +58,6 @@ omx_new_skb(struct net_device *ifp, unsigned long len)
 		 * or to get the NIC to do it
 		 */
 		skb->ip_summed = CHECKSUM_NONE;
-
-		/* skb->sk is used as a pointer to a private data, initialize it */
-		skb->sk = NULL;
 	}
 	return skb;
 }
