@@ -40,7 +40,7 @@ static unsigned long omx_nack_mcp_packet_loss_index = 0;
  * Allocate and initialize a OMX skb
  */
 struct sk_buff *
-omx_new_skb(struct net_device *ifp, unsigned long len)
+omx_new_skb(unsigned long len)
 {
 	struct sk_buff *skb;
 
@@ -52,7 +52,6 @@ omx_new_skb(struct net_device *ifp, unsigned long len)
 		skb->priority = 0;
 		skb_put(skb, len);
 		skb->next = skb->prev = NULL;
-		skb->dev = ifp;
 
 		/* tell the network layer not to perform IP checksums
 		 * or to get the NIC to do it
@@ -105,7 +104,6 @@ omx_send_tiny(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
 	struct omx_cmd_send_tiny_hdr cmd;
-	struct net_device * ifp = iface->eth_ifp;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
 	char * data;
 	int ret;
@@ -126,8 +124,7 @@ omx_send_tiny(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out;
 	}
 
-	skb = omx_new_skb(ifp,
-			  /* pad to ETH_ZLEN */
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
@@ -172,7 +169,7 @@ omx_send_tiny(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(skb, tiny);
+	omx_queue_xmit(iface, skb, tiny);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_TINY);
 
 	return 0;
@@ -191,7 +188,6 @@ omx_send_small(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
 	struct omx_cmd_send_small cmd;
-	struct net_device * ifp = iface->eth_ifp;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
 	char * data;
 	int ret;
@@ -212,8 +208,7 @@ omx_send_small(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out;
 	}
 
-	skb = omx_new_skb(ifp,
-			  /* pad to ETH_ZLEN */
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
@@ -258,7 +253,7 @@ omx_send_small(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(skb, small);
+	omx_queue_xmit(iface, skb, small);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_SMALL);
 
 	return 0;
@@ -277,7 +272,6 @@ omx_send_medium(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
 	struct omx_cmd_send_medium cmd;
-	struct net_device * ifp = iface->eth_ifp;
 	uint16_t sendq_page_offset;
 	struct page * page;
 	struct omx_deferred_event * defevent;
@@ -316,8 +310,7 @@ omx_send_medium(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out;
 	}
 
-	skb = omx_new_skb(ifp,
-			  /* only allocate space for the header now,
+	skb = omx_new_skb(/* only allocate space for the header now,
 			   * we'll attach pages and pad to ETH_ZLEN later
 			   */
 			   hdr_len);
@@ -381,7 +374,7 @@ omx_send_medium(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	skb->sk = (void *) defevent;
 	skb->destructor = omx_medium_frag_skb_destructor;
 
-	omx_queue_xmit(skb, medium);
+	omx_queue_xmit(iface, skb, medium);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_MEDIUM_FRAG);
 
 	/* return>0 to tell the caller to not release the endpoint,
@@ -405,7 +398,6 @@ omx_send_rndv(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
 	struct omx_cmd_send_rndv_hdr cmd;
-	struct net_device * ifp = iface->eth_ifp;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
 	char * data;
 	int ret;
@@ -426,8 +418,7 @@ omx_send_rndv(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out;
 	}
 
-	skb = omx_new_skb(ifp,
-			  /* pad to ETH_ZLEN */
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
@@ -472,7 +463,7 @@ omx_send_rndv(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(skb, rndv);
+	omx_queue_xmit(iface, skb, rndv);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_RNDV);
 
 	return 0;
@@ -491,7 +482,6 @@ omx_send_connect(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
 	struct omx_cmd_send_connect_hdr cmd;
-	struct net_device * ifp = iface->eth_ifp;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_connect);
 	char * data;
 	int ret;
@@ -512,8 +502,7 @@ omx_send_connect(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out;
 	}
 
-	skb = omx_new_skb(ifp,
-			  /* pad to ETH_ZLEN */
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
@@ -556,7 +545,7 @@ omx_send_connect(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(skb, connect);
+	omx_queue_xmit(iface, skb, connect);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_CONNECT);
 
 	return 0;
@@ -575,7 +564,6 @@ omx_send_notify(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
 	struct omx_cmd_send_notify cmd;
-	struct net_device * ifp = iface->eth_ifp;
 	int ret;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
@@ -585,8 +573,7 @@ omx_send_notify(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out;
 	}
 
-	skb = omx_new_skb(ifp,
-			  /* pad to ETH_ZLEN */
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create notify skb\n");
@@ -622,7 +609,7 @@ omx_send_notify(struct omx_endpoint * endpoint, struct omx_iface * iface,
 
 	omx_send_dprintk(eh, "NOTIFY");
 
-	omx_queue_xmit(skb, notify);
+	omx_queue_xmit(iface, skb, notify);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_NOTIFY);
 
 	return 0;
@@ -641,7 +628,6 @@ omx_send_truc(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
 	struct omx_cmd_send_truc cmd;
-	struct net_device * ifp = iface->eth_ifp;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_truc);
 	char * data;
 	uint8_t length;
@@ -662,8 +648,7 @@ omx_send_truc(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out;
 	}
 
-	skb = omx_new_skb(ifp,
-			  /* pad to ETH_ZLEN */
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
@@ -705,7 +690,7 @@ omx_send_truc(struct omx_endpoint * endpoint, struct omx_iface * iface,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(skb, truc);
+	omx_queue_xmit(iface, skb, truc);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_TRUC);
 
 	return 0;
@@ -723,11 +708,9 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
-	struct net_device * ifp = iface->eth_ifp;
 	int ret;
 
-	skb = omx_new_skb(ifp,
-			  /* pad to ETH_ZLEN */
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
@@ -762,7 +745,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	omx_send_dprintk(eh, "NACK LIB type %d", nack_type);
 
-	omx_queue_xmit(skb, nack_lib);
+	omx_queue_xmit(iface, skb, nack_lib);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_NACK_LIB);
 
 	return;
@@ -782,11 +765,9 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
-	struct net_device * ifp = iface->eth_ifp;
 	int ret;
 
-	skb = omx_new_skb(ifp,
-			  /* pad to ETH_ZLEN */
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
@@ -821,7 +802,7 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	omx_send_dprintk(eh, "NACK MCP type %d", nack_type);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_NACK_MCP);
 
-	omx_queue_xmit(skb, nack_mcp);
+	omx_queue_xmit(iface, skb, nack_mcp);
 
 	return;
 
@@ -843,7 +824,6 @@ omx_cmd_bench(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
-	struct net_device * ifp = iface->eth_ifp;
 	struct omx_cmd_bench_hdr cmd;
 	char data[OMX_TINY_MAX];
 	int ret = 0;
@@ -863,7 +843,7 @@ omx_cmd_bench(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	if (cmd.type == OMX_CMD_BENCH_TYPE_PARAMS)
 		goto out;
 
-	skb = omx_new_skb(ifp, ETH_ZLEN);
+	skb = omx_new_skb(ETH_ZLEN);
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create bench skb\n");
 		ret = -ENOMEM;
@@ -896,6 +876,7 @@ omx_cmd_bench(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	if (cmd.type == OMX_CMD_BENCH_TYPE_SEND_FILL)
 		goto out_with_skb;
 
+	skb->dev = iface->eth_ifp;
 	dev_queue_xmit(skb); /* no need to use omx_queue_xmit here */
 
 	/* level 05: send done */

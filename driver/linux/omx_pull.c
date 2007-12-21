@@ -572,7 +572,6 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 			    struct omx_pull_block_desc * desc)
 {
 	struct omx_iface * iface = handle->iface;
-	struct net_device * ifp = iface->eth_ifp;
 	uint32_t frame_index = desc->frame_index;
 	uint32_t block_length = desc->block_length;
 	uint32_t first_frame_offset = desc->first_frame_offset;
@@ -581,8 +580,7 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 	struct omx_pkt_pull_request * pull_n;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_request);
 
-	skb = omx_new_skb(ifp,
-			  /* pad to ETH_ZLEN */
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
@@ -697,10 +695,10 @@ omx_send_pull(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	 */
 	omx_pull_handle_release(handle);
 
-	omx_queue_xmit(skb, pull);
+	omx_queue_xmit(iface, skb, pull);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 	if (skb2) {
-		omx_queue_xmit(skb2, pull);
+		omx_queue_xmit(iface, skb2, pull);
 		omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 	}
 
@@ -745,7 +743,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		/* request the first block again */
 		skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 		if (!IS_ERR(skb)) {
-			omx_queue_xmit(skb, pull);
+			omx_queue_xmit(iface, skb, pull);
 			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 		}
 		handle->already_requeued_first = 0;
@@ -755,7 +753,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		/* request the second block again */
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (!IS_ERR(skb)) {
-			omx_queue_xmit(skb, pull);
+			omx_queue_xmit(iface, skb, pull);
 			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 		}
 	}
@@ -796,7 +794,6 @@ omx_recv_pull(struct omx_iface * iface,
 	struct omx_hdr *reply_mh;
 	struct ethhdr *reply_eh;
 	size_t reply_hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_reply);
-	struct net_device * ifp = iface->eth_ifp;
 	struct omx_user_region *region;
 	struct sk_buff *skb = NULL;
 	uint32_t current_frame_seqnum, current_msg_offset, block_remaining_length;
@@ -879,8 +876,7 @@ omx_recv_pull(struct omx_iface * iface,
 		uint32_t frame_length;
 
 		/* allocate a skb */
-		struct sk_buff *skb = omx_new_skb(ifp,
-						  /* only allocate space for the header now,
+		struct sk_buff *skb = omx_new_skb(/* only allocate space for the header now,
 						   * we'll attach pages and pad to ETH_ZLEN later
 						   */
 						  reply_hdr_len);
@@ -951,7 +947,7 @@ omx_recv_pull(struct omx_iface * iface,
 		/* now that the skb is ready, remove it from the array
 		 * so that we don't try to free it in case of error later
 		 */
-		omx_queue_xmit(skb, pull_reply);
+		omx_queue_xmit(iface, skb, pull_reply);
 		omx_counter_inc(iface, OMX_COUNTER_SEND_PULL_REPLY);
 
 		/* update fields now */
@@ -1138,7 +1134,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
 			if (!IS_ERR(skb)) {
-				omx_queue_xmit(skb, pull);
+				omx_queue_xmit(iface, skb, pull);
 				omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 			}
 
@@ -1220,11 +1216,11 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_release(handle);
 
 		if (skb) {
-			omx_queue_xmit(skb, pull);
+			omx_queue_xmit(iface, skb, pull);
 			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 		}
 		if (skb2) {
-			omx_queue_xmit(skb2, pull);
+			omx_queue_xmit(iface, skb2, pull);
 			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 		}
 

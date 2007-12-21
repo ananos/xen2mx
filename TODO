@@ -1,8 +1,7 @@
-* cleanup skb allocation and init
-  + stop using ifp in send and pull, move it to queue_xmit
-  + move skb->dev in queue_xmit
-
 * skb_clone and alloc_skb_fclone for pull and pull replies?
+
+* change loss variables into capitals and integrate counters_inc
+  into queue_xmit
 
 * factorize early and msg seqnum index computing (cache them?)
 
