@@ -480,7 +480,7 @@ omx_ifaces_store(const char *buf, size_t size)
  * Attach a new endpoint
  */
 int
-omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
+omx_iface_attach_endpoint(struct omx_endpoint * endpoint, struct omx_iface **ifacep)
 {
 	struct omx_iface * iface;
 	int ret;
@@ -521,6 +521,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	iface->endpoints[endpoint->endpoint_index] = endpoint ;
 	iface->endpoint_nr++;
 	endpoint->iface = iface;
+	*ifacep = iface;
 
 	/* mark the endpoint as open here so that anybody removing this
 	 * iface never sees any endpoint in status INIT in the iface list
@@ -555,9 +556,10 @@ void
 omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 			   int ifacelocked)
 {
-	struct omx_iface * iface = endpoint->iface;
+	struct omx_iface * iface;
 
 	BUG_ON(endpoint->status != OMX_ENDPOINT_STATUS_CLOSING);
+	iface = endpoint->iface;
 
 	/* lock the list of endpoints in the iface, if needed */
 	if (!ifacelocked)

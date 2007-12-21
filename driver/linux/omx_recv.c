@@ -105,7 +105,7 @@ omx_recv_connect(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, iface, OMX_EVT_RECV_CONNECT, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "CONNECT packet because of unexpected event queue full");
@@ -209,7 +209,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, iface, OMX_EVT_RECV_TINY, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "TINY packet because of unexpected event queue full");
@@ -299,7 +299,7 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_offset);
+	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, iface, &recvq_offset);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet because of unexpected event queue full");
@@ -408,7 +408,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* get the eventq slot */
-	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, &recvq_offset);
+	err = omx_prepare_notify_unexp_event_with_recvq(endpoint, iface, &recvq_offset);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of unexpected event queue full");
@@ -534,7 +534,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, iface, OMX_EVT_RECV_RNDV, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet because of unexpected event queue full");
@@ -613,7 +613,7 @@ omx_recv_notify(struct omx_iface * iface,
 	event.specific.notify.puller_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_seqnum);
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, iface, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet because of unexpected event queue full");
@@ -708,7 +708,7 @@ omx_recv_truc(struct omx_iface * iface,
 	BUG_ON(err < 0);
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_TRUC, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, iface, OMX_EVT_RECV_TRUC, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet because of unexpected event queue full");
@@ -786,7 +786,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	event.nack_type = nack_type; /* types are different, values are the same */
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, iface, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "NACK LIB packet because of unexpected event queue full");

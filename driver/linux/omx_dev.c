@@ -122,6 +122,7 @@ static int
 omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 {
 	struct omx_cmd_open_endpoint param;
+	struct omx_iface *iface;
 	struct net_device *ifp;
 	int ret;
 
@@ -151,7 +152,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 		goto out_with_init;
 
 	/* attach the endpoint to the iface */
-	ret = omx_iface_attach_endpoint(endpoint);
+	ret = omx_iface_attach_endpoint(endpoint, &iface);
 	if (ret < 0)
 		goto out_with_resources;
 
@@ -159,7 +160,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 	strncpy(endpoint->opener_comm, current->comm, TASK_COMM_LEN);
 
 	/* check iface status */
-	ifp = endpoint->iface->eth_ifp;
+	ifp = iface->eth_ifp;
 	if (!(dev_get_flags(ifp) & IFF_UP))
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN;
 	if (ifp->mtu < OMX_MTU_MIN)
@@ -245,7 +246,7 @@ omx_endpoint_close(struct omx_endpoint * endpoint)
  */
 
 static inline int
-omx_endpoint_acquire_from_ioctl(struct omx_endpoint * endpoint)
+omx_endpoint_acquire_from_ioctl(struct omx_endpoint * endpoint, struct omx_iface ** ifacep)
 {
 	int ret = -EINVAL;
 
@@ -254,6 +255,8 @@ omx_endpoint_acquire_from_ioctl(struct omx_endpoint * endpoint)
 		goto out_with_lock;
 
 	atomic_inc(&endpoint->refcount);
+	if (likely(ifacep))
+		*ifacep = endpoint->iface;
 
 	read_unlock(&endpoint->lock);
 	return 0;
@@ -350,7 +353,7 @@ omx_miscdev_release(struct inode * inode, struct file * file)
  * returns 0 on success, <0 on error,
  * 1 when success and does not want to release the reference on the endpoint
  */
-static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
+static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam) = {
 	[OMX_CMD_BENCH]			= omx_cmd_bench,
 	[OMX_CMD_SEND_TINY]		= omx_send_tiny,
 	[OMX_CMD_SEND_SMALL]		= omx_send_small,
@@ -393,7 +396,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		int use_endpoint = 0;
 
 		/* try to acquire the endpoint */
-		ret = omx_endpoint_acquire_from_ioctl(endpoint);
+		ret = omx_endpoint_acquire_from_ioctl(endpoint, NULL);
 		if (ret < 0) {
 			/* the endpoint is not open, get the command parameter and use its board_index */
 			ret = copy_from_user(&get_board_id, (void __user *) arg,
@@ -577,15 +580,16 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 	case OMX_CMD_WAIT_EVENT:
 	{
 		struct omx_endpoint * endpoint = file->private_data;
+		struct omx_iface * iface = NULL;
 
 		BUG_ON(cmd >= ARRAY_SIZE(omx_cmd_with_endpoint_handlers));
 		BUG_ON(omx_cmd_with_endpoint_handlers[cmd] == NULL);
 
-		ret = omx_endpoint_acquire_from_ioctl(endpoint);
+		ret = omx_endpoint_acquire_from_ioctl(endpoint, &iface);
 		if (unlikely(ret < 0))
 			goto out;
 
-		ret = omx_cmd_with_endpoint_handlers[cmd](endpoint, (void __user *) arg);
+		ret = omx_cmd_with_endpoint_handlers[cmd](endpoint, iface, (void __user *) arg);
 
 		/* if ret > 0, the caller wants to keep a reference on the endpoint */
 		if (likely(ret <= 0))

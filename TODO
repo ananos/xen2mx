@@ -35,8 +35,8 @@
 
 * rework the whole locking
   + use nice refcount
-  + acquire the iface (or ifp?) ptr in ioctl so that we can detach an endpoint later
-    - NULL'ify the endpoint->iface right after setting the endpoint state to CLOSING
+  + take a ref on the iface during ioctl/acquire?
+  + NULL'ify the endpoint->iface right after setting the endpoint state to CLOSING
   + reduce spinlock hold-time in pull-request/reply
   + use rcu for the pull handle thread
 * fix oops when removing the module while some pull handle are busy
