@@ -23,6 +23,7 @@
 #include <linux/netdevice.h>
 #include <linux/list.h>
 #include <linux/idr.h>
+#include <linux/kref.h>
 
 #include "omx_wire.h"
 #include "omx_io.h"
@@ -71,8 +72,8 @@ struct omx_endpoint {
 
 	rwlock_t lock;
 	enum omx_endpoint_status status;
-	atomic_t refcount;
-	wait_queue_head_t noref_queue;
+	struct kref refcount;
+	struct list_head list_elt; /* the list entry for the cleanup list */
 
 	struct omx_iface * iface;
 

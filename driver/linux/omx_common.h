@@ -67,10 +67,11 @@ extern void omx_iface_detach_endpoint(struct omx_endpoint * endpoint, int ifacel
 extern int __omx_endpoint_close(struct omx_endpoint * endpoint, int ifacelocked);
 extern struct omx_endpoint * omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index);
 extern void omx_endpoint_release(struct omx_endpoint * endpoint);
+extern void omx_endpoints_cleanup(void);
 extern int omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index, uint32_t * closed, uint32_t * pid, char * command, size_t len);
 
 static inline void omx_endpoint_reacquire(struct omx_endpoint * endpoint)
-{ atomic_inc(&endpoint->refcount); } /* somebody must already hold a reference */
+{ kref_get(&endpoint->refcount); } /* somebody must already hold a reference */
 
 /* manage ifaces */
 extern int omx_ifaces_show(char *buf);

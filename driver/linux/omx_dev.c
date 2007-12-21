@@ -114,6 +114,47 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 	vfree(endpoint->userdesc);
 }
 
+/****************************
+ * Endpoint Deferred Release
+ */
+
+/* vfree cannot be called from BH, so we just
+ * let the cleanup thread take care of it by moving
+ * endpoints to a cleanup list first
+ */
+static spinlock_t omx_endpoints_cleanup_lock = SPIN_LOCK_UNLOCKED;
+static LIST_HEAD(omx_endpoints_cleanup_list);
+
+/* Called when the last reference on the endpoint is released */
+void
+__omx_endpoint_last_release(struct kref *kref)
+{
+	struct omx_endpoint * endpoint = container_of(kref, struct omx_endpoint, refcount);
+
+	spin_lock(&omx_endpoints_cleanup_lock);
+	list_add(&endpoint->list_elt, &omx_endpoints_cleanup_list);
+	spin_unlock(&omx_endpoints_cleanup_lock);
+}
+
+void
+omx_endpoints_cleanup(void)
+{
+        struct omx_endpoint * endpoint, * next;
+	LIST_HEAD(private_head);
+
+	/* move the whole list to our private head at once */
+	spin_lock_bh(&omx_endpoints_cleanup_lock);
+	list_splice(&omx_endpoints_cleanup_list, &private_head);
+	INIT_LIST_HEAD(&omx_endpoints_cleanup_list);
+	spin_unlock_bh(&omx_endpoints_cleanup_lock);
+
+	/* and now free all endpoints without needing any lock */
+	list_for_each_entry_safe(endpoint, next, &private_head, list_elt) {
+		omx_endpoint_free_resources(endpoint);
+		endpoint->status = OMX_ENDPOINT_STATUS_FREE;
+	}
+}
+
 /******************************
  * Opening/Closing endpoint main routines
  */
@@ -143,7 +184,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 		goto out;
 	}
 	endpoint->status = OMX_ENDPOINT_STATUS_INITIALIZING;
-	atomic_inc(&endpoint->refcount);
+	kref_init(&endpoint->refcount);
 	write_unlock_bh(&endpoint->lock);
 
 	/* alloc internal fields */
@@ -171,20 +212,18 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
  out_with_resources:
 	omx_endpoint_free_resources(endpoint);
  out_with_init:
-	atomic_dec(&endpoint->refcount);
 	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
  out:
 	return ret;
 }
 
-/* Wait for all users to release an endpoint and then close it.
+/* Detach the endpoint and release the reference on it.
  * If already closing, return -EBUSY.
  */
 int
 __omx_endpoint_close(struct omx_endpoint * endpoint,
 		     int ifacelocked)
 {
-	DECLARE_WAITQUEUE(wq, current);
 	int ret;
 
 	/* test whether the endpoint is ok to be closed */
@@ -198,36 +237,14 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 	}
 	/* mark it as closing so that nobody may use it again */
 	endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;
-	/* release our refcount now that other users cannot use again */
-	atomic_dec(&endpoint->refcount);
-	write_unlock_bh(&endpoint->lock);
 
-	/* wait until refcount is 0 so that other users are gone */
-	add_wait_queue(&endpoint->noref_queue, &wq);
-	for(;;) {
-		set_current_state(TASK_INTERRUPTIBLE);
-		if (!atomic_read(&endpoint->refcount))
-			break;
-		if (signal_pending(current)) {
-			set_current_state(TASK_RUNNING);
-			remove_wait_queue(&endpoint->noref_queue, &wq);
-			atomic_inc(&endpoint->refcount);
-			endpoint->status = OMX_ENDPOINT_STATUS_OK;
-			return -EINTR;
-		}
-		schedule();
-	}
-	set_current_state(TASK_RUNNING);
-	remove_wait_queue(&endpoint->noref_queue, &wq);
-
-	/* detach */
+	/* detach from the iface now that nobody can dereference endpoint->iface anymore */
 	omx_iface_detach_endpoint(endpoint, ifacelocked);
+	endpoint->iface = NULL;
 
-	/* release resources */
-	omx_endpoint_free_resources(endpoint);
-
-	/* mark as free now */
-	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
+	/* release our refcount now that other users cannot use again */
+	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
+	write_unlock_bh(&endpoint->lock);
 
 	return 0;
 
@@ -254,7 +271,7 @@ omx_endpoint_acquire_from_ioctl(struct omx_endpoint * endpoint, struct omx_iface
 	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
 		goto out_with_lock;
 
-	atomic_inc(&endpoint->refcount);
+	kref_get(&endpoint->refcount);
 	if (likely(ifacep))
 		*ifacep = endpoint->iface;
 
@@ -291,7 +308,7 @@ omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 		goto out_with_endpoint_lock;
 	}
 
-	atomic_inc(&endpoint->refcount);
+	kref_get(&endpoint->refcount);
 
 	read_unlock(&endpoint->lock);
 	read_unlock(&iface->endpoint_lock);
@@ -308,9 +325,7 @@ void
 omx_endpoint_release(struct omx_endpoint * endpoint)
 {
 	/* decrement refcount and wake up the closer */
-	if (unlikely(atomic_dec_and_test(&endpoint->refcount)
-		     && endpoint->status == OMX_ENDPOINT_STATUS_CLOSING))
-		wake_up(&endpoint->noref_queue);
+	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
 }
 
 /******************************
@@ -328,8 +343,6 @@ omx_miscdev_open(struct inode * inode, struct file * file)
 
 	rwlock_init(&endpoint->lock);
 	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
-	atomic_set(&endpoint->refcount, 0);
-	init_waitqueue_head(&endpoint->noref_queue);
 
 	file->private_data = endpoint;
 	return 0;

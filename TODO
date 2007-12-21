@@ -34,14 +34,12 @@
 * vectorial support, through isendv/irecvv
 
 * rework the whole locking
-  + use nice refcount
   + take a ref on the iface during ioctl/acquire?
-  + NULL'ify the endpoint->iface right after setting the endpoint state to CLOSING
   + reduce spinlock hold-time in pull-request/reply
-  + use rcu for the pull handle thread
+  + use rcu for the pull handle thread? no list_splice_rcu exists
 * fix oops when removing the module while some pull handle are busy
+  + drop pull handles BEFORE closing, after setting to CLOSING
 * disable force until it does not oops?
-* cleanup vfree in the cleanup thread so that it is not done in irq context?
 
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request

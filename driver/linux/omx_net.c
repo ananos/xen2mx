@@ -554,7 +554,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint, struct omx_iface **ifa
  */
 void
 omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
-			   int ifacelocked)
+			  int ifacelocked)
 {
 	struct omx_iface * iface;
 
