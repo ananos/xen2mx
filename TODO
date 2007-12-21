@@ -22,9 +22,6 @@
   + cleanup pending connects too
   + call it when the connect session changed
 
-* cleanup BH locking in pull ?
-  + add a pull_handle_done_release with a BH param?
-
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
   + omx_set_error_handler - if the default is return, I do not need this 
@@ -36,7 +33,12 @@
 
 * vectorial support, through isendv/irecvv
 
-* acquire the iface (or ifp?) ptr in ioctl so that we can detach an endpoint later
+* rework the whole locking
+  + use nice refcount
+  + acquire the iface (or ifp?) ptr in ioctl so that we can detach an endpoint later
+    - NULL'ify the endpoint->iface right after setting the endpoint state to CLOSING
+  + reduce spinlock hold-time in pull-request/reply
+  + use rcu for the pull handle thread
 * fix oops when removing the module while some pull handle are busy
 * disable force until it does not oops?
 * cleanup vfree in the cleanup thread so that it is not done in irq context?

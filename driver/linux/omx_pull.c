@@ -191,19 +191,21 @@ static LIST_HEAD(omx_pull_handles_cleanup_list);
 void
 omx_pull_handles_cleanup(void)
 {
+	LIST_HEAD(private_head);
 	struct omx_pull_handle * handle, * next;
 
+	/* move the whole list to our private head at once */
 	spin_lock_bh(&omx_pull_handles_cleanup_lock);
+	list_splice(&omx_pull_handles_cleanup_list, &private_head);
+	INIT_LIST_HEAD(&omx_pull_handles_cleanup_list);
+	spin_unlock_bh(&omx_pull_handles_cleanup_lock);
 
-	list_for_each_entry_safe(handle, next,
-				 &omx_pull_handles_cleanup_list,
-				 list_elt) {
+	/* and now delete all pull handles without needing any lock */
+	list_for_each_entry_safe(handle, next, &private_head, list_elt) {
 		del_timer_sync(&handle->retransmit_timer);
 		list_del(&handle->list_elt);
 		kfree(handle);
 	}
-
-	spin_unlock_bh(&omx_pull_handles_cleanup_lock);
 }
 
 /******************************
