@@ -44,7 +44,7 @@ omx_new_skb(struct net_device *ifp, unsigned long len)
 {
 	struct sk_buff *skb;
 
-	skb = omx_netdev_alloc_skb(ifp, len);
+	skb = alloc_skb(len, GFP_ATOMIC);
 	if (likely(skb != NULL)) {
 		omx_skb_reset_mac_header(skb);
 		omx_skb_reset_network_header(skb);
@@ -53,6 +53,7 @@ omx_new_skb(struct net_device *ifp, unsigned long len)
 		skb_put(skb, len);
 		memset(skb->head, 0, len);
 		skb->next = skb->prev = NULL;
+		skb->dev = ifp;
 
 		/* tell the network layer not to perform IP checksums
 		 * or to get the NIC to do it
