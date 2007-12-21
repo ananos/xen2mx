@@ -143,7 +143,7 @@ omx_send_tiny(struct omx_endpoint * endpoint, struct omx_iface * iface,
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, cmd.peer_index);
@@ -229,7 +229,7 @@ omx_send_small(struct omx_endpoint * endpoint, struct omx_iface * iface,
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, cmd.peer_index);
@@ -334,7 +334,7 @@ omx_send_medium(struct omx_endpoint * endpoint, struct omx_iface * iface,
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, cmd.peer_index);
@@ -443,7 +443,7 @@ omx_send_rndv(struct omx_endpoint * endpoint, struct omx_iface * iface,
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, cmd.peer_index);
@@ -529,7 +529,7 @@ omx_send_connect(struct omx_endpoint * endpoint, struct omx_iface * iface,
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, cmd.peer_index);
@@ -600,7 +600,7 @@ omx_send_notify(struct omx_endpoint * endpoint, struct omx_iface * iface,
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, cmd.peer_index);
@@ -679,7 +679,7 @@ omx_send_truc(struct omx_endpoint * endpoint, struct omx_iface * iface,
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, cmd.peer_index);
@@ -742,7 +742,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, peer_index);
@@ -801,7 +801,7 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, peer_index);
@@ -878,7 +878,7 @@ omx_cmd_bench(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	eh = &mh->head.eth;
 	memset(eh, 0, sizeof(*eh));
 	omx_board_addr_to_ethhdr_dst(eh, (uint64_t)-1ULL);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 
 	/* level 03: prepare */

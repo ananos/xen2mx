@@ -226,6 +226,9 @@ omx_iface_attach(struct net_device * ifp)
 	iface->hostname = hostname;
 
 	iface->eth_ifp = ifp;
+	/* cache the ifp addr to prevent from dereferencing iface->ifp all the time */
+	memcpy(iface->eth_addr, ifp->dev_addr, sizeof(iface->eth_addr));
+
 	iface->endpoint_nr = 0;
 	iface->endpoints = kzalloc(omx_endpoint_max * sizeof(struct omx_endpoint *), GFP_KERNEL);
 	if (!iface->endpoints) {

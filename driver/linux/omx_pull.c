@@ -303,7 +303,6 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint, struct omx_iface * 
 			     struct omx_pull_handle * handle,
 			     struct omx_cmd_send_pull * cmd)
 {
-	struct net_device * ifp = iface->eth_ifp;
 	struct omx_hdr * mh = &handle->pkt_hdr;
 	struct ethhdr * eh = &mh->head.eth;
 	struct omx_pkt_pull_request * pull_n = &mh->body.pull;
@@ -311,7 +310,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint, struct omx_iface * 
 
 	/* pre-fill the packet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, cmd->peer_index);
@@ -897,7 +896,7 @@ omx_recv_pull(struct omx_iface * iface,
 		reply_eh = &reply_mh->head.eth;
 
 		/* fill ethernet header */
-		memcpy(reply_eh->h_source, ifp->dev_addr, sizeof (reply_eh->h_source));
+		memcpy(reply_eh->h_source, iface->eth_addr, sizeof (reply_eh->h_source));
 		reply_eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 		/* get the destination address */
 		memcpy(reply_eh->h_dest, pull_eh->h_source, sizeof(reply_eh->h_dest));

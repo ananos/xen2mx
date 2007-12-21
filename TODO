@@ -1,6 +1,8 @@
 * cleanup skb allocation and init
+  + stop using ifp in send and pull, move it to queue_xmit
   + move skb->dev in queue_xmit
-  + store dev->dev_addr in iface
+
+* skb_clone and alloc_skb_fclone for pull and pull replies?
 
 * factorize early and msg seqnum index computing (cache them?)
 

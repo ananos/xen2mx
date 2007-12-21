@@ -40,6 +40,7 @@ struct omx_iface {
 
 	struct net_device * eth_ifp;
 	char * hostname;
+	unsigned char eth_addr[ETH_ALEN];
 
 	rwlock_t endpoint_lock;
 	int endpoint_nr;
