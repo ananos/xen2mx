@@ -25,26 +25,6 @@
 
 #include "omx_checks.h"
 
-/* FIXME: useless now */
-#ifdef OMX_SKB_LINEARIZE_HAS_GFP
-#define omx_skb_linearize(skb) skb_linearize(skb, GFP_ATOMIC)
-#else
-#define omx_skb_linearize skb_linearize
-#endif
-
-#ifdef OMX_HAVE_NETDEV_ALLOC_SKB
-#define omx_netdev_alloc_skb netdev_alloc_skb
-#else /* OMX_HAVE_NETDEV_ALLOC_SKB */
-static inline struct sk_buff *
-omx_netdev_alloc_skb(struct net_device * dev, unsigned length)
-{
-	struct sk_buff * skb = dev_alloc_skb(length);
-	if (likely(skb))
-		skb->dev = dev;
-	return skb;
-}
-#endif /* OMX_HAVE_NETDEV_ALLOC_SKB */
-
 #ifdef OMX_HAVE_REMAP_VMALLOC_RANGE
 #define omx_vmalloc_user vmalloc_user
 #define omx_remap_vmalloc_range remap_vmalloc_range

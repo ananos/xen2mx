@@ -107,24 +107,6 @@ echo " * It checked kernel headers in ${LINUX_HDR}/include/" >> ${TMP_CHECKS_PAT
 echo " */" >> ${TMP_CHECKS_PATH}
 echo "" >> ${TMP_CHECKS_PATH}
 
-# skb_linearize had a gfp argument before 2.6.18
-#AC_MSG_CHECKING(skb_linearize gfp argument)
-#if grep "skb_linearize *(.*, .* gfp)" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
-#  echo "#define OMX_SKB_LINEARIZE_HAS_GFP 1" >> ${TMP_CHECKS_PATH}
-#  AC_MSG_RESULT(yes)
-#else
-#  AC_MSG_RESULT(no)
-#fi
-
-# netdev_alloc_skb deprecates dev_alloc_skb in 2.6.18
-AC_MSG_CHECKING(netdev_alloc_skb availability)
-if grep "netdev_alloc_skb *(" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
-  echo "#define OMX_HAVE_NETDEV_ALLOC_SKB 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-fi
-
 # remap_vmalloc_range and vmalloc_user appeared in 2.6.18
 AC_MSG_CHECKING(remap_vmalloc_range availability)
 if grep "remap_vmalloc_range *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null ; then
