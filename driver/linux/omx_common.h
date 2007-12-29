@@ -62,7 +62,7 @@ extern int omx_dma_init(void);
 extern void omx_dma_exit(void);
 
 /* manage endpoints */
-extern int omx_iface_attach_endpoint(struct omx_endpoint * endpoint, struct omx_iface **ifacep);
+extern int omx_iface_attach_endpoint(struct omx_endpoint * endpoint);
 extern void omx_iface_detach_endpoint(struct omx_endpoint * endpoint, int ifacelocked);
 extern int __omx_endpoint_close(struct omx_endpoint * endpoint, int ifacelocked);
 extern struct omx_endpoint * omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index);
@@ -95,22 +95,22 @@ extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uin
 
 /* events */
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);
-extern int omx_notify_exp_event(struct omx_endpoint *endpoint, struct omx_iface *iface, uint8_t type, void *event, int length);
-extern int omx_notify_unexp_event(struct omx_endpoint *endpoint, struct omx_iface *iface, uint8_t type, void *event, int length);
-extern int omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, struct omx_iface *iface, unsigned long *recvq_offset);
+extern int omx_notify_exp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
+extern int omx_notify_unexp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
+extern int omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, unsigned long *recvq_offset);
 extern void omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
-extern int omx_wait_event(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
+extern int omx_wait_event(struct omx_endpoint * endpoint, void __user * uparam);
 
 /* sending */
 extern struct sk_buff * omx_new_skb(unsigned long len);
-extern int omx_send_tiny(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
-extern int omx_send_small(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
-extern int omx_send_medium(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
-extern int omx_send_rndv(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
-extern int omx_send_pull(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
-extern int omx_send_notify(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
-extern int omx_send_connect(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
-extern int omx_send_truc(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
+extern int omx_send_tiny(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_send_small(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_send_medium(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_send_rndv(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_send_pull(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_send_notify(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_send_connect(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_send_truc(struct omx_endpoint * endpoint, void __user * uparam);
 extern void omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type, uint8_t src_endpoint, uint8_t dst_endpoint, uint16_t lib_seqnum);
 extern void omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type, uint8_t src_endpoint, uint32_t src_pull_handle, uint32_t src_magic);
 
@@ -129,8 +129,8 @@ extern void omx_pull_handles_cleanup(void);
 /* user regions */
 extern void omx_endpoint_user_regions_init(struct omx_endpoint * endpoint);
 extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
-extern int omx_user_region_register(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
-extern int omx_user_region_deregister(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
+extern int omx_user_region_register(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_user_region_deregister(struct omx_endpoint * endpoint, void __user * uparam);
 extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
 
 static inline void omx_user_region_reacquire(struct omx_user_region * region)
@@ -148,7 +148,7 @@ extern void omx_dev_exit(void);
 static inline void omx_counter_inc(struct omx_iface * iface, enum omx_counter_index index) { iface->counters[index]++; }
 
 /* misc */
-extern int omx_cmd_bench(struct omx_endpoint * endpoint, struct omx_iface * iface, void __user * uparam);
+extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
 
 /* queue a skb for xmit, or eventually drop it */
 #ifdef OMX_DEBUG

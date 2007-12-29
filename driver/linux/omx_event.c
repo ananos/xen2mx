@@ -64,7 +64,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
  */
 
 int
-omx_notify_exp_event(struct omx_endpoint *endpoint, struct omx_iface *iface,
+omx_notify_exp_event(struct omx_endpoint *endpoint,
 		     uint8_t type, void *event, int length)
 {
 	union omx_evt *slot;
@@ -79,7 +79,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, struct omx_iface *iface,
 		dprintk(EVENT,
 			"Open-MX: Expected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
-		omx_counter_inc(iface, OMX_COUNTER_EXP_EVENTQ_FULL);
+		omx_counter_inc(endpoint->iface, OMX_COUNTER_EXP_EVENTQ_FULL);
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL;
 		spin_unlock(&endpoint->event_lock);
 		return -EBUSY;
@@ -112,7 +112,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, struct omx_iface *iface,
  */
 
 int
-omx_notify_unexp_event(struct omx_endpoint *endpoint, struct omx_iface *iface,
+omx_notify_unexp_event(struct omx_endpoint *endpoint,
 		       uint8_t type, void *event, int length)
 {
 	union omx_evt *slot;
@@ -127,7 +127,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, struct omx_iface *iface,
 		dprintk(EVENT,
 			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
-		omx_counter_inc(iface, OMX_COUNTER_UNEXP_EVENTQ_FULL);
+		omx_counter_inc(endpoint->iface, OMX_COUNTER_UNEXP_EVENTQ_FULL);
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
 		spin_unlock(&endpoint->event_lock);
 		return -EBUSY;
@@ -174,7 +174,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, struct omx_iface *iface,
 
 /* Reserve one more slot and returns the corresponding recvq slot to the caller */
 int
-omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, struct omx_iface *iface,
+omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 					  unsigned long *recvq_offset_p)
 {
 	union omx_evt *slot;
@@ -187,7 +187,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, struct 
 		dprintk(EVENT,
 			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
-		omx_counter_inc(iface, OMX_COUNTER_EXP_EVENTQ_FULL);
+		omx_counter_inc(endpoint->iface, OMX_COUNTER_EXP_EVENTQ_FULL);
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
 		spin_unlock(&endpoint->event_lock);
 		return -EBUSY;
@@ -257,8 +257,7 @@ omx_autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *
 }
 
 int
-omx_wait_event(struct omx_endpoint * endpoint, struct omx_iface * iface,
-	       void __user * uparam)
+omx_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 {
 	struct omx_cmd_wait_event cmd;
 	struct omx_event_waiter waiter;

@@ -226,9 +226,6 @@ omx_iface_attach(struct net_device * ifp)
 	iface->hostname = hostname;
 
 	iface->eth_ifp = ifp;
-	/* cache the ifp addr to prevent from dereferencing iface->ifp all the time */
-	memcpy(iface->eth_addr, ifp->dev_addr, sizeof(iface->eth_addr));
-
 	iface->endpoint_nr = 0;
 	iface->endpoints = kzalloc(omx_endpoint_max * sizeof(struct omx_endpoint *), GFP_KERNEL);
 	if (!iface->endpoints) {
@@ -483,7 +480,7 @@ omx_ifaces_store(const char *buf, size_t size)
  * Attach a new endpoint
  */
 int
-omx_iface_attach_endpoint(struct omx_endpoint * endpoint, struct omx_iface **ifacep)
+omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 {
 	struct omx_iface * iface;
 	int ret;
@@ -524,7 +521,6 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint, struct omx_iface **ifa
 	iface->endpoints[endpoint->endpoint_index] = endpoint ;
 	iface->endpoint_nr++;
 	endpoint->iface = iface;
-	*ifacep = iface;
 
 	/* mark the endpoint as open here so that anybody removing this
 	 * iface never sees any endpoint in status INIT in the iface list
@@ -559,10 +555,9 @@ void
 omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 			  int ifacelocked)
 {
-	struct omx_iface * iface;
+	struct omx_iface * iface = endpoint->iface;
 
 	BUG_ON(endpoint->status != OMX_ENDPOINT_STATUS_CLOSING);
-	iface = endpoint->iface;
 
 	/* lock the list of endpoints in the iface, if needed */
 	if (!ifacelocked)

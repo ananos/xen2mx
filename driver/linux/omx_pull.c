@@ -52,7 +52,6 @@ struct omx_pull_handle {
 	uint64_t last_retransmit_jiffies;
 
 	/* global pull fields */
-	struct omx_iface * iface;
 	struct omx_endpoint * endpoint;
 	struct omx_user_region * region;
 	uint32_t lib_cookie;
@@ -299,10 +298,12 @@ omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
  */
 
 static inline int
-omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint, struct omx_iface * iface,
+omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 			     struct omx_pull_handle * handle,
 			     struct omx_cmd_send_pull * cmd)
 {
+	struct omx_iface * iface = endpoint->iface;
+	struct net_device * ifp = iface->eth_ifp;
 	struct omx_hdr * mh = &handle->pkt_hdr;
 	struct ethhdr * eh = &mh->head.eth;
 	struct omx_pkt_pull_request * pull_n = &mh->body.pull;
@@ -310,7 +311,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint, struct omx_iface * 
 
 	/* pre-fill the packet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(eh->h_source, iface->eth_addr, sizeof (eh->h_source));
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
 	ret = omx_set_target_peer(mh, cmd->peer_index);
@@ -344,7 +345,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint, struct omx_iface * 
  * with a reference on the endpoint
  */
 static inline struct omx_pull_handle *
-omx_pull_handle_create(struct omx_endpoint * endpoint, struct omx_iface * iface,
+omx_pull_handle_create(struct omx_endpoint * endpoint,
 		       struct omx_cmd_send_pull * cmd)
 {
 	struct omx_pull_handle * handle;
@@ -390,7 +391,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint, struct omx_iface * iface,
 
 	/* we are good now, finish filling the handle */
 	spin_lock_init(&handle->lock);
-	handle->iface = iface;
 	handle->endpoint = endpoint;
 	handle->region = region;
 
@@ -409,7 +409,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	handle->last_retransmit_jiffies = cmd->retransmit_delay_jiffies + jiffies;
 
 	/* initialize cached header */
-	err = omx_pull_handle_pkt_hdr_fill(endpoint, iface, handle, cmd);
+	err = omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
 	if (err < 0)
 		goto out_with_idr;
 
@@ -571,7 +571,7 @@ static inline struct sk_buff *
 omx_fill_pull_block_request(struct omx_pull_handle * handle,
 			    struct omx_pull_block_desc * desc)
 {
-	struct omx_iface * iface = handle->iface;
+	struct omx_iface * iface = handle->endpoint->iface;
 	uint32_t frame_index = desc->frame_index;
 	uint32_t block_length = desc->block_length;
 	uint32_t first_frame_offset = desc->first_frame_offset;
@@ -615,11 +615,12 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 }
 
 int
-omx_send_pull(struct omx_endpoint * endpoint, struct omx_iface * iface,
+omx_send_pull(struct omx_endpoint * endpoint,
 	      void __user * uparam)
 {
 	struct omx_cmd_send_pull cmd;
 	struct omx_pull_handle * handle;
+	struct omx_iface * iface = endpoint->iface;
 	struct sk_buff * skb, * skb2;
 	uint32_t block_length, first_frame_offset;
 	int err = 0;
@@ -639,7 +640,7 @@ omx_send_pull(struct omx_endpoint * endpoint, struct omx_iface * iface,
 	}
 
 	/* create and acquire the handle */
-	handle = omx_pull_handle_create(endpoint, iface, &cmd);
+	handle = omx_pull_handle_create(endpoint, &cmd);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		err = -ENOMEM;
@@ -718,7 +719,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 {
 	struct omx_pull_handle * handle = (void *) data;
 	struct omx_endpoint * endpoint = handle->endpoint;
-	struct omx_iface * iface = handle->iface;
+	struct omx_iface * iface = endpoint->iface;
 	struct sk_buff * skb;
 
 	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
@@ -776,6 +777,7 @@ omx_recv_pull(struct omx_iface * iface,
 	      struct omx_hdr * pull_mh,
 	      struct sk_buff * orig_skb)
 {
+	struct net_device * ifp = iface->eth_ifp;
 	struct omx_endpoint * endpoint;
 	struct ethhdr *pull_eh = &pull_mh->head.eth;
 	struct omx_pkt_pull_request *pull_request_n = &pull_mh->body.pull;
@@ -892,7 +894,7 @@ omx_recv_pull(struct omx_iface * iface,
 		reply_eh = &reply_mh->head.eth;
 
 		/* fill ethernet header */
-		memcpy(reply_eh->h_source, iface->eth_addr, sizeof (reply_eh->h_source));
+		memcpy(reply_eh->h_source, ifp->dev_addr, sizeof (reply_eh->h_source));
 		reply_eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 		/* get the destination address */
 		memcpy(reply_eh->h_dest, pull_eh->h_source, sizeof(reply_eh->h_dest));
@@ -987,7 +989,6 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 			    uint8_t status)
 {
 	struct omx_endpoint *endpoint = handle->endpoint;
-	struct omx_iface *iface = handle->iface;
 	struct omx_evt_pull_done event;
 
 	/* notify event */
@@ -995,7 +996,7 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 	event.lib_cookie = handle->lib_cookie;
 	event.pulled_length = handle->total_length - handle->remaining_length;
 	event.local_rdma_id = handle->region->id;
-	omx_notify_exp_event(endpoint, iface,
+	omx_notify_exp_event(endpoint,
 			     OMX_EVT_PULL_DONE,
 			     &event, sizeof(event));
 
