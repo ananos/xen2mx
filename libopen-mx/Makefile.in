@@ -25,7 +25,8 @@ DYNAMIC_CFLAGS	+=	-fpic
 SRCS	=	$(wildcard @srcdir@/*.c)
 
 STATIC_OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
-STATIC_LIB_OBJS	=	$(filter-out omx__assertions.o,$(STATIC_OBJS))
+ASSERTIONS_STATIC_OBJ	=	omx__assertions.o
+STATIC_LIB_OBJS	=	$(filter-out $(ASSERTIONS_STATIC_OBJ),$(STATIC_OBJS))
 STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
 
 DYNAMIC_OBJS	=	$(subst .o,.lo,$(STATIC_OBJS))
@@ -56,7 +57,7 @@ $(STATIC_LIB): $(STATIC_LIB_OBJS)
 $(DYNAMIC_LIB): $(DYNAMIC_LIB_OBJS)
 	$(SHARED_LD) --shared -o $@ $^
 
-assertions: omx__assertions.o
+assertions: $(ASSERTIONS_STATIC_OBJ)
 
 # build and create dependency file
 
