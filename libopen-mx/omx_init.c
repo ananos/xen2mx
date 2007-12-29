@@ -60,6 +60,13 @@ omx__init_api(int api)
     goto out_with_fd;
   }
 
+  if (omx__driver_desc->abi_version != OMX_DRIVER_ABI_VERSION) {
+    fprintf(stderr, "Driver (ABI 0x%x) incompatible with library (ABI 0x%x), rebuild/reload probably required.\n",
+	    omx__driver_desc->abi_version, OMX_DRIVER_ABI_VERSION);
+    ret = OMX_BAD_ERROR;
+    goto out_with_fd;
+  }
+
   omx__globals.ack_delay = omx__driver_desc->hz / 100 + 1;
   omx__globals.resend_delay = omx__driver_desc->hz / 2 + 1;
   omx__globals.retransmits_max = 1000;

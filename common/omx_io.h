@@ -23,6 +23,13 @@
 #include <stdint.h>
 #endif
 
+/*
+ * The ABI version should be increased when ioctl commands are added
+ * or modified, or when the user-mapped driver- and endpoint-descriptors
+ * are modified.
+ */
+#define OMX_DRIVER_ABI_VERSION		0x100
+
 /************************
  * Common parameters or IOCTL subtypes
  */
@@ -73,6 +80,7 @@ struct omx_cmd_region_segment {
 
 /* driver desc */
 struct omx_driver_desc {
+	uint32_t abi_version;
 	uint64_t jiffies;
 	uint32_t hz;
 	uint32_t board_max;
@@ -101,18 +109,18 @@ struct omx_endpoint_desc {
  * IOCTL commands
  */
 
-#define OMX_CMD_BENCH			0x00
-#define OMX_CMD_GET_BOARD_COUNT		0x01
-#define OMX_CMD_GET_BOARD_ID		0x02
-#define OMX_CMD_GET_ENDPOINT_INFO	0x03
-#define OMX_CMD_GET_COUNTERS		0x04
-#define OMX_CMD_PEERS_CLEAR		0x10
-#define OMX_CMD_PEER_ADD		0x11
-#define OMX_CMD_PEER_FROM_INDEX		0x12
-#define OMX_CMD_PEER_FROM_ADDR		0x13
-#define OMX_CMD_PEER_FROM_HOSTNAME	0x14
+#define OMX_CMD_GET_BOARD_COUNT		0x11
+#define OMX_CMD_GET_BOARD_ID		0x12
+#define OMX_CMD_GET_ENDPOINT_INFO	0x13
+#define OMX_CMD_GET_COUNTERS		0x14
+#define OMX_CMD_PEERS_CLEAR		0x20
+#define OMX_CMD_PEER_ADD		0x21
+#define OMX_CMD_PEER_FROM_INDEX		0x22
+#define OMX_CMD_PEER_FROM_ADDR		0x23
+#define OMX_CMD_PEER_FROM_HOSTNAME	0x24
 #define OMX_CMD_OPEN_ENDPOINT		0x71
 #define OMX_CMD_CLOSE_ENDPOINT		0x72
+#define OMX_CMD_BENCH			0x73
 #define OMX_CMD_SEND_TINY		0x81
 #define OMX_CMD_SEND_SMALL		0x82
 #define OMX_CMD_SEND_MEDIUM		0x83
@@ -129,8 +137,6 @@ static inline const char *
 omx_strcmd(unsigned cmd)
 {
 	switch (cmd) {
-	case OMX_CMD_BENCH:
-		return "Command Benchmark";
 	case OMX_CMD_GET_BOARD_COUNT:
 		return "Get Board Count";
 	case OMX_CMD_GET_BOARD_ID:
@@ -153,6 +159,8 @@ omx_strcmd(unsigned cmd)
 		return "Open Endpoint";
 	case OMX_CMD_CLOSE_ENDPOINT:
 		return "Close Endpoint";
+	case OMX_CMD_BENCH:
+		return "Command Benchmark";
 	case OMX_CMD_SEND_TINY:
 		return "Send Tiny";
 	case OMX_CMD_SEND_SMALL:

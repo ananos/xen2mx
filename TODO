@@ -1,5 +1,3 @@
-* add ABI check in init ioctl
-
 * revert "do not dereference endpoint->iface everywhere", keep the pointer valid
 * detach endpoint in close and keep endpoint->iface valid until the last reference is gone
 * add a kref from endpoint to iface and call dev_put in the last iface kref_put

@@ -162,6 +162,7 @@ omx_init(void)
 	}
 
 	/* fill the driver descriptor */
+	omx_driver_userdesc->abi_version = OMX_DRIVER_ABI_VERSION;
 	omx_driver_userdesc->board_max = omx_iface_max;
 	omx_driver_userdesc->endpoint_max = omx_endpoint_max;
 	omx_driver_userdesc->peer_max = omx_peer_max;
