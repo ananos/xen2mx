@@ -165,7 +165,7 @@ extern int omx_cmd_bench(struct omx_endpoint * endpoint, struct omx_iface * ifac
 } while (0)
 
 #else /* OMX_DEBUG */
-#define omx_queue_xmit(skb, type) dev_queue_xmit(skb);
+#define omx_queue_xmit(iface, skb, type) dev_queue_xmit(skb);
 #endif /* OMX_DEBUG */
 
 /* translate omx_endpoint_acquire_by_iface_index return values into nack type */
