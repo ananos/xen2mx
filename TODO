@@ -1,4 +1,11 @@
+* add ABI check in init ioctl
+
+* revert "do not dereference endpoint->iface everywhere", keep the pointer valid
+* detach endpoint in close and keep endpoint->iface valid until the last reference is gone
+* add a kref from endpoint to iface and call dev_put in the last iface kref_put
+
 * skb_clone and alloc_skb_fclone for pull and pull replies?
+* netif_wake_queue(dev) after xmit?
 
 * change loss variables into capitals and integrate counters_inc
   into queue_xmit
