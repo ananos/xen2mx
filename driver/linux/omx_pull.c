@@ -463,9 +463,6 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	if (!handle)
 		goto out_with_endpoint_lock;
 
-	/* acquire the handle */
-	spin_lock(&handle->lock);
-
 	read_unlock_bh(&endpoint->pull_handle_lock);
 
 	dprintk(PULL, "acquired pull handle %p\n", handle);
@@ -476,30 +473,6 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	omx_endpoint_release(endpoint);
  out:
 	return NULL;
-}
-
-/*
- * Takes a locked pull handle, unlock it and release the endpoint.
- *
- * Maybe be called by the bottom half when the receiving a pull reply
- * is done, or within an ioctl to post a pull.
- */
-static inline void
-omx_pull_handle_release(struct omx_pull_handle * handle)
-{
-	struct omx_endpoint * endpoint = handle->endpoint;
-
-	dprintk(PULL, "releasing pull handle %p\n", handle);
-
-	/* current block not done (no frames are being copied but some are missing),
-	 * release the handle and the endpoint
-	 */
-	spin_unlock(&handle->lock);
-
-	/* release the endpoint */
-	omx_endpoint_release(endpoint);
-
-	dprintk(PULL, "some frames are missing, release the handle and the endpoint\n");
 }
 
 /*
@@ -661,7 +634,10 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	/* release the handle before sending to avoid
 	 * deadlock when sending to ourself in the same region
 	 */
-	omx_pull_handle_release(handle);
+	spin_unlock(&handle->lock);
+
+	/* release the endpoint */
+	omx_endpoint_release(endpoint);
 
 	omx_queue_xmit(iface, skb, pull);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
@@ -1026,6 +1002,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* FIXME: check the magic */
 
+	/* lock the handle */
+	spin_lock(&handle->lock);
+
 	/* check that the frame is from this block, and handle wrap around 256 */
 	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
 	if (unlikely(frame_seqnum_offset >= handle->block_frames)) {
@@ -1034,7 +1013,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) handle->frame_index,
 				 (unsigned long) handle->frame_index + handle->block_frames);
-		omx_pull_handle_release(handle);
+		spin_unlock(&handle->lock);
+		omx_endpoint_release(handle->endpoint);
 		err = 0;
 		goto out;
 	}
@@ -1046,7 +1026,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with duplicate seqnum %ld in current block %ld",
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) handle->frame_index);
-		omx_pull_handle_release(handle);
+		spin_unlock(&handle->lock);
+		omx_endpoint_release(handle->endpoint);
 		err = 0;
 		goto out;
 	}
@@ -1111,7 +1092,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		}
 
 		dprintk(PULL, "block not done, just releasing\n");
-		omx_pull_handle_release(handle);
+		spin_unlock(&handle->lock);
+		omx_endpoint_release(handle->endpoint);
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
 
@@ -1182,7 +1164,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* release the handle before sending to avoid
 		 * deadlock when sending to ourself in the same region
 		 */
-		omx_pull_handle_release(handle);
+		spin_unlock(&handle->lock);
+		omx_endpoint_release(handle->endpoint);
 
 		if (skb) {
 			omx_queue_xmit(iface, skb, pull);
@@ -1256,6 +1239,9 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		err = -EINVAL;
 		goto out;
 	}
+
+	/* lock the handle */
+	spin_lock(&handle->lock);
 
 	omx_recv_dprintk(eh, "NACK MCP type %s",
 			 omx_strnacktype(nack_type));
