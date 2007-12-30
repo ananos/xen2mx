@@ -227,8 +227,9 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 {
 	int ret;
 
-	/* test whether the endpoint is ok to be closed */
 	write_lock_bh(&endpoint->lock);
+
+	/* test whether the endpoint is ok to be closed */
 	ret = -EBUSY;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
 		/* only CLOSING and OK endpoints may be attached to the iface */
@@ -239,13 +240,14 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 	/* mark it as closing so that nobody may use it again */
 	endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;
 
+	write_unlock_bh(&endpoint->lock);
+
 	/* detach from the iface now so that nobody can acquire it */
 	omx_iface_detach_endpoint(endpoint, ifacelocked);
 	/* but keep the endpoint->iface valid until everybody releases the endpoint */
 
 	/* release our refcount now that other users cannot use again */
 	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
-	write_unlock_bh(&endpoint->lock);
 
 	return 0;
 
@@ -323,7 +325,6 @@ omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 void
 omx_endpoint_release(struct omx_endpoint * endpoint)
 {
-	/* decrement refcount and wake up the closer */
 	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
 }
 
