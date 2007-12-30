@@ -222,7 +222,7 @@ omx_exit(void)
 	omx_dev_exit();
 	kthread_stop(omx_kthread_task);
 	omx_net_exit();
-	omx_peers_init();
+	omx_peers_exit();
 	omx_dma_exit();
 	del_timer_sync(&omx_driver_userdesc_update_timer);
 	vfree(omx_driver_userdesc);
