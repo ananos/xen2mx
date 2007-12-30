@@ -396,26 +396,32 @@ omx_ifaces_show(char *buf)
 int
 omx_ifaces_store(const char *buf, size_t size)
 {
-	char copy[IFNAMSIZ];
-	char * ptr;
+	char tmp[IFNAMSIZ+2];
+	size_t tmpsize = size > IFNAMSIZ+2 ? IFNAMSIZ+2 : size;
+	char *ptr;
 
 	/* remove the ending \n if required, so copy first since buf is const */
-	strncpy(copy, buf+1, IFNAMSIZ);
-	copy[IFNAMSIZ-1] = '\0';
-	ptr = strchr(copy, '\n');
+	strncpy(tmp, buf, tmpsize);
+	tmp[tmpsize-1] = '\0';
+	ptr = strchr(tmp, '\n');
 	if (ptr)
 		*ptr = '\0';
 
-	if (buf[0] == '-') {
+	if (tmp[0] == '-') {
+		char *ifname;
+		int ret = -EINVAL;
 		int force = 0;
 		int i;
 		/* if none matches, we return -EINVAL.
 		 * if one matches, it sets ret accordingly.
 		 */
-		int ret = -EINVAL;
 
-		if (copy[0] == '-')
+		/* remove the first '-' and possibly another one for force */
+		ifname = tmp+1;
+		if (ifname[0] == '-') {
+			ifname++;
 			force = 1;
+		}
 
 		write_lock(&omx_iface_lock);
 		for(i=0; i<omx_iface_max; i++) {
@@ -426,7 +432,7 @@ omx_ifaces_store(const char *buf, size_t size)
 				continue;
 
 			ifp = iface->eth_ifp;
-			if (strcmp(ifp->name, copy+force))
+			if (strcmp(ifp->name, ifname))
 				continue;
 
 			/* disable incoming packets while removing the iface
@@ -442,34 +448,33 @@ omx_ifaces_store(const char *buf, size_t size)
 		}
 		write_unlock(&omx_iface_lock);
 
-		if (ret == -EINVAL) {
-			printk(KERN_ERR "Open-MX: Cannot find any attached interface '%s' to detach\n", copy);
-			return -EINVAL;
-		}
-		return size;
-
-	} else if (buf[0] == '+') {
-		struct net_device * ifp;
-		int ret;
-
-		ifp = dev_hold_by_name(copy);
-		if (!ifp)
-			return -EINVAL;
-
-		write_lock(&omx_iface_lock);
-		ret = omx_iface_attach(ifp);
-		write_unlock(&omx_iface_lock);
-		if (ret < 0) {
-			dev_put(ifp);
-			return ret;
-		}
-
-		return size;
+		if (ret == -EINVAL)
+			printk(KERN_ERR "Open-MX: Cannot find any attached interface '%s' to detach\n", ifname);
 
 	} else {
-		printk(KERN_ERR "Open-MX: Unrecognized command passed in the ifaces file, need either +name or -name\n");
-		return -EINVAL;
+		char *ifname = tmp;
+		struct net_device * ifp;
+
+		/* remove the first optional '+' */
+		if (tmp[0] == '+')
+			ifname++;
+
+		ifp = dev_hold_by_name(ifname);
+		if (ifp) {
+			int ret;
+			write_lock(&omx_iface_lock);
+			ret = omx_iface_attach(ifp);
+			write_unlock(&omx_iface_lock);
+			if (ret < 0)
+				dev_put(ifp);
+		} else {
+			printk(KERN_ERR "Open-MX: Cannot find interface '%s' to attach\n", ifname);
+		}
+
 	}
+
+	/* always return the length to empty the buffer, even on error */
+	return size;
 }
 
 /******************************
