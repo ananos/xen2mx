@@ -4,7 +4,6 @@
 * no endpoint reference in the wire_handle, just a handle reference
   since the endpoint reference s already kept
 * no need to acquire the endpoint again on recv_pull_reply
-* just check the magic
 * use kref for pull handles
 
 * no return 1 when keeping a second reference on the endpoint, just acquire twice?
