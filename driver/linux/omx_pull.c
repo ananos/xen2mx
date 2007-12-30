@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/idr.h>
 #include <linux/timer.h>
 
 #include "omx_common.h"
@@ -208,6 +209,27 @@ omx_pull_handles_cleanup(void)
 	}
 }
 
+/*************************
+ * Global pull idr
+ */
+
+static struct idr omx_pull_handles_idr;
+static rwlock_t omx_pull_handles_idr_lock;
+
+int
+omx_pull_handles_init(void)
+{
+	idr_init(&omx_pull_handles_idr);
+	rwlock_init(&omx_pull_handles_idr_lock);
+	return 0;
+}
+
+void
+omx_pull_handles_exit(void)
+{
+	idr_destroy(&omx_pull_handles_idr);
+}
+
 /******************************
  * Per-endpoint pull handles management
  */
@@ -215,20 +237,18 @@ omx_pull_handles_cleanup(void)
 int
 omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
 {
-	rwlock_init(&endpoint->pull_handle_lock);
-	idr_init(&endpoint->pull_handle_idr);
-	INIT_LIST_HEAD(&endpoint->pull_handle_list);
-
+	INIT_LIST_HEAD(&endpoint->pull_handles_list);
+	rwlock_init(&endpoint->pull_handles_list_lock);
 	return 0;
 }
 
 static inline void
-omx_pull_handle_destroy(struct omx_pull_handle * handle)
+__omx_pull_handle_destroy(struct omx_pull_handle * handle)
 {
-	struct omx_endpoint * endpoint = handle->endpoint;
-
 	/* remove from the idr so that nobody can't find it anymore */
-	idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
+	write_lock_bh(&omx_pull_handles_idr_lock);
+	idr_remove(&omx_pull_handles_idr, handle->idr_index);
+	write_unlock_bh(&omx_pull_handles_idr_lock);
 
 	/* move to the cleanup queue so that the timer is deleted in a safe context */
 	spin_lock(&omx_pull_handles_cleanup_lock);
@@ -236,23 +256,29 @@ omx_pull_handle_destroy(struct omx_pull_handle * handle)
 	spin_unlock(&omx_pull_handles_cleanup_lock);
 }
 
+static inline void
+omx_pull_handle_destroy(struct omx_pull_handle * handle)
+{
+	struct omx_endpoint * endpoint = handle->endpoint;
+
+	write_lock_bh(&endpoint->pull_handles_list_lock);
+	__omx_pull_handle_destroy(handle);
+	write_unlock_bh(&endpoint->pull_handles_list_lock);
+}
+
 void
 omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 {
 	struct omx_pull_handle * handle, * next;
 
-	write_lock_bh(&endpoint->pull_handle_lock);
-
-	/* release all pull handles of endpoint */
+	/* release all pull handles of the endpoint */
+	write_lock_bh(&endpoint->pull_handles_list_lock);
 	list_for_each_entry_safe(handle, next,
-				 &endpoint->pull_handle_list,
+				 &endpoint->pull_handles_list,
 				 list_elt) {
-		omx_pull_handle_destroy(handle);
+		__omx_pull_handle_destroy(handle);
 	}
-
-	write_unlock_bh(&endpoint->pull_handle_lock);
-
-	idr_destroy(&endpoint->pull_handle_idr);
+	write_unlock_bh(&endpoint->pull_handles_list_lock);
 }
 
 /******************************
@@ -373,21 +399,21 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 	/* while failed, realloc and retry */
  idr_try_alloc:
-	err = idr_pre_get(&endpoint->pull_handle_idr, GFP_KERNEL);
+	err = idr_pre_get(&omx_pull_handles_idr, GFP_KERNEL);
 	if (unlikely(!err)) {
 		printk(KERN_ERR "Open-MX: Failed to allocate idr space for pull handles\n");
 		err = -ENOMEM;
 		goto out_with_handle;
 	}
 
-	write_lock_bh(&endpoint->pull_handle_lock);
-
-	err = idr_get_new(&endpoint->pull_handle_idr, handle, &handle->idr_index);
+	write_lock_bh(&omx_pull_handles_idr_lock);
+	err = idr_get_new(&omx_pull_handles_idr, handle, &handle->idr_index);
 	if (unlikely(err == -EAGAIN)) {
-		write_unlock_bh(&endpoint->pull_handle_lock);
+		write_unlock_bh(&omx_pull_handles_idr_lock);
 		printk("omx_pull_handle_create try again\n");
 		goto idr_try_alloc;
 	}
+	write_unlock_bh(&omx_pull_handles_idr_lock);
 
 	/* we are good now, finish filling the handle */
 	spin_lock_init(&handle->lock);
@@ -420,18 +446,20 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	/* queue and acquire the handle */
+	write_lock_bh(&endpoint->pull_handles_list_lock);
 	list_add_tail(&handle->list_elt,
-		      &endpoint->pull_handle_list);
-	spin_lock(&handle->lock);
+		      &endpoint->pull_handles_list);
+	write_unlock_bh(&endpoint->pull_handles_list_lock);
 
-	write_unlock_bh(&endpoint->pull_handle_lock);
+	spin_lock(&handle->lock);
 
 	dprintk(PULL, "created and acquired pull handle %p\n", handle);
 	return handle;
 
  out_with_idr:
-	idr_remove(&endpoint->pull_handle_idr, handle->idr_index);
-	write_unlock_bh(&endpoint->pull_handle_lock);
+	write_lock_bh(&omx_pull_handles_idr_lock);
+	idr_remove(&omx_pull_handles_idr, handle->idr_index);
+	write_unlock_bh(&omx_pull_handles_idr_lock);
  out_with_handle:
 	kfree(handle);
  out_with_region:
@@ -458,18 +486,16 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint)))
 		goto out;
 
-	read_lock_bh(&endpoint->pull_handle_lock);
-	handle = idr_find(&endpoint->pull_handle_idr, wire_handle);
+	read_lock_bh(&omx_pull_handles_idr_lock);
+	handle = idr_find(&omx_pull_handles_idr, wire_handle);
+	read_unlock_bh(&omx_pull_handles_idr_lock);
 	if (!handle)
-		goto out_with_endpoint_lock;
-
-	read_unlock_bh(&endpoint->pull_handle_lock);
+		goto out_with_endpoint;
 
 	dprintk(PULL, "acquired pull handle %p\n", handle);
 	return handle;
 
- out_with_endpoint_lock:
-	read_unlock_bh(&endpoint->pull_handle_lock);
+ out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
 	return NULL;
@@ -489,11 +515,10 @@ omx_pull_handle_done_release(struct omx_pull_handle * handle)
 	struct omx_user_region * region = handle->region;
 
 	/* destroy the handle */
-	write_lock_bh(&endpoint->pull_handle_lock);
+
 	/* release the lock first to avoid leaking preempt count */
 	spin_unlock(&handle->lock);
 	omx_pull_handle_destroy(handle);
-	write_unlock_bh(&endpoint->pull_handle_lock);
 
 	/* release the region and endpoint */
 	omx_user_region_release(region);

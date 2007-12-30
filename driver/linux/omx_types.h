@@ -22,7 +22,6 @@
 #include <linux/fs.h>
 #include <linux/netdevice.h>
 #include <linux/list.h>
-#include <linux/idr.h>
 #include <linux/kref.h>
 
 #include "omx_wire.h"
@@ -88,9 +87,8 @@ struct omx_endpoint {
 	rwlock_t user_regions_lock;
 	struct omx_user_region * user_regions[OMX_USER_REGION_MAX];
 
-	rwlock_t pull_handle_lock;
-	struct idr pull_handle_idr;
-	struct list_head pull_handle_list;
+	struct list_head pull_handles_list;
+	rwlock_t pull_handles_list_lock;
 
 	/* descriptor exported to user-space, modified by user-space and the driver,
 	 * so we can export some info to user-space by writing into it, but we
