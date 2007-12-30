@@ -42,11 +42,10 @@ struct omx_iface {
 	char * hostname;
 
 	rwlock_t endpoint_lock;
+	enum omx_iface_status status;
+	struct kref refcount;
 	int endpoint_nr;
 	struct omx_endpoint ** endpoints;
-	wait_queue_head_t noendpoint_queue;
-
-	enum omx_iface_status status;
 
 	uint32_t counters[OMX_COUNTER_INDEX_MAX];
 };

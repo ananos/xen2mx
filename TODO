@@ -1,3 +1,4 @@
+* + not required in echo +eth0 > ifaces
 
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
@@ -41,7 +42,7 @@
 * vectorial support, through isendv/irecvv
 
 * rework the whole locking
-  + add a kref from endpoint to iface and call dev_put in the last iface kref_put
+  + update doc
   + reduce spinlock hold-time in pull-request/reply
   + use rcu for the pull handle thread? no list_splice_rcu exists
 * fix oops when removing the module while some pull handle are busy

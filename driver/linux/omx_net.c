@@ -234,7 +234,7 @@ omx_iface_attach(struct net_device * ifp)
 		goto out_with_iface_hostname;
 	}
 
-	init_waitqueue_head(&iface->noendpoint_queue);
+	kref_init(&iface->refcount);
 	rwlock_init(&iface->endpoint_lock);
 	iface->index = i;
 	omx_iface_nr++;
@@ -250,6 +250,17 @@ omx_iface_attach(struct net_device * ifp)
 	return ret;
 }
 
+/* Called when the last reference on the iface is released */
+static void
+__omx_iface_last_release(struct kref *kref)
+{
+	struct omx_iface * iface = container_of(kref, struct omx_iface, refcount);
+
+	kfree(iface->endpoints);
+	kfree(iface->hostname);
+	kfree(iface);
+}
+
 /*
  * Detach an existing iface, possibly by force.
  *
@@ -261,7 +272,6 @@ omx_iface_attach(struct net_device * ifp)
 static int
 __omx_iface_detach(struct omx_iface * iface, int force)
 {
-	DECLARE_WAITQUEUE(wq, current);
 	int ret;
 	int i;
 
@@ -292,47 +302,28 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 		printk(KERN_INFO "Open-MX: forcing close of endpoint #%d attached to iface #%d '%s'\n",
 		       i, iface->index, iface->eth_ifp->name);
 
-		/* close the endpoint, with the iface lock hold */
-		ret = __omx_endpoint_close(endpoint, 1);
-		if (ret < 0) {
-			BUG_ON(ret != -EBUSY);
-			/* somebody else is already closing this endpoint,
-			 * let's forget about it for now, we'll wait later
-			 */
-		}
+		/*
+		 * schedule the endpoint closing, with the iface lock hold
+		 * ignore the return value, somebody might be closing it already
+		 */
+		__omx_endpoint_close(endpoint, 1);
+		/*
+		 * no need to wait for anything, the last endpoint reference
+		 * will release the iface, the last iface reference will
+		 * release the device and wake up unregister_netdevice()
+		 */
 	}
 
-	/* wait for concurrent endpoint closers to be done */
-	add_wait_queue(&iface->noendpoint_queue, &wq);
-	for(;;) {
-		set_current_state(force ? TASK_UNINTERRUPTIBLE
-				  : TASK_INTERRUPTIBLE);
-		if (!iface->endpoint_nr)
-			break;
-		write_unlock_bh(&iface->endpoint_lock);
-
-		if (signal_pending(current)) {
-			set_current_state(TASK_RUNNING);
-			remove_wait_queue(&iface->noendpoint_queue, &wq);
-			iface->status = OMX_IFACE_STATUS_OK;
-			return -EINTR;
-		}
-
-		schedule();
-
-		write_lock_bh(&iface->endpoint_lock);
-	}
-	set_current_state(TASK_RUNNING);
-	remove_wait_queue(&iface->noendpoint_queue, &wq);
 	write_unlock_bh(&iface->endpoint_lock);
 
 	printk(KERN_INFO "Open-MX: detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
 
+	/* remove the iface from the array */
 	omx_ifaces[iface->index] = NULL;
 	omx_iface_nr--;
-	kfree(iface->endpoints);
-	kfree(iface->hostname);
-	kfree(iface);
+
+	/* let the last reference release the iface's internals */
+	kref_put(&iface->refcount, __omx_iface_last_release);
 
 	return 0;
 
@@ -525,6 +516,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 
 	iface->endpoints[endpoint->endpoint_index] = endpoint ;
 	iface->endpoint_nr++;
+	kref_get(&iface->refcount);
 	endpoint->iface = iface;
 
 	/* mark the endpoint as open here so that anybody removing this
@@ -570,13 +562,15 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 
 	BUG_ON(iface->endpoints[endpoint->endpoint_index] != endpoint);
 	iface->endpoints[endpoint->endpoint_index] = NULL;
-	/* decrease the number of endpoints and wakeup the iface detacher if needed */
-	if (!--iface->endpoint_nr
-	    && iface->status == OMX_IFACE_STATUS_CLOSING)
-		wake_up(&iface->noendpoint_queue);
+
+	/* decrease the number of endpoints */
+	iface->endpoint_nr--;
 
 	if (!ifacelocked)
 		write_unlock_bh(&iface->endpoint_lock);
+
+	/* release the iface */
+	kref_put(&iface->refcount, __omx_iface_last_release);
 }
 
 /*
