@@ -479,39 +479,6 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 }
 
 /*
- * Reacquire a pull handle.
- *
- * A reference is still hold on the endpoint.
- */
-static inline void
-omx_pull_handle_reacquire(struct omx_pull_handle * handle)
-{
-	/* acquire the handle */
-	spin_lock(&handle->lock);
-
-	dprintk(PULL, "reacquired pull handle %p\n", handle);
-}
-
-/*
- * Takes a locked pull handle, unlock it without releasing the endpoint.
- *
- * Called by the BH before copying a just-received pull reply frame.
- */
-static inline void
-omx_pull_handle_release_during_copy(struct omx_pull_handle * handle)
-{
-	dprintk(PULL, "releasing pull handle %p\n", handle);
-
-	/* some frames are being copied,
-	 * release the handle but keep the reference on the endpoint
-	 * since it will be reacquired later
-	 */
-	spin_unlock(&handle->lock);
-
-	dprintk(PULL, "some frames are being copied, just release the handle\n");
-}
-
-/*
  * Takes a locked pull handle, unlock it and release the endpoint.
  *
  * Maybe be called by the bottom half when the receiving a pull reply
@@ -734,7 +701,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	if (jiffies > handle->last_retransmit_jiffies) {
 		omx_counter_inc(iface, OMX_COUNTER_PULL_TIMEOUT_ABORT);
 		dprintk(PULL, "pull handle last retransmit time reached, reporting an error\n");
-		omx_pull_handle_reacquire(handle);
+		spin_lock(&handle->lock);
 		omx_endpoint_reacquire(endpoint);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
 		return;
@@ -1085,8 +1052,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 	handle->frame_missing_bitmap &= ~bitmap_mask;
 
-	/* release the handle during the copy */
-	omx_pull_handle_release_during_copy(handle);
+	/* release the lock during the copy */
+	spin_unlock(&handle->lock);
 
 	/* fill segment pages */
 	dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
@@ -1103,12 +1070,13 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* the other peer is sending crap, close the handle and report truncated to userspace
 		 * we do not really care about what have been tranfered since it's crap
 		 */
-		omx_pull_handle_reacquire(handle);
+		spin_lock(&handle->lock);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED);
 		goto out;
 	}
 
-	omx_pull_handle_reacquire(handle);
+	/* take the lock back to prepare the future */
+	spin_lock(&handle->lock);
 
 	handle->frame_copying_bitmap &= ~bitmap_mask;
 
