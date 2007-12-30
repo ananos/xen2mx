@@ -142,9 +142,19 @@ extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
 extern int omx_user_region_register(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_user_region_deregister(struct omx_endpoint * endpoint, void __user * uparam);
 extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
+extern void __omx_user_region_last_release(struct kref * kref);
 
-static inline void omx_user_region_reacquire(struct omx_user_region * region)
-{ atomic_inc(&region->refcount); } /* somebody must already hold a reference */
+static inline void
+omx_user_region_reacquire(struct omx_user_region * region)
+{
+	kref_get(&region->refcount);
+}
+
+static inline void
+omx_user_region_release(struct omx_user_region * region)
+{
+	kref_put(&region->refcount, __omx_user_region_last_release);
+}
 
 extern void omx_user_region_release(struct omx_user_region * region);
 extern int omx_user_region_append_pages(struct omx_user_region * region, unsigned long region_offset, struct sk_buff * skb, unsigned long length);

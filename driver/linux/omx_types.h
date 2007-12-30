@@ -156,8 +156,7 @@ struct omx_user_region {
 
 	rwlock_t lock;
 	enum omx_user_region_status status;
-	atomic_t refcount;
-	wait_queue_head_t noref_queue;
+	struct kref refcount;
 
 	unsigned nr_segments;
 	unsigned long total_length;
@@ -167,13 +166,6 @@ struct omx_user_region {
 		unsigned long nr_pages;
 		struct page ** pages;
 	} segments[0];
-};
-
-struct omx_user_region_offset_state {
-	int valid;
-	unsigned long current_region_offset;
-	unsigned long current_segment;
-	unsigned long current_segment_offset;
 };
 
 #endif /* __omx_types_h__ */

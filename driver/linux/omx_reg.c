@@ -98,6 +98,13 @@ omx__user_region_deregister(struct omx_user_region * region)
 	kfree(region);
 }
 
+void
+__omx_user_region_last_release(struct kref * kref)
+{
+	struct omx_user_region * region = container_of(kref, struct omx_user_region, refcount);
+	omx__user_region_deregister(region);
+}
+
 int
 omx_user_region_register(struct omx_endpoint * endpoint,
 			 void __user * uparam)
@@ -149,8 +156,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 
 	rwlock_init(&region->lock);
 	region->status = OMX_USER_REGION_STATUS_OK;
-	atomic_set(&region->refcount, 1);
-	init_waitqueue_head(&region->noref_queue);
+	kref_init(&region->refcount);
 	region->total_length = 0;
 
 	/* keep nr_segments exact so that we may call omx__deregister_user_region safely */
@@ -200,7 +206,6 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 {
 	struct omx_cmd_deregister_region cmd;
 	struct omx_user_region * region;
-	DECLARE_WAITQUEUE(wq, current);
 	int ret;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
@@ -234,36 +239,13 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 
 	/* mark it as closing so that nobody may use it again */
 	region->status = OMX_USER_REGION_STATUS_CLOSING;
-	/* release our refcount now that other users cannot use again */
-	atomic_dec(&region->refcount);
+	endpoint->user_regions[cmd.id] = NULL;
 
 	write_unlock_bh(&region->lock);
 	write_unlock_bh(&endpoint->user_regions_lock);
 
-	/* wait until refcount is 0 so that other users are gone */
-	add_wait_queue(&region->noref_queue, &wq);
-	for(;;) {
-		set_current_state(TASK_INTERRUPTIBLE);
-		if (likely(!atomic_read(&region->refcount)))
-			break;
-		if (signal_pending(current)) {
-			set_current_state(TASK_RUNNING);
-			remove_wait_queue(&region->noref_queue, &wq);
-			region->status = OMX_USER_REGION_STATUS_OK;
-			return -EINTR;
-		}
-		schedule();
-	}
-	set_current_state(TASK_RUNNING);
-	remove_wait_queue(&region->noref_queue, &wq);
-
-	/* release the region now that nobody uses it */
-
-	/* now we really modify the array now, disable BH too */
-	write_lock_bh(&endpoint->user_regions_lock);
-	omx__user_region_deregister(region);
-	endpoint->user_regions[cmd.id] = NULL;
-	write_unlock_bh(&endpoint->user_regions_lock);
+	/* release our refcount now that other users cannot use again */
+	kref_put(&region->refcount, __omx_user_region_last_release);
 
 	return 0;
 
@@ -297,7 +279,7 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 	if (unlikely(region->status != OMX_USER_REGION_STATUS_OK))
 		goto out_with_region_lock;
 
-	atomic_inc(&region->refcount);
+	kref_get(&region->refcount);
 	read_unlock(&region->lock);
 	read_unlock(&endpoint->user_regions_lock);
 
@@ -308,15 +290,6 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
  out_with_endpoint_lock:
 	read_unlock(&endpoint->user_regions_lock);
 	return NULL;
-}
-
-void
-omx_user_region_release(struct omx_user_region * region)
-{
-	/* decrement refcount and wake up the closer */
-	if (unlikely(atomic_dec_and_test(&region->refcount)
-		     && region->status == OMX_USER_REGION_STATUS_CLOSING))
-		wake_up(&region->noref_queue);
 }
 
 /***************************************
