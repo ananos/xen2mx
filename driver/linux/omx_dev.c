@@ -322,12 +322,6 @@ omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 	return ERR_PTR(err);
 }
 
-void
-omx_endpoint_release(struct omx_endpoint * endpoint)
-{
-	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
-}
-
 /******************************
  * File operations
  */
