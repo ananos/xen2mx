@@ -342,7 +342,7 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 			continue;
 
 		printk(KERN_INFO "Open-MX: Forcing deregister of window %d on endpoint %d board %d\n",
-		       i, endpoint->endpoint_index, endpoint->iface->index);
+		       i, endpoint->endpoint_index, endpoint->board_index);
 		omx__user_region_deregister(region);
 		endpoint->user_regions[i] = NULL;
 	}
