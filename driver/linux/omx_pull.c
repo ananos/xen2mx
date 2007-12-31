@@ -203,7 +203,10 @@ omx_pull_handles_cleanup(void)
 
 	/* and now delete all pull handles without needing any lock */
 	list_for_each_entry_safe(handle, next, &private_head, list_elt) {
-		del_timer_sync(&handle->retransmit_timer);
+		int ret = del_timer_sync(&handle->retransmit_timer);
+		if (ret > 0)
+			/* the timer was pending, the endpoint reference has not been released */
+			omx_endpoint_release(handle->endpoint);
 		list_del(&handle->list_elt);
 		kfree(handle);
 	}
@@ -358,9 +361,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	struct omx_user_region * region;
 	int err;
 
-	/* take another reference on the endpoint
-	 * since we will return the pull_handle as acquired
-	 */
+	/* take another reference on the endpoint for the timeout handler */
 	omx_endpoint_reacquire(endpoint);
 
 	/* acquire the region */
@@ -641,9 +642,6 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	 */
 	spin_unlock(&handle->lock);
 
-	/* release the endpoint */
-	omx_endpoint_release(endpoint);
-
 	omx_queue_xmit(iface, skb, pull);
 	omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
 	if (skb2) {
@@ -662,7 +660,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	return err;
 }
 
-/* retransmission callback */
+/* retransmission callback, owns a reference on the endpoint */
 static void omx_pull_handle_timeout_handler(unsigned long data)
 {
 	struct omx_pull_handle * handle = (void *) data;
@@ -672,10 +670,11 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 
 	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
 
-	/* FIXME: if endpoint closing, exit? */
-
-	if (OMX_PULL_HANDLE_DONE(handle))
+	if (endpoint->status != OMX_ENDPOINT_STATUS_OK
+	    || OMX_PULL_HANDLE_DONE(handle)) {
+		omx_endpoint_release(endpoint);
 		return;
+	}
 
 	omx_counter_inc(iface, OMX_COUNTER_PULL_TIMEOUT_HANDLER);
 
@@ -683,7 +682,6 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		omx_counter_inc(iface, OMX_COUNTER_PULL_TIMEOUT_ABORT);
 		dprintk(PULL, "pull handle last retransmit time reached, reporting an error\n");
 		spin_lock(&handle->lock);
-		omx_endpoint_reacquire(endpoint);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
 		return;
 	}
@@ -1005,8 +1003,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* no session to check */
 
-	/* FIXME: check the magic */
-
 	/* lock the handle */
 	spin_lock(&handle->lock);
 
@@ -1040,6 +1036,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* release the lock during the copy */
 	spin_unlock(&handle->lock);
+	/* FIXME: not safe? */
 
 	/* fill segment pages */
 	dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
