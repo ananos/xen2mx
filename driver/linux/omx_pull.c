@@ -299,26 +299,6 @@ omx_endpoint_pull_magic(struct omx_endpoint * endpoint)
 	return magic;
 }
 
-/*
- * Acquire an endpoint using a pull handle magic given on the wire.
- *
- * Returns an endpoint acquired, on ERR_PTR(-errno) on error
- */
-static inline struct omx_endpoint *
-omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
-{
-	uint32_t full_index;
-	uint8_t index;
-
-	full_index = (magic ^ OMX_ENDPOINT_PULL_MAGIC_XOR) >> OMX_ENDPOINT_PULL_MAGIC_SHIFT;
-	if (unlikely(full_index & (~0xff)))
-		/* index does not fit in 8 bits, drop the packet */
-		return NULL;
-	index = full_index;
-
-	return omx_endpoint_acquire_by_iface_index(iface, index);
-}
-
 /******************************
  * Per-endpoint pull handles create/find/...
  */
