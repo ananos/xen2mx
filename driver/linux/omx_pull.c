@@ -84,11 +84,12 @@ static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t
 /*
  * Notes about locking:
  *
- * A reference is hold on the endpoint while using a pull handle:
- * - when manipulating its internal fields
- *   (by taking the endpoint reference as long as we hold the handle lock)
- * - when copying data corresponding to the handle
- *   (the endpoint reference is hold without taking the handle lock)
+ * Each handle owns a reference on the endpoint during its whole life.
+ * It is released when the last handle reference is released. One is used
+ * as long as the timeout handler is pending. The other one is taken while
+ * processing incoming pull replies.
+ *
+ * Each handle also owns a spinlock to protect in variable internal state.
  *
  * The pile of handles for an endpoint is protected by a rwlock. It is taken
  * for reading when acquiring an handle (when a pull reply arrives, likely
@@ -181,7 +182,7 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	handle->already_requeued_first = 0;
 }
 
-/*************************
+/******************
  * Global pull idr
  */
 
@@ -206,9 +207,10 @@ omx_pull_handles_exit(void)
  * Kthread Deferred Work
  */
 
-/* del_timer_sync cannot be called from BH, so we just
- * let the cleanup thread take care of it by moving
- * pull handles to a cleanup list first
+/*
+ * We need to wait for the timeout handler to finish before destroying the handle.
+ * But del_timer_sync cannot be called from BH, so we just let the cleanup thread
+ * take care of it by moving pull handles to a cleanup list first
  */
 static spinlock_t omx_pull_handles_cleanup_lock = SPIN_LOCK_UNLOCKED;
 static LIST_HEAD(omx_pull_handles_cleanup_list);
@@ -236,7 +238,7 @@ omx_pull_handles_cleanup(void)
 	}
 }
 
-/******************************
+/***************************************
  * Per-endpoint pull handles management
  */
 
@@ -251,7 +253,7 @@ omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
 static inline void
 __omx_pull_handle_destroy(struct omx_pull_handle * handle)
 {
-	/* remove from the idr so that nobody can't find it anymore */
+	/* remove from the idr so that no incoming packet can find it anymore */
 	write_lock_bh(&omx_pull_handles_idr_lock);
 	idr_remove(&omx_pull_handles_idr, handle->idr_index);
 	write_unlock_bh(&omx_pull_handles_idr_lock);
@@ -261,6 +263,7 @@ __omx_pull_handle_destroy(struct omx_pull_handle * handle)
 	list_move(&handle->list_elt, &omx_pull_handles_cleanup_list);
 	spin_unlock(&omx_pull_handles_cleanup_lock);
 
+	/* we don't depend on the endpoint anymore now, release the endpoint reference */
 	omx_endpoint_release(handle->endpoint);
 }
 
@@ -403,7 +406,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	write_unlock_bh(&omx_pull_handles_idr_lock);
 
 	/* we are good now, finish filling the handle */
-	spin_lock_init(&handle->lock);
 	kref_init(&handle->refcount);
 	handle->endpoint = endpoint;
 	handle->region = region;
@@ -411,9 +413,13 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* fill handle */
 	handle->lib_cookie = cmd->lib_cookie;
 	handle->total_length = cmd->length;
-	handle->remaining_length = cmd->length;
 	handle->puller_rdma_offset = cmd->local_offset;
 	handle->pulled_rdma_offset = cmd->remote_offset;
+
+	/* initialize variable stuff */
+	spin_lock_init(&handle->lock);
+	spin_lock(&handle->lock);
+	handle->remaining_length = cmd->length;
 	handle->frame_index = 0;
 	handle->next_frame_index = 0;
 	handle->block_frames = 0;
@@ -433,13 +439,11 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	__mod_timer(&handle->retransmit_timer,
 		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-	/* queue and acquire the handle */
+	/* queue in the endpoint list */
 	write_lock_bh(&endpoint->pull_handles_list_lock);
 	list_add_tail(&handle->list_elt,
 		      &endpoint->pull_handles_list);
 	write_unlock_bh(&endpoint->pull_handles_list_lock);
-
-	spin_lock(&handle->lock);
 
 	dprintk(PULL, "created and acquired pull handle %p\n", handle);
 	return handle;
