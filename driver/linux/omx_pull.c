@@ -178,6 +178,27 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	handle->already_requeued_first = 0;
 }
 
+/*************************
+ * Global pull idr
+ */
+
+static struct idr omx_pull_handles_idr;
+static rwlock_t omx_pull_handles_idr_lock;
+
+int
+omx_pull_handles_init(void)
+{
+	idr_init(&omx_pull_handles_idr);
+	rwlock_init(&omx_pull_handles_idr_lock);
+	return 0;
+}
+
+void
+omx_pull_handles_exit(void)
+{
+	idr_destroy(&omx_pull_handles_idr);
+}
+
 /************************
  * Kthread Deferred Work
  */
@@ -210,27 +231,6 @@ omx_pull_handles_cleanup(void)
 		list_del(&handle->list_elt);
 		kfree(handle);
 	}
-}
-
-/*************************
- * Global pull idr
- */
-
-static struct idr omx_pull_handles_idr;
-static rwlock_t omx_pull_handles_idr_lock;
-
-int
-omx_pull_handles_init(void)
-{
-	idr_init(&omx_pull_handles_idr);
-	rwlock_init(&omx_pull_handles_idr_lock);
-	return 0;
-}
-
-void
-omx_pull_handles_exit(void)
-{
-	idr_destroy(&omx_pull_handles_idr);
 }
 
 /******************************
