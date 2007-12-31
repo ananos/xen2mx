@@ -44,9 +44,7 @@
 * vectorial support, through isendv/irecvv
 
 * rework the whole locking
-  + use kref for pull handles
   + update all pull comment
-  + keep a reference on the endpoint as long as the handle timeout handler is pending
   + reduce spinlock hold-time in pull-request/reply
   + use rcu for the pull handle thread? no list_splice_rcu exists
 * fix oops when removing the module while some pull handle are busy

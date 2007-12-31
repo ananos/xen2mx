@@ -20,6 +20,7 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/idr.h>
+#include <linux/kref.h>
 #include <linux/timer.h>
 
 #include "omx_common.h"
@@ -44,9 +45,9 @@ struct omx_pull_block_desc {
 };
 
 struct omx_pull_handle {
+	struct kref refcount;
 	struct list_head list_elt;
 	uint32_t idr_index;
-	spinlock_t lock;
 
 	/* timer for retransmission */
 	struct timer_list retransmit_timer;
@@ -61,6 +62,7 @@ struct omx_pull_handle {
 	uint32_t pulled_rdma_offset;
 
 	/* current status */
+	spinlock_t lock;
 	uint32_t remaining_length;
 	uint32_t frame_index; /* index of the first requested frame */
 	uint32_t next_frame_index; /* index of the frame to request */
@@ -75,6 +77,7 @@ struct omx_pull_handle {
 	struct omx_hdr pkt_hdr;
 };
 
+static void omx_pull_handle_release(struct omx_pull_handle * handle);
 static void omx_pull_handle_timeout_handler(unsigned long data);
 static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t status);
 
@@ -226,8 +229,8 @@ omx_pull_handles_cleanup(void)
 	list_for_each_entry_safe(handle, next, &private_head, list_elt) {
 		int ret = del_timer_sync(&handle->retransmit_timer);
 		if (ret > 0)
-			/* the timer was pending, the endpoint reference has not been released */
-			omx_endpoint_release(handle->endpoint);
+			/* the timer was pending, the handle reference has not been released */
+			omx_pull_handle_release(handle);
 		list_del(&handle->list_elt);
 		kfree(handle);
 	}
@@ -257,11 +260,14 @@ __omx_pull_handle_destroy(struct omx_pull_handle * handle)
 	spin_lock(&omx_pull_handles_cleanup_lock);
 	list_move(&handle->list_elt, &omx_pull_handles_cleanup_list);
 	spin_unlock(&omx_pull_handles_cleanup_lock);
+
+	omx_endpoint_release(handle->endpoint);
 }
 
-static inline void
-omx_pull_handle_destroy(struct omx_pull_handle * handle)
+static void
+__omx_pull_handle_last_release(struct kref * kref)
 {
+	struct omx_pull_handle * handle = container_of(kref, struct omx_pull_handle, refcount);
 	struct omx_endpoint * endpoint = handle->endpoint;
 
 	write_lock_bh(&endpoint->pull_handles_list_lock);
@@ -361,7 +367,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	struct omx_user_region * region;
 	int err;
 
-	/* take another reference on the endpoint for the timeout handler */
+	/* take another reference and keep it during the handle life */
 	omx_endpoint_reacquire(endpoint);
 
 	/* acquire the region */
@@ -398,6 +404,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 	/* we are good now, finish filling the handle */
 	spin_lock_init(&handle->lock);
+	kref_init(&handle->refcount);
 	handle->endpoint = endpoint;
 	handle->region = region;
 
@@ -473,7 +480,7 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	if (magic != omx_endpoint_pull_magic(endpoint))
 		goto out;
 
-	omx_endpoint_reacquire(endpoint);
+	kref_get(&handle->refcount);
 
 	dprintk(PULL, "acquired pull handle %p\n", handle);
 	return handle;
@@ -481,6 +488,12 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
  out:
 	return NULL;
 }
+
+static void
+omx_pull_handle_release(struct omx_pull_handle * handle)
+{
+	kref_put(&handle->refcount, __omx_pull_handle_last_release);
+}	
 
 /*
  * Takes a locked pull handle and complete it.
@@ -492,18 +505,16 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 static inline void
 omx_pull_handle_done_release(struct omx_pull_handle * handle)
 {
-	struct omx_endpoint * endpoint = handle->endpoint;
 	struct omx_user_region * region = handle->region;
 
 	/* destroy the handle */
 
 	/* release the lock first to avoid leaking preempt count */
 	spin_unlock(&handle->lock);
-	omx_pull_handle_destroy(handle);
 
-	/* release the region and endpoint */
+	/* release the region and handle */
 	omx_user_region_release(region);
-	omx_endpoint_release(endpoint);
+	omx_pull_handle_release(handle);
 
 	dprintk(PULL, "frame are all done, destroy the handle and release the endpoint\n");
 }
@@ -672,7 +683,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 
 	if (endpoint->status != OMX_ENDPOINT_STATUS_OK
 	    || OMX_PULL_HANDLE_DONE(handle)) {
-		omx_endpoint_release(endpoint);
+		omx_pull_handle_release(handle);
 		return;
 	}
 
@@ -1015,7 +1026,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 				 (unsigned long) handle->frame_index,
 				 (unsigned long) handle->frame_index + handle->block_frames);
 		spin_unlock(&handle->lock);
-		omx_endpoint_release(handle->endpoint);
+		omx_pull_handle_release(handle);
 		err = 0;
 		goto out;
 	}
@@ -1028,7 +1039,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) handle->frame_index);
 		spin_unlock(&handle->lock);
-		omx_endpoint_release(handle->endpoint);
+		omx_pull_handle_release(handle);
 		err = 0;
 		goto out;
 	}
@@ -1095,7 +1106,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 		dprintk(PULL, "block not done, just releasing\n");
 		spin_unlock(&handle->lock);
-		omx_endpoint_release(handle->endpoint);
+		omx_pull_handle_release(handle);
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
 
@@ -1167,7 +1178,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		 * deadlock when sending to ourself in the same region
 		 */
 		spin_unlock(&handle->lock);
-		omx_endpoint_release(handle->endpoint);
+		omx_pull_handle_release(handle);
 
 		if (skb) {
 			omx_queue_xmit(iface, skb, pull);
