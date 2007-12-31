@@ -500,7 +500,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 }	
 
 /*
- * Takes a locked pull handle and complete it.
+ * Takes an acquired pull handle and complete it.
  *
  * May be called by the BH after receiving a pull reply or a nack,
  * by the retransmit timer when expired, or within an ioctl if the
@@ -510,11 +510,6 @@ static inline void
 omx_pull_handle_done_release(struct omx_pull_handle * handle)
 {
 	struct omx_user_region * region = handle->region;
-
-	/* destroy the handle */
-
-	/* release the lock first to avoid leaking preempt count */
-	spin_unlock(&handle->lock);
 
 	/* release the region and handle */
 	omx_user_region_release(region);
@@ -670,6 +665,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	/* we failed to send the first pull requests,
 	 * report an error to the user right now
 	 */
+	spin_unlock(&handle->lock);
 	omx_pull_handle_done_release(handle);
  out:
 	return err;
@@ -685,8 +681,11 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 
 	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
 
+	spin_lock(&handle->lock);
+
 	if (endpoint->status != OMX_ENDPOINT_STATUS_OK
 	    || OMX_PULL_HANDLE_DONE(handle)) {
+		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 		return;
 	}
@@ -696,7 +695,6 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	if (jiffies > handle->last_retransmit_jiffies) {
 		omx_counter_inc(iface, OMX_COUNTER_PULL_TIMEOUT_ABORT);
 		dprintk(PULL, "pull handle last retransmit time reached, reporting an error\n");
-		spin_lock(&handle->lock);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
 		return;
 	}
@@ -722,6 +720,8 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 
 	mod_timer(&handle->retransmit_timer,
 		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+
+	spin_unlock(&handle->lock);
 }
 
 /* pull reply skb destructor to release the user region */
@@ -938,9 +938,8 @@ omx_recv_pull(struct omx_iface * iface,
 }
 
 /*
- * Notify the completion of a pull handle.
- *
- * Must be called with the handle held, and we will release it here.
+ * Takes a locked and acquired pull handle and complete it after
+ * having reported an event to user-space.
  *
  * May be called by the BH after receiving a pull reply or a nack,
  * and by the retransmit timer when expired.
@@ -965,6 +964,8 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
 	handle->remaining_length = 0;
+
+	spin_unlock(&handle->lock);
 	omx_pull_handle_done_release(handle);
 }
 
@@ -1257,12 +1258,10 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		goto out;
 	}
 
-	/* lock the handle */
-	spin_lock(&handle->lock);
-
 	omx_recv_dprintk(eh, "NACK MCP type %s",
 			 omx_strnacktype(nack_type));
 
+	spin_lock(&handle->lock);
 	omx_pull_handle_done_notify(handle, nack_type);
 
 	return 0;
