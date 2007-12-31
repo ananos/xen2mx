@@ -302,6 +302,8 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 		printk(KERN_INFO "Open-MX: forcing close of endpoint #%d attached to iface #%d '%s'\n",
 		       i, iface->index, iface->eth_ifp->name);
 
+		/* notify the interface removal to userspace */
+		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED;
 		/*
 		 * schedule the endpoint closing, with the iface lock hold
 		 * ignore the return value, somebody might be closing it already

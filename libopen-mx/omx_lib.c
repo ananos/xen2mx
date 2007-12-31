@@ -202,6 +202,11 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     printf("Open-MX WARNING: Driver reporting too small MTU for interface %s (%s) for endpoint %d, check dmesg\n",
 	   ep->ifacename, ep->hostname, ep->endpoint_index);
   }
+  if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED) {
+    omx__abort("Open-MX WARNING: Driver reporting endpoint %d being closed because interface %s (%s) has been removed\n",
+	       ep->endpoint_index, ep->ifacename, ep->hostname);
+    /* FIXME: find a nice way to exit here? */
+  }
 
   /* could be racy... could be fixed using atomic ops... */
   ep->desc->status = 0;
