@@ -641,6 +641,8 @@ enum omx_counter_index {
 	OMX_COUNTER_UNEXP_EVENTQ_FULL,
 	OMX_COUNTER_SEND_NOMEM_SKB,
 	OMX_COUNTER_SEND_NOMEM_MEDIUM_DEFEVENT,
+	OMX_COUNTER_PULL_SECOND_BLOCK_DONE_EARLY,
+	OMX_COUNTER_PULL_REQUEST_BOTH_BLOCKS,
 	OMX_COUNTER_PULL_TIMEOUT_HANDLER,
 	OMX_COUNTER_PULL_TIMEOUT_ABORT,
 	OMX_COUNTER_PULL_REPLY_APPEND_FAIL,
@@ -719,6 +721,10 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Skbuff Alloc Failed";
 	case OMX_COUNTER_SEND_NOMEM_MEDIUM_DEFEVENT:
 		return "Send Medium Deferred Event Alloc Failed";
+	case OMX_COUNTER_PULL_SECOND_BLOCK_DONE_EARLY:
+		return "Pull Second Block Done before First One";
+	case OMX_COUNTER_PULL_REQUEST_BOTH_BLOCKS:
+		return "Pull Request for Both Blocks at Once";
 	case OMX_COUNTER_PULL_TIMEOUT_HANDLER:
 		return "Pull Timeout Handler";
 	case OMX_COUNTER_PULL_TIMEOUT_ABORT:

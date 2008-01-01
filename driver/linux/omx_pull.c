@@ -1103,6 +1103,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 			struct sk_buff *skb;
 
+			omx_counter_inc(iface, OMX_COUNTER_PULL_SECOND_BLOCK_DONE_EARLY);
+
 			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
 				handle);
 
@@ -1161,6 +1163,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* is there more to request? if so, use the now-freed second block */
 		if (!handle->remaining_length)
 			goto skbs_ready;
+
+		omx_counter_inc(iface, OMX_COUNTER_PULL_REQUEST_BOTH_BLOCKS);
 
 		/* start another next block */
 		dprintk(PULL, "queueing another next pull block request\n");
