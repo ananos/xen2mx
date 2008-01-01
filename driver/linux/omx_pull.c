@@ -1183,8 +1183,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	} else {
 
-		/* last block is done, notify the completion */
+		/* last block is done */
+		omx_pull_handle_first_block_done(handle);
 
+		/* notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_SUCCESS);
 	}
