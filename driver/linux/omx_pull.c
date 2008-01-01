@@ -33,6 +33,15 @@
 #endif
 #endif
 
+/* use a bitmask type large enough to store two pull frame blocks */
+#if OMX_PULL_REPLY_PER_BLOCK > 15
+typedef uint64_t omx_frame_bitmask_t;
+#elif OMX_PULL_REPLY_PER_BLOCK > 7
+typedef uint32_t omx_frame_bitmask_t;
+#else
+typedef uint16_t omx_frame_bitmask_t;
+#endif
+
 #define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
 
 #define OMX_PULL_RETRANSMIT_TIMEOUT_MS	1000
@@ -67,8 +76,8 @@ struct omx_pull_handle {
 	uint32_t frame_index; /* index of the first requested frame */
 	uint32_t next_frame_index; /* index of the frame to request */
 	uint32_t block_frames; /* number of frames requested */
-	uint64_t frame_missing_bitmap; /* frames not received at all */
-	uint64_t frame_copying_bitmap; /* frames received but not copied yet */
+	omx_frame_bitmask_t frame_missing_bitmap; /* frames not received at all */
+	omx_frame_bitmask_t frame_copying_bitmap; /* frames received but not copied yet */
 	struct omx_pull_block_desc first_desc;
 	struct omx_pull_block_desc second_desc;
 	uint32_t already_requeued_first; /* the first block has been requested again since the last timer */
@@ -136,9 +145,9 @@ static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 #error Cannot request more than 32 replies per pull block
 #endif
 
-#define OMX_PULL_HANDLE_BLOCK_BITMASK ((1ULL<<OMX_PULL_REPLY_PER_BLOCK)-1)
+#define OMX_PULL_HANDLE_BLOCK_BITMASK ((((omx_frame_bitmask_t)1)<<OMX_PULL_REPLY_PER_BLOCK)-1)
 #define OMX_PULL_HANDLE_SECOND_BLOCK_BITMASK (OMX_PULL_HANDLE_BLOCK_BITMASK<<OMX_PULL_REPLY_PER_BLOCK)
-#define OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK ((1ULL<<(2*OMX_PULL_REPLY_PER_BLOCK))-1)
+#define OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK ((((omx_frame_bitmask_t)1)<<(2*OMX_PULL_REPLY_PER_BLOCK))-1)
 
 #define OMX_PULL_HANDLE_DONE(handle) \
 	(!((handle)->remaining_length) \
@@ -155,14 +164,14 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 				     uint32_t block_length,
 				     uint32_t first_frame_offset)
 {
-	uint64_t new_mask;
+	omx_frame_bitmask_t new_mask;
 	int new_frames;
 
 	new_frames = (first_frame_offset + block_length
 		      + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
 	BUG_ON(new_frames + handle->block_frames > 64);
 
-	new_mask = ((1ULL << new_frames) - 1) << handle->block_frames;
+	new_mask = ((((omx_frame_bitmask_t)1) << new_frames) - 1) << handle->block_frames;
 
 	handle->frame_missing_bitmap |= new_mask;
 	handle->frame_copying_bitmap |= new_mask;
@@ -979,7 +988,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	uint32_t msg_offset = OMX_FROM_PKT_FIELD(pull_reply_n->msg_offset);
 	uint32_t frame_seqnum_offset; /* unsigned to make seqnum offset easy to check */
 	struct omx_pull_handle * handle;
-	uint64_t bitmap_mask;
+	omx_frame_bitmask_t bitmap_mask;
 	int frame_from_second_block = 0;
 	int err = 0;
 
@@ -1034,7 +1043,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 
 	/* check that the frame is not a duplicate */
-	bitmap_mask = 1ULL << frame_seqnum_offset;
+	bitmap_mask = ((omx_frame_bitmask_t)1) << frame_seqnum_offset;
 	if (unlikely((handle->frame_missing_bitmap & bitmap_mask) == 0)) {
 		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_REPLY_DUPLICATE);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with duplicate seqnum %ld (offset %ld) in current block %ld-%ld",
@@ -1082,7 +1091,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	 * processed in the meantime. Reupdate our offset.
 	 */
 	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
-	bitmap_mask = 1ULL << frame_seqnum_offset;
+	bitmap_mask = ((omx_frame_bitmask_t)1) << frame_seqnum_offset;
 	handle->frame_copying_bitmap &= ~bitmap_mask;
 
 	if (frame_seqnum_offset >= OMX_PULL_REPLY_PER_BLOCK)
