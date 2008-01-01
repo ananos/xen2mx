@@ -58,7 +58,7 @@ enum omx_pull_handle_status {
 	 * Either the pull has completed (or aborted on error), or the endpoint is being closed and
 	 * all handles have been scheduled for removal.
 	 * The timeout handler must exit next time it runs. It will release the reference on the handle
-	 * so that the handle may be destroyed by the cleanup thread
+	 * so that the handle may be destroyed.
 	 */
 	OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT,
 
@@ -69,11 +69,6 @@ enum omx_pull_handle_status {
 	 * or the timeout was reached and its handler aborted the handle directly.
 	 */
 	OMX_PULL_HANDLE_STATUS_TIMER_EXITED,
-
-	/*
-	 * All reference on the handle have been removed, the handle has been moved to the cleanup list
-	 */
-	OMX_PULL_HANDLE_STATUS_NEED_CLEANUP,
 };
 
 struct omx_pull_block_desc {
@@ -245,38 +240,6 @@ omx_pull_handles_exit(void)
 	idr_destroy(&omx_pull_handles_idr);
 }
 
-/************************
- * Kthread Deferred Work
- */
-
-/*
- * We need to wait for the timeout handler to finish before destroying the handle.
- * But del_timer_sync cannot be called from BH, so we just let the cleanup thread
- * take care of it by moving pull handles to a cleanup list first
- */
-static spinlock_t omx_pull_handles_cleanup_lock = SPIN_LOCK_UNLOCKED;
-static LIST_HEAD(omx_pull_handles_cleanup_list);
-
-void
-omx_pull_handles_cleanup(void)
-{
-	LIST_HEAD(private_head);
-	struct omx_pull_handle * handle, * next;
-
-	/* move the whole list to our private head at once */
-	spin_lock_bh(&omx_pull_handles_cleanup_lock);
-	list_splice(&omx_pull_handles_cleanup_list, &private_head);
-	INIT_LIST_HEAD(&omx_pull_handles_cleanup_list);
-	spin_unlock_bh(&omx_pull_handles_cleanup_lock);
-
-	/* and now delete all pull handles without needing any lock */
-	list_for_each_entry_safe(handle, next, &private_head, list_elt) {
-		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_NEED_CLEANUP);
-		list_del(&handle->list_elt);
-		kfree(handle);
-	}
-}
-
 /***************************************
  * Per-endpoint pull handles management
  */
@@ -296,15 +259,10 @@ __omx_pull_handle_last_release(struct kref * kref)
 	struct omx_endpoint * endpoint = handle->endpoint;
 
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
-	handle->status = OMX_PULL_HANDLE_STATUS_NEED_CLEANUP;
+	kfree(handle);
 
 	/* we don't depend on the endpoint anymore now, release the endpoint reference */
 	omx_endpoint_release(endpoint);
-
-	/* we can be cleaned up by the cleanup thread now */
-	spin_lock(&omx_pull_handles_cleanup_lock);
-	list_add(&handle->list_elt, &omx_pull_handles_cleanup_list);
-	spin_unlock(&omx_pull_handles_cleanup_lock);	
 }
 
 void

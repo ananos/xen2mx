@@ -127,7 +127,6 @@ omx_kthread_func(void *dummy)
 
 		msleep(1000);
 
-		omx_pull_handles_cleanup();
 		omx_endpoints_cleanup();
 	}
 
