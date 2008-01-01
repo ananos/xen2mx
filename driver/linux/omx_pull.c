@@ -1022,8 +1022,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
 	if (unlikely(frame_seqnum_offset >= handle->block_frames)) {
 		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM);
-		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (should be within %ld-%ld)",
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (offset %ld), should be within %ld-%ld",
 				 (unsigned long) frame_seqnum,
+				 (unsigned long) frame_seqnum_offset,
 				 (unsigned long) handle->frame_index,
 				 (unsigned long) handle->frame_index + handle->block_frames);
 		spin_unlock(&handle->lock);
@@ -1036,9 +1037,11 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	bitmap_mask = 1ULL << frame_seqnum_offset;
 	if (unlikely((handle->frame_missing_bitmap & bitmap_mask) == 0)) {
 		omx_counter_inc(iface, OMX_COUNTER_DROP_PULL_REPLY_DUPLICATE);
-		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with duplicate seqnum %ld in current block %ld",
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with duplicate seqnum %ld (offset %ld) in current block %ld-%ld",
 				 (unsigned long) frame_seqnum,
-				 (unsigned long) handle->frame_index);
+				 (unsigned long) frame_seqnum_offset,
+				 (unsigned long) handle->frame_index,
+				 (unsigned long) handle->frame_index + handle->block_frames);
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 		err = 0;

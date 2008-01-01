@@ -1,3 +1,5 @@
+* #define frame_bitmask_t and optimize if wire-compat
+
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
