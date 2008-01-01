@@ -107,7 +107,6 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 static void
 omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 {
-	omx_endpoint_pull_handles_exit(endpoint);
 	omx_endpoint_user_regions_exit(endpoint);
 	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
@@ -245,6 +244,9 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 	/* detach from the iface now so that nobody can acquire it */
 	omx_iface_detach_endpoint(endpoint, ifacelocked);
 	/* but keep the endpoint->iface valid until everybody releases the endpoint */
+
+	/* schedule the releasing of pending pull handles */
+	omx_endpoint_pull_handles_prepare_exit(endpoint);
 
 	/* release our refcount now that other users cannot use again */
 	kref_put(&endpoint->refcount, __omx_endpoint_last_release);

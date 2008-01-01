@@ -1,9 +1,13 @@
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
-* fix Drop Pull Reply Bad Frame SeqNum
+* split out omx_common.h (and types.h?)
 
 * factorize early and msg seqnum index computing (cache them?)
+
+* shared comms between boards from within the driver
+  + reject sends if no place in the target eventq so that we requeue them
+    instead of dropping them and needing to ack them later ?
 
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
@@ -12,8 +16,6 @@
 
 * optimize mediums
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
-
-* if pulling outside of the remote window, send a nack?
 
 * add retransmission
   + wakeup earlier if sleeping to send delayed acks
@@ -42,9 +44,6 @@
   + update all pull comment
   + reduce spinlock hold-time in pull-request/reply
   + use rcu for the pull handle thread? no list_splice_rcu exists
-* fix oops when removing the module while some pull handle are busy
-  + drop pull handles BEFORE closing, after setting to CLOSING
-* disable force until it does not oops?
 
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request
@@ -82,13 +81,6 @@
 * mapper (open-mxd)
 * /dev/open-mxd ?
 
-* optimizations
-  - single ioctl for multiple medium frags ?
-  - if sending a medium in the regcache, use 0-copy
-  - optimize shared comms between boards from within the driver
-    + reject sends if no place in the target eventq so that we requeue them
-      instead of dropping them and needing to ack them later ?
-
 * use IOAT
   + post a req
     cookie = dma_async_memcpy_pg_to_pg(chan, dst_page, dest_off, src_page, src_off, len)
@@ -122,3 +114,4 @@
   + extend threshold for small/tiny ?
   + cleanup connect request/reply data
   + no bidirectionnal connect in the background
+  + if pulling outside of the remote window, send a nack?
