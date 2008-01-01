@@ -173,10 +173,13 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 static inline void
 omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 {
-	handle->frame_missing_bitmap >>= OMX_PULL_REPLY_PER_BLOCK;
-	handle->frame_copying_bitmap >>= OMX_PULL_REPLY_PER_BLOCK;
-	handle->frame_index += OMX_PULL_REPLY_PER_BLOCK;
-	handle->block_frames -= OMX_PULL_REPLY_PER_BLOCK;
+	uint32_t first_block_frames = handle->block_frames > OMX_PULL_REPLY_PER_BLOCK
+	 ? handle->block_frames - OMX_PULL_REPLY_PER_BLOCK : handle->block_frames;
+
+	handle->frame_missing_bitmap >>= first_block_frames;
+	handle->frame_copying_bitmap >>= first_block_frames;
+	handle->frame_index += first_block_frames;
+	handle->block_frames -= first_block_frames;
 	memcpy(&handle->first_desc, &handle->second_desc,
 	       sizeof(struct omx_pull_block_desc));
 	handle->already_requeued_first = 0;
