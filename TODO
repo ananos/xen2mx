@@ -1,3 +1,6 @@
+* the first block MUST be missing in the timeout handler
+  so just don't request the second one again
+
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
@@ -41,7 +44,6 @@
 * vectorial support, through isendv/irecvv
 
 * rework the whole locking
-  + update all pull comment
   + reduce spinlock hold-time in pull-request/reply
   + use rcu for the pull handle thread? no list_splice_rcu exists
 

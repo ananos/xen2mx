@@ -28,11 +28,24 @@
 #include "omx_hal.h"
 #include "omx_wire_access.h"
 
+/**************************
+ * Pull-specific Constants
+ */
+
+#define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
+
+#define OMX_PULL_RETRANSMIT_TIMEOUT_MS	1000
+#define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES (OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
+
 #ifdef OMX_MX_WIRE_COMPAT
 #if OMX_PULL_REPLY_LENGTH_MAX >= 65536
 #error Cannot store rdma offsets > 65535 in 16bits offsets on the wire
 #endif
 #endif
+
+/**********************
+ * Pull-specific Types
+ */
 
 /* use a bitmask type large enough to store two pull frame blocks */
 #if OMX_PULL_REPLY_PER_BLOCK > 15
@@ -42,11 +55,6 @@ typedef uint32_t omx_frame_bitmask_t;
 #else
 typedef uint16_t omx_frame_bitmask_t;
 #endif
-
-#define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
-
-#define OMX_PULL_RETRANSMIT_TIMEOUT_MS	1000
-#define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES (OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
 
 enum omx_pull_handle_status {
 	/*
@@ -112,7 +120,6 @@ struct omx_pull_handle {
 	struct omx_hdr pkt_hdr;
 };
 
-static void omx_pull_handle_release(struct omx_pull_handle * handle);
 static void omx_pull_handle_timeout_handler(unsigned long data);
 static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t status);
 
@@ -125,6 +132,9 @@ static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t
  * processing incoming pull replies.
  *
  * Each handle also owns a spinlock to protect in variable internal state.
+ * It status field describes whether it is being processed or not, and
+ * whether its timer is still active. Once both are done, the handle may
+ * be cleaned.
  *
  * The pile of handles for an endpoint is protected by a rwlock. It is taken
  * for reading when acquiring an handle (when a pull reply arrives, likely
@@ -153,7 +163,7 @@ static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t
  * To avoid re-requesting too often, we do it only once per timeout.
  *
  * In the end, the timer is only called if:
- * + one packet is lost for block the first and the second current block
+ * + one packet is lost for both the first and the second current block
  * + or one packet is missing in the first block after one optimistic re-request.
  * So the timeout doesn't need to be short, 1 second is enough.
  */
@@ -271,7 +281,7 @@ omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 {
 	struct omx_pull_handle * handle, * next;
 
-	/* release all pull handles of the endpoint */
+	/* ask all pull handles of the endpoint to stop their timer */
 	write_lock_bh(&endpoint->pull_handles_list_lock);
 
 	list_for_each_entry_safe(handle, next,
@@ -358,8 +368,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 }
 
 /*
- * Create a pull handle and return it as acquired,
- * with a reference on the endpoint
+ * Create a pull handle and return it as acquired and locked.
  */
 static inline struct omx_pull_handle *
 omx_pull_handle_create(struct omx_endpoint * endpoint,
@@ -493,6 +502,7 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	return NULL;
 }
 
+/* Release an acquire pull handle */
 static void
 omx_pull_handle_release(struct omx_pull_handle * handle)
 {
@@ -503,7 +513,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
  * Takes an acquired and locked pull handle and complete it.
  *
  * May be called by the BH after receiving a pull reply or a nack,
- * by the retransmit timer when expired, or within an ioctl if the
+ * by the retransmit timer when expired, or with in an ioctl if the
  * posting of a pull failed.
  */
 static inline void
@@ -528,6 +538,7 @@ __omx_pull_handle_done_release(struct omx_pull_handle * handle)
 	omx_pull_handle_release(handle);
 }
 
+/* __omx_pull_handle_done_release called by the bottom half or ioctl */
 static inline void
 omx_pull_handle_done_release(struct omx_pull_handle * handle)
 {
@@ -536,6 +547,7 @@ omx_pull_handle_done_release(struct omx_pull_handle * handle)
 	__omx_pull_handle_done_release(handle);
 }
 
+/* __omx_pull_handle_done_release called by the timer */
 static inline void
 omx_pull_handle_timer_release(struct omx_pull_handle * handle)
 {
@@ -548,7 +560,7 @@ omx_pull_handle_timer_release(struct omx_pull_handle * handle)
  * Pull-related networking
  */
 
-/* Called with the handle held */
+/* Called with the handle acquired and locked */
 static inline struct sk_buff *
 omx_fill_pull_block_request(struct omx_pull_handle * handle,
 			    struct omx_pull_block_desc * desc)
@@ -589,7 +601,7 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 			 (unsigned long) frame_index,
 			 (unsigned long) first_frame_offset);
 
-	/* update the timer */
+	/* start the timer */
 	mod_timer(&handle->retransmit_timer,
 		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
@@ -621,7 +633,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	/* create and acquire the handle */
+	/* create, acquire and lock the handle */
 	handle = omx_pull_handle_create(endpoint, &cmd);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
@@ -673,9 +685,6 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
  skbs_ready:
-	/* release the handle before sending to avoid
-	 * deadlock when sending to ourself in the same region
-	 */
 	spin_unlock(&handle->lock);
 
 	omx_queue_xmit(iface, skb, PULL);
@@ -958,8 +967,8 @@ omx_recv_pull(struct omx_iface * iface,
 }
 
 /*
- * Takes a locked and acquired pull handle and complete it after
- * having reported an event to user-space.
+ * Takes a locked and acquired pull handle
+ * and report an event to user-space.
  *
  * May be called by the BH after receiving a pull reply or a nack,
  * and by the retransmit timer when expired.
@@ -1072,7 +1081,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* release the lock during the copy */
 	spin_unlock(&handle->lock);
-	/* FIXME: not safe? */
 
 	/* fill segment pages */
 	dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
@@ -1276,7 +1284,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		peer_index = src_addr_peer_index;
 	}
 
-	/* acquire the handle and endpoint */
+	/* acquire and lock the handle */
 	handle = omx_pull_handle_acquire_by_wire(iface, dst_magic, dst_pull_handle);
 	if (unlikely(!handle)) {
 		omx_counter_inc(iface, DROP_NACK_MCP_BAD_MAGIC);
