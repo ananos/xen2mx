@@ -41,17 +41,17 @@ extern int omx_peer_max;
 extern int omx_copybench;
 extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */
 
-extern unsigned long omx_tiny_packet_loss;
-extern unsigned long omx_small_packet_loss;
-extern unsigned long omx_medium_packet_loss;
-extern unsigned long omx_rndv_packet_loss;
-extern unsigned long omx_pull_packet_loss;
-extern unsigned long omx_pull_reply_packet_loss;
-extern unsigned long omx_notify_packet_loss;
-extern unsigned long omx_connect_packet_loss;
-extern unsigned long omx_truc_packet_loss;
-extern unsigned long omx_nack_lib_packet_loss;
-extern unsigned long omx_nack_mcp_packet_loss;
+extern unsigned long omx_TINY_packet_loss;
+extern unsigned long omx_SMALL_packet_loss;
+extern unsigned long omx_MEDIUM_FRAG_packet_loss;
+extern unsigned long omx_RNDV_packet_loss;
+extern unsigned long omx_PULL_packet_loss;
+extern unsigned long omx_PULL_REPLY_packet_loss;
+extern unsigned long omx_NOTIFY_packet_loss;
+extern unsigned long omx_CONNECT_packet_loss;
+extern unsigned long omx_TRUC_packet_loss;
+extern unsigned long omx_NACK_LIB_packet_loss;
+extern unsigned long omx_NACK_MCP_packet_loss;
 
 /* main net */
 extern int omx_net_init(const char * ifnames);
@@ -175,6 +175,7 @@ extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
 /* queue a skb for xmit, or eventually drop it */
 #define __omx_queue_xmit(iface, skb, type)			\
 do {								\
+	omx_counter_inc(iface, OMX_COUNTER_SEND_##type);	\
 	skb->dev = iface->eth_ifp;				\
 	dev_queue_xmit(skb);					\
 } while (0)

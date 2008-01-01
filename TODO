@@ -3,8 +3,7 @@
 
 * no return 1 when keeping a second reference on the endpoint, just acquire twice?
 
-* change loss variables into capitals and integrate counters_inc
-  into queue_xmit
+* fix Drop Pull Reply Bad Frame SeqNum
 
 * factorize early and msg seqnum index computing (cache them?)
 

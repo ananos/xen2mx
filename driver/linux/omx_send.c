@@ -25,15 +25,15 @@
 #include "omx_wire_access.h"
 
 #ifdef OMX_DEBUG
-static unsigned long omx_tiny_packet_loss_index = 0;
-static unsigned long omx_small_packet_loss_index = 0;
-static unsigned long omx_medium_packet_loss_index = 0;
-static unsigned long omx_rndv_packet_loss_index = 0;
-static unsigned long omx_notify_packet_loss_index = 0;
-static unsigned long omx_connect_packet_loss_index = 0;
-static unsigned long omx_truc_packet_loss_index = 0;
-static unsigned long omx_nack_lib_packet_loss_index = 0;
-static unsigned long omx_nack_mcp_packet_loss_index = 0;
+static unsigned long omx_TINY_packet_loss_index = 0;
+static unsigned long omx_SMALL_packet_loss_index = 0;
+static unsigned long omx_MEDIUM_FRAG_packet_loss_index = 0;
+static unsigned long omx_RNDV_packet_loss_index = 0;
+static unsigned long omx_NOTIFY_packet_loss_index = 0;
+static unsigned long omx_CONNECT_packet_loss_index = 0;
+static unsigned long omx_TRUC_packet_loss_index = 0;
+static unsigned long omx_NACK_LIB_packet_loss_index = 0;
+static unsigned long omx_NACK_MCP_packet_loss_index = 0;
 #endif
 
 /*************************************
@@ -169,8 +169,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(iface, skb, tiny);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_TINY);
+	omx_queue_xmit(iface, skb, TINY);
 
 	return 0;
 
@@ -255,8 +254,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(iface, skb, small);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_SMALL);
+	omx_queue_xmit(iface, skb, SMALL);
 
 	return 0;
 
@@ -377,8 +375,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	skb->sk = (void *) defevent;
 	skb->destructor = omx_medium_frag_skb_destructor;
 
-	omx_queue_xmit(iface, skb, medium);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_MEDIUM_FRAG);
+	omx_queue_xmit(iface, skb, MEDIUM_FRAG);
 
 	/* return>0 to tell the caller to not release the endpoint,
 	 * we will do it when releasing the skb in the destructor
@@ -468,8 +465,7 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(iface, skb, rndv);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_RNDV);
+	omx_queue_xmit(iface, skb, RNDV);
 
 	return 0;
 
@@ -552,8 +548,7 @@ omx_send_connect(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(iface, skb, connect);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_CONNECT);
+	omx_queue_xmit(iface, skb, CONNECT);
 
 	return 0;
 
@@ -618,8 +613,7 @@ omx_send_notify(struct omx_endpoint * endpoint,
 
 	omx_send_dprintk(eh, "NOTIFY");
 
-	omx_queue_xmit(iface, skb, notify);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_NOTIFY);
+	omx_queue_xmit(iface, skb, NOTIFY);
 
 	return 0;
 
@@ -701,8 +695,7 @@ omx_send_truc(struct omx_endpoint * endpoint,
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(iface, skb, truc);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_TRUC);
+	omx_queue_xmit(iface, skb, TRUC);
 
 	return 0;
 
@@ -757,8 +750,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	omx_send_dprintk(eh, "NACK LIB type %d", nack_type);
 
-	omx_queue_xmit(iface, skb, nack_lib);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_NACK_LIB);
+	omx_queue_xmit(iface, skb, NACK_LIB);
 
 	return;
 
@@ -813,9 +805,8 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.src_magic, src_magic);
 
 	omx_send_dprintk(eh, "NACK MCP type %d", nack_type);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_NACK_MCP);
 
-	omx_queue_xmit(iface, skb, nack_mcp);
+	omx_queue_xmit(iface, skb, NACK_MCP);
 
 	return;
 

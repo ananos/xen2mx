@@ -124,8 +124,8 @@ static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t
  */
 
 #ifdef OMX_DEBUG
-static unsigned long omx_pull_packet_loss_index = 0;
-static unsigned long omx_pull_reply_packet_loss_index = 0;
+static unsigned long omx_PULL_packet_loss_index = 0;
+static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 #endif
 
 /********************************
@@ -652,12 +652,9 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	 */
 	spin_unlock(&handle->lock);
 
-	omx_queue_xmit(iface, skb, pull);
-	omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
-	if (skb2) {
-		omx_queue_xmit(iface, skb2, pull);
-		omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
-	}
+	omx_queue_xmit(iface, skb, PULL);
+	if (skb2)
+		omx_queue_xmit(iface, skb2, PULL);
 
 	return 0;
 
@@ -702,20 +699,17 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 		/* request the first block again */
 		skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-		if (!IS_ERR(skb)) {
-			omx_queue_xmit(iface, skb, pull);
-			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
-		}
+		if (!IS_ERR(skb))
+			omx_queue_xmit(iface, skb, PULL);
+
 		handle->already_requeued_first = 0;
 	}
 	else
 	if (!OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
 		/* request the second block again */
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
-		if (!IS_ERR(skb)) {
-			omx_queue_xmit(iface, skb, pull);
-			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
-		}
+		if (!IS_ERR(skb))
+			omx_queue_xmit(iface, skb, PULL);
 	}
 
 	mod_timer(&handle->retransmit_timer,
@@ -910,8 +904,7 @@ omx_recv_pull(struct omx_iface * iface,
 		/* now that the skb is ready, remove it from the array
 		 * so that we don't try to free it in case of error later
 		 */
-		omx_queue_xmit(iface, skb, pull_reply);
-		omx_counter_inc(iface, OMX_COUNTER_SEND_PULL_REPLY);
+		omx_queue_xmit(iface, skb, PULL_REPLY);
 
 		/* update fields now */
 		current_frame_seqnum++;
@@ -1101,10 +1094,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 				handle);
 
 			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-			if (!IS_ERR(skb)) {
-				omx_queue_xmit(iface, skb, pull);
-				omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
-			}
+			if (!IS_ERR(skb))
+				omx_queue_xmit(iface, skb, PULL);
 
 			handle->already_requeued_first = 1;
 		}
@@ -1185,14 +1176,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 
-		if (skb) {
-			omx_queue_xmit(iface, skb, pull);
-			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
-		}
-		if (skb2) {
-			omx_queue_xmit(iface, skb2, pull);
-			omx_counter_inc(iface, OMX_COUNTER_SEND_PULL);
-		}
+		if (skb)
+			omx_queue_xmit(iface, skb, PULL);
+		if (skb2)
+			omx_queue_xmit(iface, skb2, PULL);
 
 	} else {
 

@@ -56,48 +56,48 @@ unsigned long omx_debug = 0;
 module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(debug, "Bitmask of debugging messages to display");
 
-unsigned long omx_tiny_packet_loss = 0;
-module_param_named(tiny_packet_loss, omx_tiny_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_TINY_packet_loss = 0;
+module_param_named(tiny_packet_loss, omx_TINY_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(tiny_packet_loss, "Explicit tiny reply packet loss frequency");
 
-unsigned long omx_small_packet_loss = 0;
-module_param_named(small_packet_loss, omx_small_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_SMALL_packet_loss = 0;
+module_param_named(small_packet_loss, omx_SMALL_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(small_packet_loss, "Explicit small reply packet loss frequency");
 
-unsigned long omx_medium_packet_loss = 0;
-module_param_named(medium_packet_loss, omx_medium_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_MEDIUM_FRAG_packet_loss = 0;
+module_param_named(medium_frag_packet_loss, omx_MEDIUM_FRAG_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(medium_packet_loss, "Explicit medium reply packet loss frequency");
 
-unsigned long omx_rndv_packet_loss = 0;
-module_param_named(rndv_packet_loss, omx_rndv_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_RNDV_packet_loss = 0;
+module_param_named(rndv_packet_loss, omx_RNDV_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(rndv_packet_loss, "Explicit rndv reply packet loss frequency");
 
-unsigned long omx_pull_packet_loss = 0;
-module_param_named(pull_packet_loss, omx_pull_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_PULL_packet_loss = 0;
+module_param_named(pull_packet_loss, omx_PULL_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(pull_packet_loss, "Explicit pull packet loss frequency");
 
-unsigned long omx_pull_reply_packet_loss = 0;
-module_param_named(pull_reply_packet_loss, omx_pull_reply_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_PULL_REPLY_packet_loss = 0;
+module_param_named(pull_reply_packet_loss, omx_PULL_REPLY_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(pull_reply_packet_loss, "Explicit pull reply packet loss frequency");
 
-unsigned long omx_notify_packet_loss = 0;
-module_param_named(notify_packet_loss, omx_notify_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_NOTIFY_packet_loss = 0;
+module_param_named(notify_packet_loss, omx_NOTIFY_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(notify_packet_loss, "Explicit notify packet loss frequency");
 
-unsigned long omx_connect_packet_loss = 0;
-module_param_named(connect_packet_loss, omx_connect_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_CONNECT_packet_loss = 0;
+module_param_named(connect_packet_loss, omx_CONNECT_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(connect_packet_loss, "Explicit connect packet loss frequency");
 
-unsigned long omx_truc_packet_loss = 0;
-module_param_named(truc_packet_loss, omx_truc_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_TRUC_packet_loss = 0;
+module_param_named(truc_packet_loss, omx_TRUC_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(truc_packet_loss, "Explicit truc packet loss frequency");
 
-unsigned long omx_nack_lib_packet_loss = 0;
-module_param_named(nack_lib_packet_loss, omx_nack_lib_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_NACK_LIB_packet_loss = 0;
+module_param_named(nack_lib_packet_loss, omx_NACK_LIB_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(nack_lib_packet_loss, "Explicit nack lib packet loss frequency");
 
-unsigned long omx_nack_mcp_packet_loss = 0;
-module_param_named(nack_mcp_packet_loss, omx_nack_mcp_packet_loss, ulong, S_IRUGO|S_IWUSR);
+unsigned long omx_NACK_MCP_packet_loss = 0;
+module_param_named(nack_mcp_packet_loss, omx_NACK_MCP_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(nack_mcp_packet_loss, "Explicit nack mcp packet loss frequency");
 #endif
 
@@ -149,9 +149,39 @@ omx_init(void)
 	       (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
 	       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);
 #ifdef OMX_DEBUG
-	if (omx_pull_packet_loss)
+	if (omx_TINY_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating tiny packet loss every %ld packets\n",
+		       omx_TINY_packet_loss);
+	if (omx_SMALL_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating small packet loss every %ld packets\n",
+		       omx_SMALL_packet_loss);
+	if (omx_MEDIUM_FRAG_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating medium frag packet loss every %ld packets\n",
+		       omx_MEDIUM_FRAG_packet_loss);
+	if (omx_RNDV_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating rndv packet loss every %ld packets\n",
+		       omx_RNDV_packet_loss);
+	if (omx_PULL_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating pull packet loss every %ld packets\n",
+		       omx_PULL_packet_loss);
+	if (omx_PULL_REPLY_packet_loss)
 		printk(KERN_INFO "Open-MX: simulating pull reply packet loss every %ld packets\n",
-		       omx_pull_packet_loss);
+		       omx_PULL_REPLY_packet_loss);
+	if (omx_NOTIFY_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating notify packet loss every %ld packets\n",
+		       omx_NOTIFY_packet_loss);
+	if (omx_CONNECT_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating connect packet loss every %ld packets\n",
+		       omx_CONNECT_packet_loss);
+	if (omx_TRUC_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating truc packet loss every %ld packets\n",
+		       omx_TRUC_packet_loss);
+	if (omx_NACK_LIB_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating nack lib packet loss every %ld packets\n",
+		       omx_NACK_LIB_packet_loss);
+	if (omx_NACK_MCP_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating nack mcp packet loss every %ld packets\n",
+		       omx_NACK_MCP_packet_loss);
 #endif
 
 	omx_driver_userdesc = omx_vmalloc_user(sizeof(struct omx_driver_desc));
