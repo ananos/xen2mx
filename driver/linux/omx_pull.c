@@ -1076,6 +1076,13 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* take the lock back to prepare the future */
 	spin_lock(&handle->lock);
 
+	/*
+	 * handle->frame_index may have changed while the lock was released if we are
+	 * processing a frame of the second block and one from the first block has been
+	 * processed in the meantime. Reupdate our offset.
+	 */
+	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
+	bitmap_mask = 1ULL << frame_seqnum_offset;
 	handle->frame_copying_bitmap &= ~bitmap_mask;
 
 	if (frame_seqnum_offset >= OMX_PULL_REPLY_PER_BLOCK)
