@@ -20,6 +20,7 @@
 #define __omx_common_h__
 
 #include "omx_types.h"
+#include "omx_debug.h"
 
 /* constants */
 #ifdef OMX_MX_WIRE_COMPAT
@@ -242,51 +243,6 @@ omx_board_addr_to_ethhdr_dst(struct ethhdr * eh, uint64_t board_addr)
 	eh->h_dest[4] = (uint8_t)(board_addr >> 8);
 	eh->h_dest[5] = (uint8_t)(board_addr >> 0);
 }
-
-#ifdef OMX_DEBUG
-
-#define OMX_DEBUG_SEND (1<<0)
-#define OMX_DEBUG_RECV (1<<1)
-#define OMX_DEBUG_DROP (1<<2)
-#define OMX_DEBUG_PULL (1<<3)
-#define OMX_DEBUG_REG (1<<4)
-#define OMX_DEBUG_IOCTL (1<<5)
-#define OMX_DEBUG_EVENT (1<<6)
-#define OMX_DEBUG_PEER (1<<7)
-
-extern unsigned long omx_debug;
-#define omx_debug_type_enabled(type) (OMX_DEBUG_##type & omx_debug)
-
-#define dprintk(type, x...) do { if (omx_debug_type_enabled(type)) printk(KERN_INFO x); } while (0)
-
-#else /* OMX_DEBUG */
-#define dprintk(type, x...) do { /* nothing */ } while (0)
-#endif /* OMX_DEBUG */
-
-#define omx_send_dprintk(_eh, _format, ...) \
-dprintk(SEND, \
-	"Open-MX: sending from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
-	(_eh)->h_source[0], (_eh)->h_source[1], (_eh)->h_source[2], \
-	(_eh)->h_source[3], (_eh)->h_source[4], (_eh)->h_source[5], \
-	(_eh)->h_dest[0], (_eh)->h_dest[1], (_eh)->h_dest[2], \
-	(_eh)->h_dest[3], (_eh)->h_dest[4], (_eh)->h_dest[5], \
-	##__VA_ARGS__)
-
-#define omx_recv_dprintk(_eh, _format, ...) \
-dprintk(RECV, \
-	"Open-MX: received from %02x:%02x:%02x:%02x:%02x:%02x to %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
-	(_eh)->h_source[0], (_eh)->h_source[1], (_eh)->h_source[2], \
-	(_eh)->h_source[3], (_eh)->h_source[4], (_eh)->h_source[5], \
-	(_eh)->h_dest[0], (_eh)->h_dest[1], (_eh)->h_dest[2], \
-	(_eh)->h_dest[3], (_eh)->h_dest[4], (_eh)->h_dest[5], \
-	##__VA_ARGS__);
-
-#define omx_drop_dprintk(_eh, _format, ...) \
-dprintk(DROP, \
-	"Open-MX: dropping pkt from %02x:%02x:%02x:%02x:%02x:%02x, " _format "\n", \
-	(_eh)->h_source[0], (_eh)->h_source[1], (_eh)->h_source[2], \
-	(_eh)->h_source[3], (_eh)->h_source[4], (_eh)->h_source[5], \
-	##__VA_ARGS__);
 
 #endif /* __omx_common_h__ */
 
