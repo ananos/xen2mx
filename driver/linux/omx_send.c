@@ -128,7 +128,7 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
+		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create tiny skb\n");
 		ret = -ENOMEM;
 		goto out;
@@ -213,7 +213,7 @@ omx_send_small(struct omx_endpoint * endpoint,
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
+		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create small skb\n");
 		ret = -ENOMEM;
 		goto out;
@@ -307,7 +307,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 
 	defevent = kmalloc(sizeof(*defevent), GFP_KERNEL);
 	if (unlikely(!defevent)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_MEDIUM_DEFEVENT);
+		omx_counter_inc(iface, SEND_NOMEM_MEDIUM_DEFEVENT);
 		printk(KERN_INFO "Open-MX: Failed to allocate event\n");
 		ret = -ENOMEM;
 		goto out;
@@ -318,7 +318,7 @@ omx_send_medium(struct omx_endpoint * endpoint,
 			   */
 			   hdr_len);
 	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
+		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create medium skb\n");
 		ret = -ENOMEM;
 		goto out_with_event;
@@ -422,7 +422,7 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
+		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create rndv skb\n");
 		ret = -ENOMEM;
 		goto out;
@@ -507,7 +507,7 @@ omx_send_connect(struct omx_endpoint * endpoint,
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
+		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create connect skb\n");
 		ret = -ENOMEM;
 		goto out;
@@ -655,7 +655,7 @@ omx_send_truc(struct omx_endpoint * endpoint,
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
+		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create truc skb\n");
 		ret = -ENOMEM;
 		goto out;
@@ -717,7 +717,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
+		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create nack lib skb\n");
 		ret = -ENOMEM;
 		goto out;
@@ -774,7 +774,7 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, OMX_COUNTER_SEND_NOMEM_SKB);
+		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create nack mcp skb\n");
 		ret = -ENOMEM;
 		goto out;

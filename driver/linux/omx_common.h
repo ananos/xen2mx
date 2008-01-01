@@ -167,17 +167,20 @@ extern int omx_dev_init(void);
 extern void omx_dev_exit(void);
 
 /* counters */
-static inline void omx_counter_inc(struct omx_iface * iface, enum omx_counter_index index) { iface->counters[index]++; }
+#define omx_counter_inc(iface, index)		\
+do {						\
+	iface->counters[OMX_COUNTER_##index]++;	\
+} while (0)
 
 /* misc */
 extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
 
 /* queue a skb for xmit, or eventually drop it */
-#define __omx_queue_xmit(iface, skb, type)			\
-do {								\
-	omx_counter_inc(iface, OMX_COUNTER_SEND_##type);	\
-	skb->dev = iface->eth_ifp;				\
-	dev_queue_xmit(skb);					\
+#define __omx_queue_xmit(iface, skb, type)	\
+do {						\
+	omx_counter_inc(iface, SEND_##type);	\
+	skb->dev = iface->eth_ifp;		\
+	dev_queue_xmit(skb);			\
 } while (0)
 
 #ifdef OMX_DEBUG

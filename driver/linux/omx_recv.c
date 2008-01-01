@@ -49,7 +49,7 @@ omx_recv_connect(struct omx_iface * iface,
 
 	/* check packet length */
 	if (unlikely(length > OMX_CONNECT_DATA_MAX)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_DATALEN);
+		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(eh, "CONNECT packet data too long (length %d)",
 				 (unsigned) length);
 		err = -EINVAL;
@@ -58,7 +58,7 @@ omx_recv_connect(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(length > skb->len - hdr_len)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SKBLEN);
+		omx_counter_inc(iface, DROP_BAD_SKBLEN);
 		omx_drop_dprintk(eh, "CONNECT packet data with %ld bytes instead of %d",
 				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
@@ -69,7 +69,7 @@ omx_recv_connect(struct omx_iface * iface,
 	/* the connect doesn't know its peer index tet, we need to lookup */
 	err = omx_peer_lookup_by_addr(src_addr, NULL, &peer_index);
 	if (err < 0) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_PEER_INDEX);
+		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(eh, "CONNECT packet with unknown peer index %d",
 				 (unsigned) peer_index);
 		goto out;
@@ -82,7 +82,7 @@ omx_recv_connect(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_ENDPOINT);
+		omx_counter_inc(iface, DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(eh, "CONNECT packet for unknown endpoint %d",
 				 dst_endpoint);
 		omx_send_nack_lib(iface, peer_index,
@@ -113,7 +113,7 @@ omx_recv_connect(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_counter_inc(iface, OMX_COUNTER_RECV_CONNECT);
+	omx_counter_inc(iface, RECV_CONNECT);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -144,7 +144,7 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	/* check packet length */
 	if (unlikely(length > OMX_TINY_MAX)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_DATALEN);
+		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "TINY packet too long (length %d)",
 				 (unsigned) length);
 		err = -EINVAL;
@@ -153,7 +153,7 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(length > skb->len - hdr_len)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SKBLEN);
+		omx_counter_inc(iface, DROP_BAD_SKBLEN);
 		omx_drop_dprintk(&mh->head.eth, "TINY packet with %ld bytes instead of %d",
 				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
@@ -164,7 +164,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	/* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_PEER_INDEX);
+		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(&mh->head.eth, "TINY packet with unknown peer index %d",
 				 (unsigned) peer_index);
 		goto out;
@@ -173,7 +173,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_ENDPOINT);
+		omx_counter_inc(iface, DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(&mh->head.eth, "TINY packet for unknown endpoint %d",
 				 dst_endpoint);
 		omx_send_nack_lib(iface, peer_index,
@@ -185,7 +185,7 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SESSION);
+		omx_counter_inc(iface, DROP_BAD_SESSION);
 		omx_drop_dprintk(&mh->head.eth, "TINY packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -217,7 +217,7 @@ omx_recv_tiny(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_counter_inc(iface, OMX_COUNTER_RECV_TINY);
+	omx_counter_inc(iface, RECV_TINY);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -249,7 +249,7 @@ omx_recv_small(struct omx_iface * iface,
 
 	/* check packet length */
 	if (unlikely(length > OMX_SMALL_MAX)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_DATALEN);
+		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet too long (length %d)",
 				 (unsigned) length);
 		err = -EINVAL;
@@ -258,7 +258,7 @@ omx_recv_small(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(length > skb->len - hdr_len)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SKBLEN);
+		omx_counter_inc(iface, DROP_BAD_SKBLEN);
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet with %ld bytes instead of %d",
 				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
@@ -269,7 +269,7 @@ omx_recv_small(struct omx_iface * iface,
 	/* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_PEER_INDEX);
+		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet with unknown peer index %d",
 				 (unsigned) peer_index);
 		goto out;
@@ -278,7 +278,7 @@ omx_recv_small(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_ENDPOINT);
+		omx_counter_inc(iface, DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet for unknown endpoint %d",
 				 dst_endpoint);
 		omx_send_nack_lib(iface, peer_index,
@@ -290,7 +290,7 @@ omx_recv_small(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SESSION);
+		omx_counter_inc(iface, DROP_BAD_SESSION);
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -326,7 +326,7 @@ omx_recv_small(struct omx_iface * iface,
 	/* notify the event */
 	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
 
-	omx_counter_inc(iface, OMX_COUNTER_RECV_SMALL);
+	omx_counter_inc(iface, RECV_SMALL);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -358,7 +358,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	/* check packet length */
 	if (unlikely(frag_length > OMX_RECVQ_ENTRY_SIZE)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_DATALEN);
+		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM fragment packet too long (length %d)",
 				 (unsigned) frag_length);
 		err = -EINVAL;
@@ -367,7 +367,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(frag_length > skb->len - hdr_len)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SKBLEN);
+		omx_counter_inc(iface, DROP_BAD_SKBLEN);
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM fragment with %ld bytes instead of %d",
 				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) frag_length);
@@ -378,7 +378,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_PEER_INDEX);
+		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet with unknown peer index %d",
 				 (unsigned) peer_index);
 		goto out;
@@ -387,7 +387,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_ENDPOINT);
+		omx_counter_inc(iface, DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet for unknown endpoint %d",
 				 dst_endpoint);
 		omx_send_nack_lib(iface, peer_index,
@@ -399,7 +399,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SESSION);
+		omx_counter_inc(iface, DROP_BAD_SESSION);
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -438,7 +438,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* notify the event */
 	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_MEDIUM, &event, sizeof(event));
 
-	omx_counter_inc(iface, OMX_COUNTER_RECV_MEDIUM_FRAG);
+	omx_counter_inc(iface, RECV_MEDIUM_FRAG);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -469,7 +469,7 @@ omx_recv_rndv(struct omx_iface * iface,
 
 	/* check packet length */
 	if (unlikely(length > OMX_RNDV_DATA_MAX)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_DATALEN);
+		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet too long (length %d)",
 				 (unsigned) length);
 		err = -EINVAL;
@@ -478,7 +478,7 @@ omx_recv_rndv(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(length > skb->len - hdr_len)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SKBLEN);
+		omx_counter_inc(iface, DROP_BAD_SKBLEN);
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet with %ld bytes instead of %d",
 				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
@@ -489,7 +489,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	/* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_PEER_INDEX);
+		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet with unknown peer index %d",
 				 (unsigned) peer_index);
 		goto out;
@@ -498,7 +498,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_ENDPOINT);
+		omx_counter_inc(iface, DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet for unknown endpoint %d",
 				 dst_endpoint);
 		omx_send_nack_lib(iface, peer_index,
@@ -510,7 +510,7 @@ omx_recv_rndv(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SESSION);
+		omx_counter_inc(iface, DROP_BAD_SESSION);
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -542,7 +542,7 @@ omx_recv_rndv(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_counter_inc(iface, OMX_COUNTER_RECV_RNDV);
+	omx_counter_inc(iface, RECV_RNDV);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -572,7 +572,7 @@ omx_recv_notify(struct omx_iface * iface,
 	/* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_PEER_INDEX);
+		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet with unknown peer index %d",
 				 (unsigned) peer_index);
 		goto out;
@@ -581,7 +581,7 @@ omx_recv_notify(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_ENDPOINT);
+		omx_counter_inc(iface, DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet for unknown endpoint %d",
 				 dst_endpoint);
 		omx_send_nack_lib(iface, peer_index,
@@ -593,7 +593,7 @@ omx_recv_notify(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SESSION);
+		omx_counter_inc(iface, DROP_BAD_SESSION);
 		omx_drop_dprintk(&mh->head.eth, "NOTIFY packet with bad session");
 		omx_send_nack_lib(iface, peer_index,
 				  OMX_NACK_TYPE_BAD_SESSION,
@@ -621,7 +621,7 @@ omx_recv_notify(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_counter_inc(iface, OMX_COUNTER_RECV_NOTIFY);
+	omx_counter_inc(iface, RECV_NOTIFY);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -650,7 +650,7 @@ omx_recv_truc(struct omx_iface * iface,
 
 	/* check packet length */
 	if (unlikely(length > OMX_TRUC_DATA_MAX)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_DATALEN);
+		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet too long (length %d)",
 				 (unsigned) length);
 		err = -EINVAL;
@@ -659,7 +659,7 @@ omx_recv_truc(struct omx_iface * iface,
 
 	/* check actual data length */
 	if (unlikely(length > skb->len - hdr_len)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SKBLEN);
+		omx_counter_inc(iface, DROP_BAD_SKBLEN);
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet with %ld bytes instead of %d",
 				 (unsigned long) skb->len - hdr_len,
 				 (unsigned) length);
@@ -670,7 +670,7 @@ omx_recv_truc(struct omx_iface * iface,
 	/* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_PEER_INDEX);
+		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet with unknown peer index %d",
 				 (unsigned) peer_index);
 		goto out;
@@ -679,7 +679,7 @@ omx_recv_truc(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_ENDPOINT);
+		omx_counter_inc(iface, DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet for unknown endpoint %d",
 				 dst_endpoint);
 		/* no nack for truc messages, just drop */
@@ -689,7 +689,7 @@ omx_recv_truc(struct omx_iface * iface,
 
 	/* check the session */
 	if (unlikely(session_id != endpoint->session_id)) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_SESSION);
+		omx_counter_inc(iface, DROP_BAD_SESSION);
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet with bad session");
 		/* no nack for truc messages, just drop */
 		err = -EINVAL;
@@ -716,7 +716,7 @@ omx_recv_truc(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_counter_inc(iface, OMX_COUNTER_RECV_TRUC);
+	omx_counter_inc(iface, RECV_TRUC);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -769,7 +769,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
 	if (unlikely(IS_ERR(endpoint))) {
-		omx_counter_inc(iface, OMX_COUNTER_DROP_BAD_ENDPOINT);
+		omx_counter_inc(iface, DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(eh, "NACK LIB packet for unknown endpoint %d",
 				 dst_endpoint);
 		/* FIXME: BUG? */
@@ -794,7 +794,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_counter_inc(iface, OMX_COUNTER_RECV_NACK_LIB);
+	omx_counter_inc(iface, RECV_NACK_LIB);
 	omx_endpoint_release(endpoint);
 
 	return 0;
@@ -810,7 +810,7 @@ omx_recv_nosys(struct omx_iface * iface,
 		struct omx_hdr * mh,
 		struct sk_buff * skb)
 {
-	omx_counter_inc(iface, OMX_COUNTER_DROP_NOSYS_TYPE);
+	omx_counter_inc(iface, DROP_NOSYS_TYPE);
 	omx_drop_dprintk(&mh->head.eth, "packet with unsupported type %d",
 			 mh->body.generic.ptype);
 
@@ -822,7 +822,7 @@ omx_recv_error(struct omx_iface * iface,
 		struct omx_hdr * mh,
 		struct sk_buff * skb)
 {
-	omx_counter_inc(iface, OMX_COUNTER_DROP_UNKNOWN_TYPE);
+	omx_counter_inc(iface, DROP_UNKNOWN_TYPE);
 	omx_drop_dprintk(&mh->head.eth, "packet with unrecognized type %d",
 			 mh->body.generic.ptype);
 
