@@ -23,6 +23,7 @@
 #include <linux/list.h>
 
 #include "omx_common.h"
+#include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_wire_access.h"
 

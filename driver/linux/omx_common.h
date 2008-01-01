@@ -195,55 +195,6 @@ do {								\
 #define omx_queue_xmit __omx_queue_xmit
 #endif /* OMX_DEBUG */
 
-/* translate omx_endpoint_acquire_by_iface_index return values into nack type */
-static inline enum omx_nack_type
-omx_endpoint_acquire_by_iface_index_error_to_nack_type(void * errptr)
-{
-	switch (PTR_ERR(errptr)) {
-	case -EINVAL:
-		return OMX_NACK_TYPE_BAD_ENDPT;
-	case -ENOENT:
-		return OMX_NACK_TYPE_ENDPT_CLOSED;
-	}
-
-	BUG();
-	return 0; /* shut-up the compiler */
-}
-
-/* manage addresses */
-static inline uint64_t
-omx_board_addr_from_netdevice(struct net_device * ifp)
-{
-	return (((uint64_t) ifp->dev_addr[0]) << 40)
-	     + (((uint64_t) ifp->dev_addr[1]) << 32)
-	     + (((uint64_t) ifp->dev_addr[2]) << 24)
-	     + (((uint64_t) ifp->dev_addr[3]) << 16)
-	     + (((uint64_t) ifp->dev_addr[4]) << 8)
-	     + (((uint64_t) ifp->dev_addr[5]) << 0);
-}
-
-static inline uint64_t
-omx_board_addr_from_ethhdr_src(struct ethhdr * eh)
-{
-	return (((uint64_t) eh->h_source[0]) << 40)
-	     + (((uint64_t) eh->h_source[1]) << 32)
-	     + (((uint64_t) eh->h_source[2]) << 24)
-	     + (((uint64_t) eh->h_source[3]) << 16)
-	     + (((uint64_t) eh->h_source[4]) << 8)
-	     + (((uint64_t) eh->h_source[5]) << 0);
-}
-
-static inline void
-omx_board_addr_to_ethhdr_dst(struct ethhdr * eh, uint64_t board_addr)
-{
-	eh->h_dest[0] = (uint8_t)(board_addr >> 40);
-	eh->h_dest[1] = (uint8_t)(board_addr >> 32);
-	eh->h_dest[2] = (uint8_t)(board_addr >> 24);
-	eh->h_dest[3] = (uint8_t)(board_addr >> 16);
-	eh->h_dest[4] = (uint8_t)(board_addr >> 8);
-	eh->h_dest[5] = (uint8_t)(board_addr >> 0);
-}
-
 #endif /* __omx_common_h__ */
 
 /*

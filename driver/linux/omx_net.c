@@ -22,6 +22,7 @@
 #include <linux/if_arp.h>
 
 #include "omx_common.h"
+#include "omx_misc.h"
 #include "omx_hal.h"
 
 /*
