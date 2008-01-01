@@ -173,6 +173,12 @@ static inline void omx_counter_inc(struct omx_iface * iface, enum omx_counter_in
 extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
 
 /* queue a skb for xmit, or eventually drop it */
+#define __omx_queue_xmit(iface, skb, type)			\
+do {								\
+	skb->dev = iface->eth_ifp;				\
+	dev_queue_xmit(skb);					\
+} while (0)
+
 #ifdef OMX_DEBUG
 #define omx_queue_xmit(iface, skb, type)					\
 	do {									\
@@ -181,13 +187,11 @@ extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
 		kfree_skb(skb);							\
 		omx_##type##_packet_loss_index = 0;				\
 	} else {								\
-		skb->dev = iface->eth_ifp;					\
-		dev_queue_xmit(skb);						\
+		__omx_queue_xmit(iface, skb, type);				\
 	}									\
 } while (0)
-
 #else /* OMX_DEBUG */
-#define omx_queue_xmit(iface, skb, type) dev_queue_xmit(skb);
+#define omx_queue_xmit __omx_queue_xmit
 #endif /* OMX_DEBUG */
 
 /* translate omx_endpoint_acquire_by_iface_index return values into nack type */
