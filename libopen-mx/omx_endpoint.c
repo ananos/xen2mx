@@ -89,6 +89,7 @@ omx__open_endpoint_in_range(int fd,
 {
   uint32_t board, endpoint;
   omx_return_t ret;
+  int busy = 0;
 
   omx__debug_printf(ENDPOINT, "trying to open board [%d,%d] endpoint [%d,%d]\n",
 		    board_start, board_end, endpoint_start, endpoint_end);
@@ -113,10 +114,13 @@ omx__open_endpoint_in_range(int fd,
       } else if (ret != OMX_BUSY && ret != OMX_NO_DEVICE) {
 	return ret;
       }
+
+      if (ret == OMX_BUSY)
+	busy++;
     }
 
   /* didn't find any endpoint available */
-  return OMX_BUSY;
+  return busy ? OMX_BUSY : OMX_NO_DEVICE;
 }
 
 static INLINE omx_return_t
