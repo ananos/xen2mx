@@ -705,6 +705,8 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		omx_counter_inc(iface, OMX_COUNTER_PULL_TIMEOUT_ABORT);
 		dprintk(PULL, "pull handle last retransmit time reached, reporting an error\n");
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
+		spin_unlock(&handle->lock);
+		omx_pull_handle_done_release(handle);
 		return;
 	}
 
@@ -969,9 +971,6 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
 	handle->remaining_length = 0;
-
-	spin_unlock(&handle->lock);
-	omx_pull_handle_done_release(handle);
 }
 
 int
@@ -1079,6 +1078,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		 */
 		spin_lock(&handle->lock);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED);
+		spin_unlock(&handle->lock);
+		omx_pull_handle_done_release(handle);
 		goto out;
 	}
 
@@ -1215,6 +1216,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_SUCCESS);
+		spin_unlock(&handle->lock);
+		omx_pull_handle_done_release(handle);
 	}
 
 	return 0;
@@ -1278,6 +1281,8 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 
 	spin_lock(&handle->lock);
 	omx_pull_handle_done_notify(handle, nack_type);
+	spin_unlock(&handle->lock);
+	omx_pull_handle_done_release(handle);
 
 	return 0;
 
