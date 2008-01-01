@@ -597,9 +597,7 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 
 		ret = omx_cmd_with_endpoint_handlers[cmd](endpoint, (void __user *) arg);
 
-		/* if ret > 0, the caller wants to keep a reference on the endpoint */
-		if (likely(ret <= 0))
-			omx_endpoint_release(endpoint);
+		omx_endpoint_release(endpoint);
 
 		break;
 	}

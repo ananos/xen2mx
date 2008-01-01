@@ -371,16 +371,14 @@ omx_send_medium(struct omx_endpoint * endpoint,
 
 	/* prepare the deferred event now that we cannot fail anymore */
 	defevent->endpoint = endpoint;
+	omx_endpoint_reacquire(endpoint); /* keep a reference in the defevent */
 	defevent->evt.sendq_page_offset = cmd.sendq_page_offset;
 	skb->sk = (void *) defevent;
 	skb->destructor = omx_medium_frag_skb_destructor;
 
 	omx_queue_xmit(iface, skb, MEDIUM_FRAG);
 
-	/* return>0 to tell the caller to not release the endpoint,
-	 * we will do it when releasing the skb in the destructor
-	 */
-	return 1;
+	return 0;
 
  out_with_skb:
 	dev_kfree_skb(skb);

@@ -1,8 +1,6 @@
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
-* no return 1 when keeping a second reference on the endpoint, just acquire twice?
-
 * fix Drop Pull Reply Bad Frame SeqNum
 
 * factorize early and msg seqnum index computing (cache them?)
