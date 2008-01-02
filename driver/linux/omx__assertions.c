@@ -16,9 +16,10 @@
  * See the GNU General Public License in COPYING.GPL for more details.
  */
 
-#include "omx_types.h"
 #include "omx_io.h"
+#include "omx_wire.h"
 
+#include <linux/if_ether.h>
 #include <linux/if.h>
 
 /*
