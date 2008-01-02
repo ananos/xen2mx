@@ -19,7 +19,9 @@
 #ifndef __omx_io_h__
 #define __omx_io_h__
 
-#ifndef __KERNEL__
+#ifdef __KERNEL__
+#include <linux/types.h>
+#else
 #include <stdint.h>
 #endif
 
