@@ -19,6 +19,10 @@
 #ifndef __omx_endpoint_h__
 #define __omx_endpoint_h__
 
+#include <linux/sched.h>
+
+#include "omx_io.h"
+
 enum omx_endpoint_status {
 	/* endpoint is free and may be open */
 	OMX_ENDPOINT_STATUS_FREE,

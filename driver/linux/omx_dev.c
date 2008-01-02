@@ -31,6 +31,7 @@
 #include "omx_common.h"
 #include "omx_iface.h"
 #include "omx_endpoint.h"
+#include "omx_region.h"
 
 /* defined as a module parameter */
 extern int omx_endpoint_max;

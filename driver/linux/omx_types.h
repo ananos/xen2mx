@@ -19,14 +19,6 @@
 #ifndef __omx_types_h__
 #define __omx_types_h__
 
-#include <linux/fs.h>
-#include <linux/netdevice.h>
-#include <linux/list.h>
-#include <linux/kref.h>
-
-#include "omx_wire.h"
-#include "omx_io.h"
-
 /******************************
  * Notes about locking:
  *
@@ -70,30 +62,6 @@
  * The locks are always taken in this priority order:
  * omx_iface_lock, iface->endpoint_lock, endpoint->lock
  */
-
-enum omx_user_region_status {
-	/* region is ready to be used */
-	OMX_USER_REGION_STATUS_OK,
-	/* region is being closed by somebody else */
-	OMX_USER_REGION_STATUS_CLOSING,
-};
-
-struct omx_user_region {
-	uint32_t id;
-
-	rwlock_t lock;
-	enum omx_user_region_status status;
-	struct kref refcount;
-
-	unsigned nr_segments;
-	unsigned long total_length;
-	struct omx_user_region_segment {
-		unsigned first_page_offset;
-		unsigned long length;
-		unsigned long nr_pages;
-		struct page ** pages;
-	} segments[0];
-};
 
 #endif /* __omx_types_h__ */
 

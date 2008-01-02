@@ -29,6 +29,7 @@
 #include "omx_common.h"
 #include "omx_iface.h"
 #include "omx_endpoint.h"
+#include "omx_region.h"
 
 /**************************
  * Pull-specific Constants

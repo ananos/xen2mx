@@ -19,7 +19,7 @@
 #ifndef __omx_common_h__
 #define __omx_common_h__
 
-#include "omx_types.h"
+#include "omx_wire.h"
 #include "omx_debug.h"
 
 /* constants */
@@ -94,30 +94,6 @@ extern int omx_pull_handles_init(void);
 extern void omx_pull_handles_exit(void);
 extern int omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint);
 extern void omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint);
-
-/* user regions */
-extern void omx_endpoint_user_regions_init(struct omx_endpoint * endpoint);
-extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
-extern int omx_user_region_register(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_user_region_deregister(struct omx_endpoint * endpoint, void __user * uparam);
-extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
-extern void __omx_user_region_last_release(struct kref * kref);
-
-static inline void
-omx_user_region_reacquire(struct omx_user_region * region)
-{
-	kref_get(&region->refcount);
-}
-
-static inline void
-omx_user_region_release(struct omx_user_region * region)
-{
-	kref_put(&region->refcount, __omx_user_region_last_release);
-}
-
-extern void omx_user_region_release(struct omx_user_region * region);
-extern int omx_user_region_append_pages(struct omx_user_region * region, unsigned long region_offset, struct sk_buff * skb, unsigned long length);
-extern int omx_user_region_fill_pages(struct omx_user_region * region, unsigned long region_offset, struct sk_buff * skb, unsigned long length);
 
 /* device */
 extern int omx_dev_init(void);
