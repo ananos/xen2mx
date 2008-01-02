@@ -20,6 +20,7 @@
 
 #include "omx_io.h"
 #include "omx_common.h"
+#include "omx_iface.h"
 #include "omx_endpoint.h"
 
 struct omx_event_waiter {

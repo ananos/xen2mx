@@ -27,28 +27,6 @@
 #include "omx_wire.h"
 #include "omx_io.h"
 
-enum omx_iface_status {
-	/* iface is ready to be used */
-	OMX_IFACE_STATUS_OK,
-	/* iface is being closed by somebody else, no new endpoint may be open */
-	OMX_IFACE_STATUS_CLOSING,
-};
-
-struct omx_iface {
-	int index;
-
-	struct net_device * eth_ifp;
-	char * hostname;
-
-	rwlock_t endpoint_lock;
-	enum omx_iface_status status;
-	struct kref refcount;
-	int endpoint_nr;
-	struct omx_endpoint ** endpoints;
-
-	uint32_t counters[OMX_COUNTER_INDEX_MAX];
-};
-
 /******************************
  * Notes about locking:
  *

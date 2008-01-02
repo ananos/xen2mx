@@ -24,6 +24,7 @@
 #include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_common.h"
+#include "omx_iface.h"
 #include "omx_endpoint.h"
 
 /* defined as module parameters */
