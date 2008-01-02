@@ -17,7 +17,7 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/module.h>
+#include <linux/skbuff.h>
 #include <linux/mm.h>
 
 #include "omx_misc.h"

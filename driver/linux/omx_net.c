@@ -17,7 +17,6 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/module.h>
 #include <linux/utsname.h>
 #include <linux/if_arp.h>
 

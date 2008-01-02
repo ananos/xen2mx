@@ -22,6 +22,7 @@
 #include <linux/skbuff.h>
 #include <linux/netdevice.h>
 #include <linux/vmalloc.h>
+#include <linux/mm.h>
 
 #ifdef OMX_HAVE_REMAP_VMALLOC_RANGE
 #define omx_vmalloc_user vmalloc_user

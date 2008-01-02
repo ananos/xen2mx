@@ -19,6 +19,12 @@
 #ifndef __omx_iface_h__
 #define __omx_iface_h__
 
+#include <linux/netdevice.h>
+#include <linux/spinlock.h>
+#include <linux/kref.h>
+
+struct omx_endpoint;
+
 enum omx_iface_status {
 	/* iface is ready to be used */
 	OMX_IFACE_STATUS_OK,

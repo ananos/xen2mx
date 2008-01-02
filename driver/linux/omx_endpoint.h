@@ -19,9 +19,17 @@
 #ifndef __omx_endpoint_h__
 #define __omx_endpoint_h__
 
+#include <linux/types.h>
 #include <linux/sched.h>
+#include <linux/spinlock.h>
+#include <linux/kref.h>
+#include <linux/list.h>
+#include <linux/wait.h>
 
 #include "omx_io.h"
+
+struct omx_iface;
+struct page;
 
 enum omx_endpoint_status {
 	/* endpoint is free and may be open */

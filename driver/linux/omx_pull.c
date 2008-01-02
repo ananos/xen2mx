@@ -17,8 +17,8 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/spinlock.h>
 #include <linux/idr.h>
 #include <linux/kref.h>
 #include <linux/timer.h>

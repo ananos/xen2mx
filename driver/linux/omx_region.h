@@ -19,6 +19,12 @@
 #ifndef __omx_region_h__
 #define __omx_region_h__
 
+#include <linux/spinlock.h>
+#include <linux/kref.h>
+
+struct omx_endpoint;
+struct sk_buff;
+
 enum omx_user_region_status {
 	/* region is ready to be used */
 	OMX_USER_REGION_STATUS_OK,
