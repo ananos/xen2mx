@@ -1,0 +1,42 @@
+Notes about locking in the Open-MX driver
+=========================================
+
+The endpoint has 2 main status: FREE and OK. To prevent 2 people from changing it
+at the same time, it is protected by a rwlock. To reduce the time we hold the lock,
+there are 2 intermediate status: INITIALIZING and CLOSING.
+When an endpoint is being used, its refcount is increased (by acquire/release)
+When somebody wants to close an endpoint, it sets the CLOSING status (so that
+new users can't acquire the endpoint), remove it from the interface, and the
+the last user will release it for real.
+The rwlock is taken as write only when opening and closing. Bottom halves are disabled
+meanwhile since they might preempt the application. All other locks are taken as read,
+especially on the receive side.
+
+The iface has both a kref to detect the last user and also has a number of endpoints 
+attached to detect when we need to force.
+There's a rwlock to protect this array against concurrent endpoint attach/detach.
+When removing an iface (either by the user or by the netdevice notifier), the status
+is set to CLOSING so that any new endpoint opener fails.
+The rwlock is taken as write only when attach/detaching endpoints. Bottom halves are
+disabled meanwhile since they might preempt the application. All other locks are taken
+as read, especially on the receive side.
+
+When an iface is removed, all endpoints are scheduled for closing if necessary
+(if forced) and the reference is released. The last endpoint will release the last
+reference and thus release the device. When this happens because the unregister
+notifier is called, the caller will wait for the last device reference to be released,
+so we can return from the detach routine earlier as long as we guarantee that
+things are being closed soon.
+
+The list of ifaces is always coherent since new ifaces are only added once initialized,
+and removed in a coherent state (endpoints have been properly detached first)
+Incoming packet processing is disabled while removing an iface.
+So scanning the array of ifaces does not require locking,
+but looking in the iface internals requires (read) locking.
+The iface may not be removed while processing an incoming packet, so
+we don't need locking and no need hold a reference on the iface either.
+No need to disable bottom halves since it never scans the array of ifaces
+(and the notifier callback may not be called from BH since it is interruptible).
+
+The locks are always taken in this priority order:
+omx_iface_lock, iface->endpoint_lock, endpoint->lock
