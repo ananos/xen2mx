@@ -169,6 +169,10 @@ static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t
  */
 
 #ifdef OMX_DEBUG
+/* defined as module parameters */
+extern unsigned long omx_PULL_packet_loss;
+extern unsigned long omx_PULL_REPLY_packet_loss;
+/* index between 0 and the above limit */
 static unsigned long omx_PULL_packet_loss_index = 0;
 static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 #endif

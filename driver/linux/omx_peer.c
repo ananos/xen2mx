@@ -27,6 +27,9 @@
 #include "omx_hal.h"
 #include "omx_wire_access.h"
 
+/* defined as a module parameter */
+extern int omx_peer_max;
+
 #define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
 
 struct omx_peer {

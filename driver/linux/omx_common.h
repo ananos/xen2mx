@@ -36,23 +36,7 @@
 #define OMX_IFNAMES_DEFAULT "all"
 
 /* globals */
-extern int omx_iface_max;
-extern int omx_endpoint_max;
-extern int omx_peer_max;
-extern int omx_copybench;
 extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */
-
-extern unsigned long omx_TINY_packet_loss;
-extern unsigned long omx_SMALL_packet_loss;
-extern unsigned long omx_MEDIUM_FRAG_packet_loss;
-extern unsigned long omx_RNDV_packet_loss;
-extern unsigned long omx_PULL_packet_loss;
-extern unsigned long omx_PULL_REPLY_packet_loss;
-extern unsigned long omx_NOTIFY_packet_loss;
-extern unsigned long omx_CONNECT_packet_loss;
-extern unsigned long omx_TRUC_packet_loss;
-extern unsigned long omx_NACK_LIB_packet_loss;
-extern unsigned long omx_NACK_MCP_packet_loss;
 
 /* main net */
 extern int omx_net_init(const char * ifnames);

@@ -25,6 +25,11 @@
 #include "omx_misc.h"
 #include "omx_hal.h"
 
+/* defined as module parameters */
+extern int omx_iface_max;
+extern int omx_endpoint_max;
+extern int omx_copybench;
+
 /*
  * Scan the list of physical interfaces and return the
  * one that matches ifname (and take a reference on it).
