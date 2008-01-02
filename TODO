@@ -1,6 +1,3 @@
-* the first block MUST be missing in the timeout handler
-  so just don't request the second one again
-
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 

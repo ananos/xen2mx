@@ -722,8 +722,6 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		return; /* timer will never be called again (status is TIMER_EXITED) */
 	}
 
-	omx_counter_inc(iface, PULL_TIMEOUT_HANDLER);
-
 	if (jiffies > handle->last_retransmit_jiffies) {
 		omx_counter_inc(iface, PULL_TIMEOUT_ABORT);
 		dprintk(PULL, "pull handle last retransmit time reached, reporting an error\n");
@@ -732,17 +730,26 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		return; /* timer will never be called again (status is TIMER_EXITED) */
 	}
 
-	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
-		/* request the first block again */
-		skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-		if (!IS_ERR(skb))
-			omx_queue_xmit(iface, skb, PULL);
+	BUG_ON(OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle));
 
-		handle->already_requeued_first = 0;
-	}
-	else
+	/* request the first block again */
+	omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_FIRST_BLOCK);
+
+	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
+	if (!IS_ERR(skb))
+		omx_queue_xmit(iface, skb, PULL);
+
+	handle->already_requeued_first = 0;
+
+	/*
+	 * If the second block isn't done either, request it again
+	 * (otherwise the 2-block pipeline would be broken for ever)
+	 * This shouldn't happen often since it means a packet has been lost
+	 * in both first and second blocks.
+	 */
 	if (!OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
-		/* request the second block again */
+		omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_SECOND_BLOCK);
+
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (!IS_ERR(skb))
 			omx_queue_xmit(iface, skb, PULL);
