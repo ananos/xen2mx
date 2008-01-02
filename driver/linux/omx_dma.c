@@ -18,8 +18,6 @@
 
 #include <linux/kernel.h>
 
-#include "omx_checks.h"
-
 /* DMA Engine must be built in the kernel and as a module,
  * and it must provide shareable channels.
  */

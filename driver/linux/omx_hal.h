@@ -23,8 +23,6 @@
 #include <linux/netdevice.h>
 #include <linux/vmalloc.h>
 
-#include "omx_checks.h"
-
 #ifdef OMX_HAVE_REMAP_VMALLOC_RANGE
 #define omx_vmalloc_user vmalloc_user
 #define omx_remap_vmalloc_range remap_vmalloc_range
