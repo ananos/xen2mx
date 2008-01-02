@@ -20,10 +20,11 @@
 #include <linux/module.h>
 #include <linux/mm.h>
 
-#include "omx_common.h"
 #include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_wire_access.h"
+#include "omx_common.h"
+#include "omx_endpoint.h"
 
 #ifdef OMX_DEBUG
 /* defined as module parameters */

@@ -21,9 +21,10 @@
 #include <linux/utsname.h>
 #include <linux/if_arp.h>
 
-#include "omx_common.h"
 #include "omx_misc.h"
 #include "omx_hal.h"
+#include "omx_common.h"
+#include "omx_endpoint.h"
 
 /* defined as module parameters */
 extern int omx_iface_max;

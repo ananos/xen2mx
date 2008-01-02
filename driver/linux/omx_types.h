@@ -49,55 +49,6 @@ struct omx_iface {
 	uint32_t counters[OMX_COUNTER_INDEX_MAX];
 };
 
-enum omx_endpoint_status {
-	/* endpoint is free and may be open */
-	OMX_ENDPOINT_STATUS_FREE,
-	/* endpoint is already being open by somebody else */
-	OMX_ENDPOINT_STATUS_INITIALIZING,
-	/* endpoint is ready to be used */
-	OMX_ENDPOINT_STATUS_OK,
-	/* endpoint is being closed by somebody else */
-	OMX_ENDPOINT_STATUS_CLOSING,
-};
-
-struct omx_endpoint {
-	uint8_t board_index;
-	uint8_t endpoint_index;
-	uint32_t session_id;
-
-	pid_t opener_pid;
-	char opener_comm[TASK_COMM_LEN];
-
-	rwlock_t lock;
-	enum omx_endpoint_status status;
-	struct kref refcount;
-	struct list_head list_elt; /* the list entry for the cleanup list */
-
-	struct omx_iface * iface;
-
-	void * sendq, * recvq, * exp_eventq, * unexp_eventq;
-	unsigned long next_exp_eventq_offset;
-	unsigned long next_free_unexp_eventq_offset, next_reserved_unexp_eventq_offset;
-	unsigned long next_recvq_offset;
-	wait_queue_head_t waiters;
-	spinlock_t event_lock;
-
-	struct page ** sendq_pages;
-
-	rwlock_t user_regions_lock;
-	struct omx_user_region * user_regions[OMX_USER_REGION_MAX];
-
-	struct list_head pull_handles_list;
-	rwlock_t pull_handles_list_lock;
-
-	/* descriptor exported to user-space, modified by user-space and the driver,
-	 * so we can export some info to user-space by writing into it, but we
-	 * cannot rely on reading from it
-	 */
-	struct omx_endpoint_desc * userdesc;
-};
-
-
 /******************************
  * Notes about locking:
  *

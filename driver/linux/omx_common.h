@@ -46,28 +46,6 @@ extern void omx_net_exit(void);
 extern int omx_dma_init(void);
 extern void omx_dma_exit(void);
 
-/* manage endpoints */
-extern int omx_iface_attach_endpoint(struct omx_endpoint * endpoint);
-extern void omx_iface_detach_endpoint(struct omx_endpoint * endpoint, int ifacelocked);
-extern int __omx_endpoint_close(struct omx_endpoint * endpoint, int ifacelocked);
-extern struct omx_endpoint * omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index);
-extern void __omx_endpoint_last_release(struct kref *kref);
-extern void omx_endpoints_cleanup(void);
-extern int omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index, uint32_t * closed, uint32_t * pid, char * command, size_t len);
-
-static inline void
-omx_endpoint_reacquire(struct omx_endpoint * endpoint)
-{
-	/* somebody must already hold a reference */
-	kref_get(&endpoint->refcount);
-}
-
-static inline void
-omx_endpoint_release(struct omx_endpoint * endpoint)
-{
-	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
-}
-
 /* manage ifaces */
 extern int omx_ifaces_show(char *buf);
 extern int omx_ifaces_store(const char *buf, size_t size);
@@ -155,9 +133,6 @@ extern void omx_dev_exit(void);
 do {						\
 	iface->counters[OMX_COUNTER_##index]++;	\
 } while (0)
-
-/* misc */
-extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
 
 /* queue a skb for xmit, or eventually drop it */
 #define __omx_queue_xmit(iface, skb, type)	\

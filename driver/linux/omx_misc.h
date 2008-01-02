@@ -20,7 +20,9 @@
 #define __omx_misc_h__
 
 #include <linux/netdevice.h>
+
 #include "omx_io.h"
+#include "omx_wire.h"
 
 /* translate omx_endpoint_acquire_by_iface_index return values into nack type */
 static inline enum omx_nack_type

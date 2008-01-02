@@ -19,10 +19,11 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
-#include "omx_common.h"
 #include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_wire_access.h"
+#include "omx_common.h"
+#include "omx_endpoint.h"
 
 /***************************
  * Event reporting routines

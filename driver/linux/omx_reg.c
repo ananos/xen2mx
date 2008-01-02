@@ -26,6 +26,7 @@
 #include "omx_hal.h"
 #include "omx_io.h"
 #include "omx_common.h"
+#include "omx_endpoint.h"
 
 #ifdef OMX_MX_WIRE_COMPAT
 #if OMX_USER_REGION_MAX > 256

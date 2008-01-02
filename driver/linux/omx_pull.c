@@ -23,10 +23,11 @@
 #include <linux/kref.h>
 #include <linux/timer.h>
 
-#include "omx_common.h"
 #include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_wire_access.h"
+#include "omx_common.h"
+#include "omx_endpoint.h"
 
 /**************************
  * Pull-specific Constants
