@@ -43,9 +43,7 @@
 
 * vectorial support, through isendv/irecvv
 
-* rework the whole locking
-  + reduce spinlock hold-time in pull-request/reply
-  + use rcu for the pull handle thread? no list_splice_rcu exists
+* use rcu locking for various read/write locks?
 
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request

@@ -1284,7 +1284,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		peer_index = src_addr_peer_index;
 	}
 
-	/* acquire and lock the handle */
+	/* acquire the handle */
 	handle = omx_pull_handle_acquire_by_wire(iface, dst_magic, dst_pull_handle);
 	if (unlikely(!handle)) {
 		omx_counter_inc(iface, DROP_NACK_MCP_BAD_MAGIC);
