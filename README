@@ -221,21 +221,8 @@ you might want to pass --disable-mx-wire to the configure command line so
 that larger packets are used for large messages.
 Note that the required MTU will jump from roughly 4kB to 8.
 
-+------------------------------------------------
-| VI.b. Avoiding Linearizing on the receive side
-
-Multiple drivers are known to linearize (using a memory copy) all incoming
-packets except those that use a common Ethernet type for which the software
-stack is known to be able to receive without being linearize.
-
-Since the Open-MX Ethernet type is generally not part of these common types,
-linearizing might occur and cause an important performance degradation.
-To avoid this, if IPv6 is not in use, you might tell Open-MX to use the IPv6
-Ethernet type, which will not be linearized by the drivers. To do so, you
-should pass --with-ethertype=0x86DD to the configure command line.
-
 +--------------------------
-| VI.c. Registration Cache
+| VI.b. Registration Cache
 
 Achieving optimal performance requires to avoid memory copies as much
 as possible. This is done using memory registration, which pins buffers
@@ -249,7 +236,7 @@ the buffer in the meantime. Since Open-MX has no way to detect this
 for now, this registration cache should be used with caution.
 
 +----------------------------
-| VI.d. Interrupt Coalescing
+| VI.c. Interrupt Coalescing
 
 Most Ethernet drivers use interrupt coalescing to avoid interrupting the
 host once per incoming packet. While this is good for the throughput, it
@@ -265,6 +252,23 @@ for consecutive packets. So, assuming that you observe a N usecs latency
 with Open-MX when interrupt coalescing is disabled, a nice configuration
 would to set coalescing to N or N-1 usecs:
 $ ethtool -C eth2 rx-usecs <N-1>
+
++-----------------------------------------------------------------
+| VI.d. Avoiding Linearizing on the receive side with old kernels
+
+Some old kernels (<2.6.18) have problems with drivers that may receive
+data in frags (non-linear skbuff). As a workaround, they will linearize
+these skbuffs unless their target protocol stack explicitly supports
+non-linear skbuff. This basically adds a memory copy for all packets
+except IPv4 and IPv6, which would decrease Open-MX performance.
+
+To avoid this, if IPv6 is not in use on the network, you might want to
+tell Open-MX to use the IPv6 Ethernet type. this way, its skbuffs will
+not by linearized uselessly. Note that this solution is only required
+under very special circumstances.
+
+To use IPv6 in order to avoid useless linearizing of received skbuffs,
+you should pass --with-ethertype=0x86DD to the configure command line.
 
 
 +------------------------------+
