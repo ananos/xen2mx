@@ -24,6 +24,29 @@
 #include "omx_io.h"
 #include "omx_wire.h"
 
+/* queue a skb for xmit, account it, and eventually actually drop it for debugging */
+#define __omx_queue_xmit(iface, skb, type)	\
+do {						\
+	omx_counter_inc(iface, SEND_##type);	\
+	skb->dev = iface->eth_ifp;		\
+	dev_queue_xmit(skb);			\
+} while (0)
+
+#ifdef OMX_DEBUG
+#define omx_queue_xmit(iface, skb, type)					\
+	do {									\
+	if (omx_##type##_packet_loss &&						\
+	    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) {	\
+		kfree_skb(skb);							\
+		omx_##type##_packet_loss_index = 0;				\
+	} else {								\
+		__omx_queue_xmit(iface, skb, type);				\
+	}									\
+} while (0)
+#else /* OMX_DEBUG */
+#define omx_queue_xmit __omx_queue_xmit
+#endif /* OMX_DEBUG */
+
 /* translate omx_endpoint_acquire_by_iface_index return values into nack type */
 static inline enum omx_nack_type
 omx_endpoint_acquire_by_iface_index_error_to_nack_type(void * errptr)

@@ -37,6 +37,7 @@
 
 struct omx_iface;
 struct omx_endpoint;
+struct sk_buff;
 
 /* globals */
 extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */
@@ -98,29 +99,6 @@ extern void omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoin
 /* device */
 extern int omx_dev_init(void);
 extern void omx_dev_exit(void);
-
-/* queue a skb for xmit, or eventually drop it */
-#define __omx_queue_xmit(iface, skb, type)	\
-do {						\
-	omx_counter_inc(iface, SEND_##type);	\
-	skb->dev = iface->eth_ifp;		\
-	dev_queue_xmit(skb);			\
-} while (0)
-
-#ifdef OMX_DEBUG
-#define omx_queue_xmit(iface, skb, type)					\
-	do {									\
-	if (omx_##type##_packet_loss &&						\
-	    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) {	\
-		kfree_skb(skb);							\
-		omx_##type##_packet_loss_index = 0;				\
-	} else {								\
-		__omx_queue_xmit(iface, skb, type);				\
-	}									\
-} while (0)
-#else /* OMX_DEBUG */
-#define omx_queue_xmit __omx_queue_xmit
-#endif /* OMX_DEBUG */
 
 #endif /* __omx_common_h__ */
 

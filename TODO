@@ -1,8 +1,6 @@
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
-* split out omx_common.h (and types.h?)
-
 * factorize early and msg seqnum index computing (cache them?)
 
 * shared comms between boards from within the driver
