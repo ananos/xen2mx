@@ -25,6 +25,7 @@
 #include "omx_wire_access.h"
 #include "omx_common.h"
 #include "omx_iface.h"
+#include "omx_peer.h"
 #include "omx_endpoint.h"
 
 #ifdef OMX_DEBUG

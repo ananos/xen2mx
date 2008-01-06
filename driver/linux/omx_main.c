@@ -25,6 +25,7 @@
 #include <linux/delay.h>
 
 #include "omx_common.h"
+#include "omx_peer.h"
 #include "omx_endpoint.h"
 #include "omx_region.h"
 #include "omx_hal.h"

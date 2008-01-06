@@ -23,6 +23,7 @@
 #include <linux/list.h>
 
 #include "omx_common.h"
+#include "omx_peer.h"
 #include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_wire_access.h"
@@ -31,14 +32,6 @@
 extern int omx_peer_max;
 
 #define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
-
-struct omx_peer {
-	uint64_t board_addr;
-	char *hostname;
-	uint32_t index; /* this peer index in our table */
-	uint32_t reverse_index; /* our index in this peer table, or OMX_UNKNOWN_REVERSE_PEER_INDEX */
-	struct list_head addr_hash_elt;
-};
 
 static spinlock_t omx_peer_lock;
 static struct omx_peer ** omx_peer_array;

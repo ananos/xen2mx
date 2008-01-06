@@ -49,18 +49,6 @@ extern void omx_net_exit(void);
 extern int omx_dma_init(void);
 extern void omx_dma_exit(void);
 
-/* manage peers */
-extern int omx_peers_init(void);
-extern void omx_peers_exit(void);
-extern void omx_peers_clear(void);
-extern int omx_peer_add(uint64_t board_addr, char *hostname);
-extern int omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index);
-extern int omx_set_target_peer(struct omx_hdr *mh, uint16_t index);
-extern int omx_check_recv_peer_index(uint16_t peer_index);
-extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *hostname);
-extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t *index);
-extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uint32_t *index);
-
 /* events */
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);
 extern int omx_notify_exp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);

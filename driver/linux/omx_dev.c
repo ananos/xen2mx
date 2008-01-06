@@ -29,6 +29,7 @@
 #include "omx_io.h"
 #include "omx_common.h"
 #include "omx_iface.h"
+#include "omx_peer.h"
 #include "omx_endpoint.h"
 #include "omx_region.h"
 
