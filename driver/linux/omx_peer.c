@@ -61,6 +61,8 @@ omx_peers_clear(void)
 	spin_lock(&omx_peer_lock);
 	for(i=0; i<omx_peers_nr; i++) {
 		struct omx_peer * peer = omx_peer_array[i];
+		if (!peer)
+			continue;
 		kfree(peer->hostname);
 		list_del(&peer->addr_hash_elt);
 		kfree(peer);
