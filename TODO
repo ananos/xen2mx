@@ -1,3 +1,5 @@
+* store peer_index in board and update peer_index with set_hostname
+
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
@@ -31,7 +33,6 @@
   + thread safety (including omx_wakeup)
   + omx_set_error_handler - if the default is return, I do not need this 
 
-* sethostname ioctl
 * ioctls to change board indexes?
 
 * check pingpong contents

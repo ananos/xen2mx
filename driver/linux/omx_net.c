@@ -171,6 +171,48 @@ omx_iface_get_counters(uint8_t board_index, int clear,
 	return ret;
 }
 
+int
+omx_iface_set_hostname(uint8_t board_index, char * hostname)
+{
+	struct omx_iface * iface;
+	char * new_hostname;
+	int ret;
+
+	new_hostname = kstrdup(hostname, GFP_KERNEL);
+	if (!new_hostname) {
+		printk(KERN_ERR "Open-MX: failed to allocate the new hostname string\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* need to lock since we access the internals of the iface */
+	read_lock(&omx_iface_lock);
+
+	ret = -EINVAL;
+	if (board_index >= omx_iface_max
+	    || omx_ifaces[board_index] == NULL)
+		goto out_with_lock;
+
+	iface = omx_ifaces[board_index];
+
+	printk(KERN_INFO "Open-MX: changing board %d (iface %s) hostname from %s to %s\n",
+	       board_index, iface->eth_ifp->name, iface->hostname, hostname);
+
+	kfree(iface->hostname);
+	iface->hostname = new_hostname;
+	
+	/* FIXME: update peer table */
+
+	read_unlock(&omx_iface_lock);
+	return 0;
+
+ out_with_lock:
+	read_unlock(&omx_iface_lock);
+	kfree(new_hostname);
+ out:
+	return ret;
+}
+
 /******************************
  * Attaching/Detaching interfaces
  */

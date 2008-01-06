@@ -53,6 +53,7 @@ extern int omx_ifaces_get_count(void);
 extern int omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, char * ifacename);
 extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);
 extern int omx_iface_get_counters(uint8_t board_index, int clear, uint64_t buffer_addr, uint32_t buffer_length);
+extern int omx_iface_set_hostname(uint8_t board_index, char * hostname);
 
 /* counters */
 #define omx_counter_inc(iface, index)		\

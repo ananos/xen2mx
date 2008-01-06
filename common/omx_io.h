@@ -116,6 +116,7 @@ struct omx_endpoint_desc {
 #define OMX_CMD_GET_BOARD_ID		0x12
 #define OMX_CMD_GET_ENDPOINT_INFO	0x13
 #define OMX_CMD_GET_COUNTERS		0x14
+#define OMX_CMD_SET_HOSTNAME		0x15
 #define OMX_CMD_PEERS_CLEAR		0x20
 #define OMX_CMD_PEER_ADD		0x21
 #define OMX_CMD_PEER_FROM_INDEX		0x22
@@ -235,6 +236,11 @@ struct omx_cmd_get_counters {
 	uint8_t clear;
 	uint64_t buffer_addr;
 	uint32_t buffer_length;
+};
+
+struct omx_cmd_set_hostname {
+	uint32_t board_index;
+	char hostname[OMX_HOSTNAMELEN_MAX];
 };
 
 struct omx_cmd_misc_peer_info {

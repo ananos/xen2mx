@@ -495,6 +495,28 @@ omx_miscdev_ioctl(struct inode *inode, struct file *file,
 		break;
 	}
 
+	case OMX_CMD_SET_HOSTNAME: {
+		struct omx_cmd_set_hostname set_hostname;
+
+		ret = copy_from_user(&set_hostname, (void __user *) arg,
+				     sizeof(set_hostname));
+		if (ret < 0) {
+			printk(KERN_ERR "Open-MX: Failed to read set_hostname command argument, error %d\n", ret);
+			goto out;
+		}
+
+		ret = -EPERM;
+		if (!capable(CAP_SYS_ADMIN))
+			goto out;
+
+		set_hostname.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+
+		ret = omx_iface_set_hostname(set_hostname.board_index,
+					     set_hostname.hostname);
+
+		break;
+	}
+
 	case OMX_CMD_PEERS_CLEAR: {
 
 		ret = -EPERM;
