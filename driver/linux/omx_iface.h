@@ -23,6 +23,8 @@
 #include <linux/spinlock.h>
 #include <linux/kref.h>
 
+#include "omx_peer.h"
+
 struct omx_endpoint;
 
 enum omx_iface_status {
@@ -36,7 +38,7 @@ struct omx_iface {
 	int index;
 
 	struct net_device * eth_ifp;
-	char * hostname;
+	struct omx_peer peer;
 
 	rwlock_t endpoint_lock;
 	enum omx_iface_status status;

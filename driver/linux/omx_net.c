@@ -129,7 +129,7 @@ omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, ch
 	*board_addr = omx_board_addr_from_netdevice(ifp);
 	strncpy(ifacename, ifp->name, OMX_IF_NAMESIZE);
 	ifacename[OMX_IF_NAMESIZE-1] = '\0';
-	strncpy(hostname, iface->hostname, OMX_HOSTNAMELEN_MAX);
+	strncpy(hostname, iface->peer.hostname, OMX_HOSTNAMELEN_MAX);
 	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 
 	read_unlock(&omx_iface_lock);
@@ -175,7 +175,7 @@ int
 omx_iface_set_hostname(uint8_t board_index, char * hostname)
 {
 	struct omx_iface * iface;
-	char * new_hostname;
+	char * new_hostname, * old_hostname;
 	int ret;
 
 	new_hostname = kstrdup(hostname, GFP_KERNEL);
@@ -196,10 +196,11 @@ omx_iface_set_hostname(uint8_t board_index, char * hostname)
 	iface = omx_ifaces[board_index];
 
 	printk(KERN_INFO "Open-MX: changing board %d (iface %s) hostname from %s to %s\n",
-	       board_index, iface->eth_ifp->name, iface->hostname, hostname);
+	       board_index, iface->eth_ifp->name, iface->peer.hostname, hostname);
 
-	kfree(iface->hostname);
-	iface->hostname = new_hostname;
+	old_hostname = iface->peer.hostname;
+	iface->peer.hostname = new_hostname;
+	kfree(old_hostname);
 	
 	/* FIXME: update peer table */
 
@@ -272,7 +273,7 @@ omx_iface_attach(struct net_device * ifp)
 
 	snprintf(hostname, OMX_HOSTNAMELEN_MAX, "%s:%d", omx_current_utsname.nodename, i);
 	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
-	iface->hostname = hostname;
+	iface->peer.hostname = hostname;
 
 	iface->eth_ifp = ifp;
 	iface->endpoint_nr = 0;
@@ -306,7 +307,7 @@ __omx_iface_last_release(struct kref *kref)
 	struct omx_iface * iface = container_of(kref, struct omx_iface, refcount);
 
 	kfree(iface->endpoints);
-	kfree(iface->hostname);
+	kfree(iface->peer.hostname);
 	kfree(iface);
 }
 
