@@ -20,7 +20,6 @@
 #define __omx_common_h__
 
 #include "omx_wire.h"
-#include "omx_debug.h"
 
 /* constants */
 #ifdef OMX_MX_WIRE_COMPAT

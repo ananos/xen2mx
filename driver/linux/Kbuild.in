@@ -1,5 +1,6 @@
 EXTRA_CFLAGS	+=	-include @abs_top_builddir@/common/omx_config.h
 EXTRA_CFLAGS	+=	-include @abs_top_builddir@/driver/linux/omx_checks.h
+EXTRA_CFLAGS	+=	-include @abs_top_builddir@/driver/linux/omx_debug.h
 EXTRA_CFLAGS	+=	-I@abs_top_srcdir@/common/
 
 obj-m	+=	open-mx.o
