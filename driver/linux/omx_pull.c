@@ -702,7 +702,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	 */
 	spin_unlock(&handle->lock);
 
-	if (likely(skb2))
+	if (likely(skb))
 		omx_queue_xmit(iface, skb, PULL);
 	if (likely(skb2))
 		omx_queue_xmit(iface, skb2, PULL);
