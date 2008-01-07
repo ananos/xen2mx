@@ -689,7 +689,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
 	if (unlikely(IS_ERR(skb2))) {
 		err = PTR_ERR(skb2);
-		dev_kfree_skb(skb);
+		dev_kfree_skb(skb2);
 		goto out_with_handle;
 	}
 
@@ -764,7 +764,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	if (!OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
 		omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_SECOND_BLOCK);
 
-		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
+		skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
 		if (unlikely(IS_ERR(skb2)))
 			skb2 = NULL;
 	}
