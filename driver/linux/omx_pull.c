@@ -665,7 +665,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	handle->first_desc.block_length = block_length;
 	handle->first_desc.first_frame_offset = first_frame_offset;
 	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-	if (IS_ERR(skb)) {
+	if (unlikely(IS_ERR(skb))) {
 		err = PTR_ERR(skb);
 		goto out_with_handle;
 	}
@@ -687,7 +687,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	handle->second_desc.block_length = block_length;
 	handle->second_desc.first_frame_offset = 0;
 	skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
-	if (IS_ERR(skb2)) {
+	if (unlikely(IS_ERR(skb2))) {
 		err = PTR_ERR(skb2);
 		dev_kfree_skb(skb);
 		goto out_with_handle;
@@ -696,10 +696,13 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
  skbs_ready:
+	/* release the handle before sending to avoid
+	 * deadlock when sending to ourself in the same region
+	 */
 	spin_unlock(&handle->lock);
 
 	omx_queue_xmit(iface, skb, PULL);
-	if (skb2)
+	if (likely(skb2))
 		omx_queue_xmit(iface, skb2, PULL);
 
 	return 0;
@@ -719,7 +722,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	struct omx_pull_handle * handle = (void *) data;
 	struct omx_endpoint * endpoint = handle->endpoint;
 	struct omx_iface * iface = endpoint->iface;
-	struct sk_buff * skb;
+	struct sk_buff * skb = NULL, * skb2 = NULL;
 
 	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
 
@@ -747,10 +750,10 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_FIRST_BLOCK);
 
 	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-	if (!IS_ERR(skb))
-		omx_queue_xmit(iface, skb, PULL);
-
-	handle->already_requeued_first = 0;
+	if (unlikely(IS_ERR(skb)))
+		skb = NULL;
+	else
+		handle->already_requeued_first = 0;
 
 	/*
 	 * If the second block isn't done either, request it again
@@ -762,14 +765,23 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_SECOND_BLOCK);
 
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
-		if (!IS_ERR(skb))
-			omx_queue_xmit(iface, skb, PULL);
+		if (unlikely(IS_ERR(skb2)))
+			skb2 = NULL;
 	}
 
+	/* reschedule another timeout handler */
 	mod_timer(&handle->retransmit_timer,
 		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
+	/* release the handle before sending to avoid
+	 * deadlock when sending to ourself in the same region
+	 */
 	spin_unlock(&handle->lock);
+
+	if (likely(skb))
+		omx_queue_xmit(iface, skb, PULL);
+	if (likely(skb2))
+		omx_queue_xmit(iface, skb2, PULL);
 }
 
 /* pull reply skb destructor to release the user region */
@@ -1140,6 +1152,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 		/* current first block not done, we basically just need to release the handle */
 
+		struct sk_buff *skb = NULL;
+
 		if (frame_from_second_block
 		    && OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
 		    && !handle->already_requeued_first) {
@@ -1149,23 +1163,28 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			 * so we request the first one again
 			 */
 
-			struct sk_buff *skb;
-
 			omx_counter_inc(iface, PULL_SECOND_BLOCK_DONE_EARLY);
 
 			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
 				handle);
 
 			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-			if (!IS_ERR(skb))
-				omx_queue_xmit(iface, skb, PULL);
-
-			handle->already_requeued_first = 1;
+			if (unlikely(IS_ERR(skb)))
+				skb = NULL;
+			else
+				handle->already_requeued_first = 1;
 		}
 
 		dprintk(PULL, "block not done, just releasing\n");
+
+		/* release the handle before sending to avoid
+		 * deadlock when sending to ourself in the same region
+		 */
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
+
+		if (likely(skb))
+			omx_queue_xmit(iface, skb, PULL);
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
 
@@ -1190,7 +1209,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		handle->second_desc.block_length = block_length;
 		handle->second_desc.first_frame_offset = 0;
 		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
-		if (IS_ERR(skb)) {
+		if (unlikely(IS_ERR(skb))) {
 			BUG_ON(PTR_ERR(skb) != -ENOMEM);
 			/* let the timeout expire and resend */
 			skb = NULL;
@@ -1225,7 +1244,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		handle->second_desc.block_length = block_length;
 		handle->second_desc.first_frame_offset = 0;
 		skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
-		if (IS_ERR(skb2)) {
+		if (unlikely(IS_ERR(skb2))) {
 			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
 			/* let the timeout expire and resend */
 			skb2 = NULL;
@@ -1241,9 +1260,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 
-		if (skb)
+		if (likely(skb))
 			omx_queue_xmit(iface, skb, PULL);
-		if (skb2)
+		if (likely(skb2))
 			omx_queue_xmit(iface, skb2, PULL);
 
 	} else {
