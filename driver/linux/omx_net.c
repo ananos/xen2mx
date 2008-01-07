@@ -31,30 +31,6 @@ extern int omx_iface_max;
 extern int omx_endpoint_max;
 extern int omx_copybench;
 
-/*
- * Scan the list of physical interfaces and return the
- * one that matches ifname (and take a reference on it).
- */
-static struct net_device *
-dev_hold_by_name(const char * ifname)
-{
-	struct net_device * ifp;
-
-	read_lock(&dev_base_lock);
-	omx_for_each_netdev(ifp) {
-		dev_hold(ifp);
-		if (!strcmp(ifp->name, ifname)) {
-			read_unlock(&dev_base_lock);
-			return ifp;
-		}
-		dev_put(ifp);
-	}
-	read_unlock(&dev_base_lock);
-
-	printk(KERN_ERR "Open-MX: Failed to find interface '%s'\n", ifname);
-	return NULL;
-}
-
 /******************************
  * Managing interfaces
  */
@@ -502,7 +478,7 @@ omx_ifaces_store(const char *buf, size_t size)
 		if (tmp[0] == '+')
 			ifname++;
 
-		ifp = dev_hold_by_name(ifname);
+		ifp = dev_get_by_name(ifname);
 		if (ifp) {
 			int ret;
 			write_lock(&omx_iface_lock);
@@ -791,7 +767,7 @@ omx_net_init(const char * ifnames)
 
 		while ((ifname = strsep(&copy, ",")) != NULL) {
 			struct net_device * ifp;
-			ifp = dev_hold_by_name(ifname);
+			ifp = dev_get_by_name(ifname);
 			if (ifp)
 				if (omx_iface_attach(ifp) < 0) {
 					dev_put(ifp);
