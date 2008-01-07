@@ -29,6 +29,16 @@
   + cleanup pending connects too
   + call it when the connect session changed
 
+* pull fixes
+  + update the handle and send the request before the copy, except when the handle is done (will simplify ioat)
+  + only a single bitmap per handle
+  + keep the handle lock around check/set status + idr_remove at both places
+  + set the status AFTER removing from idr and acquire takes the lock and check the status ? find an order to simplify things
+  + check the pull handle status before mod_timer?
+  + use a bitmask for timer/done/timer_exit pull handle status?
+  + the timeout handler may be called during the copy, what if it reaches the timeout at this point? status boom
+  + what if we re-request while done, get a bad rdmawin nack since window is closed, and thus try to done the handle again?
+
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
   + omx_set_error_handler - if the default is return, I do not need this 

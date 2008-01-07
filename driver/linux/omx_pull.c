@@ -453,8 +453,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* init timer */
 	setup_timer(&handle->retransmit_timer, omx_pull_handle_timeout_handler,
 		    (unsigned long) handle);
-	__mod_timer(&handle->retransmit_timer,
-		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	/* queue in the endpoint list */
 	write_lock_bh(&endpoint->pull_handles_list_lock);
@@ -612,10 +610,6 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 			 (unsigned long) frame_index,
 			 (unsigned long) first_frame_offset);
 
-	/* start the timer */
-	mod_timer(&handle->retransmit_timer,
-		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
-
 	return skb;
 }
 
@@ -697,6 +691,10 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
  skbs_ready:
+	/* schedule the timeout handler now that we are ready to send the requests */
+	__mod_timer(&handle->retransmit_timer,
+		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+
 	/* release the handle before sending to avoid
 	 * deadlock when sending to ourself in the same region
 	 */
@@ -1178,6 +1176,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 		dprintk(PULL, "block not done, just releasing\n");
 
+		/* reschedule the timeout handler now that we are ready to send the request */
+		mod_timer(&handle->retransmit_timer,
+			  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+
 		/* release the handle before sending to avoid
 		 * deadlock when sending to ourself in the same region
 		 */
@@ -1255,6 +1257,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
 	skbs_ready:
+		/* reschedule the timeout handler now that we are ready to send the requests */
+		mod_timer(&handle->retransmit_timer,
+			  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+
 		/* release the handle before sending to avoid
 		 * deadlock when sending to ourself in the same region
 		 */
