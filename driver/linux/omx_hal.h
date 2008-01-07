@@ -68,6 +68,12 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 #define omx_for_each_netdev(_ifp) for ((_ifp) = dev_base; (_ifp) != NULL; (_ifp) = (_ifp)->next)
 #endif /* OMX_HAVE_FOR_EACH_NETDEV */
 
+#ifdef OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS
+#define omx_dev_get_by_name dev_get_by_name
+#else /* OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS */
+#define omx_dev_get_by_name(name) dev_get_by_name(&init_net, name)
+#endif /* OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS */
+
 #ifdef OMX_HAVE_SKB_HEADERS
 #define omx_skb_reset_mac_header skb_reset_mac_header
 #define omx_skb_reset_network_header skb_reset_network_header

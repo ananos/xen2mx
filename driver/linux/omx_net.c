@@ -466,7 +466,7 @@ omx_ifaces_store(const char *buf, size_t size)
 		if (tmp[0] == '+')
 			ifname++;
 
-		ifp = dev_get_by_name(ifname);
+		ifp = omx_dev_get_by_name(ifname);
 		if (ifp) {
 			int ret;
 			write_lock(&omx_iface_lock);
@@ -755,7 +755,7 @@ omx_net_init(const char * ifnames)
 
 		while ((ifname = strsep(&copy, ",")) != NULL) {
 			struct net_device * ifp;
-			ifp = dev_get_by_name(ifname);
+			ifp = omx_dev_get_by_name(ifname);
 			if (ifp)
 				if (omx_iface_attach(ifp) < 0) {
 					dev_put(ifp);

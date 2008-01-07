@@ -141,6 +141,15 @@ else
   AC_MSG_RESULT(no)
 fi
 
+# dev_get_by_name got a namespace argument in 2.6.24
+AC_MSG_CHECKING(dev_get_by_name prototype)
+if grep "struct net_device.*dev_get_by_name *(.*,.*)" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
+  AC_MSG_RESULT(with namespace)
+else  
+  echo "#define OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(without namespace)
+fi
+
 # skb got mac/network/transport headers in 2.6.22
 AC_MSG_CHECKING(skb headers availability)
 if grep "sk_buff_data_t.*mac_header;" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
