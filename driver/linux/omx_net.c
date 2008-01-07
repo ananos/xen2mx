@@ -296,7 +296,7 @@ __omx_iface_last_release(struct kref *kref)
  * to prevent users while detaching the iface.
  */
 static int
-__omx_iface_detach(struct omx_iface * iface, int force)
+omx_iface_detach(struct omx_iface * iface, int force)
 {
 	int ret;
 	int i;
@@ -357,18 +357,6 @@ __omx_iface_detach(struct omx_iface * iface, int force)
 
  out:
 	return ret;
-}
-
-static inline int
-omx_iface_detach(struct omx_iface * iface)
-{
-	return __omx_iface_detach(iface, 0);
-}
-
-static inline int
-omx_iface_detach_force(struct omx_iface * iface)
-{
-	return __omx_iface_detach(iface, 1);
 }
 
 /******************************
@@ -458,7 +446,7 @@ omx_ifaces_store(const char *buf, size_t size)
 			 * to prevent races
 			 */
 			dev_remove_pack(&omx_pt);
-			ret = __omx_iface_detach(iface, force);
+			ret = omx_iface_detach(iface, force);
 			dev_add_pack(&omx_pt);
 
 			/* release the interface now */
@@ -667,7 +655,7 @@ omx_netdevice_notifier_cb(struct notifier_block *unused,
 			/* there is no need to disable incoming packets since
 			 * the ethernet ifp is already disabled before the notifier is called
 			 */
-			ret = omx_iface_detach_force(iface);
+			ret = omx_iface_detach(iface, 1 /* force */);
 			BUG_ON(ret);
 			dev_put(ifp);
 		}
@@ -826,7 +814,7 @@ omx_net_exit(void)
 			/* detach the iface now.
 			 * all endpoints are closed, no need to force
 			 */
-			BUG_ON(omx_iface_detach(iface) < 0);
+			BUG_ON(omx_iface_detach(iface, 0) < 0);
 			dev_put(ifp);
 			nr++;
 		}
