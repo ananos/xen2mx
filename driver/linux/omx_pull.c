@@ -665,9 +665,11 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	handle->first_desc.block_length = block_length;
 	handle->first_desc.first_frame_offset = first_frame_offset;
 	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-	if (unlikely(IS_ERR(skb)))
+	if (unlikely(IS_ERR(skb))) {
+		BUG_ON(PTR_ERR(skb) != -ENOMEM);
 		/* just ignore the memory allocation failure and let retransmission take care of it */
 		skb = NULL;
+	}
 
 	omx_pull_handle_append_needed_frames(handle,
 					     block_length, first_frame_offset);
@@ -686,9 +688,11 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	handle->second_desc.block_length = block_length;
 	handle->second_desc.first_frame_offset = 0;
 	skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
-	if (unlikely(IS_ERR(skb2)))
+	if (unlikely(IS_ERR(skb2))) {
+		BUG_ON(PTR_ERR(skb2) != -ENOMEM);
 		/* just ignore the memory allocation failure and let retransmission take care of it */
 		skb2 = NULL;
+	}
 
 	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
@@ -743,9 +747,10 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_FIRST_BLOCK);
 
 	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-	if (unlikely(IS_ERR(skb)))
+	if (unlikely(IS_ERR(skb))) {
+		BUG_ON(PTR_ERR(skb) != -ENOMEM);
 		skb = NULL;
-	else
+	} else
 		handle->already_requeued_first = 0;
 
 	/*
@@ -758,8 +763,10 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_SECOND_BLOCK);
 
 		skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
-		if (unlikely(IS_ERR(skb2)))
+		if (unlikely(IS_ERR(skb2))) {
+			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
 			skb2 = NULL;
+		}
 	}
 
 	/* reschedule another timeout handler */
@@ -1162,9 +1169,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 				handle);
 
 			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-			if (unlikely(IS_ERR(skb)))
+			if (unlikely(IS_ERR(skb))) {
+				BUG_ON(PTR_ERR(skb) != -ENOMEM);
 				skb = NULL;
-			else
+			} else
 				handle->already_requeued_first = 1;
 		}
 
