@@ -810,11 +810,14 @@ omx_net_exit(void)
 		struct omx_iface * iface = omx_ifaces[i];
 		if (iface != NULL) {
 			struct net_device * ifp = iface->eth_ifp;
+			int ret;
 
 			/* detach the iface now.
-			 * all endpoints are closed, no need to force
+			 * all endpoints are closed since there is no reference on the module,
+			 * no need to force
 			 */
-			BUG_ON(omx_iface_detach(iface, 0) < 0);
+			ret = omx_iface_detach(iface, 0);
+			BUG_ON(ret);
 			dev_put(ifp);
 			nr++;
 		}
