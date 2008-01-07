@@ -665,10 +665,9 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	handle->first_desc.block_length = block_length;
 	handle->first_desc.first_frame_offset = first_frame_offset;
 	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
-	if (unlikely(IS_ERR(skb))) {
-		err = PTR_ERR(skb);
-		goto out_with_handle;
-	}
+	if (unlikely(IS_ERR(skb)))
+		/* just ignore the memory allocation failure and let retransmission take care of it */
+		skb = NULL;
 
 	omx_pull_handle_append_needed_frames(handle,
 					     block_length, first_frame_offset);
@@ -687,11 +686,9 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	handle->second_desc.block_length = block_length;
 	handle->second_desc.first_frame_offset = 0;
 	skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
-	if (unlikely(IS_ERR(skb2))) {
-		err = PTR_ERR(skb2);
-		dev_kfree_skb(skb2);
-		goto out_with_handle;
-	}
+	if (unlikely(IS_ERR(skb2)))
+		/* just ignore the memory allocation failure and let retransmission take care of it */
+		skb2 = NULL;
 
 	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
@@ -701,17 +698,13 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	 */
 	spin_unlock(&handle->lock);
 
-	omx_queue_xmit(iface, skb, PULL);
+	if (likely(skb2))
+		omx_queue_xmit(iface, skb, PULL);
 	if (likely(skb2))
 		omx_queue_xmit(iface, skb2, PULL);
 
 	return 0;
 
- out_with_handle:
-	/* we failed to send the first pull requests,
-	 * report an error to the user right now
-	 */
-	omx_pull_handle_done_release(handle);
  out:
 	return err;
 }
