@@ -19,7 +19,6 @@
 #include <linux/kernel.h>
 #include <linux/utsname.h>
 #include <linux/if_arp.h>
-#include <asm/atomic.h>
 
 #include "omx_misc.h"
 #include "omx_hal.h"
@@ -42,7 +41,6 @@ extern int omx_copybench;
 static struct omx_iface ** omx_ifaces;
 static unsigned omx_iface_nr = 0;
 static rwlock_t omx_iface_lock = RW_LOCK_UNLOCKED;
-static atomic_t omx_iface_detach_pending = ATOMIC_INIT(0);
 
 /*
  * Returns the iface associated to a physical interface.
@@ -287,7 +285,6 @@ __omx_iface_last_release(struct kref *kref)
 	kfree(iface->endpoints);
 	kfree(iface->peer.hostname);
 	kfree(iface);
-	atomic_dec(&omx_iface_detach_pending);
 }
 
 /*
@@ -352,7 +349,6 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	/* remove the iface from the array */
 	omx_ifaces[iface->index] = NULL;
 	omx_iface_nr--;
-	atomic_inc(&omx_iface_detach_pending);
 
 	/* let the last reference release the iface's internals */
 	kref_put(&iface->refcount, __omx_iface_last_release);
@@ -837,17 +833,6 @@ omx_net_exit(void)
 
 	/* free structures now that the notifier is gone */
 	kfree(omx_ifaces);
-
-	/*
-	 * iface detaching is asynchronous, we need to make sure that all references
-	 * are released for real before having rmmod complete
-	 */
-	while ((nr = atomic_read(&omx_iface_detach_pending)) != 0) {
-		printk(KERN_INFO "Waiting for %d interfaces to be released\n", nr);
-		schedule_timeout(HZ);
-	}
-	/* wait a bit so that the last reference actually exits from __omx_iface_last_release */
-	schedule_timeout(1);
 }
 
 /*
