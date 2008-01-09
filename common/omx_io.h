@@ -30,7 +30,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x100
+#define OMX_DRIVER_ABI_VERSION		0x101
 
 /************************
  * Common parameters or IOCTL subtypes
