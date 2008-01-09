@@ -266,6 +266,7 @@ omx_exit(void)
 	del_timer_sync(&omx_driver_userdesc_update_timer);
 	vfree(omx_driver_userdesc);
 	printk(KERN_INFO "Open-MX " PACKAGE_VERSION " terminated\n");
+	mdelay(1000); /* FIXME: workaround to make sure pull timers are gone */
 }
 module_exit(omx_exit);
 
