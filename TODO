@@ -1,9 +1,6 @@
 * need to wait for timers to be done before completing rmmod,
   either with a reference or with del_timer_sync
 
-* display the svn revision when possible in the driver too?
-  or anything to show that the code has been modified since the release of this version
-
 * store peer_index in board and update peer_index with set_hostname
 
 * skb_clone and alloc_skb_fclone for pull and pull replies?

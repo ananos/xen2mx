@@ -108,6 +108,12 @@ MODULE_PARM_DESC(nack_mcp_packet_loss, "Explicit nack mcp packet loss frequency"
  * Main Module Init/Exit
  */
 
+#ifdef SVN_VERSION
+#define VERSION PACKAGE_VERSION " (svn" SVN_VERSION ")"
+#else
+#define VERSION PACKAGE_VERSION
+#endif
+
 struct omx_driver_desc * omx_driver_userdesc = NULL; /* exported read-only to user-space */
 static struct timer_list omx_driver_userdesc_update_timer;
 static struct task_struct * omx_kthread_task = NULL;
@@ -142,7 +148,7 @@ omx_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Open-MX " PACKAGE_VERSION " initializing...\n");
+	printk(KERN_INFO "Open-MX " VERSION " initializing...\n");
 	printk(KERN_INFO "Open-MX: using Ethertype 0x%lx\n",
 	       (unsigned long) ETH_P_OMX);
 	printk(KERN_INFO "Open-MX: requires MTU >= %ld\n",
@@ -265,7 +271,7 @@ omx_exit(void)
 	omx_dma_exit();
 	del_timer_sync(&omx_driver_userdesc_update_timer);
 	vfree(omx_driver_userdesc);
-	printk(KERN_INFO "Open-MX " PACKAGE_VERSION " terminated\n");
+	printk(KERN_INFO "Open-MX " VERSION " terminated\n");
 	mdelay(1000); /* FIXME: workaround to make sure pull timers are gone */
 }
 module_exit(omx_exit);
