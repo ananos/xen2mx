@@ -449,10 +449,15 @@ omx_ifaces_store(const char *buf, size_t size)
 			if (strcmp(ifp->name, ifname))
 				continue;
 
-			/* disable incoming packets while removing the iface
+			/*
+			 * disable incoming packets while removing the iface
 			 * to prevent races
 			 */
 			dev_remove_pack(&omx_pt);
+			/*
+			 * no new packets will be received now,
+			 * and all the former are already done
+			 */
 			ret = omx_iface_detach(iface, force);
 			dev_add_pack(&omx_pt);
 
@@ -816,7 +821,12 @@ omx_net_exit(void)
 	 */
 
 	dev_remove_pack(&omx_pt);
-	/* now, no iface may be used by any incoming packet */
+	/*
+	 * Now, no iface may be used by any incoming packet
+	 * and there is no packet being processed either.
+	 *
+	 * All iface references are from user-space through endpoints.
+	 */
 
 	/* prevent omx_netdevice_notifier from removing an iface now */
 	write_lock(&omx_iface_lock);
@@ -846,6 +856,8 @@ omx_net_exit(void)
 
 	/* free structures now that the notifier is gone */
 	kfree(omx_ifaces);
+
+	/* FIXME: some pull handle timers may still be active */
 }
 
 /*

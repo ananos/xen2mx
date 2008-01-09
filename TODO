@@ -1,3 +1,5 @@
+* no ref from ph to endpoint, cleanup thread does del_timer_sync
+
 * need to wait for timers to be done before completing rmmod,
   either with a reference or with del_timer_sync
 
