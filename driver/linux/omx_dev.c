@@ -117,6 +117,7 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
 	vfree(endpoint->userdesc);
+	kfree(endpoint);
 }
 
 /****************************
