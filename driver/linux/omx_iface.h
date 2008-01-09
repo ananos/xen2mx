@@ -49,6 +49,8 @@ struct omx_iface {
 	uint32_t counters[OMX_COUNTER_INDEX_MAX];
 };
 
+extern void omx_iface_release(struct omx_iface * iface);
+
 extern int omx_ifaces_show(char *buf);
 extern int omx_ifaces_store(const char *buf, size_t size);
 extern int omx_ifaces_get_count(void);

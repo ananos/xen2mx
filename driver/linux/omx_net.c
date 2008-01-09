@@ -281,10 +281,14 @@ static void
 __omx_iface_last_release(struct kref *kref)
 {
 	struct omx_iface * iface = container_of(kref, struct omx_iface, refcount);
+	struct net_device * ifp = iface->eth_ifp;
 
 	kfree(iface->endpoints);
 	kfree(iface->peer.hostname);
 	kfree(iface);
+
+	/* release the interface now, it will wakeup the unregister notifier waiting in rtnl_unlock() */
+	dev_put(ifp);
 }
 
 /*
@@ -449,8 +453,6 @@ omx_ifaces_store(const char *buf, size_t size)
 			ret = omx_iface_detach(iface, force);
 			dev_add_pack(&omx_pt);
 
-			/* release the interface now */
-			dev_put(ifp);
 			break;
 		}
 		write_unlock(&omx_iface_lock);
@@ -584,8 +586,14 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 
 	if (!ifacelocked)
 		write_unlock_bh(&iface->endpoint_lock);
+}
 
-	/* release the iface */
+/*
+ * Release the endpoint's iface once the endpoint is really done
+ */
+void
+omx_iface_release(struct omx_iface * iface)
+{
 	kref_put(&iface->refcount, __omx_iface_last_release);
 }
 
@@ -657,7 +665,11 @@ omx_netdevice_notifier_cb(struct notifier_block *unused,
 			 */
 			ret = omx_iface_detach(iface, 1 /* force */);
 			BUG_ON(ret);
-			dev_put(ifp);
+
+			/*
+			 * the device will be released when the last reference is actually released,
+			 * there's no need to wait for it, the caller will do it in rtnl_unlock()
+			 */
 		}
 		write_unlock(&omx_iface_lock);
 	}
@@ -809,7 +821,6 @@ omx_net_exit(void)
 	for (i=0; i<omx_iface_max; i++) {
 		struct omx_iface * iface = omx_ifaces[i];
 		if (iface != NULL) {
-			struct net_device * ifp = iface->eth_ifp;
 			int ret;
 
 			/* detach the iface now.
@@ -818,7 +829,6 @@ omx_net_exit(void)
 			 */
 			ret = omx_iface_detach(iface, 0);
 			BUG_ON(ret);
-			dev_put(ifp);
 			nr++;
 		}
 	}

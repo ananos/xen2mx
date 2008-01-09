@@ -136,12 +136,15 @@ void
 __omx_endpoint_last_release(struct kref *kref)
 {
 	struct omx_endpoint * endpoint = container_of(kref, struct omx_endpoint, refcount);
+	struct omx_iface * iface = endpoint->iface;
 
 	endpoint->iface = NULL;
 
 	spin_lock(&omx_endpoints_cleanup_lock);
 	list_add(&endpoint->list_elt, &omx_endpoints_cleanup_list);
 	spin_unlock(&omx_endpoints_cleanup_lock);
+
+	omx_iface_release(iface);
 }
 
 void
