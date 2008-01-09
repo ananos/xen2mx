@@ -103,6 +103,10 @@ void
 __omx_user_region_last_release(struct kref * kref)
 {
 	struct omx_user_region * region = container_of(kref, struct omx_user_region, refcount);
+
+	dprintk(KREF, "releasing the last reference on region %p\n",
+		region);
+
 	omx__user_region_deregister(region);
 }
 

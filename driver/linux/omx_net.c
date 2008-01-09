@@ -283,6 +283,9 @@ __omx_iface_last_release(struct kref *kref)
 	struct omx_iface * iface = container_of(kref, struct omx_iface, refcount);
 	struct net_device * ifp = iface->eth_ifp;
 
+	dprintk(KREF, "releasing the last reference on iface %s (%s)\n",
+		iface->peer.hostname, ifp->name);
+
 	kfree(iface->endpoints);
 	kfree(iface->peer.hostname);
 	kfree(iface);

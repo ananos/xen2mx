@@ -138,6 +138,9 @@ __omx_endpoint_last_release(struct kref *kref)
 	struct omx_endpoint * endpoint = container_of(kref, struct omx_endpoint, refcount);
 	struct omx_iface * iface = endpoint->iface;
 
+	dprintk(KREF, "releasing the last reference on endpoint %d for iface %s (%s)\n",
+		endpoint->endpoint_index, iface->peer.hostname, iface->eth_ifp->name);
+
 	endpoint->iface = NULL;
 
 	spin_lock(&omx_endpoints_cleanup_lock);

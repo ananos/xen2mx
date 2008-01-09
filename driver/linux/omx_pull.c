@@ -277,6 +277,9 @@ __omx_pull_handle_last_release(struct kref * kref)
 	struct omx_pull_handle * handle = container_of(kref, struct omx_pull_handle, refcount);
 	struct omx_endpoint * endpoint = handle->endpoint;
 
+	dprintk(KREF, "releasing the last reference on pull handle %p\n",
+		handle);
+
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
 	kfree(handle);
 
