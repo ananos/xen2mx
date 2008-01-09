@@ -156,6 +156,8 @@ The --with-device configure option may be used to change the name of
 this device file, its group or mode. Write access to this file is
 required when using Open-MX.
 
+Kernels older than 2.6.15 are unlikely to be supported due to various
+important functions being unavailable (especially vm_insert_page).
 
 +--------------------------+
 | IV. Attaching interfaces |
