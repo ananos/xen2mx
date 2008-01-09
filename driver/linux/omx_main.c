@@ -142,7 +142,7 @@ omx_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Open-MX initializing...\n");
+	printk(KERN_INFO "Open-MX " PACKAGE_VERSION " initializing...\n");
 	printk(KERN_INFO "Open-MX: using Ethertype 0x%lx\n",
 	       (unsigned long) ETH_P_OMX);
 	printk(KERN_INFO "Open-MX: requires MTU >= %ld\n",
@@ -265,7 +265,7 @@ omx_exit(void)
 	omx_dma_exit();
 	del_timer_sync(&omx_driver_userdesc_update_timer);
 	vfree(omx_driver_userdesc);
-	printk(KERN_INFO "Open-MX terminated\n");
+	printk(KERN_INFO "Open-MX " PACKAGE_VERSION " terminated\n");
 }
 module_exit(omx_exit);
 
