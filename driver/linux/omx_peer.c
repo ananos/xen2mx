@@ -311,7 +311,7 @@ omx_peers_init(void)
 
 	omx_peers_nr = 0;
 
-	omx_peer_array = kmalloc(omx_peer_max * sizeof(*omx_peer_array), GFP_KERNEL);
+	omx_peer_array = vmalloc(omx_peer_max * sizeof(*omx_peer_array));
 	if (!omx_peer_array) {
 		printk(KERN_ERR "Open-MX: Failed to allocate the peer array\n");
 		err = -ENOMEM;
@@ -332,7 +332,7 @@ omx_peers_init(void)
 	return 0;
 
  out_with_peer_array:
-	kfree(omx_peer_array);
+	vfree(omx_peer_array);
  out:
 	return err;
 }
@@ -342,7 +342,7 @@ omx_peers_exit(void)
 {
 	omx_peers_clear();
 	kfree(omx_peer_addr_hash_array);
-	kfree(omx_peer_array);
+	vfree(omx_peer_array);
 }
 
 /*
