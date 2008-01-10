@@ -102,7 +102,7 @@ omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, ch
 	iface = omx_ifaces[board_index];
 	ifp = iface->eth_ifp;
 
-	*board_addr = omx_board_addr_from_netdevice(ifp);
+	*board_addr = iface->peer.board_addr;
 	strncpy(ifacename, ifp->name, OMX_IF_NAMESIZE);
 	ifacename[OMX_IF_NAMESIZE-1] = '\0';
 	strncpy(hostname, iface->peer.hostname, OMX_HOSTNAMELEN_MAX);
@@ -251,6 +251,7 @@ omx_iface_attach(struct net_device * ifp)
 	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 	iface->peer.hostname = hostname;
 	iface->peer.index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
+	iface->peer.board_addr = omx_board_addr_from_netdevice(ifp);
 
 	iface->eth_ifp = ifp;
 	iface->endpoint_nr = 0;
