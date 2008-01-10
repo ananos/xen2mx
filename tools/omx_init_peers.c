@@ -42,6 +42,7 @@ omx__peers_read(const char * filename)
     int addr_bytes[6];
     uint64_t board_addr;
     size_t len = strlen(line);
+    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 
     /* ignore comments and empty lines */
     if (line[0] == '#' || len == 1)
@@ -62,18 +63,26 @@ omx__peers_read(const char * filename)
       goto out_with_file;
     }
 
-    /* add the new peer */
     board_addr = ((((uint64_t) addr_bytes[0]) << 40)
 		  + (((uint64_t) addr_bytes[1]) << 32)
 		  + (((uint64_t) addr_bytes[2]) << 24)
 		  + (((uint64_t) addr_bytes[3]) << 16)
 		  + (((uint64_t) addr_bytes[4]) << 8)
 		  + (((uint64_t) addr_bytes[5]) << 0));
+    omx__board_addr_sprintf(board_addr_str, board_addr);
+
+    /* add the new peer */
     ret = omx__driver_peer_add(board_addr, hostname);
     if (ret != OMX_SUCCESS) {
-      fprintf(stderr, "Failed to add peer (%s)\n",
-	      omx_strerror(ret));
-      goto out_with_file;
+      if (ret == OMX_BUSY) {
+	fprintf(stderr, "Cannot add new peer, address (%s) already listed\n",
+		board_addr_str);
+	/* continue */
+      } else {
+	fprintf(stderr, "Failed to add new peer '%s' (%s)\n",
+		line, omx_strerror(ret));
+	goto out_with_file;
+      }
     }
   }
 
