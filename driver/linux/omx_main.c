@@ -215,13 +215,10 @@ omx_init(void)
 	if (ret < 0)
 		goto out_with_driver_userdesc;
 
-	ret = omx_pull_handles_init();
-	if (ret < 0)
-		goto out_with_dma;
 
 	ret = omx_peers_init();
 	if (ret < 0)
-		goto out_with_pull_handles;
+		goto out_with_dma;
 
 	ret = omx_net_init((const char *) omx_ifnames);
 	if (ret < 0)
@@ -246,8 +243,6 @@ omx_init(void)
 	omx_net_exit();
  out_with_peers:
 	omx_peers_init();
- out_with_pull_handles:
-	omx_pull_handles_exit();
  out_with_dma:
 	omx_dma_exit();
  out_with_driver_userdesc:
@@ -267,7 +262,6 @@ omx_exit(void)
 	kthread_stop(omx_kthread_task);
 	omx_net_exit();
 	omx_peers_exit();
-	omx_pull_handles_exit();
 	omx_dma_exit();
 	del_timer_sync(&omx_driver_userdesc_update_timer);
 	vfree(omx_driver_userdesc);

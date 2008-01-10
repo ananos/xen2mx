@@ -25,6 +25,7 @@
 #include <linux/kref.h>
 #include <linux/list.h>
 #include <linux/wait.h>
+#include <linux/idr.h>
 
 #include "omx_io.h"
 
@@ -70,7 +71,8 @@ struct omx_endpoint {
 	struct omx_user_region * user_regions[OMX_USER_REGION_MAX];
 
 	struct list_head pull_handles_list;
-	rwlock_t pull_handles_list_lock;
+	struct idr pull_handles_idr;
+	rwlock_t pull_handles_lock;
 
 	/* descriptor exported to user-space, modified by user-space and the driver,
 	 * so we can export some info to user-space by writing into it, but we

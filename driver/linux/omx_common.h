@@ -78,8 +78,6 @@ extern int omx_recv_pull_reply(struct omx_iface * iface, struct omx_hdr * mh, st
 extern int omx_recv_nack_mcp(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 
 /* pull */
-extern int omx_pull_handles_init(void);
-extern void omx_pull_handles_exit(void);
 extern int omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint);
 extern void omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint);
 
