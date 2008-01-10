@@ -31,7 +31,7 @@
 /* defined as a module parameter */
 extern int omx_peer_max;
 
-static spinlock_t omx_peer_lock;
+static rwlock_t omx_peer_lock;
 static struct omx_peer ** omx_peer_array;
 static struct list_head * omx_peer_addr_hash_array;
 static int omx_peers_nr;
@@ -56,7 +56,7 @@ omx_peers_clear(void)
 
 	dprintk(PEER, "clearing all peers\n");
 
-	spin_lock(&omx_peer_lock);
+	write_lock_bh(&omx_peer_lock);
 	for(i=0; i<omx_peers_nr; i++) {
 		struct omx_peer * peer = omx_peer_array[i];
 		if (!peer)
@@ -67,7 +67,7 @@ omx_peers_clear(void)
 		omx_peer_array[i] = NULL;
 	}
 	omx_peers_nr = 0;
-	spin_unlock(&omx_peer_lock);
+	write_unlock_bh(&omx_peer_lock);
 }
 
 static int
@@ -109,7 +109,7 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 
 	hash = omx_peer_addr_hash(board_addr);
 
-	spin_lock(&omx_peer_lock);
+	write_lock_bh(&omx_peer_lock);
 	peer->index = omx_peers_nr;
 
 	if (omx_peer_is_local(board_addr)) {
@@ -125,7 +125,7 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	list_add_tail(&peer->addr_hash_elt, &omx_peer_addr_hash_array[hash]);
 	omx_peer_array[omx_peers_nr] = peer;
 	omx_peers_nr++;
-	spin_unlock(&omx_peer_lock);
+	write_unlock_bh(&omx_peer_lock);
 
 	return 0;
 }
@@ -134,13 +134,16 @@ int
 omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
 {
 	struct omx_peer *peer;
+	int err = -EINVAL;
+
+	read_lock_bh(&omx_peer_lock);
 
 	if (index >= omx_peers_nr)
-		return -EINVAL;
+		goto out_with_lock;
 
 	peer = omx_peer_array[index];
 	if (!peer)
-		return -EINVAL;
+		goto out_with_lock;
 
 	if (peer->reverse_index != OMX_UNKNOWN_REVERSE_PEER_INDEX
 	    && reverse_index != peer->reverse_index)
@@ -152,34 +155,58 @@ omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
 
 	peer->reverse_index = reverse_index;
 
+	read_unlock_bh(&omx_peer_lock);
 	return 0;
+
+ out_with_lock:
+	read_unlock_bh(&omx_peer_lock);
+	return err;
 }
 
 int
 omx_set_target_peer(struct omx_hdr *mh, uint16_t index)
 {
 	struct omx_peer *peer;
+	int err = -EINVAL;
+
+	read_lock_bh(&omx_peer_lock);
 
 	if (index >= omx_peers_nr)
-		return -EINVAL;
+		goto out_with_lock;
 
 	peer = omx_peer_array[index];
 	if (!peer)
-		return -EINVAL;
+		goto out_with_lock;
 
 	omx_board_addr_to_ethhdr_dst(&mh->head.eth, peer->board_addr);
 	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, peer->reverse_index);
 
+	read_unlock_bh(&omx_peer_lock);
 	return 0;
+
+ out_with_lock:
+	read_unlock_bh(&omx_peer_lock);
+	return err;
 }
 
+/* FIXME: removes locks by making sure the peer table is never reduced */
 int
 omx_check_recv_peer_index(uint16_t index)
 {
+	int err = -EINVAL;
+
+	read_lock_bh(&omx_peer_lock);
+
 	if (index >= omx_peers_nr
 	    || !omx_peer_array[index])
-		return -EINVAL;
+		goto out_with_lock;
+
+	read_unlock_bh(&omx_peer_lock);
 	return 0;
+
+ out_with_lock:
+	read_unlock_bh(&omx_peer_lock);
+	return err;
 }
 
 int
@@ -187,20 +214,28 @@ omx_peer_lookup_by_index(uint32_t index,
 			 uint64_t *board_addr, char *hostname)
 {
 	struct omx_peer *peer;
+	int err = -EINVAL;
+
+	read_lock_bh(&omx_peer_lock);
 
 	if (index >= omx_peers_nr)
-		return -EINVAL;
+		goto out_with_lock;
 
 	peer = omx_peer_array[index];
 	if (!peer)
-		return -EINVAL;
+		goto out_with_lock;
 
 	if (board_addr)
 		*board_addr = peer->board_addr;
 	if (hostname)
 		strcpy(hostname, peer->hostname);
 
+	read_unlock_bh(&omx_peer_lock);
 	return 0;
+
+ out_with_lock:
+	read_unlock_bh(&omx_peer_lock);
+	return err;
 }
 
 int
@@ -232,6 +267,8 @@ omx_peer_lookup_by_hostname(char *hostname,
 {
 	int i;
 
+	read_lock_bh(&omx_peer_lock);
+
 	for(i=0; i<omx_peers_nr; i++) {
 		struct omx_peer *peer = omx_peer_array[i];
 		if (!strcmp(hostname, peer->hostname)) {
@@ -239,10 +276,12 @@ omx_peer_lookup_by_hostname(char *hostname,
 				*index = i;
 			if (board_addr)
 				*board_addr = peer->board_addr;
+			read_unlock_bh(&omx_peer_lock);
 			return 0;
 		}
 	}
 
+	read_unlock_bh(&omx_peer_lock);
 	return -EINVAL;
 }
 
@@ -252,7 +291,7 @@ omx_peers_init(void)
 	int err;
 	int i;
 
-	spin_lock_init(&omx_peer_lock);
+	rwlock_init(&omx_peer_lock);
 
 	omx_peers_nr = 0;
 
