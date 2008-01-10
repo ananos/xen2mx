@@ -26,6 +26,7 @@
 #include <linux/mutex.h>
 #endif
 
+#include "omx_hal.h"
 #include "omx_peer.h"
 
 struct omx_endpoint;

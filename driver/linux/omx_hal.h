@@ -99,6 +99,7 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 
 #ifndef OMX_HAVE_MUTEX
 /* mutex introduced in 2.6.16 */
+#include <asm/semaphore.h>
 #define mutex semaphore
 #define mutex_init(m) sema_init(m, 1)
 #define mutex_lock(m) down(m)
