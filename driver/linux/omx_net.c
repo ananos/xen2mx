@@ -535,6 +535,10 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 		goto out_with_rcu_lock;
 	}
 
+	/* take a reference on the iface and release the lock */
+	kref_get(&iface->refcount);
+	rcu_read_unlock();
+
 	/* lock the list of endpoints in the iface */
 	write_lock_bh(&iface->endpoint_lock);
 
@@ -547,7 +551,6 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 
 	iface->endpoints[endpoint->endpoint_index] = endpoint ;
 	iface->endpoint_nr++;
-	kref_get(&iface->refcount);
 	endpoint->iface = iface;
 
 	/* mark the endpoint as open here so that anybody removing this
@@ -557,12 +560,13 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	endpoint->status = OMX_ENDPOINT_STATUS_OK;
 
 	write_unlock_bh(&iface->endpoint_lock);
-	rcu_read_unlock();
-
 	return 0;
 
  out_with_endpoints_locked:
 	write_unlock_bh(&iface->endpoint_lock);
+	omx_iface_release(iface);
+	goto out;
+
  out_with_rcu_lock:
 	rcu_read_unlock();
  out:
@@ -630,6 +634,9 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 	if (!iface)
 		goto out_with_lock;
 
+	kref_get(&iface->refcount);
+	rcu_read_unlock();
+
 	read_lock(&iface->endpoint_lock);
         if (endpoint_index >= omx_endpoint_max)
 		goto out_with_iface_lock;
@@ -644,11 +651,14 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 	}
 
 	read_unlock(&iface->endpoint_lock);
-	rcu_read_unlock();
+	omx_iface_release(iface);
 	return 0;
 
  out_with_iface_lock:
 	read_unlock(&iface->endpoint_lock);
+	omx_iface_release(iface);
+	goto out;
+
  out_with_lock:
 	rcu_read_unlock();
  out:
