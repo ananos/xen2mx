@@ -5,8 +5,11 @@
 
 * store peer_index in board and update peer_index with set_hostname
 
-* optimize peer table locking to avoid locks on the critical path
 * disable incoming packets and ioctl while updating the peer table
+
+* revert back to per-endpoint idr
+* add a per-endpoint incremented magic (stored in the handle) to ensure
+  that the pull wire handle cannot be reused right after being done
 
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?

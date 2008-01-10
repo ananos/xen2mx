@@ -21,6 +21,8 @@
 #include <linux/string.h>
 #include <linux/spinlock.h>
 #include <linux/list.h>
+#include <asm/semaphore.h>
+#include <linux/rcupdate.h>
 
 #include "omx_common.h"
 #include "omx_peer.h"
@@ -31,9 +33,9 @@
 /* defined as a module parameter */
 extern int omx_peer_max;
 
-static rwlock_t omx_peer_lock;
 static struct omx_peer ** omx_peer_array;
 static struct list_head * omx_peer_addr_hash_array;
+struct mutex omx_peers_mutex; /* big mutex protecting concurrent modification, readers are protected by RCU */
 static int omx_peer_next_nr;
 
 #define OMX_PEER_ADDR_HASH_NR 256
@@ -56,18 +58,21 @@ omx_peers_clear(void)
 
 	dprintk(PEER, "clearing all peers\n");
 
-	write_lock_bh(&omx_peer_lock);
+	mutex_lock(&omx_peers_mutex);
+
 	for(i=0; i<omx_peer_max; i++) {
 		struct omx_peer * peer = omx_peer_array[i];
 		if (!peer)
 			continue;
+		list_del_rcu(&peer->addr_hash_elt);
+		rcu_assign_pointer(omx_peer_array[i], NULL);
+		synchronize_rcu();
 		kfree(peer->hostname);
-		list_del(&peer->addr_hash_elt);
 		kfree(peer);
-		omx_peer_array[i] = NULL;
 	}
 	omx_peer_next_nr = 0;
-	write_unlock_bh(&omx_peer_lock);
+
+	mutex_unlock(&omx_peers_mutex);
 }
 
 static int
@@ -107,7 +112,7 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	peer->board_addr = board_addr;
 	peer->hostname = kstrdup(hostname, GFP_KERNEL);
 
-	write_lock_bh(&omx_peer_lock);
+	mutex_lock(&omx_peers_mutex);
 
 	err = -ENOMEM;
 	if (omx_peer_next_nr == omx_peer_max)
@@ -115,7 +120,8 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 
 	hash = omx_peer_addr_hash(board_addr);
 
-	list_for_each_entry(existing, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
+	rcu_read_lock();
+	list_for_each_entry_rcu(existing, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
 		if (existing->board_addr == board_addr) {
 			printk(KERN_INFO "Open-MX: Cannot add already existing peer address %012llx\n",
 			       (unsigned long long) board_addr);
@@ -123,6 +129,7 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 			goto out_with_lock;
 		}
 	}
+	rcu_read_unlock();
 
 	peer->index = omx_peer_next_nr;
 
@@ -136,15 +143,16 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 		peer->reverse_index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 	}
 
-	list_add_tail(&peer->addr_hash_elt, &omx_peer_addr_hash_array[hash]);
-	omx_peer_array[omx_peer_next_nr] = peer;
+	list_add_tail_rcu(&peer->addr_hash_elt, &omx_peer_addr_hash_array[hash]);
+	rcu_assign_pointer(omx_peer_array[omx_peer_next_nr], peer);
 	omx_peer_next_nr++;
-	write_unlock_bh(&omx_peer_lock);
+
+	mutex_unlock(&omx_peers_mutex);
 
 	return 0;
 
  out_with_lock:
-	write_unlock_bh(&omx_peer_lock);
+	mutex_unlock(&omx_peers_mutex);
 	kfree(peer->hostname);
 	kfree(peer);	
  out:
@@ -160,9 +168,9 @@ omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
 	if (index >= omx_peer_max)
 		goto out;
 
-	read_lock_bh(&omx_peer_lock);
+	rcu_read_lock();
 
-	peer = omx_peer_array[index];
+	peer = rcu_dereference(omx_peer_array[index]);
 	if (!peer)
 		goto out_with_lock;
 
@@ -176,11 +184,11 @@ omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
 
 	peer->reverse_index = reverse_index;
 
-	read_unlock_bh(&omx_peer_lock);
+	rcu_read_unlock();
 	return 0;
 
  out_with_lock:
-	read_unlock_bh(&omx_peer_lock);
+	rcu_read_unlock();
  out:
 	return err;
 }
@@ -194,20 +202,20 @@ omx_set_target_peer(struct omx_hdr *mh, uint16_t index)
 	if (index >= omx_peer_max)
 		goto out;
 
-	read_lock_bh(&omx_peer_lock);
+	rcu_read_lock();
 
-	peer = omx_peer_array[index];
+	peer = rcu_dereference(omx_peer_array[index]);
 	if (!peer)
 		goto out_with_lock;
 
 	omx_board_addr_to_ethhdr_dst(&mh->head.eth, peer->board_addr);
 	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, peer->reverse_index);
 
-	read_unlock_bh(&omx_peer_lock);
+	rcu_read_unlock();
 	return 0;
 
  out_with_lock:
-	read_unlock_bh(&omx_peer_lock);
+	rcu_read_unlock();
  out:
 	return err;
 }
@@ -233,9 +241,9 @@ omx_peer_lookup_by_index(uint32_t index,
 	if (index >= omx_peer_max)
 		goto out;
 
-	read_lock_bh(&omx_peer_lock);
+	rcu_read_lock();
 
-	peer = omx_peer_array[index];
+	peer = rcu_dereference(omx_peer_array[index]);
 	if (!peer)
 		goto out_with_lock;
 
@@ -244,11 +252,11 @@ omx_peer_lookup_by_index(uint32_t index,
 	if (hostname)
 		strcpy(hostname, peer->hostname);
 
-	read_unlock_bh(&omx_peer_lock);
+	rcu_read_unlock();
 	return 0;
 
  out_with_lock:
-	read_unlock_bh(&omx_peer_lock);
+	rcu_read_unlock();
  out:
 	return err;
 }
@@ -262,7 +270,8 @@ omx_peer_lookup_by_addr(uint64_t board_addr,
 
 	hash = omx_peer_addr_hash(board_addr);
 
-	list_for_each_entry(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
+	rcu_read_lock();
+	list_for_each_entry_rcu(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
 		if (peer->board_addr == board_addr) {
 			if (index)
 				*index = peer->index;
@@ -271,6 +280,7 @@ omx_peer_lookup_by_addr(uint64_t board_addr,
 			return 0;
 		}
 	}
+	rcu_read_unlock();
 
 	return -EINVAL;
 
@@ -282,21 +292,20 @@ omx_peer_lookup_by_hostname(char *hostname,
 {
 	int i;
 
-	read_lock_bh(&omx_peer_lock);
-
+	rcu_read_lock();
 	for(i=0; i<omx_peer_max; i++) {
-		struct omx_peer *peer = omx_peer_array[i];
+		struct omx_peer *peer = rcu_dereference(omx_peer_array[i]);
 		if (!strcmp(hostname, peer->hostname)) {
 			if (index)
 				*index = i;
 			if (board_addr)
 				*board_addr = peer->board_addr;
-			read_unlock_bh(&omx_peer_lock);
+			rcu_read_unlock();
 			return 0;
 		}
 	}
+	rcu_read_unlock();
 
-	read_unlock_bh(&omx_peer_lock);
 	return -EINVAL;
 }
 
@@ -306,7 +315,7 @@ omx_peers_init(void)
 	int err;
 	int i;
 
-	rwlock_init(&omx_peer_lock);
+	mutex_init(&omx_peers_mutex);
 
 	omx_peer_next_nr = 0;
 
