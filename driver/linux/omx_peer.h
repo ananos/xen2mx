@@ -30,6 +30,8 @@ extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *
 extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t *index);
 extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uint32_t *index);
 
+#define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
+
 struct omx_peer {
 	uint64_t board_addr;
 	char *hostname;

@@ -177,7 +177,7 @@ omx_iface_set_hostname(uint8_t board_index, char * hostname)
 	old_hostname = iface->peer.hostname;
 	iface->peer.hostname = new_hostname;
 	kfree(old_hostname);
-	
+
 	/* FIXME: update peer table */
 
 	read_unlock(&omx_iface_lock);
@@ -250,6 +250,7 @@ omx_iface_attach(struct net_device * ifp)
 	snprintf(hostname, OMX_HOSTNAMELEN_MAX, "%s:%d", omx_current_utsname.nodename, i);
 	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 	iface->peer.hostname = hostname;
+	iface->peer.index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 
 	iface->eth_ifp = ifp;
 	iface->endpoint_nr = 0;

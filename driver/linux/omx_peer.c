@@ -31,8 +31,6 @@
 /* defined as a module parameter */
 extern int omx_peer_max;
 
-#define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
-
 static spinlock_t omx_peer_lock;
 static struct omx_peer ** omx_peer_array;
 static struct list_head * omx_peer_addr_hash_array;
