@@ -29,6 +29,9 @@
 #define ETH_P_OMX DEFAULT_ETH_P_OMX
 #endif
 
+#define OMX_ENDPOINT_INDEX_MAX 256
+#define OMX_PEER_INDEX_MAX 65536
+
 enum omx_pkt_type {
 	/* must start with NONE and end with MAX */
 	OMX_PKT_TYPE_NONE=0,

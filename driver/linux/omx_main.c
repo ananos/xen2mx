@@ -149,6 +149,22 @@ omx_init(void)
 	int ret;
 
 	printk(KERN_INFO "Open-MX " VERSION " initializing...\n");
+
+	printk(KERN_INFO "Open-MX: configured for %d endpoints on %d interfaces with %d peers\n",
+	       omx_endpoint_max, omx_iface_max, omx_peer_max);
+	if (omx_endpoint_max > OMX_ENDPOINT_INDEX_MAX) {
+		printk(KERN_INFO "Open-MX: Cannot use more than %d endpoints per board\n",
+		       OMX_ENDPOINT_INDEX_MAX);
+		ret = -EINVAL;
+		goto out;
+	}
+	if (omx_peer_max > OMX_PEER_INDEX_MAX) {
+		printk(KERN_INFO "Open-MX: Cannot use more than %d peers\n",
+		       OMX_PEER_INDEX_MAX);
+		ret = -EINVAL;
+		goto out;
+	}		
+
 	printk(KERN_INFO "Open-MX: using Ethertype 0x%lx\n",
 	       (unsigned long) ETH_P_OMX);
 	printk(KERN_INFO "Open-MX: requires MTU >= %ld\n",
@@ -156,6 +172,7 @@ omx_init(void)
 	printk(KERN_INFO "Open-MX: using %ld x %ldkB pull replies per request\n",
 	       (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
 	       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);
+
 #ifdef OMX_DEBUG
 	if (omx_TINY_packet_loss)
 		printk(KERN_INFO "Open-MX: simulating tiny packet loss every %ld packets\n",
