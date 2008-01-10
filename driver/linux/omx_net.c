@@ -655,6 +655,10 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
  * Netdevice notifier
  */
 
+/*
+ * There are no restrictions on this callback since this is a raw notifier chain,
+ * it can block, allocate, ...
+ */
 static int
 omx_netdevice_notifier_cb(struct notifier_block *unused,
 			   unsigned long event, void *ptr)
