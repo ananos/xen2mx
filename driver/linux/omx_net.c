@@ -267,7 +267,7 @@ omx_iface_attach(struct net_device * ifp)
 	}
 
 	kref_init(&iface->refcount);
-	rwlock_init(&iface->endpoint_lock);
+	mutex_init(&iface->endpoints_mutex);
 	iface->index = i;
 	omx_iface_nr++;
 	rcu_assign_pointer(omx_ifaces[i], iface);
@@ -324,12 +324,14 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	/* if force, close all endpoints.
 	 * if not force, error if some endpoints are open.
 	 */
-	write_lock_bh(&iface->endpoint_lock);
+
+	mutex_lock(&iface->endpoints_mutex);
+
 	ret = -EBUSY;
 	if (!force && iface->endpoint_nr) {
 		printk(KERN_INFO "Open-MX: cannot detach interface #%d '%s', still %d endpoints open\n",
 		       iface->index, iface->eth_ifp->name, iface->endpoint_nr);
-		write_unlock_bh(&iface->endpoint_lock);
+		mutex_unlock(&iface->endpoints_mutex);
 		goto out;
 	}
 
@@ -355,7 +357,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
 		 */
 	}
 
-	write_unlock_bh(&iface->endpoint_lock);
+	mutex_unlock(&iface->endpoints_mutex);
 
 	printk(KERN_INFO "Open-MX: detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
 
@@ -540,7 +542,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	rcu_read_unlock();
 
 	/* lock the list of endpoints in the iface */
-	write_lock_bh(&iface->endpoint_lock);
+	mutex_lock(&iface->endpoints_mutex);
 
 	/* add the endpoint */
 	ret = -EBUSY;
@@ -549,7 +551,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 		goto out_with_endpoints_locked;
 	}
 
-	iface->endpoints[endpoint->endpoint_index] = endpoint ;
+	rcu_assign_pointer(iface->endpoints[endpoint->endpoint_index], endpoint);
 	iface->endpoint_nr++;
 	endpoint->iface = iface;
 
@@ -559,11 +561,11 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	 */
 	endpoint->status = OMX_ENDPOINT_STATUS_OK;
 
-	write_unlock_bh(&iface->endpoint_lock);
+	mutex_unlock(&iface->endpoints_mutex);
 	return 0;
 
  out_with_endpoints_locked:
-	write_unlock_bh(&iface->endpoint_lock);
+	mutex_unlock(&iface->endpoints_mutex);
 	omx_iface_release(iface);
 	goto out;
 
@@ -593,16 +595,17 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 
 	/* lock the list of endpoints in the iface, if needed */
 	if (!ifacelocked)
-		write_lock_bh(&iface->endpoint_lock);
+		mutex_lock(&iface->endpoints_mutex);
 
 	BUG_ON(iface->endpoints[endpoint->endpoint_index] != endpoint);
-	iface->endpoints[endpoint->endpoint_index] = NULL;
+	rcu_assign_pointer(iface->endpoints[endpoint->endpoint_index], NULL);
+	synchronize_rcu();
 
 	/* decrease the number of endpoints */
 	iface->endpoint_nr--;
 
 	if (!ifacelocked)
-		write_unlock_bh(&iface->endpoint_lock);
+		mutex_unlock(&iface->endpoints_mutex);
 }
 
 /*
@@ -632,16 +635,14 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 	rcu_read_lock();
 	iface = rcu_dereference(omx_ifaces[board_index]);
 	if (!iface)
-		goto out_with_lock;
+		goto out_with_rcu_lock;
 
-	kref_get(&iface->refcount);
-	rcu_read_unlock();
+	/* keep the rcu lock */
 
-	read_lock(&iface->endpoint_lock);
         if (endpoint_index >= omx_endpoint_max)
-		goto out_with_iface_lock;
+		goto out_with_rcu_lock;
 
-	endpoint = iface->endpoints[endpoint_index];
+	endpoint = rcu_dereference(iface->endpoints[endpoint_index]);
 	if (endpoint) {
 		*closed = 0;
 		*pid = endpoint->opener_pid;
@@ -650,16 +651,10 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 		*closed = 1;
 	}
 
-	read_unlock(&iface->endpoint_lock);
-	omx_iface_release(iface);
+	rcu_read_unlock();
 	return 0;
 
- out_with_iface_lock:
-	read_unlock(&iface->endpoint_lock);
-	omx_iface_release(iface);
-	goto out;
-
- out_with_lock:
+ out_with_rcu_lock:
 	rcu_read_unlock();
  out:
 	return ret;

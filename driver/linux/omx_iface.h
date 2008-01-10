@@ -22,6 +22,9 @@
 #include <linux/netdevice.h>
 #include <linux/spinlock.h>
 #include <linux/kref.h>
+#ifdef OMX_HAVE_MUTEX
+#include <linux/mutex.h>
+#endif
 
 #include "omx_peer.h"
 
@@ -40,7 +43,7 @@ struct omx_iface {
 	struct net_device * eth_ifp;
 	struct omx_peer peer;
 
-	rwlock_t endpoint_lock;
+	struct mutex endpoints_mutex;
 	enum omx_iface_status status;
 	struct kref refcount;
 	int endpoint_nr;

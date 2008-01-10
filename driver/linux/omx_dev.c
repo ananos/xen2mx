@@ -306,16 +306,17 @@ omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 	struct omx_endpoint * endpoint;
 	int err;
 
-	read_lock(&iface->endpoint_lock);
+	rcu_read_lock();
+
 	if (unlikely(index >= omx_endpoint_max)) {
 		err = -EINVAL;
-		goto out_with_iface_lock;
+		goto out_with_rcu_lock;
 	}
 
-	endpoint = iface->endpoints[index];
+	endpoint = rcu_dereference(iface->endpoints[index]);
 	if (unlikely(!endpoint)) {
 		err = -ENOENT;
-		goto out_with_iface_lock;
+		goto out_with_rcu_lock;
 	}
 
 	read_lock(&endpoint->lock);
@@ -327,13 +328,13 @@ omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 	kref_get(&endpoint->refcount);
 
 	read_unlock(&endpoint->lock);
-	read_unlock(&iface->endpoint_lock);
+	rcu_read_unlock();
 	return endpoint;
 
  out_with_endpoint_lock:
 	read_unlock(&endpoint->lock);
- out_with_iface_lock:
-	read_unlock(&iface->endpoint_lock);
+ out_with_rcu_lock:
+	rcu_read_unlock();
 	return ERR_PTR(err);
 }
 
