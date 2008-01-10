@@ -21,7 +21,9 @@
 #include <linux/string.h>
 #include <linux/spinlock.h>
 #include <linux/list.h>
-#include <asm/semaphore.h>
+#ifdef OMX_HAVE_MUTEX
+#include <linux/mutex.h>
+#endif
 #include <linux/rcupdate.h>
 
 #include "omx_common.h"

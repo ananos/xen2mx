@@ -97,6 +97,14 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 #define omx_current_utsname system_utsname
 #endif
 
+#ifndef OMX_HAVE_MUTEX
+/* mutex introduced in 2.6.16 */
+#define mutex semaphore
+#define mutex_init(m) sema_init(m, 1)
+#define mutex_lock(m) down(m)
+#define mutex_unlock(m) up(m)
+#endif
+
 #endif /* __omx_hal_h__ */
 
 /*

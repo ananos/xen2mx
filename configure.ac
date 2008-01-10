@@ -187,6 +187,15 @@ else
   AC_MSG_RESULT(no)
 fi
 
+# mutexes appeared in 2.6.16
+AC_MSG_CHECKING(whether mutexes are available)
+if test -e ${LINUX_HDR}/include/linux/mutex.h > /dev/null ; then
+  echo "#define OMX_HAVE_MUTEX 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
 # add the footer
 echo "" >> ${TMP_CHECKS_PATH}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_PATH}
