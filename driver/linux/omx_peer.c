@@ -91,8 +91,9 @@ omx_peer_is_local(uint64_t board_addr)
 int
 omx_peer_add(uint64_t board_addr, char *hostname)
 {
-	struct omx_peer * peer;
+	struct omx_peer * peer, * existing;
 	uint8_t hash;
+	int err;
 
 	if (omx_peers_nr == omx_peer_max)
 		return -ENOMEM;
@@ -107,9 +108,18 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	peer->board_addr = board_addr;
 	peer->hostname = kstrdup(hostname, GFP_KERNEL);
 
+	write_lock_bh(&omx_peer_lock);
 	hash = omx_peer_addr_hash(board_addr);
 
-	write_lock_bh(&omx_peer_lock);
+	list_for_each_entry(existing, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
+		if (existing->board_addr == board_addr) {
+			printk(KERN_INFO "Open-MX: Cannot add already existing peer address %012llx\n",
+			       (unsigned long long) board_addr);
+			err = -EBUSY;
+			goto out_with_peer;
+		}
+	}
+
 	peer->index = omx_peers_nr;
 
 	if (omx_peer_is_local(board_addr)) {
@@ -128,6 +138,12 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	write_unlock_bh(&omx_peer_lock);
 
 	return 0;
+
+ out_with_peer:
+	kfree(peer->hostname);
+	kfree(peer);	
+	write_unlock_bh(&omx_peer_lock);
+	return err;
 }
 
 int
