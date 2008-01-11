@@ -128,6 +128,7 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 			printk(KERN_INFO "Open-MX: Cannot add already existing peer address %012llx\n",
 			       (unsigned long long) board_addr);
 			err = -EBUSY;
+			rcu_read_unlock();
 			goto out_with_lock;
 		}
 	}
