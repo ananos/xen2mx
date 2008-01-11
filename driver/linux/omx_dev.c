@@ -190,15 +190,14 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 
 	/* test whether the endpoint is ok to be open
 	 * and mark it as initializing */
-	write_lock_bh(&endpoint->lock);
+	spin_lock(&endpoint->status_lock);
 	ret = -EINVAL;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_FREE) {
-		write_unlock_bh(&endpoint->lock);
+		spin_unlock(&endpoint->status_lock);
 		goto out;
 	}
 	endpoint->status = OMX_ENDPOINT_STATUS_INITIALIZING;
-	kref_init(&endpoint->refcount);
-	write_unlock_bh(&endpoint->lock);
+	spin_unlock(&endpoint->status_lock);
 
 	/* alloc internal fields */
 	ret = omx_endpoint_alloc_resources(endpoint);
@@ -239,20 +238,20 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 {
 	int ret;
 
-	write_lock_bh(&endpoint->lock);
+	spin_lock(&endpoint->status_lock);
 
 	/* test whether the endpoint is ok to be closed */
 	ret = -EBUSY;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
 		/* only CLOSING and OK endpoints may be attached to the iface */
 		BUG_ON(endpoint->status != OMX_ENDPOINT_STATUS_CLOSING);
-		write_unlock_bh(&endpoint->lock);
+		spin_unlock(&endpoint->status_lock);
 		goto out;
 	}
 	/* mark it as closing so that nobody may use it again */
 	endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;
 
-	write_unlock_bh(&endpoint->lock);
+	spin_unlock(&endpoint->status_lock);
 
 	/* detach from the iface now so that nobody can acquire it */
 	omx_iface_detach_endpoint(endpoint, ifacelocked);
@@ -285,17 +284,19 @@ omx_endpoint_acquire_from_ioctl(struct omx_endpoint * endpoint)
 {
 	int ret = -EINVAL;
 
-	read_lock(&endpoint->lock);
-	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
-		goto out_with_lock;
-
+	/*
+	 * no need to lock the endpoint status, just do things in the right order:
+	 * take a reference first, check the status and release if we were wrong
+	 */
 	kref_get(&endpoint->refcount);
 
-	read_unlock(&endpoint->lock);
+	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
+		goto out_with_kref;
+
 	return 0;
 
- out_with_lock:
-	read_unlock(&endpoint->lock);
+ out_with_kref:
+	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
 	return ret;
 }
 
@@ -319,20 +320,22 @@ omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
 		goto out_with_rcu_lock;
 	}
 
-	read_lock(&endpoint->lock);
-	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK)) {
-		err = -ENOENT;
-		goto out_with_endpoint_lock;
-	}
-
+	/*
+	 * no need to lock the endpoint status, just do things in the right order:
+	 * take a reference first, check the status and release if we were wrong
+	 */
 	kref_get(&endpoint->refcount);
 
-	read_unlock(&endpoint->lock);
+	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK)) {
+		err = -ENOENT;
+		goto out_with_kref;
+	}
+
 	rcu_read_unlock();
 	return endpoint;
 
- out_with_endpoint_lock:
-	read_unlock(&endpoint->lock);
+ out_with_kref:
+	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
  out_with_rcu_lock:
 	rcu_read_unlock();
 	return ERR_PTR(err);
@@ -351,7 +354,8 @@ omx_miscdev_open(struct inode * inode, struct file * file)
 	if (!endpoint)
 		return -ENOMEM;
 
-	rwlock_init(&endpoint->lock);
+	kref_init(&endpoint->refcount);
+	spin_lock_init(&endpoint->status_lock);
 	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
 
 	file->private_data = endpoint;

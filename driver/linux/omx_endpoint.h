@@ -51,8 +51,9 @@ struct omx_endpoint {
 	pid_t opener_pid;
 	char opener_comm[TASK_COMM_LEN];
 
-	rwlock_t lock;
 	enum omx_endpoint_status status;
+	spinlock_t status_lock;
+
 	struct kref refcount;
 	struct list_head list_elt; /* the list entry for the cleanup list */
 
