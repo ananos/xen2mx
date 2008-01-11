@@ -1347,7 +1347,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_ENDPOINT);
 		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad endpoint index within magic %ld",
-				 dst_magic);
+				 (unsigned long) dst_magic);
 		/* no need to nack this */
 		err = -EINVAL;
 		goto out;
@@ -1360,7 +1360,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		read_unlock_bh(&endpoint->pull_handles_lock);
 		omx_endpoint_release(endpoint);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
-		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad wire handle",
+		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad wire handle %ld",
 				 (unsigned long) dst_pull_handle);
 		/* no need to nack this */
 		err = -EINVAL;
@@ -1374,8 +1374,8 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		read_unlock_bh(&endpoint->pull_handles_lock);
 		omx_endpoint_release(endpoint);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
-		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad handle generation within magic",
-				 dst_magic);
+		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad handle generation within magic %ld",
+				 (unsigned long) dst_magic);
 		/* no need to nack this */
 		err = -EINVAL;
 		goto out;
