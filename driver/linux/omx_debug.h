@@ -34,7 +34,7 @@
 extern unsigned long omx_debug;
 #define omx_debug_type_enabled(type) (OMX_DEBUG_##type & omx_debug)
 
-#define dprintk(type, x...) do { if (omx_debug_type_enabled(type)) printk(KERN_INFO x); } while (0)
+#define dprintk(type, x...) do { if (omx_debug_type_enabled(type)) printk(KERN_INFO "OMXdbg-" #type ": " x); } while (0)
 
 #else /* OMX_DEBUG */
 #define dprintk(type, x...) do { /* nothing */ } while (0)
