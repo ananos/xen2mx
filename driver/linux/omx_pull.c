@@ -94,6 +94,7 @@ struct omx_pull_handle {
 	struct kref refcount;
 	struct list_head list_elt;
 	uint32_t idr_index;
+	uint32_t magic;
 
 	/* timer for retransmission */
 	struct timer_list retransmit_timer;
@@ -297,18 +298,35 @@ omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
  * Endpoint pull-magic management
  */
 
-#define OMX_ENDPOINT_PULL_MAGIC_XOR 0x22111867
-#define OMX_ENDPOINT_PULL_MAGIC_SHIFT 13
+/* the magic is an incremented 24bits generation followed by 8bits for the endpoint index */
+#define OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS 8
+#if OMX_ENDPOINT_INDEX_MAX > (1<<OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS)
+#error Endpoint index may not fit in the pull handle magic
+#endif
+
+#define OMX_PULL_HANDLE_MAGIC_XOR 0x21071980
+
+static uint32_t omx_endpoint_magic_generation = 0;
 
 static inline uint32_t
-omx_endpoint_pull_magic(struct omx_endpoint * endpoint)
+omx_generate_pull_magic(struct omx_endpoint * endpoint)
 {
-	uint32_t magic;
+	omx_endpoint_magic_generation++;
+	return ((omx_endpoint_magic_generation << OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS)
+		| endpoint->endpoint_index)
+	       ^ OMX_PULL_HANDLE_MAGIC_XOR;
+}
 
-	magic = (((uint32_t)endpoint->endpoint_index) << OMX_ENDPOINT_PULL_MAGIC_SHIFT)
-		^ OMX_ENDPOINT_PULL_MAGIC_XOR;
-
-	return magic;
+/*
+ * Acquire an endpoint using a pull handle magic given on the wire.
+ *
+ * Returns an endpoint acquired, on ERR_PTR(-errno) on error
+ */
+static inline struct omx_endpoint *
+omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
+{
+	uint8_t index = (magic ^ OMX_PULL_HANDLE_MAGIC_XOR) & ((1UL << OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS) - 1);
+	return omx_endpoint_acquire_by_iface_index(iface, index);
 }
 
 /******************************
@@ -348,7 +366,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_seqnum, cmd->remote_rdma_seqnum);
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_offset, handle->pulled_rdma_offset);
 	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->idr_index);
-	OMX_PKT_FIELD_FROM(pull_n->src_magic, omx_endpoint_pull_magic(endpoint));
+	OMX_PKT_FIELD_FROM(pull_n->src_magic, handle->magic);
 
 	/* block_length, frame_index, and first_frame_offset filled at actual send */
 
@@ -426,6 +444,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->frame_copying_bitmap = 0;
 	handle->already_requeued_first = 0;
 	handle->last_retransmit_jiffies = cmd->retransmit_delay_jiffies + jiffies;
+	handle->magic = omx_generate_pull_magic(endpoint);
 
 	/* initialize cached header */
 	err = omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
@@ -458,27 +477,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 }
 
 /*
- * Acquire an endpoint using a pull handle magic given on the wire.
- *
- * Returns an endpoint acquired, on ERR_PTR(-errno) on error
- */
-static inline struct omx_endpoint *
-omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
-{
-	uint32_t full_index;
-	uint8_t index;
-
-	full_index = (magic ^ OMX_ENDPOINT_PULL_MAGIC_XOR) >> OMX_ENDPOINT_PULL_MAGIC_SHIFT;
-	if (unlikely(full_index & (~0xff)))
-		/* index does not fit in 8 bits, drop the packet */
-		return NULL;
-
-	index = full_index;
-
-	return omx_endpoint_acquire_by_iface_index(iface, index);
-}
-
-/*
  * Acquire a pull handle through the corresponding endpoint
  * given by an pull magic and a wire handle.
  *
@@ -498,6 +496,12 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	read_lock_bh(&endpoint->pull_handles_lock);
 	handle = idr_find(&endpoint->pull_handles_idr, wire_handle);
 	if (unlikely(!handle))
+		goto out_with_lock;
+
+	/* check the full magic, if it's not fully equal, it could be
+	 * the same idr from another generation of pull handle.
+	 */
+	if (unlikely(handle->magic != magic))
 		goto out_with_lock;
 
 	kref_get(&handle->refcount);

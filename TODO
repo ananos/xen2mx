@@ -1,3 +1,5 @@
+* include acquire_ph_from_wire in callers and make nice counters
+
 * no ref from ph to endpoint, cleanup thread does del_timer_sync
 
 * need to wait for timers to be done before completing rmmod,
@@ -6,10 +8,6 @@
 * store peer_index in board and update peer_index with set_hostname
 
 * disable incoming packets and ioctl while updating the peer table
-
-* revert back to per-endpoint idr
-* add a per-endpoint incremented magic (stored in the handle) to ensure
-  that the pull wire handle cannot be reused right after being done
 
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
