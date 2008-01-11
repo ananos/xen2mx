@@ -68,6 +68,31 @@ omx_iface_find_by_ifp(struct net_device *ifp)
 }
 
 /*
+ * Returns the iface associated with an address.
+ * Used by the peer table, which needs a reference on the iface.
+ */
+struct omx_iface *
+omx_iface_find_by_addr(uint64_t addr)
+{
+	int i;
+
+	rcu_read_lock();
+
+	for (i=0; i<omx_iface_max; i++) {
+		struct omx_iface * iface = rcu_dereference(omx_ifaces[i]);
+		if (unlikely(iface && iface->peer.board_addr == addr)) {
+			kref_get(&iface->refcount);
+			rcu_read_unlock();
+			return iface;
+		}
+	}
+
+	rcu_read_unlock();
+
+	return NULL;
+}
+
+/*
  * Return the number of omx ifaces.
  */
 int
@@ -268,6 +293,10 @@ omx_iface_attach(struct net_device * ifp)
 
 	kref_init(&iface->refcount);
 	mutex_init(&iface->endpoints_mutex);
+
+	/* insert in the peer table */
+	omx_peers_notify_iface_attach(iface);
+
 	iface->index = i;
 	omx_iface_nr++;
 	rcu_assign_pointer(omx_ifaces[i], iface);
@@ -360,6 +389,9 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	mutex_unlock(&iface->endpoints_mutex);
 
 	printk(KERN_INFO "Open-MX: detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
+
+	/* remove from the peer table */
+	omx_peers_notify_iface_detach(iface);
 
 	/* remove the iface from the array */
 	rcu_assign_pointer(omx_ifaces[iface->index], NULL);

@@ -26,6 +26,7 @@
 #include <linux/mutex.h>
 #endif
 
+#include "omx_io.h"
 #include "omx_hal.h"
 #include "omx_peer.h"
 
@@ -60,6 +61,7 @@ extern int omx_ifaces_store(const char *buf, size_t size);
 extern int omx_ifaces_get_count(void);
 extern int omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, char * ifacename);
 extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);
+extern struct omx_iface * omx_iface_find_by_addr(uint64_t addr);
 extern int omx_iface_get_counters(uint8_t board_index, int clear, uint64_t buffer_addr, uint32_t buffer_length);
 extern int omx_iface_set_hostname(uint8_t board_index, char * hostname);
 
