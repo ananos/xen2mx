@@ -492,12 +492,12 @@ omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 
 	endpoint = omx_endpoint_acquire_by_pull_magic(iface, magic);
-	if (!endpoint)
+	if (unlikely(IS_ERR(endpoint)))
 		goto out;
 
 	read_lock_bh(&endpoint->pull_handles_lock);
 	handle = idr_find(&endpoint->pull_handles_idr, wire_handle);
-	if (!handle)
+	if (unlikely(!handle))
 		goto out_with_lock;
 
 	kref_get(&handle->refcount);
