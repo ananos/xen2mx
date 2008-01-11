@@ -30,7 +30,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x101
+#define OMX_DRIVER_ABI_VERSION		0x102
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -664,10 +664,14 @@ enum omx_counter_index {
 	OMX_COUNTER_DROP_BAD_SESSION,
 	OMX_COUNTER_DROP_PULL_BAD_REPLIES,
 	OMX_COUNTER_DROP_PULL_BAD_REGION,
-	OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC,
+	OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC_ENDPOINT,
+	OMX_COUNTER_DROP_PULL_REPLY_BAD_WIRE_HANDLE,
+	OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION,
 	OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM,
 	OMX_COUNTER_DROP_PULL_REPLY_DUPLICATE,
-	OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC,
+	OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC_ENDPOINT,
+	OMX_COUNTER_DROP_NACK_MCP_BAD_WIRE_HANDLE,
+	OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC_HANDLE_GENERATION,
 	OMX_COUNTER_DROP_NOSYS_TYPE,
 	OMX_COUNTER_DROP_UNKNOWN_TYPE,
 
@@ -758,21 +762,29 @@ omx_strcounter(enum omx_counter_index index)
 		return "Drop Pull Bad Number of Replies";
 	case OMX_COUNTER_DROP_PULL_BAD_REGION:
 		return "Drop Pull Bad Region";
-	case OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC:
-		return "Drop Pull Reply Bad Magic";
+	case OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC_ENDPOINT:
+		return "Drop Pull Reply Bad Endpoint in Magic";
+	case OMX_COUNTER_DROP_PULL_REPLY_BAD_WIRE_HANDLE:
+		return "Drop Pull Reply Bad Wire Handle";
+	case OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION:
+		return "Drop Pull Reply Bad Handle Generation in Magic";
 	case OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM:
 		return "Drop Pull Reply Bad Frame SeqNum";
 	case OMX_COUNTER_DROP_PULL_REPLY_DUPLICATE:
 		return "Drop Pull Reply Duplicate";
-	case OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC:
-		return "Drop Nack MCP Bad Magic";
+	case OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC_ENDPOINT:
+		return "Drop Nack MCP Bad Endpoint in Magic";
+	case OMX_COUNTER_DROP_NACK_MCP_BAD_WIRE_HANDLE:
+		return "Drop Nack MCP Bad Wire Handle";
+	case OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC_HANDLE_GENERATION:
+		return "Drop Nack MCP Bad Handle Generation in Magic";
 	case OMX_COUNTER_DROP_NOSYS_TYPE:
 		return "Drop Not Implemented Packet Type";
 	case OMX_COUNTER_DROP_UNKNOWN_TYPE:
 		return "Drop Unknown Packet Type";
 	default:
 		return "** Unknown **";
-	}	
+	}
 }
 
 #endif /* __omx_io_h__ */

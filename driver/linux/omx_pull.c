@@ -477,57 +477,25 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 }
 
 /*
- * Acquire a pull handle through the corresponding endpoint
- * given by an pull magic and a wire handle.
+ * Acquire a handle.
  *
- * May be called by the bottom half.
+ * Either another reference on this handle should be owned,
+ * or the endpoint lock should be hold.
  */
-static inline struct omx_pull_handle *
-omx_pull_handle_acquire_by_wire(struct omx_iface * iface,
-				uint32_t magic, uint32_t wire_handle)
+static inline void
+omx_pull_handle_acquire(struct omx_pull_handle * handle)
 {
-	struct omx_pull_handle * handle;
-	struct omx_endpoint * endpoint;
-
-	endpoint = omx_endpoint_acquire_by_pull_magic(iface, magic);
-	if (unlikely(IS_ERR(endpoint)))
-		goto out;
-
-	read_lock_bh(&endpoint->pull_handles_lock);
-
-	handle = idr_find(&endpoint->pull_handles_idr, wire_handle);
-	if (unlikely(!handle))
-		goto out_with_endpoint;
-
-	/* check the full magic, if it's not fully equal, it could be
-	 * the same idr from another generation of pull handle.
-	 */
-	if (unlikely(handle->magic != magic))
-		goto out_with_endpoint;
-
 	kref_get(&handle->refcount);
-
-	read_unlock_bh(&endpoint->pull_handles_lock);
-
-	/* release the endpoint reference since the handle owns one */
-	omx_endpoint_release(endpoint);
-
-	dprintk(PULL, "acquired pull handle %p\n", handle);
-	return handle;
-
- out_with_endpoint:
-	omx_endpoint_release(endpoint);
-	read_unlock_bh(&endpoint->pull_handles_lock);
- out:
-	return NULL;
 }
 
-/* Release an acquire pull handle */
-static void
+/*
+ * Release an acquired pull handle
+ */
+static inline void
 omx_pull_handle_release(struct omx_pull_handle * handle)
 {
 	kref_put(&handle->refcount, __omx_pull_handle_last_release);
-}	
+}
 
 /*
  * Takes an acquired and locked pull handle and complete it.
@@ -1044,6 +1012,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	uint32_t frame_seqnum = OMX_FROM_PKT_FIELD(pull_reply_n->frame_seqnum);
 	uint32_t msg_offset = OMX_FROM_PKT_FIELD(pull_reply_n->msg_offset);
 	uint32_t frame_seqnum_offset; /* unsigned to make seqnum offset easy to check */
+	struct omx_endpoint * endpoint;
 	struct omx_pull_handle * handle;
 	omx_frame_bitmask_t bitmap_mask;
 	int frame_from_second_block = 0;
@@ -1068,16 +1037,49 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out;
 	}
 
-	/* acquire the handle and endpoint */
-	handle = omx_pull_handle_acquire_by_wire(iface, dst_magic, dst_pull_handle);
-	if (unlikely(!handle)) {
-		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC);
-		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet unknown handle %d magic %d",
-				 dst_pull_handle, dst_magic);
+	/* acquire the endpoint */
+	endpoint = omx_endpoint_acquire_by_pull_magic(iface, dst_magic);
+	if (unlikely(IS_ERR(endpoint))) {
+		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_ENDPOINT);
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad endpoint index within magic %ld",
+				 (unsigned long) dst_magic);
 		/* no need to nack this */
 		err = -EINVAL;
 		goto out;
 	}
+	read_lock_bh(&endpoint->pull_handles_lock);
+
+	/* acquire the handle within the endpoint idr */
+	handle = idr_find(&endpoint->pull_handles_idr, dst_pull_handle);
+	if (unlikely(!handle)) {
+		read_unlock_bh(&endpoint->pull_handles_lock);
+		omx_endpoint_release(endpoint);
+		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad wire handle %ld",
+				 (unsigned long) dst_pull_handle);
+		/* no need to nack this */
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* check the full magic, if it's not fully equal, it could be
+	 * the same idr from another generation of pull handle.
+	 */
+	if (unlikely(handle->magic != dst_magic)) {
+		read_unlock_bh(&endpoint->pull_handles_lock);
+		omx_endpoint_release(endpoint);
+		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad handle generation within magic %ld",
+				 (unsigned long) dst_magic);
+		/* no need to nack this */
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* take a reference on the handle and release the endpoint since the handle owns it */
+	omx_pull_handle_acquire(handle);
+	read_unlock_bh(&endpoint->pull_handles_lock);
+	omx_endpoint_release(endpoint);
 
 	/* no session to check */
 
@@ -1308,10 +1310,14 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	enum omx_nack_type nack_type = OMX_FROM_PKT_FIELD(nack_mcp_n->nack_type);
 	uint32_t dst_pull_handle = OMX_FROM_PKT_FIELD(nack_mcp_n->src_pull_handle);
 	uint32_t dst_magic = OMX_FROM_PKT_FIELD(nack_mcp_n->src_magic);
+	struct omx_endpoint * endpoint;
 	struct omx_pull_handle * handle;
 	int err = 0;
 
 	omx_counter_inc(iface, RECV_NACK_MCP);
+
+	omx_recv_dprintk(eh, "NACK MCP type %s",
+			 omx_strnacktype(nack_type));
 
 	/* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
@@ -1336,20 +1342,53 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		peer_index = src_addr_peer_index;
 	}
 
-	/* acquire the handle */
-	handle = omx_pull_handle_acquire_by_wire(iface, dst_magic, dst_pull_handle);
+	/* acquire the endpoint */
+	endpoint = omx_endpoint_acquire_by_pull_magic(iface, dst_magic);
+	if (unlikely(IS_ERR(endpoint))) {
+		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_ENDPOINT);
+		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad endpoint index within magic %ld",
+				 dst_magic);
+		/* no need to nack this */
+		err = -EINVAL;
+		goto out;
+	}
+	read_lock_bh(&endpoint->pull_handles_lock);
+
+	/* acquire the handle within the endpoint idr */
+	handle = idr_find(&endpoint->pull_handles_idr, dst_pull_handle);
 	if (unlikely(!handle)) {
-		omx_counter_inc(iface, DROP_NACK_MCP_BAD_MAGIC);
-		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet unknown handle %d magic %d",
-				 dst_pull_handle, dst_magic);
+		read_unlock_bh(&endpoint->pull_handles_lock);
+		omx_endpoint_release(endpoint);
+		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
+		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad wire handle",
+				 (unsigned long) dst_pull_handle);
 		/* no need to nack this */
 		err = -EINVAL;
 		goto out;
 	}
 
-	omx_recv_dprintk(eh, "NACK MCP type %s",
-			 omx_strnacktype(nack_type));
+	/* check the full magic, if it's not fully equal, it could be
+	 * the same idr from another generation of pull handle.
+	 */
+	if (unlikely(handle->magic != dst_magic)) {
+		read_unlock_bh(&endpoint->pull_handles_lock);
+		omx_endpoint_release(endpoint);
+		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
+		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad handle generation within magic",
+				 dst_magic);
+		/* no need to nack this */
+		err = -EINVAL;
+		goto out;
+	}
 
+	/* take a reference on the handle and release the endpoint since the handle owns it */
+	omx_pull_handle_acquire(handle);
+	read_unlock_bh(&endpoint->pull_handles_lock);
+	omx_endpoint_release(endpoint);
+
+	/* no session to check */
+
+	/* lock the handle and complete it */
 	spin_lock(&handle->lock);
 	omx_pull_handle_done_notify(handle, nack_type);
 	omx_pull_handle_done_release(handle);

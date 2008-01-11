@@ -1,5 +1,3 @@
-* include acquire_ph_from_wire in callers and make nice counters
-
 * no ref from ph to endpoint, cleanup thread does del_timer_sync
 
 * need to wait for timers to be done before completing rmmod,
