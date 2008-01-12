@@ -25,18 +25,9 @@
 struct omx_endpoint;
 struct sk_buff;
 
-enum omx_user_region_status {
-	/* region is ready to be used */
-	OMX_USER_REGION_STATUS_OK,
-	/* region is being closed by somebody else */
-	OMX_USER_REGION_STATUS_CLOSING,
-};
-
 struct omx_user_region {
 	uint32_t id;
 
-	rwlock_t lock;
-	enum omx_user_region_status status;
 	struct kref refcount;
 
 	unsigned nr_segments;

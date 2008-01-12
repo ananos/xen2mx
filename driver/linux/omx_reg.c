@@ -151,8 +151,6 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 		goto out_with_usegs;
 	}
 
-	rwlock_init(&region->lock);
-	region->status = OMX_USER_REGION_STATUS_OK;
 	kref_init(&region->refcount);
 	region->total_length = 0;
 
@@ -181,8 +179,9 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 		write_unlock_bh(&endpoint->user_regions_lock);
 		goto out_with_region;
 	}
-	endpoint->user_regions[cmd.id] = region;
+
 	region->id = cmd.id;
+	endpoint->user_regions[cmd.id] = region;
 
 	write_unlock_bh(&endpoint->user_regions_lock);
 
@@ -215,33 +214,6 @@ __omx_user_region_last_release(struct kref * kref)
 	kfree(region);
 }
 
-static int
-omx__user_region_deregister(struct omx_endpoint * endpoint,
-			    struct omx_user_region * region)
-{
-	int err;
-
-	write_lock_bh(&region->lock);
-
-	err = -EINVAL;
-	if (unlikely(region->status != OMX_USER_REGION_STATUS_OK))
-		goto out_with_region_lock;
-
-	/* mark it as closing so that nobody may use it again */
-	region->status = OMX_USER_REGION_STATUS_CLOSING;
-
-	write_unlock_bh(&region->lock);
-
-	/* release our refcount now that other users cannot use again */
-	kref_put(&region->refcount, __omx_user_region_last_release);
-
-	return 0;
-
- out_with_region_lock:
-	write_unlock_bh(&region->lock);
-	return err;
-}
-
 int
 omx_user_region_deregister(struct omx_endpoint * endpoint,
 			   void __user * uparam)
@@ -263,10 +235,6 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	/* we don't change the array yet.
-	 * but taking a write lock could block the BH taking the read_lock
-	 * after preempting us. so we use a write_lock_bh anyway.
-	 */
 	write_lock_bh(&endpoint->user_regions_lock);
 
 	region = endpoint->user_regions[cmd.id];
@@ -275,13 +243,10 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 		goto out_with_endpoint_lock;
 	}
 
-	ret = omx__user_region_deregister(endpoint, region);
-	if (ret < 0)
-		goto out_with_endpoint_lock;
-
 	endpoint->user_regions[cmd.id] = NULL;
-	write_unlock_bh(&endpoint->user_regions_lock);
 
+	write_unlock_bh(&endpoint->user_regions_lock);
+	kref_put(&region->refcount, __omx_user_region_last_release);
 	return 0;
 
  out_with_endpoint_lock:
@@ -301,27 +266,23 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 {
 	struct omx_user_region * region;
 
-	read_lock(&endpoint->user_regions_lock);
 	if (unlikely(rdma_id >= OMX_USER_REGION_MAX))
-		goto out_with_endpoint_lock;
+		goto out;
+
+	read_lock(&endpoint->user_regions_lock);
+
 	region = endpoint->user_regions[rdma_id];
 	if (unlikely(!region))
-		goto out_with_endpoint_lock;
-
-	read_lock(&region->lock);
-	if (unlikely(region->status != OMX_USER_REGION_STATUS_OK))
-		goto out_with_region_lock;
+		goto out_with_lock;
 
 	kref_get(&region->refcount);
-	read_unlock(&region->lock);
-	read_unlock(&endpoint->user_regions_lock);
 
+	read_unlock(&endpoint->user_regions_lock);
 	return region;
 
- out_with_region_lock:
-	read_unlock(&region->lock);
- out_with_endpoint_lock:
+ out_with_lock:
 	read_unlock(&endpoint->user_regions_lock);
+ out:
 	return NULL;
 }
 
@@ -351,8 +312,10 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 
 		printk(KERN_INFO "Open-MX: Forcing deregister of window %d on endpoint %d board %d\n",
 		       i, endpoint->endpoint_index, endpoint->board_index);
-		omx__user_region_deregister(endpoint, region);
+
 		endpoint->user_regions[i] = NULL;
+
+		kref_put(&region->refcount, __omx_user_region_last_release);
 	}
 
 	write_unlock_bh(&endpoint->user_regions_lock);
