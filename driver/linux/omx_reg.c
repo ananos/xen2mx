@@ -324,6 +324,8 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 	struct omx_user_region * region;
 	int i;
 
+	write_lock_bh(&endpoint->user_regions_lock);
+
 	for(i=0; i<OMX_USER_REGION_MAX; i++) {
 		region = endpoint->user_regions[i];
 		if (!region)
@@ -334,6 +336,8 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 		omx__user_region_deregister(endpoint, region);
 		endpoint->user_regions[i] = NULL;
 	}
+
+	write_unlock_bh(&endpoint->user_regions_lock);
 }
 
 /*********************************
