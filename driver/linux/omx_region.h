@@ -30,6 +30,8 @@ struct omx_user_region {
 
 	struct kref refcount;
 
+	struct rcu_head rcu_head; /* rcu deferred releasing callback */
+
 	unsigned nr_segments;
 	unsigned long total_length;
 	struct omx_user_region_segment {

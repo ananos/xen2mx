@@ -21,6 +21,7 @@
 #include <linux/highmem.h>
 #include <linux/skbuff.h>
 #include <linux/spinlock.h>
+#include <linux/rcupdate.h>
 
 #include "omx_hal.h"
 #include "omx_io.h"
@@ -171,19 +172,19 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 
 	up_write(&current->mm->mmap_sem);
 
-	write_lock_bh(&endpoint->user_regions_lock);
+	spin_lock(&endpoint->user_regions_lock);
 
 	if (unlikely(endpoint->user_regions[cmd.id] != NULL)) {
 		printk(KERN_ERR "Open-MX: Cannot register busy region %d\n", cmd.id);
 		ret = -EBUSY;
-		write_unlock_bh(&endpoint->user_regions_lock);
+		spin_unlock(&endpoint->user_regions_lock);
 		goto out_with_region;
 	}
 
 	region->id = cmd.id;
-	endpoint->user_regions[cmd.id] = region;
+	rcu_assign_pointer(endpoint->user_regions[cmd.id], region);
 
-	write_unlock_bh(&endpoint->user_regions_lock);
+	spin_unlock(&endpoint->user_regions_lock);
 
 	kfree(usegs);
 	return 0;
@@ -214,6 +215,13 @@ __omx_user_region_last_release(struct kref * kref)
 	kfree(region);
 }
 
+static void
+__omx_user_region_rcu_release_callback(struct rcu_head *rcu_head)
+{
+	struct omx_user_region * region = container_of(rcu_head, struct omx_user_region, rcu_head);
+	kref_put(&region->refcount, __omx_user_region_last_release);
+}
+
 int
 omx_user_region_deregister(struct omx_endpoint * endpoint,
 			   void __user * uparam)
@@ -235,7 +243,7 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	write_lock_bh(&endpoint->user_regions_lock);
+	spin_lock(&endpoint->user_regions_lock);
 
 	region = endpoint->user_regions[cmd.id];
 	if (unlikely(!region)) {
@@ -243,14 +251,18 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 		goto out_with_endpoint_lock;
 	}
 
-	endpoint->user_regions[cmd.id] = NULL;
+	rcu_assign_pointer(endpoint->user_regions[cmd.id], NULL);
+	/*
+	 * since synchronize_rcu() is too expensive in this critical path,
+	 * just defer the actual releasing after the grace period
+	 */
+	call_rcu(&region->rcu_head, __omx_user_region_rcu_release_callback);
 
-	write_unlock_bh(&endpoint->user_regions_lock);
-	kref_put(&region->refcount, __omx_user_region_last_release);
+	spin_unlock(&endpoint->user_regions_lock);
 	return 0;
 
  out_with_endpoint_lock:
-	write_unlock_bh(&endpoint->user_regions_lock);
+	spin_unlock(&endpoint->user_regions_lock);
  out:
 	return ret;
 }
@@ -269,19 +281,19 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 	if (unlikely(rdma_id >= OMX_USER_REGION_MAX))
 		goto out;
 
-	read_lock(&endpoint->user_regions_lock);
+	rcu_read_lock();
 
-	region = endpoint->user_regions[rdma_id];
+	region = rcu_dereference(endpoint->user_regions[rdma_id]);
 	if (unlikely(!region))
-		goto out_with_lock;
+		goto out_with_rcu_lock;
 
 	kref_get(&region->refcount);
 
-	read_unlock(&endpoint->user_regions_lock);
+	rcu_read_unlock();
 	return region;
 
- out_with_lock:
-	read_unlock(&endpoint->user_regions_lock);
+ out_with_rcu_lock:
+	rcu_read_unlock();
  out:
 	return NULL;
 }
@@ -294,7 +306,7 @@ void
 omx_endpoint_user_regions_init(struct omx_endpoint * endpoint)
 {
 	memset(endpoint->user_regions, 0, sizeof(endpoint->user_regions));
-	rwlock_init(&endpoint->user_regions_lock);
+	spin_lock_init(&endpoint->user_regions_lock);
 }
 
 void
@@ -303,7 +315,7 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 	struct omx_user_region * region;
 	int i;
 
-	write_lock_bh(&endpoint->user_regions_lock);
+	spin_lock(&endpoint->user_regions_lock);
 
 	for(i=0; i<OMX_USER_REGION_MAX; i++) {
 		region = endpoint->user_regions[i];
@@ -313,12 +325,12 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 		printk(KERN_INFO "Open-MX: Forcing deregister of window %d on endpoint %d board %d\n",
 		       i, endpoint->endpoint_index, endpoint->board_index);
 
-		endpoint->user_regions[i] = NULL;
-
-		kref_put(&region->refcount, __omx_user_region_last_release);
+		rcu_assign_pointer(endpoint->user_regions[i], NULL);
+		/* just defer the actual releasing after the grace period */
+		call_rcu(&region->rcu_head, __omx_user_region_rcu_release_callback);
 	}
 
-	write_unlock_bh(&endpoint->user_regions_lock);
+	spin_unlock(&endpoint->user_regions_lock);
 }
 
 /*********************************
