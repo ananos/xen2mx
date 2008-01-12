@@ -96,7 +96,6 @@ omx_user_region_deregister_segments(struct omx_user_region * region)
 	int i;
 	for(i=0; i<region->nr_segments; i++)
 		omx_user_region_deregister_segment(&region->segments[i]);
-	kfree(region);
 }
 
 void
@@ -108,6 +107,7 @@ __omx_user_region_last_release(struct kref * kref)
 		region);
 
 	omx_user_region_deregister_segments(region);
+	kfree(region);
 }
 
 int
@@ -199,6 +199,7 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 
  out_with_region:
 	omx_user_region_deregister_segments(region);
+	kfree(region);
  out_with_usegs:
 	kfree(usegs);
  out:
