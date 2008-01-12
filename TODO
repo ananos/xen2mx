@@ -1,10 +1,3 @@
-* no ref from ph to endpoint, cleanup thread does del_timer_sync
-
-* need to wait for timers to be done before completing rmmod,
-  either with a reference or with del_timer_sync
-
-* disable incoming packets and ioctl while updating the peer table
-
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
@@ -35,14 +28,17 @@
   + call it when the connect session changed
 
 * pull fixes
-  + update the handle and send the request before the copy, except when the handle is done (will simplify ioat)
-  + only a single bitmap per handle
-  + keep the handle lock around check/set status + idr_remove at both places
+  + always keep handle in a endpoint list, maybe one for regular handles, and one for "timer-exit-pending" handles?
+  + no ref from ph to endpoint, cleanup thread does del_timer_sync using the above list
+  + keep the handle lock around check/set status + idr_remove + list modif at all places
   + set the status AFTER removing from idr and acquire takes the lock and check the status ? find an order to simplify things
   + check the pull handle status before mod_timer?
   + use a bitmask for timer/done/timer_exit pull handle status?
   + the timeout handler may be called during the copy, what if it reaches the timeout at this point? status boom
   + what if we re-request while done, get a bad rdmawin nack since window is closed, and thus try to done the handle again?
+* pull improvements
+  + update the handle (and send the request?) before the copy, except when the handle is done (will simplify ioat)
+  + only a single bitmap per handle
 
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
@@ -53,8 +49,6 @@
 * check pingpong contents
 
 * vectorial support, through isendv/irecvv
-
-* use rcu locking for various read/write locks?
 
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request
