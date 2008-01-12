@@ -206,11 +206,15 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 	return ret;
 }
 
-static void
+static int
 omx__user_region_deregister(struct omx_endpoint * endpoint,
 			    struct omx_user_region * region)
 {
+	int err;
+
 	write_lock_bh(&region->lock);
+
+	err = -EINVAL;
 	if (unlikely(region->status != OMX_USER_REGION_STATUS_OK))
 		goto out_with_region_lock;
 
@@ -222,10 +226,11 @@ omx__user_region_deregister(struct omx_endpoint * endpoint,
 	/* release our refcount now that other users cannot use again */
 	kref_put(&region->refcount, __omx_user_region_last_release);
 
-	return;
+	return 0;
 
  out_with_region_lock:
 	write_unlock_bh(&region->lock);
+	return err;
 }
 
 int
@@ -261,7 +266,10 @@ omx_user_region_deregister(struct omx_endpoint * endpoint,
 		goto out_with_endpoint_lock;
 	}
 
-	omx__user_region_deregister(endpoint, region);
+	ret = omx__user_region_deregister(endpoint, region);
+	if (ret < 0)
+		goto out_with_endpoint_lock;
+
 	endpoint->user_regions[cmd.id] = NULL;
 	write_unlock_bh(&endpoint->user_regions_lock);
 
