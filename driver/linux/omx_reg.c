@@ -34,8 +34,8 @@
 #endif
 #endif
 
-/***************************
- * User region registration
+/********************************************
+ * Low-level segments and pages registration
  */
 
 static int
@@ -98,17 +98,9 @@ omx_user_region_deregister_segments(struct omx_user_region * region)
 		omx_user_region_deregister_segment(&region->segments[i]);
 }
 
-void
-__omx_user_region_last_release(struct kref * kref)
-{
-	struct omx_user_region * region = container_of(kref, struct omx_user_region, refcount);
-
-	dprintk(KREF, "releasing the last reference on region %p\n",
-		region);
-
-	omx_user_region_deregister_segments(region);
-	kfree(region);
-}
+/**********************
+ * Region registration
+ */
 
 int
 omx_user_region_register(struct omx_endpoint * endpoint,
@@ -204,6 +196,23 @@ omx_user_region_register(struct omx_endpoint * endpoint,
 	kfree(usegs);
  out:
 	return ret;
+}
+
+/************************
+ * Region deregistration
+ */
+
+/* Called when the last reference on the region is released */
+void
+__omx_user_region_last_release(struct kref * kref)
+{
+	struct omx_user_region * region = container_of(kref, struct omx_user_region, refcount);
+
+	dprintk(KREF, "releasing the last reference on region %p\n",
+		region);
+
+	omx_user_region_deregister_segments(region);
+	kfree(region);
 }
 
 static int
