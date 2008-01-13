@@ -126,7 +126,6 @@ struct omx_pull_handle {
 };
 
 static void omx_pull_handle_timeout_handler(unsigned long data);
-static void omx_pull_handle_done_notify(struct omx_pull_handle * handle, uint8_t status);
 
 /*
  * Notes about locking:
@@ -239,19 +238,21 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	handle->already_requeued_first = 0;
 }
 
-/***************************************
- * Per-endpoint pull handles management
+/*
+ * Acquire a handle.
+ *
+ * Either another reference on this handle should be owned,
+ * or the endpoint lock should be hold.
  */
-
-int
-omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
+static inline void
+omx_pull_handle_acquire(struct omx_pull_handle * handle)
 {
-	INIT_LIST_HEAD(&endpoint->pull_handles_list);
-	idr_init(&endpoint->pull_handles_idr);
-	rwlock_init(&endpoint->pull_handles_lock);
-	return 0;
+	kref_get(&handle->refcount);
 }
 
+/*
+ * Actual freeing of a handle when the last reference is released
+ */
 static void
 __omx_pull_handle_last_release(struct kref * kref)
 {
@@ -266,6 +267,28 @@ __omx_pull_handle_last_release(struct kref * kref)
 
 	/* we don't depend on the endpoint anymore now, release the endpoint reference */
 	omx_endpoint_release(endpoint);
+}
+
+/*
+ * Release an acquired pull handle
+ */
+static inline void
+omx_pull_handle_release(struct omx_pull_handle * handle)
+{
+	kref_put(&handle->refcount, __omx_pull_handle_last_release);
+}
+
+/***************************************
+ * Per-endpoint pull handles management
+ */
+
+int
+omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
+{
+	INIT_LIST_HEAD(&endpoint->pull_handles_list);
+	idr_init(&endpoint->pull_handles_idr);
+	rwlock_init(&endpoint->pull_handles_lock);
+	return 0;
 }
 
 void
@@ -477,27 +500,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 }
 
 /*
- * Acquire a handle.
- *
- * Either another reference on this handle should be owned,
- * or the endpoint lock should be hold.
- */
-static inline void
-omx_pull_handle_acquire(struct omx_pull_handle * handle)
-{
-	kref_get(&handle->refcount);
-}
-
-/*
- * Release an acquired pull handle
- */
-static inline void
-omx_pull_handle_release(struct omx_pull_handle * handle)
-{
-	kref_put(&handle->refcount, __omx_pull_handle_last_release);
-}
-
-/*
  * Takes an acquired and locked pull handle and complete it.
  *
  * May be called by the BH after receiving a pull reply or a nack,
@@ -539,6 +541,35 @@ omx_pull_handle_timer_release(struct omx_pull_handle * handle)
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
 	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
 	__omx_pull_handle_done_release(handle);
+}
+
+/*
+ * Takes a locked and acquired pull handle
+ * and report an event to user-space.
+ *
+ * May be called by the BH after receiving a pull reply or a nack,
+ * and by the retransmit timer when expired.
+ */
+static void
+omx_pull_handle_done_notify(struct omx_pull_handle * handle,
+			    uint8_t status)
+{
+	struct omx_endpoint *endpoint = handle->endpoint;
+	struct omx_evt_pull_done event;
+
+	/* notify event */
+	event.status = status;
+	event.lib_cookie = handle->lib_cookie;
+	event.pulled_length = handle->total_length - handle->remaining_length;
+	event.local_rdma_id = handle->region->id;
+	omx_notify_exp_event(endpoint,
+			     OMX_EVT_PULL_DONE,
+			     &event, sizeof(event));
+
+	/* make sure the handle will be released, in case we are reporting truncation */
+	handle->frame_missing_bitmap = 0;
+	handle->frame_copying_bitmap = 0;
+	handle->remaining_length = 0;
 }
 
 /******************************
@@ -968,35 +999,6 @@ omx_recv_pull(struct omx_iface * iface,
 	omx_endpoint_release(endpoint);
  out:
 	return err;
-}
-
-/*
- * Takes a locked and acquired pull handle
- * and report an event to user-space.
- *
- * May be called by the BH after receiving a pull reply or a nack,
- * and by the retransmit timer when expired.
- */
-static void
-omx_pull_handle_done_notify(struct omx_pull_handle * handle,
-			    uint8_t status)
-{
-	struct omx_endpoint *endpoint = handle->endpoint;
-	struct omx_evt_pull_done event;
-
-	/* notify event */
-	event.status = status;
-	event.lib_cookie = handle->lib_cookie;
-	event.pulled_length = handle->total_length - handle->remaining_length;
-	event.local_rdma_id = handle->region->id;
-	omx_notify_exp_event(endpoint,
-			     OMX_EVT_PULL_DONE,
-			     &event, sizeof(event));
-
-	/* make sure the handle will be released, in case we are reporting truncation */
-	handle->frame_missing_bitmap = 0;
-	handle->frame_copying_bitmap = 0;
-	handle->remaining_length = 0;
 }
 
 int
