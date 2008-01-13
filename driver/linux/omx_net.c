@@ -395,8 +395,9 @@ omx_iface_detach(struct omx_iface * iface, int force)
 
 	/* remove the iface from the array */
 	rcu_assign_pointer(omx_ifaces[iface->index], NULL);
-	synchronize_rcu();
 	omx_iface_nr--;
+	/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
+	synchronize_rcu();
 
 	/* let the last reference release the iface's internals */
 	kref_put(&iface->refcount, __omx_iface_last_release);
@@ -631,6 +632,7 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 
 	BUG_ON(iface->endpoints[endpoint->endpoint_index] != endpoint);
 	rcu_assign_pointer(iface->endpoints[endpoint->endpoint_index], NULL);
+	/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
 	synchronize_rcu();
 
 	/* decrease the number of endpoints */

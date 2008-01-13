@@ -21,6 +21,7 @@
 
 #include <linux/spinlock.h>
 #include <linux/kref.h>
+#include <linux/rcupdate.h>
 
 struct omx_endpoint;
 struct sk_buff;

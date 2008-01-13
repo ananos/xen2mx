@@ -72,6 +72,7 @@ omx_peers_clear(void)
 
 		list_del_rcu(&peer->addr_hash_elt);
 		rcu_assign_pointer(omx_peer_array[i], NULL);
+		/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
 		synchronize_rcu();
 
 		iface = peer->local_iface;
@@ -229,6 +230,7 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 
 			rcu_assign_pointer(omx_peer_array[index], new);
 			list_replace_rcu(&old->addr_hash_elt, &new->addr_hash_elt);
+			/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
 			synchronize_rcu();
 			kfree(old);
 			break;
@@ -256,6 +258,7 @@ omx_peers_notify_iface_detach(struct omx_iface * iface)
 		/* the iface is in the array, just remove it, we don't really care about still having it in the peer table */
 		list_del_rcu(&peer->addr_hash_elt);
 		rcu_assign_pointer(omx_peer_array[index], NULL);
+		/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
 		synchronize_rcu();
 		peer->index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 
