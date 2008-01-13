@@ -238,6 +238,10 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	handle->already_requeued_first = 0;
 }
 
+/**********************************
+ * Pull handle acquiring/releasing
+ */
+
 /*
  * Acquire a handle.
  *
@@ -277,6 +281,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 {
 	kref_put(&handle->refcount, __omx_pull_handle_last_release);
 }
+
 
 /***************************************
  * Per-endpoint pull handles management
@@ -352,8 +357,8 @@ omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
 	return omx_endpoint_acquire_by_iface_index(iface, index);
 }
 
-/******************************
- * Per-endpoint pull handles create/find/...
+/************************
+ * Pull handles creation
  */
 
 static inline int
@@ -499,6 +504,10 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	return NULL;
 }
 
+/*************************
+ * Pull handle completion
+ */
+
 /*
  * Takes an acquired and locked pull handle and complete it.
  *
@@ -572,8 +581,8 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 	handle->remaining_length = 0;
 }
 
-/******************************
- * Pull-related networking
+/************************
+ * Sending pull requests
  */
 
 /* Called with the handle acquired and locked */
@@ -789,6 +798,10 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		omx_queue_xmit(iface, skb2, PULL);
 }
 
+/*******************************************
+ * Recv pull requests and send pull replies
+ */
+
 /* pull reply skb destructor to release the user region */
 static void
 omx_send_pull_reply_skb_destructor(struct sk_buff *skb)
@@ -1000,6 +1013,10 @@ omx_recv_pull(struct omx_iface * iface,
  out:
 	return err;
 }
+
+/********************
+ * Recv pull replies
+ */
 
 int
 omx_recv_pull_reply(struct omx_iface * iface,
@@ -1300,6 +1317,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
  out:
 	return err;
 }
+
+/******************
+ * Recv pull nacks
+ */
 
 int
 omx_recv_nack_mcp(struct omx_iface * iface,
