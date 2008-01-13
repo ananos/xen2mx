@@ -62,7 +62,7 @@ AC_SUBST(LINUX_RELEASE)
 # Find where the headers are (to avoid grepping at both places).
 # Do not check for autoconf.h or version.h since these are in
 # both the source and the build directory.
-AC_MSG_CHECKING(include/linux/kernel.h)
+AC_MSG_CHECKING(kernel header include/linux/kernel.h)
 LINUX_HDR=
 if test -f ${LINUX_SRC}/include/linux/kernel.h ; then
   LINUX_HDR=$LINUX_SRC
@@ -108,7 +108,7 @@ echo " */" >> ${TMP_CHECKS_PATH}
 echo "" >> ${TMP_CHECKS_PATH}
 
 # remap_vmalloc_range and vmalloc_user appeared in 2.6.18
-AC_MSG_CHECKING(remap_vmalloc_range availability)
+AC_MSG_CHECKING((in kernel headers) remap_vmalloc_range availability)
 if grep "remap_vmalloc_range *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null ; then
   echo "#define OMX_HAVE_REMAP_VMALLOC_RANGE 1" >> ${TMP_CHECKS_PATH}
   AC_MSG_RESULT(yes)
@@ -117,7 +117,7 @@ else
 fi
 
 # miscdevice pointed to a class_device before 2.6.20
-AC_MSG_CHECKING(device type in miscdevice)
+AC_MSG_CHECKING((in kernel headers) device type in miscdevice)
 if sed -ne '/^struct miscdevice/,/^};/p' ${LINUX_HDR}/include/linux/miscdevice.h \
    | grep "struct class_device" > /dev/null ; then
   echo "#define OMX_MISCDEV_HAVE_CLASS_DEVICE 1" >> ${TMP_CHECKS_PATH}
@@ -128,7 +128,7 @@ fi
 
 # dev_base list replaced with for_each_netdev added in 2.6.22
 # and modified for net namespaces in 2.6.24
-AC_MSG_CHECKING(for_each_netdev availability)
+AC_MSG_CHECKING((in kernel headers) for_each_netdev availability)
 if grep "for_each_netdev *(" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
   if grep "for_each_netdev *(.*,.*)" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
     echo "#define OMX_HAVE_FOR_EACH_NETDEV 1" >> ${TMP_CHECKS_PATH}
@@ -142,7 +142,7 @@ else
 fi
 
 # dev_get_by_name got a namespace argument in 2.6.24
-AC_MSG_CHECKING(dev_get_by_name prototype)
+AC_MSG_CHECKING((in kernel headers) dev_get_by_name prototype)
 if grep "struct net_device.*dev_get_by_name *(.*,.*)" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
   AC_MSG_RESULT(with namespace)
 else  
@@ -151,7 +151,7 @@ else
 fi
 
 # skb got mac/network/transport headers in 2.6.22
-AC_MSG_CHECKING(skb headers availability)
+AC_MSG_CHECKING((in kernel headers) skb headers availability)
 if grep "sk_buff_data_t.*mac_header;" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
   echo "#define OMX_HAVE_SKB_HEADERS 1" >> ${TMP_CHECKS_PATH}
   AC_MSG_RESULT(yes)
@@ -160,7 +160,7 @@ else
 fi
 
 # skb_pad returned a new skb up to 2.6.17
-AC_MSG_CHECKING(skb_pad return type)
+AC_MSG_CHECKING((in kernel headers) skb_pad return type)
 if grep "struct sk_buff *\*[[ 	]]*skb_pad(.*, .*);" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
   echo "#define OMX_SKB_PAD_RETURNS_NEW_SKB 1" >> ${TMP_CHECKS_PATH}
   AC_MSG_RESULT(struct sk_buff *)
@@ -169,7 +169,7 @@ else
 fi
 
 # uts namespace arrived in 2.6.19
-AC_MSG_CHECKING(uts namespace availabilty)
+AC_MSG_CHECKING((in kernel headers) UTS namespace availabilty)
 if grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null ; then
   echo "#define OMX_HAVE_UTS_NAMESPACE 1" >> ${TMP_CHECKS_PATH}
   AC_MSG_RESULT(yes)
@@ -178,7 +178,7 @@ else
 fi
 
 # dmaengine really usable when channel may be shared among clients, arrived in 2.6.23
-AC_MSG_CHECKING(whether DMA engine channels are shareable)
+AC_MSG_CHECKING((in kernel headers) whether DMA engine channels are shareable)
 if test -e ${LINUX_HDR}/include/linux/dmaengine.h \
   && grep DMA_RESOURCE_AVAILABLE ${LINUX_HDR}/include/linux/dmaengine.h > /dev/null ; then
   echo "#define OMX_HAVE_SHAREABLE_DMA_CHANNELS 1" >> ${TMP_CHECKS_PATH}
@@ -188,7 +188,7 @@ else
 fi
 
 # mutexes appeared in 2.6.16
-AC_MSG_CHECKING(whether mutexes are available)
+AC_MSG_CHECKING((in kernel headers) whether mutexes are available)
 if test -e ${LINUX_HDR}/include/linux/mutex.h > /dev/null ; then
   echo "#define OMX_HAVE_MUTEX 1" >> ${TMP_CHECKS_PATH}
   AC_MSG_RESULT(yes)
@@ -206,7 +206,7 @@ if diff -q ${CHECKS_PATH} ${TMP_CHECKS_PATH} >/dev/null 2>&1; then
   AC_MSG_NOTICE(${CHECKS_NAME} is unchanged)
 else
   mv -f ${TMP_CHECKS_PATH} ${CHECKS_PATH}
-  AC_MSG_NOTICE(creating ${CHECKS_NAME})
+  AC_MSG_NOTICE(creating kernel headers description in ${CHECKS_NAME})
 fi
 
 ###############
