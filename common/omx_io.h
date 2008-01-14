@@ -109,112 +109,8 @@ struct omx_endpoint_desc {
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED (1ULL << 4)
 
 /************************
- * IOCTL commands
- */
-
-#define OMX_CMD_GET_BOARD_COUNT		0x11
-#define OMX_CMD_GET_BOARD_ID		0x12
-#define OMX_CMD_GET_ENDPOINT_INFO	0x13
-#define OMX_CMD_GET_COUNTERS		0x14
-#define OMX_CMD_SET_HOSTNAME		0x15
-#define OMX_CMD_PEERS_CLEAR		0x20
-#define OMX_CMD_PEER_ADD		0x21
-#define OMX_CMD_PEER_FROM_INDEX		0x22
-#define OMX_CMD_PEER_FROM_ADDR		0x23
-#define OMX_CMD_PEER_FROM_HOSTNAME	0x24
-#define OMX_CMD_OPEN_ENDPOINT		0x71
-#define OMX_CMD_CLOSE_ENDPOINT		0x72
-#define OMX_CMD_BENCH			0x73
-#define OMX_CMD_SEND_TINY		0x81
-#define OMX_CMD_SEND_SMALL		0x82
-#define OMX_CMD_SEND_MEDIUM		0x83
-#define OMX_CMD_SEND_RNDV		0x84
-#define OMX_CMD_SEND_PULL		0x85
-#define OMX_CMD_SEND_NOTIFY		0x86
-#define OMX_CMD_SEND_CONNECT		0x87
-#define OMX_CMD_SEND_TRUC		0x88
-#define OMX_CMD_REGISTER_REGION		0x90
-#define OMX_CMD_DEREGISTER_REGION	0x91
-#define OMX_CMD_WAIT_EVENT		0x92
-
-static inline const char *
-omx_strcmd(unsigned cmd)
-{
-	switch (cmd) {
-	case OMX_CMD_GET_BOARD_COUNT:
-		return "Get Board Count";
-	case OMX_CMD_GET_BOARD_ID:
-		return "Get Board ID";
-	case OMX_CMD_GET_ENDPOINT_INFO:
-		return "Get Endpoint Info";
-	case OMX_CMD_GET_COUNTERS:
-		return "Get Counters";
-	case OMX_CMD_PEERS_CLEAR:
-		return "Clear Peers";
-	case OMX_CMD_PEER_ADD:
-		return "Add Peer";
-	case OMX_CMD_PEER_FROM_INDEX:
-		return "Peer from Index";
-	case OMX_CMD_PEER_FROM_ADDR:
-		return "Peer from Addr";
-	case OMX_CMD_PEER_FROM_HOSTNAME:
-		return "Peer from Hostname";
-	case OMX_CMD_OPEN_ENDPOINT:
-		return "Open Endpoint";
-	case OMX_CMD_CLOSE_ENDPOINT:
-		return "Close Endpoint";
-	case OMX_CMD_BENCH:
-		return "Command Benchmark";
-	case OMX_CMD_SEND_TINY:
-		return "Send Tiny";
-	case OMX_CMD_SEND_SMALL:
-		return "Send Small";
-	case OMX_CMD_SEND_MEDIUM:
-		return "Send Medium";
-	case OMX_CMD_SEND_RNDV:
-		return "Send Rendez-vous";
-	case OMX_CMD_SEND_PULL:
-		return "Send Pull";
-	case OMX_CMD_SEND_NOTIFY:
-		return "Send Notify";
-	case OMX_CMD_SEND_CONNECT:
-		return "Send Connect";
-	case OMX_CMD_SEND_TRUC:
-		return "Send Truc";
-	case OMX_CMD_REGISTER_REGION:
-		return "Register Region";
-	case OMX_CMD_DEREGISTER_REGION:
-		return "Deregister Region";
-	case OMX_CMD_WAIT_EVENT:
-		return "Wait Event";
-	default:
-		return "** Unknown **";
-	}
-}
-
-/************************
  * IOCTL parameter types
  */
-
-/* level 0 testing, only pass the command and get the endpoint, no parameter given */
-#define OMX_CMD_BENCH_TYPE_PARAMS	0x01
-#define OMX_CMD_BENCH_TYPE_SEND_ALLOC	0x02
-#define OMX_CMD_BENCH_TYPE_SEND_PREP	0x03
-#define OMX_CMD_BENCH_TYPE_SEND_FILL	0x04
-#define OMX_CMD_BENCH_TYPE_SEND_DONE	0x05
-#define OMX_CMD_BENCH_TYPE_RECV_ACQU	0x11
-#define OMX_CMD_BENCH_TYPE_RECV_NOTIFY	0x12
-#define OMX_CMD_BENCH_TYPE_RECV_DONE	0x13
-
-struct omx_cmd_bench {
-	struct omx_cmd_bench_hdr {
-		uint8_t type;
-		uint8_t pad[7];
-		/* 8 */
-	} hdr;
-	char dummy_data[OMX_TINY_MAX];
-	/* 40 */
-};
 
 struct omx_cmd_get_board_id {
 	uint8_t board_index;
@@ -418,6 +314,110 @@ struct omx_cmd_wait_event {
 	uint32_t next_exp_event_offset;
 	uint32_t next_unexp_event_offset;
 };
+
+/* level 0 testing, only pass the command and get the endpoint, no parameter given */
+#define OMX_CMD_BENCH_TYPE_PARAMS	0x01
+#define OMX_CMD_BENCH_TYPE_SEND_ALLOC	0x02
+#define OMX_CMD_BENCH_TYPE_SEND_PREP	0x03
+#define OMX_CMD_BENCH_TYPE_SEND_FILL	0x04
+#define OMX_CMD_BENCH_TYPE_SEND_DONE	0x05
+#define OMX_CMD_BENCH_TYPE_RECV_ACQU	0x11
+#define OMX_CMD_BENCH_TYPE_RECV_NOTIFY	0x12
+#define OMX_CMD_BENCH_TYPE_RECV_DONE	0x13
+
+struct omx_cmd_bench {
+	struct omx_cmd_bench_hdr {
+		uint8_t type;
+		uint8_t pad[7];
+		/* 8 */
+	} hdr;
+	char dummy_data[OMX_TINY_MAX];
+	/* 40 */
+};
+
+/************************
+ * IOCTL commands
+ */
+
+#define OMX_CMD_GET_BOARD_COUNT		0x11
+#define OMX_CMD_GET_BOARD_ID		0x12
+#define OMX_CMD_GET_ENDPOINT_INFO	0x13
+#define OMX_CMD_GET_COUNTERS		0x14
+#define OMX_CMD_SET_HOSTNAME		0x15
+#define OMX_CMD_PEERS_CLEAR		0x20
+#define OMX_CMD_PEER_ADD		0x21
+#define OMX_CMD_PEER_FROM_INDEX		0x22
+#define OMX_CMD_PEER_FROM_ADDR		0x23
+#define OMX_CMD_PEER_FROM_HOSTNAME	0x24
+#define OMX_CMD_OPEN_ENDPOINT		0x71
+#define OMX_CMD_CLOSE_ENDPOINT		0x72
+#define OMX_CMD_BENCH			0x73
+#define OMX_CMD_SEND_TINY		0x81
+#define OMX_CMD_SEND_SMALL		0x82
+#define OMX_CMD_SEND_MEDIUM		0x83
+#define OMX_CMD_SEND_RNDV		0x84
+#define OMX_CMD_SEND_PULL		0x85
+#define OMX_CMD_SEND_NOTIFY		0x86
+#define OMX_CMD_SEND_CONNECT		0x87
+#define OMX_CMD_SEND_TRUC		0x88
+#define OMX_CMD_REGISTER_REGION		0x90
+#define OMX_CMD_DEREGISTER_REGION	0x91
+#define OMX_CMD_WAIT_EVENT		0x92
+
+static inline const char *
+omx_strcmd(unsigned cmd)
+{
+	switch (cmd) {
+	case OMX_CMD_GET_BOARD_COUNT:
+		return "Get Board Count";
+	case OMX_CMD_GET_BOARD_ID:
+		return "Get Board ID";
+	case OMX_CMD_GET_ENDPOINT_INFO:
+		return "Get Endpoint Info";
+	case OMX_CMD_GET_COUNTERS:
+		return "Get Counters";
+	case OMX_CMD_PEERS_CLEAR:
+		return "Clear Peers";
+	case OMX_CMD_PEER_ADD:
+		return "Add Peer";
+	case OMX_CMD_PEER_FROM_INDEX:
+		return "Peer from Index";
+	case OMX_CMD_PEER_FROM_ADDR:
+		return "Peer from Addr";
+	case OMX_CMD_PEER_FROM_HOSTNAME:
+		return "Peer from Hostname";
+	case OMX_CMD_OPEN_ENDPOINT:
+		return "Open Endpoint";
+	case OMX_CMD_CLOSE_ENDPOINT:
+		return "Close Endpoint";
+	case OMX_CMD_BENCH:
+		return "Command Benchmark";
+	case OMX_CMD_SEND_TINY:
+		return "Send Tiny";
+	case OMX_CMD_SEND_SMALL:
+		return "Send Small";
+	case OMX_CMD_SEND_MEDIUM:
+		return "Send Medium";
+	case OMX_CMD_SEND_RNDV:
+		return "Send Rendez-vous";
+	case OMX_CMD_SEND_PULL:
+		return "Send Pull";
+	case OMX_CMD_SEND_NOTIFY:
+		return "Send Notify";
+	case OMX_CMD_SEND_CONNECT:
+		return "Send Connect";
+	case OMX_CMD_SEND_TRUC:
+		return "Send Truc";
+	case OMX_CMD_REGISTER_REGION:
+		return "Register Region";
+	case OMX_CMD_DEREGISTER_REGION:
+		return "Deregister Region";
+	case OMX_CMD_WAIT_EVENT:
+		return "Wait Event";
+	default:
+		return "** Unknown **";
+	}
+}
 
 /************************
  * Event types
