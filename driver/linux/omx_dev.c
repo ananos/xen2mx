@@ -701,7 +701,7 @@ omx_miscdev_fops = {
 	.release = omx_miscdev_release,
 	.mmap = omx_miscdev_mmap,
 	.unlocked_ioctl = omx_miscdev_ioctl,
-#ifdef COMPAT_IOCTL
+#ifdef CONFIG_COMPAT
 	.compat_ioctl = omx_miscdev_ioctl,
 #endif
 };
