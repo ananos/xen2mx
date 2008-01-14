@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   uint32_t emax;
   int i, err;
-  char c;
+  int c;
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
   /* get endpoint max */
   emax = omx__driver_desc->endpoint_max;
 
-  while ((c = getopt(argc, argv, "b:h")) != EOF)
+  while ((c = getopt(argc, argv, "b:h")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);

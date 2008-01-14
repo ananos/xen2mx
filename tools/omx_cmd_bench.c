@@ -41,12 +41,12 @@ main(int argc, char *argv[])
   struct omx_cmd_bench cmd;
   unsigned long long total, delay, olddelay;
   int i, err;
-  char c;
+  int c;
 
   ret = omx_init();
   assert(ret == OMX_SUCCESS);
 
-  while ((c = getopt(argc, argv, "h")) != EOF)
+  while ((c = getopt(argc, argv, "h")) != -1)
     switch (c) {
     default:
       fprintf(stderr, "Unknown option -%c\n", c);

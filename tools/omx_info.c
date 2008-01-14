@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   uint32_t max, emax, count;
   int found, i;
-  char c;
+  int c;
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "h")) != EOF)
+  while ((c = getopt(argc, argv, "h")) != -1)
     switch (c) {
     default:
       fprintf(stderr, "Unknown option -%c\n", c);

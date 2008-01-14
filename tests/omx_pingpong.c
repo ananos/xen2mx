@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 {
   omx_endpoint_t ep;
   omx_return_t ret;
-  char c;
+  int c;
 
   int bid = BID;
   int eid = EID;
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:swUYvah")) != EOF)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:swUYvah")) != -1)
     switch (c) {
     case 'b':
       bid = atoi(optarg);

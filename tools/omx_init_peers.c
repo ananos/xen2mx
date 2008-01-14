@@ -109,7 +109,7 @@ int
 main(int argc, char *argv[])
 {
   omx_return_t ret;
-  char c;
+  int c;
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -118,7 +118,7 @@ main(int argc, char *argv[])
     exit(-1);
   }
 
-  while ((c = getopt(argc, argv, "cah")) != EOF)
+  while ((c = getopt(argc, argv, "cah")) != -1)
     switch (c) {
     case 'c':
       clear = 1;

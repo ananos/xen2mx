@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
   char hostname[OMX_HOSTNAMELEN_MAX];
   char ifacename[16];
   omx_endpoint_addr_t addr;
-  char c;
+  int c;
   int i;
   omx_return_t ret;
 
@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:b:h")) != EOF)
+  while ((c = getopt(argc, argv, "e:b:h")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);

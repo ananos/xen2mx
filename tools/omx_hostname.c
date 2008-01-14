@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
   struct omx_cmd_set_hostname set_hostname;
   omx_return_t ret;
   int err;
-  char c;
+  int c;
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "b:h")) != EOF)
+  while ((c = getopt(argc, argv, "b:h")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);

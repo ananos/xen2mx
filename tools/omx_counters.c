@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
   int non_null = 0;
   struct omx_cmd_get_counters get_counters;
   int i, err;
-  char c;
+  int c;
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "b:cqh")) != EOF)
+  while ((c = getopt(argc, argv, "b:cqh")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
