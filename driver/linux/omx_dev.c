@@ -398,9 +398,8 @@ static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, v
 /*
  * Main ioctl switch where all application ioctls arrive
  */
-static int
-omx_miscdev_ioctl(struct inode *inode, struct file *file,
-		  unsigned cmd, unsigned long arg)
+static long
+omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 {
 	int ret = 0;
 
@@ -701,7 +700,7 @@ omx_miscdev_fops = {
 	.open = omx_miscdev_open,
 	.release = omx_miscdev_release,
 	.mmap = omx_miscdev_mmap,
-	.ioctl = omx_miscdev_ioctl,
+	.unlocked_ioctl = omx_miscdev_ioctl,
 };
 
 static struct miscdevice
