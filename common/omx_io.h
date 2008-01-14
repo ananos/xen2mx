@@ -21,8 +21,10 @@
 
 #ifdef __KERNEL__
 #include <linux/types.h>
+#include <linux/ioctl.h>
 #else
 #include <stdint.h>
+#include <sys/ioctl.h>
 #endif
 
 /*
@@ -30,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x102
+#define OMX_DRIVER_ABI_VERSION		0x103
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -339,30 +341,33 @@ struct omx_cmd_bench {
  * IOCTL commands
  */
 
-#define OMX_CMD_GET_BOARD_COUNT		0x11
-#define OMX_CMD_GET_BOARD_ID		0x12
-#define OMX_CMD_GET_ENDPOINT_INFO	0x13
-#define OMX_CMD_GET_COUNTERS		0x14
-#define OMX_CMD_SET_HOSTNAME		0x15
-#define OMX_CMD_PEERS_CLEAR		0x20
-#define OMX_CMD_PEER_ADD		0x21
-#define OMX_CMD_PEER_FROM_INDEX		0x22
-#define OMX_CMD_PEER_FROM_ADDR		0x23
-#define OMX_CMD_PEER_FROM_HOSTNAME	0x24
-#define OMX_CMD_OPEN_ENDPOINT		0x71
-#define OMX_CMD_CLOSE_ENDPOINT		0x72
-#define OMX_CMD_BENCH			0x73
-#define OMX_CMD_SEND_TINY		0x81
-#define OMX_CMD_SEND_SMALL		0x82
-#define OMX_CMD_SEND_MEDIUM		0x83
-#define OMX_CMD_SEND_RNDV		0x84
-#define OMX_CMD_SEND_PULL		0x85
-#define OMX_CMD_SEND_NOTIFY		0x86
-#define OMX_CMD_SEND_CONNECT		0x87
-#define OMX_CMD_SEND_TRUC		0x88
-#define OMX_CMD_REGISTER_REGION		0x90
-#define OMX_CMD_DEREGISTER_REGION	0x91
-#define OMX_CMD_WAIT_EVENT		0x92
+#define OMX_CMD_MAGIC	'O'
+#define OMX_CMD_INDEX(x)	_IOC_NR(x)
+
+#define OMX_CMD_GET_BOARD_COUNT		_IOW(OMX_CMD_MAGIC, 0x11, uint32_t)
+#define OMX_CMD_GET_BOARD_ID		_IOWR(OMX_CMD_MAGIC, 0x12, struct omx_cmd_get_board_id)
+#define OMX_CMD_GET_ENDPOINT_INFO	_IOWR(OMX_CMD_MAGIC, 0x13, struct omx_cmd_get_endpoint_info)
+#define OMX_CMD_GET_COUNTERS		_IOWR(OMX_CMD_MAGIC, 0x14, struct omx_cmd_get_counters)
+#define OMX_CMD_SET_HOSTNAME		_IOR(OMX_CMD_MAGIC, 0x15, struct omx_cmd_set_hostname)
+#define OMX_CMD_PEERS_CLEAR		_IO(OMX_CMD_MAGIC, 0x20)
+#define OMX_CMD_PEER_ADD		_IOR(OMX_CMD_MAGIC, 0x21, struct omx_cmd_misc_peer_info)
+#define OMX_CMD_PEER_FROM_INDEX		_IOWR(OMX_CMD_MAGIC, 0x22, struct omx_cmd_misc_peer_info)
+#define OMX_CMD_PEER_FROM_ADDR		_IOWR(OMX_CMD_MAGIC, 0x23, struct omx_cmd_misc_peer_info)
+#define OMX_CMD_PEER_FROM_HOSTNAME	_IOWR(OMX_CMD_MAGIC, 0x24, struct omx_cmd_misc_peer_info)
+#define OMX_CMD_OPEN_ENDPOINT		_IOR(OMX_CMD_MAGIC, 0x71, struct omx_cmd_open_endpoint)
+#define OMX_CMD_CLOSE_ENDPOINT		_IO(OMX_CMD_MAGIC, 0x72)
+#define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x73, struct omx_cmd_bench)
+#define OMX_CMD_SEND_TINY		_IOR(OMX_CMD_MAGIC, 0x81, struct omx_cmd_send_tiny)
+#define OMX_CMD_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x82, struct omx_cmd_send_small)
+#define OMX_CMD_SEND_MEDIUM		_IOR(OMX_CMD_MAGIC, 0x83, struct omx_cmd_send_medium)
+#define OMX_CMD_SEND_RNDV		_IOR(OMX_CMD_MAGIC, 0x84, struct omx_cmd_send_rndv)
+#define OMX_CMD_SEND_PULL		_IOR(OMX_CMD_MAGIC, 0x85, struct omx_cmd_send_pull)
+#define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x86, struct omx_cmd_send_notify)
+#define OMX_CMD_SEND_CONNECT		_IOR(OMX_CMD_MAGIC, 0x87, struct omx_cmd_send_connect)
+#define OMX_CMD_SEND_TRUC		_IOR(OMX_CMD_MAGIC, 0x88, struct omx_cmd_send_truc)
+#define OMX_CMD_REGISTER_REGION		_IOR(OMX_CMD_MAGIC, 0x90, struct omx_cmd_register_region)
+#define OMX_CMD_DEREGISTER_REGION	_IOR(OMX_CMD_MAGIC, 0x91, struct omx_cmd_deregister_region)
+#define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x92, struct omx_cmd_wait_event)
 
 static inline const char *
 omx_strcmd(unsigned cmd)

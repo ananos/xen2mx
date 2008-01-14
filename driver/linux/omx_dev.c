@@ -376,23 +376,22 @@ omx_miscdev_release(struct inode * inode, struct file * file)
 }
 
 /*
- * Common command handlers
- * returns 0 on success, <0 on error,
- * 1 when success and does not want to release the reference on the endpoint
+ * Common command handlers.
+ * Use OMX_CMD_INDEX() to only keep the 8 latest bits of the 32bits command flags
  */
 static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
-	[OMX_CMD_BENCH]			= omx_cmd_bench,
-	[OMX_CMD_SEND_TINY]		= omx_send_tiny,
-	[OMX_CMD_SEND_SMALL]		= omx_send_small,
-	[OMX_CMD_SEND_MEDIUM]		= omx_send_medium,
-	[OMX_CMD_SEND_RNDV]		= omx_send_rndv,
-	[OMX_CMD_SEND_PULL]		= omx_send_pull,
-	[OMX_CMD_SEND_NOTIFY]		= omx_send_notify,
-	[OMX_CMD_SEND_CONNECT]	       	= omx_send_connect,
-	[OMX_CMD_SEND_TRUC]		= omx_send_truc,
-	[OMX_CMD_REGISTER_REGION]	= omx_user_region_register,
-	[OMX_CMD_DEREGISTER_REGION]	= omx_user_region_deregister,
-	[OMX_CMD_WAIT_EVENT]		= omx_wait_event,
+	[OMX_CMD_INDEX(OMX_CMD_BENCH)]			= omx_cmd_bench,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_TINY)]		= omx_send_tiny,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_SMALL)]		= omx_send_small,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_MEDIUM)]		= omx_send_medium,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_RNDV)]		= omx_send_rndv,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_PULL)]		= omx_send_pull,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_NOTIFY)]		= omx_send_notify,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_CONNECT)]	       	= omx_send_connect,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_TRUC)]		= omx_send_truc,
+	[OMX_CMD_INDEX(OMX_CMD_REGISTER_REGION)]	= omx_user_region_register,
+	[OMX_CMD_INDEX(OMX_CMD_DEREGISTER_REGION)]	= omx_user_region_deregister,
+	[OMX_CMD_INDEX(OMX_CMD_WAIT_EVENT)]		= omx_wait_event,
 };
 
 /*
@@ -628,15 +627,16 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_WAIT_EVENT:
 	{
 		struct omx_endpoint * endpoint = file->private_data;
+		uint32_t index = OMX_CMD_INDEX(cmd);
 
-		BUG_ON(cmd >= ARRAY_SIZE(omx_cmd_with_endpoint_handlers));
-		BUG_ON(omx_cmd_with_endpoint_handlers[cmd] == NULL);
+		BUG_ON(index >= ARRAY_SIZE(omx_cmd_with_endpoint_handlers));
+		BUG_ON(omx_cmd_with_endpoint_handlers[index] == NULL);
 
 		ret = omx_endpoint_acquire_from_ioctl(endpoint);
 		if (unlikely(ret < 0))
 			goto out;
 
-		ret = omx_cmd_with_endpoint_handlers[cmd](endpoint, (void __user *) arg);
+		ret = omx_cmd_with_endpoint_handlers[index](endpoint, (void __user *) arg);
 
 		omx_endpoint_release(endpoint);
 
@@ -649,6 +649,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	}
 
  out:
+printk("ioctl %s returns %d\n", omx_strcmd(cmd), ret);
 	return ret;
 }
 
