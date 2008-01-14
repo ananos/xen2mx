@@ -34,9 +34,11 @@ if test $AR = false; then
   AC_MSG_ERROR(ar program not found in \$PATH)
 fi
 
-AC_CHECK_PROG(KCC, gcc, $CC)
-AC_MSG_CHECKING(which compiler to use for kernel modules)
-AC_MSG_RESULT($KCC)
+if test -n "$KCC" ; then
+	AC_CHECK_PROG(KCC, gcc, $CC)
+	AC_MSG_CHECKING(which compiler to use for kernel modules)
+	AC_MSG_RESULT($KCC)
+fi
 
 ########################
 # Kernel related config
