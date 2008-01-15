@@ -765,10 +765,15 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
 		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
 		handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
-		/* the handle has been moved to the done_but_timer_list */
-		write_lock_bh(&endpoint->pull_handles_lock);
+
+		/*
+		 * the handle has been moved to the done_but_timer_list,
+		 * it's already outside of the idr, no need to lock bh
+		 */
+		write_lock(&endpoint->pull_handles_lock);
 		list_del(&handle->list_elt);
-		write_unlock_bh(&endpoint->pull_handles_lock);
+		write_unlock(&endpoint->pull_handles_lock);
+
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 		return; /* timer will never be called again (status is TIMER_EXITED) */
