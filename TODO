@@ -1,3 +1,5 @@
+* synchronize_rcu() at the end of rmmod?
+
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
@@ -28,7 +30,6 @@
   + call it when the connect session changed
 
 * pull fixes
-  + always keep handle in a endpoint list, maybe one for regular handles, and one for "timer-exit-pending" handles?
   + no ref from ph to endpoint, cleanup thread does del_timer_sync using the above list
   + keep the handle lock around check/set status + idr_remove + list modif at all places
   + set the status AFTER removing from idr and acquire takes the lock and check the status ? find an order to simplify things

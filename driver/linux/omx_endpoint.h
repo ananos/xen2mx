@@ -71,7 +71,8 @@ struct omx_endpoint {
 	spinlock_t user_regions_lock;
 	struct omx_user_region * user_regions[OMX_USER_REGION_MAX];
 
-	struct list_head pull_handles_list;
+	struct list_head pull_handles_running_list;
+	struct list_head pull_handles_done_but_timer_list;
 	struct idr pull_handles_idr;
 	rwlock_t pull_handles_lock;
 
