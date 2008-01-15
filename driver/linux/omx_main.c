@@ -23,6 +23,7 @@
 #include <linux/vmalloc.h>
 #include <linux/kthread.h>
 #include <linux/delay.h>
+#include <linux/rcupdate.h>
 
 #include "omx_common.h"
 #include "omx_peer.h"
@@ -163,7 +164,7 @@ omx_init(void)
 		       OMX_PEER_INDEX_MAX);
 		ret = -EINVAL;
 		goto out;
-	}		
+	}
 
 	printk(KERN_INFO "Open-MX: using Ethertype 0x%lx\n",
 	       (unsigned long) ETH_P_OMX);
@@ -282,8 +283,8 @@ omx_exit(void)
 	omx_dma_exit();
 	del_timer_sync(&omx_driver_userdesc_update_timer);
 	vfree(omx_driver_userdesc);
+	synchronize_rcu();
 	printk(KERN_INFO "Open-MX " VERSION " terminated\n");
-	mdelay(1000); /* FIXME: workaround to make sure pull timers are gone */
 }
 module_exit(omx_exit);
 
