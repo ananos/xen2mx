@@ -8,7 +8,13 @@ III. Kernel Module and /dev/open-mx Device Node
  IV. Attaching interfaces
   V. Peer Table File
  VI. Performance tuning
+   a. Wire-compatibility
+   b. Registration Cache
+   c. Interrupt Coalescing
+   d. Avoiding Linearizing on the receive side with old kernels
 VII. Native MX Compatibility
+   a. Wire-compatibility
+   b. API-compatibility
 
 
 See REPORTING-BUGS for problems.
@@ -216,12 +222,21 @@ The contents of the file is one line per peer, each containing
 +------------------------+
 
 +-------------------------------
-| VI.a. Native MX compatibility
+| VI.a. Wire-compatibility
+
+Open-MX enables 2 types of wire-compatibility by default, native-MX
+compatibility and endian-independent compatibility. Disabling them
+when they are not needed may improve the performance.
 
 If native MX compatibility is not required on the wire (see section VII),
 you might want to pass --disable-mx-wire to the configure command line so
 that larger packets are used for large messages.
 Note that the required MTU will jump from roughly 4kB to 8.
+
+If the machines on the network all use the same endian-ness, you might
+want to pass --disable-endian to the configure command line so that
+Open-MX does not swap header bits into/from network order. It may reduce
+the latency very slightly.
 
 +--------------------------
 | VI.b. Registration Cache
@@ -277,13 +292,13 @@ you should pass --with-ethertype=0x86DD to the configure command line.
 | VII. Native MX Compatibility |
 +------------------------------+
 
-Open-MX provides API and wire compatibility with the native MX stack.
+Open-MX provides API- and wire-compatibility with the native MX stack.
 
 +---------------------------
 | VII.a. Wire-compatibility
 
 If you need some Open-MX hosts to talk to some MX hosts, you should
-keep the wire compatibility enabled (it is enabled by default).
+keep the wire-compatibility enabled (it is enabled by default).
 If you only have Open-MX hosts talking on the network, you can disable
 it to improve performance (see VI.a).
 
