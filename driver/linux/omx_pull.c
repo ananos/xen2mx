@@ -343,6 +343,58 @@ omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 	idr_destroy(&endpoint->pull_handles_idr);
 }
 
+/*
+ * Called when cleaning the endpoint, always from the cleanup thread, may del_timer_sync() then.
+ */
+void
+omx_endpoint_pull_handles_force_exit(struct omx_endpoint * endpoint)
+{
+	might_sleep();
+
+	write_lock_bh(&endpoint->pull_handles_lock);
+	while (!list_empty(&endpoint->pull_handles_done_but_timer_list)) {
+		struct omx_pull_handle * handle;
+		int ret;
+
+		/* get the first handle of the list, acquire it and release the list lock */
+		handle = list_first_entry(&endpoint->pull_handles_done_but_timer_list, struct omx_pull_handle, list_elt);
+		omx_pull_handle_acquire(handle);
+		write_unlock_bh(&endpoint->pull_handles_lock);
+
+		dprintk(PULL, "stopping handle %p timer with del_sync_timer\n", handle);
+		ret = del_timer_sync(&handle->retransmit_timer);
+		spin_lock_bh(&handle->lock);
+		if (ret) {
+			dprintk(PULL, "del_timer_sync stopped pull handle %p timer\n", handle);
+
+			/* we deactivated the timer, cleanup ourself */
+			BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
+			handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
+
+			/* drop from the list */
+			write_lock(&endpoint->pull_handles_lock);
+			list_del(&handle->list_elt);
+			write_unlock(&endpoint->pull_handles_lock);
+
+			spin_unlock_bh(&handle->lock);
+			/* release the timer reference */
+			omx_pull_handle_release(handle);
+
+		} else {
+			dprintk(PULL, "del_timer_sync was useless pull handle %p timer, already exited\n", handle);
+
+			/* the timer expired, nothing to do */
+			BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
+
+			spin_unlock_bh(&handle->lock);
+		}
+
+		omx_pull_handle_release(handle);
+		write_lock_bh(&endpoint->pull_handles_lock);
+	}
+	write_unlock_bh(&endpoint->pull_handles_lock);
+}
+
 /******************************
  * Endpoint pull-magic management
  */

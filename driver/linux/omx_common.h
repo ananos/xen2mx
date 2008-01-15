@@ -80,6 +80,7 @@ extern int omx_recv_nack_mcp(struct omx_iface * iface, struct omx_hdr * mh, stru
 /* pull */
 extern int omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint);
 extern void omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint);
+extern void omx_endpoint_pull_handles_force_exit(struct omx_endpoint * endpoint);
 
 /* device */
 extern int omx_dev_init(void);
