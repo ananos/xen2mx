@@ -772,6 +772,8 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
 		handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
 
+		dprintk(PULL, "pull handle %p timer exiting\n", handle);
+
 		/*
 		 * the handle has been moved to the done_but_timer_list,
 		 * it's already outside of the idr, no need to lock bh
@@ -787,7 +789,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 
 	if (jiffies > handle->last_retransmit_jiffies) {
 		omx_counter_inc(iface, PULL_TIMEOUT_ABORT);
-		dprintk(PULL, "pull handle last retransmit time reached, reporting an error\n");
+		dprintk(PULL, "pull handle %p last retransmit time reached, reporting an error\n", handle);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
 		omx_pull_handle_timeout_release(handle);
 		return; /* timer will never be called again (status is TIMER_EXITED) */
