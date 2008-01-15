@@ -649,7 +649,6 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	}
 
  out:
-printk("ioctl %s returns %d\n", omx_strcmd(cmd), ret);
 	return ret;
 }
 
