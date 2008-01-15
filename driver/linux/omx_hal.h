@@ -106,6 +106,12 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 #define mutex_unlock(m) up(m)
 #endif
 
+/* list_first_entry appeared in 2.6.22 */
+#ifndef list_first_entry
+#define list_first_entry(ptr, type, member) \
+list_entry((ptr)->next, type, member)
+#endif
+
 #endif /* __omx_hal_h__ */
 
 /*
