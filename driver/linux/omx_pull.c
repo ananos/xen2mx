@@ -463,7 +463,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	err = idr_get_new(&endpoint->pull_handles_idr, handle, &handle->idr_index);
 	if (unlikely(err == -EAGAIN)) {
 		write_unlock_bh(&endpoint->pull_handles_lock);
-		printk("omx_pull_handle_create try again\n");
 		goto idr_try_alloc;
 	}
 
