@@ -300,25 +300,40 @@ omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
 void
 omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 {
-	struct omx_pull_handle * handle, * next;
+	/*
+	 * ask all pull handles of the endpoint to stop their timer
+	 * but we can't take endpoint->pull_handles_lock after handle->lock since that would deadlock
+	 * so we use a tricky loop to take locks in order
+	 */
 
-	/* ask all pull handles of the endpoint to stop their timer */
 	write_lock_bh(&endpoint->pull_handles_lock);
+	while (!list_empty(&endpoint->pull_handles_running_list)) {
+		struct omx_pull_handle * handle;
 
-	list_for_each_entry_safe(handle, next,
-				 &endpoint->pull_handles_running_list,
-				 list_elt) {
-		/* FIXME: the handle should be locked, but that would deadlock with other code */
+		/* get the first handle of the list, acquire it and release the list lock */
+		handle = list_entry(endpoint->pull_handles_running_list.next, struct omx_pull_handle, list_elt);
+		omx_pull_handle_acquire(handle);
+		write_unlock_bh(&endpoint->pull_handles_lock);
 
-		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
-		handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
+		/* take the handle lock and check the status in case it changed while the lock was released */
+		spin_lock_bh(&handle->lock);
+		if (handle->status == OMX_PULL_HANDLE_STATUS_OK) {
+			/* the handle didn't change, do our stuff */
+			handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
 
-		/* remove from the idr so that no incoming packet can find it anymore */
-		idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
+			/* remove from the idr so that no incoming packet can find it anymore */
+			write_lock(&endpoint->pull_handles_lock);
+			idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
+			list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
+			write_unlock(&endpoint->pull_handles_lock);
+		} else {
+			/* the handle has been moved out of the list, it means that the timer is done, nothing to done */
+		}
+		spin_unlock_bh(&handle->lock);
+		omx_pull_handle_release(handle);
 
-		list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
+		write_lock_bh(&endpoint->pull_handles_lock);
 	}
-
 	write_unlock_bh(&endpoint->pull_handles_lock);
 
 	idr_destroy(&endpoint->pull_handles_idr);
@@ -528,14 +543,13 @@ omx_pull_handle_done_release(struct omx_pull_handle * handle)
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
 	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
 
-	spin_unlock(&handle->lock);
-
-	/* FIXME: keep the lock below, without deadlocking with the cleanup */
 	/* remove from the idr (and endpoint list) so that no incoming packet can find it anymore */
 	write_lock_bh(&endpoint->pull_handles_lock);
 	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
 	list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
 	write_unlock_bh(&endpoint->pull_handles_lock);
+
+	spin_unlock(&handle->lock);
 
 	/* release the region and handle */
 	omx_user_region_release(region);
@@ -552,14 +566,13 @@ omx_pull_handle_timeout_release(struct omx_pull_handle * handle)
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
 	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
 
-	spin_unlock(&handle->lock);
-
-	/* FIXME: keep the lock below, without deadlocking with the cleanup */
 	/* remove from the idr (and endpoint list) so that no incoming packet can find it anymore */
 	write_lock_bh(&endpoint->pull_handles_lock);
 	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
 	list_del(&handle->list_elt);
 	write_unlock_bh(&endpoint->pull_handles_lock);
+
+	spin_unlock(&handle->lock);
 
 	/* release the region and handle */
 	omx_user_region_release(region);
@@ -757,8 +770,9 @@ static void omx_pull_handle_timeout_handler(unsigned long data)
 		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
 		handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
 		/* the handle has been moved to the done_but_timer_list */
-		/* FIXME: lock the endpoint, without deadlocking */
+		write_lock_bh(&endpoint->pull_handles_lock);
 		list_del(&handle->list_elt);
+		write_unlock_bh(&endpoint->pull_handles_lock);
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 		return; /* timer will never be called again (status is TIMER_EXITED) */
