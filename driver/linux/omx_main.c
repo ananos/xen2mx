@@ -140,6 +140,12 @@ omx_kthread_func(void *dummy)
 		omx_endpoints_cleanup();
 	}
 
+	/*
+	 * do a last round of cleanup before exiting since we might
+	 * have been stopped before other resources were cleaned up
+	 */
+	omx_endpoints_cleanup();
+
 	printk(KERN_INFO "Open-MX: kthread stopping\n");
 	return 0;
 }
