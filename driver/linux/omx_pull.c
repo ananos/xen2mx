@@ -261,16 +261,12 @@ static void
 __omx_pull_handle_last_release(struct kref * kref)
 {
 	struct omx_pull_handle * handle = container_of(kref, struct omx_pull_handle, refcount);
-	struct omx_endpoint * endpoint = handle->endpoint;
 
 	dprintk(KREF, "releasing the last reference on pull handle %p\n",
 		handle);
 
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
 	kfree(handle);
-
-	/* we don't depend on the endpoint anymore now, release the endpoint reference */
-	omx_endpoint_release(endpoint);
 }
 
 /*
@@ -297,6 +293,10 @@ omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
 	return 0;
 }
 
+/*
+ * Called when the last reference on the endpoint is removed,
+ * possibly from unsafe context, cannot del_timer_sync() then.
+ */
 void
 omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 {
@@ -432,14 +432,11 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	struct omx_user_region * region;
 	int err;
 
-	/* take another reference and keep it during the handle life */
-	omx_endpoint_reacquire(endpoint);
-
 	/* acquire the region */
 	region = omx_user_region_acquire(endpoint, cmd->local_rdma_id);
 	if (unlikely(!region)) {
 		err = -ENOMEM;
-		goto out_with_endpoint;
+		goto out;
 	}
 
 	/* alloc the pull handle */
@@ -516,8 +513,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	kfree(handle);
  out_with_region:
 	omx_user_region_release(region);
- out_with_endpoint:
-	omx_endpoint_release(endpoint);
+ out:
 	return NULL;
 }
 
@@ -1103,13 +1099,12 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle = idr_find(&endpoint->pull_handles_idr, dst_pull_handle);
 	if (unlikely(!handle)) {
 		read_unlock_bh(&endpoint->pull_handles_lock);
-		omx_endpoint_release(endpoint);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad wire handle %ld",
 				 (unsigned long) dst_pull_handle);
 		/* no need to nack this */
 		err = -EINVAL;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* check the full magic, if it's not fully equal, it could be
@@ -1117,19 +1112,17 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	 */
 	if (unlikely(handle->magic != dst_magic)) {
 		read_unlock_bh(&endpoint->pull_handles_lock);
-		omx_endpoint_release(endpoint);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad handle generation within magic %ld",
 				 (unsigned long) dst_magic);
 		/* no need to nack this */
 		err = -EINVAL;
-		goto out;
+		goto out_with_endpoint;
 	}
 
-	/* take a reference on the handle and release the endpoint since the handle owns it */
+	/* take a reference on the handle */
 	omx_pull_handle_acquire(handle);
 	read_unlock_bh(&endpoint->pull_handles_lock);
-	omx_endpoint_release(endpoint);
 
 	/* no session to check */
 
@@ -1148,7 +1141,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 		err = 0;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* check that the frame is not a duplicate */
@@ -1163,7 +1156,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 		err = 0;
-		goto out;
+		goto out_with_endpoint;
 	}
 	handle->frame_missing_bitmap &= ~bitmap_mask;
 
@@ -1188,7 +1181,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		spin_lock(&handle->lock);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED);
 		omx_pull_handle_done_release(handle);
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* take the lock back to prepare the future */
@@ -1343,8 +1336,12 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_done_release(handle);
 	}
 
+	omx_endpoint_release(endpoint);
+
 	return 0;
 
+ out_with_endpoint:
+	omx_endpoint_release(endpoint);
  out:
 	return err;
 }
@@ -1412,13 +1409,12 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	handle = idr_find(&endpoint->pull_handles_idr, dst_pull_handle);
 	if (unlikely(!handle)) {
 		read_unlock_bh(&endpoint->pull_handles_lock);
-		omx_endpoint_release(endpoint);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
 		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad wire handle %ld",
 				 (unsigned long) dst_pull_handle);
 		/* no need to nack this */
 		err = -EINVAL;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* check the full magic, if it's not fully equal, it could be
@@ -1426,19 +1422,17 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	 */
 	if (unlikely(handle->magic != dst_magic)) {
 		read_unlock_bh(&endpoint->pull_handles_lock);
-		omx_endpoint_release(endpoint);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
 		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad handle generation within magic %ld",
 				 (unsigned long) dst_magic);
 		/* no need to nack this */
 		err = -EINVAL;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* take a reference on the handle and release the endpoint since the handle owns it */
 	omx_pull_handle_acquire(handle);
 	read_unlock_bh(&endpoint->pull_handles_lock);
-	omx_endpoint_release(endpoint);
 
 	/* no session to check */
 
@@ -1446,9 +1440,12 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	spin_lock(&handle->lock);
 	omx_pull_handle_done_notify(handle, nack_type);
 	omx_pull_handle_done_release(handle);
+	omx_endpoint_release(endpoint);
 
 	return 0;
 
+ out_with_endpoint:
+	omx_endpoint_release(endpoint);
  out:
 	return err;
 }

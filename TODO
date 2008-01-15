@@ -30,7 +30,6 @@
   + call it when the connect session changed
 
 * pull fixes
-  + no ref from ph to endpoint, cleanup thread does del_timer_sync using the above list
   + keep the handle lock around check/set status + idr_remove + list modif at all places
   + set the status AFTER removing from idr and acquire takes the lock and check the status ? find an order to simplify things
   + check the pull handle status before mod_timer?
