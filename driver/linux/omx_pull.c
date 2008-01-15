@@ -321,7 +321,11 @@ omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 			/* the handle didn't change, do our stuff */
 			handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
 
-			/* remove from the idr so that no incoming packet can find it anymore */
+			/*
+			 * remove from the idr so that no incoming packet can find it anymore,
+			 * and move to the done_but_timer list
+			 */
+			dprintk(PULL, "moving handle %p to the done_but_timer list and removing from idr\n", handle);
 			write_lock(&endpoint->pull_handles_lock);
 			idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
 			list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
@@ -540,6 +544,7 @@ omx_pull_handle_done_release(struct omx_pull_handle * handle)
 	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
 
 	/* remove from the idr (and endpoint list) so that no incoming packet can find it anymore */
+	dprintk(PULL, "moving done handle %p to the done_but_timer list and removing from idr\n", handle);
 	write_lock_bh(&endpoint->pull_handles_lock);
 	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
 	list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
@@ -563,6 +568,7 @@ omx_pull_handle_timeout_release(struct omx_pull_handle * handle)
 	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
 
 	/* remove from the idr (and endpoint list) so that no incoming packet can find it anymore */
+	dprintk(PULL, "pull handle %p timer done, removing from idr and endpoint list\n", handle);
 	write_lock_bh(&endpoint->pull_handles_lock);
 	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
 	list_del(&handle->list_elt);
