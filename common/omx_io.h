@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x103
+#define OMX_DRIVER_ABI_VERSION		0x104
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -355,7 +355,6 @@ struct omx_cmd_bench {
 #define OMX_CMD_PEER_FROM_ADDR		_IOWR(OMX_CMD_MAGIC, 0x23, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_PEER_FROM_HOSTNAME	_IOWR(OMX_CMD_MAGIC, 0x24, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_OPEN_ENDPOINT		_IOR(OMX_CMD_MAGIC, 0x71, struct omx_cmd_open_endpoint)
-#define OMX_CMD_CLOSE_ENDPOINT		_IO(OMX_CMD_MAGIC, 0x72)
 #define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x73, struct omx_cmd_bench)
 #define OMX_CMD_SEND_TINY		_IOR(OMX_CMD_MAGIC, 0x81, struct omx_cmd_send_tiny)
 #define OMX_CMD_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x82, struct omx_cmd_send_small)
@@ -393,8 +392,6 @@ omx_strcmd(unsigned cmd)
 		return "Peer from Hostname";
 	case OMX_CMD_OPEN_ENDPOINT:
 		return "Open Endpoint";
-	case OMX_CMD_CLOSE_ENDPOINT:
-		return "Close Endpoint";
 	case OMX_CMD_BENCH:
 		return "Command Benchmark";
 	case OMX_CMD_SEND_TINY:

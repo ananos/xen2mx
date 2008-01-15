@@ -233,7 +233,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 }
 
 /* Detach the endpoint and release the reference on it.
- * If already closing, return -EBUSY.
+ * If already closing, return an error.
  */
 int
 __omx_endpoint_close(struct omx_endpoint * endpoint,
@@ -244,10 +244,9 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 	spin_lock(&endpoint->status_lock);
 
 	/* test whether the endpoint is ok to be closed */
-	ret = -EBUSY;
+	ret = -EINVAL;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
-		/* only CLOSING and OK endpoints may be attached to the iface */
-		BUG_ON(endpoint->status != OMX_ENDPOINT_STATUS_CLOSING);
+		/* either already being closed, or not-yet open, return an error */
 		spin_unlock(&endpoint->status_lock);
 		goto out;
 	}
@@ -272,36 +271,9 @@ __omx_endpoint_close(struct omx_endpoint * endpoint,
 	return ret;
 }
 
-static inline int
-omx_endpoint_close(struct omx_endpoint * endpoint)
-{
-	return __omx_endpoint_close(endpoint, 0); /* we don't hold the iface lock */
-}
-
 /******************************
  * Acquiring/Releasing endpoints
  */
-
-static inline int
-omx_endpoint_acquire_from_ioctl(struct omx_endpoint * endpoint)
-{
-	int ret = -EINVAL;
-
-	/*
-	 * no need to lock the endpoint status, just do things in the right order:
-	 * take a reference first, check the status and release if we were wrong
-	 */
-	kref_get(&endpoint->refcount);
-
-	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
-		goto out_with_kref;
-
-	return 0;
-
- out_with_kref:
-	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
-	return ret;
-}
 
 /* maybe called by the bottom half */
 struct omx_endpoint *
@@ -372,8 +344,12 @@ omx_miscdev_release(struct inode * inode, struct file * file)
 
 	BUG_ON(!endpoint);
 
-	if (endpoint->status != OMX_ENDPOINT_STATUS_FREE)
-		omx_endpoint_close(endpoint);
+	/*
+	 * if really closing an endpoint, __omx_endpoint_close() may fail if already being closed.
+	 * if closing the global fd, it will fail for sure, but we don't care.
+	 * just try to close, let __omx_endpoint_close() fail if needed, and ignore the return value.
+	 */
+	__omx_endpoint_close(endpoint, 0); /* we don't hold the iface lock */
 
 	return 0;
 }
@@ -421,11 +397,13 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_GET_BOARD_ID: {
 		struct omx_endpoint * endpoint = file->private_data;
 		struct omx_cmd_get_board_id get_board_id;
-		int use_endpoint = 0;
 
-		/* try to acquire the endpoint */
-		ret = omx_endpoint_acquire_from_ioctl(endpoint);
-		if (ret < 0) {
+		/*
+		 * the endpoint is already acquired by the file,
+		 * just check its status
+		 */
+		ret = -EINVAL;
+		if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
 			/* the endpoint is not open, get the command parameter and use its board_index */
 			ret = copy_from_user(&get_board_id, (void __user *) arg,
 					     sizeof(get_board_id));
@@ -436,17 +414,12 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		} else {
 			/* endpoint acquired, use its board index */
 			get_board_id.board_index = endpoint->board_index;
-			use_endpoint = 1;
 		}
 
 		ret = omx_iface_get_id(get_board_id.board_index,
 				       &get_board_id.board_addr,
 				       get_board_id.hostname,
 				       get_board_id.ifacename);
-
-		/* release the endpoint if we used it */
-		if (use_endpoint)
-			omx_endpoint_release(endpoint);
 
 		if (ret < 0)
 			goto out;
@@ -607,15 +580,6 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		break;
 	}
 
-	case OMX_CMD_CLOSE_ENDPOINT: {
-		struct omx_endpoint * endpoint = file->private_data;
-		BUG_ON(!endpoint);
-
-		ret = omx_endpoint_close(endpoint);
-
-		break;
-	}
-
 	case OMX_CMD_BENCH:
 	case OMX_CMD_SEND_TINY:
 	case OMX_CMD_SEND_SMALL:
@@ -635,13 +599,15 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		BUG_ON(index >= ARRAY_SIZE(omx_cmd_with_endpoint_handlers));
 		BUG_ON(omx_cmd_with_endpoint_handlers[index] == NULL);
 
-		ret = omx_endpoint_acquire_from_ioctl(endpoint);
-		if (unlikely(ret < 0))
+		/*
+		 * the endpoint is already acquired by the file,
+		 * just check its status
+		 */
+		ret = -EINVAL;
+		if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
 			goto out;
 
 		ret = omx_cmd_with_endpoint_handlers[index](endpoint, (void __user *) arg);
-
-		omx_endpoint_release(endpoint);
 
 		break;
 	}
