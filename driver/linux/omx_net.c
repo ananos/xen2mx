@@ -378,7 +378,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
 		 * schedule the endpoint closing, with the iface lock hold
 		 * ignore the return value, somebody might be closing it already
 		 */
-		__omx_endpoint_close(endpoint, 1);
+		omx_endpoint_close(endpoint, 1);
 		/*
 		 * no need to wait for anything, the last endpoint reference
 		 * will release the iface, the last iface reference will

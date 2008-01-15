@@ -236,8 +236,8 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
  * If already closing, return an error.
  */
 int
-__omx_endpoint_close(struct omx_endpoint * endpoint,
-		     int ifacelocked)
+omx_endpoint_close(struct omx_endpoint * endpoint,
+		   int ifacelocked)
 {
 	int ret;
 
@@ -345,11 +345,11 @@ omx_miscdev_release(struct inode * inode, struct file * file)
 	BUG_ON(!endpoint);
 
 	/*
-	 * if really closing an endpoint, __omx_endpoint_close() may fail if already being closed.
+	 * if really closing an endpoint, omx_endpoint_close() may fail if already being closed.
 	 * if closing the global fd, it will fail for sure, but we don't care.
-	 * just try to close, let __omx_endpoint_close() fail if needed, and ignore the return value.
+	 * just try to close, let omx_endpoint_close() fail if needed, and ignore the return value.
 	 */
-	__omx_endpoint_close(endpoint, 0); /* we don't hold the iface lock */
+	omx_endpoint_close(endpoint, 0); /* we don't hold the iface lock */
 
 	return 0;
 }
