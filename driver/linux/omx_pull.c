@@ -311,7 +311,7 @@ omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 		struct omx_pull_handle * handle;
 
 		/* get the first handle of the list, acquire it and release the list lock */
-		handle = list_entry(endpoint->pull_handles_running_list.next, struct omx_pull_handle, list_elt);
+		handle = list_first_entry(&endpoint->pull_handles_running_list, struct omx_pull_handle, list_elt);
 		omx_pull_handle_acquire(handle);
 		write_unlock_bh(&endpoint->pull_handles_lock);
 
