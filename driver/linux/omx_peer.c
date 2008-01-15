@@ -405,6 +405,9 @@ omx_peer_lookup_by_hostname(char *hostname,
 	rcu_read_lock();
 	for(i=0; i<omx_peer_max; i++) {
 		struct omx_peer *peer = rcu_dereference(omx_peer_array[i]);
+		if (!peer)
+			continue;
+
 		if (!strcmp(hostname, peer->hostname)) {
 			if (index)
 				*index = i;
