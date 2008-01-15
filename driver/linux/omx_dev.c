@@ -113,6 +113,8 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 static void
 omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 {
+	might_sleep();
+
 	omx_endpoint_user_regions_exit(endpoint);
 	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
