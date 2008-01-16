@@ -1193,6 +1193,15 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* lock the handle */
 	spin_lock(&handle->lock);
 
+	/* check the status now that we own the lock */
+	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
+		/* the handle is being closed, forget about this packet */
+		spin_unlock(&handle->lock);
+		omx_pull_handle_release(handle);
+		err = 0;
+		goto out_with_endpoint;
+	}
+
 	/* check that the frame is from this block, and handle wrap around 256 */
 	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
 	if (unlikely(frame_seqnum_offset >= handle->block_frames)) {
@@ -1250,6 +1259,15 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* take the lock back to prepare the future */
 	spin_lock(&handle->lock);
+
+	/* check the status now that we own the lock */
+	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
+		/* the handle is being closed, forget about this packet */
+		spin_unlock(&handle->lock);
+		omx_pull_handle_release(handle);
+		err = 0;
+		goto out_with_endpoint;
+	}
 
 	/*
 	 * handle->frame_index may have changed while the lock was released if we are
@@ -1502,6 +1520,17 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 
 	/* lock the handle and complete it */
 	spin_lock(&handle->lock);
+
+	/* check the status now that we own the lock */
+	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
+		/* the handle is being closed, forget about this packet */
+		spin_unlock(&handle->lock);
+		omx_pull_handle_release(handle);
+		err = 0;
+		goto out_with_endpoint;
+	}
+
+	/* complete the handle */
 	omx_pull_handle_done_notify(handle, nack_type);
 	omx_pull_handle_done_release(handle);
 	omx_endpoint_release(endpoint);
