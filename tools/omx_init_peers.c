@@ -24,6 +24,35 @@
 
 #define OMX_PEERS_FILELINELEN_MAX (10 + 1 + OMX_HOSTNAMELEN_MAX + OMX_BOARD_ADDR_STRLEN + 1)
 
+static int clear = 0;
+static int verbose = 0;
+
+omx_return_t
+omx__peer_add(uint64_t board_addr, char *hostname)
+{
+  char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+  omx_return_t ret;
+
+  omx__board_addr_sprintf(board_addr_str, board_addr);
+
+  if (verbose)
+    printf("Trying to adding peer %s address %s\n", hostname, board_addr_str);
+
+  /* add the new peer */
+  ret = omx__driver_peer_add(board_addr, hostname);
+  if (ret != OMX_SUCCESS) {
+    if (ret == OMX_BUSY) {
+      fprintf(stderr, "Cannot add new peer, address (%s) already listed\n",
+	      board_addr_str);
+    } else {
+      fprintf(stderr, "Failed to add new peer %s address %s (%s)\n",
+	      hostname, board_addr_str, omx_strerror(ret));
+    }
+  }
+
+  return ret;
+}
+
 omx_return_t
 omx__peers_read(const char * filename)
 {
@@ -42,7 +71,6 @@ omx__peers_read(const char * filename)
     int addr_bytes[6];
     uint64_t board_addr;
     size_t len = strlen(line);
-    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 
     /* ignore comments and empty lines */
     if (line[0] == '#' || len == 1)
@@ -69,21 +97,10 @@ omx__peers_read(const char * filename)
 		  + (((uint64_t) addr_bytes[3]) << 16)
 		  + (((uint64_t) addr_bytes[4]) << 8)
 		  + (((uint64_t) addr_bytes[5]) << 0));
-    omx__board_addr_sprintf(board_addr_str, board_addr);
 
-    /* add the new peer */
-    ret = omx__driver_peer_add(board_addr, hostname);
-    if (ret != OMX_SUCCESS) {
-      if (ret == OMX_BUSY) {
-	fprintf(stderr, "Cannot add new peer, address (%s) already listed\n",
-		board_addr_str);
-	/* continue */
-      } else {
-	fprintf(stderr, "Failed to add new peer '%s' (%s)\n",
-		line, omx_strerror(ret));
-	goto out_with_file;
-      }
-    }
+    ret = omx__peer_add(board_addr, hostname);
+    if (ret != OMX_SUCCESS && ret != OMX_BUSY)
+      goto out_with_file;
   }
 
   fclose(file);
@@ -98,12 +115,17 @@ omx__peers_read(const char * filename)
 static void
 usage(int argc, char *argv[])
 {
+  fprintf(stderr, "%s [options]\n", argv[0]);
+  fprintf(stderr, "  => does not add any new peers\n");
   fprintf(stderr, "%s [options] filename\n", argv[0]);
-  fprintf(stderr, " -c <n>\treplace existing peers with the new ones (default)\n");
-  fprintf(stderr, " -a <n>\tappend new peers to existing ones\n");
+  fprintf(stderr, "  => adds new peers from a file\n");
+  fprintf(stderr, "%s [options] address hostname\n", argv[0]);
+  fprintf(stderr, "  => adds a new single peer from the command line arguments\n");
+  fprintf(stderr, "Options\n");
+  fprintf(stderr, " -c <n>\treplace existing peers with the new ones\n");
+  fprintf(stderr, " -a <n>\tappend new peers to existing ones (default)\n");
+  fprintf(stderr, " -v <n>\tverbose messages\n");
 }
-
-static int clear = 1;
 
 int
 main(int argc, char *argv[])
@@ -118,13 +140,16 @@ main(int argc, char *argv[])
     exit(-1);
   }
 
-  while ((c = getopt(argc, argv, "cah")) != -1)
+  while ((c = getopt(argc, argv, "cavh")) != -1)
     switch (c) {
     case 'c':
       clear = 1;
       break;
     case 'a':
       clear = 0;
+      break;
+    case 'v':
+      verbose = 1;
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
@@ -134,12 +159,8 @@ main(int argc, char *argv[])
       break;
     }
 
-  if (optind >= argc) {
-    fprintf(stderr, "Missing peers filename\n");
-    exit(-1);
-  }
-
   if (clear) {
+    printf("Clearing peers...\n");
     ret = omx__driver_peers_clear();
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to clear peers (%s)\n",
@@ -148,7 +169,42 @@ main(int argc, char *argv[])
     }
   }
 
-  ret = omx__peers_read(argv[optind]);
+  if (argc > optind + 1) {
+    /* two arguments given, take it as node + ip */
+    char *board_addr_str = argv[optind];
+    char *hostname = argv[optind+1];
+    int addr_bytes[6];
+    uint64_t board_addr;
+
+    printf("Adding peer %s address %s\n", hostname, board_addr_str);
+
+    /* parse the address */
+    if (sscanf(board_addr_str, "%02x:%02x:%02x:%02x:%02x:%02x",
+	       &addr_bytes[0], &addr_bytes[1], &addr_bytes[2],
+	       &addr_bytes[3], &addr_bytes[4], &addr_bytes[5])
+	!= 6) {
+      fprintf(stderr, "Unrecognized address '%s'\n", board_addr_str);
+      exit(-1);
+    }
+
+    board_addr = ((((uint64_t) addr_bytes[0]) << 40)
+		  + (((uint64_t) addr_bytes[1]) << 32)
+		  + (((uint64_t) addr_bytes[2]) << 24)
+		  + (((uint64_t) addr_bytes[3]) << 16)
+		  + (((uint64_t) addr_bytes[4]) << 8)
+		  + (((uint64_t) addr_bytes[5]) << 0));
+
+    ret = omx__peer_add(board_addr, hostname);
+
+  } else if (argc == optind + 1) {
+    /* single argument given, take it as a peer file */
+    char *filename = argv[optind];
+    printf("Adding peers from file %s...\n", filename);
+    ret = omx__peers_read(filename);
+
+  } else {
+    printf("Not adding any peer\n");
+  }
 
   return ret;
 }
