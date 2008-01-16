@@ -112,6 +112,26 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	if (!new_hostname)
 		goto out;
 
+	mutex_lock(&omx_peers_mutex);
+
+	err = -ENOMEM;
+	if (omx_peer_next_nr == omx_peer_max)
+		goto out_with_mutex;
+
+	hash = omx_peer_addr_hash(board_addr);
+
+	rcu_read_lock();
+	list_for_each_entry_rcu(old, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
+		if (old->board_addr == board_addr) {
+			printk(KERN_INFO "Open-MX: Cannot add already existing peer address %012llx\n",
+			       (unsigned long long) board_addr);
+			err = -EBUSY;
+			rcu_read_unlock();
+			goto out_with_mutex;
+		}
+	}
+	rcu_read_unlock();
+
 	iface = omx_iface_find_by_addr(board_addr);
 	if (iface) {
 		char * old_hostname;
@@ -134,31 +154,11 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 		err = -ENOMEM;
 		new = kmalloc(sizeof(*new), GFP_KERNEL);
 		if (!new)
-			goto out_with_new_hostname;
+			goto out_with_mutex;
 
 		new->board_addr = board_addr;
 		new->hostname = new_hostname;
 	}
-
-	mutex_lock(&omx_peers_mutex);
-
-	err = -ENOMEM;
-	if (omx_peer_next_nr == omx_peer_max)
-		goto out_with_lock;
-
-	hash = omx_peer_addr_hash(board_addr);
-
-	rcu_read_lock();
-	list_for_each_entry_rcu(old, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
-		if (old->board_addr == board_addr) {
-			printk(KERN_INFO "Open-MX: Cannot add already existing peer address %012llx\n",
-			       (unsigned long long) board_addr);
-			err = -EBUSY;
-			rcu_read_unlock();
-			goto out_with_lock;
-		}
-	}
-	rcu_read_unlock();
 
 	new->index = omx_peer_next_nr;
 	new->local_iface = iface;
@@ -181,14 +181,9 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 
 	return 0;
 
- out_with_lock:
+ out_with_mutex:
 	mutex_unlock(&omx_peers_mutex);
-	if (iface)
-		omx_iface_release(iface);
-	else
-		kfree(new);
- out_with_new_hostname:
-	kfree(hostname);
+	kfree(new_hostname);
  out:
 	return err;
 }
