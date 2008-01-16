@@ -1,3 +1,7 @@
+* nimp? "release the handle before sending to avoid deadlock when sending to ourself in the same region"
+
+* is close really in interrupt context?
+
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 

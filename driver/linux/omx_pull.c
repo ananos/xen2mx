@@ -63,20 +63,22 @@ typedef uint16_t omx_frame_bitmask_t;
 enum omx_pull_handle_status {
 	/*
 	 * The handle is normal, being processed as usual and its timeout handler is running ok.
+	 * It is queued on the endpoint running_list.
 	 */
 	OMX_PULL_HANDLE_STATUS_OK,
 
 	/*
-	 * The handle has been removed from the idr and the endpoint list, but the timeout handler is still running.
+	 * The handle has been removed from the idr, but the timeout handler is still running.
+	 * It is queued on the endpoint done_but_timer_list.
 	 * Either the pull has completed (or aborted on error), or the endpoint is being closed and
 	 * all handles have been scheduled for removal.
-	 * The timeout handler must exit next time it runs. It will release the reference on the handle
-	 * so that the handle may be destroyed.
+	 * The timeout handler must exit next time it runs. It will release the reference on the handle,
+	 * dequeue it, and the handle may be destroyed.
 	 */
 	OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT,
 
 	/*
-	 * The handle has been removed from the idr and the endpoint list, and its timeout handler has exited
+	 * The handle has been removed from the idr and the endpoint lists, and its timeout handler has exited
 	 * and released its reference.
 	 * Either the pull has completed (or aborted on error) and the handler caught the MUST_EXIT status,
 	 * or the timeout was reached and its handler aborted the handle directly.
@@ -92,9 +94,9 @@ struct omx_pull_block_desc {
 
 struct omx_pull_handle {
 	struct kref refcount;
-	struct list_head list_elt;
+	struct list_head list_elt; /* always queued on one of the endpoint lists */
 	uint32_t idr_index;
-	uint32_t magic;
+	uint32_t magic; /* 8bits endpoint index + 24bits handle generation number */
 
 	/* timer for retransmission */
 	struct timer_list retransmit_timer;
@@ -130,18 +132,19 @@ static void omx_pull_handle_timeout_handler(unsigned long data);
 /*
  * Notes about locking:
  *
- * Each handle owns a reference on the endpoint during its whole life.
- * It is released when the last handle reference is released. One is used
- * as long as the timeout handler is pending. The other one is taken while
- * processing incoming pull replies.
+ * Each handle owns a spin_lock that protects the actual pull status (frame index, ...).
+ * It also protects its handle status and its queueing in the endpoint lists and idr.
+ * This lock is always taken *before* the endpoint pull handle lock.
  *
- * Each handle also owns a spinlock to protect in variable internal state.
- * It status field describes whether it is being processed or not, and
- * whether its timer is still active. Once both are done, the handle may
- * be cleaned.
+ * The handle does not own a reference on the endpoint. It is always queued in one
+ * endpoint lists, and the endpoint closing will enforce its detruction.
+ * When the endpoint starts to be closed, it calls prepare_exit which sets all handle
+ * to timer_must_exit but cannot wait for them because of the possible interrupt
+ * context. Later, the cleanup thread will cleanup the endpoint, including destroying
+ * the handle timers that are still running.
  *
- * The pile of handles for an endpoint is protected by a rwlock. It is taken
- * for reading when acquiring an handle (when a pull reply arrives, likely
+ * The pile of handles for an endpoint is protected by a rwlock. It is taken for
+ * reading when acquiring an handle (when a pull reply or nack mcp arrives, likely
  * in a bottom half). It is taken for writing when creating a handle (when the
  * application request a pull), finishing a handle (when a pull reply arrives
  * and completes the pull request, likely in a bottom half), and when destroying
@@ -301,7 +304,7 @@ void
 omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 {
 	/*
-	 * ask all pull handles of the endpoint to stop their timer
+	 * ask all pull handles of the endpoint to stop their timer.
 	 * but we can't take endpoint->pull_handles_lock after handle->lock since that would deadlock
 	 * so we use a tricky loop to take locks in order
 	 */
@@ -578,13 +581,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 /*
  * Takes an acquired and locked pull handle and complete it.
- *
- * May be called by the BH after receiving a pull reply or a nack,
- * by the retransmit timer when expired, or with in an ioctl if the
- * posting of a pull failed.
+ * Called by the BH after receiving a pull reply or a nack.
  */
-
-/* called by the bottom half or ioctl */
 static inline void
 omx_pull_handle_done_release(struct omx_pull_handle * handle)
 {
@@ -608,7 +606,10 @@ omx_pull_handle_done_release(struct omx_pull_handle * handle)
 	omx_pull_handle_release(handle);
 }
 
-/* called by the timer when the timeout is expired */
+/*
+ * Takes an acquired and locked pull handle and complete it.
+ * Called by the retransmit timer when expired.
+ */
 static inline void
 omx_pull_handle_timeout_release(struct omx_pull_handle * handle)
 {
@@ -791,7 +792,8 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	__mod_timer(&handle->retransmit_timer,
 		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-	/* release the handle before sending to avoid
+	/*
+	 * release the handle before sending to avoid
 	 * deadlock when sending to ourself in the same region
 	 */
 	spin_unlock(&handle->lock);
@@ -807,8 +809,12 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	return err;
 }
 
-/* retransmission callback, owns a reference on the endpoint */
-static void omx_pull_handle_timeout_handler(unsigned long data)
+/*
+ * Retransmission callback, owns a reference on the handle.
+ * Running as long as status is OMX_PULL_HANDLE_STATUS_OK.
+ */
+static void
+omx_pull_handle_timeout_handler(unsigned long data)
 {
 	struct omx_pull_handle * handle = (void *) data;
 	struct omx_endpoint * endpoint = handle->endpoint;
