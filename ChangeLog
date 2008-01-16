@@ -1,12 +1,40 @@
+Open-MX 0.2.0 (January 16th 2007, svn r1071)
+============================================
+The Stabilizing-the-Basics release.
 
-* Add sbin/omx_local_install in the install directory to setup the
+Major enhancements:
+* Install a sbin/omx_local_install in the install directory to setup the
   /etc/init.d/open-mx startup script on each node, with the
   /etc/open-mx/open-mx.conf configuration file.
   The default static peers file is now /etc/open-mx/peers.
+* Improved boards and peers management:
+  + Add the omx_hostname tool to change board names.
+  + Make omx_init_peers add a single peer when 2 arguments are given.
+  + Merge peer and board names so that one updates to other one automatically.
+* Rework large message support to handle abort, timeout, endpoint closing,
+  interface removal, and early module removal safely.
 
+Other improvements from previous release:
+* Report interface removal to user-space.
+* Add an ABI check between the driver and library.
+* Fix possible pull handle confusion when an index is reused soon after.
+* Fix driver build and ioctls on mixed 32/64bits platforms.
+* Rework locking in the driver to reduce holding time and use RCU fast locking
+  in the readers.
+* Improve messages and debugging messages in the driver.
+* Valgrind 3.3 support.
+* Lots of various fixes.
 
-Open-MX 0.1.0 (December 20th 2007)
-==================================
+Caveats:
+* Node disconnection not well recovered (some requests will remain uncompleted
+  for ever)
+* Blocking function will busy poll by default to avoid breaking retransmission
+  and progression. Use OMX_WAITSPIN=0 to force sleeping.
+* No background progression or retransmission is done if the application does
+  not invoke an Open-MX routine explicitly.
+
+Open-MX 0.1.0 (December 20th 2007, svn r908)
+============================================
 First official release.
 
 Status:
@@ -28,15 +56,8 @@ Other improvements from previous snapshot:
 * Make OMX_VERBOSE configurable to select which debug messages to show.
 
 Caveats:
-* Node disconnection not well recovered (some requests will remain
-  uncompleted for ever)
 * Large message retransmission seem to cause some kernel hang under
   heavy message loss rate.
-* Blocking function will busy poll by default to avoid breaking
-  retransmission and progression. Use OMX_WAITSPIN=0 to force
-  sleeping.
-* No background progression or retransmission is done if the
-  application does not invoke an Open-MX routine explicitly.
 
 
 
