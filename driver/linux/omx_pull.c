@@ -1003,7 +1003,7 @@ omx_recv_pull(struct omx_iface * iface,
 		- pulled_rdma_offset + first_frame_offset;
 	block_remaining_length = block_length;
 
-	/* prepare all skbs now */
+	/* send all replies */
 	for(i=0; i<replies; i++) {
 		uint32_t frame_length;
 
@@ -1075,9 +1075,6 @@ omx_recv_pull(struct omx_iface * iface,
 
 		omx_set_skb_destructor(skb, omx_send_pull_reply_skb_destructor, region);
 
-		/* now that the skb is ready, remove it from the array
-		 * so that we don't try to free it in case of error later
-		 */
 		omx_queue_xmit(iface, skb, PULL_REPLY);
 
 		/* update fields now */
