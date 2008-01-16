@@ -20,9 +20,24 @@
 #define __omx_misc_h__
 
 #include <linux/netdevice.h>
+#include <linux/skbuff.h>
 
 #include "omx_io.h"
 #include "omx_wire.h"
+
+/* set/get a skb destructor and its data */
+static inline void
+omx_set_skb_destructor(struct sk_buff *skb, void (*callback)(struct sk_buff *skb), void * data)
+{
+	skb->destructor = callback;
+	skb->sk = data;
+}
+
+static inline void *
+omx_get_skb_destructor_data(struct sk_buff *skb)
+{
+	return (void *) skb->sk;
+}
 
 /* queue a skb for xmit, account it, and eventually actually drop it for debugging */
 #define __omx_queue_xmit(iface, skb, type)	\

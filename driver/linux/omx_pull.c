@@ -898,8 +898,7 @@ omx_pull_handle_timeout_handler(unsigned long data)
 static void
 omx_send_pull_reply_skb_destructor(struct sk_buff *skb)
 {
-	struct omx_user_region * region = (void *) skb->sk;
-
+	struct omx_user_region * region = omx_get_skb_destructor_data(skb);
 	omx_user_region_release(region);
 }
 
@@ -1074,8 +1073,7 @@ omx_recv_pull(struct omx_iface * iface,
 			skb->len = ETH_ZLEN;
 		}
 
-		skb->sk = (void *) region;
-		skb->destructor = omx_send_pull_reply_skb_destructor;
+		omx_set_skb_destructor(skb, omx_send_pull_reply_skb_destructor, region);
 
 		/* now that the skb is ready, remove it from the array
 		 * so that we don't try to free it in case of error later

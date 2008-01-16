@@ -92,7 +92,7 @@ struct omx_deferred_event {
 static void
 omx_medium_frag_skb_destructor(struct sk_buff *skb)
 {
-	struct omx_deferred_event * defevent = (void *) skb->sk;
+	struct omx_deferred_event * defevent = omx_get_skb_destructor_data(skb);
 	struct omx_endpoint * endpoint = defevent->endpoint;
 
 	/* report the event to user-space */
@@ -385,11 +385,10 @@ omx_send_medium(struct omx_endpoint * endpoint,
 	}
 
 	/* prepare the deferred event now that we cannot fail anymore */
-	defevent->endpoint = endpoint;
 	omx_endpoint_reacquire(endpoint); /* keep a reference in the defevent */
+	defevent->endpoint = endpoint;
 	defevent->evt.sendq_page_offset = cmd.sendq_page_offset;
-	skb->sk = (void *) defevent;
-	skb->destructor = omx_medium_frag_skb_destructor;
+	omx_set_skb_destructor(skb, omx_medium_frag_skb_destructor, defevent);
 
 	omx_queue_xmit(iface, skb, MEDIUM_FRAG);
 
