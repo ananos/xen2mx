@@ -792,10 +792,7 @@ omx_send_pull(struct omx_endpoint * endpoint,
 	__mod_timer(&handle->retransmit_timer,
 		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-	/*
-	 * release the handle before sending to avoid
-	 * deadlock when sending to ourself in the same region
-	 */
+	/* no need to keep the lock while sending */
 	spin_unlock(&handle->lock);
 
 	if (likely(skb))
@@ -884,9 +881,7 @@ omx_pull_handle_timeout_handler(unsigned long data)
 	mod_timer(&handle->retransmit_timer,
 		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-	/* release the handle before sending to avoid
-	 * deadlock when sending to ourself in the same region
-	 */
+	/* no need to keep the lock while sending */
 	spin_unlock(&handle->lock);
 
 	if (likely(skb))
@@ -1321,9 +1316,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		mod_timer(&handle->retransmit_timer,
 			  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-		/* release the handle before sending to avoid
-		 * deadlock when sending to ourself in the same region
-		 */
+		/* no need to keep the lock while sending */
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 
@@ -1402,9 +1395,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		mod_timer(&handle->retransmit_timer,
 			  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-		/* release the handle before sending to avoid
-		 * deadlock when sending to ourself in the same region
-		 */
+		/* no need to keep the lock while sending */
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 

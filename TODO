@@ -1,7 +1,3 @@
-* nimp? "release the handle before sending to avoid deadlock when sending to ourself in the same region"
-
-* is close really in interrupt context?
-
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
@@ -32,6 +28,8 @@
   + call it when the connect session changed
 
 * pull improvements
+  + ph_prepare_exit only called when holding the iface mutex, may sleep
+    - but last_release may be called from interrupt context
   + update the handle (and send the request?) before the copy, except when the handle is done (will simplify ioat)
   + only a single bitmap per handle
 
