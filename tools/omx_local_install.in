@@ -27,7 +27,7 @@ fi
 echo "Installing ${OMX_INIT_SCRIPT_DEST}..."
 cp ${OMX_INIT_SCRIPT} ${OMX_INIT_SCRIPT_DEST}
 
-if test ! -f ${OMX_CONFIG_DIR} ; then
+if test ! -d ${OMX_CONFIG_DIR} ; then
 	echo "Creating ${OMX_CONFIG_DIR} directory..."
 	mkdir ${OMX_CONFIG_DIR}
 fi
