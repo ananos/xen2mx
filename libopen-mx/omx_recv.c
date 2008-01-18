@@ -688,7 +688,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     }
 
     /* if not FINISHED, return MUST be CONTINUE */
-    if (ret == OMX_RECV_CONTINUE) {
+    if (ret != OMX_RECV_CONTINUE) {
       omx__abort("The unexpected handler must return either OMX_RECV_FINISHED and OMX_RECV_CONTINUE\n");
     }
 
