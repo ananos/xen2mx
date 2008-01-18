@@ -92,6 +92,7 @@ AC_MSG_RESULT(${LINUX_RELEASE})
 # create the output file
 CHECKS_NAME=driver/linux/omx_checks.h
 CHECKS_PATH=`pwd`/${CHECKS_NAME}
+CHECKS_DATE_PREFIX="This file has been first generated on "
 TMP_CHECKS_PATH=${CHECKS_PATH}.tmp
 rm -f ${TMP_CHECKS_PATH}
 mkdir -p $(dirname ${TMP_CHECKS_PATH})
@@ -103,7 +104,7 @@ echo "" >> ${TMP_CHECKS_PATH}
 
 # what command line was used to generate with file
 echo "/*" >> ${TMP_CHECKS_PATH}
-echo " * This file has been generated with on "`date` >> ${TMP_CHECKS_PATH}
+echo " * ${CHECKS_DATE_PREFIX}"`date` >> ${TMP_CHECKS_PATH}
 echo " * The configure line was: $ac_configure $ac_configure_args" >> ${TMP_CHECKS_PATH}
 echo " * It checked kernel headers in ${LINUX_HDR}/include/" >> ${TMP_CHECKS_PATH}
 echo " */" >> ${TMP_CHECKS_PATH}
@@ -203,7 +204,7 @@ echo "" >> ${TMP_CHECKS_PATH}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_PATH}
 
 # install final file
-if diff -q ${CHECKS_PATH} ${TMP_CHECKS_PATH} >/dev/null 2>&1; then
+if diff -q ${CHECKS_PATH} ${TMP_CHECKS_PATH} --ignore-matching-lines="${CHECKS_DATE_PREFIX}" >/dev/null 2>&1; then
   rm -f ${TMP_CHECKS_PATH}
   AC_MSG_NOTICE(${CHECKS_NAME} is unchanged)
 else
