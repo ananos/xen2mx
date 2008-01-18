@@ -30,7 +30,10 @@ if test ! -d ${OMX_PREFIX}; then
     exit 1
 fi
 
-test -f ${OMX_CONFIG} && source ${OMX_CONFIG}
+if test -f ${OMX_CONFIG}; then
+    . ${OMX_CONFIG}
+fi
+
 OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${IFACES}"
 
 # Remove the Open-MX module if loaded
