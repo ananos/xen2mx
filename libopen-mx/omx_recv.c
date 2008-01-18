@@ -407,7 +407,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       return OMX_SUCCESS;
 
     /* if not FINISHED, return MUST be CONTINUE */
-    if (ret == OMX_RECV_CONTINUE) {
+    if (ret != OMX_RECV_CONTINUE) {
       omx__abort("The unexpected handler must return either OMX_RECV_FINISHED and OMX_RECV_CONTINUE\n");
     }
 
