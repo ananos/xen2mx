@@ -242,8 +242,8 @@ omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
 	  uint32_t timeout);
 
 enum omx_unexp_handler_action {
-  OMX_RECV_CONTINUE = 0,
-  OMX_RECV_FINISHED
+  OMX_UNEXP_HANDLER_RECV_CONTINUE = 0,
+  OMX_UNEXP_HANDLER_RECV_FINISHED
 };
 typedef enum omx_unexp_handler_action omx_unexp_handler_action_t;
 

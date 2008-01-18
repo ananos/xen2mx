@@ -32,8 +32,8 @@
 
 #define mx_set_request_timeout omx_set_request_timeout
 
-#define MX_RECV_CONTINUE OMX_RECV_CONTINUE
-#define MX_RECV_FINISHED OMX_RECV_FINISHED
+#define MX_RECV_CONTINUE OMX_UNEXP_HANDLER_RECV_CONTINUE
+#define MX_RECV_FINISHED OMX_UNEXP_HANDLER_RECV_FINISHED
 typedef omx_unexp_handler_action_t mx_unexp_handler_action_t;
 typedef omx_unexp_handler_t mx_unexp_handler_t;
 #define mx_register_unexp_handler omx_register_unexp_handler

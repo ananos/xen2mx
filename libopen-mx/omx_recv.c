@@ -402,13 +402,13 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     /* FIXME: unlock */
     ep->in_handler = 0;
     /* FIXME: signal */
-    if (ret == OMX_RECV_FINISHED)
+    if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED)
       /* the handler took care of the message, we now discard it */
       return OMX_SUCCESS;
 
     /* if not FINISHED, return MUST be CONTINUE */
-    if (ret != OMX_RECV_CONTINUE) {
-      omx__abort("The unexpected handler must return either OMX_RECV_FINISHED and OMX_RECV_CONTINUE\n");
+    if (ret != OMX_UNEXP_HANDLER_RECV_CONTINUE) {
+      omx__abort("The unexpected handler must return either OMX_UNEXP_HANDLER_RECV_FINISHED or _CONTINUE\n");
     }
 
     /* the unexp has been noticed check if a recv has been posted */
@@ -680,7 +680,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     /* FIXME: unlock */
     ep->in_handler = 0;
     /* FIXME: signal */
-    if (ret == OMX_RECV_FINISHED) {
+    if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED) {
       /* the handler took care of the message, just complete the send request */
       sreq->generic.status.xfer_length = msg_length;
       omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
@@ -688,8 +688,8 @@ omx__process_self_send(struct omx_endpoint *ep,
     }
 
     /* if not FINISHED, return MUST be CONTINUE */
-    if (ret != OMX_RECV_CONTINUE) {
-      omx__abort("The unexpected handler must return either OMX_RECV_FINISHED and OMX_RECV_CONTINUE\n");
+    if (ret != OMX_UNEXP_HANDLER_RECV_CONTINUE) {
+      omx__abort("The unexpected handler must return either OMX_UNEXP_HANDLER_RECV_FINISHED and _CONTINUE\n");
     }
 
     /* the unexp has been noticed check if a recv has been posted */
