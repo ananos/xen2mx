@@ -248,7 +248,7 @@ int main(int argc, char *argv[])
     vect_send_to_contig_recv(ep, addr, seg, i+1, buffer1, buffer2);
   }
 
-  for(i=0; i<4; i++) { /* tiny/small only so far */
+  for(i=0; i<6; i++) { /* tiny/small/medium only so far */
     contig_send_to_vect_recv(ep, addr, buffer2, seg, i+1, buffer1);
   }
 

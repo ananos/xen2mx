@@ -148,4 +148,66 @@ omx_continue_partial_copy_from_segments(void *dst, struct omx__req_seg *srcsegs,
   state->offset = curoff;
 }
 
+/*
+ * copy a chunk of contigous buffer into segments,
+ * start at state and update state before returning
+ */
+static inline void
+omx_continue_partial_copy_to_segments(struct omx__req_seg *dstsegs, void *src,
+				      uint32_t length,
+				      struct omx_segscan_state *state)
+{
+  omx_seg_t * curseg = state->seg;
+  uint32_t curoff = state->offset;
+
+  while (1) {
+    uint32_t curchunk = curseg->len - curoff; /* remaining data in the segment */
+    uint32_t chunk = curchunk > length ? length : curchunk; /* data to take */
+    memcpy(curseg->ptr + curoff, src, chunk);
+    omx__debug_printf(VECT, "copying %ld into seg %d at %ld\n",
+		      (unsigned long) chunk, (unsigned) (curseg-&dstsegs->segs[0]), (unsigned long)curoff);
+    length -= chunk;            
+    src += chunk;
+    if (curchunk != chunk) {
+      /* we didn't consume this whole segment, we're done */
+      curoff += chunk;
+      break;
+    } else {
+      /* next segment, and exit if nothing to do anymore */
+      curseg++;
+      curoff = 0;
+      if (!length)
+	break;
+    }
+  }
+
+  state->seg = curseg;
+  state->offset = curoff;
+}
+
+/*
+ * copy a chunk of contigous buffer into segments,
+ * check whether the saved state is valid and use it, or update it first.
+ * then, start at state and update state before returning.
+ */
+static inline void
+omx_partial_copy_to_segments(struct omx__req_seg *dstsegs, void *src,
+			     uint32_t length,
+			     uint32_t offset, struct omx_segscan_state *scan_state, uint32_t *scan_offset)
+{
+  if (offset != *scan_offset) {
+    omx_seg_t * curseg = &dstsegs->segs[0];
+    uint32_t curoffset = 0;
+    while (offset > curoffset + curseg->len) {
+      curoffset += curseg->len;
+      curseg++;
+    }
+    scan_state->seg = curseg;
+    scan_state->offset = offset - curoffset;
+  }
+
+  omx_continue_partial_copy_to_segments(dstsegs, src, length, scan_state);
+  *scan_offset = offset+length;
+}
+
 #endif /* __omx_segments_h__ */

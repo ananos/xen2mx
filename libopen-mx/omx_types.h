@@ -351,6 +351,8 @@ union omx_request {
       struct {
 	uint32_t frags_received_mask;
 	uint32_t accumulated_length;
+	uint32_t scan_offset;
+	struct omx_segscan_state scan_state;
       } medium;
       struct {
 	struct omx_cmd_send_notify send_notify_ioctl_param;

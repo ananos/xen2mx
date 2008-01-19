@@ -258,6 +258,10 @@ omx__init_process_recv_medium(union omx_request *req)
 {
   req->recv.specific.medium.frags_received_mask = 0;
   req->recv.specific.medium.accumulated_length = 0;
+  /* initialize the state to the beginning */
+  req->recv.specific.medium.scan_offset = 0;
+  req->recv.specific.medium.scan_state.seg = &req->recv.segs.segs[0];
+  req->recv.specific.medium.scan_state.offset = 0;
 }
 
 void
@@ -291,8 +295,12 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   if (unlikely(offset + chunk > msg_length))
     chunk = msg_length - offset;
 
-  assert(req->recv.segs.nseg == 1);
-  memcpy(req->recv.segs.single.ptr + offset, data, chunk);
+  if (likely(req->recv.segs.nseg == 1))
+    memcpy(req->recv.segs.single.ptr + offset, data, chunk);
+  else
+    omx_partial_copy_to_segments(&req->recv.segs, data, chunk,
+				 offset, &req->recv.specific.medium.scan_state,
+				 &req->recv.specific.medium.scan_offset);
   req->recv.specific.medium.frags_received_mask |= 1 << frag_seqnum;
   req->recv.specific.medium.accumulated_length += chunk;
 
@@ -878,6 +886,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 
 	if (unlikely(req->generic.state)) {
 	  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);
+	  /* no need to reset the scan_state, the unexpected buffer didn't use since its contigous */
 	  omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
 	} else {
 	  omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
