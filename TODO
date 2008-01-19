@@ -1,7 +1,7 @@
 * vectorial support
   + add copy_from/to segments routines
   + use segments copy for medium send
-  + use segments copy for tiny/small/medium recv
+  + use segments copy for medium recv
   + support multi-segments user region
   + support vectorial self comm
 

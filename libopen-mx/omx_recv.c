@@ -228,8 +228,7 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
 
-  assert(req->recv.segs.nseg == 1);
-  memcpy(req->recv.segs.single.ptr, msg->specific.tiny.data, msg_length);
+  omx_copy_to_segments(&req->recv.segs, msg->specific.tiny.data, msg_length);
 
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
@@ -245,8 +244,7 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
 
-  assert(req->recv.segs.nseg == 1);
-  memcpy(req->recv.segs.single.ptr, data, msg_length);
+  omx_copy_to_segments(&req->recv.segs, data, msg_length);
 
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
