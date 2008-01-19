@@ -1,3 +1,10 @@
+* vectorial support
+  + pass array of segments from isendv/irecvv to core functions
+  + add copy_from/to segments routine
+  + support multi-segments user region
+  + free segment array, either in request free or before (when receive/send is done?)
+  + support vectorial self comm
+
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
@@ -45,8 +52,6 @@
   + except if some endpoints are attached
 
 * check pingpong contents
-
-* vectorial support, through isendv/irecvv
 
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request

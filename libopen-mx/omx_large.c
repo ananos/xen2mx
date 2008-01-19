@@ -288,7 +288,9 @@ omx__submit_pull(struct omx_endpoint * ep,
   if (unlikely(ep->avail_exp_events < 1))
     return OMX_NO_RESOURCES;
 
-  ret = omx__get_region(ep, req->recv.buffer, xfer_length, &region);
+  assert(req->recv.segs.nseg == 1);
+
+  ret = omx__get_region(ep, req->recv.segs.single.ptr, xfer_length, &region);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 

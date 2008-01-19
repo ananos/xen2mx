@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 #include <assert.h>
 
 #include "open-mx.h"
@@ -412,6 +413,57 @@ omx__endpoint_sendq_map_user(struct omx_endpoint * ep,
   omx__debug_assert(array[index].next_free == -1);
 
   return user;
+}
+
+/************************
+ * Segments manipulation
+ */
+
+static inline void
+omx_cache_single_segment(struct omx__req_seg * reqsegs, void * buffer, uint32_t length)
+{
+  reqsegs->single.ptr = buffer;
+  reqsegs->single.len = length;
+  reqsegs->nseg = 1;
+  reqsegs->segs = &reqsegs->single;
+  reqsegs->total_length = reqsegs->single.len;
+}
+
+static inline omx_return_t
+omx_cache_segments(struct omx__req_seg * reqsegs, omx_seg_t * segs, uint32_t nseg)
+{
+
+  if (nseg == 0) {
+    /* use a single empty buffer, to avoid having to check for nsegs>0 */
+    omx_cache_single_segment(reqsegs, NULL, 0);
+
+  } else if (nseg == 1) {
+    omx_cache_single_segment(reqsegs, segs[0].ptr, segs[0].len);
+
+  } else {
+    int i;
+
+    reqsegs->segs = malloc(nseg * sizeof(omx_seg_t));
+    if (!reqsegs->segs)
+      return OMX_NO_RESOURCES;
+
+    memcpy(reqsegs->segs, segs, nseg * sizeof(omx_seg_t));
+
+    reqsegs->total_length = 0;
+    for(i=0; i<nseg; i++)
+      reqsegs->total_length += segs[i].len;
+
+    reqsegs->nseg = nseg;
+  }
+
+  return OMX_SUCCESS;
+}
+
+static inline void
+omx_free_segments(struct omx__req_seg * reqsegs)
+{
+  if (unlikely(reqsegs->nseg > 1))
+    free(reqsegs->segs);
 }
 
 #endif /* __omx_lib_h__ */

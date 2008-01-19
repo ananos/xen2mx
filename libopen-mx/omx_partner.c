@@ -692,7 +692,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       /* drop it and that's it */
       omx__dequeue_request(head, req);
       if (req->generic.type != OMX_REQUEST_TYPE_RECV_LARGE)
-	free(req->recv.buffer);
+	/* release the single segment used for unexp buffer */
+	free(req->recv.segs.single.ptr);
       omx__request_free(ep, req);
 
       count++;

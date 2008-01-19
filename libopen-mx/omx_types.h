@@ -301,11 +301,19 @@ struct omx__generic_request {
   struct omx_status status;
 };
 
+struct omx__req_seg {
+    omx_seg_t single; /* optimization to store the single segment */
+    uint32_t nseg;
+    omx_seg_t * segs;
+    uint32_t total_length;
+};
+
 union omx_request {
   struct omx__generic_request generic;
 
   struct {
     struct omx__generic_request generic;
+    struct omx__req_seg segs;
     union {
       struct {
 	struct omx_cmd_send_tiny send_tiny_ioctl_param;
@@ -316,14 +324,12 @@ union omx_request {
       } small;
       struct {
 	struct omx_cmd_send_medium send_medium_ioctl_param;
-	void * buffer;
 	uint32_t frags_nr;
 	uint32_t frags_pending_nr;
 	int sendq_map_index[8]; /* FIXME #define NR_MEDIUM_FRAGS */
       } medium;
       struct {
 	struct omx_cmd_send_rndv send_rndv_ioctl_param;
-	void * buffer;
 	struct omx__large_region * region;
       } large;
     } specific;
@@ -331,8 +337,7 @@ union omx_request {
 
   struct {
     struct omx__generic_request generic;
-    void * buffer;
-    unsigned long length;
+    struct omx__req_seg segs;
     uint64_t match_info;
     uint64_t match_mask;
     omx__seqnum_t seqnum; /* seqnum of the incoming matched send */

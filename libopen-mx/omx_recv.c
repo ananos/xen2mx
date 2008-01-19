@@ -225,7 +225,8 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
 
-  memcpy(req->recv.buffer, msg->specific.tiny.data, msg_length);
+  assert(req->recv.segs.nseg == 1);
+  memcpy(req->recv.segs.single.ptr, msg->specific.tiny.data, msg_length);
 
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
@@ -241,7 +242,8 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
 
-  memcpy(req->recv.buffer, data, msg_length);
+  assert(req->recv.segs.nseg == 1);
+  memcpy(req->recv.segs.single.ptr, data, msg_length);
 
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
@@ -286,7 +288,9 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   /* take care of the data chunk */
   if (unlikely(offset + chunk > msg_length))
     chunk = msg_length - offset;
-  memcpy(req->recv.buffer + offset, data, chunk);
+
+  assert(req->recv.segs.nseg == 1);
+  memcpy(req->recv.segs.single.ptr + offset, data, chunk);
   req->recv.specific.medium.frags_received_mask |= 1 << frag_seqnum;
   req->recv.specific.medium.accumulated_length += chunk;
 
@@ -428,7 +432,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_NEED_MATCHING;
 
     req->generic.status.msg_length = msg_length;
-    xfer_length = req->recv.length < msg_length ? req->recv.length : msg_length;
+    xfer_length = req->recv.segs.total_length < msg_length ? req->recv.segs.total_length : msg_length;
     req->generic.status.xfer_length = xfer_length;
 
     if (msg->type == OMX_EVT_RECV_MEDIUM)
@@ -461,7 +465,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 	}
       }
 
-      req->recv.buffer = unexp_buffer;
+      omx_cache_single_segment(&req->recv.segs, unexp_buffer, msg_length);
     }
 
     req->generic.partner = partner;
@@ -708,12 +712,12 @@ omx__process_self_send(struct omx_endpoint *ep,
     rreq->generic.state &= ~OMX_REQUEST_STATE_RECV_NEED_MATCHING;
 
     rreq->generic.status.msg_length = msg_length;
-    xfer_length = rreq->recv.length < msg_length ? rreq->recv.length : msg_length;
+    xfer_length = rreq->recv.segs.total_length < msg_length ? rreq->recv.segs.total_length : msg_length;
     rreq->generic.status.xfer_length = xfer_length;
     sreq->generic.status.xfer_length = xfer_length;
 
-    memcpy(rreq->recv.buffer, sbuffer, xfer_length);
-
+    assert(rreq->recv.segs.nseg == 1);
+    memcpy(rreq->recv.segs.single.ptr, sbuffer, xfer_length);
     sreq->generic.state = 0; /* the state of expected self send is always set here */
     omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
     omx__recv_complete(ep, rreq, OMX_STATUS_SUCCESS);
@@ -736,7 +740,8 @@ omx__process_self_send(struct omx_endpoint *ep,
 	return OMX_NO_RESOURCES;
       }
     }
-    rreq->recv.buffer = unexp_buffer;
+
+    omx_cache_single_segment(&rreq->recv.segs, unexp_buffer, msg_length);
 
     rreq->generic.partner = ep->myself;
     omx__partner_to_addr(ep->myself, &rreq->generic.status.addr);
@@ -819,6 +824,12 @@ omx_irecv(struct omx_endpoint *ep,
   omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
     if (likely((req->generic.status.match_info & match_mask) == match_info)) {
       /* matched an unexpected */
+      void * unexp_buffer;
+
+      /* get the unexp buffer and store the new segments */
+      unexp_buffer = req->recv.segs.single.ptr;
+      omx_cache_single_segment(&req->recv.segs, buffer, recv_length);
+
       omx__dequeue_request(&ep->ctxid[ctxid].unexp_req_q, req);
 
       /* compute xfer_length */
@@ -833,17 +844,15 @@ omx_irecv(struct omx_endpoint *ep,
 
       if (unlikely(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE)) {
 	/* it's a large message, queue the recv large */
-	req->recv.buffer = buffer;
 	omx__submit_or_queue_pull(ep, req);
 
       } else if (unlikely(req->generic.type == OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED)) {
 	/* it's a unexpected from self, we need to complete the corresponding send */
 	union omx_request *sreq = req->recv.specific.self_unexp.sreq;
 
-	memcpy(buffer, req->recv.buffer, xfer_length);
+	memcpy(buffer, unexp_buffer, xfer_length);
 	if (msg_length)
-	  free(req->recv.buffer);
-	req->recv.buffer = buffer;
+	  free(unexp_buffer);
 	omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
 
 	omx__debug_assert(sreq->generic.state & OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED);
@@ -854,10 +863,9 @@ omx_irecv(struct omx_endpoint *ep,
 
       } else {
 	/* it's a tiny/small/medium, copy the data back to our buffer */
-	memcpy(buffer, req->recv.buffer, xfer_length); /* FIXME: could just copy what has been received */
+	memcpy(buffer, unexp_buffer, xfer_length); /* FIXME: could just copy what has been received */
 	if (msg_length)
-	  free(req->recv.buffer);
-	req->recv.buffer = buffer;
+	  free(unexp_buffer);
 
 	if (unlikely(req->generic.state)) {
 	  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);
@@ -878,11 +886,11 @@ omx_irecv(struct omx_endpoint *ep,
     goto out;
   }
 
+  omx_cache_single_segment(&req->recv.segs, buffer, recv_length);
+
   req->generic.type = OMX_REQUEST_TYPE_RECV;
   req->generic.state = OMX_REQUEST_STATE_RECV_NEED_MATCHING; /* the state of non-matched recv is always set here */
   req->generic.status.context = context;
-  req->recv.buffer = buffer;
-  req->recv.length = recv_length;
   req->recv.match_info = match_info;
   req->recv.match_mask = match_mask;
 
