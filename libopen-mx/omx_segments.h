@@ -84,6 +84,7 @@ omx_copy_from_segments(void *dst, struct omx__req_seg *srcsegs, uint32_t length)
       uint32_t chunk = cseg->len > length ? length : cseg->len;
       memcpy(dst, cseg->ptr, chunk);
       dst += chunk;
+      length -= chunk;
       cseg++;
     }
   }
@@ -102,6 +103,7 @@ omx_copy_to_segments(struct omx__req_seg *dstsegs, void *src, uint32_t length)
       uint32_t chunk = cseg->len > length ? length : cseg->len;
       memcpy(cseg->ptr, src, chunk);
       src += chunk;
+      length -= chunk;
       cseg++;
     }
   }
