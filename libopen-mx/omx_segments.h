@@ -111,12 +111,12 @@ omx_copy_to_segments(struct omx__req_seg *dstsegs, void *src, uint32_t length)
 
 /*
  * copy a chunk of segments into a contigous buffer,
- * start to writ at (cursegp,curoffp) and update these values before return
+ * start at state and update state before returning
  */
 static inline void
-omx_partial_copy_from_segments(void *dst, struct omx__req_seg *srcsegs,
-			       uint32_t length,
-			       struct omx_segscan_state *state)
+omx_continue_partial_copy_from_segments(void *dst, struct omx__req_seg *srcsegs,
+					uint32_t length,
+					struct omx_segscan_state *state)
 {
   omx_seg_t * curseg = state->seg;
   uint32_t curoff = state->offset;

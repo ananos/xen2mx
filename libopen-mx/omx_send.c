@@ -257,7 +257,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr = req->send.specific.medium.frags_nr;
   omx_return_t ret;
-  struct omx_segscan_state state = { .seg = &req->send.segs.segs[0], .offset = 0 };
+  struct omx_segscan_state state = { .seg = &req->send.segs.segs[0], .offset = 0 }; /* initialize the state to the beginning */
   int err;
   int i;
 
@@ -274,9 +274,9 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 
     /* copy the data in the sendq only once */
     if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED)))
-      omx_partial_copy_from_segments(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT),
-				     &req->send.segs, chunk,
-				     &state);
+      omx_continue_partial_copy_from_segments(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT),
+					      &req->send.segs, chunk,
+					      &state);
 
     err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
     if (unlikely(err < 0))
