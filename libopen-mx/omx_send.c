@@ -596,8 +596,7 @@ omx_isend(struct omx_endpoint *ep,
 
 #ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
-    ret = omx__process_self_send(ep, req, buffer, length,
-				 match_info, context);
+    ret = omx__process_self_send(ep, req, match_info, context);
   } else
 #endif
     if (likely(length <= OMX_TINY_MAX)) {
@@ -683,8 +682,7 @@ omx_issend(struct omx_endpoint *ep,
 
 #ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
-    ret = omx__process_self_send(ep, req, buffer, length,
-				 match_info, context);
+    ret = omx__process_self_send(ep, req, match_info, context);
   } else
 #endif
     {

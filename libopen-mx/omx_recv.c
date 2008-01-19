@@ -655,13 +655,13 @@ omx__process_recv(struct omx_endpoint *ep,
 omx_return_t
 omx__process_self_send(struct omx_endpoint *ep,
 		       union omx_request *sreq,
-		       void *sbuffer, size_t msg_length,
 		       uint64_t match_info,
 		       void *context)
 {
   union omx_request * rreq = NULL;
   omx_unexp_handler_t handler = ep->unexp_handler;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
+  uint32_t msg_length = sreq->send.segs.total_length;
 
   sreq->generic.type = OMX_REQUEST_TYPE_SEND_SELF;
   sreq->generic.partner = ep->myself;
@@ -678,7 +678,10 @@ omx__process_self_send(struct omx_endpoint *ep,
   if (unlikely(handler && !rreq)) {
     void * context = ep->unexp_handler_context;
     omx_unexp_handler_action_t ret;
-    void * data_if_available = sbuffer;
+    void * data_if_available;
+
+    assert(sreq->send.segs.nseg == 1);
+    data_if_available = sreq->send.segs.single.ptr;
 
     ep->in_handler = 1;
     /* FIXME: lock */
@@ -720,7 +723,8 @@ omx__process_self_send(struct omx_endpoint *ep,
     sreq->generic.status.xfer_length = xfer_length;
 
     assert(rreq->recv.segs.nseg == 1);
-    memcpy(rreq->recv.segs.single.ptr, sbuffer, xfer_length);
+    assert(sreq->send.segs.nseg == 1);
+    memcpy(rreq->recv.segs.single.ptr, sreq->send.segs.single.ptr, xfer_length);
     sreq->generic.state = 0; /* the state of expected self send is always set here */
     omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
     omx__recv_complete(ep, rreq, OMX_STATUS_SUCCESS);
@@ -752,7 +756,8 @@ omx__process_self_send(struct omx_endpoint *ep,
     rreq->generic.status.msg_length = msg_length;
 
     rreq->recv.specific.self_unexp.sreq = sreq;
-    memcpy(unexp_buffer, sbuffer, msg_length);
+    assert(sreq->send.segs.nseg == 1);
+    memcpy(unexp_buffer, sreq->send.segs.single.ptr, msg_length);
 
     rreq->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED; /* the state of unexpected self send is always set here */
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, rreq);
