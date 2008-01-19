@@ -1,8 +1,7 @@
 * vectorial support
-  + pass array of segments from isendv/irecvv to core functions
+  + pass array of segments from irecvv to core functions
   + add copy_from/to segments routine
   + support multi-segments user region
-  + free segment array, either in request free or before (when receive/send is done?)
   + support vectorial self comm
 
 * skb_clone and alloc_skb_fclone for pull and pull replies?

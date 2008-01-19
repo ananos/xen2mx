@@ -569,30 +569,22 @@ omx__queue_notify(struct omx_endpoint *ep,
   omx__enqueue_request(&ep->queued_send_req_q, req);
 }
 
-/*************************************
- * API-Level Send Submission Routines
+/****************************
+ * ISEND Submission Routines
  */
 
-omx_return_t
-omx_isend(struct omx_endpoint *ep,
-	  void *buffer, size_t length,
-	  omx_endpoint_addr_t dest_endpoint,
-	  uint64_t match_info,
-	  void *context, union omx_request **requestp)
+static inline omx_return_t
+omx__isend_req(struct omx_endpoint *ep, union omx_request *req,
+	       omx_endpoint_addr_t dest_endpoint, uint64_t match_info,
+	       void *context, union omx_request **requestp)
 {
-  struct omx__partner * partner;
-  union omx_request *req;
+  struct omx__partner * partner = omx__partner_from_addr(&dest_endpoint);
+  uint32_t length = req->send.segs.total_length;
   omx_return_t ret;
 
-  partner = omx__partner_from_addr(&dest_endpoint);
-  omx__debug_printf(SEND, "sending %ld bytes using seqnum %d\n",
-		    (unsigned long) length, partner->next_send_seq);
-
-  req = omx__request_alloc(ep);
-  if (unlikely(!req))
-    return OMX_NO_RESOURCES;
-
-  omx_cache_single_segment(&req->send.segs, buffer, length);
+  omx__debug_printf(SEND, "sending %ld bytes in %d segments using seqnum %d\n",
+		    (unsigned long) length, (unsigned) req->send.segs.nseg,
+		    partner->next_send_seq);
 
 #ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
@@ -600,25 +592,13 @@ omx_isend(struct omx_endpoint *ep,
   } else
 #endif
     if (likely(length <= OMX_TINY_MAX)) {
-    ret = omx__submit_or_queue_isend_tiny(ep, req,
-					  partner,
-					  match_info,
-					  context);
+    ret = omx__submit_or_queue_isend_tiny(ep, req, partner, match_info, context);
   } else if (length <= OMX_SMALL_MAX) {
-    ret = omx__submit_or_queue_isend_small(ep, req,
-					   partner,
-					   match_info,
-					   context);
+    ret = omx__submit_or_queue_isend_small(ep, req, partner, match_info, context);
   } else if (length <= OMX_MEDIUM_MAX) {
-    ret = omx__submit_or_queue_isend_medium(ep, req,
-					    partner,
-					    match_info,
-					    context);
+    ret = omx__submit_or_queue_isend_medium(ep, req, partner, match_info, context);
   } else {
-    ret = omx__submit_or_queue_isend_large(ep, req,
-					   partner,
-					   match_info,
-					   context);
+    ret = omx__submit_or_queue_isend_large(ep, req, partner, match_info, context);
   }
 
   if (ret == OMX_SUCCESS) {
@@ -637,26 +617,75 @@ omx_isend(struct omx_endpoint *ep,
 }
 
 omx_return_t
+omx_isend(struct omx_endpoint *ep,
+	  void *buffer, size_t length,
+	  omx_endpoint_addr_t dest_endpoint,
+	  uint64_t match_info,
+	  void *context, union omx_request **requestp)
+{
+  union omx_request *req = omx__request_alloc(ep);
+  if (unlikely(!req))
+    return OMX_NO_RESOURCES;
+
+  omx_cache_single_segment(&req->send.segs, buffer, length);
+
+  return omx__isend_req(ep, req, dest_endpoint, match_info, context, requestp);
+}
+
+omx_return_t
 omx_isendv(omx_endpoint_t ep,
 	   omx_seg_t *segs, uint32_t nseg,
 	   omx_endpoint_addr_t dest_endpoint,
 	   uint64_t match_info,
-	   void * context, omx_request_t * request)
+	   void * context, omx_request_t * requestp)
 {
-	void *buffer;
-	size_t length;
+  union omx_request *req = omx__request_alloc(ep);
+  if (unlikely(!req))
+    return OMX_NO_RESOURCES;
 
-	assert(nseg <= 1);
+  omx_cache_segments(&req->send.segs, segs, nseg);
 
-	if (nseg == 0) {
-		buffer = NULL;
-		length = 0;
-	} else {
-		buffer = segs[0].ptr;
-		length = segs[0].len;
-	}
+  return omx__isend_req(ep, req, dest_endpoint, match_info, context, requestp);
+}
 
-	return omx_isend(ep, buffer, length, dest_endpoint, match_info, context, request);
+/*****************************
+ * ISSEND Submission Routines
+ */
+
+static inline omx_return_t
+omx__issend_req(struct omx_endpoint *ep, union omx_request *req,
+		omx_endpoint_addr_t dest_endpoint, uint64_t match_info,
+		void *context, union omx_request **requestp)
+{
+  struct omx__partner * partner = omx__partner_from_addr(&dest_endpoint);
+  omx_return_t ret;
+
+  omx__debug_printf(SEND, "ssending %ld bytes in %d segments using seqnum %d\n",
+		    (unsigned long) req->send.segs.total_length, (unsigned) req->send.segs.nseg,
+		    partner->next_send_seq);
+
+#ifndef OMX_DISABLE_SELF
+  if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
+    ret = omx__process_self_send(ep, req, match_info, context);
+  } else
+#endif
+    {
+    ret = omx__submit_or_queue_isend_large(ep, req, partner, match_info, context);
+  }
+
+  if (ret == OMX_SUCCESS) {
+    if (requestp) {
+      *requestp = req;
+    } else {
+      req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+      ep->zombies++;
+    }
+
+    /* progress a little bit */
+    omx__progress(ep);
+  }
+
+  return ret;
 }
 
 omx_return_t
@@ -666,45 +695,13 @@ omx_issend(struct omx_endpoint *ep,
 	   uint64_t match_info,
 	   void *context, union omx_request **requestp)
 {
-  struct omx__partner * partner;
-  union omx_request *req;
-  omx_return_t ret;
-
-  partner = omx__partner_from_addr(&dest_endpoint);
-  omx__debug_printf(SEND, "ssending %ld bytes using seqnum %d\n",
-		    (unsigned long) length, partner->next_send_seq);
-
-  req = omx__request_alloc(ep);
+  union omx_request *req = omx__request_alloc(ep);
   if (unlikely(!req))
     return OMX_NO_RESOURCES;
 
   omx_cache_single_segment(&req->send.segs, buffer, length);
 
-#ifndef OMX_DISABLE_SELF
-  if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
-    ret = omx__process_self_send(ep, req, match_info, context);
-  } else
-#endif
-    {
-    ret = omx__submit_or_queue_isend_large(ep, req,
-					   partner,
-					   match_info,
-					   context);
-  }
-
-  if (ret == OMX_SUCCESS) {
-    if (requestp) {
-      *requestp = req;
-    } else {
-      req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-      ep->zombies++;
-    }
-
-    /* progress a little bit */
-    omx__progress(ep);
-  }
-
-  return ret;
+  return omx__issend_req(ep, req, dest_endpoint, match_info, context, requestp);
 }
 
 omx_return_t
@@ -712,22 +709,15 @@ omx_issendv(omx_endpoint_t ep,
 	    omx_seg_t *segs, uint32_t nseg,
 	    omx_endpoint_addr_t dest_endpoint,
 	    uint64_t match_info,
-	    void * context, omx_request_t * request)
+	    void * context, omx_request_t * requestp)
 {
-	void *buffer;
-	size_t length;
+  union omx_request *req = omx__request_alloc(ep);
+  if (unlikely(!req))
+    return OMX_NO_RESOURCES;
 
-	assert(nseg <= 1);
+  omx_cache_segments(&req->send.segs, segs, nseg);
 
-	if (nseg == 0) {
-		buffer = NULL;
-		length = 0;
-	} else {
-		buffer = segs[0].ptr;
-		length = segs[0].len;
-	}
-
-	return omx_issend(ep, buffer, length, dest_endpoint, match_info, context, request);
+  return omx__issend_req(ep, req, dest_endpoint, match_info, context, requestp);
 }
 
 /***********************
