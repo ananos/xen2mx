@@ -55,6 +55,9 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
     break;
   }
 
+  /* the request is acked, we can free the segments */
+  omx_free_segments(&req->send.segs);
+
   omx__notify_request_done(ep, ctxid, req);
 }
 

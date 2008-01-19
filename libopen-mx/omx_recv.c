@@ -42,6 +42,9 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
     }
   }
 
+  /* the request is done, we can free the segments */
+  omx_free_segments(&req->send.segs);
+
   omx__notify_request_done(ep, ctxid, req);
 }
 
