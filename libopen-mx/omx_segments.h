@@ -116,13 +116,13 @@ omx_copy_to_segments(struct omx__req_seg *dstsegs, void *src, uint32_t length)
 static inline void
 omx_partial_copy_from_segments(void *dst, struct omx__req_seg *srcsegs,
 			       uint32_t length,
-			       omx_seg_t **cursegp, uint32_t *curoffp)
+			       struct omx_segscan_state *state)
 {
-  omx_seg_t * curseg = *cursegp;
-  uint32_t curoff = *curoffp;
+  omx_seg_t * curseg = state->seg;
+  uint32_t curoff = state->offset;
 
   if (likely(srcsegs->nseg == 1)) {
-    omx__debug_assert(*cursegp == &srcsegs->single);
+    omx__debug_assert(curseg == &srcsegs->single);
     memcpy(dst, srcsegs->single.ptr + curoff, length);
     curoff += length;
   } else {
@@ -148,8 +148,8 @@ omx_partial_copy_from_segments(void *dst, struct omx__req_seg *srcsegs,
     }
   }
 
-  *cursegp = curseg;
-  *curoffp = curoff;
+  state->seg = curseg;
+  state->offset = curoff;
 }
 
 #endif /* __omx_segments_h__ */

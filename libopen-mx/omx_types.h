@@ -308,6 +308,12 @@ struct omx__req_seg {
     uint32_t total_length;
 };
 
+/* current segment and offset within an array of segments */
+struct omx_segscan_state {
+  omx_seg_t *seg;
+  uint32_t offset;
+};
+
 union omx_request {
   struct omx__generic_request generic;
 
