@@ -1,5 +1,4 @@
 * vectorial support
-  + pass array of segments from irecvv to core functions
   + add copy_from/to segments routine
   + support multi-segments user region
   + support vectorial self comm

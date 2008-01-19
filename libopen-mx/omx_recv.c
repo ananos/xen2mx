@@ -803,14 +803,13 @@ omx__process_recv_truc(struct omx_endpoint *ep,
 }
 
 /**************************
- * Main recv routines
+ * Main IRECV and IRECVV routines
  */
 
-omx_return_t
-omx_irecv(struct omx_endpoint *ep,
-	  void *buffer, size_t recv_length,
-	  uint64_t match_info, uint64_t match_mask,
-	  void *context, union omx_request **requestp)
+static inline omx_return_t
+omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
+		uint64_t match_info, uint64_t match_mask,
+		void *context, union omx_request **requestp)
 {
   union omx_request * req;
   omx_return_t ret;
@@ -836,13 +835,13 @@ omx_irecv(struct omx_endpoint *ep,
 
       /* get the unexp buffer and store the new segments */
       unexp_buffer = req->recv.segs.single.ptr;
-      omx_cache_single_segment(&req->recv.segs, buffer, recv_length);
+      memcpy(&req->recv.segs, reqsegs, sizeof(*reqsegs));
 
       omx__dequeue_request(&ep->ctxid[ctxid].unexp_req_q, req);
 
       /* compute xfer_length */
       msg_length = req->generic.status.msg_length;
-      xfer_length = recv_length < msg_length ? recv_length : msg_length;
+      xfer_length = req->recv.segs.total_length < msg_length ? req->recv.segs.total_length : msg_length;
       req->generic.status.xfer_length = xfer_length;
 
       omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED);
@@ -858,7 +857,8 @@ omx_irecv(struct omx_endpoint *ep,
 	/* it's a unexpected from self, we need to complete the corresponding send */
 	union omx_request *sreq = req->recv.specific.self_unexp.sreq;
 
-	memcpy(buffer, unexp_buffer, xfer_length);
+	assert(reqsegs->nseg == 1);
+	memcpy(reqsegs->single.ptr, unexp_buffer, xfer_length);
 	if (msg_length)
 	  free(unexp_buffer);
 	omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
@@ -871,7 +871,9 @@ omx_irecv(struct omx_endpoint *ep,
 
       } else {
 	/* it's a tiny/small/medium, copy the data back to our buffer */
-	memcpy(buffer, unexp_buffer, xfer_length); /* FIXME: could just copy what has been received */
+
+	assert(reqsegs->nseg == 1);
+	memcpy(reqsegs->single.ptr, unexp_buffer, xfer_length); /* FIXME: could just copy what has been received */
 	if (msg_length)
 	  free(unexp_buffer);
 
@@ -894,7 +896,7 @@ omx_irecv(struct omx_endpoint *ep,
     goto out;
   }
 
-  omx_cache_single_segment(&req->recv.segs, buffer, recv_length);
+  memcpy(&req->recv.segs, reqsegs, sizeof(*reqsegs));
 
   req->generic.type = OMX_REQUEST_TYPE_RECV;
   req->generic.state = OMX_REQUEST_STATE_RECV_NEED_MATCHING; /* the state of non-matched recv is always set here */
@@ -920,24 +922,46 @@ omx_irecv(struct omx_endpoint *ep,
 }
 
 omx_return_t
+omx_irecv(struct omx_endpoint *ep,
+	  void *buffer, size_t length,
+	  uint64_t match_info, uint64_t match_mask,
+	  void *context, union omx_request **requestp)
+{
+  struct omx__req_seg reqsegs;
+  omx_return_t ret;
+
+  omx_cache_single_segment(&reqsegs, buffer, length);
+
+  ret = omx__irecv_segs(ep, &reqsegs, match_info, match_mask, context, requestp);
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out;
+
+  return OMX_SUCCESS;
+
+ out:
+  omx_free_segments(&reqsegs);
+  return ret;
+}
+
+omx_return_t
 omx_irecvv(omx_endpoint_t ep,
 	   omx_seg_t *segs, uint32_t nseg,
 	   uint64_t match_info, uint64_t match_mask,
-	   void *context, omx_request_t * request)
+	   void *context, omx_request_t * requestp)
 {
-	void *buffer;
-	size_t length;
+  struct omx__req_seg reqsegs;
+  omx_return_t ret;
 
-	assert(nseg <= 1);
+  omx_cache_segments(&reqsegs, segs, nseg);
 
-	if (nseg == 0) {
-		buffer = NULL;
-		length = 0;
-	} else {
-		buffer = segs[0].ptr;
-		length = segs[0].len;
-	}
+  ret = omx__irecv_segs(ep, &reqsegs, match_info, match_mask, context, requestp);
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out;
 
-	return omx_irecv(ep, buffer, length, match_info, match_mask, context, request);
+  return OMX_SUCCESS;
+
+ out:
+  omx_free_segments(&reqsegs);
+  return ret;
 }
 
