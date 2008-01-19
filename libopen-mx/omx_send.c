@@ -257,33 +257,64 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr = req->send.specific.medium.frags_nr;
   omx_return_t ret;
-  struct omx_segscan_state state = { .seg = &req->send.segs.segs[0], .offset = 0 }; /* initialize the state to the beginning */
   int err;
   int i;
 
   medium_param->piggyack = partner->next_frag_recv_seq;
 
-  for(i=0; i<frags_nr; i++) {
-    unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
-      ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
-    medium_param->frag_length = chunk;
-    medium_param->frag_seqnum = i;
-    medium_param->sendq_page_offset = sendq_index[i];
-    omx__debug_printf(MEDIUM, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
-		      i, chunk, (unsigned long) length);
+  if (likely(req->send.segs.nseg == 1)) {
+    /* optimize the contigous send medium */
+    void * data = req->send.segs.single.ptr;
+    uint32_t offset = 0;
 
-    /* copy the data in the sendq only once */
-    if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED)))
-      omx_continue_partial_copy_from_segments(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT),
-					      &req->send.segs, chunk,
-					      &state);
+    for(i=0; i<frags_nr; i++) {
+      unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
+        ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
+      medium_param->frag_length = chunk;
+      medium_param->frag_seqnum = i;
+      medium_param->sendq_page_offset = sendq_index[i];
+      omx__debug_printf(MEDIUM, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+			i, chunk, (unsigned long) length);
 
-    err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
-    if (unlikely(err < 0))
-      goto err;
+      /* copy the data in the sendq only once */
+      if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED)))
+	memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), data + offset, chunk);
 
-    ep->avail_exp_events--;
-    remaining -= chunk;
+      err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
+      if (unlikely(err < 0))
+	goto err;
+
+      ep->avail_exp_events--;
+      remaining -= chunk;
+      offset += chunk;
+    }
+    
+  } else {
+    /* initialize the state to the beginning */
+    struct omx_segscan_state state = { .seg = &req->send.segs.segs[0], .offset = 0 };
+
+    for(i=0; i<frags_nr; i++) {
+      unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
+        ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
+      medium_param->frag_length = chunk;
+      medium_param->frag_seqnum = i;
+      medium_param->sendq_page_offset = sendq_index[i];
+      omx__debug_printf(MEDIUM, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+			i, chunk, (unsigned long) length);
+
+      /* copy the data in the sendq only once */
+      if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED)))
+	omx_continue_partial_copy_from_segments(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT),
+						&req->send.segs, chunk,
+						&state);
+
+      err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
+      if (unlikely(err < 0))
+	goto err;
+
+      ep->avail_exp_events--;
+      remaining -= chunk;
+    }
   }
 
   req->send.specific.medium.frags_pending_nr = frags_nr;

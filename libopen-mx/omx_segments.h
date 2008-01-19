@@ -121,30 +121,26 @@ omx_continue_partial_copy_from_segments(void *dst, struct omx__req_seg *srcsegs,
   omx_seg_t * curseg = state->seg;
   uint32_t curoff = state->offset;
 
-  if (likely(srcsegs->nseg == 1)) {
-    omx__debug_assert(curseg == &srcsegs->single);
-    memcpy(dst, srcsegs->single.ptr + curoff, length);
-    curoff += length;
-  } else {
-    while (1) {
-      uint32_t curchunk = curseg->len - curoff; /* remaining data in the segment */
-      uint32_t chunk = curchunk > length ? length : curchunk; /* data to take */
-      memcpy(dst, curseg->ptr + curoff, chunk);
-      omx__debug_printf(VECT, "copying %ld from seg %d at %ld\n",
-			(unsigned long) chunk, (unsigned) (curseg-&srcsegs->segs[0]), (unsigned long)curoff);
-      length -= chunk;            
-      dst += chunk;
-      if (curchunk != chunk) {
-	/* we didn't consume this whole segment, we're done */
-	curoff += chunk;
+  omx__debug_assert(srcsegs->nseg > 1);
+
+  while (1) {
+    uint32_t curchunk = curseg->len - curoff; /* remaining data in the segment */
+    uint32_t chunk = curchunk > length ? length : curchunk; /* data to take */
+    memcpy(dst, curseg->ptr + curoff, chunk);
+    omx__debug_printf(VECT, "copying %ld from seg %d at %ld\n",
+		      (unsigned long) chunk, (unsigned) (curseg-&srcsegs->segs[0]), (unsigned long)curoff);
+    length -= chunk;            
+    dst += chunk;
+    if (curchunk != chunk) {
+      /* we didn't consume this whole segment, we're done */
+      curoff += chunk;
+      break;
+    } else {
+      /* next segment, and exit if nothing to do anymore */
+      curseg++;
+      curoff = 0;
+      if (!length)
 	break;
-      } else {
-	/* next segment, and exit if nothing to do anymore */
-	curseg++;
-	curoff = 0;
-	if (!length)
-	  break;
-      }
     }
   }
 
