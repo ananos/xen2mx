@@ -252,18 +252,15 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 		       union omx_request *req)
 {
   struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
-  void * data;
   uint32_t length = req->generic.status.msg_length;
   uint32_t remaining = length;
-  uint32_t offset = 0;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr = req->send.specific.medium.frags_nr;
   omx_return_t ret;
+  uint32_t copy_current_offset = 0;
+  omx_seg_t * copy_current_seg = &req->send.segs.segs[0];
   int err;
   int i;
-
-  assert(req->send.segs.nseg == 1);
-  data = req->send.segs.single.ptr;
 
   medium_param->piggyack = partner->next_frag_recv_seq;
 
@@ -278,7 +275,9 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 
     /* copy the data in the sendq only once */
     if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED)))
-      memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), data + offset, chunk);
+      omx_partial_copy_from_segments(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT),
+				     &req->send.segs, chunk,
+				     &copy_current_seg, &copy_current_offset);
 
     err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
     if (unlikely(err < 0))
@@ -286,7 +285,6 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 
     ep->avail_exp_events--;
     remaining -= chunk;
-    offset += chunk;
   }
 
   req->send.specific.medium.frags_pending_nr = frags_nr;
