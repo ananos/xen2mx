@@ -109,6 +109,49 @@ omx_copy_to_segments(struct omx__req_seg *dstsegs, void *src, uint32_t length)
   }
 }
 
+static inline void
+omx_copy_from_to_segments(struct omx__req_seg *dstsegs, struct omx__req_seg *srcsegs, uint32_t length)
+{
+  omx__debug_assert(length <= dstsegs->total_length);
+  omx__debug_assert(length <= srcsegs->total_length);
+
+  if (likely(srcsegs->nseg == 1)) {
+    omx_copy_to_segments(dstsegs, srcsegs->single.ptr, length);
+
+  } else if (likely(dstsegs->nseg == 1)) {
+    omx_copy_from_segments(dstsegs->single.ptr, srcsegs, length);
+
+  } else {
+    omx_seg_t * csseg = &srcsegs->segs[0];
+    int cssegoff = 0;
+    omx_seg_t * cdseg = &dstsegs->segs[0];
+    int cdsegoff = 0;
+
+    while (length) {
+      uint32_t chunk = length;
+      if (csseg->len < chunk)
+	chunk = csseg->len;
+      if (cdseg->len < chunk)
+	chunk = cdseg->len;
+
+      memcpy(cdseg->ptr + cdsegoff, csseg->ptr + cssegoff, chunk);
+      length -= chunk;
+
+      cssegoff += chunk;
+      if (cssegoff >= csseg->len) {
+	csseg++;
+	cssegoff = 0;
+      }
+
+      cdsegoff += chunk;
+      if (cdsegoff >= cdseg->len) {
+	cdseg++;
+	cdsegoff = 0;
+      }
+    }
+  }
+}
+
 /*
  * copy a chunk of segments into a contigous buffer,
  * start at state and update state before returning
