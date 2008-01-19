@@ -114,9 +114,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   tiny_param->hdr.length = length;
   tiny_param->hdr.seqnum = seqnum;
   tiny_param->hdr.session_id = partner->true_session_id;
-
-  assert(req->send.segs.nseg == 1);
-  memcpy(tiny_param->data, req->send.segs.single.ptr, length);
+  omx_copy_from_segments(tiny_param->data, &req->send.segs, length);
 
   omx__post_isend_tiny(ep, partner, req);
 
@@ -202,18 +200,27 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   small_param->seqnum = seqnum;
   small_param->session_id = partner->true_session_id;
 
-  assert(req->send.segs.nseg == 1);
-  small_param->vaddr = (uintptr_t) req->send.segs.single.ptr;
+  /*
+   * if single segment, use it for the first pio,
+   * else copy it in the contigous copy buffer first
+   */ 
+  if (likely(req->send.segs.nseg == 1)) {
+    small_param->vaddr = (uintptr_t) req->send.segs.single.ptr;
+  } else {
+    omx_copy_from_segments(copy, &req->send.segs, length);
+    small_param->vaddr = (uintptr_t) copy;
+  }
 
   omx__post_isend_small(ep, partner, req);
 
   /* no need to wait for a done event, small is synchronous */
 
-  /* bufferize data for retransmission */
-  assert(req->send.segs.nseg == 1);
-  memcpy(copy, req->send.segs.single.ptr, length);
+  /* bufferize data for retransmission (if not done already) */
+  if (likely(req->send.segs.nseg == 1)) {
+    omx_copy_from_segments(copy, &req->send.segs, length);
+    small_param->vaddr = (uintptr_t) copy;
+  }
   req->send.specific.small.copy = copy;
-  small_param->vaddr = (uintptr_t) copy;
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);

@@ -465,4 +465,23 @@ omx_free_segments(struct omx__req_seg * reqsegs)
     free(reqsegs->segs);
 }
 
+static inline void
+omx_copy_from_segments(void *dst, struct omx__req_seg *srcsegs, uint32_t length)
+{
+  omx_seg_t * cseg = &srcsegs->segs[0];
+
+  omx__debug_assert(length <= srcsegs->total_length);
+
+  if (likely(srcsegs->nseg == 1)) {
+    memcpy(dst, cseg->ptr, length);
+  } else {
+    while (length) {
+      uint32_t chunk = cseg->len > length ? length : cseg->len;
+      memcpy(dst, cseg->ptr, chunk);
+      dst += chunk;
+      cseg++;
+    }
+  }
+}
+
 #endif /* __omx_lib_h__ */
