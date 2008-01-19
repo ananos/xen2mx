@@ -46,7 +46,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
 
   switch (req->generic.type) {
   case OMX_REQUEST_TYPE_SEND_SMALL:
-    free(req->send.specific.small.buffer);
+    free(req->send.specific.small.copy);
     break;
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
     omx__endpoint_sendq_map_put(ep, req->send.specific.medium.frags_nr, req->send.specific.medium.sendq_map_index);
@@ -204,7 +204,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 
   /* bufferize data for retransmission */
   memcpy(copy, buffer, length);
-  req->send.specific.small.buffer = copy;
+  req->send.specific.small.copy = copy;
   small_param->vaddr = (uintptr_t) copy;
 
   req->generic.partner = partner;
