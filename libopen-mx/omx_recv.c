@@ -902,3 +902,26 @@ omx_irecv(struct omx_endpoint *ep,
  out:
   return ret;
 }
+
+omx_return_t
+omx_irecvv(omx_endpoint_t ep,
+	   omx_seg_t *segs, uint32_t nseg,
+	   uint64_t match_info, uint64_t match_mask,
+	   void *context, omx_request_t * request)
+{
+	void *buffer;
+	size_t length;
+
+	assert(nseg <= 1);
+
+	if (nseg == 0) {
+		buffer = NULL;
+		length = 0;
+	} else {
+		buffer = segs[0].ptr;
+		length = segs[0].len;
+	}
+
+	return omx_irecv(ep, buffer, length, match_info, match_mask, context, request);
+}
+

@@ -628,6 +628,29 @@ omx_isend(struct omx_endpoint *ep,
 }
 
 omx_return_t
+omx_isendv(omx_endpoint_t ep,
+	   omx_seg_t *segs, uint32_t nseg,
+	   omx_endpoint_addr_t dest_endpoint,
+	   uint64_t match_info,
+	   void * context, omx_request_t * request)
+{
+	void *buffer;
+	size_t length;
+
+	assert(nseg <= 1);
+
+	if (nseg == 0) {
+		buffer = NULL;
+		length = 0;
+	} else {
+		buffer = segs[0].ptr;
+		length = segs[0].len;
+	}
+
+	return omx_isend(ep, buffer, length, dest_endpoint, match_info, context, request);
+}
+
+omx_return_t
 omx_issend(struct omx_endpoint *ep,
 	   void *buffer, size_t length,
 	   omx_endpoint_addr_t dest_endpoint,
@@ -673,6 +696,29 @@ omx_issend(struct omx_endpoint *ep,
   }
 
   return ret;
+}
+
+omx_return_t
+omx_issendv(omx_endpoint_t ep,
+	    omx_seg_t *segs, uint32_t nseg,
+	    omx_endpoint_addr_t dest_endpoint,
+	    uint64_t match_info,
+	    void * context, omx_request_t * request)
+{
+	void *buffer;
+	size_t length;
+
+	assert(nseg <= 1);
+
+	if (nseg == 0) {
+		buffer = NULL;
+		length = 0;
+	} else {
+		buffer = segs[0].ptr;
+		length = segs[0].len;
+	}
+
+	return omx_issend(ep, buffer, length, dest_endpoint, match_info, context, request);
 }
 
 /***********************

@@ -178,6 +178,16 @@ omx_return_t
 omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
 			      void **context);
 
+#define OMX_MAX_SEGMENTS 1
+
+typedef void * omx_seg_ptr_t;
+
+struct omx_seg {
+  omx_seg_ptr_t ptr;
+  uint32_t len;
+};
+typedef struct omx_seg omx_seg_t;
+
 omx_return_t
 omx_isend(omx_endpoint_t ep,
 	  void *buffer, size_t length,
@@ -197,6 +207,26 @@ omx_irecv(omx_endpoint_t ep,
 	  void *buffer, size_t length,
 	  uint64_t match_info, uint64_t match_mask,
 	  void *context, omx_request_t * request);
+
+omx_return_t
+omx_isendv(omx_endpoint_t ep,
+	   omx_seg_t *segs, uint32_t nseg,
+	   omx_endpoint_addr_t dest_endpoint,
+	   uint64_t match_info,
+	   void * context, omx_request_t * request);
+
+omx_return_t
+omx_issendv(omx_endpoint_t ep,
+	    omx_seg_t *segs, uint32_t nseg,
+	    omx_endpoint_addr_t dest_endpoint,
+	    uint64_t match_info,
+	    void * context, omx_request_t * request);
+
+omx_return_t
+omx_irecvv(omx_endpoint_t ep,
+	   omx_seg_t *segs, uint32_t nseg,
+	   uint64_t match_info, uint64_t match_mask,
+	   void *context, omx_request_t * request);
 
 omx_return_t
 omx_context(omx_request_t *request, void ** context);

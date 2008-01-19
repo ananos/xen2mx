@@ -149,77 +149,24 @@ typedef struct mx_status mx_status_t;
 #define mx_disable_progression omx_disable_progression
 #define mx_reenable_progression omx_reenable_progression
 
-/* FIXME: wrapper instead, once supported */
-typedef void * mx_segment_ptr_t;
+typedef omx_seg_ptr_t mx_segment_ptr_t;
+
+/* need to be redefined entirely since some fields are renamed,
+ * there are some compile-time assertions to check compatibility
+ */
 struct mx_segment {
   mx_segment_ptr_t segment_ptr;
   uint32_t segment_length;
 };
 typedef struct mx_segment mx_segment_t;
 
-#define MX_MAX_SEGMENTS 1 /* FIXME */
+#define MX_MAX_SEGMENTS OMX_MAX_SEGMENTS
 
-static inline mx_return_t
-mx_isend(mx_endpoint_t endpoint,
-	 mx_segment_t *segments_list,
-	 uint32_t segments_count,
-	 mx_endpoint_addr_t dest_endpoint,
-	 uint64_t match_info,
-	 void *context,
-	 mx_request_t *request)
-{
-  void * buffer = NULL;
-  uint32_t length = 0;
-  assert(segments_count <= 1);
-  if (segments_count) {
-    if (!segments_list) return OMX_INVALID_PARAMETER;
-    buffer = segments_list[0].segment_ptr;
-    length = segments_list[0].segment_length;
-  }
-  return omx_isend(endpoint, buffer, length, dest_endpoint, match_info, context, request);
-}
-
-static inline mx_return_t
-mx_issend(mx_endpoint_t endpoint,
-	 mx_segment_t *segments_list,
-	 uint32_t segments_count,
-	 mx_endpoint_addr_t dest_endpoint,
-	 uint64_t match_info,
-	 void *context,
-	 mx_request_t *request)
-{
-  void * buffer = NULL;
-  uint32_t length = 0;
-  assert(segments_count <= 1);
-  if (segments_count) {
-    if (!segments_list) return OMX_INVALID_PARAMETER;
-    buffer = segments_list[0].segment_ptr;
-    length = segments_list[0].segment_length;
-  }
-  return omx_issend(endpoint, buffer, length, dest_endpoint, match_info, context, request);
-}
+#define mx_isend(ep, segs, nseg, d, mi, c, r) omx_isendv(ep, (struct omx_seg *) segs, nseg, d, mi, c, r)
+#define mx_issend(ep, segs, nseg, d, mi, c, r) omx_issendv(ep, (struct omx_seg *) segs, nseg, d, mi, c, r)
+#define mx_irecv(ep, segs, nseg, mi, mm, c, r) omx_irecvv(ep, (struct omx_seg *) segs, nseg, mi, mm, c, r)
 
 #define MX_MATCH_MASK_NONE (~(uint64_t)0)
-
-static inline mx_return_t
-mx_irecv(mx_endpoint_t endpoint,
-	 mx_segment_t *segments_list,
-	 uint32_t segments_count,
-	 uint64_t match_info,
-	 uint64_t match_mask,
-	 void *context,
-	 mx_request_t *request)
-{
-  void * buffer = NULL;
-  uint32_t length = 0;
-  assert(segments_count <= 1);
-  if (segments_count) {
-    if (!segments_list) return OMX_INVALID_PARAMETER;
-    buffer = segments_list[0].segment_ptr;
-    length = segments_list[0].segment_length;
-  }
-  return omx_irecv(endpoint, buffer, length, match_info, match_mask, context, request);
-}
 
 #define mx_cancel omx_cancel
 

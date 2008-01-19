@@ -62,6 +62,13 @@ compat_assertions(void)
   CHECK(offsetof(mx_status_t, context) == offsetof(omx_status_t, context));
   CHECK(sizeof(((mx_status_t*)NULL)->context) == sizeof(((omx_status_t*)NULL)->context));
 
+  /* check the contents of segment types, since their fields are different */
+  CHECK(sizeof(mx_segment_t) == sizeof(omx_seg_t));
+  CHECK(offsetof(mx_segment_t, segment_ptr) == offsetof(omx_seg_t, ptr));
+  CHECK(sizeof(((mx_segment_t*)NULL)->segment_ptr) == sizeof(((omx_seg_t*)NULL)->ptr));
+  CHECK(offsetof(mx_segment_t, segment_length) == offsetof(omx_seg_t, len));
+  CHECK(sizeof(((mx_segment_t*)NULL)->segment_length) == sizeof(((omx_seg_t*)NULL)->len));
+
   /* check the size of enums */
   CHECK(sizeof(mx_return_t) == sizeof(omx_return_t));
   CHECK(sizeof(mx_status_code_t) == sizeof(omx_status_code_t));
