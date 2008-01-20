@@ -50,7 +50,7 @@ struct omx__large_region_map {
       uint8_t seqnum;
       struct omx_cmd_region_segment *segs;
       uint16_t offset;
-      void * user;
+      void * reserver; /* when a single object can use the request, store it here. used for rndv/notify */
     } region;
   } * array;
 };

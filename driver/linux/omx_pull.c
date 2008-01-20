@@ -105,7 +105,7 @@ struct omx_pull_handle {
 	/* global pull fields */
 	struct omx_endpoint * endpoint;
 	struct omx_user_region * region;
-	uint32_t lib_cookie;
+	uint64_t lib_cookie;
 	uint32_t total_length;
 	uint32_t puller_rdma_offset;
 	uint32_t pulled_rdma_offset;

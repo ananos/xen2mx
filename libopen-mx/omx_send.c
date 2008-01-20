@@ -489,7 +489,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   /* no need to wait for a done event, tiny is synchronous */
 
   req->send.specific.large.region = region;
-  region->user = req;
+  region->reserver = req;
 
   return OMX_SUCCESS;
 }
