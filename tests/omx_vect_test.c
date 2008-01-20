@@ -29,12 +29,15 @@
 #define ITER 10
 #define LEN 1048576
 
+static int verbose = 0;
+
 static void
 usage(int argc, char *argv[])
 {
   fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
+  fprintf(stderr, " -v\tverbose\n");
 }
 
 #define DEFAULT_SEND_CHAR 'a'
@@ -60,7 +63,8 @@ vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   }
   memset(rbuf, DEFAULT_RECV_CHAR, LEN);
 
-  printf("sending %ld as %d segments\n", (unsigned long) len, (unsigned) nseg);
+  if (verbose)
+    printf("  sending %ld as %d segments\n", (unsigned long) len, (unsigned) nseg);
 
   ret = omx_irecv(ep, rbuf, len, 0, 0, NULL, &rreq);
   assert(ret == OMX_SUCCESS);
@@ -81,14 +85,16 @@ vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
       assert(0);
     }
   memset(rbuf, 'c', len);
-  printf("  rbuf buffer modified as expected\n");
+  if (verbose)
+    printf("  rbuf buffer modified as expected\n");
 
   for(j=0; j<LEN; j++)
     if (rbuf[j] != DEFAULT_RECV_CHAR) {
       fprintf(stderr, "byte %d should not have changed from %c to %c\n", j, DEFAULT_RECV_CHAR, rbuf[j]);
       assert(0);
     }
-  printf("  rbuf outside-of-buffer not modified, as expected\n");
+  if (verbose)
+    printf("  rbuf outside-of-buffer not modified, as expected\n");
 }
 
 static void
@@ -107,11 +113,12 @@ contig_send_to_vect_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     len += segs[i].len;
   }
 
+  if (verbose)
+    printf("  receiving %ld as %d segments\n", (unsigned long) len, (unsigned) nseg);
+
   memset(sbuf, 'a', LEN);
   memset(sbuf, 'b', len);
   memset(rbuf, 'c', LEN);
-
-  printf("receiving %ld as %d segments\n", (unsigned long) len, (unsigned) nseg);
 
   ret = omx_irecvv(ep, segs, nseg, 0, 0, NULL, &rreq);
   assert(ret == OMX_SUCCESS);
@@ -136,14 +143,16 @@ contig_send_to_vect_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     }
     memset(segs[i].ptr, 'c', segs[i].len);
   }
-  printf("  rbuf segments modified as expected\n");
+  if (verbose)
+    printf("  rbuf segments modified as expected\n");
 
   for(j=0; j<LEN; j++)
     if (rbuf[j] != DEFAULT_RECV_CHAR) {
       fprintf(stderr, "byte %d should not have changed from %c to %c\n", j, DEFAULT_RECV_CHAR, rbuf[j]);
       assert(0);
     }
-  printf("  rbuf outside-of-segments not modified, as expected\n");
+  if (verbose)
+    printf("  rbuf outside-of-segments not modified, as expected\n");
 }
 
 int main(int argc, char *argv[])
@@ -156,10 +165,11 @@ int main(int argc, char *argv[])
   char ifacename[16];
   omx_endpoint_addr_t addr;
   int c;
-  int i;
+  int i, j;
   omx_seg_t seg[7];
   void * buffer1, * buffer2;
   omx_return_t ret;
+  int nseg = 0;
 
   if (!getenv("OMX_DISABLE_SELF"))
     putenv("OMX_DISABLE_SELF=1");
@@ -171,13 +181,16 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:b:h")) != -1)
+  while ((c = getopt(argc, argv, "e:b:hv")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
       break;
     case 'e':
       endpoint_index = atoi(optarg);
+      break;
+    case 'v':
+      verbose = 1;
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
@@ -245,16 +258,24 @@ int main(int argc, char *argv[])
   seg[4].len = 13456; /* total 13573, medium */
   seg[5].ptr = buffer1 + 50000;
   seg[5].len = 11111; /* total 24684, medium */
+  /* tiny/small/medium only so far */
+#if 0
   seg[6].ptr = buffer1 + 100000;
   seg[6].len = 333333; /* total 357814, large */
+#endif
+  nseg = 6;
 
-  for(i=0; i<6; i++) { /* tiny/small/medium only so far */
-    vect_send_to_contig_recv(ep, addr, seg, i+1, buffer1, buffer2);
-  }
+  for(i=0; i<=nseg; i++)
+    for(j=0; j<=nseg-i; j++) {
+      printf("sending %d segments starting as #%d\n", j, i);
+      vect_send_to_contig_recv(ep, addr, seg+i, j, buffer1, buffer2);
+    }
 
-  for(i=0; i<6; i++) { /* tiny/small/medium only so far */
-    contig_send_to_vect_recv(ep, addr, buffer2, seg, i+1, buffer1);
-  }
+  for(i=0; i<=nseg; i++)
+    for(j=0; j<=nseg-i; j++) {
+      printf("receiving %d segments starting as #%d\n", j, i);
+      contig_send_to_vect_recv(ep, addr, buffer2, seg+i, j, buffer1);
+    }
 
   omx_close_endpoint(ep);
   return 0;
