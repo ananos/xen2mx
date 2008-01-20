@@ -630,6 +630,10 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	}
 
  out:
+	if (ret != 0)
+		dprintk(IOCTL, "cmd %x (%x,%s) returns %d\n",
+			cmd, OMX_CMD_INDEX(cmd), omx_strcmd(cmd), ret);
+
 	return ret;
 }
 
