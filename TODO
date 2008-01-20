@@ -1,4 +1,3 @@
-* drop forcing deregister messages
 * drop endpoint busy or so messages
 
 * drop our region window offset ? (when wire compat will work for large)

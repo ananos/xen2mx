@@ -322,8 +322,8 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 		if (!region)
 			continue;
 
-		printk(KERN_INFO "Open-MX: Forcing deregister of window %d on endpoint %d board %d\n",
-		       i, endpoint->endpoint_index, endpoint->board_index);
+		dprintk(REG, "forcing deregister of window %d on endpoint %d board %d\n",
+			i, endpoint->endpoint_index, endpoint->board_index);
 
 		rcu_assign_pointer(endpoint->user_regions[i], NULL);
 		/* just defer the actual releasing after the grace period */
