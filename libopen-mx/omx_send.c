@@ -456,14 +456,10 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   struct omx__rndv_data * data_n = (void *) rndv_param->data;
   struct omx__large_region *region;
   struct omx__partner * partner = req->generic.partner;
-  void * buffer;
   uint32_t length = req->generic.status.msg_length;
   omx_return_t ret;
 
-  assert(req->send.segs.nseg == 1);
-  buffer = req->send.segs.single.ptr;
-
-  ret = omx__get_region(ep, buffer, length, &region, req);
+  ret = omx__get_region(ep, &req->send.segs, &region, req);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 

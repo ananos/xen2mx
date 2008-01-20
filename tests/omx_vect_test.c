@@ -27,7 +27,7 @@
 #define BID 0
 #define EID OMX_ANY_ENDPOINT
 #define ITER 10
-#define LEN 1048576
+#define LEN 4000000
 
 static int verbose = 0;
 
@@ -258,12 +258,11 @@ int main(int argc, char *argv[])
   seg[4].len = 13456; /* total 13573, medium */
   seg[5].ptr = buffer1 + 50000;
   seg[5].len = 11111; /* total 24684, medium */
-  /* tiny/small/medium only so far */
-#if 0
   seg[6].ptr = buffer1 + 100000;
   seg[6].len = 333333; /* total 357814, large */
-#endif
-  nseg = 6;
+  seg[7].ptr = buffer1 + 1000000;
+  seg[7].len = 3000000; /* total 3357814, large */
+  nseg = 8;
 
   for(i=0; i<=nseg; i++)
     for(j=0; j<=nseg-i; j++) {

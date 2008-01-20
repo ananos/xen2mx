@@ -115,7 +115,7 @@ omx__register_region(struct omx_endpoint *ep,
   struct omx_cmd_register_region reg;
   int err;
 
-  reg.nr_segments = 1;
+  reg.nr_segments = region->nseg;
   reg.id = region->id;
   reg.seqnum = region->seqnum;
   reg.memory_context = 0ULL; /* FIXME */
@@ -190,57 +190,47 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
 
 static omx_return_t
 omx__create_region(struct omx_endpoint *ep,
-		   uint64_t vaddr, uint32_t rdma_length, uint16_t offset,
+		   struct omx_cmd_region_segment *segs, uint32_t nseg,
+		   uint16_t offset,
 		   struct omx__large_region **regionp)
 {
   struct omx__large_region *region = NULL;
-  struct omx_cmd_region_segment *segs;
   omx_return_t ret;
 
   ret = omx__endpoint_large_region_try_alloc(ep, &region);
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
-  segs = malloc(sizeof(*segs));
-  if (!segs) {
-    ret = omx__errno_to_return("alloc register segments");
-    goto out_with_region;
-  }
-
-  segs[0].vaddr = vaddr;
-  segs[0].len = rdma_length;
-
   region->offset = offset;
   region->segs = segs;
+  region->nseg = nseg;
 
   ret = omx__register_region(ep, region);
   if (ret != OMX_SUCCESS)
-    goto out_with_segments;
+    goto out_with_region;
 
-  list_add_tail(&region->reg_elt, &ep->reg_list);
   region->reserver = NULL;
   *regionp = region;
   return OMX_SUCCESS;
 
- out_with_segments:
-  free(segs);
  out_with_region:
   omx__endpoint_large_region_free(ep, region);
  out:
   return ret;
 }
 
-omx_return_t
-omx__get_region(struct omx_endpoint *ep,
-		char * buffer, size_t length,
-		struct omx__large_region **regionp,
-		void *reserver)
+static inline omx_return_t
+omx__get_contigous_region(struct omx_endpoint *ep,
+			  char * buffer, size_t length,
+			  struct omx__large_region **regionp,
+			  void *reserver)
 {
   struct omx__large_region *region = NULL;
+  struct omx_cmd_region_segment *rsegs;
+  omx_return_t ret;
   uint64_t vaddr;
   uint32_t rdma_length;
   uint16_t offset;
-  omx_return_t ret;
 
   vaddr = ((uintptr_t) buffer) & ~4095;
   offset = ((uintptr_t) buffer) & 4095;
@@ -266,12 +256,21 @@ omx__get_region(struct omx_endpoint *ep,
     }
   }
 
-  ret = omx__create_region(ep, vaddr, rdma_length, offset, &region);
-  if (ret != OMX_SUCCESS)
-    return ret;
+  rsegs = malloc(sizeof(*rsegs));
+  if (!rsegs) {
+    ret = omx__errno_to_return("alloc register segments");
+    goto out;
+  }
+  rsegs[0].vaddr = vaddr;
+  rsegs[0].len = rdma_length;
 
+  ret = omx__create_region(ep, rsegs, 1, offset, &region);
+  if (ret != OMX_SUCCESS)
+    goto out_with_segments;
+
+  list_add_tail(&region->reg_elt, &ep->reg_list);
   region->use_count++;
-  omx__debug_printf(LARGE, "created region %d (usecount %d)\n", region->id, region->use_count);
+  omx__debug_printf(LARGE, "created contigous region %d (usecount %d)\n", region->id, region->use_count);
 
  found:
   if (reserver) {
@@ -282,6 +281,80 @@ omx__get_region(struct omx_endpoint *ep,
 
   *regionp = region;
   return OMX_SUCCESS;
+
+ out_with_segments:
+  free(rsegs);
+ out:
+  return ret;
+}
+
+static inline omx_return_t
+omx__get_vect_region(struct omx_endpoint *ep,
+		     struct omx__req_seg *reqsegs,
+		     struct omx__large_region **regionp,
+		     void *reserver)
+{
+  struct omx__large_region *region = NULL;
+  struct omx_cmd_region_segment *segs;
+  uint32_t nseg = reqsegs->nseg;
+  omx_return_t ret;
+  int i;
+
+  if (reserver)
+    omx__debug_printf(LARGE, "need a region reserved for object %p\n", reserver);
+  else
+    omx__debug_printf(LARGE, "need a region without reserving it\n");
+
+  /* no regcache for vectorials */
+
+  segs = malloc(sizeof(*segs) * nseg);
+  if (!segs) {
+    ret = omx__errno_to_return("alloc register segments");
+    goto out;
+  }
+
+  for(i=0; i<nseg; i++) {
+    omx_seg_t *seg = &reqsegs->segs[i];
+    segs[i].vaddr = (uintptr_t) seg->ptr;
+    segs[i].len = seg->len;
+  }
+
+  ret = omx__create_region(ep, segs, nseg, 0, &region);
+  if (ret != OMX_SUCCESS)
+    goto out_with_segments;
+
+  list_add_tail(&region->reg_elt, &ep->reg_vect_list);
+  region->use_count++;
+  omx__debug_printf(LARGE, "created vectorial region %d (usecount %d)\n", region->id, region->use_count);
+
+  if (reserver) {
+    omx__debug_assert(!region->reserver);
+    omx__debug_printf(LARGE, "reserving region %d for object %p\n", region->id, reserver);
+    region->reserver = reserver;
+  }
+
+  *regionp = region;
+  return OMX_SUCCESS;
+
+ out_with_segments:
+  free(segs);
+ out:
+  return ret;
+}
+
+omx_return_t
+omx__get_region(struct omx_endpoint *ep,
+		struct omx__req_seg *reqsegs,
+		struct omx__large_region **regionp,
+		void *reserver)
+{
+  uint32_t nseg = reqsegs->nseg;
+  if (nseg > 1) {
+    return omx__get_vect_region(ep, reqsegs, regionp, reserver);
+  } else {
+    omx_seg_t *seg = &reqsegs->single;
+    return omx__get_contigous_region(ep, seg->ptr, seg->len, regionp, reserver);
+  }
 }
 
 omx_return_t
@@ -297,7 +370,7 @@ omx__put_region(struct omx_endpoint *ep,
     region->reserver = NULL;
   }
 
-  if (omx__globals.regcache) {
+  if (omx__globals.regcache && region->nseg == 1) {
     if (!region->use_count)
       list_add_tail(&region->reg_unused_elt, &ep->reg_unused_list);
     omx__debug_printf(LARGE, "regcache keeping region %d (usecount %d)\n", region->id, region->use_count);
@@ -327,9 +400,8 @@ omx__submit_pull(struct omx_endpoint * ep,
   if (unlikely(ep->avail_exp_events < 1))
     return OMX_NO_RESOURCES;
 
-  assert(req->recv.segs.nseg == 1);
-
-  ret = omx__get_region(ep, req->recv.segs.single.ptr, xfer_length, &region, NULL);
+  /* FIXME: could register xfer_length instead of the whole segments */
+  ret = omx__get_region(ep, &req->recv.segs, &region, NULL);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
