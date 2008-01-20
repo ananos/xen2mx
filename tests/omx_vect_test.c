@@ -41,8 +41,9 @@ usage(int argc, char *argv[])
 }
 
 #define DEFAULT_SEND_CHAR 'a'
-#define DEFAULT_RECV_CHAR 'c'
-#define REAL_SEND_CHAR 'b'
+#define DEFAULT_RECV_CHAR 'b'
+#define REAL_SEND_FIRST_CHAR 'm'
+#define REAL_SEND_LAST_CHAR 'z'
 
 static void
 vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
@@ -55,12 +56,24 @@ vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   uint32_t result;
   uint32_t len;
   int i,j;
+  char c;
 
+  /* initialize the whole send buffer to DEFAULT_SEND_CHAR */
   memset(sbuf, DEFAULT_SEND_CHAR, LEN);
+
+  /* initialize send segments to chars between REAL_SEND_FIRST_CHAR and REAL_SEND_LAST_CHAR */
+  c = REAL_SEND_FIRST_CHAR;
   for(i=0, len=0; i<nseg; i++) {
-    memset(segs[i].ptr, REAL_SEND_CHAR, segs[i].len);
+    char *buf = segs[i].ptr;
+    for(j=0; j<segs[i].len; j++) {
+      buf[j] = c;
+      if (c++ == REAL_SEND_LAST_CHAR) c = REAL_SEND_FIRST_CHAR;
+    }
+
     len += segs[i].len;
   }
+
+  /* initialize the whole recv buffer to DEFAULT_RECV_CHAR */
   memset(rbuf, DEFAULT_RECV_CHAR, LEN);
 
   if (verbose)
@@ -79,18 +92,27 @@ vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   assert(result);
   assert(status.code == OMX_STATUS_SUCCESS);
 
-  for(j=0; j<len; j++)
-    if (rbuf[j] != REAL_SEND_CHAR) {
-      fprintf(stderr, "byte %d changed from %c to %c instead of %c\n", j, DEFAULT_RECV_CHAR, rbuf[j], REAL_SEND_CHAR);
+  /* check recv segment are chars between REAL_SEND_FIRST_CHAR and REAL_SEND_LAST_CHAR */
+  c = REAL_SEND_FIRST_CHAR;
+  for(j=0; j<len; j++) {
+    if (rbuf[j] != c) {
+      fprintf(stderr, "byte %d changed from %c to %c instead of %c\n",
+	      j, DEFAULT_RECV_CHAR, rbuf[j], c);
       assert(0);
     }
-  memset(rbuf, 'c', len);
+    if (c++ == REAL_SEND_LAST_CHAR) c = REAL_SEND_FIRST_CHAR;
+  }
   if (verbose)
     printf("  rbuf buffer modified as expected\n");
 
+  /* reset the recv segment to DEFAULT_RECV_CHAR */
+  memset(rbuf, DEFAULT_RECV_CHAR, len);
+
+  /* check that the whole recv buffer is DEFAULT_RECV_CHAR now */
   for(j=0; j<LEN; j++)
     if (rbuf[j] != DEFAULT_RECV_CHAR) {
-      fprintf(stderr, "byte %d should not have changed from %c to %c\n", j, DEFAULT_RECV_CHAR, rbuf[j]);
+      fprintf(stderr, "byte %d should not have changed from %c to %c\n",
+	      j, DEFAULT_RECV_CHAR, rbuf[j]);
       assert(0);
     }
   if (verbose)
@@ -108,6 +130,7 @@ contig_send_to_vect_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   uint32_t result;
   uint32_t len;
   int i,j;
+  char c;
 
   for(i=0, len=0; i<nseg; i++) {
     len += segs[i].len;
@@ -116,9 +139,18 @@ contig_send_to_vect_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   if (verbose)
     printf("  receiving %ld as %d segments\n", (unsigned long) len, (unsigned) nseg);
 
-  memset(sbuf, 'a', LEN);
-  memset(sbuf, 'b', len);
-  memset(rbuf, 'c', LEN);
+  /* initialize the whole send buffer to DEFAULT_SEND_CHAR */
+  memset(sbuf, DEFAULT_SEND_CHAR, LEN);
+
+  /* initialize the send segment to chars between REAL_SEND_FIRST_CHAR and REAL_SEND_LAST_CHAR */
+  c = REAL_SEND_FIRST_CHAR;
+  for(j=0; j<len; j++) {
+    sbuf[j] = c;
+    if (c++ > REAL_SEND_LAST_CHAR) c = REAL_SEND_FIRST_CHAR;
+  }
+
+  /* initialize the whole recv buffer to DEFAULT_RECV_CHAR */
+  memset(rbuf, DEFAULT_RECV_CHAR, LEN);
 
   ret = omx_irecvv(ep, segs, nseg, 0, 0, NULL, &rreq);
   assert(ret == OMX_SUCCESS);
@@ -133,22 +165,31 @@ contig_send_to_vect_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   assert(result);
   assert(status.code == OMX_STATUS_SUCCESS);
 
+  /* check recv segments are chars between REAL_SEND_FIRST_CHAR and REAL_SEND_LAST_CHAR */
+  c = REAL_SEND_FIRST_CHAR;
   for(i=0; i<nseg; i++) {
+    char *buf = segs[i].ptr;
     for(j=0; j<segs[i].len; j++) {
-      char *buf = segs[i].ptr;
-      if (buf[j] != REAL_SEND_CHAR) {
-        fprintf(stderr, "byte %d in seg %d changed from %c to %c instead of %c\n", j, i, DEFAULT_RECV_CHAR, buf[j], REAL_SEND_CHAR);
+      if (buf[j] != c) {
+        fprintf(stderr, "byte %d in seg %d changed from %c to %c instead of %c\n",
+		j, i, DEFAULT_RECV_CHAR, buf[j], c);
 	assert(0);
       }
+      if (c++ > REAL_SEND_LAST_CHAR) c = REAL_SEND_FIRST_CHAR;
     }
-    memset(segs[i].ptr, 'c', segs[i].len);
   }
   if (verbose)
     printf("  rbuf segments modified as expected\n");
 
+  /* reset the recv segment to DEFAULT_RECV_CHAR */
+  for(i=0; i<nseg; i++)
+    memset(segs[i].ptr, DEFAULT_RECV_CHAR, segs[i].len);
+
+  /* check that the whole recv buffer is DEFAULT_RECV_CHAR now */
   for(j=0; j<LEN; j++)
     if (rbuf[j] != DEFAULT_RECV_CHAR) {
-      fprintf(stderr, "byte %d should not have changed from %c to %c\n", j, DEFAULT_RECV_CHAR, rbuf[j]);
+      fprintf(stderr, "byte %d should not have changed from %c to %c\n",
+	      j, DEFAULT_RECV_CHAR, rbuf[j]);
       assert(0);
     }
   if (verbose)
