@@ -1,5 +1,3 @@
-* drop endpoint busy or so messages
-
 * drop our region window offset ? (when wire compat will work for large)
   + pull are aligned on the reader's pages because it's the slower side on native MX
     - we don't really care about alignment in open-mx, pages are pinned first, adding 2 pages to a skb isn't very expensive

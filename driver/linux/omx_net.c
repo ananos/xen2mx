@@ -565,7 +565,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 
 	ret = -ENODEV;
 	if (!iface || iface->status != OMX_IFACE_STATUS_OK) {
-		printk(KERN_ERR "Open-MX: Cannot open endpoint on unexisting board %d\n",
+		dprintk(IOCTL, "cannot open endpoint on unexisting board %d\n",
 		       endpoint->board_index);
 		goto out_with_rcu_lock;
 	}
@@ -580,7 +580,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	/* add the endpoint */
 	ret = -EBUSY;
 	if (iface->endpoints[endpoint->endpoint_index] != NULL) {
-		printk(KERN_ERR "Open-MX: endpoint already open\n");
+		dprintk(IOCTL, "endpoint already open\n");
 		goto out_with_endpoints_locked;
 	}
 
