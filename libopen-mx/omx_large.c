@@ -139,7 +139,7 @@ omx__register_region(struct omx_endpoint *ep,
     omx_return_t ret;
     ret = omx__errno_to_return("ioctl REGISTER");
     if (ret == OMX_BUSY)
-      omx__abort("region %d already registered, contains %p\n", region->id, ep->large_region_map.array[region->id]);
+      omx__abort("region %d already registered\n", region->id);
   }
 
   return OMX_SUCCESS;
