@@ -43,8 +43,8 @@ struct omx__large_region_map {
   struct omx__large_region_slot {
     int next_free;
     struct omx__large_region {
-      struct list_head regcache_elt;
-      struct list_head regcache_unused_elt;
+      struct list_head reg_elt; /* linked into the endpoint reg_list or reg_vect_list */
+      struct list_head reg_unused_elt; /* linked into the endpoint reg_unused_list if contigous, unused and cached */
       int use_count;
       uint8_t id;
       uint8_t seqnum;
@@ -201,8 +201,9 @@ struct omx_endpoint {
 
   struct list_head partners_to_ack;
 
-  struct list_head regcache_list; /* list of registered windows */
-  struct list_head regcache_unused_list; /* list of unused registered window, LRU in front */
+  struct list_head reg_list; /* registered single-segment windows */
+  struct list_head reg_unused_list; /* unused registered single-segment windows, LRU in front */
+  struct list_head reg_vect_list; /* registered vectorial windows (uncached) */
 };
 
 enum omx__request_type {
