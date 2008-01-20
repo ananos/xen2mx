@@ -216,7 +216,7 @@ omx__submit_send_liback(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TRUC, &truc_param);
   if (unlikely(err < 0))
-    return omx__errno_to_return("ioctl SEND_TINY");
+    return omx__errno_to_return("ioctl SEND_TRUC");
 
   /* no need to wait for a done event, tiny is synchronous */
 
