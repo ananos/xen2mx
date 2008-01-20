@@ -120,7 +120,6 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
 	vfree(endpoint->userdesc);
-	kfree(endpoint);
 }
 
 /****************************
@@ -168,7 +167,7 @@ omx_endpoints_cleanup(void)
 	/* and now free all endpoints without needing any lock */
 	list_for_each_entry_safe(endpoint, next, &private_head, list_elt) {
 		omx_endpoint_free_resources(endpoint);
-		endpoint->status = OMX_ENDPOINT_STATUS_FREE;
+		kfree(endpoint);
 	}
 }
 
