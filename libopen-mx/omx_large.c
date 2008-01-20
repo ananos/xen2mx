@@ -177,6 +177,7 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
       region = list_first_entry(&ep->reg_unused_list, struct omx__large_region, reg_unused_elt);
       omx__debug_printf(LARGE, "regcache releasing unused region %d\n", region->id);
       list_del(&region->reg_unused_elt);
+      omx__debug_printf(LARGE, "destroying region %d\n", region->id);
       omx__destroy_region(ep, region);
 
       /* try again now, it should work */
@@ -232,7 +233,8 @@ omx__create_region(struct omx_endpoint *ep,
 omx_return_t
 omx__get_region(struct omx_endpoint *ep,
 		char * buffer, size_t length,
-		struct omx__large_region **regionp)
+		struct omx__large_region **regionp,
+		void *reserver)
 {
   struct omx__large_region *region = NULL;
   uint64_t vaddr;
@@ -244,18 +246,22 @@ omx__get_region(struct omx_endpoint *ep,
   offset = ((uintptr_t) buffer) & 4095;
   rdma_length = (offset + length + 4095) & ~4095;
 
+  if (reserver)
+    omx__debug_printf(LARGE, "need a region reserved for object %p\n", reserver);
+  else
+    omx__debug_printf(LARGE, "need a region without reserving it\n");
+
   if (omx__globals.regcache) {
     list_for_each_entry(region, &ep->reg_list, reg_elt) {
-      if (!region->reserver
+      if ((!reserver || !region->reserver)
 	  && region->segs[0].vaddr == vaddr
 	  && region->segs[0].len >= rdma_length
 	  && region->offset == offset) {
 
 	if (!(region->use_count++))
 	  list_del(&region->reg_unused_elt);
-	*regionp = region;
 	omx__debug_printf(LARGE, "regcache reusing region %d (usecount %d)\n", region->id, region->use_count);
-	return OMX_SUCCESS;
+	goto found;
       }
     }
   }
@@ -265,21 +271,38 @@ omx__get_region(struct omx_endpoint *ep,
     return ret;
 
   region->use_count++;
-  omx__debug_printf(LARGE, "regcache created region %d (usecount %d)\n", region->id, region->use_count);
+  omx__debug_printf(LARGE, "created region %d (usecount %d)\n", region->id, region->use_count);
+
+ found:
+  if (reserver) {
+    omx__debug_assert(!region->reserver);
+    omx__debug_printf(LARGE, "reserving region %d for object %p\n", region->id, reserver);
+    region->reserver = reserver;
+  }
+
   *regionp = region;
   return OMX_SUCCESS;
 }
 
 omx_return_t
 omx__put_region(struct omx_endpoint *ep,
-		struct omx__large_region *region)
+		struct omx__large_region *region,
+		void *reserver)
 {
   region->use_count--;
+
+  if (reserver) {
+    omx__debug_assert(region->reserver == reserver);
+    omx__debug_printf(LARGE, "unreserving region %d from object %p\n", region->id, reserver);
+    region->reserver = NULL;
+  }
+
   if (omx__globals.regcache) {
     if (!region->use_count)
       list_add_tail(&region->reg_unused_elt, &ep->reg_unused_list);
     omx__debug_printf(LARGE, "regcache keeping region %d (usecount %d)\n", region->id, region->use_count);
   } else {
+    omx__debug_printf(LARGE, "destroying region %d\n", region->id);
     omx__destroy_region(ep, region);
   }
 
@@ -306,7 +329,7 @@ omx__submit_pull(struct omx_endpoint * ep,
 
   assert(req->recv.segs.nseg == 1);
 
-  ret = omx__get_region(ep, req->recv.segs.single.ptr, xfer_length, &region);
+  ret = omx__get_region(ep, req->recv.segs.single.ptr, xfer_length, &region, NULL);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
@@ -329,7 +352,7 @@ omx__submit_pull(struct omx_endpoint * ep,
       omx__abort("Failed to post SEND PULL, driver replied %m\n");
     }
 
-    omx__put_region(ep, region);
+    omx__put_region(ep, region, NULL);
     return ret;
   }
   ep->avail_exp_events--;
@@ -426,7 +449,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
 	       (unsigned long) req->generic.status.xfer_length);
   }
 
-  omx__put_region(ep, req->recv.specific.large.local_region);
+  omx__put_region(ep, req->recv.specific.large.local_region, NULL);
   omx__dequeue_request(&ep->pull_req_q, req);
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
 
@@ -448,12 +471,12 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   /* FIXME: check region id */
   region = &ep->large_region_map.array[region_id].region;
   req = region->reserver;
-  region->reserver = NULL;
+
   omx__debug_assert(req);
   omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_SEND_LARGE);
   omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
 
-  omx__put_region(ep, req->send.specific.large.region);
+  omx__put_region(ep, req->send.specific.large.region, req);
   req->generic.status.xfer_length = xfer_length;
 
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;

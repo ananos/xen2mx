@@ -463,7 +463,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   assert(req->send.segs.nseg == 1);
   buffer = req->send.segs.single.ptr;
 
-  ret = omx__get_region(ep, buffer, length, &region);
+  ret = omx__get_region(ep, buffer, length, &region, req);
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
@@ -489,7 +489,6 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   /* no need to wait for a done event, tiny is synchronous */
 
   req->send.specific.large.region = region;
-  region->reserver = req;
 
   return OMX_SUCCESS;
 }

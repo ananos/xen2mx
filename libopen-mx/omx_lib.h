@@ -154,11 +154,13 @@ omx__endpoint_large_region_map_exit(struct omx_endpoint * ep);
 omx_return_t
 omx__get_region(struct omx_endpoint *ep,
 		char * buffer, size_t length,
-		struct omx__large_region **regionp);
+		struct omx__large_region **regionp,
+		void * reserver);
 
 omx_return_t
 omx__put_region(struct omx_endpoint *ep,
-		struct omx__large_region *region);
+		struct omx__large_region *region,
+		void * reserver);
 
 void
 omx__post_notify(struct omx_endpoint *ep,
