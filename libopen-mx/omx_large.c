@@ -255,6 +255,7 @@ omx__get_region(struct omx_endpoint *ep,
 	if (!(region->use_count++))
 	  list_del(&region->reg_unused_elt);
 	*regionp = region;
+	omx__debug_printf(LARGE, "regcache reusing region %d (usecount %d)\n", region->id, region->use_count);
 	return OMX_SUCCESS;
       }
     }
@@ -265,6 +266,7 @@ omx__get_region(struct omx_endpoint *ep,
     return ret;
 
   region->use_count++;
+  omx__debug_printf(LARGE, "regcache created region %d (usecount %d)\n", region->id, region->use_count);
   *regionp = region;
   return OMX_SUCCESS;
 }
@@ -277,6 +279,7 @@ omx__put_region(struct omx_endpoint *ep,
   if (omx__globals.regcache) {
     if (!region->use_count)
       list_add_tail(&region->reg_unused_elt, &ep->reg_unused_list);
+    omx__debug_printf(LARGE, "regcache keeping region %d (usecount %d)\n", region->id, region->use_count);
   } else {
     omx__destroy_region(ep, region);
   }
