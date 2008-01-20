@@ -144,12 +144,11 @@ __omx_endpoint_last_release(struct kref *kref)
 		endpoint->endpoint_index, iface->peer.hostname, iface->eth_ifp->name);
 
 	endpoint->iface = NULL;
+	omx_iface_release(iface);
 
 	spin_lock(&omx_endpoints_cleanup_lock);
 	list_add(&endpoint->list_elt, &omx_endpoints_cleanup_list);
 	spin_unlock(&omx_endpoints_cleanup_lock);
-
-	omx_iface_release(iface);
 }
 
 void
@@ -166,6 +165,11 @@ omx_endpoints_cleanup(void)
 
 	/* and now free all endpoints without needing any lock */
 	list_for_each_entry_safe(endpoint, next, &private_head, list_elt) {
+		/*
+		 * only that were open before end up here,
+		 * the global fd is freed in omx_endpoint_close()
+		 */
+		BUG_ON(endpoint->status != OMX_ENDPOINT_STATUS_CLOSING);
 		omx_endpoint_free_resources(endpoint);
 		kfree(endpoint);
 	}
@@ -243,12 +247,21 @@ omx_endpoint_close(struct omx_endpoint * endpoint,
 	spin_lock(&endpoint->status_lock);
 
 	/* test whether the endpoint is ok to be closed */
+
+	if (endpoint->status == OMX_ENDPOINT_STATUS_FREE) {
+		/* not open, just free the structure */
+		spin_unlock(&endpoint->status_lock);
+		kfree(endpoint);
+		return 0;
+	}
+
 	ret = -EINVAL;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
-		/* either already being closed, or not-yet open, return an error */
+		/* either already closing or not initialized yet */
 		spin_unlock(&endpoint->status_lock);
 		goto out;
 	}
+
 	/* mark it as closing so that nobody may use it again */
 	endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;
 
