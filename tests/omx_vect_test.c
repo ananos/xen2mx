@@ -37,6 +37,10 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
 }
 
+#define DEFAULT_SEND_CHAR 'a'
+#define DEFAULT_RECV_CHAR 'c'
+#define REAL_SEND_CHAR 'b'
+
 static void
 vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 			 omx_seg_t *segs, int nseg,
@@ -49,12 +53,12 @@ vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   uint32_t len;
   int i,j;
 
-  memset(sbuf, 'a', LEN);
+  memset(sbuf, DEFAULT_SEND_CHAR, LEN);
   for(i=0, len=0; i<nseg; i++) {
-    memset(segs[i].ptr, 'b', segs[i].len);
+    memset(segs[i].ptr, REAL_SEND_CHAR, segs[i].len);
     len += segs[i].len;
   }
-  memset(rbuf, 'c', LEN);
+  memset(rbuf, DEFAULT_RECV_CHAR, LEN);
 
   printf("sending %ld as %d segments\n", (unsigned long) len, (unsigned) nseg);
 
@@ -72,19 +76,19 @@ vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   assert(status.code == OMX_STATUS_SUCCESS);
 
   for(j=0; j<len; j++)
-    if (rbuf[j] != 'b') {
-      fprintf(stderr, "found %c instead of %c at %d\n", rbuf[j], 'b', j);
+    if (rbuf[j] != REAL_SEND_CHAR) {
+      fprintf(stderr, "byte %d changed from %c to %c instead of %c\n", j, DEFAULT_RECV_CHAR, rbuf[j], REAL_SEND_CHAR);
       assert(0);
     }
   memset(rbuf, 'c', len);
-  printf("  rbuf touched as expected\n");
+  printf("  rbuf buffer modified as expected\n");
 
   for(j=0; j<LEN; j++)
-    if (rbuf[j] != 'c') {
-      fprintf(stderr, "found %c instead of %c at %d\n", rbuf[j], 'c', j);
+    if (rbuf[j] != DEFAULT_RECV_CHAR) {
+      fprintf(stderr, "byte %d should not have changed from %c to %c\n", j, DEFAULT_RECV_CHAR, rbuf[j]);
       assert(0);
     }
-  printf("  remaining rbuf not touched, as expected\n");
+  printf("  rbuf outside-of-buffer not modified, as expected\n");
 }
 
 static void
@@ -125,21 +129,21 @@ contig_send_to_vect_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   for(i=0; i<nseg; i++) {
     for(j=0; j<segs[i].len; j++) {
       char *buf = segs[i].ptr;
-      if (buf[j] != 'b') {
-	fprintf(stderr, "found %c instead of %c at %d(%d)\n", buf[j], 'b', i, j);
+      if (buf[j] != REAL_SEND_CHAR) {
+        fprintf(stderr, "byte %d in seg %d changed from %c to %c instead of %c\n", j, i, DEFAULT_RECV_CHAR, buf[j], REAL_SEND_CHAR);
 	assert(0);
       }
     }
     memset(segs[i].ptr, 'c', segs[i].len);
   }
-  printf("  rbuf touched as expected\n");
+  printf("  rbuf segments modified as expected\n");
 
   for(j=0; j<LEN; j++)
-    if (rbuf[j] != 'c') {
-      fprintf(stderr, "found %c instead of %c at %d\n", rbuf[j], 'c', j);
+    if (rbuf[j] != DEFAULT_RECV_CHAR) {
+      fprintf(stderr, "byte %d should not have changed from %c to %c\n", j, DEFAULT_RECV_CHAR, rbuf[j]);
       assert(0);
     }
-  printf("  remaining rbuf not touched, as expected\n");
+  printf("  rbuf outside-of-segments not modified, as expected\n");
 }
 
 int main(int argc, char *argv[])
