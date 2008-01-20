@@ -1,4 +1,3 @@
-* cleanup regcache region on close_endpoint
 * drop forcing deregister messages
 * drop endpoint busy or so messages
 

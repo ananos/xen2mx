@@ -52,13 +52,6 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
   return OMX_SUCCESS;
 }
 
-void
-omx__endpoint_large_region_map_exit(struct omx_endpoint * ep)
-{
-  /* FIXME: check and deregister */
-  free(ep->large_region_map.array);
-}
-
 static inline omx_return_t
 omx__endpoint_large_region_try_alloc(struct omx_endpoint * ep,
 				     struct omx__large_region ** regionp)
@@ -102,6 +95,26 @@ omx__endpoint_large_region_free(struct omx_endpoint * ep,
   array[index].next_free = ep->large_region_map.first_free;
   ep->large_region_map.first_free = index;
   ep->large_region_map.nr_free++;
+}
+
+static void omx__destroy_region(struct omx_endpoint *ep,  struct omx__large_region *region);
+
+void
+omx__endpoint_large_region_map_exit(struct omx_endpoint * ep)
+{
+  struct omx__large_region *region, *next;
+
+  list_for_each_entry_safe(region, next, &ep->reg_list, reg_elt) {
+    if (!region->use_count)
+      list_del(&region->reg_unused_elt);
+    omx__destroy_region(ep, region);
+  }
+
+  list_for_each_entry_safe(region, next, &ep->reg_vect_list, reg_elt) {
+    omx__destroy_region(ep, region);
+  }
+
+  free(ep->large_region_map.array);
 }
 
 /****************************************
