@@ -26,9 +26,7 @@
 
 #define BID 0
 #define EID OMX_ANY_ENDPOINT
-#define ITER 2//0
-
-char *buffer = NULL, *buffer2 = NULL;
+#define ITER 10
 
 static omx_return_t
 one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
@@ -36,23 +34,19 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 {
   omx_request_t sreq[4], rreq[4], req;
   omx_status_t status;
+  char *buffer, *buffer2;
   omx_return_t ret;
   uint32_t result;
   int i;
 
-if (!buffer) {
-  buffer = malloc(10000000);
+  buffer = malloc(length);
   if (!buffer)
     return OMX_NO_RESOURCES;
-  buffer2 = buffer;
-#if 0
-malloc(length);
+  buffer2 = malloc(length);
   if (!buffer2) {
     free(buffer);
     return OMX_NO_RESOURCES;
   }
-#endif
-}
 
   /* initialize buffers to different values
    * so that it's easy to check bytes correctness
@@ -135,13 +129,13 @@ malloc(length);
   }
   fprintf(stderr, "Successfully transferred %d bytes 4 times\n", length);
 
-//  free(buffer2);
-//  free(buffer);
+  free(buffer2);
+  free(buffer);
   return OMX_SUCCESS;
 
  out:
-//  free(buffer2);
-//  free(buffer);
+  free(buffer2);
+  free(buffer);
   return OMX_BAD_ERROR;
 }
 
