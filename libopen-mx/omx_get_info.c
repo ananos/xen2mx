@@ -48,7 +48,7 @@ omx__get_board_count(uint32_t * count)
 }
 
 /*
- * Returns the board id of the endpoint is non NULL,
+ * Returns the board id of the endpoint if non NULL,
  * or the current board corresponding to the index.
  *
  * index, addr, hostname and ifacename pointers may be NULL is unused.

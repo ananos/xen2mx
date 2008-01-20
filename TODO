@@ -5,6 +5,8 @@
     - MX doesn't care about our alignement when it pulls from us
   + design is ugly (fixed in 1.3?)
 
+* link request in the list qnd free them on close to avoid leaking the zombies or so?
+
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
