@@ -298,10 +298,8 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	spin_unlock(&endpoint->event_lock);
 
 	dprintk(EVENT, "going to sleep\n");
-	if (cmd.timeout != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE) {
-		unsigned long jiffies_timeout = msecs_to_jiffies(cmd.timeout);
-		jiffies_timeout = schedule_timeout(jiffies_timeout);
-		cmd.timeout = jiffies_to_msecs(jiffies_timeout);
+	if (cmd.jiffies_timeout != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE) {
+		cmd.jiffies_timeout = schedule_timeout(cmd.jiffies_timeout);
 	} else {
 		schedule();
 	}
@@ -312,8 +310,8 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
 		/* status didn't changed,
 		 * we didn't get woken up by an event */
-		if (cmd.timeout != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE
-		    && cmd.timeout != 0) {
+		if (cmd.jiffies_timeout != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE
+		    && cmd.jiffies_timeout != 0) {
 			/* if there was a timeout, and it didn't expire,
 			 * we have been interrupted */
 			waiter.status = OMX_CMD_WAIT_EVENT_STATUS_INTR;

@@ -99,11 +99,13 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	 uint32_t timeout)
 {
   struct omx_cmd_wait_event wait_param;
+  uint32_t hz = omx__driver_desc->hz;
+  uint32_t jiffies_timeout = (timeout == OMX_TIMEOUT_INFINITE) ? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE : (timeout + hz-1)/hz;
   omx_return_t ret = OMX_SUCCESS;
 
   if (omx__globals.waitspin) {
+    uint64_t last_jiffies = omx__driver_desc->jiffies + jiffies_timeout;
     /* busy spin instead of sleeping */
-    uint64_t last_jiffies = omx__driver_desc->jiffies + timeout/omx__driver_desc->hz;
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
@@ -128,12 +130,13 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
     goto out;
   }
 
-  wait_param.timeout = timeout;
+  wait_param.jiffies_timeout = jiffies_timeout;
 
   while (1) {
     int err;
 
-    omx__debug_printf(WAIT, "omx_wait going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+    omx__debug_printf(WAIT, "omx_wait going to sleep for %ld jiffies\n",
+		      (unsigned long) wait_param.jiffies_timeout);
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
@@ -222,6 +225,8 @@ omx_wait_any(struct omx_endpoint *ep,
 	     uint32_t timeout)
 {
   struct omx_cmd_wait_event wait_param;
+  uint32_t hz = omx__driver_desc->hz;
+  uint32_t jiffies_timeout = (timeout == OMX_TIMEOUT_INFINITE) ? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE : (timeout + hz-1)/hz;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -237,7 +242,7 @@ omx_wait_any(struct omx_endpoint *ep,
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
-    uint64_t last_jiffies = omx__driver_desc->jiffies + timeout/omx__driver_desc->hz;
+    uint64_t last_jiffies = omx__driver_desc->jiffies + jiffies_timeout;
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
@@ -262,12 +267,13 @@ omx_wait_any(struct omx_endpoint *ep,
     goto out;
   }
 
-  wait_param.timeout = timeout;
+  wait_param.jiffies_timeout = jiffies_timeout;
 
   while (1) {
     int err;
 
-    omx__debug_printf(WAIT, "omx_wait_any going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+    omx__debug_printf(WAIT, "omx_wait_any going to sleep for %ld jiffies\n",
+		      (unsigned long) wait_param.jiffies_timeout);
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
@@ -340,6 +346,8 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 	 uint32_t *result, uint32_t timeout)
 {
   struct omx_cmd_wait_event wait_param;
+  uint32_t hz = omx__driver_desc->hz;
+  uint32_t jiffies_timeout = (timeout == OMX_TIMEOUT_INFINITE) ? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE : (timeout + hz-1)/hz;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(ep->ctxid_bits)) {
@@ -349,7 +357,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
-    uint64_t last_jiffies = omx__driver_desc->jiffies + timeout/omx__driver_desc->hz;
+    uint64_t last_jiffies = omx__driver_desc->jiffies + jiffies_timeout;
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
@@ -374,12 +382,13 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
     goto out;
   }
 
-  wait_param.timeout = timeout;
+  wait_param.jiffies_timeout = jiffies_timeout;
 
   while (1) {
     int err;
 
-    omx__debug_printf(WAIT, "omx_peek going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+    omx__debug_printf(WAIT, "omx_peek going to sleep for %ld jiffies\n",
+		      (unsigned long) wait_param.jiffies_timeout);
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
@@ -467,6 +476,8 @@ omx_probe(struct omx_endpoint *ep,
 	  uint32_t timeout)
 {
   struct omx_cmd_wait_event wait_param;
+  uint32_t hz = omx__driver_desc->hz;
+  uint32_t jiffies_timeout = (timeout == OMX_TIMEOUT_INFINITE) ? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE : (timeout + hz-1)/hz;
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -482,7 +493,7 @@ omx_probe(struct omx_endpoint *ep,
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
-    uint64_t last_jiffies = omx__driver_desc->jiffies + timeout/omx__driver_desc->hz;
+    uint64_t last_jiffies = omx__driver_desc->jiffies + jiffies_timeout;
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
@@ -507,12 +518,13 @@ omx_probe(struct omx_endpoint *ep,
     goto out;
   }
 
-  wait_param.timeout = timeout;
+  wait_param.jiffies_timeout = jiffies_timeout;
 
   while (1) {
     int err;
 
-    omx__debug_printf(WAIT, "omx_probe going to sleep for %ldms\n", (unsigned long) wait_param.timeout);
+    omx__debug_printf(WAIT, "omx_probe going to sleep for %ld jiffies\n",
+		      (unsigned long) wait_param.jiffies_timeout);
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;

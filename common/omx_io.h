@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x105
+#define OMX_DRIVER_ABI_VERSION		0x106
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -314,7 +314,7 @@ struct omx_cmd_deregister_region {
 
 struct omx_cmd_wait_event {
 	uint8_t status;
-	uint32_t timeout; /* milliseconds */
+	uint32_t jiffies_timeout; /* jiffies */
 	uint32_t next_exp_event_offset;
 	uint32_t next_unexp_event_offset;
 };
