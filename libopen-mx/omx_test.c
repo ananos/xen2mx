@@ -116,7 +116,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	goto out;
       }
 
-      if (omx__driver_desc->jiffies >= last_jiffies)
+      if (timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
 	goto out;
     }
   }
@@ -253,7 +253,7 @@ omx_wait_any(struct omx_endpoint *ep,
 	goto out;
       }
 
-      if (omx__driver_desc->jiffies >= last_jiffies)
+      if (timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
 	goto out;
     }
   }
@@ -368,7 +368,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 	goto out;
       }
 
-      if (omx__driver_desc->jiffies >= last_jiffies)
+      if (timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
 	goto out;
     }
   }
@@ -504,7 +504,7 @@ omx_probe(struct omx_endpoint *ep,
 	goto out;
       }
 
-      if (omx__driver_desc->jiffies >= last_jiffies)
+      if (timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
 	goto out;
     }
   }
