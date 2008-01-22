@@ -55,18 +55,18 @@ extern int omx_notify_exp_event(struct omx_endpoint *endpoint, uint8_t type, voi
 extern int omx_notify_unexp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
 extern int omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, unsigned long *recvq_offset);
 extern void omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
-extern int omx_wait_event(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam);
 
 /* sending */
 extern struct sk_buff * omx_new_skb(unsigned long len);
-extern int omx_send_tiny(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_send_small(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_send_medium(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_send_rndv(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_send_pull(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_send_notify(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_send_connect(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_send_truc(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_tiny(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_small(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_medium(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_rndv(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_pull(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_notify(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_connect(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_truc(struct omx_endpoint * endpoint, void __user * uparam);
 extern void omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type, uint8_t src_endpoint, uint8_t dst_endpoint, uint16_t lib_seqnum);
 extern void omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type, uint8_t src_endpoint, uint32_t src_pull_handle, uint32_t src_magic);
 

@@ -104,8 +104,8 @@ omx_user_region_deregister_segments(struct omx_user_region * region)
  */
 
 int
-omx_user_region_register(struct omx_endpoint * endpoint,
-			 void __user * uparam)
+omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
+			       void __user * uparam)
 {
 	struct omx_cmd_register_region cmd;
 	struct omx_user_region * region;
@@ -223,8 +223,8 @@ __omx_user_region_rcu_release_callback(struct rcu_head *rcu_head)
 }
 
 int
-omx_user_region_deregister(struct omx_endpoint * endpoint,
-			   void __user * uparam)
+omx_ioctl_user_region_deregister(struct omx_endpoint * endpoint,
+			         void __user * uparam)
 {
 	struct omx_cmd_deregister_region cmd;
 	struct omx_user_region * region;

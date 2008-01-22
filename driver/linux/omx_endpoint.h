@@ -103,7 +103,7 @@ omx_endpoint_release(struct omx_endpoint * endpoint)
 	kref_put(&endpoint->refcount, __omx_endpoint_last_release);
 }
 
-extern int omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam);
 
 #endif /* __omx_endpoint_h__ */
 

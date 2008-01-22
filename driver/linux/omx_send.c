@@ -110,8 +110,8 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
  */
 
 int
-omx_send_tiny(struct omx_endpoint * endpoint,
-	      void __user * uparam)
+omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
+		    void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
@@ -195,8 +195,8 @@ omx_send_tiny(struct omx_endpoint * endpoint,
 }
 
 int
-omx_send_small(struct omx_endpoint * endpoint,
-	       void __user * uparam)
+omx_ioctlsend_small(struct omx_endpoint * endpoint,
+		    void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
@@ -280,8 +280,8 @@ omx_send_small(struct omx_endpoint * endpoint,
 }
 
 int
-omx_send_medium(struct omx_endpoint * endpoint,
-		void __user * uparam)
+omx_ioctl_send_medium(struct omx_endpoint * endpoint,
+		      void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
@@ -403,8 +403,8 @@ omx_send_medium(struct omx_endpoint * endpoint,
 }
 
 int
-omx_send_rndv(struct omx_endpoint * endpoint,
-	      void __user * uparam)
+omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
+		    void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
@@ -488,8 +488,8 @@ omx_send_rndv(struct omx_endpoint * endpoint,
 }
 
 int
-omx_send_connect(struct omx_endpoint * endpoint,
-		 void __user * uparam)
+omx_ioctl_send_connect(struct omx_endpoint * endpoint,
+		       void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
@@ -571,8 +571,8 @@ omx_send_connect(struct omx_endpoint * endpoint,
 }
 
 int
-omx_send_notify(struct omx_endpoint * endpoint,
-		void __user * uparam)
+omx_ioctl_send_notify(struct omx_endpoint * endpoint,
+		      void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
@@ -636,8 +636,8 @@ omx_send_notify(struct omx_endpoint * endpoint,
 }
 
 int
-omx_send_truc(struct omx_endpoint * endpoint,
-	      void __user * uparam)
+omx_ioctl_send_truc(struct omx_endpoint * endpoint,
+		    void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
@@ -834,7 +834,7 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
  * Command to benchmark commands
  */
 int
-omx_cmd_bench(struct omx_endpoint * endpoint, void __user * uparam)
+omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;

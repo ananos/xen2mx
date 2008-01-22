@@ -371,18 +371,18 @@ omx_miscdev_release(struct inode * inode, struct file * file)
  * Use OMX_CMD_INDEX() to only keep the 8 latest bits of the 32bits command flags
  */
 static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
-	[OMX_CMD_INDEX(OMX_CMD_BENCH)]			= omx_cmd_bench,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_TINY)]		= omx_send_tiny,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_SMALL)]		= omx_send_small,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_MEDIUM)]		= omx_send_medium,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_RNDV)]		= omx_send_rndv,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_PULL)]		= omx_send_pull,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_NOTIFY)]		= omx_send_notify,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_CONNECT)]	       	= omx_send_connect,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_TRUC)]		= omx_send_truc,
-	[OMX_CMD_INDEX(OMX_CMD_REGISTER_REGION)]	= omx_user_region_register,
-	[OMX_CMD_INDEX(OMX_CMD_DEREGISTER_REGION)]	= omx_user_region_deregister,
-	[OMX_CMD_INDEX(OMX_CMD_WAIT_EVENT)]		= omx_wait_event,
+	[OMX_CMD_INDEX(OMX_CMD_BENCH)]			= omx_ioctl_bench,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_TINY)]		= omx_ioctl_send_tiny,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_SMALL)]		= omx_ioctl_send_small,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_MEDIUM)]		= omx_ioctl_send_medium,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_RNDV)]		= omx_ioctl_send_rndv,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_PULL)]		= omx_ioctl_send_pull,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_NOTIFY)]		= omx_ioctl_send_notify,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_CONNECT)]	       	= omx_ioctl_send_connect,
+	[OMX_CMD_INDEX(OMX_CMD_SEND_TRUC)]		= omx_ioctl_send_truc,
+	[OMX_CMD_INDEX(OMX_CMD_REGISTER_REGION)]	= omx_ioctl_user_region_register,
+	[OMX_CMD_INDEX(OMX_CMD_DEREGISTER_REGION)]	= omx_ioctl_user_region_deregister,
+	[OMX_CMD_INDEX(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
 };
 
 /*
