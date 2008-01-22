@@ -259,7 +259,7 @@ omx_autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *
 }
 
 int
-omx_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
+omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 {
 	struct omx_cmd_wait_event cmd;
 	struct omx_event_waiter waiter;

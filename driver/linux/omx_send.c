@@ -195,8 +195,8 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 }
 
 int
-omx_ioctlsend_small(struct omx_endpoint * endpoint,
-		    void __user * uparam)
+omx_ioctl_send_small(struct omx_endpoint * endpoint,
+		     void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;

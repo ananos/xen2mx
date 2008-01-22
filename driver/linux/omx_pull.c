@@ -711,8 +711,8 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 }
 
 int
-omx_send_pull(struct omx_endpoint * endpoint,
-	      void __user * uparam)
+omx_ioctl_send_pull(struct omx_endpoint * endpoint,
+		    void __user * uparam)
 {
 	struct omx_cmd_send_pull cmd;
 	struct omx_pull_handle * handle;
