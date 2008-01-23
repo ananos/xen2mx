@@ -99,6 +99,7 @@ struct omx_driver_desc {
 struct omx_endpoint_desc {
 	uint64_t status;
 	uint32_t session_id;
+	uint64_t wakeup_jiffies;
 };
 
 #define OMX_ENDPOINT_DESC_SIZE	sizeof(struct omx_endpoint_desc)
@@ -310,8 +311,9 @@ struct omx_cmd_deregister_region {
 #define OMX_CMD_WAIT_EVENT_STATUS_NONE		0x00 /* nothing happen, should not be reported in user-space */
 #define OMX_CMD_WAIT_EVENT_STATUS_EVENT		0x01 /* some event arrived */
 #define OMX_CMD_WAIT_EVENT_STATUS_INTR		0x02 /* interrupted by a signal without any event */
-#define OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT	0x03 /* timeout expired without any event */
-#define OMX_CMD_WAIT_EVENT_STATUS_RACE		0x04 /* some events arrived in the meantime, need to go back to user-space and check them first */
+#define OMX_CMD_WAIT_EVENT_STATUS_PROGRESS	0x03 /* wake up because of retransmission */
+#define OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT	0x04 /* timeout expired without any event */
+#define OMX_CMD_WAIT_EVENT_STATUS_RACE		0x05 /* some events arrived in the meantime, need to go back to user-space and check them first */
 
 struct omx_cmd_wait_event {
 	uint8_t status;

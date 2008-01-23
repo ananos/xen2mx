@@ -152,6 +152,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    omx__prepare_ack_wakeup(ep);
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
@@ -179,6 +180,8 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
       *result = 0;
       goto out;
     }
+
+    omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
  out:
@@ -293,6 +296,7 @@ omx_wait_any(struct omx_endpoint *ep,
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    omx__prepare_ack_wakeup(ep);
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
@@ -320,6 +324,8 @@ omx_wait_any(struct omx_endpoint *ep,
       *result = 0;
       goto out;
     }
+
+    omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
  out:
@@ -412,6 +418,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    omx__prepare_ack_wakeup(ep);
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
@@ -439,6 +446,8 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
       *result = 0;
       goto out;
     }
+
+    omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
  out:
@@ -552,6 +561,7 @@ omx_probe(struct omx_endpoint *ep,
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    omx__prepare_ack_wakeup(ep);
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
@@ -579,6 +589,8 @@ omx_probe(struct omx_endpoint *ep,
       *result = 0;
       goto out;
     }
+
+    omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
  out:

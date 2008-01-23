@@ -58,6 +58,14 @@ omx_wakeup_on_timeout_handler(unsigned long data)
 	wake_up_process(waiter->task);
 }
 
+static void
+omx_wakeup_on_progress_timeout_handler(unsigned long data)
+{
+	struct omx_event_waiter *waiter = (struct omx_event_waiter*) data;
+	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_PROGRESS;
+	wake_up_process(waiter->task);
+}
+
 /*****************
  * Initialization
  */
@@ -280,14 +288,21 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
  * Sleeping
  */
 
+/* FIXME: this is for when the application waits, not when the progression thread does */
 int
 omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 {
 	struct omx_cmd_wait_event cmd;
 	struct omx_event_waiter waiter;
 	struct timer_list timer;
-	int timer_pending = 0;
 	int err = 0;
+
+	/* lib-progression-requested timeout */
+	uint64_t wakeup_jiffies = endpoint->userdesc->wakeup_jiffies;
+
+	/* timer, either from the ioctl or from the lib-progression-requested timeout */
+	void (*timer_handler)(unsigned long) = NULL;
+	uint64_t timer_jiffies = 0;
 
 	err = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(err != 0)) {
@@ -324,16 +339,24 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	set_current_state(TASK_INTERRUPTIBLE);
 	spin_unlock(&endpoint->event_lock);
 
-	/* setup the timer if need */
+	/* setup the timer if needed */
 	if (cmd.jiffies_expire != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE) {
 		if (jiffies >= cmd.jiffies_expire) {
 			dprintk(EVENT, "wait event expire %lld has passed (now is %lld), not sleeping\n",
 				(unsigned long long) cmd.jiffies_expire, (unsigned long long) jiffies);
 			goto wakeup;
 		}
-		setup_timer(&timer, omx_wakeup_on_timeout_handler, (unsigned long) &waiter);
-		__mod_timer(&timer, cmd.jiffies_expire);
-		timer_pending = 1;
+		timer_handler = omx_wakeup_on_timeout_handler;
+		timer_jiffies = cmd.jiffies_expire;
+	}
+	if (wakeup_jiffies > jiffies
+	    && (!timer_handler || wakeup_jiffies < timer_jiffies)) {
+		timer_handler = omx_wakeup_on_progress_timeout_handler;
+		timer_jiffies = wakeup_jiffies;
+	}
+	if (timer_handler) {
+		setup_timer(&timer, timer_handler, (unsigned long) &waiter);
+		__mod_timer(&timer, timer_jiffies);
 		dprintk(EVENT, "wait event timer setup at %lld (now is %lld)\n",
 			(unsigned long long) cmd.jiffies_expire, (unsigned long long) jiffies);
 	}
@@ -341,10 +364,10 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	dprintk(EVENT, "going to sleep at %lld\n", (unsigned long long) jiffies);
 	schedule();
 	dprintk(EVENT, "waking up from sleep at %lld\n", (unsigned long long) jiffies);
- wakeup:
 
+ wakeup:
 	/* remove the timer */
-	if (timer_pending)
+	if (timer_handler)
 		del_singleshot_timer_sync(&timer);
 
 	/* remove from the wait queue */

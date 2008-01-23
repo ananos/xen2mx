@@ -280,6 +280,28 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
   return ret;
 }
 
+void
+omx__prepare_ack_wakeup(struct omx_endpoint *ep)
+{
+  struct omx__partner *partner;
+  uint64_t now = omx__driver_desc->jiffies;
+  uint64_t wakeup_jiffies;
+
+  if (list_empty(&ep->partners_to_ack))
+    return;
+
+  partner = list_first_entry(&ep->partners_to_ack, struct omx__partner, endpoint_partners_to_ack_elt);
+  wakeup_jiffies = partner->oldest_recv_time_not_acked + omx__globals.ack_delay;
+
+  omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld)\n",
+		    (unsigned long long) wakeup_jiffies,
+		    (unsigned long) (wakeup_jiffies-now));
+
+  if (ep->desc->wakeup_jiffies < now
+      || wakeup_jiffies < ep->desc->wakeup_jiffies)
+    ep->desc->wakeup_jiffies = wakeup_jiffies;
+}
+
 /**********************************
  * Set Request or Endpoint Timeout
  */
