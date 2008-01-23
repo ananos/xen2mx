@@ -17,16 +17,46 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/timer.h>
 
 #include "omx_io.h"
 #include "omx_common.h"
 #include "omx_iface.h"
 #include "omx_endpoint.h"
 
+/*************************
+ * Wait Queues and Wakeup
+ */
+
 struct omx_event_waiter {
-	wait_queue_t wq;
+	wait_queue_t event_wq;
+	struct task_struct *task;
 	uint8_t status;
 };
+
+static inline void
+omx_wakeup_on_event(struct omx_endpoint *endpoint)
+{
+	/* wake up everybody with the event key */
+	__wake_up(&endpoint->waiters, TASK_INTERRUPTIBLE, 0, NULL);
+}
+
+static int
+omx_wakeup_on_event_handler(wait_queue_t *wait, unsigned mode, int sync, void *key)
+{
+	struct omx_event_waiter *waiter = container_of(wait, struct omx_event_waiter, event_wq);
+	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
+	return autoremove_wake_function(wait, mode, sync, NULL);
+}
+
+static void
+omx_wakeup_on_timeout_handler(unsigned long data)
+{
+	struct omx_event_waiter *waiter = (struct omx_event_waiter*) data;
+	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT;
+	wake_up_process(waiter->task);
+}
 
 /*****************
  * Initialization
@@ -93,7 +123,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 		endpoint->next_exp_eventq_offset = 0;
 
 	dprintk(EVENT, "notify_exp waking up everybody1\n");
-	wake_up_all(&endpoint->waiters);
+	omx_wakeup_on_event(endpoint);
 
 	spin_unlock(&endpoint->event_lock);
 
@@ -147,7 +177,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 		endpoint->next_reserved_unexp_eventq_offset = 0;
 
 	dprintk(EVENT, "notify_unexp waking up everybody\n");
-	wake_up_all(&endpoint->waiters);
+	omx_wakeup_on_event(endpoint);
 
 	spin_unlock(&endpoint->event_lock);
 
@@ -233,7 +263,7 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 		endpoint->next_reserved_unexp_eventq_offset = 0;
 
 	dprintk(EVENT, "commit_notify_unexp waking up everybody\n");
-	wake_up_all(&endpoint->waiters);
+	omx_wakeup_on_event(endpoint);
 
 	spin_unlock(&endpoint->event_lock);
 
@@ -250,19 +280,13 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
  * Sleeping
  */
 
-static int
-omx_autoremove_wake_function(wait_queue_t *wait, unsigned mode, int sync, void *key)
-{
-	struct omx_event_waiter *waiter = container_of(wait, struct omx_event_waiter, wq);
-	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
-	return autoremove_wake_function(wait, mode, sync, key);
-}
-
 int
 omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 {
 	struct omx_cmd_wait_event cmd;
 	struct omx_event_waiter waiter;
+	struct timer_list timer;
+	int timer_pending = 0;
 	int err = 0;
 
 	err = copy_from_user(&cmd, uparam, sizeof(cmd));
@@ -274,9 +298,11 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
 	/* FIXME: wait on some event type only */
 
-	waiter.status = OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT;
-	init_waitqueue_entry(&waiter.wq, current);
-	waiter.wq.func = &omx_autoremove_wake_function;
+	/* prepare the wait queue */
+	waiter.status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
+	waiter.task = current;
+	init_waitqueue_entry(&waiter.event_wq, current);
+	waiter.event_wq.func = &omx_wakeup_on_event_handler;
 
 	spin_lock(&endpoint->event_lock);
 
@@ -293,29 +319,40 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 		goto race;
 	}
 
-	add_wait_queue(&endpoint->waiters, &waiter.wq);
+	/* queue ourself on the wait wueue */
+	add_wait_queue(&endpoint->waiters, &waiter.event_wq);
 	set_current_state(TASK_INTERRUPTIBLE);
 	spin_unlock(&endpoint->event_lock);
 
-	dprintk(EVENT, "going to sleep\n");
-	if (cmd.jiffies_timeout != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE) {
-		cmd.jiffies_timeout = schedule_timeout(cmd.jiffies_timeout);
-	} else {
-		schedule();
-	}
-	dprintk(EVENT, "waking up from sleep\n");
-
-	remove_wait_queue(&endpoint->waiters, &waiter.wq);
-
-	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
-		/* status didn't changed,
-		 * we didn't get woken up by an event */
-		if (cmd.jiffies_timeout != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE
-		    && cmd.jiffies_timeout != 0) {
-			/* if there was a timeout, and it didn't expire,
-			 * we have been interrupted */
-			waiter.status = OMX_CMD_WAIT_EVENT_STATUS_INTR;
+	/* setup the timer if need */
+	if (cmd.jiffies_expire != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE) {
+		if (jiffies >= cmd.jiffies_expire) {
+			dprintk(EVENT, "wait event expire %lld has passed (now is %lld), not sleeping\n",
+				(unsigned long long) cmd.jiffies_expire, (unsigned long long) jiffies);
+			goto wakeup;
 		}
+		setup_timer(&timer, omx_wakeup_on_timeout_handler, (unsigned long) &waiter);
+		__mod_timer(&timer, cmd.jiffies_expire);
+		timer_pending = 1;
+		dprintk(EVENT, "wait event timer setup at %lld (now is %lld)\n",
+			(unsigned long long) cmd.jiffies_expire, (unsigned long long) jiffies);
+	}
+
+	dprintk(EVENT, "going to sleep at %lld\n", (unsigned long long) jiffies);
+	schedule();
+	dprintk(EVENT, "waking up from sleep at %lld\n", (unsigned long long) jiffies);
+ wakeup:
+
+	/* remove the timer */
+	if (timer_pending)
+		del_singleshot_timer_sync(&timer);
+
+	/* remove from the wait queue */
+	remove_wait_queue(&endpoint->waiters, &waiter.event_wq);
+
+	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_NONE) {
+		/* status didn't changed, we have been interrupted */
+		waiter.status = OMX_CMD_WAIT_EVENT_STATUS_INTR;
 	}
 
 	cmd.status = waiter.status;

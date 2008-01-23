@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x106
+#define OMX_DRIVER_ABI_VERSION		0x107
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -305,8 +305,9 @@ struct omx_cmd_deregister_region {
 	uint32_t id;
 };
 
-#define OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE	((uint32_t) -1)
+#define OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE	((uint64_t) -1)
 
+#define OMX_CMD_WAIT_EVENT_STATUS_NONE		0x00 /* nothing happen, should not be reported in user-space */
 #define OMX_CMD_WAIT_EVENT_STATUS_EVENT		0x01 /* some event arrived */
 #define OMX_CMD_WAIT_EVENT_STATUS_INTR		0x02 /* interrupted by a signal without any event */
 #define OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT	0x03 /* timeout expired without any event */
@@ -314,7 +315,7 @@ struct omx_cmd_deregister_region {
 
 struct omx_cmd_wait_event {
 	uint8_t status;
-	uint32_t jiffies_timeout; /* jiffies */
+	uint64_t jiffies_expire; /* absolute jiffies where to wakeup, or OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE */
 	uint32_t next_exp_event_offset;
 	uint32_t next_unexp_event_offset;
 };
