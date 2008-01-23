@@ -280,6 +280,9 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep);
 extern void
 omx__prepare_ack_wakeup(struct omx_endpoint *ep);
 
+void
+omx__prepare_resend_wakeup(struct omx_endpoint *ep);
+
 static inline void
 omx__partner_needs_to_ack(struct omx_endpoint *ep,
 			  struct omx__partner *partner)

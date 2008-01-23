@@ -293,7 +293,7 @@ omx__prepare_ack_wakeup(struct omx_endpoint *ep)
   partner = list_first_entry(&ep->partners_to_ack, struct omx__partner, endpoint_partners_to_ack_elt);
   wakeup_jiffies = partner->oldest_recv_time_not_acked + omx__globals.ack_delay;
 
-  omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld)\n",
+  omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for delayed acks\n",
 		    (unsigned long long) wakeup_jiffies,
 		    (unsigned long) (wakeup_jiffies-now));
 

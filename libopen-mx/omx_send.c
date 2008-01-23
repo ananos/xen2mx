@@ -806,6 +806,28 @@ omx__process_queued_requests(struct omx_endpoint *ep)
  */
 
 void
+omx__prepare_resend_wakeup(struct omx_endpoint *ep)
+{
+  union omx_request *req;
+  uint64_t now = omx__driver_desc->jiffies;
+  uint64_t wakeup_jiffies;
+
+  if (omx__queue_empty(&ep->non_acked_req_q))
+    return;
+
+  req = omx__queue_first_request(&ep->non_acked_req_q);
+  wakeup_jiffies = req->generic.last_send_jiffies + omx__globals.resend_delay;
+
+  omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
+                    (unsigned long long) wakeup_jiffies,
+                    (unsigned long) (wakeup_jiffies-now));
+
+  if (ep->desc->wakeup_jiffies < now
+      || wakeup_jiffies < ep->desc->wakeup_jiffies)
+    ep->desc->wakeup_jiffies = wakeup_jiffies;
+}
+
+void
 omx__process_non_acked_requests(struct omx_endpoint *ep)
 {
   union omx_request *req, *next;

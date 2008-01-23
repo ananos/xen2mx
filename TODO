@@ -27,8 +27,7 @@
 * optimize mediums
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
 
-* add retransmission
-  + wakeup earlier if sleeping to send delayed acks
+* improve retransmission
   + cancel a liback if sending a message before, or send liback after dequeuing request
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
   + throttle if too many partially received medium
