@@ -93,14 +93,19 @@ omx_test(struct omx_endpoint *ep, union omx_request **requestp,
   return ret;
 }
 
+uint32_t timeout_ms_to_jiffies(uint32_t ms)
+{
+	uint32_t hz = omx__driver_desc->hz;
+	return (ms == OMX_TIMEOUT_INFINITE) ? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE : (ms * hz + 1023)/1024; /* 1024 is similar to 1000 and easier to divide with */
+}
+
 omx_return_t
 omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	 struct omx_status *status, uint32_t * result,
-	 uint32_t timeout)
+	 uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
-  uint32_t hz = omx__driver_desc->hz;
-  uint32_t jiffies_timeout = (timeout == OMX_TIMEOUT_INFINITE) ? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE : (timeout + hz-1)/hz;
+  uint32_t jiffies_timeout = timeout_ms_to_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
 
   if (omx__globals.waitspin) {
@@ -116,7 +121,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	goto out;
       }
 
-      if (timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
+      if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
 	goto out;
     }
   }
@@ -222,11 +227,10 @@ omx_return_t
 omx_wait_any(struct omx_endpoint *ep,
 	     uint64_t match_info, uint64_t match_mask,
 	     omx_status_t *status, uint32_t *result,
-	     uint32_t timeout)
+	     uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
-  uint32_t hz = omx__driver_desc->hz;
-  uint32_t jiffies_timeout = (timeout == OMX_TIMEOUT_INFINITE) ? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE : (timeout + hz-1)/hz;
+  uint32_t jiffies_timeout = timeout_ms_to_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -253,7 +257,7 @@ omx_wait_any(struct omx_endpoint *ep,
 	goto out;
       }
 
-      if (timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
+      if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
 	goto out;
     }
   }
@@ -343,11 +347,10 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
 
 omx_return_t
 omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
-	 uint32_t *result, uint32_t timeout)
+	 uint32_t *result, uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
-  uint32_t hz = omx__driver_desc->hz;
-  uint32_t jiffies_timeout = (timeout == OMX_TIMEOUT_INFINITE) ? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE : (timeout + hz-1)/hz;
+  uint32_t jiffies_timeout = timeout_ms_to_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(ep->ctxid_bits)) {
@@ -368,7 +371,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 	goto out;
       }
 
-      if (timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
+      if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
 	goto out;
     }
   }
@@ -473,11 +476,10 @@ omx_return_t
 omx_probe(struct omx_endpoint *ep,
 	  uint64_t match_info, uint64_t match_mask,
 	  omx_status_t *status, uint32_t *result,
-	  uint32_t timeout)
+	  uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
-  uint32_t hz = omx__driver_desc->hz;
-  uint32_t jiffies_timeout = (timeout == OMX_TIMEOUT_INFINITE) ? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE : (timeout + hz-1)/hz;
+  uint32_t jiffies_timeout = timeout_ms_to_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -504,7 +506,7 @@ omx_probe(struct omx_endpoint *ep,
 	goto out;
       }
 
-      if (timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
+      if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= last_jiffies)
 	goto out;
     }
   }
