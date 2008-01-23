@@ -108,7 +108,7 @@ omx__init_api(int api)
   }
 #endif /* OMX_DEBUG */
 
-  omx__globals.waitspin = 1; /* FIXME: default until wait takes care of the progression timeout */
+  omx__globals.waitspin = 0;
   env = getenv("OMX_WAITSPIN");
   if (env)
     omx__globals.waitspin = atoi(env);
