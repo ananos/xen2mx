@@ -71,11 +71,6 @@ omx__init_api(int api)
   omx__globals.resend_delay = omx__driver_desc->hz / 2 + 1;
   omx__globals.retransmits_max = 1000;
 
-  omx__globals.regcache = 0;
-  env = getenv("OMX_RCACHE");
-  if (env)
-    omx__globals.regcache = 1;
-
 #ifdef OMX_DEBUG
   omx__globals.verbose = 0;
   env = getenv("OMX_VERBOSE");
@@ -108,25 +103,45 @@ omx__init_api(int api)
   }
 #endif /* OMX_DEBUG */
 
+  omx__globals.regcache = 0;
+  env = getenv("OMX_RCACHE");
+  if (env) {
+    omx__globals.regcache = atoi(env);
+    omx__debug_printf(MAIN, "Forcing regcache to %s\n",
+		      omx__globals.regcache ? "enabled" : "disabled");
+  }
+
   omx__globals.waitspin = 0;
   env = getenv("OMX_WAITSPIN");
-  if (env)
+  if (env) {
     omx__globals.waitspin = atoi(env);
+    omx__debug_printf(MAIN, "Forcing waitspin to %s\n",
+		      omx__globals.waitspin ? "enabled" : "disabled");
+  }
 
   omx__globals.zombie_max = OMX_ZOMBIE_MAX_DEFAULT;
   env = getenv("OMX_ZOMBIE_SEND");
-  if (env)
+  if (env) {
     omx__globals.zombie_max = atoi(env);
+    omx__debug_printf(MAIN, "Forcing zombie max to %d\n",
+		      omx__globals.zombie_max);
+  }
 
   omx__globals.selfcomms = 1;
   env = getenv("OMX_DISABLE_SELF");
-  if (env)
+  if (env) {
     omx__globals.selfcomms = !atoi(env);
+    omx__debug_printf(MAIN, "Forcing self comms to %s\n",
+		      omx__globals.selfcomms ? "enabled" : "disabled");
+  }
 
   omx__globals.sharedcomms = 0; /* disabled for now */
   env = getenv("OMX_DISABLE_SHARED");
-  if (env)
+  if (env) {
     omx__globals.sharedcomms = !atoi(env);
+    omx__debug_printf(MAIN, "Forcing shared comms to %s\n",
+		      omx__globals.sharedcomms ? "enabled" : "disabled");
+  }
 
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
