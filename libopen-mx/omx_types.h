@@ -399,6 +399,7 @@ struct omx__globals {
   int waitspin;
   int zombie_max;
   int selfcomms;
+  int sharedcomms;
   unsigned ack_delay;
   unsigned resend_delay;
   unsigned retransmits_max;

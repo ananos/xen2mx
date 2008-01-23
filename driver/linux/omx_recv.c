@@ -100,6 +100,7 @@ omx_recv_connect(struct omx_iface * iface,
 	/* fill event */
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
+	event.shared = 0;
 	event.length = length;
 	event.seqnum = lib_seqnum;
 

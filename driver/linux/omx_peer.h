@@ -19,6 +19,9 @@
 #ifndef __omx_peer_h__
 #define __omx_peer_h__
 
+struct omx_iface;
+struct omx_hdr;
+
 extern int omx_peers_init(void);
 extern void omx_peers_exit(void);
 extern void omx_peers_clear(void);
@@ -26,6 +29,7 @@ extern void omx_peers_notify_iface_attach(struct omx_iface * iface);
 extern void omx_peers_notify_iface_detach(struct omx_iface * iface);
 extern int omx_peer_add(uint64_t board_addr, char *hostname);
 extern int omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index);
+extern struct omx_endpoint * omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index);
 extern int omx_set_target_peer(struct omx_hdr *mh, uint16_t index);
 extern int omx_check_recv_peer_index(uint16_t peer_index);
 extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *hostname);
@@ -33,8 +37,6 @@ extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t
 extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uint32_t *index);
 
 #define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
-
-struct omx_iface;
 
 struct omx_peer {
 	uint64_t board_addr;

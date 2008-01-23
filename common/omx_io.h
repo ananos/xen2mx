@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x107
+#define OMX_DRIVER_ABI_VERSION		0x108
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -232,7 +232,7 @@ struct omx_cmd_send_connect {
 	struct omx_cmd_send_connect_hdr {
 		uint16_t peer_index;
 		uint8_t dest_endpoint;
-		uint8_t pad1;
+		uint8_t shared_disabled;
 		uint16_t seqnum;
 		uint8_t length;
 		uint8_t pad2;
@@ -520,7 +520,7 @@ union omx_evt {
 	struct omx_evt_recv_connect {
 		uint16_t peer_index;
 		uint8_t src_endpoint;
-		uint8_t pad1;
+		uint8_t shared;
 		/* 4 */
 		uint16_t seqnum;
 		uint8_t length;

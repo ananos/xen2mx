@@ -26,6 +26,7 @@
 #include "omx_common.h"
 #include "omx_iface.h"
 #include "omx_peer.h"
+#include "omx_shared.h"
 #include "omx_endpoint.h"
 
 #ifdef OMX_DEBUG
@@ -515,6 +516,18 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 		       OMX_CONNECT_DATA_MAX, length);
 		ret = -EINVAL;
 		goto out;
+	}
+
+	if (!cmd.shared_disabled) {
+		struct omx_endpoint * dst_endpoint;
+
+		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
+		if (dst_endpoint) {
+			ret = omx_shared_connect(endpoint, dst_endpoint,
+						 &cmd, &((struct omx_cmd_send_connect __user *) uparam)->data);
+			omx_endpoint_release(dst_endpoint);
+			return ret;
+		}
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */

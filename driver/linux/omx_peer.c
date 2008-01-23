@@ -29,6 +29,7 @@
 #include "omx_common.h"
 #include "omx_peer.h"
 #include "omx_iface.h"
+#include "omx_endpoint.h"
 #include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_wire_access.h"
@@ -296,6 +297,37 @@ omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
 	rcu_read_unlock();
  out:
 	return err;
+}
+
+struct omx_endpoint *
+omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index)
+{
+	struct omx_peer *peer;
+	struct omx_iface *iface;
+	struct omx_endpoint *endpoint;
+
+	if (peer_index >= omx_peer_max)
+		goto out;
+
+	rcu_read_lock();
+
+	peer = rcu_dereference(omx_peer_array[peer_index]);
+	if (!peer)
+		goto out_with_lock;
+
+	iface = peer->local_iface;
+	if (!iface)
+		goto out_with_lock;
+
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, endpoint_index);
+
+	rcu_read_unlock();
+	return endpoint;
+
+ out_with_lock:
+	rcu_read_unlock();
+ out:
+	return NULL;
 }
 
 int

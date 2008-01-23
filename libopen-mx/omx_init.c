@@ -123,6 +123,11 @@ omx__init_api(int api)
   if (env)
     omx__globals.selfcomms = !atoi(env);
 
+  omx__globals.sharedcomms = 0; /* disabled for now */
+  env = getenv("OMX_DISABLE_SHARED");
+  if (env)
+    omx__globals.sharedcomms = !atoi(env);
+
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
 

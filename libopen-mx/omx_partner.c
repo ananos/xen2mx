@@ -250,6 +250,7 @@ omx__connect_common(omx_endpoint_t ep,
 
   connect_param->hdr.peer_index = partner->peer_index;
   connect_param->hdr.dest_endpoint = partner->endpoint_index;
+  connect_param->hdr.shared_disabled = !omx__globals.sharedcomms;
   connect_param->hdr.seqnum = 0;
   connect_param->hdr.length = sizeof(*data_n);
   OMX_PKT_FIELD_FROM(data_n->src_session_id, ep->desc->session_id);
@@ -416,6 +417,9 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   union omx_request * req;
   omx_return_t ret;
 
+  if (event->shared)
+    printf("got a shared connect reply\n");
+
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_INVALID_PARAMETER)
@@ -482,6 +486,9 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   omx_status_code_t status_code;
   int err;
 
+  if (event->shared)
+    printf("got a shared connect request\n");
+
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_INVALID_PARAMETER)
@@ -522,6 +529,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   reply_param.hdr.peer_index = partner->peer_index;
   reply_param.hdr.dest_endpoint = partner->endpoint_index;
+  reply_param.hdr.shared_disabled = !omx__globals.sharedcomms;
   reply_param.hdr.seqnum = 0;
   reply_param.hdr.length = sizeof(*reply_data_n);
   reply_data_n->src_session_id = request_data_n->src_session_id;
