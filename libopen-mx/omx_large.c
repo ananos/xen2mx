@@ -424,6 +424,7 @@ omx__submit_pull(struct omx_endpoint * ep,
 
   pull_param.peer_index = partner->peer_index;
   pull_param.dest_endpoint = partner->endpoint_index;
+  pull_param.shared = partner->is_local;
   pull_param.length = xfer_length;
   pull_param.session_id = partner->back_session_id;
   pull_param.lib_cookie = (uintptr_t) req;

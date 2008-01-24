@@ -88,6 +88,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->board_addr = board_addr;
   partner->endpoint_index = endpoint_index;
   partner->peer_index = peer_index;
+  partner->is_local = 0; /* will be set to 1 on connect request/reply */
 
   omx__partner_reset(partner);
 
@@ -418,7 +419,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   omx_return_t ret;
 
   if (event->shared)
-    printf("got a shared connect reply\n");
+    partner->is_local = 1;
 
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
@@ -487,7 +488,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   int err;
 
   if (event->shared)
-    printf("got a shared connect request\n");
+    partner->is_local = 1;
 
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {

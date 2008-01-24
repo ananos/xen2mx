@@ -140,6 +140,11 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+	if (unlikely(cmd.shared)) {
+		/* FIXME */
+		printk("should use shared comms\n");
+	}
+
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
@@ -223,6 +228,11 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 		       OMX_SMALL_MAX, length);
 		ret = -EINVAL;
 		goto out;
+	}
+
+	if (unlikely(cmd.shared)) {
+		/* FIXME */
+		printk("should use shared comms\n");
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
@@ -328,6 +338,11 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+	if (unlikely(cmd.shared)) {
+		/* FIXME */
+		printk("should use shared comms\n");
+	}
+
 	skb = omx_new_skb(/* only allocate space for the header now,
 			   * we'll attach pages and pad to ETH_ZLEN later
 			   */
@@ -431,6 +446,11 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		       OMX_RNDV_DATA_MAX, length);
 		ret = -EINVAL;
 		goto out;
+	}
+
+	if (unlikely(cmd.shared)) {
+		/* FIXME */
+		printk("should use shared comms\n");
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
@@ -602,6 +622,11 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+	if (unlikely(cmd.shared)) {
+		/* FIXME */
+		printk("should use shared comms\n");
+	}
+
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
@@ -676,6 +701,11 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 		       OMX_TRUC_DATA_MAX, length);
 		ret = -EINVAL;
 		goto out;
+	}
+
+	if (unlikely(cmd.shared)) {
+		/* FIXME */
+		printk("should use shared comms\n");
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */

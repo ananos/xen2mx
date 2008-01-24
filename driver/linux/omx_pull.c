@@ -735,6 +735,11 @@ omx_ioctl_send_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+	if (unlikely(cmd.shared)) {
+		/* FIXME */
+		printk("should use shared comms\n");
+	}
+
 	/* create, acquire and lock the handle */
 	handle = omx_pull_handle_create(endpoint, &cmd);
 	if (unlikely(!handle)) {

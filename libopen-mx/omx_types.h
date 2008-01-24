@@ -76,6 +76,7 @@ struct omx__partner {
   uint64_t board_addr;
   uint16_t peer_index;
   uint8_t endpoint_index;
+  uint8_t is_local;
 
   /* the main session id, obtained from the our actual connect */
   uint32_t true_session_id;

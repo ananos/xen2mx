@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x108
+#define OMX_DRIVER_ABI_VERSION		0x109
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -157,7 +157,7 @@ struct omx_cmd_send_tiny {
 	struct omx_cmd_send_tiny_hdr {
 		uint16_t peer_index;
 		uint8_t dest_endpoint;
-		uint8_t pad1;
+		uint8_t shared;
 		uint32_t session_id;
 		/* 8 */
 		uint16_t seqnum;
@@ -175,7 +175,7 @@ struct omx_cmd_send_tiny {
 struct omx_cmd_send_small {
 	uint16_t peer_index;
 	uint8_t dest_endpoint;
-	uint8_t pad1;
+	uint8_t shared;
 	uint32_t session_id;
 	/* 8 */
 	uint16_t seqnum;
@@ -192,7 +192,7 @@ struct omx_cmd_send_small {
 struct omx_cmd_send_medium {
 	uint16_t peer_index;
 	uint8_t dest_endpoint;
-	uint8_t pad1;
+	uint8_t shared;
 	uint32_t session_id;
 	/* 8 */
 	uint16_t seqnum;
@@ -213,7 +213,7 @@ struct omx_cmd_send_rndv {
 	struct omx_cmd_send_rndv_hdr {
 		uint16_t peer_index;
 		uint8_t dest_endpoint;
-		uint8_t pad1;
+		uint8_t shared;
 		uint32_t session_id;
 		/* 8 */
 		uint16_t seqnum;
@@ -245,7 +245,7 @@ struct omx_cmd_send_connect {
 struct omx_cmd_send_pull {
 	uint16_t peer_index;
 	uint8_t dest_endpoint;
-	uint8_t pad1;
+	uint8_t shared;
 	uint32_t session_id;
 	/* 8 */
 	uint32_t length; /* FIXME: 64bits ? */
@@ -267,7 +267,7 @@ struct omx_cmd_send_pull {
 struct omx_cmd_send_notify {
 	uint16_t peer_index;
 	uint8_t dest_endpoint;
-	uint8_t pad1;
+	uint8_t shared;
 	uint32_t session_id;
 	/* 8 */
 	uint32_t total_length;
@@ -283,7 +283,7 @@ struct omx_cmd_send_notify {
 struct omx_cmd_send_truc {
 	uint16_t peer_index;
 	uint8_t dest_endpoint;
-	uint8_t pad1;
+	uint8_t shared;
 	uint32_t session_id;
 	/* 8 */
 	uint8_t length;
