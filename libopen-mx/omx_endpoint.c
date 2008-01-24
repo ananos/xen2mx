@@ -310,9 +310,6 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   INIT_LIST_HEAD(&ep->non_acked_req_q);
   INIT_LIST_HEAD(&ep->requeued_send_req_q);
   INIT_LIST_HEAD(&ep->send_self_unexp_req_q);
-  INIT_LIST_HEAD(&ep->reg_list);
-  INIT_LIST_HEAD(&ep->reg_unused_list);
-  INIT_LIST_HEAD(&ep->reg_vect_list);
 
   omx__progress(ep);
 
@@ -350,7 +347,7 @@ omx_close_endpoint(struct omx_endpoint *ep)
 
   for(i=0; i<omx__driver_desc->peer_max * omx__driver_desc->endpoint_max; i++)
     if (ep->partners[i])
-      free(ep->partners[i]);  
+      free(ep->partners[i]);
   free(ep->partners);
   free(ep->ctxid);
   omx__endpoint_large_region_map_exit(ep);
