@@ -702,7 +702,7 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct ethhdr *eh;
-	struct omx_cmd_send_truc cmd;
+	struct omx_cmd_send_truc_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_truc);

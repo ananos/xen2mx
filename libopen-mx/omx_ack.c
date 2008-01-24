@@ -203,11 +203,11 @@ omx__submit_send_liback(struct omx_endpoint *ep,
 
   partner->last_send_acknum++;
 
-  truc_param.peer_index = partner->peer_index;
-  truc_param.dest_endpoint = partner->endpoint_index;
-  truc_param.shared = omx__partner_localization_shared(partner);
-  truc_param.length = sizeof(union omx__truc_data);
-  truc_param.session_id = partner->back_session_id;
+  truc_param.hdr.peer_index = partner->peer_index;
+  truc_param.hdr.dest_endpoint = partner->endpoint_index;
+  truc_param.hdr.shared = omx__partner_localization_shared(partner);
+  truc_param.hdr.length = sizeof(union omx__truc_data);
+  truc_param.hdr.session_id = partner->back_session_id;
   OMX_PKT_FIELD_FROM(data_n->type, OMX__TRUC_DATA_TYPE_ACK);
   OMX_PKT_FIELD_FROM(data_n->ack.acknum, partner->last_send_acknum);
   OMX_PKT_FIELD_FROM(data_n->ack.session_id, partner->back_session_id);

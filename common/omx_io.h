@@ -281,14 +281,16 @@ struct omx_cmd_send_notify {
 };
 
 struct omx_cmd_send_truc {
-	uint16_t peer_index;
-	uint8_t dest_endpoint;
-	uint8_t shared;
-	uint32_t session_id;
-	/* 8 */
-	uint8_t length;
-	uint8_t pad[7];
-	/* 16 */
+	struct omx_cmd_send_truc_hdr {
+		uint16_t peer_index;
+		uint8_t dest_endpoint;
+		uint8_t shared;
+		uint32_t session_id;
+		/* 8 */
+		uint8_t length;
+		uint8_t pad[7];
+		/* 16 */
+	} hdr;
 	char data[OMX_TRUC_DATA_MAX];
 	/* 48 */
 };
