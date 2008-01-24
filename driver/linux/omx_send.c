@@ -144,8 +144,8 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 		struct omx_endpoint * dst_endpoint;
 		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
 		if (likely(!IS_ERR(dst_endpoint))) {
-			ret = omx_shared_connect(endpoint, dst_endpoint,
-						 &cmd, &((struct omx_cmd_send_connect __user *) uparam)->data);
+			ret = omx_shared_send_connect(endpoint, dst_endpoint,
+						      &cmd, &((struct omx_cmd_send_connect __user *) uparam)->data);
 			omx_endpoint_release(dst_endpoint);
 			return ret;
 		}
@@ -241,8 +241,8 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 			/* endpoint has been removed, just drop the packet */
 			return 0;
 
-		ret = omx_shared_tiny(endpoint, dst_endpoint,
-				      &cmd, &((struct omx_cmd_send_tiny __user *) uparam)->data);
+		ret = omx_shared_send_tiny(endpoint, dst_endpoint,
+					   &cmd, &((struct omx_cmd_send_tiny __user *) uparam)->data);
 		omx_endpoint_release(dst_endpoint);
 		return ret;
 	}
@@ -339,7 +339,7 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 			/* endpoint has been removed, just drop the packet */
 			return 0;
 
-		ret = omx_shared_small(endpoint, dst_endpoint, &cmd);
+		ret = omx_shared_send_small(endpoint, dst_endpoint, &cmd);
 		omx_endpoint_release(dst_endpoint);
 		return ret;
 	}
@@ -454,7 +454,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 			/* endpoint has been removed, just drop the packet */
 			return 0;
 
-		ret = omx_shared_medium(endpoint, dst_endpoint, &cmd);
+		ret = omx_shared_send_medium(endpoint, dst_endpoint, &cmd);
 		omx_endpoint_release(dst_endpoint);
 		return ret;
 	}
@@ -571,8 +571,8 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 			/* endpoint has been removed, just drop the packet */
 			return 0;
 
-		ret = omx_shared_rndv(endpoint, dst_endpoint,
-				      &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
+		ret = omx_shared_send_rndv(endpoint, dst_endpoint,
+					   &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
 		omx_endpoint_release(dst_endpoint);
 		return ret;
 	}
@@ -658,7 +658,7 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 			/* endpoint has been removed, just drop the packet */
 			return 0;
 
-		ret = omx_shared_notify(endpoint, dst_endpoint, &cmd);
+		ret = omx_shared_send_notify(endpoint, dst_endpoint, &cmd);
 		omx_endpoint_release(dst_endpoint);
 		return ret;
 	}
@@ -746,8 +746,8 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 			/* endpoint has been removed, just drop the packet */
 			return 0;
 
-		ret = omx_shared_truc(endpoint, dst_endpoint,
-				      &cmd, &((struct omx_cmd_send_truc __user *) uparam)->data);
+		ret = omx_shared_send_truc(endpoint, dst_endpoint,
+					   &cmd, &((struct omx_cmd_send_truc __user *) uparam)->data);
 		omx_endpoint_release(dst_endpoint);
 		return ret;
 	}

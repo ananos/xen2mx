@@ -24,8 +24,8 @@
 #include "omx_io.h"
 
 int
-omx_shared_connect(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
-		   struct omx_cmd_send_connect_hdr *hdr, void __user * data)
+omx_shared_send_connect(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+			struct omx_cmd_send_connect_hdr *hdr, void __user * data)
 {
 	struct omx_evt_recv_connect event;
 	int err;
@@ -61,8 +61,8 @@ omx_shared_connect(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_e
 }
 
 int
-omx_shared_tiny(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
-		struct omx_cmd_send_tiny_hdr *hdr, void __user * data)
+omx_shared_send_tiny(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		     struct omx_cmd_send_tiny_hdr *hdr, void __user * data)
 {
 	struct omx_evt_recv_msg event;
 	int err;
@@ -99,8 +99,8 @@ omx_shared_tiny(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 }
 
 int
-omx_shared_small(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
-		 struct omx_cmd_send_small *hdr)
+omx_shared_send_small(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		      struct omx_cmd_send_small *hdr)
 {
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
@@ -143,8 +143,8 @@ omx_shared_small(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_end
 }
 
 int
-omx_shared_medium(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
-		  struct omx_cmd_send_medium *hdr)
+omx_shared_send_medium(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		       struct omx_cmd_send_medium *hdr)
 {
 	struct omx_evt_recv_msg dst_event;
 	struct omx_evt_send_medium_frag_done src_event;
@@ -190,8 +190,8 @@ omx_shared_medium(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_en
 }
 
 int
-omx_shared_rndv(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
-		struct omx_cmd_send_rndv_hdr *hdr, void __user * data)
+omx_shared_send_rndv(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		     struct omx_cmd_send_rndv_hdr *hdr, void __user * data)
 {
 	struct omx_evt_recv_msg event;
 	int err;
@@ -228,8 +228,32 @@ omx_shared_rndv(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 }
 
 int
-omx_shared_notify(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
-		  struct omx_cmd_send_notify *hdr)
+omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		struct omx_cmd_pull *hdr)
+{
+	struct omx_evt_pull_done event;
+	int err;
+
+	err = 0;
+	/* omx_copy_between_regions() */
+	printk("should copy between regions\n");
+
+	event.lib_cookie = hdr->lib_cookie;
+	event.pulled_length = hdr->length;
+	event.local_rdma_id = hdr->local_rdma_id;
+	event.status = OMX_EVT_PULL_DONE_SUCCESS;
+
+	/* notify the event */
+	omx_notify_exp_event(src_endpoint, OMX_EVT_PULL_DONE, &event, sizeof(event));
+
+	/* FIXME: counters */
+
+	return 0;
+}
+
+int
+omx_shared_send_notify(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		       struct omx_cmd_send_notify *hdr)
 {
 	struct omx_evt_recv_msg event;
 	int err;
@@ -259,8 +283,8 @@ omx_shared_notify(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_en
 }
 
 int
-omx_shared_truc(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
-		struct omx_cmd_send_truc_hdr *hdr, void __user * data)
+omx_shared_send_truc(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		     struct omx_cmd_send_truc_hdr *hdr, void __user * data)
 {
 	struct omx_evt_recv_truc event;
 	int err;
