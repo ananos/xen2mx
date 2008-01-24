@@ -177,10 +177,10 @@ static void omx_pull_handle_timeout_handler(unsigned long data);
 
 #ifdef OMX_DEBUG
 /* defined as module parameters */
-extern unsigned long omx_PULL_packet_loss;
+extern unsigned long omx_PULL_REQ_packet_loss;
 extern unsigned long omx_PULL_REPLY_packet_loss;
 /* index between 0 and the above limit */
-static unsigned long omx_PULL_packet_loss_index = 0;
+static unsigned long omx_PULL_REQ_packet_loss_index = 0;
 static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 #endif
 
@@ -440,7 +440,7 @@ omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
 static inline int
 omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 			     struct omx_pull_handle * handle,
-			     struct omx_cmd_send_pull * cmd)
+			     struct omx_cmd_pull * cmd)
 {
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -485,7 +485,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
  */
 static inline struct omx_pull_handle *
 omx_pull_handle_create(struct omx_endpoint * endpoint,
-		       struct omx_cmd_send_pull * cmd)
+		       struct omx_cmd_pull * cmd)
 {
 	struct omx_pull_handle * handle;
 	struct omx_user_region * region;
@@ -711,10 +711,10 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 }
 
 int
-omx_ioctl_send_pull(struct omx_endpoint * endpoint,
-		    void __user * uparam)
+omx_ioctl_pull(struct omx_endpoint * endpoint,
+	       void __user * uparam)
 {
-	struct omx_cmd_send_pull cmd;
+	struct omx_cmd_pull cmd;
 	struct omx_pull_handle * handle;
 	struct omx_iface * iface = endpoint->iface;
 	struct sk_buff * skb, * skb2;
@@ -801,9 +801,9 @@ omx_ioctl_send_pull(struct omx_endpoint * endpoint,
 	spin_unlock(&handle->lock);
 
 	if (likely(skb))
-		omx_queue_xmit(iface, skb, PULL);
+		omx_queue_xmit(iface, skb, PULL_REQ);
 	if (likely(skb2))
-		omx_queue_xmit(iface, skb2, PULL);
+		omx_queue_xmit(iface, skb2, PULL_REQ);
 
 	return 0;
 
@@ -890,9 +890,9 @@ omx_pull_handle_timeout_handler(unsigned long data)
 	spin_unlock(&handle->lock);
 
 	if (likely(skb))
-		omx_queue_xmit(iface, skb, PULL);
+		omx_queue_xmit(iface, skb, PULL_REQ);
 	if (likely(skb2))
-		omx_queue_xmit(iface, skb2, PULL);
+		omx_queue_xmit(iface, skb2, PULL_REQ);
 }
 
 /*******************************************
@@ -908,9 +908,9 @@ omx_send_pull_reply_skb_destructor(struct sk_buff *skb)
 }
 
 int
-omx_recv_pull(struct omx_iface * iface,
-	      struct omx_hdr * pull_mh,
-	      struct sk_buff * orig_skb)
+omx_recv_pull_request(struct omx_iface * iface,
+		      struct omx_hdr * pull_mh,
+		      struct sk_buff * orig_skb)
 {
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_endpoint * endpoint;
@@ -937,7 +937,7 @@ omx_recv_pull(struct omx_iface * iface,
 	int replies, i;
 	int err = 0;
 
-	omx_counter_inc(iface, RECV_PULL);
+	omx_counter_inc(iface, RECV_PULL_REQ);
 
         /* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
@@ -1321,7 +1321,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_release(handle);
 
 		if (likely(skb))
-			omx_queue_xmit(iface, skb, PULL);
+			omx_queue_xmit(iface, skb, PULL_REQ);
 
 	} else if (!OMX_PULL_HANDLE_DONE(handle)) {
 
@@ -1400,9 +1400,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_release(handle);
 
 		if (likely(skb))
-			omx_queue_xmit(iface, skb, PULL);
+			omx_queue_xmit(iface, skb, PULL_REQ);
 		if (likely(skb2))
-			omx_queue_xmit(iface, skb2, PULL);
+			omx_queue_xmit(iface, skb2, PULL_REQ);
 
 	} else {
 

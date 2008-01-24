@@ -76,9 +76,9 @@ unsigned long omx_RNDV_packet_loss = 0;
 module_param_named(rndv_packet_loss, omx_RNDV_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(rndv_packet_loss, "Explicit rndv reply packet loss frequency");
 
-unsigned long omx_PULL_packet_loss = 0;
-module_param_named(pull_packet_loss, omx_PULL_packet_loss, ulong, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(pull_packet_loss, "Explicit pull packet loss frequency");
+unsigned long omx_PULL_REQ_packet_loss = 0;
+module_param_named(pull_packet_loss, omx_PULL_REQ_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(pull_packet_loss, "Explicit pull request packet loss frequency");
 
 unsigned long omx_PULL_REPLY_packet_loss = 0;
 module_param_named(pull_reply_packet_loss, omx_PULL_REPLY_packet_loss, ulong, S_IRUGO|S_IWUSR);
@@ -193,9 +193,9 @@ omx_init(void)
 	if (omx_RNDV_packet_loss)
 		printk(KERN_INFO "Open-MX: simulating rndv packet loss every %ld packets\n",
 		       omx_RNDV_packet_loss);
-	if (omx_PULL_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating pull packet loss every %ld packets\n",
-		       omx_PULL_packet_loss);
+	if (omx_PULL_REQ_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating pull request packet loss every %ld packets\n",
+		       omx_PULL_REQ_packet_loss);
 	if (omx_PULL_REPLY_packet_loss)
 		printk(KERN_INFO "Open-MX: simulating pull reply packet loss every %ld packets\n",
 		       omx_PULL_REPLY_packet_loss);

@@ -411,7 +411,7 @@ omx_return_t
 omx__submit_pull(struct omx_endpoint * ep,
 		 union omx_request * req)
 {
-  struct omx_cmd_send_pull pull_param;
+  struct omx_cmd_pull pull_param;
   struct omx__large_region *region;
   uint32_t xfer_length = req->generic.status.xfer_length;
   struct omx__partner * partner = req->generic.partner;
@@ -439,11 +439,11 @@ omx__submit_pull(struct omx_endpoint * ep,
   pull_param.remote_offset = req->recv.specific.large.target_rdma_offset;
   pull_param.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_PULL, &pull_param);
+  err = ioctl(ep->fd, OMX_CMD_PULL, &pull_param);
   if (unlikely(err < 0)) {
-    ret = omx__errno_to_return("ioctl SEND_PULL");
+    ret = omx__errno_to_return("ioctl PULL");
     if (ret != OMX_NO_SYSTEM_RESOURCES) {
-      omx__abort("Failed to post SEND PULL, driver replied %m\n");
+      omx__abort("Failed to post PULL, driver replied %m\n");
     }
 
     omx__put_region(ep, region, NULL);

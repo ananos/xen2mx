@@ -63,7 +63,7 @@ extern int omx_ioctl_send_tiny(struct omx_endpoint * endpoint, void __user * upa
 extern int omx_ioctl_send_small(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_medium(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_rndv(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_ioctl_send_pull(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_pull(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_notify(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_connect(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_truc(struct omx_endpoint * endpoint, void __user * uparam);

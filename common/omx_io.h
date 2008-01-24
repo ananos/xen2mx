@@ -242,7 +242,7 @@ struct omx_cmd_send_connect {
 	/* 40 */
 };
 
-struct omx_cmd_send_pull {
+struct omx_cmd_pull {
 	uint16_t peer_index;
 	uint8_t dest_endpoint;
 	uint8_t shared;
@@ -367,7 +367,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x82, struct omx_cmd_send_small)
 #define OMX_CMD_SEND_MEDIUM		_IOR(OMX_CMD_MAGIC, 0x83, struct omx_cmd_send_medium)
 #define OMX_CMD_SEND_RNDV		_IOR(OMX_CMD_MAGIC, 0x84, struct omx_cmd_send_rndv)
-#define OMX_CMD_SEND_PULL		_IOR(OMX_CMD_MAGIC, 0x85, struct omx_cmd_send_pull)
+#define OMX_CMD_PULL			_IOR(OMX_CMD_MAGIC, 0x85, struct omx_cmd_pull)
 #define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x86, struct omx_cmd_send_notify)
 #define OMX_CMD_SEND_CONNECT		_IOR(OMX_CMD_MAGIC, 0x87, struct omx_cmd_send_connect)
 #define OMX_CMD_SEND_TRUC		_IOR(OMX_CMD_MAGIC, 0x88, struct omx_cmd_send_truc)
@@ -409,8 +409,8 @@ omx_strcmd(unsigned cmd)
 		return "Send Medium";
 	case OMX_CMD_SEND_RNDV:
 		return "Send Rendez-vous";
-	case OMX_CMD_SEND_PULL:
-		return "Send Pull";
+	case OMX_CMD_PULL:
+		return "Pull";
 	case OMX_CMD_SEND_NOTIFY:
 		return "Send Notify";
 	case OMX_CMD_SEND_CONNECT:
@@ -638,7 +638,7 @@ enum omx_counter_index {
 	OMX_COUNTER_SEND_TRUC,
 	OMX_COUNTER_SEND_NACK_LIB,
 	OMX_COUNTER_SEND_NACK_MCP,
-	OMX_COUNTER_SEND_PULL,
+	OMX_COUNTER_SEND_PULL_REQ,
 	OMX_COUNTER_SEND_PULL_REPLY,
 
 	OMX_COUNTER_RECV_TINY,
@@ -650,7 +650,7 @@ enum omx_counter_index {
 	OMX_COUNTER_RECV_TRUC,
 	OMX_COUNTER_RECV_NACK_LIB,
 	OMX_COUNTER_RECV_NACK_MCP,
-	OMX_COUNTER_RECV_PULL,
+	OMX_COUNTER_RECV_PULL_REQ,
 	OMX_COUNTER_RECV_PULL_REPLY,
 
 	OMX_COUNTER_EXP_EVENTQ_FULL,
@@ -708,8 +708,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Nack Lib";
 	case OMX_COUNTER_SEND_NACK_MCP:
 		return "Send Nack MCP";
-	case OMX_COUNTER_SEND_PULL:
-		return "Send Pull";
+	case OMX_COUNTER_SEND_PULL_REQ:
+		return "Send Pull Request";
 	case OMX_COUNTER_SEND_PULL_REPLY:
 		return "Send Pull Reply";
 	case OMX_COUNTER_RECV_TINY:
@@ -730,8 +730,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Recv Nack Lib";
 	case OMX_COUNTER_RECV_NACK_MCP:
 		return "Recv Nack MCP";
-	case OMX_COUNTER_RECV_PULL:
-		return "Recv Pull";
+	case OMX_COUNTER_RECV_PULL_REQ:
+		return "Recv Pull Request";
 	case OMX_COUNTER_RECV_PULL_REPLY:
 		return "Recv Pull Reply";
 	case OMX_COUNTER_EXP_EVENTQ_FULL:
