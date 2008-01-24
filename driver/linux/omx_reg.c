@@ -549,6 +549,20 @@ omx_user_region_fill_pages(struct omx_user_region * region,
 	return 0;
 }
 
+/************************************
+ * Filling region pages with receive
+ */
+
+int
+omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset,
+			      struct omx_user_region * dst_region, unsigned long dst_offset,
+			      unsigned long length)
+{
+	/* TODO */
+
+	return 0;
+}
+
 /*
  * Local variables:
  *  tab-width: 8

@@ -65,6 +65,7 @@ omx_user_region_release(struct omx_user_region * region)
 extern void omx_user_region_release(struct omx_user_region * region);
 extern int omx_user_region_append_pages(struct omx_user_region * region, unsigned long region_offset, struct sk_buff * skb, unsigned long length);
 extern int omx_user_region_fill_pages(struct omx_user_region * region, unsigned long region_offset, struct sk_buff * skb, unsigned long length);
+extern int omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset, struct omx_user_region * dst_region, unsigned long dst_offset, unsigned long length);
 
 #endif /* __omx_region_h__ */
 

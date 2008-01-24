@@ -737,15 +737,8 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	}
 
 	if (unlikely(cmd.shared)) {
-		struct omx_endpoint * dst_endpoint;
-		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
-		if (unlikely(IS_ERR(dst_endpoint)))
-			/* endpoint has been removed, just drop the packet */
-			return 0;
-
-		err = omx_shared_pull(endpoint, dst_endpoint, &cmd);
-		omx_endpoint_release(dst_endpoint);
-		return err;
+		struct omx_endpoint * dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
+		return omx_shared_pull(endpoint, dst_endpoint, &cmd);
 	}
 
 	/* create, acquire and lock the handle */

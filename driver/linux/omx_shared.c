@@ -20,9 +20,24 @@
 
 #include "omx_endpoint.h"
 #include "omx_iface.h"
+#include "omx_misc.h"
 #include "omx_region.h"
 #include "omx_common.h"
 #include "omx_io.h"
+
+static inline enum omx_nack_type
+omx_shared_dst_endpoint_to_mcp_nack(struct omx_endpoint *dst_endpoint, uint32_t session_id)
+{
+	if (unlikely(IS_ERR(dst_endpoint)))
+		return omx_endpoint_acquire_by_iface_index_error_to_nack_type(dst_endpoint);
+
+	if (unlikely(session_id != dst_endpoint->session_id)) {
+		omx_endpoint_release(dst_endpoint);
+		return OMX_NACK_TYPE_BAD_SESSION;
+	}
+
+	return OMX_NACK_TYPE_NONE;
+}
 
 int
 omx_shared_send_connect(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
@@ -234,15 +249,21 @@ omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 {
 	struct omx_evt_pull_done event;
 	struct omx_user_region *src_region, *dst_region;
+	enum omx_nack_type nack_type;
 	int err;
 
-	event.status = OMX_EVT_PULL_DONE_SUCCESS;
-
-	err = -EINVAL;
 	src_region = omx_user_region_acquire(src_endpoint, hdr->local_rdma_id);
-	if (!src_region)
+	if (!src_region) {
 		/* source region is invalid, return an error */
+		err = -EINVAL;
 		goto out;
+	}
+
+	nack_type = omx_shared_dst_endpoint_to_mcp_nack(dst_endpoint, hdr->session_id);
+	if (unlikely(nack_type != OMX_NACK_TYPE_NONE)) {
+		event.status = nack_type;
+		goto notify;
+	}
 
 	dst_region = omx_user_region_acquire(dst_endpoint, hdr->remote_rdma_id);
 	if (!dst_region) {
@@ -252,8 +273,11 @@ omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 		goto notify;
 	}
 
-	/* omx_copy_between_regions() */
-	printk("should copy between regions\n");
+	omx_copy_between_user_regions(src_region, hdr->local_offset,
+				      dst_region, hdr->remote_offset,
+				      hdr->length);
+	event.status = OMX_EVT_PULL_DONE_SUCCESS;
+	err = 0;
 
 	omx_user_region_release(dst_region);
 	omx_user_region_release(src_region);
@@ -268,9 +292,9 @@ omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 
 	/* FIXME: counters */
 
-	return 0;
-
  out:
+	if (!IS_ERR(dst_endpoint))
+		omx_endpoint_release(dst_endpoint);
 	return err;
 }
 
