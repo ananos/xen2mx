@@ -98,6 +98,110 @@ omx_shared_tiny(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 	return err;
 }
 
+int
+omx_shared_rndv(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		struct omx_cmd_send_rndv_hdr *hdr, void __user * data)
+{
+	struct omx_evt_recv_msg event;
+	int err;
+
+	event.peer_index = src_endpoint->iface->peer.index;
+	event.src_endpoint = src_endpoint->endpoint_index;
+	event.match_info = hdr->match_info;
+	event.seqnum = hdr->seqnum;
+	event.piggyack = hdr->piggyack;
+	event.specific.rndv.length = hdr->length;
+
+	/* copy the data */
+	err = copy_from_user(&event.specific.rndv.data, data, hdr->length);
+	if (unlikely(err != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read shared send rndv cmd data\n");
+		err = -EFAULT;
+		goto out;
+	}
+
+	/* notify the event */
+	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));
+	if (unlikely(err < 0)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		goto out;
+	}
+
+	omx_counter_inc(src_endpoint->iface, SEND_RNDV);
+	omx_counter_inc(dst_endpoint->iface, RECV_RNDV);
+
+	return 0;
+
+ out:
+	return err;
+}
+
+int
+omx_shared_notify(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		  struct omx_cmd_send_notify *hdr)
+{
+	struct omx_evt_recv_msg event;
+	int err;
+
+	event.peer_index = src_endpoint->iface->peer.index;
+	event.src_endpoint = src_endpoint->endpoint_index;
+	event.seqnum = hdr->seqnum;
+	event.piggyack = hdr->piggyack;
+	event.specific.notify.length = hdr->total_length;
+	event.specific.notify.puller_rdma_id = hdr->puller_rdma_id;
+	event.specific.notify.puller_rdma_seqnum = hdr->puller_rdma_seqnum;
+
+	/* notify the event */
+	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));
+	if (unlikely(err < 0)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		goto out;
+	}
+
+	omx_counter_inc(src_endpoint->iface, SEND_NOTIFY);
+	omx_counter_inc(dst_endpoint->iface, RECV_NOTIFY);
+
+	return 0;
+
+ out:
+	return err;
+}
+
+int
+omx_shared_truc(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		struct omx_cmd_send_truc *hdr, void __user * data)
+{
+	struct omx_evt_recv_truc event;
+	int err;
+
+	event.peer_index = src_endpoint->iface->peer.index;
+	event.src_endpoint = src_endpoint->endpoint_index;
+	event.length = hdr->length;
+
+	/* copy the data */
+	err = copy_from_user(&event.data, data, hdr->length);
+	if (unlikely(err != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read shared send truc cmd data\n");
+		err = -EFAULT;
+		goto out;
+	}
+
+	/* notify the event */
+	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_TRUC, &event, sizeof(event));
+	if (unlikely(err < 0)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		goto out;
+	}
+
+	omx_counter_inc(src_endpoint->iface, SEND_TRUC);
+	omx_counter_inc(dst_endpoint->iface, RECV_TRUC);
+
+	return 0;
+
+ out:
+	return err;
+}
+
 /*
  * Local variables:
  *  tab-width: 8

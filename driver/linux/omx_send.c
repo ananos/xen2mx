@@ -457,8 +457,16 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	}
 
 	if (unlikely(cmd.shared)) {
-		/* FIXME */
-		printk("should use shared comms\n");
+		struct omx_endpoint * dst_endpoint;
+		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
+		if (unlikely(IS_ERR(dst_endpoint)))
+			/* endpoint has been removed, just drop the packet */
+			return 0;
+
+		ret = omx_shared_rndv(endpoint, dst_endpoint,
+				      &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
+		omx_endpoint_release(dst_endpoint);
+		return ret;
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
@@ -630,8 +638,15 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 	}
 
 	if (unlikely(cmd.shared)) {
-		/* FIXME */
-		printk("should use shared comms\n");
+		struct omx_endpoint * dst_endpoint;
+		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
+		if (unlikely(IS_ERR(dst_endpoint)))
+			/* endpoint has been removed, just drop the packet */
+			return 0;
+
+		ret = omx_shared_notify(endpoint, dst_endpoint, &cmd);
+		omx_endpoint_release(dst_endpoint);
+		return ret;
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
@@ -711,8 +726,16 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 	}
 
 	if (unlikely(cmd.shared)) {
-		/* FIXME */
-		printk("should use shared comms\n");
+		struct omx_endpoint * dst_endpoint;
+		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
+		if (unlikely(IS_ERR(dst_endpoint)))
+			/* endpoint has been removed, just drop the packet */
+			return 0;
+
+		ret = omx_shared_truc(endpoint, dst_endpoint,
+				      &cmd, &((struct omx_cmd_send_truc __user *) uparam)->data);
+		omx_endpoint_release(dst_endpoint);
+		return ret;
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
