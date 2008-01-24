@@ -418,15 +418,15 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   union omx_request * req;
   omx_return_t ret;
 
-  if (event->shared)
-    partner->is_local = 1;
-
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_INVALID_PARAMETER)
       fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
     return ret;
   }
+
+  if (event->shared)
+    partner->is_local = 1;
 
   omx__foreach_request(&ep->connect_req_q, req) {
     /* check the endpoint session (so that the endpoint didn't close/reopen in the meantime)
@@ -487,15 +487,15 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   omx_status_code_t status_code;
   int err;
 
-  if (event->shared)
-    partner->is_local = 1;
-
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_INVALID_PARAMETER)
       fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
     return ret;
   }
+
+  if (event->shared)
+    partner->is_local = 1;
 
   if (app_key == ep->app_key) {
     /* FIXME: do bidirectionnal connection stuff? */
