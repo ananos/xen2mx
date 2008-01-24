@@ -125,6 +125,14 @@ omx__partner_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
   OMX_VALGRIND_MEMORY_MAKE_READABLE(addr, sizeof(*addr));
 }
 
+static inline int
+omx__partner_localization_shared(struct omx__partner *partner)
+{
+  enum omx__partner_localization localization = partner->localization;
+  omx__debug_assert(localization != OMX__PARTNER_LOCALIZATION_UNKNOWN);
+  return (localization == OMX__PARTNER_LOCALIZATION_LOCAL);
+}
+
 extern void
 omx__partner_cleanup(struct omx_endpoint *ep,
 		     struct omx__partner *partner, int disconnect);

@@ -88,7 +88,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->board_addr = board_addr;
   partner->endpoint_index = endpoint_index;
   partner->peer_index = peer_index;
-  partner->is_local = 0; /* will be set to 1 on connect request/reply */
+  partner->localization = OMX__PARTNER_LOCALIZATION_UNKNOWN; /* will be set by omx__partner_check_localization() */
 
   omx__partner_reset(partner);
 
@@ -100,6 +100,20 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   omx__debug_printf(CONNECT, "created peer %d %d\n", peer_index, endpoint_index);
 
   return OMX_SUCCESS;
+}
+
+static INLINE void
+omx__partner_check_localization(struct omx__partner * partner, int shared)
+{
+  enum omx__partner_localization localization;
+  localization = shared ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
+
+  if (partner->localization == OMX__PARTNER_LOCALIZATION_UNKNOWN) {
+    partner->localization = localization;
+    omx__debug_printf(MAIN, "using shared communication for partner index %d\n", (unsigned) partner->peer_index);
+  } else {
+    omx__debug_assert(partner->localization == localization);
+  }
 }
 
 omx_return_t
@@ -425,8 +439,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     return ret;
   }
 
-  if (event->shared)
-    partner->is_local = 1;
+  omx__partner_check_localization(partner, event->shared);
 
   omx__foreach_request(&ep->connect_req_q, req) {
     /* check the endpoint session (so that the endpoint didn't close/reopen in the meantime)
@@ -494,8 +507,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     return ret;
   }
 
-  if (event->shared)
-    partner->is_local = 1;
+  omx__partner_check_localization(partner, event->shared);
 
   if (app_key == ep->app_key) {
     /* FIXME: do bidirectionnal connection stuff? */

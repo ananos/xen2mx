@@ -111,7 +111,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
   tiny_param->hdr.peer_index = partner->peer_index;
   tiny_param->hdr.dest_endpoint = partner->endpoint_index;
-  tiny_param->hdr.shared = partner->is_local;
+  tiny_param->hdr.shared = omx__partner_localization_shared(partner);
   tiny_param->hdr.match_info = match_info;
   tiny_param->hdr.length = length;
   tiny_param->hdr.seqnum = seqnum;
@@ -197,7 +197,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   small_param = &req->send.specific.small.send_small_ioctl_param;
   small_param->peer_index = partner->peer_index;
   small_param->dest_endpoint = partner->endpoint_index;
-  small_param->shared = partner->is_local;
+  small_param->shared = omx__partner_localization_shared(partner);
   small_param->match_info = match_info;
   small_param->length = length;
   small_param->seqnum = seqnum;
@@ -206,7 +206,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   /*
    * if single segment, use it for the first pio,
    * else copy it in the contigous copy buffer first
-   */ 
+   */
   if (likely(req->send.segs.nseg == 1)) {
     small_param->vaddr = (uintptr_t) req->send.segs.single.ptr;
   } else {
@@ -370,7 +370,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 
   medium_param->peer_index = partner->peer_index;
   medium_param->dest_endpoint = partner->endpoint_index;
-  medium_param->shared = partner->is_local;
+  medium_param->shared = omx__partner_localization_shared(partner);
   medium_param->match_info = req->generic.status.match_info;
   medium_param->frag_pipeline = OMX_MEDIUM_FRAG_PIPELINE;
   medium_param->msg_length = length;
@@ -473,7 +473,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
 
   rndv_param->hdr.peer_index = partner->peer_index;
   rndv_param->hdr.dest_endpoint = partner->endpoint_index;
-  rndv_param->hdr.shared = partner->is_local;
+  rndv_param->hdr.shared = omx__partner_localization_shared(partner);
   rndv_param->hdr.match_info = req->generic.status.match_info;
   rndv_param->hdr.length = sizeof(struct omx__rndv_data);
   rndv_param->hdr.seqnum = req->generic.send_seqnum;
@@ -578,7 +578,7 @@ omx__submit_notify(struct omx_endpoint *ep,
   notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   notify_param->peer_index = partner->peer_index;
   notify_param->dest_endpoint = partner->endpoint_index;
-  notify_param->shared = partner->is_local;
+  notify_param->shared = omx__partner_localization_shared(partner);
   notify_param->total_length = req->generic.status.xfer_length;
   notify_param->session_id = partner->back_session_id;
   notify_param->seqnum = seqnum;

@@ -72,11 +72,17 @@ typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
  */
 #define OMX__EARLY_PACKET_OFFSET_MAX 0xff
 
+enum omx__partner_localization {
+  OMX__PARTNER_LOCALIZATION_LOCAL,
+  OMX__PARTNER_LOCALIZATION_REMOTE,
+  OMX__PARTNER_LOCALIZATION_UNKNOWN,
+};
+
 struct omx__partner {
   uint64_t board_addr;
   uint16_t peer_index;
   uint8_t endpoint_index;
-  uint8_t is_local;
+  uint8_t localization;
 
   /* the main session id, obtained from the our actual connect */
   uint32_t true_session_id;
