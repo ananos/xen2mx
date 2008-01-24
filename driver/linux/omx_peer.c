@@ -80,7 +80,7 @@ omx_peers_clear(void)
 		if (iface) {
 			dprintk(PEER, "detaching iface %s (%s) peer #%d\n",
 				iface->eth_ifp->name, peer->hostname, peer->index);
-			
+
 			peer->index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 
 			/* release the iface reference now it is not linked in the peer table anymore */

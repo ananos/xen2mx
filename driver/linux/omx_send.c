@@ -540,9 +540,8 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 
 	if (!cmd.shared_disabled) {
 		struct omx_endpoint * dst_endpoint;
-
 		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
-		if (dst_endpoint) {
+		if (likely(!IS_ERR(dst_endpoint))) {
 			ret = omx_shared_connect(endpoint, dst_endpoint,
 						 &cmd, &((struct omx_cmd_send_connect __user *) uparam)->data);
 			omx_endpoint_release(dst_endpoint);

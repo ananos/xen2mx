@@ -127,7 +127,7 @@ omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, ch
 		goto out_with_lock;
 
 	iface = rcu_dereference(omx_ifaces[board_index]);
-	if (!iface)	
+	if (!iface)
 		goto out_with_lock;
 
 	ifp = iface->eth_ifp;
@@ -160,7 +160,7 @@ omx_iface_get_counters(uint8_t board_index, int clear,
 		goto out_with_lock;
 
 	iface = rcu_dereference(omx_ifaces[board_index]);
-	if (!iface)	
+	if (!iface)
 		goto out_with_lock;
 
 	if (buffer_length < sizeof(iface->counters))
@@ -197,7 +197,7 @@ omx_iface_set_hostname(uint8_t board_index, char * hostname)
 		goto out_with_lock;
 
 	iface = rcu_dereference(omx_ifaces[board_index]);
-	if (!iface)	
+	if (!iface)
 		goto out_with_lock;
 
 	printk(KERN_INFO "Open-MX: changing board %d (iface %s) hostname from %s to %s\n",
