@@ -20,6 +20,7 @@
 
 #include "omx_endpoint.h"
 #include "omx_iface.h"
+#include "omx_region.h"
 #include "omx_common.h"
 #include "omx_io.h"
 
@@ -232,16 +233,35 @@ omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 		struct omx_cmd_pull *hdr)
 {
 	struct omx_evt_pull_done event;
+	struct omx_user_region *src_region, *dst_region;
 	int err;
 
-	err = 0;
+	event.status = OMX_EVT_PULL_DONE_SUCCESS;
+
+	err = -EINVAL;
+	src_region = omx_user_region_acquire(src_endpoint, hdr->local_rdma_id);
+	if (!src_region)
+		/* source region is invalid, return an error */
+		goto out;
+
+	dst_region = omx_user_region_acquire(dst_endpoint, hdr->remote_rdma_id);
+	if (!dst_region) {
+		/* dest region invalid, return a pull error */
+		omx_user_region_release(src_region);
+		event.status = OMX_EVT_PULL_DONE_BAD_RDMAWIN;
+		goto notify;
+	}
+
 	/* omx_copy_between_regions() */
 	printk("should copy between regions\n");
 
+	omx_user_region_release(dst_region);
+	omx_user_region_release(src_region);
+
+ notify:
 	event.lib_cookie = hdr->lib_cookie;
 	event.pulled_length = hdr->length;
 	event.local_rdma_id = hdr->local_rdma_id;
-	event.status = OMX_EVT_PULL_DONE_SUCCESS;
 
 	/* notify the event */
 	omx_notify_exp_event(src_endpoint, OMX_EVT_PULL_DONE, &event, sizeof(event));
@@ -249,6 +269,9 @@ omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 	/* FIXME: counters */
 
 	return 0;
+
+ out:
+	return err;
 }
 
 int

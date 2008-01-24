@@ -1,6 +1,7 @@
 * wait_event latency is worse than poll?
 
 * check the session in shared comms
+* nack lib/mcp if endpoint closed
 
 * sleep in connect
 
