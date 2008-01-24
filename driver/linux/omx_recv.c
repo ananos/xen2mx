@@ -860,7 +860,7 @@ omx_pkt_type_handlers_init(void)
 	omx_pkt_type_handlers[OMX_PKT_TYPE_SMALL] = omx_recv_small;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_MEDIUM] = omx_recv_medium_frag;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_RNDV] = omx_recv_rndv;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL] = omx_recv_pull;
+	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL] = omx_recv_pull_request;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL_REPLY] = omx_recv_pull_reply;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_NOTIFY] = omx_recv_notify;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_LIB] = omx_recv_nack_lib;

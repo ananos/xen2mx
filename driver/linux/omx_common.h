@@ -73,7 +73,7 @@ extern void omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enu
 /* receiving */
 extern void omx_pkt_type_handlers_init(void);
 extern struct packet_type omx_pt;
-extern int omx_recv_pull(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
+extern int omx_recv_pull_request(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 extern int omx_recv_pull_reply(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 extern int omx_recv_nack_mcp(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 
