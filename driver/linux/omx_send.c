@@ -333,8 +333,15 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 	}
 
 	if (unlikely(cmd.shared)) {
-		/* FIXME */
-		printk("should use shared comms\n");
+		struct omx_endpoint * dst_endpoint;
+		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
+		if (unlikely(IS_ERR(dst_endpoint)))
+			/* endpoint has been removed, just drop the packet */
+			return 0;
+
+		ret = omx_shared_small(endpoint, dst_endpoint, &cmd);
+		omx_endpoint_release(dst_endpoint);
+		return ret;
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
@@ -441,8 +448,15 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 	}
 
 	if (unlikely(cmd.shared)) {
-		/* FIXME */
-		printk("should use shared comms\n");
+		struct omx_endpoint * dst_endpoint;
+		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
+		if (unlikely(IS_ERR(dst_endpoint)))
+			/* endpoint has been removed, just drop the packet */
+			return 0;
+
+		ret = omx_shared_medium(endpoint, dst_endpoint, &cmd);
+		omx_endpoint_release(dst_endpoint);
+		return ret;
 	}
 
 	skb = omx_new_skb(/* only allocate space for the header now,
