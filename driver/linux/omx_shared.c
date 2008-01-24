@@ -60,6 +60,44 @@ omx_shared_connect(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_e
 	return err;
 }
 
+int
+omx_shared_tiny(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		struct omx_cmd_send_tiny_hdr *hdr, void __user * data)
+{
+	struct omx_evt_recv_msg event;
+	int err;
+
+	event.peer_index = src_endpoint->iface->peer.index;
+	event.src_endpoint = src_endpoint->endpoint_index;
+	event.match_info = hdr->match_info;
+	event.seqnum = hdr->seqnum;
+	event.piggyack = hdr->piggyack;
+	event.specific.tiny.length = hdr->length;
+
+	/* copy the data */
+	err = copy_from_user(&event.specific.tiny.data, data, hdr->length);
+	if (unlikely(err != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read shared send tiny cmd data\n");
+		err = -EFAULT;
+		goto out;
+	}
+
+	/* notify the event */
+	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
+	if (unlikely(err < 0)) {
+		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
+		goto out;
+	}
+
+	omx_counter_inc(src_endpoint->iface, SEND_TINY);
+	omx_counter_inc(dst_endpoint->iface, RECV_TINY);
+
+	return 0;
+
+ out:
+	return err;
+}
+
 /*
  * Local variables:
  *  tab-width: 8

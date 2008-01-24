@@ -141,8 +141,16 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 	}
 
 	if (unlikely(cmd.shared)) {
-		/* FIXME */
-		printk("should use shared comms\n");
+		struct omx_endpoint * dst_endpoint;
+		dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
+		if (unlikely(IS_ERR(dst_endpoint)))
+			/* endpoint has been removed, just drop the packet */
+			return 0;
+
+		ret = omx_shared_tiny(endpoint, dst_endpoint,
+				      &cmd, &((struct omx_cmd_send_tiny __user *) uparam)->data);
+		omx_endpoint_release(dst_endpoint);
+		return ret;
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */

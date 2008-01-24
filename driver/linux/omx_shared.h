@@ -23,6 +23,10 @@ extern int
 omx_shared_connect(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
 		   struct omx_cmd_send_connect_hdr *hdr, void __user * data);
 
+extern int
+omx_shared_tiny(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+		struct omx_cmd_send_tiny_hdr *hdr, void __user * data);
+
 #endif /* __omx_shared_h__ */
 
 /*
