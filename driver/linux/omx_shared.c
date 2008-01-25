@@ -284,7 +284,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 
  notify:
 	event.lib_cookie = hdr->lib_cookie;
-	event.pulled_length = hdr->length;
+	event.pulled_length = hdr->length; /* FIXME */
 	event.local_rdma_id = hdr->local_rdma_id;
 
 	/* notify the event */

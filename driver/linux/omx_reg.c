@@ -564,7 +564,113 @@ omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long
 			      struct omx_user_region * dst_region, unsigned long dst_offset,
 			      unsigned long length)
 {
-	/* TODO */
+	unsigned long remaining = length;
+	unsigned long tmp;
+	struct omx_user_region_segment *sseg, *dseg; /* current segment */
+	unsigned long sseglen, dseglen; /* length of current segment */
+	unsigned long ssegoff, dsegoff; /* current offset in current segment */
+	struct page **spage, **dpage; /* current page */
+	unsigned int spageoff, dpageoff; /* current offset in current page */
+	void *spageaddr, *dpageaddr; /* current page mapping */
+
+	if (src_offset + length > src_region->total_length
+	    || dst_offset + length > dst_region->total_length)
+		return -EINVAL;
+
+	/* initialize the src state */
+	for(tmp=0,sseg=&src_region->segments[0];; sseg++) {
+		sseglen = sseg->length;
+		if (tmp + sseglen > src_offset)
+			break;
+		tmp += sseglen;
+	}
+	ssegoff = src_offset - tmp;
+	spage = &sseg->pages[(ssegoff + sseg->first_page_offset) >> PAGE_SHIFT];
+	spageoff = (ssegoff + sseg->first_page_offset) & (~PAGE_MASK);
+	spageaddr = kmap_atomic(*spage, KM_USER0);
+
+	/* initialize the dst state */
+	for(tmp=0,dseg=&dst_region->segments[0];; dseg++) {
+		dseglen = dseg->length;
+		if (tmp + dseglen > dst_offset)
+			break;
+		tmp += dseglen;
+	}
+	dsegoff = dst_offset - tmp;
+	dpage = &dseg->pages[(dsegoff + dseg->first_page_offset) >> PAGE_SHIFT];
+	dpageoff = (dsegoff + dseg->first_page_offset) & (~PAGE_MASK);
+	dpageaddr = kmap_atomic(*dpage, KM_USER1);
+
+	while (remaining) {
+		/* compute the chunk size */
+		unsigned chunk = remaining;
+		if (chunk > PAGE_SIZE - spageoff)
+			chunk = PAGE_SIZE - spageoff;
+		if (chunk > sseglen - ssegoff)
+			chunk = sseglen - ssegoff;
+		if (chunk > PAGE_SIZE - dpageoff)
+			chunk = PAGE_SIZE - dpageoff;
+		if (chunk > dseglen - dsegoff)
+			chunk = dseglen - dsegoff;
+
+		/* actual copy */
+		dprintk(REG, "copying %d from seg=%ld:page=%ld(%p):off=%d to seg=%ld:page=%ld(%p):off=%d\n",
+			chunk,
+			sseg-&src_region->segments[0], spage-&sseg->pages[0], *spage, spageoff,
+			dseg-&dst_region->segments[0], dpage-&dseg->pages[0], *dpage, dpageoff);
+		memcpy(dpageaddr + dpageoff, spageaddr + spageoff, chunk);
+
+		/* update the source */
+		if (ssegoff + chunk == sseglen) {
+			/* next segment */
+			kunmap_atomic(spageaddr, KM_USER0);
+			sseg++;
+			sseglen = sseg->length;
+			ssegoff = 0;
+			spage = &sseg->pages[0];
+			spageoff = sseg->first_page_offset;
+			spageaddr = kmap_atomic(*spage, KM_USER0);
+		} else if (spageoff + chunk == PAGE_SIZE) {
+			/* next page */
+			kunmap_atomic(spageaddr, KM_USER0);
+			ssegoff += chunk;
+			spage++;
+			spageoff = 0;
+			spageaddr = kmap_atomic(*spage, KM_USER0);
+		} else {
+			/* same page */
+			ssegoff += chunk;
+			spageoff += chunk;
+		}
+
+		/* update the destination */
+		if (dsegoff + chunk == dseglen) {
+			/* next segment */
+			kunmap_atomic(dpageaddr, KM_USER1);
+			dseg++;
+			dseglen = dseg->length;
+			dsegoff = 0;
+			dpage = &dseg->pages[0];
+			dpageoff = dseg->first_page_offset;
+			dpageaddr = kmap_atomic(*dpage, KM_USER1);
+		} else if (dpageoff + chunk == PAGE_SIZE) {
+			/* next page */
+			kunmap_atomic(dpageaddr, KM_USER1);
+			dsegoff += chunk;
+			dpage++;
+			dpageoff = 0;
+			dpageaddr = kmap_atomic(*dpage, KM_USER1);
+		} else {
+			/* same page */
+			dsegoff += chunk;
+			dpageoff += chunk;
+		}
+
+		remaining -= chunk;
+	}
+
+	kunmap_atomic(spageaddr, KM_USER0);
+	kunmap_atomic(dpageaddr, KM_USER1);
 
 	return 0;
 }
