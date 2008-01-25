@@ -28,6 +28,7 @@
 #define EID OMX_ANY_ENDPOINT
 #define ITER 10
 #define LEN 4000000
+#define NSEG_MAX 10
 
 static int verbose = 0;
 
@@ -207,7 +208,7 @@ int main(int argc, char *argv[])
   omx_endpoint_addr_t addr;
   int c;
   int i, j;
-  omx_seg_t seg[8];
+  omx_seg_t seg[NSEG_MAX];
   void * buffer1, * buffer2;
   omx_return_t ret;
   int nseg = 0;
@@ -295,15 +296,20 @@ int main(int argc, char *argv[])
   seg[2].len = 61; /* total 91, small */
   seg[3].ptr = buffer1 + 10001;
   seg[3].len = 26; /* total 117, small */
-  seg[4].ptr = buffer1 + 11111;
-  seg[4].len = 13456; /* total 13573, medium */
-  seg[5].ptr = buffer1 + 50000;
-  seg[5].len = 11111; /* total 24684, medium */
-  seg[6].ptr = buffer1 + 100000;
-  seg[6].len = 333333; /* total 357814, large */
-  seg[7].ptr = buffer1 + 1000000;
-  seg[7].len = 3000000; /* total 3357814, large */
-  nseg = 8;
+  seg[4].ptr = NULL;
+  seg[4].len = 0; /* total 117, small */
+  seg[5].ptr = buffer1 + 11111;
+  seg[5].len = 13456; /* total 13573, medium */
+  seg[6].ptr = NULL;
+  seg[6].len = 0; /* total 13573, medium */
+  seg[7].ptr = buffer1 + 50000;
+  seg[7].len = 11111; /* total 24684, medium */
+  seg[8].ptr = buffer1 + 100000;
+  seg[8].len = 333333; /* total 357814, large */
+  seg[9].ptr = buffer1 + 1000000;
+  seg[9].len = 3000000; /* total 3357814, large */
+  nseg = 10;
+  assert(nseg <= NSEG_MAX);
 
   for(i=0; i<=nseg; i++)
     for(j=0; j<=nseg-i; j++) {

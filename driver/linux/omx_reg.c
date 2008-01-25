@@ -43,6 +43,8 @@ static int
 omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 				 struct omx_user_region_segment * segment)
 {
+	unsigned long usegvaddr = useg->vaddr;
+	unsigned long useglen = useg->len;
 	struct page ** pages;
 	unsigned offset;
 	unsigned long aligned_vaddr;
@@ -50,9 +52,9 @@ omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 	unsigned long nr_pages;
 	int ret;
 
-	offset = useg->vaddr & (~PAGE_MASK);
-	aligned_vaddr = useg->vaddr & PAGE_MASK;
-	aligned_len = PAGE_ALIGN(offset + useg->len);
+	offset = usegvaddr & (~PAGE_MASK);
+	aligned_vaddr = usegvaddr & PAGE_MASK;
+	aligned_len = PAGE_ALIGN(offset + useglen);
 	nr_pages = aligned_len >> PAGE_SHIFT;
 
 	pages = kmalloc(nr_pages * sizeof(struct page *), GFP_KERNEL);
@@ -70,7 +72,7 @@ omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 	BUG_ON(ret != nr_pages);
 
 	segment->first_page_offset = offset;
-	segment->length = useg->len;
+	segment->length = useglen;
 	segment->nr_pages = nr_pages;
 	segment->pages = pages;
 
@@ -109,6 +111,7 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 {
 	struct omx_cmd_register_region cmd;
 	struct omx_user_region * region;
+	struct omx_user_region_segment *seg;
 	struct omx_cmd_region_segment * usegs;
 	int ret, i;
 
@@ -160,14 +163,17 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 
 	down_write(&current->mm->mmap_sem);
 
-	for(i=0; i<cmd.nr_segments; i++) {
-		ret = omx_user_region_register_segment(&usegs[i], &region->segments[i]);
+	for(i=0, seg = &region->segments[0]; i<cmd.nr_segments; i++) {
+		if (!usegs[i].len)
+			continue;
+		ret = omx_user_region_register_segment(&usegs[i], seg);
 		if (unlikely(ret < 0)) {
 			up_write(&current->mm->mmap_sem);
 			goto out_with_region;
 		}
 		region->nr_segments++;
-		region->total_length += region->segments[i].length;
+		region->total_length += seg->length;
+		seg++;
 	}
 
 	up_write(&current->mm->mmap_sem);
