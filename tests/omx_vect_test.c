@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
   omx_endpoint_addr_t addr;
   int c;
   int i, j;
-  omx_seg_t seg[7];
+  omx_seg_t seg[8];
   void * buffer1, * buffer2;
   omx_return_t ret;
   int nseg = 0;
