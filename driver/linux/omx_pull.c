@@ -736,10 +736,8 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	if (unlikely(cmd.shared)) {
-		struct omx_endpoint * dst_endpoint = omx_local_peer_acquire_endpoint(cmd.peer_index, cmd.dest_endpoint);
-		return omx_shared_pull(endpoint, dst_endpoint, &cmd);
-	}
+	if (unlikely(cmd.shared))
+		return omx_shared_pull(endpoint, &cmd);
 
 	/* create, acquire and lock the handle */
 	handle = omx_pull_handle_create(endpoint, &cmd);

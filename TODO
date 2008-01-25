@@ -1,5 +1,7 @@
 * wait_event latency is worse than poll?
 
+* shared large sucks? rcu ?
+
 * check the session in shared comms
 * nack lib/mcp if endpoint closed
 

@@ -31,10 +31,8 @@ omx_shared_dst_endpoint_to_mcp_nack(struct omx_endpoint *dst_endpoint, uint32_t 
 	if (unlikely(IS_ERR(dst_endpoint)))
 		return omx_endpoint_acquire_by_iface_index_error_to_nack_type(dst_endpoint);
 
-	if (unlikely(session_id != dst_endpoint->session_id)) {
-		omx_endpoint_release(dst_endpoint);
+	if (unlikely(session_id != dst_endpoint->session_id))
 		return OMX_NACK_TYPE_BAD_SESSION;
-	}
 
 	return OMX_NACK_TYPE_NONE;
 }
@@ -244,43 +242,42 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst
 }
 
 int
-omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+omx_shared_pull(struct omx_endpoint *src_endpoint,
 		struct omx_cmd_pull *hdr)
 {
+	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_pull_done event;
-	struct omx_user_region *src_region, *dst_region;
+	struct omx_user_region *src_region, *dst_region = NULL;
 	enum omx_nack_type nack_type;
 	int err;
 
 	src_region = omx_user_region_acquire(src_endpoint, hdr->local_rdma_id);
 	if (!src_region) {
-		/* source region is invalid, return an error */
+		/* source region is invalid, return an immediate error */
 		err = -EINVAL;
 		goto out;
 	}
 
+	dst_endpoint = omx_local_peer_acquire_endpoint(hdr->peer_index,hdr->dest_endpoint);
 	nack_type = omx_shared_dst_endpoint_to_mcp_nack(dst_endpoint, hdr->session_id);
 	if (unlikely(nack_type != OMX_NACK_TYPE_NONE)) {
+		/* dest endpoint invalid, return a pull done status error */
 		event.status = nack_type;
 		goto notify;
 	}
 
 	dst_region = omx_user_region_acquire(dst_endpoint, hdr->remote_rdma_id);
-	if (!dst_region) {
-		/* dest region invalid, return a pull error */
-		omx_user_region_release(src_region);
+	if (unlikely(dst_region == NULL)) {
+		/* dest region invalid, return a pull done status error */
 		event.status = OMX_EVT_PULL_DONE_BAD_RDMAWIN;
 		goto notify;
 	}
 
-	omx_copy_between_user_regions(src_region, hdr->local_offset,
-				      dst_region, hdr->remote_offset,
-				      hdr->length);
-	event.status = OMX_EVT_PULL_DONE_SUCCESS;
-	err = 0;
+	err = omx_copy_between_user_regions(src_region, hdr->local_offset,
+					    dst_region, hdr->remote_offset,
+					    hdr->length);
 
-	omx_user_region_release(dst_region);
-	omx_user_region_release(src_region);
+	event.status = err < 0 ? OMX_EVT_PULL_DONE_ABORTED : OMX_EVT_PULL_DONE_SUCCESS;
 
  notify:
 	event.lib_cookie = hdr->lib_cookie;
@@ -292,9 +289,15 @@ omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endp
 
 	/* FIXME: counters */
 
- out:
-	if (!IS_ERR(dst_endpoint))
+	omx_user_region_release(src_region);
+	if (likely(!IS_ERR(dst_endpoint))) {
 		omx_endpoint_release(dst_endpoint);
+		if (likely(dst_region != NULL))
+			omx_user_region_release(dst_region);
+	}
+
+	err = 0;
+ out:
 	return err;
 }
 

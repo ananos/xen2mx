@@ -40,8 +40,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst
 		     struct omx_cmd_send_rndv_hdr *hdr, void __user * data);
 
 extern int
-omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
-		struct omx_cmd_pull *hdr);
+omx_shared_pull(struct omx_endpoint *src_endpoint, struct omx_cmd_pull *hdr);
 
 extern int
 omx_shared_send_notify(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
