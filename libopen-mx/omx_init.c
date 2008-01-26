@@ -60,8 +60,13 @@ omx__init_api(int api)
     goto out_with_fd;
   }
 
-  if (omx__driver_desc->abi_version != OMX_DRIVER_ABI_VERSION) {
-    fprintf(stderr, "Driver (ABI 0x%x) incompatible with library (ABI 0x%x), rebuild/reload probably required.\n",
+  if (omx__driver_desc->abi_version > OMX_DRIVER_ABI_VERSION) {
+    fprintf(stderr, "Library (ABI 0x%x) is too old for driver (ABI 0x%x), did you relink your program with the new library?\n",
+	    OMX_DRIVER_ABI_VERSION, omx__driver_desc->abi_version);
+    ret = OMX_BAD_ERROR;
+    goto out_with_fd;
+  } else if (omx__driver_desc->abi_version < OMX_DRIVER_ABI_VERSION) {
+    fprintf(stderr, "Driver (ABI 0x%x) is too old for library (ABI 0x%x), did you rebuild/reload the new driver?\n",
 	    omx__driver_desc->abi_version, OMX_DRIVER_ABI_VERSION);
     ret = OMX_BAD_ERROR;
     goto out_with_fd;
