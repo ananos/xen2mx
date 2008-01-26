@@ -1,0 +1,61 @@
+bindir = @bindir@
+exec_prefix = @exec_prefix@
+prefix = @prefix@
+
+SRCS	=	$(wildcard @srcdir@/*.c)
+OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
+TESTS	=	$(subst .o,,$(OBJS))
+
+CC	=	@CC@
+LD	=	@CC@ #FIXME
+MKDIR_P	=	@MKDIR_P@
+INSTALL	=	@INSTALL@
+
+CPPFLAGS	+=	-I@top_srcdir@/common
+CFLAGS	+=	-Wall
+CFLAGS	+=	-g -O2
+
+LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
+
+.PHONY: all installonly install clean distclean
+
+all: $(TESTS)
+
+###############
+# dependencies
+
+DEPS	=	$(subst .o,.d,$(OBJS))
+DEPSRCDIR	=	@srcdir@
+include @top_srcdir@/depend.mk
+
+########
+# build
+
+$(TESTS): %: %.o $(LIB)
+	$(LD) $^ -o $@
+
+# build and create dependency file
+$(OBJS): %.o: @srcdir@/%.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+
+##########
+# install
+
+installonly:
+	@echo "Installing MX tests to $(DESTDIR)$(bindir)/"
+	@if test ! -d $(DESTDIR)$(bindir); then \
+		echo "'$(DESTDIR)$(bindir)' didn't exist, creating it" ; \
+		$(MKDIR_P) $(DESTDIR)$(bindir) ; \
+	fi
+	$(INSTALL) -m 0755 $(TESTS) $(DESTDIR)$(bindir)/
+
+install: all installonly
+
+########
+# clean
+
+clean:
+	$(RM) $(TESTS) $(OBJS)
+
+distclean: clean
+	$(RM) $(DEPS)
