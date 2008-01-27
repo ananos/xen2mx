@@ -289,7 +289,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->ctxid = malloc(ep->ctxid_max * sizeof(*ep->ctxid));
   if (!ep->ctxid) {
     ret = OMX_NO_RESOURCES;
-    goto out_with_partners;
+    goto out_with_myself;
   }
   for(i=0; i<ep->ctxid_max; i++) {
     INIT_LIST_HEAD(&ep->ctxid[i].unexp_req_q);
@@ -317,16 +317,22 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   return OMX_SUCCESS;
 
+ out_with_myself:
+  free(ep->myself);
  out_with_partners:
   free(ep->partners);
  out_with_large_regions:
   omx__endpoint_large_region_map_exit(ep);
  out_with_userq_mmap:
-  /* could munmap here, but close will do it */
+  munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
+  munmap(ep->sendq, OMX_SENDQ_SIZE);
+  munmap(ep->recvq, OMX_RECVQ_SIZE);
+  munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
+  munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
  out_with_sendq_map:
   omx__endpoint_sendq_map_exit(ep);
  out_with_attached:
-  /* could detach here, but close will do it */
+  /* nothing to do for detach, close will do it */
  out_with_fd:
   close(fd);
  out_with_ep:
@@ -345,18 +351,19 @@ omx_close_endpoint(struct omx_endpoint *ep)
 
   omx__flush_partners_to_ack(ep);
 
+  free(ep->ctxid);
   for(i=0; i<omx__driver_desc->peer_max * omx__driver_desc->endpoint_max; i++)
     if (ep->partners[i])
       free(ep->partners[i]);
   free(ep->partners);
-  free(ep->ctxid);
   omx__endpoint_large_region_map_exit(ep);
+  munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->recvq, OMX_RECVQ_SIZE);
   munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
   munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
   omx__endpoint_sendq_map_exit(ep);
-  /* could detach here, but close will do it */
+  /* nothing to do for detach, close will do it */
   close(ep->fd);
   free(ep);
 
