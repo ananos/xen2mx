@@ -475,14 +475,19 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
  found:
   omx__debug_printf(CONNECT, "waking up on connect reply\n");
 
+  /* complete the request */
+  omx__connect_complete(ep, req, status_code);
+
+  /* update the partner afterwards, so that omx__partner_cleanup() does not find the current request too */
   if (status_code == OMX_STATUS_SUCCESS) {
     /* connection successfull, initialize stuff */
 
-    if (partner->back_session_id != target_session_id) {
+    if (partner->back_session_id != target_session_id
+	&& partner->back_session_id != -1) {
       /* this partner changed since last time it talked to us, cleanup the stuff */
       omx__debug_assert(partner->true_session_id != target_session_id);
 
-      /* FIXME: cleanup stuff */
+      omx__partner_cleanup(ep, partner, 0);
     }
 
     if (partner->true_session_id != target_session_id) {
@@ -494,8 +499,6 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     partner->true_session_id = target_session_id;
   }
 
-  /* complete the request */
-  omx__connect_complete(ep, req, status_code);
   return OMX_SUCCESS;
 }
 
