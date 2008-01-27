@@ -175,7 +175,8 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 		region->nr_segments++;
 		region->total_length += seg->length;
 		dprintk(REG, "register added new seg #%ld, total %ld length %ld\n",
-			seg-&region->segments[0], (unsigned long) region->nr_segments, region->total_length);
+			(unsigned long) (seg-&region->segments[0]),
+			(unsigned long) region->nr_segments, region->total_length);
 		seg++;
 	}
 
@@ -627,8 +628,8 @@ omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long
 		/* actual copy */
 		dprintk(REG, "shared region copy of %d bytes from seg=%ld:page=%ld(%p):off=%d to seg=%ld:page=%ld(%p):off=%d\n",
 			chunk,
-			sseg-&src_region->segments[0], spage-&sseg->pages[0], *spage, spageoff,
-			dseg-&dst_region->segments[0], dpage-&dseg->pages[0], *dpage, dpageoff);
+			(unsigned long) (sseg-&src_region->segments[0]), (unsigned long) (spage-&sseg->pages[0]), *spage, spageoff,
+			(unsigned long) (dseg-&dst_region->segments[0]), (unsigned long) (dpage-&dseg->pages[0]), *dpage, dpageoff);
 		memcpy(dpageaddr + dpageoff, spageaddr + spageoff, chunk);
 
 		remaining -= chunk;
@@ -645,7 +646,7 @@ omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long
 			sseg++;
 			sseglen = sseg->length;
 			dprintk(REG, "shared region copy switching to source seg %ld len %ld, %ld remaining\n", 
-				sseg-&src_region->segments[0], sseglen, remaining);
+				(unsigned long) (sseg-&src_region->segments[0]), sseglen, remaining);
 			ssegoff = 0;
 			spage = &sseg->pages[0];
 			spageoff = sseg->first_page_offset;
@@ -670,7 +671,7 @@ omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long
 			dseg++;
 			dseglen = dseg->length;
 			dprintk(REG, "shared region copy switching to dest seg %ld len %ld, %ld remaining\n",
-				dseg-&dst_region->segments[0], dseglen, remaining);
+				(unsigned long) (dseg-&dst_region->segments[0]), dseglen, remaining);
 			dsegoff = 0;
 			dpage = &dseg->pages[0];
 			dpageoff = dseg->first_page_offset;
