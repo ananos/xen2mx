@@ -1,6 +1,5 @@
 * fix disconnect
   + cleanup pending sends, even if their state may be anything
-  + cleanup pending connects too
 
 * free request (and buffers) on close
   + preallocated pool with free list

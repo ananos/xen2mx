@@ -680,9 +680,18 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     count++;
   }
   /* FIXME: printf count */
-
-  /* FIXME: pending connect requests too */
 #endif
+
+  /*
+   * Drop pending connect request to this partner
+   */
+  count = 0;
+  while (!omx__partner_connect_queue_empty(partner)) {
+    req = omx__partner_connect_queue_first_request(partner);
+    omx__connect_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+  }
+  if (count)
+    printf("Dropped %d pending connect request to partner\n", count);
 
   /*
    * Complete partially received request with an error status
@@ -705,7 +714,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     omx__recv_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
     count++;
   }
-  printf("Dropped %d partially received messages from partner\n", count);
+  if (count)
+    printf("Dropped %d partially received messages from partner\n", count);
 
   /*
    * Drop early fragments
@@ -722,7 +732,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     free(early);
     count++;
   }
-  printf("Dropped %d early received packets from partner\n", count);
+  if (count)
+    printf("Dropped %d early received packets from partner\n", count);
 
   /*
    * Drop unexpected from this peer
@@ -747,7 +758,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       count++;
     }
   }
-  printf("Dropped %d unexpected message from partner\n", count);
+  if (count)
+    printf("Dropped %d unexpected message from partner\n", count);
 
   /*
    * No need to touch pending pulls, the driver will abort them
