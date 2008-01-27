@@ -54,6 +54,7 @@
 #define OMX_VERBOSE_EVENT (1<<11)
 #define OMX_VERBOSE_WAIT (1<<12)
 #define OMX_VERBOSE_VECT (1<<13)
+#define OMX_VERBOSE_DISCONNECT (1<<14)
 #define omx__verbose_type_enabled(type) (OMX_VERBOSE_##type & omx__globals.verbose)
 
 #define INLINE

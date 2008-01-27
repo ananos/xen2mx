@@ -1,3 +1,10 @@
+* fix disconnect
+  + cleanup pending sends, even if their state may be anything
+  + cleanup pending connects too
+
+* free request (and buffers) on close
+  + preallocated pool with free list
+
 * wait_event latency is worse than poll?
 
 * atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
@@ -37,11 +44,6 @@
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
   + throttle if too many partially received medium
   + add session to seqnums
-
-* fix disconnect
-  + cleanup pending sends, even if their state may be anything
-  + cleanup pending connects too
-  + call it when the connect session changed
 
 * pull improvements
   + ph_prepare_exit only called when holding the iface mutex, may sleep
