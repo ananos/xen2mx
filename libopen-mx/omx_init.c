@@ -160,6 +160,7 @@ omx__init_api(int api)
   }
 
   /* self comm configuration */
+#ifndef OMX_DISABLE_SELF
   omx__globals.selfcomms = 1;
   env = getenv("OMX_DISABLE_SELF");
 #ifdef OMX_MX_API_COMPAT
@@ -174,6 +175,7 @@ omx__init_api(int api)
     omx__debug_printf(MAIN, "Forcing self comms to %s\n",
 		      omx__globals.selfcomms ? "enabled" : "disabled");
   }
+#endif
 
   /* shared comm configuration */
   omx__globals.sharedcomms = 1;

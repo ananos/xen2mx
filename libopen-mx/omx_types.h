@@ -405,7 +405,9 @@ struct omx__globals {
   int regcache;
   int waitspin;
   int zombie_max;
+#ifndef OMX_DISABLE_SELF
   int selfcomms;
+#endif
   int sharedcomms;
   unsigned ack_delay;
   unsigned resend_delay;
