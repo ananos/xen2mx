@@ -434,6 +434,7 @@ int main(int argc, char **argv)
   uint32_t filter;
   uint16_t his_eid;
   mx_endpoint_addr_t his_addr;
+  mx_return_t ret;
   char *rem_host;
   int inc;
   double mult;
@@ -575,8 +576,12 @@ int main(int argc, char **argv)
 	
   if (my_eid == MX_ANY_ENDPOINT && !rem_host)
     my_eid = DFLT_EID;
-  mx_open_endpoint(board_id, my_eid, filter, NULL, 0, &ep);
-  
+  ret = mx_open_endpoint(board_id, my_eid, filter, NULL, 0, &ep);
+  if (ret != MX_SUCCESS) {
+    fprintf(stderr, "Failed to open endpoint %s\n", mx_strerror(ret));
+    exit(1);
+  }
+
   /* If no host, we are receiver */
   if (rem_host == NULL) {
     char hostname[MX_MAX_HOSTNAME_LEN];
