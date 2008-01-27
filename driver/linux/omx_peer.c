@@ -299,6 +299,10 @@ omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
 	return err;
 }
 
+/*
+ * returns an acquired endpoint, or NULL if the peer is not local,
+ * ot PTR_ERR(errno) if the peer is local but the endpoint invalid
+ */
 struct omx_endpoint *
 omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index)
 {

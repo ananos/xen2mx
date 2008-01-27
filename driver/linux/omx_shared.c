@@ -25,25 +25,124 @@
 #include "omx_common.h"
 #include "omx_io.h"
 
-static inline enum omx_nack_type
-omx_shared_dst_endpoint_to_mcp_nack(struct omx_endpoint *dst_endpoint, uint32_t session_id)
+/********************
+ * Endpoint checking
+ */
+
+/*
+ * acquire the destination endpoint or return a nack_type
+ * if the endpoint isn't available or the session is wrong.
+ */
+static inline struct omx_endpoint *
+omx_shared_get_endpoint_or_nack_type(uint16_t dst_peer_index, uint8_t dst_endpoint_index,
+				     uint32_t session_id,
+				     enum omx_nack_type *nack_type)
 {
-	if (unlikely(IS_ERR(dst_endpoint)))
-		return omx_endpoint_acquire_by_iface_index_error_to_nack_type(dst_endpoint);
+	struct omx_endpoint * dst_endpoint;
 
-	if (unlikely(session_id != dst_endpoint->session_id))
-		return OMX_NACK_TYPE_BAD_SESSION;
+	dst_endpoint = omx_local_peer_acquire_endpoint(dst_peer_index, dst_endpoint_index);
 
-	return OMX_NACK_TYPE_NONE;
+	if (unlikely(!dst_endpoint)) {
+		/* the peer isn't local, no need to nack */
+		if (nack_type)
+			*nack_type = OMX_NACK_TYPE_NONE;
+		return NULL;
+	}
+
+	if (unlikely(IS_ERR(dst_endpoint))) {
+		/* the peer is local but the endpoint is invalid */
+		if (nack_type)
+			*nack_type = omx_endpoint_acquire_by_iface_index_error_to_nack_type(dst_endpoint);
+		return NULL;
+	}
+
+	if (unlikely(session_id != dst_endpoint->session_id)) {
+		/* the peer is local, the endpoint is valid, but the session id is wrong */
+		if (nack_type)
+			*nack_type = OMX_NACK_TYPE_BAD_SESSION;
+		omx_endpoint_release(dst_endpoint);
+		return NULL;
+	}
+
+	/* endpoint acquired and session ok */
+	return dst_endpoint;
 }
 
-int
-omx_shared_send_connect(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
-			struct omx_cmd_send_connect_hdr *hdr, void __user * data)
+static inline void
+omx_shared_notify_nack(struct omx_endpoint *src_endpoint,
+		       uint16_t dst_peer_index, uint8_t dst_endpoint_index, uint16_t seqnum,
+		       enum omx_nack_type nack_type)
 {
+	struct omx_evt_recv_nack_lib event;
+	
+	event.peer_index = dst_peer_index;
+	event.src_endpoint = dst_endpoint_index;
+	event.seqnum = seqnum;
+	event.nack_type = nack_type;
+
+	/* notify the event */
+	omx_notify_unexp_event(src_endpoint, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
+	/* ignore errors. if no more unexpected eventq slot, just drop the packet, it will be resent anyway */
+}
+
+/*
+ * acquire the destination endpoint or notify a lib nack
+ * if the endpoint isn't available or the session is wrong.
+ */
+static inline struct omx_endpoint *
+omx_shared_get_endpoint_or_notify_nack(struct omx_endpoint *src_endpoint,
+				       uint16_t dst_peer_index, uint8_t dst_endpoint_index, 
+				       uint32_t session_id, uint16_t seqnum)
+{
+	struct omx_endpoint * dst_endpoint;
+	enum omx_nack_type nack_type = OMX_NACK_TYPE_NONE;
+
+	dst_endpoint = omx_shared_get_endpoint_or_nack_type(dst_peer_index, dst_endpoint_index,
+							    session_id, &nack_type);
+	if (likely(dst_endpoint != NULL))
+		return dst_endpoint;
+
+	if (nack_type == OMX_NACK_TYPE_NONE)
+		/* no need to nack, just report the error */
+		return NULL;
+
+	omx_shared_notify_nack(src_endpoint, dst_peer_index, dst_endpoint_index, seqnum, nack_type);
+	return NULL;
+}
+
+/***********************
+ * Main Shared Routines
+ */
+
+/*
+ * try to acquire an endpoint if its peer is local.
+ * returns 0 on success
+ * returns 1 if the endpoint isn't local (the caller needs to use the network)
+ * returns <0 on real error
+ */
+int
+omx_shared_try_send_connect(struct omx_endpoint *src_endpoint,
+			    struct omx_cmd_send_connect_hdr *hdr, void __user * data)
+{
+	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_connect event;
 	int err;
 
+	dst_endpoint = omx_local_peer_acquire_endpoint(hdr->peer_index, hdr->dest_endpoint);
+	if (unlikely(!dst_endpoint))
+		/* peer isn't local, return 1 to use the network */
+		return 1;
+
+	if (unlikely(IS_ERR(dst_endpoint))) {
+		enum omx_nack_type nack_type = omx_endpoint_acquire_by_iface_index_error_to_nack_type(dst_endpoint);
+		omx_shared_notify_nack(src_endpoint, hdr->peer_index, hdr->dest_endpoint, hdr->seqnum, nack_type);
+		/* peer is local, return a success since we reported the nack already */
+		return 0;
+	}
+
+	/* no session to check for connect */
+
+	/* feel the event */
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.shared = 1;
@@ -55,32 +154,43 @@ omx_shared_send_connect(struct omx_endpoint *src_endpoint, struct omx_endpoint *
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read shared send connect cmd data\n");
 		err = -EFAULT;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_CONNECT, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		goto out;
+		err = 0;
+		goto out_with_endpoint;
 	}
+	omx_endpoint_release(dst_endpoint);
 
 	omx_counter_inc(src_endpoint->iface, SEND_CONNECT);
 	omx_counter_inc(dst_endpoint->iface, RECV_CONNECT);
 
 	return 0;
 
- out:
+ out_with_endpoint:
+	omx_endpoint_release(dst_endpoint);
 	return err;
 }
 
 int
-omx_shared_send_tiny(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 		     struct omx_cmd_send_tiny_hdr *hdr, void __user * data)
 {
+	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
 	int err;
 
+	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
+							      hdr->dest_endpoint, hdr->session_id,
+							      hdr->seqnum);
+	if (unlikely(!dst_endpoint))
+		return 0;
+
+	/* fill the event */
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.match_info = hdr->match_info;
@@ -93,38 +203,49 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read shared send tiny cmd data\n");
 		err = -EFAULT;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		goto out;
+		err = 0;
+		goto out_with_endpoint;
 	}
+	omx_endpoint_release(dst_endpoint);
 
 	omx_counter_inc(src_endpoint->iface, SEND_TINY);
 	omx_counter_inc(dst_endpoint->iface, RECV_TINY);
 
 	return 0;
 
- out:
+ out_with_endpoint:
+	omx_endpoint_release(dst_endpoint);
 	return err;
 }
 
 int
-omx_shared_send_small(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+omx_shared_send_small(struct omx_endpoint *src_endpoint,
 		      struct omx_cmd_send_small *hdr)
 {
+	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
 	int err;
+
+	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
+							      hdr->dest_endpoint, hdr->session_id,
+							      hdr->seqnum);
+	if (unlikely(!dst_endpoint))
+		return 0;
 
 	/* get the eventq slot */
 	err = omx_prepare_notify_unexp_event_with_recvq(dst_endpoint, &recvq_offset);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		goto out;
+		err = 0;
+		goto out_with_endpoint;
 	}
 
 	/* copy the data */
@@ -134,7 +255,7 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint, struct omx_endpoint *ds
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read shared send small cmd data\n");
 		err = -EFAULT;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* fill and notify the event */
@@ -146,30 +267,40 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint, struct omx_endpoint *ds
 	event.specific.small.length = hdr->length;
 	event.specific.small.recvq_offset = recvq_offset;
 	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
+	omx_endpoint_release(dst_endpoint);
 
 	omx_counter_inc(src_endpoint->iface, SEND_SMALL);
 	omx_counter_inc(dst_endpoint->iface, RECV_SMALL);
 
 	return 0;
 
- out:
+ out_with_endpoint:
+	omx_endpoint_release(dst_endpoint);
 	return err;
 }
 
 int
-omx_shared_send_medium(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 		       struct omx_cmd_send_medium *hdr)
 {
+	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg dst_event;
 	struct omx_evt_send_medium_frag_done src_event;
 	unsigned long recvq_offset;
 	int err;
 
+	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
+							      hdr->dest_endpoint, hdr->session_id,
+							      hdr->seqnum);
+	if (unlikely(!dst_endpoint))
+		return 0;
+
 	/* get the dst eventq slot */
 	err = omx_prepare_notify_unexp_event_with_recvq(dst_endpoint, &recvq_offset);
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		goto out;
+		err = 0;
+		goto out_with_endpoint;
 	}
 
 	/* copy the data */
@@ -193,23 +324,33 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint, struct omx_endpoint *d
 	/* fill and notify the src event */
 	src_event.sendq_page_offset = hdr->sendq_page_offset;
 	omx_notify_exp_event(src_endpoint, OMX_EVT_SEND_MEDIUM_FRAG_DONE, &src_event, sizeof(src_event));
+	omx_endpoint_release(dst_endpoint);
 
 	omx_counter_inc(src_endpoint->iface, SEND_MEDIUM_FRAG);
 	omx_counter_inc(dst_endpoint->iface, RECV_MEDIUM_FRAG);
 
 	return 0;
 
- out:
+ out_with_endpoint:
+	omx_endpoint_release(dst_endpoint);
 	return err;
 }
 
 int
-omx_shared_send_rndv(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 		     struct omx_cmd_send_rndv_hdr *hdr, void __user * data)
 {
+	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
 	int err;
 
+	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
+							      hdr->dest_endpoint, hdr->session_id,
+							      hdr->seqnum);
+	if (unlikely(!dst_endpoint))
+		return 0;
+
+	/* fill the event */
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.match_info = hdr->match_info;
@@ -222,22 +363,25 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read shared send rndv cmd data\n");
 		err = -EFAULT;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		goto out;
+		err = 0;
+		goto out_with_endpoint;
 	}
+	omx_endpoint_release(dst_endpoint);
 
 	omx_counter_inc(src_endpoint->iface, SEND_RNDV);
 	omx_counter_inc(dst_endpoint->iface, RECV_RNDV);
 
 	return 0;
 
- out:
+ out_with_endpoint:
+	omx_endpoint_release(dst_endpoint);
 	return err;
 }
 
@@ -248,7 +392,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_pull_done event;
 	struct omx_user_region *src_region, *dst_region = NULL;
-	enum omx_nack_type nack_type;
+	enum omx_nack_type nack_type = OMX_NACK_TYPE_NONE;
 	int err;
 
 	src_region = omx_user_region_acquire(src_endpoint, hdr->local_rdma_id);
@@ -258,57 +402,77 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 		goto out;
 	}
 
-	dst_endpoint = omx_local_peer_acquire_endpoint(hdr->peer_index,hdr->dest_endpoint);
-	nack_type = omx_shared_dst_endpoint_to_mcp_nack(dst_endpoint, hdr->session_id);
-	if (unlikely(nack_type != OMX_NACK_TYPE_NONE)) {
-		/* dest endpoint invalid, return a pull done status error */
-		event.status = nack_type;
-		goto notify;
+	dst_endpoint = omx_shared_get_endpoint_or_nack_type(hdr->peer_index,hdr->dest_endpoint,
+							    hdr->session_id, &nack_type);
+	if (unlikely(dst_endpoint == NULL)) {
+		if (nack_type == OMX_NACK_TYPE_NONE) {
+			/* peer invalid, we cannot reach it, assume it's a timeout */
+			event.status = OMX_EVT_PULL_DONE_TIMEOUT;
+		} else {
+			/* dest endpoint invalid, return a pull done status error */
+			event.status = nack_type;
+		}
+		goto out_notify_nack;
 	}
 
 	dst_region = omx_user_region_acquire(dst_endpoint, hdr->remote_rdma_id);
 	if (unlikely(dst_region == NULL)) {
 		/* dest region invalid, return a pull done status error */
 		event.status = OMX_EVT_PULL_DONE_BAD_RDMAWIN;
-		goto notify;
+		goto out_notify_nack_with_dst_endpoint;
 	}
 
 	/* pull from the dst region into the src region */
 	err = omx_copy_between_user_regions(dst_region, hdr->remote_offset,
 					    src_region, hdr->local_offset,
 					    hdr->length);
-
 	event.status = err < 0 ? OMX_EVT_PULL_DONE_ABORTED : OMX_EVT_PULL_DONE_SUCCESS;
 
- notify:
-	event.lib_cookie = hdr->lib_cookie;
-	event.pulled_length = hdr->length; /* FIXME */
-	event.local_rdma_id = hdr->local_rdma_id;
+	/* release stuff */
+	omx_user_region_release(dst_region);
+	omx_endpoint_release(dst_endpoint);
+	omx_user_region_release(src_region);
 
-	/* notify the event */
+	/* fill and notify the event */
+	event.lib_cookie = hdr->lib_cookie;
+	event.pulled_length = hdr->length;
+	event.local_rdma_id = hdr->local_rdma_id;
 	omx_notify_exp_event(src_endpoint, OMX_EVT_PULL_DONE, &event, sizeof(event));
 
 	/* FIXME: counters */
 
-	omx_user_region_release(src_region);
-	if (likely(!IS_ERR(dst_endpoint))) {
-		omx_endpoint_release(dst_endpoint);
-		if (likely(dst_region != NULL))
-			omx_user_region_release(dst_region);
-	}
+	return 0;
 
-	err = 0;
+ out_notify_nack_with_dst_endpoint:
+	omx_endpoint_release(dst_endpoint);
+ out_notify_nack:
+	omx_user_region_release(src_region);
+
+	event.lib_cookie = hdr->lib_cookie;
+	event.pulled_length = hdr->length;
+	event.local_rdma_id = hdr->local_rdma_id;
+	omx_notify_exp_event(src_endpoint, OMX_EVT_PULL_DONE, &event, sizeof(event));
+	return 0;
+
  out:
 	return err;
 }
 
 int
-omx_shared_send_notify(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+omx_shared_send_notify(struct omx_endpoint *src_endpoint,
 		       struct omx_cmd_send_notify *hdr)
 {
+	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
 	int err;
 
+	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
+							      hdr->dest_endpoint, hdr->session_id,
+							      hdr->seqnum);
+	if (unlikely(!dst_endpoint))
+		return 0;
+
+	/* fill the event */
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.seqnum = hdr->seqnum;
@@ -321,25 +485,37 @@ omx_shared_send_notify(struct omx_endpoint *src_endpoint, struct omx_endpoint *d
 	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		goto out;
+		err = 0;
+		goto out_with_endpoint;
 	}
+	omx_endpoint_release(dst_endpoint);
 
 	omx_counter_inc(src_endpoint->iface, SEND_NOTIFY);
 	omx_counter_inc(dst_endpoint->iface, RECV_NOTIFY);
 
 	return 0;
 
- out:
+ out_with_endpoint:
+	omx_endpoint_release(dst_endpoint);
 	return err;
 }
 
 int
-omx_shared_send_truc(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst_endpoint,
+omx_shared_send_truc(struct omx_endpoint *src_endpoint,
 		     struct omx_cmd_send_truc_hdr *hdr, void __user * data)
 {
+	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_truc event;
 	int err;
 
+	/* don't notify a nack if the endpoint is invalid */
+	dst_endpoint = omx_shared_get_endpoint_or_nack_type(hdr->peer_index, hdr->dest_endpoint,
+							    hdr->session_id, NULL);
+	if (unlikely(!dst_endpoint))
+		/* endpoint unreachable, just ignore */
+		return 0;
+
+	/* fill the event */
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.length = hdr->length;
@@ -349,22 +525,25 @@ omx_shared_send_truc(struct omx_endpoint *src_endpoint, struct omx_endpoint *dst
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read shared send truc cmd data\n");
 		err = -EFAULT;
-		goto out;
+		goto out_with_endpoint;
 	}
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_TRUC, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
-		goto out;
+		err = 0;
+		goto out_with_endpoint;
 	}
+	omx_endpoint_release(dst_endpoint);
 
 	omx_counter_inc(src_endpoint->iface, SEND_TRUC);
 	omx_counter_inc(dst_endpoint->iface, RECV_TRUC);
 
 	return 0;
 
- out:
+ out_with_endpoint:
+	omx_endpoint_release(dst_endpoint);
 	return err;
 }
 
