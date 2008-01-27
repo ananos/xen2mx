@@ -331,4 +331,4 @@ AC_SUBST(OPEN_MX_LIB_STATIC, libopen-mx/libopen-mx.a)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC, libopen-mx/libopen-mx.so)
 
 AC_CONFIG_HEADER(common/omx_config.h)
-AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild libopen-mx/Makefile tools/Makefile tests/Makefile)
+AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild libopen-mx/Makefile tools/Makefile tests/Makefile tests/mx/Makefile)
