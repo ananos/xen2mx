@@ -178,6 +178,7 @@ omx__init_api(int api)
 #endif
 
   /* shared comm configuration */
+#ifndef OMX_DISABLE_SHARED
   omx__globals.sharedcomms = 1;
   env = getenv("OMX_DISABLE_SHARED");
 #ifdef OMX_MX_API_COMPAT
@@ -192,6 +193,7 @@ omx__init_api(int api)
     omx__debug_printf(MAIN, "Forcing shared comms to %s\n",
 		      omx__globals.sharedcomms ? "enabled" : "disabled");
   }
+#endif
 
   omx__globals.initialized = 1;
   return OMX_SUCCESS;

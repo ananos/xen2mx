@@ -408,7 +408,9 @@ struct omx__globals {
 #ifndef OMX_DISABLE_SELF
   int selfcomms;
 #endif
+#ifndef OMX_DISABLE_SHARED
   int sharedcomms;
+#endif
   unsigned ack_delay;
   unsigned resend_delay;
   unsigned retransmits_max;

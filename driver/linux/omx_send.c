@@ -26,8 +26,10 @@
 #include "omx_common.h"
 #include "omx_iface.h"
 #include "omx_peer.h"
-#include "omx_shared.h"
 #include "omx_endpoint.h"
+#ifndef OMX_DISABLE_SHARED
+#include "omx_shared.h"
+#endif
 
 #ifdef OMX_DEBUG
 /* defined as module parameters */
@@ -140,12 +142,14 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+#ifndef OMX_DISABLE_SHARED
 	if (!cmd.shared_disabled) {
 		ret = omx_shared_try_send_connect(endpoint, &cmd, &((struct omx_cmd_send_connect __user *) uparam)->data);
 		if (ret <= 0)
 			return ret;
 		/* fallback if ret==1 */
 	}
+#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
@@ -230,8 +234,10 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_tiny(endpoint, &cmd, &((struct omx_cmd_send_tiny __user *) uparam)->data);
+#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
@@ -318,8 +324,10 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_small(endpoint, &cmd);
+#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
@@ -424,8 +432,10 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_medium(endpoint, &cmd);
+#endif
 
 	skb = omx_new_skb(/* only allocate space for the header now,
 			   * we'll attach pages and pad to ETH_ZLEN later
@@ -532,8 +542,10 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_rndv(endpoint, &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
+#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
@@ -609,8 +621,10 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_notify(endpoint, &cmd);
+#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
@@ -688,8 +702,10 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_truc(endpoint, &cmd, &((struct omx_cmd_send_truc __user *) uparam)->data);
+#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));

@@ -30,8 +30,10 @@
 #include "omx_iface.h"
 #include "omx_peer.h"
 #include "omx_endpoint.h"
-#include "omx_shared.h"
 #include "omx_region.h"
+#ifndef OMX_DISABLE_SHARED
+#include "omx_shared.h"
+#endif
 
 /**************************
  * Pull-specific Constants
@@ -736,8 +738,10 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_pull(endpoint, &cmd);
+#endif
 
 	/* create, acquire and lock the handle */
 	handle = omx_pull_handle_create(endpoint, &cmd);

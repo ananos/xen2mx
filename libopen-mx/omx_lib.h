@@ -130,7 +130,11 @@ omx__partner_localization_shared(struct omx__partner *partner)
 {
   enum omx__partner_localization localization = partner->localization;
   omx__debug_assert(localization != OMX__PARTNER_LOCALIZATION_UNKNOWN);
+#ifdef OMX_DISABLE_SHARED
+  return 0;
+#else
   return (localization == OMX__PARTNER_LOCALIZATION_LOCAL);
+#endif
 }
 
 extern void

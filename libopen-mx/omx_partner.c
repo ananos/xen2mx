@@ -106,7 +106,12 @@ static INLINE void
 omx__partner_check_localization(struct omx__partner * partner, int shared)
 {
   enum omx__partner_localization localization;
+
+#ifdef OMX_DISABLE_SHARED
+  localization = OMX__PARTNER_LOCALIZATION_REMOTE;
+#else
   localization = shared ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
+#endif
 
   if (partner->localization == OMX__PARTNER_LOCALIZATION_UNKNOWN) {
     partner->localization = localization;
@@ -194,6 +199,8 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
 {
   uint16_t peer_index;
   omx_return_t ret;
+  int maybe_self = 0;
+  int maybe_shared = 0;
 
   ret = omx__peer_addr_to_index(board_addr, &peer_index);
   if (ret != OMX_SUCCESS) {
@@ -215,12 +222,13 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
   ep->myself->true_session_id = ep->desc->session_id;
   ep->myself->back_session_id = ep->desc->session_id;
 
-#ifdef OMX_DISABLE_SELF
-  ep->myself->localization = OMX__PARTNER_LOCALIZATION_REMOTE;
-#else
-  ep->myself->localization = (omx__globals.sharedcomms || omx__globals.selfcomms)
-	? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
+#ifndef OMX_DISABLE_SELF
+  maybe_self = omx__globals.selfcomms;
 #endif
+#ifndef OMX_DISABLE_SHARED
+  maybe_shared = omx__globals.sharedcomms;
+#endif
+  ep->myself->localization = (maybe_self || maybe_shared) ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
 
   return OMX_SUCCESS;
 }
@@ -272,7 +280,11 @@ omx__connect_common(omx_endpoint_t ep,
 
   connect_param->hdr.peer_index = partner->peer_index;
   connect_param->hdr.dest_endpoint = partner->endpoint_index;
+#ifdef OMX_DISABLE_SHARED
+  connect_param->hdr.shared_disabled = 1;
+#else
   connect_param->hdr.shared_disabled = !omx__globals.sharedcomms;
+#endif
   connect_param->hdr.seqnum = 0;
   connect_param->hdr.length = sizeof(*data_n);
   OMX_PKT_FIELD_FROM(data_n->src_session_id, ep->desc->session_id);
@@ -547,7 +559,11 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   reply_param.hdr.peer_index = partner->peer_index;
   reply_param.hdr.dest_endpoint = partner->endpoint_index;
+#ifdef OMX_DISABLE_SHARED
+  reply_param.hdr.shared_disabled = 1;
+#else
   reply_param.hdr.shared_disabled = !omx__globals.sharedcomms;
+#endif
   reply_param.hdr.seqnum = 0;
   reply_param.hdr.length = sizeof(*reply_data_n);
   reply_data_n->src_session_id = request_data_n->src_session_id;

@@ -12,6 +12,9 @@ obj-m	+=	open-mx.o
 open-mx-objs	:=	omx_main.o omx_dev.o omx_peer.o \
 			omx_net.o omx_send.o omx_recv.o \
 			omx_reg.o omx_pull.o omx_dma.o \
-			omx_event.o omx_shared.o
+			omx_event.o
+ifneq (@OMX_DISABLE_SHARED@,1)
+open-mx-objs	+=	omx_shared.o
+endif
 
 obj-m	+=	omx__assertions.o

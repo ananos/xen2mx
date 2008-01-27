@@ -225,6 +225,18 @@ else
   AC_DEFINE(OMX_DISABLE_SELF, [1], [Define to disable communication to myself])
 fi
 
+AC_ARG_ENABLE(shared, [  --disable-shared		disable shared communication between endpoints on the same node],
+	      enable_shared=$enableval, enable_shared=yes)
+AC_MSG_CHECKING(if shared communication is enabled)
+if test x$enable_shared = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_SUBST(OMX_DISABLE_SHARED, 0)
+else
+  AC_MSG_RESULT(no)
+  AC_DEFINE(OMX_DISABLE_SHARED, [1], [Define to disable shared communication between endpoints on the same node])
+  AC_SUBST(OMX_DISABLE_SHARED, 1)
+fi
+
 AC_ARG_ENABLE(debug, [  --enable-debug		enable debugging features],
 	      enable_debug=$enableval, enable_debug=no)
 AC_MSG_CHECKING(if debug is enabled)
