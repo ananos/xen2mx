@@ -28,6 +28,8 @@
 #define EID OMX_ANY_ENDPOINT
 #define ITER 10
 
+static int verbose = 0;
+
 static omx_return_t
 one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 	      int length, int seed)
@@ -127,7 +129,9 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
       goto out;
     }
   }
-  fprintf(stderr, "Successfully transferred %d bytes 4 times\n", length);
+
+  if (verbose)
+    fprintf(stderr, "Successfully transferred %d bytes 4 times\n", length);
 
   free(buffer2);
   free(buffer);
@@ -145,6 +149,9 @@ usage(int argc, char *argv[])
   fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
+  fprintf(stderr, " -s\tdo not disable shared communications\n");
+  fprintf(stderr, " -S\tdo not disable self communications\n");
+  fprintf(stderr, " -v\tenable verbose messages\n");
 }
 
 int main(int argc, char *argv[])
@@ -157,27 +164,28 @@ int main(int argc, char *argv[])
   char hostname[OMX_HOSTNAMELEN_MAX];
   char ifacename[16];
   omx_endpoint_addr_t addr;
+  int self = 0;
+  int shared = 0;
   int c;
   int i;
   omx_return_t ret;
 
-  if (!getenv("OMX_DISABLE_SELF"))
-    putenv("OMX_DISABLE_SELF=1");
-
-  ret = omx_init();
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to initialize (%s)\n",
-	    omx_strerror(ret));
-    goto out;
-  }
-
-  while ((c = getopt(argc, argv, "e:b:h")) != -1)
+  while ((c = getopt(argc, argv, "e:b:sSvh")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
       break;
     case 'e':
       endpoint_index = atoi(optarg);
+      break;
+    case 's':
+      shared = 1;
+      break;
+    case 'S':
+      self = 1;
+      break;
+    case 'v':
+      verbose = 1;
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
@@ -186,6 +194,19 @@ int main(int argc, char *argv[])
       exit(-1);
       break;
     }
+
+  if (!self && !getenv("OMX_DISABLE_SELF"))
+    putenv("OMX_DISABLE_SELF=1");
+
+  if (!shared && !getenv("OMX_DISABLE_SHARED"))
+    putenv("OMX_DISABLE_SHARED=1");
+
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+	    omx_strerror(ret));
+    goto out;
+  }
 
   ret = omx_board_number_to_nic_id(board_index, &dest_board_addr);
   if (ret != OMX_SUCCESS) {

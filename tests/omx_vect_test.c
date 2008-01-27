@@ -38,6 +38,8 @@ usage(int argc, char *argv[])
   fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
+  fprintf(stderr, " -s\tdo not disable shared communications\n");
+  fprintf(stderr, " -S\tdo not disable self communications\n");
   fprintf(stderr, " -v\tverbose\n");
 }
 
@@ -206,6 +208,8 @@ int main(int argc, char *argv[])
   char hostname[OMX_HOSTNAMELEN_MAX];
   char ifacename[16];
   omx_endpoint_addr_t addr;
+  int self = 0;
+  int shared = 0;
   int c;
   int i, j;
   omx_seg_t seg[NSEG_MAX];
@@ -213,23 +217,19 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   int nseg = 0;
 
-  if (!getenv("OMX_DISABLE_SELF"))
-    putenv("OMX_DISABLE_SELF=1");
-
-  ret = omx_init();
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to initialize (%s)\n",
-	    omx_strerror(ret));
-    goto out;
-  }
-
-  while ((c = getopt(argc, argv, "e:b:hv")) != -1)
+  while ((c = getopt(argc, argv, "e:b:sShv")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
       break;
     case 'e':
       endpoint_index = atoi(optarg);
+      break;
+    case 's':
+      shared = 1;
+      break;
+    case 'S':
+      self = 1;
       break;
     case 'v':
       verbose = 1;
@@ -241,6 +241,19 @@ int main(int argc, char *argv[])
       exit(-1);
       break;
     }
+
+  if (!self && !getenv("OMX_DISABLE_SELF"))
+    putenv("OMX_DISABLE_SELF=1");
+
+  if (!shared && !getenv("OMX_DISABLE_SHARED"))
+    putenv("OMX_DISABLE_SHARED=1");
+
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+	    omx_strerror(ret));
+    goto out;
+  }
 
   ret = omx_board_number_to_nic_id(board_index, &dest_board_addr);
   if (ret != OMX_SUCCESS) {

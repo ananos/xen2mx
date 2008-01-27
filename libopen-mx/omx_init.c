@@ -140,7 +140,7 @@ omx__init_api(int api)
 		      omx__globals.selfcomms ? "enabled" : "disabled");
   }
 
-  omx__globals.sharedcomms = 0; /* disabled for now */
+  omx__globals.sharedcomms = 1;
   env = getenv("OMX_DISABLE_SHARED");
   if (env) {
     omx__globals.sharedcomms = !atoi(env);

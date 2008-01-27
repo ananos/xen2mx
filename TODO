@@ -2,9 +2,6 @@
 
 * wrappers for MX environment variables
 
-* enable shared by default
-* -s/-S in loopback/vect_test to check self/shared/regular comms
-
 * atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
   ok if lots of slices in parallel ?
 
