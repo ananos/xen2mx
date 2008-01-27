@@ -747,7 +747,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   printf("Dropped %d unexpected message from partner\n", count);
 
   /*
-   * No need to touch pending pulls, the driver will abort them */
+   * No need to touch pending pulls, the driver will abort them
    */
 
   /*
