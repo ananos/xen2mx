@@ -79,6 +79,15 @@ omx__init_api(int api)
 #ifdef OMX_DEBUG
   omx__globals.verbose = 0;
   env = getenv("OMX_VERBOSE");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_VERBOSE");
+    if (env) {
+      printf("Emulating MX_VERBOSE as OMX_VERBOSE=\"\"\n");
+      env = "";
+    }
+  }
+#endif
   if (env) {
     char *next;
     unsigned long val = strtoul(env, &next, 0);
@@ -108,40 +117,74 @@ omx__init_api(int api)
   }
 #endif /* OMX_DEBUG */
 
+  /* regcache configuration */
   omx__globals.regcache = 0;
   env = getenv("OMX_RCACHE");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_RCACHE");
+    if (env)
+      omx__debug_printf(MAIN, "Emulating MX_RCACHE as OMX_RCACHE\n");
+  }
+#endif
   if (env) {
     omx__globals.regcache = atoi(env);
     omx__debug_printf(MAIN, "Forcing regcache to %s\n",
 		      omx__globals.regcache ? "enabled" : "disabled");
   }
 
+  /* waitspin configuration */
   omx__globals.waitspin = 0;
   env = getenv("OMX_WAITSPIN");
+  /* could be enabled by MX_MONOTHREAD */
   if (env) {
     omx__globals.waitspin = atoi(env);
     omx__debug_printf(MAIN, "Forcing waitspin to %s\n",
 		      omx__globals.waitspin ? "enabled" : "disabled");
   }
 
+  /* zombie send configuration */
   omx__globals.zombie_max = OMX_ZOMBIE_MAX_DEFAULT;
   env = getenv("OMX_ZOMBIE_SEND");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_ZOMBIE_SEND");
+    if (env)
+      omx__debug_printf(MAIN, "Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
+  }
+#endif
   if (env) {
     omx__globals.zombie_max = atoi(env);
     omx__debug_printf(MAIN, "Forcing zombie max to %d\n",
 		      omx__globals.zombie_max);
   }
 
+  /* self comm configuration */
   omx__globals.selfcomms = 1;
   env = getenv("OMX_DISABLE_SELF");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_DISABLE_SELF");
+    if (env)
+      omx__debug_printf(MAIN, "Emulating MX_DISABLE_SELF as OMX_DISABLE_SELF\n");
+  }
+#endif
   if (env) {
     omx__globals.selfcomms = !atoi(env);
     omx__debug_printf(MAIN, "Forcing self comms to %s\n",
 		      omx__globals.selfcomms ? "enabled" : "disabled");
   }
 
+  /* shared comm configuration */
   omx__globals.sharedcomms = 1;
   env = getenv("OMX_DISABLE_SHARED");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_DISABLE_SHMEM");
+    if (env)
+      omx__debug_printf(MAIN, "Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
+  }
+#endif
   if (env) {
     omx__globals.sharedcomms = !atoi(env);
     omx__debug_printf(MAIN, "Forcing shared comms to %s\n",

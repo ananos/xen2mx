@@ -1,6 +1,6 @@
-* wait_event latency is worse than poll?
+* --disable-shared
 
-* wrappers for MX environment variables
+* wait_event latency is worse than poll?
 
 * atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
   ok if lots of slices in parallel ?
