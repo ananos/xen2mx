@@ -62,6 +62,7 @@ clean: mxtests-clean
 distclean: mxtests-distclean
 mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean:
 	$(MAKE) -C tests/mx bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
+mxtests: lib
 endif
 
 .PHONY: wc
