@@ -72,6 +72,8 @@ omx_strerror(omx_return_t ret)
     return "No resources available";
   case OMX_BUSY:
     return "Resource Busy";
+  case OMX_CONNECTION_TIMEOUT:
+    return "Connection Timeout";
   case OMX_CONNECTION_FAILED:
     return "Connection Failed";
   case OMX_BAD_CONNECTION_KEY:

@@ -2,8 +2,6 @@
 
 * wait_event latency is worse than poll?
 
-* sleep in connect
-
 * wrappers for MX environment variables
 
 * shared counters

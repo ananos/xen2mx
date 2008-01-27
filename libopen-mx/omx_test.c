@@ -600,3 +600,78 @@ omx_probe(struct omx_endpoint *ep,
  out:
   return ret;
 }
+
+omx_return_t
+omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeout)
+{
+  struct omx_cmd_wait_event wait_param;
+  uint64_t jiffies_expire = timeout_ms_to_jiffies(ms_timeout);
+  omx_return_t ret;
+
+  if (omx__globals.waitspin) {
+    /* busy spin instead of sleeping */
+    while (1) {
+      ret = omx__progress(ep);
+      if (unlikely(ret != OMX_SUCCESS))
+	return ret;
+
+      if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
+	return OMX_SUCCESS;
+
+      if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire)
+	return OMX_CONNECTION_TIMEOUT;
+    }
+  }
+
+  ret = omx__progress(ep);
+  if (ret != OMX_SUCCESS)
+    /* request is queued, do not try to free it */
+    return ret;
+
+  if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
+    return OMX_SUCCESS;
+
+  wait_param.jiffies_expire = jiffies_expire;
+
+  while (1) {
+    int err;
+
+    if (ms_timeout == OMX_TIMEOUT_INFINITE)
+      omx__debug_printf(WAIT, "omx_connect going to sleep at %lld for ever\n",
+			(unsigned long long) omx__driver_desc->jiffies);
+    else
+      omx__debug_printf(WAIT, "omx_connect going to sleep at %lld until %lld\n",
+			(unsigned long long) omx__driver_desc->jiffies,
+			(unsigned long long) wait_param.jiffies_expire);
+
+    wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
+    wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    omx__prepare_ack_wakeup(ep);
+    omx__prepare_resend_wakeup(ep);
+    err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
+
+    omx__debug_printf(WAIT, "omx_connect woken up at %lld\n",
+		      (unsigned long long) omx__driver_desc->jiffies);
+
+    if (unlikely(err < 0))
+      return omx__errno_to_return("ioctl WAIT_EVENT");
+
+    omx__debug_printf(WAIT, "omx_connect wait event result %d\n", wait_param.status);
+
+    ret = omx__progress(ep);
+    if (unlikely(ret != OMX_SUCCESS))
+      return ret;
+
+    if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
+      return OMX_SUCCESS;
+
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT)
+      return OMX_CONNECTION_TIMEOUT;
+
+    omx__debug_printf(WAIT, "omx_connect going back to sleep\n");
+  }
+
+  return OMX_SUCCESS;
+}

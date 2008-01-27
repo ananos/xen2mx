@@ -320,28 +320,26 @@ omx_connect(omx_endpoint_t ep,
     goto out_with_req;
 
   omx__debug_printf(CONNECT, "waiting for connect reply\n");
-  while (req->generic.state != (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL)) {
-    ret = omx__progress(ep);
-    if (ret != OMX_SUCCESS)
-      goto out; /* request is queued, do not try to free it */
-  }
+  ret = omx__connect_wait(ep, req, timeout);
   omx__debug_printf(CONNECT, "connect done\n");
 
-  switch (req->generic.status.code) {
-  case OMX_STATUS_SUCCESS:
-    omx__partner_to_addr(req->generic.partner, addr);
-    ret = OMX_SUCCESS;
-    break;
-  case OMX_STATUS_BAD_KEY:
-    ret = OMX_BAD_CONNECTION_KEY;
-    break;
-  case OMX_STATUS_ENDPOINT_CLOSED:
-  case OMX_STATUS_BAD_ENDPOINT:
-    ret = OMX_CONNECTION_FAILED;
-    break;
-  default:
-    omx__abort("Failed to handle connect status %s\n",
-	       omx_strstatus(req->generic.status.code));
+  if (ret == OMX_SUCCESS) {
+    switch (req->generic.status.code) {
+    case OMX_STATUS_SUCCESS:
+      omx__partner_to_addr(req->generic.partner, addr);
+      ret = OMX_SUCCESS;
+      break;
+    case OMX_STATUS_BAD_KEY:
+      ret = OMX_BAD_CONNECTION_KEY;
+      break;
+    case OMX_STATUS_ENDPOINT_CLOSED:
+    case OMX_STATUS_BAD_ENDPOINT:
+      ret = OMX_CONNECTION_FAILED;
+      break;
+    default:
+      omx__abort("Failed to handle connect status %s\n",
+		 omx_strstatus(req->generic.status.code));
+    }
   }
 
   omx__request_free(ep, req);

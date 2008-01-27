@@ -40,6 +40,8 @@ enum omx_return {
 
   OMX_BUSY = 20,
 
+  OMX_CONNECTION_TIMEOUT = 30,
+
   OMX_CONNECTION_FAILED = 33, /* FIXME: various error codes for bad endpoint id and closed endpoint */
   OMX_BAD_CONNECTION_KEY = 34,
 

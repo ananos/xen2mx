@@ -153,6 +153,10 @@ extern void
 omx__connect_complete(struct omx_endpoint *ep, union omx_request *req,
 		      omx_status_code_t status);
 
+omx_return_t
+omx__connect_wait(omx_endpoint_t ep, union omx_request * req,
+		  uint32_t ms_timeout);
+
 extern omx_return_t
 omx__endpoint_large_region_map_init(struct omx_endpoint * ep);
 

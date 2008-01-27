@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
 
     printf("Starting sender to '%s'...\n", dest_hostname);
 
-    ret = omx_connect(ep, dest_addr, rid, 0x12345678, 0, &addr);
+    ret = omx_connect(ep, dest_addr, rid, 0x12345678, OMX_TIMEOUT_INFINITE, &addr);
     if (ret != OMX_SUCCESS) {
 	fprintf(stderr, "Failed to connect (%s)\n",
 		omx_strerror(ret));
