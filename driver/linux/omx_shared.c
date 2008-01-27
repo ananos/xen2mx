@@ -166,8 +166,8 @@ omx_shared_try_send_connect(struct omx_endpoint *src_endpoint,
 	}
 	omx_endpoint_release(dst_endpoint);
 
-	omx_counter_inc(src_endpoint->iface, SEND_CONNECT);
-	omx_counter_inc(dst_endpoint->iface, RECV_CONNECT);
+	omx_counter_inc(src_endpoint->iface, SHARED_SEND_CONNECT);
+	omx_counter_inc(dst_endpoint->iface, SHARED_RECV_CONNECT);
 
 	return 0;
 
@@ -215,8 +215,8 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 	}
 	omx_endpoint_release(dst_endpoint);
 
-	omx_counter_inc(src_endpoint->iface, SEND_TINY);
-	omx_counter_inc(dst_endpoint->iface, RECV_TINY);
+	omx_counter_inc(src_endpoint->iface, SHARED_SEND_TINY);
+	omx_counter_inc(dst_endpoint->iface, SHARED_RECV_TINY);
 
 	return 0;
 
@@ -269,8 +269,8 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
 	omx_endpoint_release(dst_endpoint);
 
-	omx_counter_inc(src_endpoint->iface, SEND_SMALL);
-	omx_counter_inc(dst_endpoint->iface, RECV_SMALL);
+	omx_counter_inc(src_endpoint->iface, SHARED_SEND_SMALL);
+	omx_counter_inc(dst_endpoint->iface, SHARED_RECV_SMALL);
 
 	return 0;
 
@@ -326,8 +326,8 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	omx_notify_exp_event(src_endpoint, OMX_EVT_SEND_MEDIUM_FRAG_DONE, &src_event, sizeof(src_event));
 	omx_endpoint_release(dst_endpoint);
 
-	omx_counter_inc(src_endpoint->iface, SEND_MEDIUM_FRAG);
-	omx_counter_inc(dst_endpoint->iface, RECV_MEDIUM_FRAG);
+	omx_counter_inc(src_endpoint->iface, SHARED_SEND_MEDIUM_FRAG);
+	omx_counter_inc(dst_endpoint->iface, SHARED_RECV_MEDIUM_FRAG);
 
 	return 0;
 
@@ -375,8 +375,8 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	}
 	omx_endpoint_release(dst_endpoint);
 
-	omx_counter_inc(src_endpoint->iface, SEND_RNDV);
-	omx_counter_inc(dst_endpoint->iface, RECV_RNDV);
+	omx_counter_inc(src_endpoint->iface, SHARED_SEND_RNDV);
+	omx_counter_inc(dst_endpoint->iface, SHARED_RECV_RNDV);
 
 	return 0;
 
@@ -439,7 +439,8 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 	event.local_rdma_id = hdr->local_rdma_id;
 	omx_notify_exp_event(src_endpoint, OMX_EVT_PULL_DONE, &event, sizeof(event));
 
-	/* FIXME: counters */
+	omx_counter_inc(src_endpoint->iface, SHARED_PULL);
+	omx_counter_inc(dst_endpoint->iface, SHARED_PULLED);
 
 	return 0;
 
@@ -490,8 +491,8 @@ omx_shared_send_notify(struct omx_endpoint *src_endpoint,
 	}
 	omx_endpoint_release(dst_endpoint);
 
-	omx_counter_inc(src_endpoint->iface, SEND_NOTIFY);
-	omx_counter_inc(dst_endpoint->iface, RECV_NOTIFY);
+	omx_counter_inc(src_endpoint->iface, SHARED_SEND_NOTIFY);
+	omx_counter_inc(dst_endpoint->iface, SHARED_RECV_NOTIFY);
 
 	return 0;
 
@@ -537,8 +538,8 @@ omx_shared_send_truc(struct omx_endpoint *src_endpoint,
 	}
 	omx_endpoint_release(dst_endpoint);
 
-	omx_counter_inc(src_endpoint->iface, SEND_TRUC);
-	omx_counter_inc(dst_endpoint->iface, RECV_TRUC);
+	omx_counter_inc(src_endpoint->iface, SHARED_SEND_TRUC);
+	omx_counter_inc(dst_endpoint->iface, SHARED_RECV_TRUC);
 
 	return 0;
 

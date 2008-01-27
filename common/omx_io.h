@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x109
+#define OMX_DRIVER_ABI_VERSION		0x110
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -683,6 +683,24 @@ enum omx_counter_index {
 	OMX_COUNTER_DROP_NOSYS_TYPE,
 	OMX_COUNTER_DROP_UNKNOWN_TYPE,
 
+	OMX_COUNTER_SHARED_SEND_TINY,
+	OMX_COUNTER_SHARED_SEND_SMALL,
+	OMX_COUNTER_SHARED_SEND_MEDIUM_FRAG,
+	OMX_COUNTER_SHARED_SEND_RNDV,
+	OMX_COUNTER_SHARED_SEND_NOTIFY,
+	OMX_COUNTER_SHARED_SEND_CONNECT,
+	OMX_COUNTER_SHARED_SEND_TRUC,
+	OMX_COUNTER_SHARED_PULL,
+
+	OMX_COUNTER_SHARED_RECV_TINY,
+	OMX_COUNTER_SHARED_RECV_SMALL,
+	OMX_COUNTER_SHARED_RECV_MEDIUM_FRAG,
+	OMX_COUNTER_SHARED_RECV_RNDV,
+	OMX_COUNTER_SHARED_RECV_NOTIFY,
+	OMX_COUNTER_SHARED_RECV_CONNECT,
+	OMX_COUNTER_SHARED_RECV_TRUC,
+	OMX_COUNTER_SHARED_PULLED,
+
 	OMX_COUNTER_INDEX_MAX,
 };
 
@@ -790,6 +808,38 @@ omx_strcounter(enum omx_counter_index index)
 		return "Drop Not Implemented Packet Type";
 	case OMX_COUNTER_DROP_UNKNOWN_TYPE:
 		return "Drop Unknown Packet Type";
+	case OMX_COUNTER_SHARED_SEND_TINY:
+		return "Shared Send Tiny";
+	case OMX_COUNTER_SHARED_SEND_SMALL:
+		return "Shared Send Small";
+	case OMX_COUNTER_SHARED_SEND_MEDIUM_FRAG:
+		return "Shared Send Medium Frag";
+	case OMX_COUNTER_SHARED_SEND_RNDV:
+		return "Shared Send Rndv";
+	case OMX_COUNTER_SHARED_SEND_NOTIFY:
+		return "Shared Send Notify";
+	case OMX_COUNTER_SHARED_SEND_CONNECT:
+		return "Shared Send Connect";
+	case OMX_COUNTER_SHARED_SEND_TRUC:
+		return "Shared Send Truc";
+	case OMX_COUNTER_SHARED_PULL:
+		return "Shared Pull";
+	case OMX_COUNTER_SHARED_RECV_TINY:
+		return "Shared Recv Tiny";
+	case OMX_COUNTER_SHARED_RECV_SMALL:
+		return "Shared Recv Small";
+	case OMX_COUNTER_SHARED_RECV_MEDIUM_FRAG:
+		return "Shared Recv Medium Frag";
+	case OMX_COUNTER_SHARED_RECV_RNDV:
+		return "Shared Recv Rndv";
+	case OMX_COUNTER_SHARED_RECV_NOTIFY:
+		return "Shared Recv Notify";
+	case OMX_COUNTER_SHARED_RECV_CONNECT:
+		return "Shared Recv Connect";
+	case OMX_COUNTER_SHARED_RECV_TRUC:
+		return "Shared Recv Truc";
+	case OMX_COUNTER_SHARED_PULLED:
+		return "Shared Pulled";
 	default:
 		return "** Unknown **";
 	}

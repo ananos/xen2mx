@@ -1,10 +1,7 @@
-* rcu when modifying too?
-
 * wait_event latency is worse than poll?
 
 * wrappers for MX environment variables
 
-* shared counters
 * enable shared by default
 * -s/-S in loopback/vect_test to check self/shared/regular comms
 
