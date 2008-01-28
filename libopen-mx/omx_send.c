@@ -849,14 +849,15 @@ omx__process_non_acked_requests(struct omx_endpoint *ep)
   }
 
   omx__foreach_request_safe(&ep->requeued_send_req_q, req, next) {
-    req->generic.state &= ~OMX_REQUEST_STATE_REQUEUED;
-    omx__dequeue_request(&ep->requeued_send_req_q, req);
-
+    /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
       /* Disconnect the peer (and drop the requests) */
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
     }
+
+    req->generic.state &= ~OMX_REQUEST_STATE_REQUEUED;
+    omx__dequeue_request(&ep->requeued_send_req_q, req);
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:
