@@ -72,8 +72,8 @@ omx__init_api(int api)
     goto out_with_fd;
   }
 
-  omx__globals.ack_delay = omx__driver_desc->hz / 100 + 1;
-  omx__globals.resend_delay = omx__driver_desc->hz / 2 + 1;
+  omx__globals.ack_delay = omx__ack_jiffies_delay();
+  omx__globals.resend_delay = omx__resend_jiffies_delay();
   omx__globals.retransmits_max = 1000;
 
 #ifdef OMX_DEBUG
