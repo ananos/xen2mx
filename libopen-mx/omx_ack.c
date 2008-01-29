@@ -342,12 +342,12 @@ omx_return_t
 omx_set_request_timeout(struct omx_endpoint *ep,
 			union omx_request *request, uint32_t ms)
 {
-  uint32_t delay_jiffies = omx__timeout_ms_to_relative_jiffies(ms);
+  uint32_t jiffies = omx__timeout_ms_to_relative_jiffies(ms);
 
   if (request)
-    request->generic.resend_delay_jiffies = delay_jiffies;
+    request->generic.resend_timeout_jiffies = jiffies;
   else
-    ep->resend_delay_jiffies = delay_jiffies;
+    ep->resend_timeout_jiffies = jiffies;
 
   return OMX_SUCCESS;
 }

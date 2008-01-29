@@ -437,7 +437,7 @@ omx__submit_pull(struct omx_endpoint * ep,
   pull_param.remote_rdma_id = req->recv.specific.large.target_rdma_id;
   pull_param.remote_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
   pull_param.remote_offset = req->recv.specific.large.target_rdma_offset;
-  pull_param.resend_delay_jiffies = ep->resend_delay_jiffies;
+  pull_param.resend_timeout_jiffies = ep->resend_timeout_jiffies;
 
   err = ioctl(ep->fd, OMX_CMD_PULL, &pull_param);
   if (unlikely(err < 0)) {

@@ -546,7 +546,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->frame_missing_bitmap = 0;
 	handle->frame_copying_bitmap = 0;
 	handle->already_requeued_first = 0;
-	handle->last_retransmit_jiffies = cmd->resend_delay_jiffies + jiffies;
+	handle->last_retransmit_jiffies = cmd->resend_timeout_jiffies + jiffies;
 	handle->magic = omx_generate_pull_magic(endpoint);
 
 	/* initialize cached header */

@@ -126,7 +126,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_delay_jiffies = ep->resend_delay_jiffies;
+  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send tiny is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
 
@@ -229,7 +229,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_delay_jiffies = ep->resend_delay_jiffies;
+  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send small is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
 
@@ -364,7 +364,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
     return OMX_NO_RESOURCES;
 
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_delay_jiffies = ep->resend_delay_jiffies;
+  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is initialized here and modified in post() (or set to QUEUED in submit_or_queue()) */
   omx__enqueue_partner_non_acked_request(partner, req);
 
@@ -467,7 +467,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
     return ret;
 
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_delay_jiffies = ep->resend_delay_jiffies;
+  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
 
@@ -573,7 +573,7 @@ omx__submit_notify(struct omx_endpoint *ep,
 
   req->generic.send_seqnum = seqnum;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_delay_jiffies = ep->resend_delay_jiffies;
+  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
 
   notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   notify_param->peer_index = partner->peer_index;
@@ -830,7 +830,7 @@ omx__process_resend_requests(struct omx_endpoint *ep)
   /* resend requests from the requeued_send_req_q */
   omx__foreach_request_safe(&ep->requeued_send_req_q, req, next) {
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
-    if (now > req->generic.submit_jiffies + req->generic.resend_delay_jiffies) {
+    if (now > req->generic.submit_jiffies + req->generic.resend_timeout_jiffies) {
       /* Disconnect the peer (and drop the requests) */
       omx__debug_printf(CONNECT, "send request timeout, sent first at %lld, now is %lld\n",
 			(unsigned long long) req->generic.submit_jiffies, (unsigned long long) now);
@@ -875,7 +875,7 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       break;
 
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
-    if (now > req->generic.submit_jiffies + req->generic.resend_delay_jiffies) {
+    if (now > req->generic.submit_jiffies + req->generic.resend_timeout_jiffies) {
       /* Disconnect the peer (and drop the requests) */
       omx__debug_printf(CONNECT, "connect request timeout, sent first at %lld, now is %lld\n",
 			(unsigned long long) req->generic.submit_jiffies, (unsigned long long) now);
