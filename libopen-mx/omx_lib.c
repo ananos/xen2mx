@@ -184,6 +184,9 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     return;
 
   driver_status = ep->desc->status;
+  /* could be racy... could be fixed using atomic ops... */
+  ep->desc->status = 0;
+
   if (!driver_status)
     return;
 
@@ -207,9 +210,6 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
 	       ep->endpoint_index, ep->ifacename, ep->hostname);
     /* FIXME: find a nice way to exit here? */
   }
-
-  /* could be racy... could be fixed using atomic ops... */
-  ep->desc->status = 0;
 
   last_check = now;
 }
