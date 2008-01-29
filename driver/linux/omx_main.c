@@ -123,6 +123,7 @@ static void
 omx_driver_userdesc_update_handler(unsigned long data)
 {
 	omx_driver_userdesc->jiffies = jiffies;
+	wmb();
 	__mod_timer(&omx_driver_userdesc_update_timer, jiffies+1);
 }
 
