@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x110
+#define OMX_DRIVER_ABI_VERSION		0x111
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -100,6 +100,7 @@ struct omx_endpoint_desc {
 	uint64_t status;
 	uint32_t session_id;
 	uint64_t wakeup_jiffies;
+#define OMX_NO_WAKEUP_JIFFIES 0
 };
 
 #define OMX_ENDPOINT_DESC_SIZE	sizeof(struct omx_endpoint_desc)

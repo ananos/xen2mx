@@ -339,37 +339,42 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	set_current_state(TASK_INTERRUPTIBLE);
 	spin_unlock(&endpoint->event_lock);
 
-	/* setup the timer if needed */
+	/* setup the timer if needed by an application timeout */
 	if (cmd.jiffies_expire != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE) {
-		if (jiffies >= cmd.jiffies_expire) {
-			dprintk(EVENT, "wait event expire %lld has passed (now is %lld), not sleeping\n",
-				(unsigned long long) cmd.jiffies_expire, (unsigned long long) jiffies);
-			goto wakeup;
-		}
 		timer_handler = omx_wakeup_on_timeout_handler;
 		timer_jiffies = cmd.jiffies_expire;
 	}
-	if (wakeup_jiffies > jiffies
+	/* setup the timer if needed by a progress timeout */
+	if (wakeup_jiffies != OMX_NO_WAKEUP_JIFFIES
 	    && (!timer_handler || wakeup_jiffies < timer_jiffies)) {
 		timer_handler = omx_wakeup_on_progress_timeout_handler;
 		timer_jiffies = wakeup_jiffies;
 	}
+
+	/* setup the timer for real now */
 	if (timer_handler) {
+		/* check timer races */
+		if (jiffies >= timer_jiffies) {
+			dprintk(EVENT, "wait event expire %lld has passed (now is %lld), not sleeping\n",
+				(unsigned long long) cmd.jiffies_expire, (unsigned long long) jiffies);
+			waiter.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
+			goto wakeup;
+		}
 		setup_timer(&timer, timer_handler, (unsigned long) &waiter);
 		__mod_timer(&timer, timer_jiffies);
 		dprintk(EVENT, "wait event timer setup at %lld (now is %lld)\n",
-			(unsigned long long) cmd.jiffies_expire, (unsigned long long) jiffies);
+			(unsigned long long) timer_jiffies, (unsigned long long) jiffies);
 	}
 
 	dprintk(EVENT, "going to sleep at %lld\n", (unsigned long long) jiffies);
 	schedule();
 	dprintk(EVENT, "waking up from sleep at %lld\n", (unsigned long long) jiffies);
 
- wakeup:
 	/* remove the timer */
 	if (timer_handler)
 		del_singleshot_timer_sync(&timer);
 
+ wakeup:
 	/* remove from the wait queue */
 	remove_wait_queue(&endpoint->waiters, &waiter.event_wq);
 
