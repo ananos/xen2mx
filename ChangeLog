@@ -1,3 +1,21 @@
+
+The Features release.
+
+Major enhancements:
+* Add vectorial communication support through omx_isendv, omx_issendv
+  and omx_irecv.
+* Add shared communication between endpoint on the same nodes, even if
+  attached to different interfaces.
+* Add safe partner disconnection detection and recovery.
+* Enable sleeping function by default when using blocking calls since
+  they now take care of waking up for progression if necessary.
+
+Other improvements from previous release:
+
+Caveats:
+* No background progression or retransmission is done if the application does
+  not invoke an Open-MX routine explicitly.
+
 Open-MX 0.2.0 (January 16th 2008, svn r1072)
 ============================================
 The Stabilizing-the-Basics release.
@@ -24,14 +42,6 @@ Other improvements from previous release:
 * Improve messages and debugging messages in the driver.
 * Valgrind 3.3 support.
 * Lots of various fixes.
-
-Caveats:
-* Node disconnection not well recovered (some requests will remain uncompleted
-  for ever)
-* Blocking function will busy poll by default to avoid breaking retransmission
-  and progression. Use OMX_WAITSPIN=0 to force sleeping.
-* No background progression or retransmission is done if the application does
-  not invoke an Open-MX routine explicitly.
 
 Open-MX 0.1.0 (December 20th 2007, svn r908)
 ============================================
