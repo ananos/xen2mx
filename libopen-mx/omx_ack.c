@@ -286,7 +286,6 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
 {
   union omx_request *req;
   struct omx__partner *partner;
-  uint64_t now = omx__driver_desc->jiffies;
   uint64_t wakeup_jiffies = OMX_NO_WAKEUP_JIFFIES;
 
   /* any delayed ack to send soon? */
@@ -297,7 +296,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
     tmp = partner->oldest_recv_time_not_acked + omx__globals.ack_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for delayed acks\n",
-		      (unsigned long long) tmp, (unsigned long) (tmp-now));
+		      (unsigned long long) tmp, (unsigned long) (tmp - omx__driver_desc->jiffies));
 
     if (tmp < wakeup_jiffies || wakeup_jiffies == OMX_NO_WAKEUP_JIFFIES)
       wakeup_jiffies = tmp;
@@ -311,7 +310,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
     tmp = req->generic.last_send_jiffies + omx__globals.resend_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
-		      (unsigned long long) tmp, (unsigned long) (tmp-now));
+		      (unsigned long long) tmp, (unsigned long) (tmp - omx__driver_desc->jiffies));
 
     if (tmp < wakeup_jiffies || wakeup_jiffies == OMX_NO_WAKEUP_JIFFIES)
       wakeup_jiffies = tmp;
@@ -325,7 +324,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
     tmp = req->generic.last_send_jiffies + omx__globals.resend_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
-		      (unsigned long long) tmp, (unsigned long) (tmp-now));
+		      (unsigned long long) tmp, (unsigned long) (tmp - omx__driver_desc->jiffies));
 
     if (tmp < wakeup_jiffies || wakeup_jiffies == OMX_NO_WAKEUP_JIFFIES)
       wakeup_jiffies = tmp;
