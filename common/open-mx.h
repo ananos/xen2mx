@@ -20,6 +20,7 @@
 #define __open_mx_h__
 
 #include <stdint.h>
+#include <stdlib.h>
 
 typedef struct omx_endpoint * omx_endpoint_t;
 

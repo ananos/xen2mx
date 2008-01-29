@@ -24,7 +24,6 @@
 #ifndef MYRIEXPRESS_H
 #define MYRIEXPRESS_H
 
-#include <assert.h>
 #include <inttypes.h>
 
 #include "open-mx.h"
