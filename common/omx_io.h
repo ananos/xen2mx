@@ -250,7 +250,7 @@ struct omx_cmd_pull {
 	uint32_t session_id;
 	/* 8 */
 	uint32_t length; /* FIXME: 64bits ? */
-	uint32_t retransmit_delay_jiffies;
+	uint32_t resend_delay_jiffies;
 	/* 16 */
 	uint32_t local_rdma_id;
 	uint32_t local_offset; /* FIXME: 64bits ? */

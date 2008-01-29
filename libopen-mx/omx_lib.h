@@ -109,21 +109,33 @@ extern struct omx_driver_desc * omx__driver_desc;
  * Timing routines
  */
 
-#define ACK_PER_SECOND 64
-#define omx__ack_jiffies_delay() ((omx__driver_desc->hz + ACK_PER_SECOND) / ACK_PER_SECOND)
+#define ACK_PER_SECOND 64 /* simplifies divisions too */
+#define omx__ack_delay_jiffies() ((omx__driver_desc->hz + ACK_PER_SECOND) / ACK_PER_SECOND)
 
 #define RESEND_PER_SECOND 2
-#define omx__resend_jiffies_delay() ((omx__driver_desc->hz + RESEND_PER_SECOND) / RESEND_PER_SECOND)
+#define omx__resend_delay_jiffies() ((omx__driver_desc->hz + RESEND_PER_SECOND) / RESEND_PER_SECOND)
+
+/* assume 1s = 1024ms, to simplify divisions */
+
+#define omx__timeout_ms_to_resends(ms) ((ms * RESEND_PER_SECOND + 1023) / 1024)
 
 static inline uint64_t
-omx__timeout_ms_to_jiffies(uint32_t ms)
+omx__timeout_ms_to_relative_jiffies(uint32_t ms)
+{
+	uint32_t hz = omx__driver_desc->hz;
+	return (ms == OMX_TIMEOUT_INFINITE)
+		? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE
+		: (ms * hz + 1023)/1024;
+}
+
+static inline uint64_t
+omx__timeout_ms_to_absolute_jiffies(uint32_t ms)
 {
 	uint32_t hz = omx__driver_desc->hz;
 	uint64_t now = omx__driver_desc->jiffies;
 	return (ms == OMX_TIMEOUT_INFINITE)
 		? OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE
 		: now + (ms * hz + 1023)/1024;
-	/* 1024 is similar to 1000 and easier to divide with */
 }
 
 /*********************

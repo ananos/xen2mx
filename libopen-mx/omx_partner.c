@@ -302,7 +302,7 @@ omx__connect_common(omx_endpoint_t ep,
 
   req->generic.partner = partner;
   req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.retransmit_delay_jiffies = ep->retransmit_delay_jiffies;
+  req->generic.resend_delay_jiffies = ep->resend_delay_jiffies;
   req->connect.session_id = ep->desc->session_id;
   req->connect.connect_seqnum = connect_seqnum;
 

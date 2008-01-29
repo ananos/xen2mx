@@ -45,7 +45,7 @@ omx__init_api(int api)
 #else
     {
       /* FIXME: the standard error handler exits by default */
-      fprintf(stderr, "Cannot open Open-MX device: code %d\n", 
+      fprintf(stderr, "Cannot open Open-MX device: code %d\n",
               omx__errno_to_return("init open control fd"));
       exit(1);
     }
@@ -72,9 +72,9 @@ omx__init_api(int api)
     goto out_with_fd;
   }
 
-  omx__globals.ack_delay = omx__ack_jiffies_delay();
-  omx__globals.resend_delay = omx__resend_jiffies_delay();
-  omx__globals.retransmits_max = 1000;
+  omx__globals.ack_delay_jiffies = omx__ack_delay_jiffies();
+  omx__globals.resend_delay_jiffies = omx__resend_delay_jiffies();
+  omx__globals.req_resends_max = 1000;
 
 #ifdef OMX_DEBUG
   omx__globals.verbose = 0;

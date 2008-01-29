@@ -99,7 +99,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	 uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
-  uint64_t jiffies_expire = omx__timeout_ms_to_jiffies(ms_timeout);
+  uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
 
   if (omx__globals.waitspin) {
@@ -232,7 +232,7 @@ omx_wait_any(struct omx_endpoint *ep,
 	     uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
-  uint64_t jiffies_expire = omx__timeout_ms_to_jiffies(ms_timeout);
+  uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -360,7 +360,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 	 uint32_t *result, uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
-  uint64_t jiffies_expire = omx__timeout_ms_to_jiffies(ms_timeout);
+  uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(ep->ctxid_bits)) {
@@ -497,7 +497,7 @@ omx_probe(struct omx_endpoint *ep,
 	  uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
-  uint64_t jiffies_expire = omx__timeout_ms_to_jiffies(ms_timeout);
+  uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -592,7 +592,7 @@ omx_return_t
 omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
-  uint64_t jiffies_expire = omx__timeout_ms_to_jiffies(ms_timeout);
+  uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret;
 
   if (omx__globals.waitspin) {

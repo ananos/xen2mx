@@ -253,7 +253,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->board_index = board_index;
   ep->endpoint_index = endpoint_index;
   ep->app_key = key;
-  ep->retransmit_delay_jiffies = omx__globals.resend_delay * omx__globals.retransmits_max;
+  ep->resend_delay_jiffies = omx__globals.resend_delay_jiffies * omx__globals.req_resends_max;
   ep->zombie_max = omx__globals.zombie_max;
   ep->zombies = 0;
 

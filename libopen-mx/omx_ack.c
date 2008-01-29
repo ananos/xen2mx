@@ -239,7 +239,7 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
 
   list_for_each_entry_safe(partner, next,
 			   &ep->partners_to_ack, endpoint_partners_to_ack_elt) {
-    if (now - partner->oldest_recv_time_not_acked < omx__globals.ack_delay)
+    if (now - partner->oldest_recv_time_not_acked < omx__globals.ack_delay_jiffies)
       /* the remaining ones are more recent, no need to ack them yet */
       break;
 
@@ -294,7 +294,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
     uint64_t tmp;
 
     partner = list_first_entry(&ep->partners_to_ack, struct omx__partner, endpoint_partners_to_ack_elt);
-    tmp = partner->oldest_recv_time_not_acked + omx__globals.ack_delay;
+    tmp = partner->oldest_recv_time_not_acked + omx__globals.ack_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for delayed acks\n",
 		      (unsigned long long) tmp, (unsigned long) (tmp-now));
@@ -308,7 +308,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
     uint64_t tmp;
 
     req = omx__queue_first_request(&ep->non_acked_req_q);
-    tmp = req->generic.last_send_jiffies + omx__globals.resend_delay;
+    tmp = req->generic.last_send_jiffies + omx__globals.resend_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
 		      (unsigned long long) tmp, (unsigned long) (tmp-now));
@@ -322,7 +322,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
     uint64_t tmp;
 
     req = omx__queue_first_request(&ep->connect_req_q);
-    tmp = req->generic.last_send_jiffies + omx__globals.resend_delay;
+    tmp = req->generic.last_send_jiffies + omx__globals.resend_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
 		      (unsigned long long) tmp, (unsigned long) (tmp-now));
@@ -340,15 +340,14 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
 
 omx_return_t
 omx_set_request_timeout(struct omx_endpoint *ep,
-			union omx_request *request, uint32_t milliseconds)
+			union omx_request *request, uint32_t ms)
 {
-  /* dividing by 1024 instead of 1000 is accurate enough, and avoid costly div */
-  uint32_t delay_jiffies = ((milliseconds * omx__driver_desc->hz) >> 10) + 1;
+  uint32_t delay_jiffies = omx__timeout_ms_to_relative_jiffies(ms);
 
   if (request)
-    request->generic.retransmit_delay_jiffies = delay_jiffies;
+    request->generic.resend_delay_jiffies = delay_jiffies;
   else
-    ep->retransmit_delay_jiffies = delay_jiffies;
+    ep->resend_delay_jiffies = delay_jiffies;
 
   return OMX_SUCCESS;
 }
