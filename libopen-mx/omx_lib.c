@@ -180,7 +180,7 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
   uint64_t driver_status;
 
   /* check once every second */
-  if (now - last_check < omx__driver_desc->hz)
+  if (now - last_check < ep->check_status_delay_jiffies)
     return;
 
   driver_status = ep->desc->status;

@@ -255,6 +255,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->app_key = key;
   ep->req_resends_max = omx__globals.req_resends_max;
   ep->pull_resend_timeout_jiffies = omx__globals.resend_delay_jiffies * omx__globals.req_resends_max;
+  ep->check_status_delay_jiffies = omx__driver_desc->hz; /* once per second */
   ep->zombie_max = omx__globals.zombie_max;
   ep->zombies = 0;
 

@@ -164,6 +164,7 @@ struct omx_endpoint {
   uint32_t avail_exp_events;
   uint32_t req_resends_max;
   uint32_t pull_resend_timeout_jiffies;
+  uint32_t check_status_delay_jiffies;
   uint32_t zombies, zombie_max;
 
   /* context ids */
