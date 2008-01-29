@@ -837,8 +837,8 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      omx__debug_printf(CONNECT, "send request timeout, already sent %ld times\n",
-			(unsigned long) req->generic.resends);
+      printf("Send request timeout, already sent %ld times, resetting partner status\n",
+	     (unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
     }
@@ -882,8 +882,8 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      omx__debug_printf(CONNECT, "connect request timeout, already sent %ld times\n",
-			(unsigned long) req->generic.resends);
+      printf("Connect request timeout, already sent %ld times, resetting partner status\n",
+	     (unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
     }

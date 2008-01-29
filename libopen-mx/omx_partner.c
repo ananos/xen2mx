@@ -491,6 +491,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
       /* this partner changed since last time it talked to us, cleanup the stuff */
       omx__debug_assert(partner->true_session_id != target_session_id);
 
+      printf("Got a connect reply from a new instance of a partner, cleaning old partner status\n");
       omx__partner_cleanup(ep, partner, 0);
     }
 
@@ -547,11 +548,10 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
       && partner->true_session_id != src_session_id) {
     /* new instance of the partner */
 
-    omx__debug_printf(CONNECT, "connect from a new instance of a partner\n");
-
+    printf("Got a connect from a new instance of a partner, cleaning old partner status\n");
+    omx__partner_cleanup(ep, partner, 0);
     partner->next_match_recv_seq = OMX__SEQNUM(0);
     partner->next_frag_recv_seq = OMX__SEQNUM(0);
-    omx__partner_cleanup(ep, partner, 0);
   }
 
   if (partner->true_session_id != src_session_id) {
