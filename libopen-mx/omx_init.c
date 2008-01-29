@@ -109,7 +109,6 @@ omx__init_api(int api)
 	case 'T': val |= OMX_VERBOSE_EVENT; break;
 	case 'W': val |= OMX_VERBOSE_WAIT; break;
 	case 'V': val |= OMX_VERBOSE_VECT; break;
-	case 'D': val |= OMX_VERBOSE_DISCONNECT; break;
 	default: omx__abort("Unknown verbose character '%c'\n", env[i]);
 	}
       }

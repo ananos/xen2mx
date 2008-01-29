@@ -482,6 +482,9 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   if (status_code == OMX_STATUS_SUCCESS) {
     /* connection successfull, initialize stuff */
 
+    omx__debug_printf(CONNECT, "got a connect reply with session id %lx while we have true %lx back %lx\n",
+		      (unsigned long) target_session_id,
+		      (unsigned long) partner->true_session_id, (unsigned long) partner->back_session_id);
     if (partner->back_session_id != target_session_id
 	&& partner->back_session_id != -1) {
       /* this partner changed since last time it talked to us, cleanup the stuff */
@@ -535,8 +538,9 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     status_code = OMX_STATUS_BAD_KEY;
   }
 
-  omx__debug_printf(CONNECT, "got a connect, replying\n");
-
+  omx__debug_printf(CONNECT, "got a connect request with session id %lx while we have true %lx back %lx\n",
+		    (unsigned long) src_session_id,
+		    (unsigned long) partner->true_session_id, (unsigned long) partner->back_session_id);
   if (partner->back_session_id != src_session_id
       && partner->true_session_id != -1
       && partner->true_session_id != src_session_id) {
@@ -675,7 +679,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     req = omx__partner_partial_queue_first_request(partner);
     ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
 
-    omx__debug_printf(DISCONNECT, "Dropping partial medium recv %p\n", req);
+    omx__debug_printf(CONNECT, "Dropping partial medium recv %p\n", req);
 
     /* dequeue and complete with status error */
     omx__dequeue_partner_partial_request(partner, req);
@@ -696,7 +700,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   while (!omx__partner_early_queue_empty(partner)) {
     struct omx__early_packet *early = omx__partner_first_early_packet(partner);
 
-    omx__debug_printf(DISCONNECT, "Dropping early fragment %p\n", early);
+    omx__debug_printf(CONNECT, "Dropping early fragment %p\n", early);
 
     omx__dequeue_partner_early_packet(partner, early);
     if (early->data)
@@ -717,7 +721,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       if (req->generic.partner != partner)
         continue;
 
-      omx__debug_printf(DISCONNECT, "Dropping unexpected recv %p\n", req);
+      omx__debug_printf(CONNECT, "Dropping unexpected recv %p\n", req);
 
       /* drop it and that's it */
       omx__dequeue_request(head, req);
@@ -762,4 +766,3 @@ omx_disconnect(omx_endpoint_t ep, omx_endpoint_addr_t addr)
 
   return OMX_SUCCESS;
 }
-

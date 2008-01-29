@@ -832,6 +832,8 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
       /* Disconnect the peer (and drop the requests) */
+      omx__debug_printf(CONNECT, "send request timeout, sent first at %lld, now is %lld\n",
+			(unsigned long long) req->generic.submit_jiffies, (unsigned long long) now);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
     }
@@ -872,8 +874,11 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       /* the remaining ones are more recent, no need to resend them yet */
       break;
 
+    /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
       /* Disconnect the peer (and drop the requests) */
+      omx__debug_printf(CONNECT, "connect request timeout, sent first at %lld, now is %lld\n",
+			(unsigned long long) req->generic.submit_jiffies, (unsigned long long) now);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
     }
