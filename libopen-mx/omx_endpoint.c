@@ -253,7 +253,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->board_index = board_index;
   ep->endpoint_index = endpoint_index;
   ep->app_key = key;
-  ep->resend_timeout_jiffies = omx__globals.resend_delay_jiffies * omx__globals.req_resends_max;
+  ep->req_resends_max = omx__globals.req_resends_max;
+  ep->pull_resend_timeout_jiffies = omx__globals.resend_delay_jiffies * omx__globals.req_resends_max;
   ep->zombie_max = omx__globals.zombie_max;
   ep->zombies = 0;
 

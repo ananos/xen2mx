@@ -74,7 +74,6 @@ omx__init_api(int api)
 
   omx__globals.ack_delay_jiffies = omx__ack_delay_jiffies();
   omx__globals.resend_delay_jiffies = omx__resend_delay_jiffies();
-  omx__globals.req_resends_max = 1000;
 
 #ifdef OMX_DEBUG
   omx__globals.verbose = 0;
@@ -116,6 +115,21 @@ omx__init_api(int api)
     omx__globals.verbose = val;
   }
 #endif /* OMX_DEBUG */
+
+  /* resend configuration */
+  omx__globals.req_resends_max = 1000;
+  env = getenv("OMX_RESENDS_MAX");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_MAX_RETRIES");
+    if (env)
+      omx__debug_printf(MAIN, "Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
+  }
+#endif
+  if (env) {
+    omx__globals.req_resends_max = atoi(env);
+    omx__debug_printf(MAIN, "Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
+  }
 
   /* regcache configuration */
   omx__globals.regcache = 0;

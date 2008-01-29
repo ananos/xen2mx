@@ -343,11 +343,14 @@ omx_set_request_timeout(struct omx_endpoint *ep,
 			union omx_request *request, uint32_t ms)
 {
   uint32_t jiffies = omx__timeout_ms_to_relative_jiffies(ms);
+  uint32_t resends = omx__timeout_ms_to_resends(ms);
 
-  if (request)
-    request->generic.resend_timeout_jiffies = jiffies;
-  else
-    ep->resend_timeout_jiffies = jiffies;
+  if (request) {
+    request->generic.resends_max = resends;
+  } else {
+    ep->pull_resend_timeout_jiffies = jiffies;
+    ep->req_resends_max = resends;
+  }
 
   return OMX_SUCCESS;
 }

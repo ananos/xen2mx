@@ -86,6 +86,7 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
+  req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__partner_ack_sent(ep, partner);
@@ -107,6 +108,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
 
   seqnum = partner->next_send_seq;
   partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
+  req->generic.resends = 0;
 
   tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
   tiny_param->hdr.peer_index = partner->peer_index;
@@ -125,8 +127,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
-  req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
+  req->generic.resends_max = ep->req_resends_max;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send tiny is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
 
@@ -165,6 +166,7 @@ omx__post_isend_small(struct omx_endpoint *ep,
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
+  req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__partner_ack_sent(ep, partner);
@@ -193,6 +195,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 
   seqnum = partner->next_send_seq;
   partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
+  req->generic.resends = 0;
 
   small_param = &req->send.specific.small.send_small_ioctl_param;
   small_param->peer_index = partner->peer_index;
@@ -228,8 +231,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
   req->generic.send_seqnum = seqnum;
-  req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
+  req->generic.resends_max = ep->req_resends_max;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send small is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
 
@@ -322,6 +324,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   req->send.specific.medium.frags_pending_nr = frags_nr;
 
  ok:
+  req->generic.resends_max = ep->req_resends_max;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
   omx__enqueue_request(&ep->driver_posted_req_q, req);
@@ -363,8 +366,8 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 	       || omx__endpoint_sendq_map_get(ep, frags_nr, req, sendq_index) < 0))
     return OMX_NO_RESOURCES;
 
-  req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
+  req->generic.resends = 0;
+  req->generic.resends_max = ep->req_resends_max;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is initialized here and modified in post() (or set to QUEUED in submit_or_queue()) */
   omx__enqueue_partner_non_acked_request(partner, req);
 
@@ -446,6 +449,7 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
+  req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__partner_ack_sent(ep, partner);
@@ -466,8 +470,6 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS))
     return ret;
 
-  req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
 
@@ -509,6 +511,8 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   seqnum = partner->next_send_seq;
   partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
   req->generic.send_seqnum = seqnum;
+  req->generic.resends = 0;
+  req->generic.resends_max = ep->req_resends_max;
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
@@ -551,6 +555,7 @@ omx__post_notify(struct omx_endpoint *ep,
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
+  req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__partner_ack_sent(ep, partner);
@@ -572,8 +577,8 @@ omx__submit_notify(struct omx_endpoint *ep,
   partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
 
   req->generic.send_seqnum = seqnum;
-  req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
+  req->generic.resends = 0;
+  req->generic.resends_max = ep->req_resends_max;
 
   notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   notify_param->peer_index = partner->peer_index;
@@ -830,10 +835,10 @@ omx__process_resend_requests(struct omx_endpoint *ep)
   /* resend requests from the requeued_send_req_q */
   omx__foreach_request_safe(&ep->requeued_send_req_q, req, next) {
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
-    if (now > req->generic.submit_jiffies + req->generic.resend_timeout_jiffies) {
+    if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      omx__debug_printf(CONNECT, "send request timeout, sent first at %lld, now is %lld\n",
-			(unsigned long long) req->generic.submit_jiffies, (unsigned long long) now);
+      omx__debug_printf(CONNECT, "send request timeout, already sent %ld times\n",
+			(unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
     }
@@ -875,10 +880,10 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       break;
 
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
-    if (now > req->generic.submit_jiffies + req->generic.resend_timeout_jiffies) {
+    if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      omx__debug_printf(CONNECT, "connect request timeout, sent first at %lld, now is %lld\n",
-			(unsigned long long) req->generic.submit_jiffies, (unsigned long long) now);
+      omx__debug_printf(CONNECT, "connect request timeout, already sent %ld times\n",
+			(unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
     }

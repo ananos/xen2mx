@@ -162,7 +162,8 @@ struct omx_endpoint {
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   void * next_exp_event, * next_unexp_event;
   uint32_t avail_exp_events;
-  uint32_t resend_timeout_jiffies;
+  uint32_t req_resends_max;
+  uint32_t pull_resend_timeout_jiffies;
   uint32_t zombies, zombie_max;
 
   /* context ids */
@@ -303,9 +304,9 @@ struct omx__generic_request {
   struct omx__partner * partner;
   enum omx__request_type type;
   omx__seqnum_t send_seqnum; /* seqnum of the sent message associated with the request, either for a usual send request, or the notify message for recv large */
-  uint64_t submit_jiffies;
   uint64_t last_send_jiffies;
-  uint32_t resend_timeout_jiffies;
+  uint32_t resends_max;
+  uint32_t resends;
   uint32_t state;
   struct omx_status status;
 };

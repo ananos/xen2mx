@@ -255,6 +255,7 @@ omx__post_connect(struct omx_endpoint *ep,
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
+  req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
 }
 
@@ -277,6 +278,7 @@ omx__connect_common(omx_endpoint_t ep,
     goto out;
 
   connect_seqnum = partner->connect_seqnum++;
+  req->generic.resends = 0;
 
   connect_param->hdr.peer_index = partner->peer_index;
   connect_param->hdr.dest_endpoint = partner->endpoint_index;
@@ -301,8 +303,7 @@ omx__connect_common(omx_endpoint_t ep,
   omx__enqueue_partner_connect_request(partner, req);
 
   req->generic.partner = partner;
-  req->generic.submit_jiffies = omx__driver_desc->jiffies;
-  req->generic.resend_timeout_jiffies = ep->resend_timeout_jiffies;
+  req->generic.resends_max = ep->req_resends_max;
   req->connect.session_id = ep->desc->session_id;
   req->connect.connect_seqnum = connect_seqnum;
 
