@@ -171,6 +171,11 @@ omx__partner_recv_lookup(struct omx_endpoint *ep,
 			 uint16_t peer_index, uint8_t endpoint_index,
 			 struct omx__partner ** partnerp);
 
+extern void
+omx__post_connect(struct omx_endpoint *ep,
+		  struct omx__partner *partner,
+		  union omx_request * req);
+
 extern omx_return_t
 omx__process_recv_connect(struct omx_endpoint *ep,
 			  struct omx_evt_recv_connect *event);
@@ -301,10 +306,7 @@ omx__handle_nack(struct omx_endpoint *ep,
                  omx_status_code_t status);
 
 extern void
-omx__process_non_acked_requests(struct omx_endpoint *ep);
-
-extern void
-omx__process_connect_requests(struct omx_endpoint *ep);
+omx__process_resend_requests(struct omx_endpoint *ep);
 
 extern void
 omx__process_queued_requests(struct omx_endpoint *ep);
@@ -315,11 +317,8 @@ omx__process_partners_to_ack(struct omx_endpoint *ep);
 extern omx_return_t
 omx__flush_partners_to_ack(struct omx_endpoint *ep);
 
-extern void
-omx__prepare_ack_wakeup(struct omx_endpoint *ep);
-
 void
-omx__prepare_resend_wakeup(struct omx_endpoint *ep);
+omx__prepare_progress_wakeup(struct omx_endpoint *ep);
 
 static inline void
 omx__partner_needs_to_ack(struct omx_endpoint *ep,

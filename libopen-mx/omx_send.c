@@ -807,37 +807,16 @@ omx__process_queued_requests(struct omx_endpoint *ep)
 }
 
 /******************
- * Resent messages
+ * Resend messages
  */
 
 void
-omx__prepare_resend_wakeup(struct omx_endpoint *ep)
-{
-  union omx_request *req;
-  uint64_t now = omx__driver_desc->jiffies;
-  uint64_t wakeup_jiffies;
-
-  if (omx__queue_empty(&ep->non_acked_req_q))
-    return;
-
-  req = omx__queue_first_request(&ep->non_acked_req_q);
-  wakeup_jiffies = req->generic.last_send_jiffies + omx__globals.resend_delay;
-
-  omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
-                    (unsigned long long) wakeup_jiffies,
-                    (unsigned long) (wakeup_jiffies-now));
-
-  if (ep->desc->wakeup_jiffies < now
-      || wakeup_jiffies < ep->desc->wakeup_jiffies)
-    ep->desc->wakeup_jiffies = wakeup_jiffies;
-}
-
-void
-omx__process_non_acked_requests(struct omx_endpoint *ep)
+omx__process_resend_requests(struct omx_endpoint *ep)
 {
   union omx_request *req, *next;
   uint64_t now = omx__driver_desc->jiffies;
 
+  /* move non acked requests to the requeued_send_req_q */
   omx__foreach_request_safe(&ep->non_acked_req_q, req, next) {
     if (now - req->generic.last_send_jiffies < omx__globals.resend_delay)
       /* the remaining ones are more recent, no need to resend them yet */
@@ -848,6 +827,7 @@ omx__process_non_acked_requests(struct omx_endpoint *ep)
     omx__enqueue_request(&ep->requeued_send_req_q, req);
   }
 
+  /* resend requests from the requeued_send_req_q */
   omx__foreach_request_safe(&ep->requeued_send_req_q, req, next) {
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
@@ -884,5 +864,21 @@ omx__process_non_acked_requests(struct omx_endpoint *ep)
       omx__abort("Failed to handle requeued request with type %d\n",
 		 req->generic.type);
     }
+  }
+
+  /* resend non-replied connect requests */
+  omx__foreach_request_safe(&ep->connect_req_q, req, next) {
+    if (now - req->generic.last_send_jiffies < omx__globals.resend_delay)
+      /* the remaining ones are more recent, no need to resend them yet */
+      break;
+
+    if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
+      /* Disconnect the peer (and drop the requests) */
+      omx__partner_cleanup(ep, req->generic.partner, 1);
+      continue;
+    }
+
+    /* no need to dequeue/requeue */
+    omx__post_connect(ep, req->generic.partner, req);
   }
 }

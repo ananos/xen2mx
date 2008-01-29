@@ -282,25 +282,54 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
 }
 
 void
-omx__prepare_ack_wakeup(struct omx_endpoint *ep)
+omx__prepare_progress_wakeup(struct omx_endpoint *ep)
 {
+  union omx_request *req;
   struct omx__partner *partner;
   uint64_t now = omx__driver_desc->jiffies;
   uint64_t wakeup_jiffies;
 
-  if (list_empty(&ep->partners_to_ack))
-    return;
+  /* any delayed ack to send soon? */
+  if (!list_empty(&ep->partners_to_ack)) {
+    partner = list_first_entry(&ep->partners_to_ack, struct omx__partner, endpoint_partners_to_ack_elt);
+    wakeup_jiffies = partner->oldest_recv_time_not_acked + omx__globals.ack_delay;
 
-  partner = list_first_entry(&ep->partners_to_ack, struct omx__partner, endpoint_partners_to_ack_elt);
-  wakeup_jiffies = partner->oldest_recv_time_not_acked + omx__globals.ack_delay;
+    omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for delayed acks\n",
+		      (unsigned long long) wakeup_jiffies,
+		      (unsigned long) (wakeup_jiffies-now));
 
-  omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for delayed acks\n",
-		    (unsigned long long) wakeup_jiffies,
-		    (unsigned long) (wakeup_jiffies-now));
+    if (ep->desc->wakeup_jiffies < now
+	|| wakeup_jiffies < ep->desc->wakeup_jiffies)
+      ep->desc->wakeup_jiffies = wakeup_jiffies;
+  }
 
-  if (ep->desc->wakeup_jiffies < now
-      || wakeup_jiffies < ep->desc->wakeup_jiffies)
-    ep->desc->wakeup_jiffies = wakeup_jiffies;
+  /* any send to resend soon? */
+  if (!omx__queue_empty(&ep->non_acked_req_q)) {
+    req = omx__queue_first_request(&ep->non_acked_req_q);
+    wakeup_jiffies = req->generic.last_send_jiffies + omx__globals.resend_delay;
+
+    omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
+                      (unsigned long long) wakeup_jiffies,
+                      (unsigned long) (wakeup_jiffies-now));
+
+    if (ep->desc->wakeup_jiffies < now
+        || wakeup_jiffies < ep->desc->wakeup_jiffies)
+      ep->desc->wakeup_jiffies = wakeup_jiffies;
+  }
+
+  /* any connect to resend soon? */
+  if (!omx__queue_empty(&ep->connect_req_q)) {
+    req = omx__queue_first_request(&ep->connect_req_q);
+    wakeup_jiffies = req->generic.last_send_jiffies + omx__globals.resend_delay;
+
+    omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
+                      (unsigned long long) wakeup_jiffies,
+                      (unsigned long) (wakeup_jiffies-now));
+
+    if (ep->desc->wakeup_jiffies < now
+        || wakeup_jiffies < ep->desc->wakeup_jiffies)
+      ep->desc->wakeup_jiffies = wakeup_jiffies;
+  }
 }
 
 /**********************************

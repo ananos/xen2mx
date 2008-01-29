@@ -237,7 +237,7 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
  * Connection
  */
 
-static INLINE void
+void
 omx__post_connect(struct omx_endpoint *ep,
 		  struct omx__partner *partner,
 		  union omx_request * req)
@@ -599,34 +599,6 @@ omx__process_recv_connect(struct omx_endpoint *ep,
     return omx__process_recv_connect_reply(ep, event);
   else
     return omx__process_recv_connect_request(ep, event);
-}
-
-/**************************
- * Resend connect requests
- */
-
-void
-omx__process_connect_requests(struct omx_endpoint *ep)
-{
-  union omx_request *req, *next;
-  uint64_t now = omx__driver_desc->jiffies;
-
-  omx__foreach_request_safe(&ep->connect_req_q, req, next) {
-    if (now - req->generic.last_send_jiffies < omx__globals.resend_delay)
-      /* the remaining ones are more recent, no need to resend them yet */
-      break;
-
-    omx__dequeue_request(&ep->connect_req_q, req);
-
-    if (now > req->generic.submit_jiffies + req->generic.retransmit_delay_jiffies) {
-      /* Disconnect the peer (and drop the requests) */
-      omx__partner_cleanup(ep, req->generic.partner, 1);
-      continue;
-    }
-
-    omx__post_connect(ep, req->generic.partner, req);
-    omx__enqueue_request(&ep->connect_req_q, req);
-  }
 }
 
 /***************************

@@ -263,14 +263,11 @@ omx__progress(struct omx_endpoint * ep)
     ep->next_exp_event = (void *) evt;
   }
 
-  /* requeued request that didn't get acked */
-  omx__process_non_acked_requests(ep);
+  /* resend requests that didn't get acked/replied */
+  omx__process_resend_requests(ep);
 
   /* post queued requests */
   omx__process_queued_requests(ep);
-
-  /* repost non-replied connect requests */
-  omx__process_connect_requests(ep);
 
   /* check the endpoint descriptor */
   omx__check_endpoint_desc(ep);
