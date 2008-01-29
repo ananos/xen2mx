@@ -27,7 +27,7 @@
  * Apply a ack or a nack to a request
  */
 
-static void
+void
 omx__mark_request_acked(struct omx_endpoint *ep,
 			union omx_request *req,
 			omx_status_code_t status)

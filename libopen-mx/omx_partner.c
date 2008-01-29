@@ -643,40 +643,109 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   omx__board_addr_sprintf(board_addr_str, partner->board_addr);
   printf("Cleaning partner %s endpoint %d\n", board_addr_str, partner->endpoint_index);
 
-#if 0
-  /* TODO */
   /*
-   * Complete pending send/recv with an error status
-   * (they should get nacked earlier most of the times)
+   * Complete pending send/recv with an error status (they should get nacked earlier most of the times).
+   * Take them from the partner non-acked queue, it will remove them from either
+   * the endpoint requeued_send_req_q or non_acked_req_q.
+   * And mediums that are currently in the driver will get their status marked as wrong
+   * and they will be completed with this status when leaving driver_posted_req_q.
    */
   count = 0;
   omx__foreach_partner_non_acked_request_safe(partner, req, next) {
-    /* FIXME: add printf */
-
-    omx__abort_sent_request(ep, partner, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    omx__debug_printf(CONNECT, "Dropping pending send %p with seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+    omx__dequeue_partner_non_acked_request(partner, req);
+    omx__mark_request_acked(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
     count++;
   }
-  /* FIXME: printf count */
-#endif
+  if (count)
+    printf("Dropped %d pending send requests to partner\n", count);
 
   /*
-   * Drop pending connect request to this partner
+   * Complete send large that were acked without being notified.
+   */
+  count = 0;
+  omx__foreach_request_safe(&ep->large_send_req_q, req, next) {
+    if (req->generic.partner != partner)
+      continue;
+    omx__debug_printf(CONNECT, "Dropping need-reply large send %p\n", req);
+    omx__dequeue_request(&ep->large_send_req_q, req);
+    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
+    req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
+    omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    count++;
+  }
+  if (count)
+    printf("Dropped %d need-reply large sends to partner\n", count);
+
+  /*
+   * No need to look at the endpoint pull_req_q, they will be nacked or timeout in the driver anyway.
+   */
+
+  /*
+   * Drop queued send requests.
+   */
+  count = 0;
+  omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
+    if (req->generic.partner != partner)
+      continue;
+
+    omx__dequeue_request(&ep->queued_send_req_q, req);
+    req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
+    omx__debug_printf(CONNECT, "Dropping queued send %p\n", req);
+
+    switch (req->generic.type) {
+    case OMX_REQUEST_TYPE_SEND_MEDIUM:
+      /* no sendq slot has been allocated, make sure none will be released and complete the request */
+      req->send.specific.medium.frags_nr = 0;
+      omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+      break;
+    case OMX_REQUEST_TYPE_SEND_LARGE:
+      /* no region has been allocated, just complete the request */
+      omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);      
+      break;
+    case OMX_REQUEST_TYPE_RECV_LARGE:
+       if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
+        /* pull request needs to the pushed to the driver, no region allocated yet, just complete the request */
+	req->generic.state &= OMX_REQUEST_STATE_RECV_PARTIAL;
+	omx__recv_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+      } else {
+        /* the pull is already done, just drop the notify */
+	omx__recv_complete(ep, req, OMX_REQUEST_STATE_RECV_PARTIAL);
+       }
+      break;
+    default:
+      omx__abort("Failed to handle queued request with type %d\n",
+                 req->generic.type);
+    }
+
+    count++;
+  }
+  if (count)
+    printf("Dropped %d queued sends to partner\n", count);
+
+  /*
+   * Drop pending connect request to this partner.
+   * Take them from the partner connect queue, it will remove them
+   * from the endpoint connect_req_q.
    */
   count = 0;
   while (!omx__partner_connect_queue_empty(partner)) {
     req = omx__partner_connect_queue_first_request(partner);
+    omx__debug_printf(CONNECT, "Dropping pending connect %p\n", req);
     omx__connect_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    count++;
   }
   if (count)
     printf("Dropped %d pending connect request to partner\n", count);
 
   /*
    * Complete partially received request with an error status
+   * Take them from the partner partial queue, it will remove them
+   * from the endpoint multifrag_medium_recv_req_q or unexp_req_q.
    */
   count = 0;
   while (!omx__partner_partial_queue_empty(partner)) {
     uint32_t ctxid;
-
     req = omx__partner_partial_queue_first_request(partner);
     ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
 
@@ -695,7 +764,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     printf("Dropped %d partially received messages from partner\n", count);
 
   /*
-   * Drop early fragments
+   * Drop early fragments from the partner early queue.
    */
   count = 0;
   while (!omx__partner_early_queue_empty(partner)) {
@@ -713,7 +782,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     printf("Dropped %d early received packets from partner\n", count);
 
   /*
-   * Drop unexpected from this peer
+   * Drop unexpected from this peer.
+   * Take them in the endpoint unexp_req_q.
    */
   count = 0;
   for(ctxid=0; ctxid < ep->ctxid_max; ctxid++) {
@@ -737,10 +807,6 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   }
   if (count)
     printf("Dropped %d unexpected message from partner\n", count);
-
-  /*
-   * No need to touch pending pulls, the driver will abort them
-   */
 
   /*
    * Reset everything else to zero

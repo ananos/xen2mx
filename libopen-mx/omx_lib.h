@@ -317,6 +317,11 @@ omx__handle_nack(struct omx_endpoint *ep,
                  omx_status_code_t status);
 
 extern void
+omx__mark_request_acked(struct omx_endpoint *ep,
+			union omx_request *req,
+			omx_status_code_t status);
+
+extern void
 omx__process_resend_requests(struct omx_endpoint *ep);
 
 extern void
