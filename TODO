@@ -1,6 +1,3 @@
-* no need to DBGCFLAGS for --enable-debug
-
-* build a debug lib
 * enable valgrind when available in the debug lib
 
 * return OMX_INTERRUPTED from blocking calls

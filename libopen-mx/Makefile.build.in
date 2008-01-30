@@ -13,12 +13,10 @@ CPPFLAGS	+=	-I@abs_top_srcdir@/common
 CPPFLAGS	+=	@CPPFLAGS@
 
 CFLAGS	+=	-Wall
+CFLAGS	+=	@CFLAGS@
 ifeq ($(omx_build_lib_debug),1)
 	CPPFLAGS	+=	-DOMX_DEBUG=1
 	CFLAGS	+=	@DBGCFLAGS@
-else
-	CPPFLAGS	+=	
-	CFLAGS	+=	@CFLAGS@
 endif
 
 STATIC_CFLAGS	+=	
