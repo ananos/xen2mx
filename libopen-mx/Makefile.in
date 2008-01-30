@@ -11,7 +11,7 @@ TARGETS	=	@LIB_TARGETS@
 
 .PHONY: all install installonly depend clean distclean
 
-all depend clean distclean:
+all depend clean:
 	+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
 
 install: all installonly
@@ -24,3 +24,6 @@ installonly:
 		$(LN_S) $(STATIC_LIB) $(DESTDIR)$(libdir)/libmyriexpress.a ; \
 		$(LN_S) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)/libmyriexpress.so ; \
 	fi
+
+distclean:
+	+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; rm -rf $$dir ; done
