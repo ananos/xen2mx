@@ -273,21 +273,21 @@ $ ethtool -C eth2 rx-usecs <N-1>
 
 +-----------------------------------------------------------------
 | VI.d. Avoiding Linearizing on the receive side with old kernels
+|       and frag-based drivers
 
-Some old kernels (<2.6.18) have problems with drivers that may receive
+Some old kernels (<2.6.18) have problems with some drivers that receive
 data in frags (non-linear skbuff). As a workaround, they will linearize
 these skbuffs unless their target protocol stack explicitly supports
 non-linear skbuff. This basically adds a memory copy for all packets
 except IPv4 and IPv6, which would decrease Open-MX performance.
 
 To avoid this, if IPv6 is not in use on the network, you might want to
-tell Open-MX to use the IPv6 Ethernet type. this way, its skbuffs will
-not by linearized uselessly. Note that this solution is only required
-under very special circumstances.
+tell Open-MX to use the IPv6 Ethernet type. This way, its skbuffs will
+not be linearized uselessly. To enable this workardound, you should pass
+--with-ethertype=0x86DD to the configure command line.
 
-To use IPv6 in order to avoid useless linearizing of received skbuffs,
-you should pass --with-ethertype=0x86DD to the configure command line.
-
+** Note that this solution is only required under very special
+   circumstances and should be avoided in most of the cases. **
 
 +------------------------------+
 | VII. Native MX Compatibility |
