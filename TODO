@@ -2,6 +2,8 @@
 * pass CFLAGS and CPPFLAGS from configure and append them after our flags
 * append DEBUG_CFLAGS to the debug lib
 
+* build a debug lib
+
 * return OMX_INTERRUPTED from blocking calls
   + add a env var to ignore it ?
 

@@ -12,8 +12,14 @@ MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 
 CPPFLAGS	+=	-I@top_srcdir@/common
+CPPFLAGS	+=	@CPPFLAGS@
+
 CFLAGS	+=	-Wall
-CFLAGS	+=	-g -O2
+ifeq (@OMX_DEBUG@,1)
+CFLAGS	+=	@DBGCFLAGS@
+else
+CFLAGS	+=	@CFLAGS@
+endif
 
 LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
 
