@@ -261,14 +261,17 @@ AC_MSG_RESULT($enable_debug)
 if test x$enable_debug = xyes; then
   # only build the debug lib lib
   AC_DEFINE(OMX_DRIVER_DEBUG, [1], [Define to enable debug features in the driver])
+  AC_SUBST(omx_debug_tests, 1)
   generate_lib_build build debug-only 1 ""
 else if test x$enable_debug = xno; then
   # only build the non-debug lib
+  AC_SUBST(omx_debug_tests, 0)
   generate_lib_build build normal 0 ""
 else
   # build both by default
   generate_lib_build build normal 0 ""
   generate_lib_build build-dbg debug 1 /debug
+  AC_SUBST(omx_debug_tests, 0)
 fi fi
 AC_SUBST(LIB_TARGETS)
 

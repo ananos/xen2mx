@@ -15,11 +15,10 @@ CPPFLAGS	+=	-I@top_srcdir@/common
 CPPFLAGS	+=	@CPPFLAGS@
 
 CFLAGS	+=	-Wall
-ifeq (@OMX_DEBUG@,1)
-CFLAGS	+=	@DBGCFLAGS@
-else
 CFLAGS	+=	@CFLAGS@
-endif
+ifeq (@omx_debug_tests@,1)
+	CFLAGS	+=	@DBGCFLAGS@
+fi
 
 LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
 
