@@ -86,7 +86,7 @@ install: all installonly
 # clean
 
 clean:
-	$(RM) $(STATIC_LIB) $(STATIC_LIB_OBJS) $(DYNAMIC_LIB) $(DYNAMIC_LIB_OBJS)
+	$(RM) $(STATIC_LIB) $(STATIC_LIB_OBJS) $(DYNAMIC_LIB) $(DYNAMIC_LIB_OBJS) $(ASSERTIONS_STATIC_OBJ)
 
 distclean: clean
 	$(RM) $(DEPS)
