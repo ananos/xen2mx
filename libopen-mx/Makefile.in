@@ -11,12 +11,13 @@ LN_S	=	@LN_S@
 
 CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
 CPPFLAGS	+=	-I@top_srcdir@/common
+CPPFLAGS	+=	@CPPFLAGS@
 
 CFLAGS	+=	-Wall
 ifeq (@OMX_DEBUG@,1)
-CFLAGS	+=	-g -O0
+CFLAGS	+=	@DBGCFLAGS@
 else
-CFLAGS	+=	-O2
+CFLAGS	+=	@CFLAGS@
 endif
 
 STATIC_CFLAGS	+=	

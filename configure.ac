@@ -22,6 +22,9 @@ AC_PREREQ(2.60)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/open-mx)
 
+########################
+# external tools config
+
 AC_PROG_CPP
 AC_PROG_CC
 AC_PROG_MKDIR_P
@@ -39,6 +42,17 @@ if test -n "$KCC" ; then
 	AC_MSG_CHECKING(which compiler to use for kernel modules)
 	AC_MSG_RESULT($KCC)
 fi
+
+#####################
+# build flags config
+
+AC_SUBST(CPPFLAGS)
+AC_SUBST(CFLAGS)
+
+if test -z "$DBGCFLAGS" ; then
+	DBGCFLAGS="-g -O0"
+fi
+AC_SUBST(DBGCFLAGS)
 
 ########################
 # Kernel related config
