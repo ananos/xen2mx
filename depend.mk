@@ -18,5 +18,5 @@ endif
 
 # include dependencies, except when cleaning (so that we don't re-create for nothing)
 ifeq ($(filter ${MAKECMDGOALS},clean distclean),)
-include $(DEPS)
+-include $(DEPS)
 endif
