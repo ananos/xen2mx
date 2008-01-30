@@ -1,21 +1,21 @@
 Contents:
-  I. Quick Start
- II. Building and Installing
-   a. Basic Install
-   b. Kernel Module
-   c. Caveats
-III. Kernel Module and /dev/open-mx Device Node
- IV. Attaching interfaces
-  V. Peer Table File
- VI. Performance tuning
-   a. Wire-compatibility
-   b. Registration Cache
-   c. Interrupt Coalescing
-   d. Avoiding Linearizing on the receive side with old kernels
-VII. Native MX Compatibility
-   a. Wire-compatibility
-   b. API-compatibility
-
+   I. Quick Start
+  II. Building and Installing
+    a. Basic Install
+    b. Kernel Module
+    c. Caveats
+ III. Kernel Module and /dev/open-mx Device Node
+  IV. Attaching interfaces
+   V. Peer Table File
+  VI. Performance tuning
+    a. Wire-compatibility
+    b. Registration Cache
+    c. Interrupt Coalescing
+    d. Avoiding Linearizing on the receive side with old kernels
+ VII. Native MX Compatibility
+    a. Wire-compatibility
+    b. API-compatibility
+VIII. Debugging
 
 See REPORTING-BUGS for problems.
 
@@ -314,3 +314,24 @@ any problem, it just installs more files. To disable it, you should pass
 
 Binary compatibility is not supported yet, which means you will always
 have to rebuild against Open-MX headers.
+
++-----------------+
+| VIII. Debugging |
++-----------------+
+
+Open-MX provides several debugging features such as verbose messages,
+additional checks, non-optimized building, valgrind hooks, ... For
+performance reasons, they are not enabled by default.
+
+By default, Open-MX will build a non-debug library and an optional debug
+library. The former is installed in $prefix/lib while the latter goes in
+$prefix/lib/debug. The driver is built without debug by default.
+
+Passing --disable-debug to the configure command line will only disable
+the build of the debug library. Passing --enable-debug will make only
+the debug library be built and installed in $prefix/lib as usual, and the
+driver will be debug enabled.
+
+The build flags may be configured by passing CFLAGS on the configure
+command line. Additional flags may be passed for the debugging library
+with DBGCFLAGS.

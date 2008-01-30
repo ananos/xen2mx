@@ -232,6 +232,7 @@ fi
 libopen_mx_dir="libopen-mx/"
 libopen_mx_builddir="${libopen_mx_dir}build/"
 libopen_mx_name="libopen-mx"
+LIB_TARGETS=""
 
 generate_lib_build() {
 	dir=$1; shift
@@ -250,22 +251,25 @@ EOF
 	test $? -eq 0 || exit -1
 
 	AC_MSG_NOTICE(building the $name library in ${libopen_mx_dir}${dir})
+	LIB_TARGETS="$LIB_TARGETS $dir"
 }
 
-AC_ARG_ENABLE(debug, [  --enable-debug		enable debugging features in the main library],
-	      enable_debug=$enableval, enable_debug=no)
-AC_MSG_CHECKING(if debug is enabled)
+AC_ARG_ENABLE(debug, [  --enable-debug		enable debugging features in the driver and main library],
+	      enable_debug=$enableval, enable_debug=optional)
+AC_MSG_CHECKING(if debug is enabled in the driver and main library)
+AC_MSG_RESULT($enable_debug)
 if test x$enable_debug = xyes; then
-  AC_MSG_RESULT(yes)
+  # only build the debug lib lib
   AC_DEFINE(OMX_DRIVER_DEBUG, [1], [Define to enable debug features in the driver])
   generate_lib_build build debug-only 1 ""
-  LIB_TARGETS="build"
+else if test x$enable_debug = xno; then
+  # only build the non-debug lib
+  generate_lib_build build normal 0 ""
 else
-  AC_MSG_RESULT(no)
+  # build both by default
   generate_lib_build build normal 0 ""
   generate_lib_build build-dbg debug 1 /debug
-  LIB_TARGETS="build build-dbg"
-fi
+fi fi
 AC_SUBST(LIB_TARGETS)
 
 AC_ARG_ENABLE(self, [  --disable-self		disable communication to myself],

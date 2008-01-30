@@ -1,5 +1,3 @@
-* document --enable-debug, CFLAGS, DBGCFLAGS
-
 * return OMX_INTERRUPTED from blocking calls
   + add a env var to ignore it ?
 
