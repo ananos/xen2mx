@@ -262,7 +262,7 @@ omx_nic_id_to_board_number(uint64_t nic_id,
 			   uint32_t *board_number)
 {
   omx_return_t ret;
-  uint8_t index;
+  uint8_t index = -1; /* shut-up the compiler */
 
   ret = omx__get_board_index_by_addr(nic_id, &index);
   if (ret == OMX_SUCCESS)
