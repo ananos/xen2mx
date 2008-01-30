@@ -229,6 +229,45 @@ fi
 ###############
 # Other config
 
+libopen_mx_dir="libopen-mx/"
+libopen_mx_builddir="${libopen_mx_dir}build/"
+libopen_mx_name="libopen-mx"
+
+generate_lib_build() {
+	dir=$1; shift
+	name=$1; shift
+	debug=$1; shift
+	installsuffix=$1; shift
+
+	mkdir -p ${libopen_mx_dir}${dir} || exit -1
+
+	cat >${libopen_mx_dir}${dir}/Makefile <<EOF
+omx_build_lib_debug = $debug
+omx_build_lib_name = $name
+libdirsuffix = ${installsuffix}
+include ../Makefile.build
+EOF
+	test $? -eq 0 || exit -1
+
+	AC_MSG_NOTICE(building the $name library in ${libopen_mx_dir}${dir})
+}
+
+AC_ARG_ENABLE(debug, [  --enable-debug		enable debugging features in the main library],
+	      enable_debug=$enableval, enable_debug=no)
+AC_MSG_CHECKING(if debug is enabled)
+if test x$enable_debug = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_DEBUG, [1], [Define to enable debug features])
+  generate_lib_build build debug-only 1 ""
+  LIB_TARGETS="build"
+else
+  AC_MSG_RESULT(no)
+  generate_lib_build build normal 0 ""
+  generate_lib_build build-dbg debug 1 /debug
+  LIB_TARGETS="build build-dbg"
+fi
+AC_SUBST(LIB_TARGETS)
+
 AC_ARG_ENABLE(self, [  --disable-self		disable communication to myself],
 	      enable_self=$enableval, enable_self=yes)
 AC_MSG_CHECKING(if self communication is enabled)
@@ -249,18 +288,6 @@ else
   AC_MSG_RESULT(no)
   AC_DEFINE(OMX_DISABLE_SHARED, [1], [Define to disable shared communication between endpoints on the same node])
   AC_SUBST(OMX_DISABLE_SHARED, 1)
-fi
-
-AC_ARG_ENABLE(debug, [  --enable-debug		enable debugging features],
-	      enable_debug=$enableval, enable_debug=no)
-AC_MSG_CHECKING(if debug is enabled)
-if test x$enable_debug = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_DEBUG, [1], [Define to enable debug features])
-  AC_SUBST(OMX_DEBUG, 1)
-else
-  AC_MSG_RESULT(no)
-  AC_SUBST(OMX_DEBUG, 0)
 fi
 
 AC_ARG_ENABLE(valgrind, [  --enable-valgrind		enable Valgrind hooks in the library ],
@@ -353,8 +380,12 @@ AC_SUBST(DEVICE_MODE)
 ##########
 # Globals
 
-AC_SUBST(OPEN_MX_LIB_STATIC, libopen-mx/libopen-mx.a)
-AC_SUBST(OPEN_MX_LIB_DYNAMIC, libopen-mx/libopen-mx.so)
+AC_SUBST(OPEN_MX_LIB_STATIC, ${libopen_mx_name}.a)
+AC_SUBST(OPEN_MX_LIB_DYNAMIC, ${libopen_mx_name}.so)
+AC_SUBST(OPEN_MX_LIB_STATIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.a)
+AC_SUBST(OPEN_MX_LIB_DYNAMIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.so)
 
 AC_CONFIG_HEADER(common/omx_config.h)
-AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild libopen-mx/Makefile tools/Makefile tests/Makefile tests/mx/Makefile)
+AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild
+	  libopen-mx/Makefile libopen-mx/Makefile.build
+	  tools/Makefile tests/Makefile tests/mx/Makefile)

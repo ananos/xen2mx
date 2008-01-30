@@ -7,32 +7,33 @@ SHARED_LD	=	@CC@ #FIXME?
 AR	=	@AR@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
-LN_S	=	@LN_S@
 
-CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
-CPPFLAGS	+=	-I@top_srcdir@/common
+CPPFLAGS	+=	-imacros @abs_top_builddir@/common/omx_config.h
+CPPFLAGS	+=	-I@abs_top_srcdir@/common
 CPPFLAGS	+=	@CPPFLAGS@
 
 CFLAGS	+=	-Wall
-ifeq (@OMX_DEBUG@,1)
-CFLAGS	+=	@DBGCFLAGS@
+ifeq ($(omx_build_lib_debug),1)
+	CPPFLAGS	+=	-DOMX_DEBUG=1
+	CFLAGS	+=	@DBGCFLAGS@
 else
-CFLAGS	+=	@CFLAGS@
+	CPPFLAGS	+=	
+	CFLAGS	+=	@CFLAGS@
 endif
 
 STATIC_CFLAGS	+=	
 DYNAMIC_CFLAGS	+=	-fpic
 
-SRCS	=	$(wildcard @srcdir@/*.c)
+SRCS	=	$(wildcard @abs_srcdir@/*.c)
 
-STATIC_OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
+STATIC_OBJS	=	$(patsubst @abs_srcdir@/%.c,%.o,$(SRCS))
 ASSERTIONS_STATIC_OBJ	=	omx__assertions.o
 STATIC_LIB_OBJS	=	$(filter-out $(ASSERTIONS_STATIC_OBJ),$(STATIC_OBJS))
-STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
+STATIC_LIB	=	@OPEN_MX_LIB_STATIC@
 
 DYNAMIC_OBJS	=	$(subst .o,.lo,$(STATIC_OBJS))
 DYNAMIC_LIB_OBJS	=	$(subst .o,.lo,$(STATIC_LIB_OBJS))
-DYNAMIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_DYNAMIC@
+DYNAMIC_LIB	=	@OPEN_MX_LIB_DYNAMIC@
 
 .PHONY: all installonly install assertions depend clean distclean
 
@@ -42,12 +43,12 @@ all: assertions $(STATIC_LIB) $(DYNAMIC_LIB)
 ###############
 # dependencies
 
-DEPS	=	$(patsubst @srcdir@/%.c,%.d,$(SRCS))
-DEPSRCDIR	=	@srcdir@
+DEPS	=	$(patsubst @abs_srcdir@/%.c,%.d,$(SRCS))
+DEPSRCDIR	=	@abs_srcdir@
 # make sure the dependency contains both .lo and .o targets
 BUILD_O_AND_LO_OBJECTS	=	1
 
-include @top_srcdir@/depend.mk
+include @abs_top_srcdir@/depend.mk
 
 ########
 # build
@@ -62,28 +63,22 @@ assertions: $(ASSERTIONS_STATIC_OBJ)
 
 # build and create dependency file
 
-$(STATIC_OBJS): %.o: @srcdir@/%.c
+$(STATIC_OBJS): %.o: @abs_srcdir@/%.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(STATIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .o,.lo,$@) $< -o $@
 
-$(DYNAMIC_OBJS): %.lo: @srcdir@/%.c
+$(DYNAMIC_OBJS): %.lo: @abs_srcdir@/%.c
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(DYNAMIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .lo,.o,$@) $< -o $@
 
 ##########
 # install
 
 installonly:
-	@echo "Installing libs to $(DESTDIR)$(libdir)/"
-	@if test ! -d $(DESTDIR)$(libdir); then \
+	@echo "Installing $(omx_build_lib_name) libs to $(DESTDIR)$(libdir)$(libdirsuffix)/"
+	@if test ! -d $(DESTDIR)$(libdir)$(libdirsuffix); then \
 		echo "Directory didn't exist, creating it" ; \
-		$(MKDIR_P) $(DESTDIR)$(libdir) ; \
+		$(MKDIR_P) $(DESTDIR)$(libdir)$(libdirsuffix) ; \
 	fi
-	$(INSTALL) -m 0644 $(STATIC_LIB) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)/
-	@if test @OMX_MX_API_COMPAT@ -eq 1; then \
-		echo "Installing MX compat wrapper lib symlinks" ; \
-		$(RM) $(DESTDIR)$(libdir)/libmyriexpress.a $(DESTDIR)$(libdir)/libmyriexpress.so ; \
-		$(LN_S) $(shell basename $(STATIC_LIB)) $(DESTDIR)$(libdir)/libmyriexpress.a ; \
-		$(LN_S) $(shell basename $(DYNAMIC_LIB)) $(DESTDIR)$(libdir)/libmyriexpress.so ; \
-	fi
+	$(INSTALL) -m 0644 $(STATIC_LIB) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/
 
 install: all installonly
 

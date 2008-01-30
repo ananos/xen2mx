@@ -18,7 +18,7 @@ CPPFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libopen-mx
 CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2
 
-LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
+LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
 
 .PHONY: all installonly install clean distclean
 

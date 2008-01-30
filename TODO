@@ -1,8 +1,9 @@
-* echo "build debug/static lib during build"
-* pass CFLAGS and CPPFLAGS from configure and append them after our flags
-* append DEBUG_CFLAGS to the debug lib
+* no need to DBGCFLAGS for --enable-debug
 
 * build a debug lib
+* enable valgrind when available in the debug lib
+
+* clean omx__assertions.o
 
 * return OMX_INTERRUPTED from blocking calls
   + add a env var to ignore it ?

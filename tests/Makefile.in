@@ -21,7 +21,7 @@ else
 CFLAGS	+=	@CFLAGS@
 endif
 
-LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC@
+LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
 
 .PHONY: all installonly install clean distclean
 
