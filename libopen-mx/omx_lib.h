@@ -19,7 +19,7 @@
 #ifndef __omx_lib_h__
 #define __omx_lib_h__
 
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
 #define MALLOC_CHECK_ 3
 #endif
 
@@ -38,7 +38,7 @@
  * Debugging
  */
 
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
 
 #define OMX_VERBOSE_MAIN (1<<0)
 #define OMX_VERBOSE_ENDPOINT (1<<1)
@@ -61,14 +61,14 @@
 #define omx__debug_instr(x) do { x; } while (0)
 #define omx__debug_printf(type,args...) do { if (omx__verbose_type_enabled(type)) fprintf(stderr, args); } while (0)
 
-#else /* OMX_DEBUG */
+#else /* OMX_LIB_DEBUG */
 
 #define INLINE inline
 #define omx__debug_assert(x) /* nothing */
 #define omx__debug_instr(x) /* nothing */
 #define omx__debug_printf(type,args...) /* nothing */
 
-#endif /* OMX_DEBUG */
+#endif /* OMX_LIB_DEBUG */
 
 #define omx__abort(args...) do { fprintf(stderr, "Open-MX fatal error: " args); assert(0); } while (0)
 
@@ -443,7 +443,7 @@ omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
   int i;
 
   user = array[indexes[0]].user;
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
   for(i=1; i<nr; i++)
     if (user != array[indexes[i]].user)
       omx__abort("Tried to put some unrelated sendq map entries\n");

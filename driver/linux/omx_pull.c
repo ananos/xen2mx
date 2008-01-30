@@ -178,14 +178,14 @@ static void omx_pull_handle_timeout_handler(unsigned long data);
  * So the timeout doesn't need to be short, 1 second is enough.
  */
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 /* defined as module parameters */
 extern unsigned long omx_PULL_REQ_packet_loss;
 extern unsigned long omx_PULL_REPLY_packet_loss;
 /* index between 0 and the above limit */
 static unsigned long omx_PULL_REQ_packet_loss_index = 0;
 static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
-#endif
+#endif /* OMX_DRIVER_DEBUG */
 
 /********************************
  * Pull handle bitmap management

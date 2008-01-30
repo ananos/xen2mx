@@ -75,7 +75,7 @@ omx__init_api(int api)
   omx__globals.ack_delay_jiffies = omx__ack_delay_jiffies();
   omx__globals.resend_delay_jiffies = omx__resend_delay_jiffies();
 
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
   omx__globals.verbose = 0;
   env = getenv("OMX_VERBOSE");
 #ifdef OMX_MX_API_COMPAT
@@ -114,7 +114,7 @@ omx__init_api(int api)
     }
     omx__globals.verbose = val;
   }
-#endif /* OMX_DEBUG */
+#endif /* OMX_LIB_DEBUG */
 
   /* resend configuration */
   omx__globals.req_resends_max = 1000;

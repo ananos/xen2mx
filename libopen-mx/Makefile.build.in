@@ -15,7 +15,7 @@ CPPFLAGS	+=	@CPPFLAGS@
 CFLAGS	+=	-Wall
 CFLAGS	+=	@CFLAGS@
 ifeq ($(omx_build_lib_debug),1)
-	CPPFLAGS	+=	-DOMX_DEBUG=1
+	CPPFLAGS	+=	-DOMX_LIB_DEBUG=1
 	CFLAGS	+=	@DBGCFLAGS@
 endif
 

@@ -55,7 +55,7 @@ int omx_copybench = 0;
 module_param_named(copybench, omx_copybench, uint, S_IRUGO);
 MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 unsigned long omx_debug = 0;
 module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(debug, "Bitmask of debugging messages to display");
@@ -103,7 +103,7 @@ MODULE_PARM_DESC(nack_lib_packet_loss, "Explicit nack lib packet loss frequency"
 unsigned long omx_NACK_MCP_packet_loss = 0;
 module_param_named(nack_mcp_packet_loss, omx_NACK_MCP_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(nack_mcp_packet_loss, "Explicit nack mcp packet loss frequency");
-#endif
+#endif /* OMX_DRIVER_DEBUG */
 
 /************************
  * Main Module Init/Exit
@@ -181,7 +181,7 @@ omx_init(void)
 	       (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
 	       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	if (omx_TINY_packet_loss)
 		printk(KERN_INFO "Open-MX: simulating tiny packet loss every %ld packets\n",
 		       omx_TINY_packet_loss);
@@ -215,7 +215,7 @@ omx_init(void)
 	if (omx_NACK_MCP_packet_loss)
 		printk(KERN_INFO "Open-MX: simulating nack mcp packet loss every %ld packets\n",
 		       omx_NACK_MCP_packet_loss);
-#endif
+#endif /* OMX_DRIVER_DEBUG */
 
 	omx_driver_userdesc = omx_vmalloc_user(sizeof(struct omx_driver_desc));
 	if (!omx_driver_userdesc) {

@@ -47,7 +47,7 @@ do {						\
 	dev_queue_xmit(skb);			\
 } while (0)
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 #define omx_queue_xmit(iface, skb, type)					\
 	do {									\
 	if (omx_##type##_packet_loss &&						\
@@ -58,9 +58,9 @@ do {						\
 		__omx_queue_xmit(iface, skb, type);				\
 	}									\
 } while (0)
-#else /* OMX_DEBUG */
+#else /* OMX_DRIVER_DEBUG */
 #define omx_queue_xmit __omx_queue_xmit
-#endif /* OMX_DEBUG */
+#endif /* OMX_DRIVER_DEBUG */
 
 /* translate omx_endpoint_acquire_by_iface_index return values into nack type */
 static inline enum omx_nack_type

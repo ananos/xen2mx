@@ -257,7 +257,7 @@ AC_ARG_ENABLE(debug, [  --enable-debug		enable debugging features in the main li
 AC_MSG_CHECKING(if debug is enabled)
 if test x$enable_debug = xyes; then
   AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_DEBUG, [1], [Define to enable debug features])
+  AC_DEFINE(OMX_DRIVER_DEBUG, [1], [Define to enable debug features in the driver])
   generate_lib_build build debug-only 1 ""
   LIB_TARGETS="build"
 else

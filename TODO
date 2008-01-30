@@ -1,5 +1,3 @@
-* change the DEBUG in omx_config.h into KERNEL_DEBUG
-
 * document --enable-debug, CFLAGS, DBGCFLAGS
 
 * return OMX_INTERRUPTED from blocking calls

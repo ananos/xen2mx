@@ -31,7 +31,7 @@
 #include "omx_shared.h"
 #endif
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 /* defined as module parameters */
 extern unsigned long omx_TINY_packet_loss;
 extern unsigned long omx_SMALL_packet_loss;
@@ -52,7 +52,7 @@ static unsigned long omx_CONNECT_packet_loss_index = 0;
 static unsigned long omx_TRUC_packet_loss_index = 0;
 static unsigned long omx_NACK_LIB_packet_loss_index = 0;
 static unsigned long omx_NACK_MCP_packet_loss_index = 0;
-#endif
+#endif /* OMX_DRIVER_DEBUG */
 
 /*************************************
  * Allocate and initialize a OMX skb

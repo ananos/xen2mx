@@ -33,7 +33,7 @@ omx__request_alloc(struct omx_endpoint *ep)
 {
   union omx_request * req;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
   req = calloc(1, sizeof(*req));
 #else
   req = malloc(sizeof(*req));
@@ -74,7 +74,7 @@ static inline void
 omx__dequeue_request(struct list_head *head,
 		     union omx_request *req)
 {
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
   struct list_head *e;
   list_for_each(e, head)
     if (req == list_entry(e, union omx_request, generic.queue_elt))
@@ -83,7 +83,7 @@ omx__dequeue_request(struct list_head *head,
   omx__abort("Failed to find request in queue for dequeueing\n");
 
  found:
-#endif /* OMX_DEBUG */
+#endif /* OMX_LIB_DEBUG */
   list_del(&req->generic.queue_elt);
 }
 
@@ -150,7 +150,7 @@ static inline void
 omx__dequeue_done_request(struct omx_endpoint *ep,
 			  union omx_request *req)
 {
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
   struct list_head *e;
   list_for_each(e, &ep->ctxid[ctxid].done_req_q)
@@ -160,7 +160,7 @@ omx__dequeue_done_request(struct omx_endpoint *ep,
   omx__abort("Failed to find request in queue for dequeueing\n");
 
  found:
-#endif /* OMX_DEBUG */
+#endif /* OMX_LIB_DEBUG */
   list_del(&req->generic.done_elt);
 }
 
@@ -196,7 +196,7 @@ static inline void
 omx__dequeue_partner_non_acked_request(struct omx__partner *partner,
 				       union omx_request *req)
 {
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
   struct list_head *e;
   list_for_each(e, &partner->non_acked_req_q)
     if (req == list_entry(e, union omx_request, generic.partner_elt))
@@ -205,7 +205,7 @@ omx__dequeue_partner_non_acked_request(struct omx__partner *partner,
   omx__abort("Failed to find request in partner non-acked queue for dequeueing\n");
 
  found:
-#endif /* OMX_DEBUG */
+#endif /* OMX_LIB_DEBUG */
   list_del(&req->generic.partner_elt);
 }
 
@@ -230,7 +230,7 @@ static inline void
 omx__dequeue_partner_connect_request(struct omx__partner *partner,
 				     union omx_request *req)
 {
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
   struct list_head *e;
   list_for_each(e, &partner->pending_connect_req_q)
     if (req == list_entry(e, union omx_request, generic.partner_elt))
@@ -239,7 +239,7 @@ omx__dequeue_partner_connect_request(struct omx__partner *partner,
   omx__abort("Failed to find request in partner pending connect queue for dequeueing\n");
 
  found:
-#endif /* OMX_DEBUG */
+#endif /* OMX_LIB_DEBUG */
   list_del(&req->generic.partner_elt);
 }
 
@@ -273,7 +273,7 @@ static inline void
 omx__dequeue_partner_partial_request(struct omx__partner *partner,
 				     union omx_request *req)
 {
-#ifdef OMX_DEBUG
+#ifdef OMX_LIB_DEBUG
   struct list_head *e;
   list_for_each(e, &partner->partial_recv_req_q)
     if (req == list_entry(e, union omx_request, generic.partner_elt))
@@ -282,7 +282,7 @@ omx__dequeue_partner_partial_request(struct omx__partner *partner,
   omx__abort("Failed to find request in partner partial queue for dequeueing\n");
 
  found:
-#endif /* OMX_DEBUG */
+#endif /* OMX_LIB_DEBUG */
   list_del(&req->generic.partner_elt);
 }
 
