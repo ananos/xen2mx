@@ -166,8 +166,8 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
       goto out;
     }
 
-    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
-        || wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+        || (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
       goto out;
     }
@@ -310,8 +310,8 @@ omx_wait_any(struct omx_endpoint *ep,
       goto out;
     }
 
-    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
-        || wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+        || (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
       goto out;
     }
@@ -432,8 +432,8 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
       goto out;
     }
 
-    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
-        || wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+        || (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
       goto out;
     }
@@ -575,8 +575,8 @@ omx_probe(struct omx_endpoint *ep,
       goto out;
     }
 
-    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
-        || wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT) {
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+        || (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
       goto out;
     }
@@ -652,8 +652,8 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
     if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
       return OMX_SUCCESS;
 
-    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT)
+    if (wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR))
       return OMX_CONNECTION_TIMEOUT;
 
     omx__debug_printf(WAIT, "omx_connect going back to sleep\n");

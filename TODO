@@ -1,6 +1,3 @@
-* return OMX_INTERRUPTED from blocking calls
-  + add a env var to ignore it ?
-
 * free request (and buffers) on close
   + preallocated pool with free list
 

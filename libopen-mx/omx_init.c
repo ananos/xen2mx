@@ -209,6 +209,15 @@ omx__init_api(int api)
   }
 #endif
 
+  /* interrupted wait configuration */
+  omx__globals.waitintr = 0;
+  env = getenv("OMX_WAITINTR");
+  if (env) {
+    omx__globals.waitintr = atoi(env);
+    omx__debug_printf(MAIN, "Forcing interrupted wait to %s\n",
+		      omx__globals.waitintr ? "exit as timeout" : "go back to sleep");
+  }
+
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
 

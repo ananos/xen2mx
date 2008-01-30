@@ -407,6 +407,7 @@ struct omx__globals {
   int regcache;
   int waitspin;
   int zombie_max;
+  int waitintr;
 #ifndef OMX_DISABLE_SELF
   int selfcomms;
 #endif
