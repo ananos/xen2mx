@@ -1,8 +1,6 @@
 * free request (and buffers) on close
   + preallocated pool with free list
 
-* wait_event latency is worse than poll?
-
 * atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
   ok if lots of slices in parallel ?
 
@@ -13,19 +11,10 @@
     - MX doesn't care about our alignement when it pulls from us
   + design is ugly (fixed in 1.3?)
 
-* link request in the list qnd free them on close to avoid leaking the zombies or so?
-
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
 * factorize early and msg seqnum index computing (cache them?)
-
-* shared comms between boards from within the driver
-  + all through the driver
-  + the connect event contains a local flag, other communication sets a local flag
-  + rcu_read_lock, acquire iface if needed, acquire endpoint, rcu_read_unlock, so the stuff
-  + reject sends if no place in the target eventq so that we requeue them
-    instead of dropping them and needing to ack them later ?
 
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
@@ -33,6 +22,7 @@
   + lib ack contents
 
 * optimize mediums
+  + 2 pages if not mx wire compat
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
 
 * improve retransmission
@@ -55,8 +45,6 @@
 * ioctls to change board indexes?
   + except if some endpoints are attached
 
-* check pingpong contents
-
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request
 * overlap registration with rndv and pull
@@ -64,7 +52,6 @@
   + drop the pull request if it arrives
   + make the window status consistent during registration so that first pages
     may be used while the end is not registered yet
-* hide region id in lib_cookies since region might be used for something else?
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered
   + may be in pull handle on the receive side
   + cannot be outside of the region on the sender's side?
