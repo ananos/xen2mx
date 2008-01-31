@@ -27,22 +27,22 @@
 #include "open-mx.h"
 
 #define MX_HAS_ICONNECT_V2 1
-#define mx_iconnect omx_iconnect
-#define mx_disconnect omx_disconnect
+#define mx_iconnect(ep,nic_id,eid,key,mi,ctx,req) omx_iconnect(ep,nic_id,eid,key,mi,ctx,req)
+#define mx_disconnect(ep,addr) omx_disconnect(ep,addr)
 
-#define mx_set_request_timeout omx_set_request_timeout
+#define mx_set_request_timeout(ep,req,ms) omx_set_request_timeout(ep,req,ms)
 
 #define MX_RECV_CONTINUE OMX_UNEXP_HANDLER_RECV_CONTINUE
 #define MX_RECV_FINISHED OMX_UNEXP_HANDLER_RECV_FINISHED
 typedef omx_unexp_handler_action_t mx_unexp_handler_action_t;
 typedef omx_unexp_handler_t mx_unexp_handler_t;
-#define mx_register_unexp_handler omx_register_unexp_handler
+#define mx_register_unexp_handler(ep,hdlr,ctx) omx_register_unexp_handler(ep,hdlr,ctx)
 
-#define mx_forget omx_forget
+#define mx_forget(ep,req) omx_forget(ep,req)
 
-#define mx_progress omx_progress
+#define mx_progress(ep) omx_progress(ep)
 
-#define mx_set_endpoint_addr_context omx_set_endpoint_addr_context
-#define mx_get_endpoint_addr_context omx_get_endpoint_addr_context
+#define mx_set_endpoint_addr_context(addr,ctx) omx_set_endpoint_addr_context(addr,ctx)
+#define mx_get_endpoint_addr_context(addr,ctx) omx_get_endpoint_addr_context(addr,ctx)
 
 #endif /* MX_EXTENSIONS_H */

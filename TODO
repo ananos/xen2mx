@@ -1,3 +1,5 @@
+* ABI compat in the lib for hard-wired MX linking requirements
+
 * free request (and buffers) on close
   + preallocated pool with free list
 

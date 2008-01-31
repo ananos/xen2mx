@@ -133,20 +133,20 @@ struct mx_status {
 };
 typedef struct mx_status mx_status_t;
 
-#define mx__init_api omx__init_api
+#define mx__init_api(api) omx__init_api(api)
 #define mx_init() mx__init_api(MX_API)
-#define mx_finalize omx_finalize
+#define mx_finalize() omx_finalize()
 
 #define MX_ERRORS_RETURN 0 /* FIXME */
 #define mx_set_error_handler(...) MX_SUCCESS; /* FIXME */
 
-#define mx_open_endpoint omx_open_endpoint
-#define mx_close_endpoint omx_close_endpoint
+#define mx_open_endpoint(bn,eid,key,pa,pc,ep) omx_open_endpoint(bn,eid,key,pa,pc,ep)
+#define mx_close_endpoint(ep) omx_close_endpoint(ep)
 
 #define mx_wakeup(...) MX_SUCCESS; /* FIXME */
 
-#define mx_disable_progression omx_disable_progression
-#define mx_reenable_progression omx_reenable_progression
+#define mx_disable_progression(ep) omx_disable_progression(ep)
+#define mx_reenable_progression(ep) omx_reenable_progression(ep)
 
 typedef omx_seg_ptr_t mx_segment_ptr_t;
 
@@ -167,7 +167,7 @@ typedef struct mx_segment mx_segment_t;
 
 #define MX_MATCH_MASK_NONE (~(uint64_t)0)
 
-#define mx_cancel omx_cancel
+#define mx_cancel(ep,req,res) omx_cancel(ep,req,res)
 
 #define MX_INFINITE OMX_TIMEOUT_INFINITE
 
@@ -181,7 +181,8 @@ typedef struct mx_segment mx_segment_t;
 #define mx_wait_any(endpoint, timeout, match_info, match_mask, status, result) \
   omx_wait_any(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result, timeout)
 
-#define mx_ipeek omx_ipeek
+#define mx_ipeek(endpoint, request, result) \
+  omx_ipeek(endpoint, request, result)
 #define mx_peek(endpoint, timeout, request, result) \
   omx_peek(endpoint, request, result, timeout)
 
@@ -292,17 +293,17 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
 
 #define MX_MAX_HOSTNAME_LEN 80
 
-#define mx_hostname_to_nic_id omx_hostname_to_nic_id
-#define mx_board_number_to_nic_id omx_board_number_to_nic_id
-#define mx_nic_id_to_board_number omx_nic_id_to_board_number
-#define mx_nic_id_to_hostname omx_nic_id_to_hostname
+#define mx_hostname_to_nic_id(h,ni) omx_hostname_to_nic_id(h,ni)
+#define mx_board_number_to_nic_id(bn,ni) omx_board_number_to_nic_id(bn,ni)
+#define mx_nic_id_to_board_number(ni,bn) omx_nic_id_to_board_number(ni,bn)
+#define mx_nic_id_to_hostname(ni,h) omx_nic_id_to_hostname(ni,h)
 
-#define mx_connect omx_connect
-#define mx_decompose_endpoint_addr omx_decompose_endpoint_addr
-#define mx_get_endpoint_addr omx_get_endpoint_addr
+#define mx_connect(ep,nicid,eid,key,timeout,addr) omx_connect(ep,nicid,eid,key,timeout,addr)
+#define mx_decompose_endpoint_addr(addr,nicid,eid) omx_decompose_endpoint_addr(addr,nicid,eid)
+#define mx_get_endpoint_addr(ep,addr) omx_get_endpoint_addr(ep,addr)
 
-#define mx_strerror omx_strerror
-#define mx_strstatus omx_strstatus
+#define mx_strerror(ret) omx_strerror(ret)
+#define mx_strstatus(code) omx_strstatus(code)
 
 /* macros to help printing uint64_t's */
 #define MX_U32(x) \
