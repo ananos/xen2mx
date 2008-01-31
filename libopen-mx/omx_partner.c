@@ -108,8 +108,9 @@ omx__partner_check_localization(struct omx__partner * partner, int shared)
   enum omx__partner_localization localization;
 
 #ifdef OMX_DISABLE_SHARED
+  if (shared)
+    omx__debug_printf(CONNECT, "Driver reporting shared peer while shared support is disabled in the lib\n");
   localization = OMX__PARTNER_LOCALIZATION_REMOTE;
-  omx__debug_assert(!shared);
 #else
   localization = shared ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
 #endif
