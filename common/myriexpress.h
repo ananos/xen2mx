@@ -194,7 +194,7 @@ typedef struct mx_segment mx_segment_t;
 /* FIXME: mx_ibuffered */
 /* FIXME: mx_buffered */
 
-#define mx_context omx_context
+#define mx_context(req,ctx) omx_context(req,ctx)
 
 enum mx_net_type {
   MX_NET_MYRI,
