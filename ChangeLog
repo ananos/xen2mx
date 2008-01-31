@@ -9,6 +9,8 @@ Major enhancements:
 * Add safe partner disconnection detection and recovery.
 * Enable sleeping function by default when using blocking calls since
   they now take care of waking up for progression if necessary.
+* Add a minimal symbol-based compatibility with the native MX stack so
+  that Open MPI and MPICH-MX build natively on top of Open-MX.
 
 Other improvements from previous release:
 

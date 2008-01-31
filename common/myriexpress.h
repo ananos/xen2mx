@@ -133,6 +133,10 @@ struct mx_status {
 };
 typedef struct mx_status mx_status_t;
 
+/* actual prototypes for the ABI wrappers */
+extern void mx_finalize();
+extern mx_return_t mx_test(mx_endpoint_t *ep, mx_request_t * request, struct mx_status status, uint32_t * result);
+
 #define mx__init_api(api) omx__init_api(api)
 #define mx_init() mx__init_api(MX_API)
 #define mx_finalize() omx_finalize()

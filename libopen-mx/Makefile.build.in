@@ -22,7 +22,12 @@ endif
 STATIC_CFLAGS	+=	
 DYNAMIC_CFLAGS	+=	-fpic
 
-SRCS	=	$(wildcard @abs_srcdir@/*.c)
+ALL_SRCS	=	$(wildcard @abs_srcdir@/*.c)
+ifeq (@OMX_MX_API_COMPAT@,1)
+	SRCS	=	$(ALL_SRCS)
+else
+	SRCS	=	$(filter-out @abs_srcdir@/omx__mx_compat.c,$(ALL_SRCS))
+endif
 
 STATIC_OBJS	=	$(patsubst @abs_srcdir@/%.c,%.o,$(SRCS))
 ASSERTIONS_STATIC_OBJ	=	omx__assertions.o
