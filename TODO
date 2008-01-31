@@ -1,5 +1,3 @@
-* reorder the API compat wrappers into constants, types and then functions,
-  and find a way to make it work for both myriexpress.h and mx_extensions.h
 * add the prototypes of all wrapped functions
 * make the mx_get_info wrapper an actual function in omx__mx_api.c
   so that there is no static inline in the wrapper anymore and we

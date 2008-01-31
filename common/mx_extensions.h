@@ -26,16 +26,35 @@
 
 #include "open-mx.h"
 
+/***********************************
+ * Redefine MX constants and macros
+ */
+
 #define MX_HAS_ICONNECT_V2 1
+
+#define MX_RECV_CONTINUE OMX_UNEXP_HANDLER_RECV_CONTINUE
+#define MX_RECV_FINISHED OMX_UNEXP_HANDLER_RECV_FINISHED
+
+/********************
+ * Redefine MX types
+ */
+
+typedef omx_unexp_handler_action_t mx_unexp_handler_action_t;
+typedef omx_unexp_handler_t mx_unexp_handler_t;
+
+/**********************************************************
+ * MX API prototypes (needed for symbol-referenced compat)
+ */
+
+/******************************************
+ * MX API wrappers (needed for API compat)
+ */
+
 #define mx_iconnect(ep,nic_id,eid,key,mi,ctx,req) omx_iconnect(ep,nic_id,eid,key,mi,ctx,req)
 #define mx_disconnect(ep,addr) omx_disconnect(ep,addr)
 
 #define mx_set_request_timeout(ep,req,ms) omx_set_request_timeout(ep,req,ms)
 
-#define MX_RECV_CONTINUE OMX_UNEXP_HANDLER_RECV_CONTINUE
-#define MX_RECV_FINISHED OMX_UNEXP_HANDLER_RECV_FINISHED
-typedef omx_unexp_handler_action_t mx_unexp_handler_action_t;
-typedef omx_unexp_handler_t mx_unexp_handler_t;
 #define mx_register_unexp_handler(ep,hdlr,ctx) omx_register_unexp_handler(ep,hdlr,ctx)
 
 #define mx_forget(ep,req) omx_forget(ep,req)

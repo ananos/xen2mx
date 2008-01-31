@@ -28,18 +28,59 @@
 
 #include "open-mx.h"
 
+/***********************************
+ * Redefine MX constants and macros
+ */
+
 #define MX_API 0x301
 
-typedef omx_endpoint_t mx_endpoint_t;
-
 #define MX_SIZEOF_ADDR OMX_SIZEOF_ADDR
-
-typedef omx_endpoint_addr_t mx_endpoint_addr_t;
 
 #define MX_ANY_NIC OMX_ANY_NIC
 #define MX_ANY_ENDPOINT OMX_ANY_ENDPOINT
 
+#define MX_PARAM_ERROR_HANDLER OMX_ENDPOINT_PARAM_ERROR_HANDLER
+#define MX_PARAM_UNEXP_QUEUE_MAX OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX
+#define MX_PARAM_CONTEXT_ID OMX_ENDPOINT_PARAM_CONTEXT_ID
+
+#define MX_ERRORS_RETURN 0 /* FIXME */
+
+#define MX_CONTEXT_ID_BITS_MAX OMX_ENDPOINT_CONTEXT_ID_MAX
+
+#define MX_MATCH_MASK_NONE (~(uint64_t)0)
+
+#define MX_INFINITE OMX_TIMEOUT_INFINITE
+
+#define MX_MAX_HOSTNAME_LEN 80
+
+#define MX_MAX_SEGMENTS OMX_MAX_SEGMENTS
+
+/* macros to help printing uint64_t's */
+#define MX_U32(x) \
+((sizeof (x) == 8) ? ((uint32_t)((uint64_t)(x) >> 32)) : ((void)(x),0))
+#define MX_L32(x) ((uint32_t)(x))
+
+/********************
+ * Redefine MX types
+ */
+
+typedef omx_endpoint_t mx_endpoint_t;
+typedef omx_endpoint_addr_t mx_endpoint_addr_t;
 typedef omx_request_t mx_request_t;
+typedef omx_endpoint_param_key_t mx_param_key_t;
+typedef omx_endpoint_param_t mx_param_t;
+typedef omx_error_handler_t mx_error_handler_t;
+
+typedef omx_seg_ptr_t mx_segment_ptr_t;
+
+/* need to be redefined entirely since some fields are renamed,
+ * there are some compile-time assertions to check compatibility
+ */
+struct mx_segment {
+  mx_segment_ptr_t segment_ptr;
+  uint32_t segment_length;
+};
+typedef struct mx_segment mx_segment_t;
 
 enum mx_return_code { /* FIXME */
 	MX_SUCCESS		= OMX_SUCCESS,
@@ -89,16 +130,6 @@ enum mx_return_code { /* FIXME */
 };
 typedef enum mx_return_code mx_return_t;
 
-#define MX_PARAM_ERROR_HANDLER OMX_ENDPOINT_PARAM_ERROR_HANDLER
-#define MX_PARAM_UNEXP_QUEUE_MAX OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX
-#define MX_PARAM_CONTEXT_ID OMX_ENDPOINT_PARAM_CONTEXT_ID
-typedef omx_endpoint_param_key_t mx_param_key_t;
-typedef omx_endpoint_param_t mx_param_t;
-
-#define MX_CONTEXT_ID_BITS_MAX OMX_ENDPOINT_CONTEXT_ID_MAX
-
-typedef omx_error_handler_t mx_error_handler_t;
-
 enum mx_status_code { /* FIXME */
 	MX_STATUS_SUCCESS	= OMX_STATUS_SUCCESS,
 	MX_STATUS_PENDING	= 101,
@@ -133,73 +164,6 @@ struct mx_status {
 };
 typedef struct mx_status mx_status_t;
 
-/* actual prototypes for the ABI wrappers */
-extern void mx_finalize();
-extern mx_return_t mx_test(mx_endpoint_t *ep, mx_request_t * request, struct mx_status status, uint32_t * result);
-
-#define mx__init_api(api) omx__init_api(api)
-#define mx_init() mx__init_api(MX_API)
-#define mx_finalize() omx_finalize()
-
-#define MX_ERRORS_RETURN 0 /* FIXME */
-#define mx_set_error_handler(...) MX_SUCCESS; /* FIXME */
-
-#define mx_open_endpoint(bn,eid,key,pa,pc,ep) omx_open_endpoint(bn,eid,key,pa,pc,ep)
-#define mx_close_endpoint(ep) omx_close_endpoint(ep)
-
-#define mx_wakeup(...) MX_SUCCESS; /* FIXME */
-
-#define mx_disable_progression(ep) omx_disable_progression(ep)
-#define mx_reenable_progression(ep) omx_reenable_progression(ep)
-
-typedef omx_seg_ptr_t mx_segment_ptr_t;
-
-/* need to be redefined entirely since some fields are renamed,
- * there are some compile-time assertions to check compatibility
- */
-struct mx_segment {
-  mx_segment_ptr_t segment_ptr;
-  uint32_t segment_length;
-};
-typedef struct mx_segment mx_segment_t;
-
-#define MX_MAX_SEGMENTS OMX_MAX_SEGMENTS
-
-#define mx_isend(ep, segs, nseg, d, mi, c, r) omx_isendv(ep, (struct omx_seg *) (void *) segs, nseg, d, mi, c, r)
-#define mx_issend(ep, segs, nseg, d, mi, c, r) omx_issendv(ep, (struct omx_seg *) (void *) segs, nseg, d, mi, c, r)
-#define mx_irecv(ep, segs, nseg, mi, mm, c, r) omx_irecvv(ep, (struct omx_seg *) (void *) segs, nseg, mi, mm, c, r)
-
-#define MX_MATCH_MASK_NONE (~(uint64_t)0)
-
-#define mx_cancel(ep,req,res) omx_cancel(ep,req,res)
-
-#define MX_INFINITE OMX_TIMEOUT_INFINITE
-
-#define mx_test(endpoint, request, status, result) \
-  omx_test(endpoint, request, (struct omx_status *) (void *) status, result)
-#define mx_wait(endpoint, request, timeout, status, result) \
-  omx_wait(endpoint, request, (struct omx_status *) (void *) status, result, timeout)
-
-#define mx_test_any(endpoint, match_info, match_mask, status, result) \
-  omx_test_any(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result)
-#define mx_wait_any(endpoint, timeout, match_info, match_mask, status, result) \
-  omx_wait_any(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result, timeout)
-
-#define mx_ipeek(endpoint, request, result) \
-  omx_ipeek(endpoint, request, result)
-#define mx_peek(endpoint, timeout, request, result) \
-  omx_peek(endpoint, request, result, timeout)
-
-#define mx_iprobe(endpoint, match_info, match_mask, status, result) \
-  omx_iprobe(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result)
-#define mx_probe(endpoint, timeout, match_info, match_mask, status, result) \
-  omx_probe(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result, timeout)
-
-/* FIXME: mx_ibuffered */
-/* FIXME: mx_buffered */
-
-#define mx_context(req,ctx) omx_context(req,ctx)
-
 enum mx_net_type {
   MX_NET_MYRI,
   MX_NET_ETHER,
@@ -233,6 +197,76 @@ enum mx_get_info_key {
   MX_LINE_SPEED = 16
 };
 typedef enum mx_get_info_key mx_get_info_key_t;
+
+/**********************************************************
+ * MX API prototypes (needed for symbol-referenced compat)
+ */
+
+extern void mx_finalize();
+extern mx_return_t mx_test(mx_endpoint_t *ep, mx_request_t * request, struct mx_status status, uint32_t * result);
+
+/******************************************
+ * MX API wrappers (needed for API compat)
+ */
+
+#define mx__init_api(api) omx__init_api(api)
+#define mx_init() mx__init_api(MX_API)
+#define mx_finalize() omx_finalize()
+
+#define mx_set_error_handler(...) MX_SUCCESS; /* FIXME */
+
+#define mx_open_endpoint(bn,eid,key,pa,pc,ep) omx_open_endpoint(bn,eid,key,pa,pc,ep)
+#define mx_close_endpoint(ep) omx_close_endpoint(ep)
+
+#define mx_wakeup(...) MX_SUCCESS; /* FIXME */
+
+#define mx_disable_progression(ep) omx_disable_progression(ep)
+#define mx_reenable_progression(ep) omx_reenable_progression(ep)
+
+#define mx_isend(ep, segs, nseg, d, mi, c, r) omx_isendv(ep, (struct omx_seg *) (void *) segs, nseg, d, mi, c, r)
+#define mx_issend(ep, segs, nseg, d, mi, c, r) omx_issendv(ep, (struct omx_seg *) (void *) segs, nseg, d, mi, c, r)
+#define mx_irecv(ep, segs, nseg, mi, mm, c, r) omx_irecvv(ep, (struct omx_seg *) (void *) segs, nseg, mi, mm, c, r)
+
+#define mx_cancel(ep,req,res) omx_cancel(ep,req,res)
+
+#define mx_test(endpoint, request, status, result) \
+  omx_test(endpoint, request, (struct omx_status *) (void *) status, result)
+#define mx_wait(endpoint, request, timeout, status, result) \
+  omx_wait(endpoint, request, (struct omx_status *) (void *) status, result, timeout)
+
+#define mx_test_any(endpoint, match_info, match_mask, status, result) \
+  omx_test_any(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result)
+#define mx_wait_any(endpoint, timeout, match_info, match_mask, status, result) \
+  omx_wait_any(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result, timeout)
+
+#define mx_ipeek(endpoint, request, result) \
+  omx_ipeek(endpoint, request, result)
+#define mx_peek(endpoint, timeout, request, result) \
+  omx_peek(endpoint, request, result, timeout)
+
+#define mx_iprobe(endpoint, match_info, match_mask, status, result) \
+  omx_iprobe(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result)
+#define mx_probe(endpoint, timeout, match_info, match_mask, status, result) \
+  omx_probe(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result, timeout)
+
+/* FIXME: mx_ibuffered */
+/* FIXME: mx_buffered */
+
+#define mx_context(req,ctx) omx_context(req,ctx)
+
+#define mx_hostname_to_nic_id(h,ni) omx_hostname_to_nic_id(h,ni)
+#define mx_board_number_to_nic_id(bn,ni) omx_board_number_to_nic_id(bn,ni)
+#define mx_nic_id_to_board_number(ni,bn) omx_nic_id_to_board_number(ni,bn)
+#define mx_nic_id_to_hostname(ni,h) omx_nic_id_to_hostname(ni,h)
+
+#define mx_connect(ep,nicid,eid,key,timeout,addr) omx_connect(ep,nicid,eid,key,timeout,addr)
+#define mx_decompose_endpoint_addr(addr,nicid,eid) omx_decompose_endpoint_addr(addr,nicid,eid)
+#define mx_get_endpoint_addr(ep,addr) omx_get_endpoint_addr(ep,addr)
+
+#define mx_strerror(ret) omx_strerror(ret)
+#define mx_strstatus(code) omx_strstatus(code)
+
+/* FIXME: move it to omx__mx_compat.c and only keep a prototype here */
 
 static inline mx_return_t
 mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
@@ -294,24 +328,5 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
 
   return MX_BAD_INFO_KEY;
 }
-
-#define MX_MAX_HOSTNAME_LEN 80
-
-#define mx_hostname_to_nic_id(h,ni) omx_hostname_to_nic_id(h,ni)
-#define mx_board_number_to_nic_id(bn,ni) omx_board_number_to_nic_id(bn,ni)
-#define mx_nic_id_to_board_number(ni,bn) omx_nic_id_to_board_number(ni,bn)
-#define mx_nic_id_to_hostname(ni,h) omx_nic_id_to_hostname(ni,h)
-
-#define mx_connect(ep,nicid,eid,key,timeout,addr) omx_connect(ep,nicid,eid,key,timeout,addr)
-#define mx_decompose_endpoint_addr(addr,nicid,eid) omx_decompose_endpoint_addr(addr,nicid,eid)
-#define mx_get_endpoint_addr(ep,addr) omx_get_endpoint_addr(ep,addr)
-
-#define mx_strerror(ret) omx_strerror(ret)
-#define mx_strstatus(code) omx_strstatus(code)
-
-/* macros to help printing uint64_t's */
-#define MX_U32(x) \
-((sizeof (x) == 8) ? ((uint32_t)((uint64_t)(x) >> 32)) : ((void)(x),0))
-#define MX_L32(x) ((uint32_t)(x))
 
 #endif /* MYRIEXPRESS_H */
