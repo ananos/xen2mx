@@ -218,7 +218,7 @@ omx__create_region(struct omx_endpoint *ep,
   struct omx__large_region *region = NULL;
   omx_return_t ret;
 
-  ret = omx__endpoint_large_region_try_alloc(ep, &region);
+  ret = omx__endpoint_large_region_alloc(ep, &region);
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
