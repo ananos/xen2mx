@@ -279,6 +279,17 @@ omx__connect_common(omx_endpoint_t ep,
   if (ret != OMX_SUCCESS)
     goto out;
 
+#ifndef OMX_DISABLE_SELF
+  if (partner == ep->myself) {
+    req->generic.partner = ep->myself;
+    req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY;
+    omx__enqueue_request(&ep->connect_req_q, req);
+    omx__enqueue_partner_connect_request(partner, req);
+    omx__connect_complete(ep, req, OMX_STATUS_SUCCESS);
+    return OMX_SUCCESS;
+  } 
+#endif
+
   connect_seqnum = partner->connect_seqnum++;
   req->generic.resends = 0;
 
