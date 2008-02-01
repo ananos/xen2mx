@@ -1,18 +1,31 @@
-
-The Features release.
+Open-MX 0.3.0 (February 1st 2008, svn r1232)
+============================================
+The Many-new-Features release.
 
 Major enhancements:
 * Add vectorial communication support through omx_isendv, omx_issendv
   and omx_irecv.
-* Add shared communication between endpoint on the same nodes, even if
-  attached to different interfaces.
-* Add safe partner disconnection detection and recovery.
-* Enable sleeping function by default when using blocking calls since
+* Add shared communication between endpoints on the same nodes, even if
+  they are attached to different interfaces.
+* Add safe partner disconnection detection and recovery, either when
+  calling mx_disconnect() or when detecting new sessions.
+* Enable sleeping functions by default when using blocking calls since
   they now take care of waking up for progression if necessary.
-* Add a minimal symbol-based compatibility with the native MX stack so
-  that Open MPI and MPICH-MX build natively on top of Open-MX.
+* Add a minimal ABI compatibility with the native MX stack so that at
+  least Open MPI and MPICH-MX build natively on top of Open-MX.
 
 Other improvements from previous release:
+* Fix a nasty bug that occurs after trying to open a busy endpoint.
+* Build an additional debugging library by default.
+* Support CFLAGS/CPPFLAGS overriding on the configure command line.
+* Fix the unexpected handler return value management.
+* Fix the registration cache in case of several pending requests
+  using the same region at the same time.
+* Multiple fixes in the installation procedure.
+* Various memory leak and minor bug fixes.
+* Various debug messages improvements.
+* Include the official mx_pingpong and mx_stream benchmarks to ease
+  wire-compatiblity testing.
 
 Caveats:
 * No background progression or retransmission is done if the application does

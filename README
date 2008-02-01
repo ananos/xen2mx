@@ -334,4 +334,4 @@ driver will be debug enabled.
 
 The build flags may be configured by passing CFLAGS on the configure
 command line. Additional flags may be passed for the debugging library
-with DBGCFLAGS.
+build with DBGCFLAGS.
