@@ -6,6 +6,7 @@ srcdir	=	@srcdir@
 
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
+SED	=	@SED@
 
 .PHONY: all install clean distcleqn
 .PHONY: driver driver-installonly driver-install driver-clean driver-distclean
@@ -31,6 +32,11 @@ other-installonly:
 		echo "Installing MX API compatibility wrappers" ; \
 		$(INSTALL) -m 0644 $(srcdir)/common/myriexpress.h $(DESTDIR)$(includedir) ; \
 		$(INSTALL) -m 0644 $(srcdir)/common/mx_extensions.h $(DESTDIR)$(includedir) ; \
+		if test @OMX_MX_API_UNSUPPORTED_COMPAT@ -ne 1; then \
+			echo "Removing unsupported MX API wrappers" ; \
+			$(SED) -e '/#ifdef OMX_MX_API_UNSUPPORTED_COMPAT/,/#endif/d' \
+				-i $(DESTDIR)$(includedir)/myriexpress.h $(DESTDIR)$(includedir)/mx_extensions.h ; \
+		fi \
 	fi
 
 other-install: other-installonly

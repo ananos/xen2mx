@@ -212,8 +212,6 @@ extern mx_return_t mx_open_endpoint(uint32_t board_number, uint32_t endpoint_id,
 				    uint32_t endpoint_key, mx_param_t *params_array, uint32_t params_count,
 				    mx_endpoint_t *endpoint);
 extern mx_return_t mx_close_endpoint(mx_endpoint_t endpoint);
-extern mx_return_t mx_wakeup(mx_endpoint_t endpoint);
-extern mx_return_t mx_register_unexp_callback(mx_endpoint_t ep, mx_matching_callback_t cb, void *ctxt);
 extern mx_return_t mx_disable_progression(mx_endpoint_t ep);
 extern mx_return_t mx_reenable_progression(mx_endpoint_t ep);
 
@@ -226,12 +224,6 @@ extern mx_return_t mx_issend(mx_endpoint_t endpoint, mx_segment_t *segments_list
 extern mx_return_t mx_irecv(mx_endpoint_t endpoint, mx_segment_t *segments_list, uint32_t segments_count,
 			    uint64_t match_info, uint64_t match_mask, void *context,
 			    mx_request_t *request);
-extern mx_return_t mx_iput(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
-			   mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
-			   mx_request_t *request);
-extern mx_return_t mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
-			   mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
-			   mx_request_t *request);
 
 extern mx_return_t mx_cancel(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result);
 extern mx_return_t mx_test(mx_endpoint_t ep, mx_request_t * request, mx_status_t * status, uint32_t * result);
@@ -242,8 +234,6 @@ extern mx_return_t mx_ipeek(mx_endpoint_t endpoint, mx_request_t *request, uint3
 extern mx_return_t mx_peek(mx_endpoint_t endpoint, uint32_t timeout, mx_request_t *request, uint32_t *result);
 extern mx_return_t mx_iprobe(mx_endpoint_t endpoint, uint64_t match_info, uint64_t match_mask, mx_status_t *status, uint32_t *result);
 extern mx_return_t mx_probe(mx_endpoint_t endpoint, uint32_t timeout, uint64_t match_info, uint64_t match_mask, mx_status_t *status, uint32_t *result);
-extern mx_return_t mx_ibuffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result);
-extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uint32_t *result);
 
 extern mx_return_t mx_context(mx_request_t *request, void **context);
 extern mx_return_t mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key, void *in_val, uint32_t in_len, void *out_val, uint32_t out_len);
@@ -261,6 +251,21 @@ extern mx_return_t mx_get_endpoint_addr(mx_endpoint_t endpoint, mx_endpoint_addr
 extern const char * mx_strerror(mx_return_t return_code);
 extern const char * mx_strstatus(mx_status_code_t status);
 
+#ifdef OMX_MX_API_UNSUPPORTED_COMPAT
+/*
+ * Not implemented yet
+ */
+extern mx_return_t mx_wakeup(mx_endpoint_t endpoint);
+extern mx_return_t mx_register_unexp_callback(mx_endpoint_t ep, mx_matching_callback_t cb, void *ctxt);
+extern mx_return_t mx_iput(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
+			   mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
+			   mx_request_t *request);
+extern mx_return_t mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
+			   mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
+			   mx_request_t *request);
+extern mx_return_t mx_ibuffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result);
+extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uint32_t *result);
+#endif
 
 /******************************************
  * MX API wrappers (needed for API compat)

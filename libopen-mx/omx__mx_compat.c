@@ -318,6 +318,7 @@ mx_strstatus(mx_status_code_t status)
   return omx_strstatus(status);
 }
 
+#ifdef OMX_MX_API_UNSUPPORTED_COMPAT
 /*
  * Not implemented yet
  */
@@ -345,9 +346,10 @@ mx_iput(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
   return MX_BAD_BAD_BAD;
 }
 
-mx_return_t mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
-		    mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
-		    mx_request_t *request)
+mx_return_t
+mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
+	mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
+	mx_request_t *request)
 {
   omx__abort("mx_iget not implemented\n");
   return MX_BAD_BAD_BAD;
@@ -374,3 +376,4 @@ mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
   omx__abort("mx_decompose_endpoint_addr2 not implemented\n");
   return MX_BAD_BAD_BAD;
 }
+#endif /* OMX_MX_API_UNSUPPORTED_COMPAT */
