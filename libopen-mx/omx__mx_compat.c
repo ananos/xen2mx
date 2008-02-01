@@ -186,7 +186,8 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
     return omx_get_info(ep, OMX_INFO_ENDPOINT_MAX, in_val, in_len, out_val, out_len);
 
   case MX_NATIVE_REQUESTS:
-    return MX_BAD_BAD_BAD; /* TODO */
+    * (uint32_t *) out_val = UINT32_MAX;
+    return MX_SUCCESS;
 
   case MX_COUNTERS_COUNT:
     return MX_BAD_BAD_BAD; /* TODO */
@@ -198,22 +199,24 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
     return MX_BAD_BAD_BAD; /* TODO */
 
   case MX_PRODUCT_CODE:
-    return MX_BAD_BAD_BAD; /* TODO */
-
   case MX_PART_NUMBER:
-    return MX_BAD_BAD_BAD; /* TODO */
-
   case MX_SERIAL_NUMBER:
-    return MX_BAD_BAD_BAD; /* TODO */
+    if (out_len < MX_MAX_STR_LEN)
+      return MX_BAD_INFO_LENGTH;
+    strcpy((char*)out_val, "N/A (Open-MX)");
+    return MX_SUCCESS;
 
   case MX_PORT_COUNT:
-    return MX_BAD_BAD_BAD; /* TODO */
+    * (uint32_t *) out_val = 1; /* can we know more from the driver? */
+    return MX_SUCCESS;
 
   case MX_PIO_SEND_MAX:
-    return MX_BAD_BAD_BAD; /* TODO */
+    * (uint32_t *) out_val = OMX_SMALL_MAX;
+    return MX_SUCCESS;
 
   case MX_COPY_SEND_MAX:
-    return MX_BAD_BAD_BAD; /* TODO */
+    * (uint32_t *) out_val = OMX_MEDIUM_MAX;
+    return MX_SUCCESS;
 
   case MX_NUMA_NODE:
     return omx_get_info(ep, OMX_INFO_BOARD_NUMA_NODE, in_val, in_len, out_val, out_len);
