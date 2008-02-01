@@ -109,7 +109,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 {
 	union omx_evt *slot;
 
-	spin_lock(&endpoint->event_lock);
+	spin_lock_bh(&endpoint->event_lock);
 
 	slot = endpoint->exp_eventq + endpoint->next_exp_eventq_offset;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
@@ -121,7 +121,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 			endpoint->endpoint_index);
 		omx_counter_inc(endpoint->iface, EXP_EVENTQ_FULL);
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL;
-		spin_unlock(&endpoint->event_lock);
+		spin_unlock_bh(&endpoint->event_lock);
 		return -EBUSY;
 	}
 
@@ -133,7 +133,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 	dprintk(EVENT, "notify_exp waking up everybody1\n");
 	omx_wakeup_on_event(endpoint);
 
-	spin_unlock(&endpoint->event_lock);
+	spin_unlock_bh(&endpoint->event_lock);
 
 	/* set type to NONE for now */
 	((struct omx_evt_generic *) event)->type = OMX_EVT_NONE;
@@ -157,7 +157,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 {
 	union omx_evt *slot;
 
-	spin_lock(&endpoint->event_lock);
+	spin_lock_bh(&endpoint->event_lock);
 
 	slot = endpoint->unexp_eventq + endpoint->next_free_unexp_eventq_offset;
 	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
@@ -169,7 +169,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 			endpoint->endpoint_index);
 		omx_counter_inc(endpoint->iface, UNEXP_EVENTQ_FULL);
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
-		spin_unlock(&endpoint->event_lock);
+		spin_unlock_bh(&endpoint->event_lock);
 		return -EBUSY;
 	}
 
@@ -187,7 +187,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 	dprintk(EVENT, "notify_unexp waking up everybody\n");
 	omx_wakeup_on_event(endpoint);
 
-	spin_unlock(&endpoint->event_lock);
+	spin_unlock_bh(&endpoint->event_lock);
 
 	/* set type to NONE for now */
 	((struct omx_evt_generic *) event)->type = OMX_EVT_NONE;
@@ -219,7 +219,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 {
 	union omx_evt *slot;
 
-	spin_lock(&endpoint->event_lock);
+	spin_lock_bh(&endpoint->event_lock);
 
 	/* check that there's a slot available and reserve it */
 	slot = endpoint->unexp_eventq + endpoint->next_free_unexp_eventq_offset;
@@ -229,7 +229,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 			endpoint->endpoint_index);
 		omx_counter_inc(endpoint->iface, EXP_EVENTQ_FULL);
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
-		spin_unlock(&endpoint->event_lock);
+		spin_unlock_bh(&endpoint->event_lock);
 		return -EBUSY;
 	}
 
@@ -244,7 +244,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	if (unlikely(endpoint->next_recvq_offset >= OMX_RECVQ_SIZE))
 		endpoint->next_recvq_offset = 0;
 
-	spin_unlock(&endpoint->event_lock);
+	spin_unlock_bh(&endpoint->event_lock);
 	return 0;
 }
 
@@ -259,7 +259,7 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 {
 	union omx_evt *slot;
 
-	spin_lock(&endpoint->event_lock);
+	spin_lock_bh(&endpoint->event_lock);
 
 	/* the caller should have called prepare() earlier */
 	BUG_ON(endpoint->next_reserved_unexp_eventq_offset == endpoint->next_free_unexp_eventq_offset);
@@ -273,7 +273,7 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	dprintk(EVENT, "commit_notify_unexp waking up everybody\n");
 	omx_wakeup_on_event(endpoint);
 
-	spin_unlock(&endpoint->event_lock);
+	spin_unlock_bh(&endpoint->event_lock);
 
 	/* set type to none for now */
 	((struct omx_evt_generic *) event)->type = OMX_EVT_NONE;
@@ -319,7 +319,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	init_waitqueue_entry(&waiter.event_wq, current);
 	waiter.event_wq.func = &omx_wakeup_on_event_handler;
 
-	spin_lock(&endpoint->event_lock);
+	spin_lock_bh(&endpoint->event_lock);
 
 	/* check for race conditions */
 	if ((cmd.next_exp_event_offset != endpoint->next_exp_eventq_offset)
@@ -329,7 +329,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 			(unsigned long) cmd.next_unexp_event_offset,
 			endpoint->next_exp_eventq_offset,
 			endpoint->next_reserved_unexp_eventq_offset);
-		spin_unlock(&endpoint->event_lock);
+		spin_unlock_bh(&endpoint->event_lock);
 		cmd.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
 		goto race;
 	}
@@ -337,7 +337,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	/* queue ourself on the wait wueue */
 	add_wait_queue(&endpoint->waiters, &waiter.event_wq);
 	set_current_state(TASK_INTERRUPTIBLE);
-	spin_unlock(&endpoint->event_lock);
+	spin_unlock_bh(&endpoint->event_lock);
 
 	/* setup the timer if needed by an application timeout */
 	if (cmd.jiffies_expire != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE) {

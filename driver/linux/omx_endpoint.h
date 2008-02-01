@@ -64,7 +64,7 @@ struct omx_endpoint {
 	unsigned long next_free_unexp_eventq_offset, next_reserved_unexp_eventq_offset;
 	unsigned long next_recvq_offset;
 	wait_queue_head_t waiters;
-	spinlock_t event_lock;
+	spinlock_t event_lock; /* needs to disable BH as well since it is taken by both ioctl and BH */
 
 	struct page ** sendq_pages;
 
