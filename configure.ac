@@ -297,20 +297,32 @@ else
   AC_SUBST(OMX_DISABLE_SHARED, 1)
 fi
 
-AC_ARG_ENABLE(valgrind, [  --enable-valgrind		enable Valgrind hooks in the library ],
-	      enable_valgrind=$enableval, enable_valgrind=maybe)
-AC_MSG_CHECKING(if valgrind hooks are enabled in the debug library)
-if test x$enable_valgrind != xno; then
-  AC_PREPROC_IFELSE([
+AC_MSG_CHECKING(if valgrind is available)
+AC_PREPROC_IFELSE([
 #include <valgrind/memcheck.h>
 #ifndef VALGRIND_MAKE_MEM_NOACCESS
 #error VALGRIND_MAKE_MEM_NOACCESS not defined
 #endif
-    ], enable_valgrind=yes)
-fi
-if test x$enable_valgrind = xyes ; then
+], valgrind_available=yes)
+if test x$valgrind_available = xyes ; then
   AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_VALGRIND_DEBUG, 1, [Enable memory allocation debugging with Valgrind])
+else
+  AC_MSG_RESULT(no)
+fi
+
+AC_ARG_ENABLE(valgrind, [  --enable-valgrind		enable Valgrind hooks in the debug or non-debug libraries],
+	      enable_valgrind=$enableval, enable_valgrind=maybe)
+AC_MSG_CHECKING(if valgrind hooks are enabled in the non-debug library)
+if test x$valgrind_available = xyes -a x$enable_valgrind = xyes ; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_VALGRIND_NONDEBUG, 1, [Enable memory allocation debugging with Valgrind in the non-debug library])
+else
+  AC_MSG_RESULT(no)
+fi
+AC_MSG_CHECKING(if valgrind hooks are enabled in the debug library)
+if test x$valgrind_available = xyes -a x$enable_valgrind != xno ; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_VALGRIND_DEBUG, 1, [Enable memory allocation debugging with Valgrind in the debug library])
 else
   AC_MSG_RESULT(no)
 fi
