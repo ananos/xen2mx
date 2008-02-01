@@ -90,11 +90,11 @@ int main(int argc, char *argv[])
       goto out;
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&get_endpoint_info, sizeof(get_endpoint_info));
 
-    if (get_endpoint_info.closed)
+    if (get_endpoint_info.info.closed)
       printf("  %d\tnot open\n", i);
     else
       printf("  %d\topen by pid %ld (%s)\n", i,
-	     (unsigned long) get_endpoint_info.pid, get_endpoint_info.command);
+	     (unsigned long) get_endpoint_info.info.pid, get_endpoint_info.info.command);
   }
 
   return 0;

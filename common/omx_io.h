@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x111
+#define OMX_DRIVER_ABI_VERSION		0x112
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -72,6 +72,7 @@
 
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16
+#define OMX_COMMAND_LEN_MAX	32
 
 #define OMX_USER_REGION_MAX	256
 typedef uint8_t omx_user_region_id_t;
@@ -116,19 +117,23 @@ struct omx_endpoint_desc {
  * IOCTL parameter types
  */
 
-struct omx_cmd_get_board_id {
+struct omx_cmd_get_board_info {
 	uint8_t board_index;
-	uint64_t board_addr;
-	char hostname[OMX_HOSTNAMELEN_MAX];
-	char ifacename[OMX_IF_NAMESIZE];
+	struct omx_board_info {
+		uint64_t board_addr;
+		char hostname[OMX_HOSTNAMELEN_MAX];
+		char ifacename[OMX_IF_NAMESIZE];
+	} info;
 };
 
 struct omx_cmd_get_endpoint_info {
 	uint32_t board_index;
 	uint32_t endpoint_index;
-	uint32_t closed;
-	uint32_t pid;
-	char command[32];
+	struct omx_endpoint_info {
+		uint32_t closed;
+		uint32_t pid;
+		char command[OMX_COMMAND_LEN_MAX];
+	} info;
 };
 
 struct omx_cmd_get_counters {
@@ -353,7 +358,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_INDEX(x)	_IOC_NR(x)
 
 #define OMX_CMD_GET_BOARD_COUNT		_IOW(OMX_CMD_MAGIC, 0x11, uint32_t)
-#define OMX_CMD_GET_BOARD_ID		_IOWR(OMX_CMD_MAGIC, 0x12, struct omx_cmd_get_board_id)
+#define OMX_CMD_GET_BOARD_INFO		_IOWR(OMX_CMD_MAGIC, 0x12, struct omx_cmd_get_board_info)
 #define OMX_CMD_GET_ENDPOINT_INFO	_IOWR(OMX_CMD_MAGIC, 0x13, struct omx_cmd_get_endpoint_info)
 #define OMX_CMD_GET_COUNTERS		_IOWR(OMX_CMD_MAGIC, 0x14, struct omx_cmd_get_counters)
 #define OMX_CMD_SET_HOSTNAME		_IOR(OMX_CMD_MAGIC, 0x15, struct omx_cmd_set_hostname)
@@ -382,8 +387,8 @@ omx_strcmd(unsigned cmd)
 	switch (cmd) {
 	case OMX_CMD_GET_BOARD_COUNT:
 		return "Get Board Count";
-	case OMX_CMD_GET_BOARD_ID:
-		return "Get Board ID";
+	case OMX_CMD_GET_BOARD_INFO:
+		return "Get Board Info";
 	case OMX_CMD_GET_ENDPOINT_INFO:
 		return "Get Endpoint Info";
 	case OMX_CMD_GET_COUNTERS:

@@ -114,7 +114,7 @@ omx_ifaces_get_count(void)
  * Return the address and name of an iface.
  */
 int
-omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, char * ifacename)
+omx_iface_get_info(uint8_t board_index, struct omx_board_info *info)
 {
 	struct omx_iface * iface;
 	struct net_device * ifp;
@@ -132,11 +132,11 @@ omx_iface_get_id(uint8_t board_index, uint64_t * board_addr, char * hostname, ch
 
 	ifp = iface->eth_ifp;
 
-	*board_addr = iface->peer.board_addr;
-	strncpy(ifacename, ifp->name, OMX_IF_NAMESIZE);
-	ifacename[OMX_IF_NAMESIZE-1] = '\0';
-	strncpy(hostname, iface->peer.hostname, OMX_HOSTNAMELEN_MAX);
-	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+	info->board_addr = iface->peer.board_addr;
+	strncpy(info->ifacename, ifp->name, OMX_IF_NAMESIZE);
+	info->ifacename[OMX_IF_NAMESIZE-1] = '\0';
+	strncpy(info->hostname, iface->peer.hostname, OMX_HOSTNAMELEN_MAX);
+	info->hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 
 	rcu_read_unlock();
 	return 0;
@@ -656,7 +656,7 @@ omx_iface_release(struct omx_iface * iface)
  */
 int
 omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
-		      uint32_t * closed, uint32_t * pid, char * command, size_t len)
+		      struct omx_endpoint_info *info)
 {
 	struct omx_iface * iface;
 	struct omx_endpoint * endpoint;
@@ -678,11 +678,12 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 
 	endpoint = rcu_dereference(iface->endpoints[endpoint_index]);
 	if (endpoint) {
-		*closed = 0;
-		*pid = endpoint->opener_pid;
-		strncpy(command, endpoint->opener_comm, len);
+		info->closed = 0;
+		info->pid = endpoint->opener_pid;
+		strncpy(info->command, endpoint->opener_comm, OMX_COMMAND_LEN_MAX);
+		info->command[OMX_COMMAND_LEN_MAX-1] = '\0';
 	} else {
-		*closed = 1;
+		info->closed = 1;
 	}
 
 	rcu_read_unlock();

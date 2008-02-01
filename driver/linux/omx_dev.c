@@ -406,9 +406,9 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		break;
 	}
 
-	case OMX_CMD_GET_BOARD_ID: {
+	case OMX_CMD_GET_BOARD_INFO: {
 		struct omx_endpoint * endpoint = file->private_data;
-		struct omx_cmd_get_board_id get_board_id;
+		struct omx_cmd_get_board_info get_board_info;
 
 		/*
 		 * the endpoint is already acquired by the file,
@@ -417,29 +417,25 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		ret = -EINVAL;
 		if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
 			/* the endpoint is not open, get the command parameter and use its board_index */
-			ret = copy_from_user(&get_board_id, (void __user *) arg,
-					     sizeof(get_board_id));
+			ret = copy_from_user(&get_board_info, (void __user *) arg,
+					     sizeof(get_board_info));
 			if (ret < 0) {
-				printk(KERN_ERR "Open-MX: Failed to read get_board_id command argument, error %d\n", ret);
+				printk(KERN_ERR "Open-MX: Failed to read get_board_info command argument, error %d\n", ret);
 				goto out;
 			}
 		} else {
 			/* endpoint acquired, use its board index */
-			get_board_id.board_index = endpoint->board_index;
+			get_board_info.board_index = endpoint->board_index;
 		}
 
-		ret = omx_iface_get_id(get_board_id.board_index,
-				       &get_board_id.board_addr,
-				       get_board_id.hostname,
-				       get_board_id.ifacename);
-
+		ret = omx_iface_get_info(get_board_info.board_index, &get_board_info.info);
 		if (ret < 0)
 			goto out;
 
-		ret = copy_to_user((void __user *) arg, &get_board_id,
-				   sizeof(get_board_id));
+		ret = copy_to_user((void __user *) arg, &get_board_info,
+				   sizeof(get_board_info));
 		if (ret < 0)
-			printk(KERN_ERR "Open-MX: Failed to write get_board_id command result, error %d\n", ret);
+			printk(KERN_ERR "Open-MX: Failed to write get_board_info command result, error %d\n", ret);
 
 		break;
 	}
@@ -455,9 +451,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		}
 
 		ret = omx_endpoint_get_info(get_endpoint_info.board_index, get_endpoint_info.endpoint_index,
-					    &get_endpoint_info.closed, &get_endpoint_info.pid,
-					    get_endpoint_info.command, sizeof(get_endpoint_info.command));
-
+					    &get_endpoint_info.info);
 		ret = copy_to_user((void __user *) arg, &get_endpoint_info,
 				   sizeof(get_endpoint_info));
 		if (ret < 0)

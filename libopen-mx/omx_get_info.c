@@ -58,7 +58,7 @@ omx__get_board_id(struct omx_endpoint * ep, uint8_t * index,
 		  uint64_t * addr, char * hostname, char * ifacename)
 {
   omx_return_t ret = OMX_SUCCESS;
-  struct omx_cmd_get_board_id board_id;
+  struct omx_cmd_get_board_info board_info;
   int err, fd;
 
   if (!omx__globals.initialized) {
@@ -72,27 +72,27 @@ omx__get_board_id(struct omx_endpoint * ep, uint8_t * index,
   } else {
     /* use the control fd and the index */
     fd = omx__globals.control_fd;
-    board_id.board_index = *index;
+    board_info.board_index = *index;
   }
 
-  err = ioctl(fd, OMX_CMD_GET_BOARD_ID, &board_id);
+  err = ioctl(fd, OMX_CMD_GET_BOARD_INFO, &board_info);
   if (err < 0) {
-    ret = omx__errno_to_return("ioctl GET_BOARD_ID");
+    ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
     goto out;
   }
-  OMX_VALGRIND_MEMORY_MAKE_READABLE(board_id.hostname, OMX_HOSTNAMELEN_MAX);
-  OMX_VALGRIND_MEMORY_MAKE_READABLE(board_id.ifacename, OMX_IF_NAMESIZE);
-  OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_id.board_index, sizeof(board_id.board_index));
-  OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_id.board_addr, sizeof(board_id.board_addr));
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.ifacename, OMX_IF_NAMESIZE);
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.board_addr, sizeof(board_info.info.board_addr));
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.board_index, sizeof(board_info.board_index));
 
-  if (hostname)
-    strncpy(hostname, board_id.hostname, OMX_HOSTNAMELEN_MAX);
-  if (ifacename)
-    strncpy(ifacename, board_id.ifacename, OMX_IF_NAMESIZE);
   if (index)
-    *index = board_id.board_index;
+    *index = board_info.board_index;
+  if (hostname)
+    strncpy(hostname, board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
+  if (ifacename)
+    strncpy(ifacename, board_info.info.ifacename, OMX_IF_NAMESIZE);
   if (addr)
-    *addr = board_id.board_addr;
+    *addr = board_info.info.board_addr;
 
  out:
   return ret;
@@ -115,18 +115,18 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
 
   ret = OMX_INVALID_PARAMETER;
   for(i=0; i<max; i++) {
-    struct omx_cmd_get_board_id board_id;
+    struct omx_cmd_get_board_info board_info;
 
-    board_id.board_index = i;
-    err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_ID, &board_id);
+    board_info.board_index = i;
+    err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_INFO, &board_info);
     if (err < 0) {
-      ret = omx__errno_to_return("ioctl GET_BOARD_ID");
+      ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
       if (ret != OMX_INVALID_PARAMETER)
 	goto out;
     }
-    OMX_VALGRIND_MEMORY_MAKE_READABLE(board_id.hostname, OMX_HOSTNAMELEN_MAX);
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
 
-    if (!strncmp(name, board_id.hostname, OMX_HOSTNAMELEN_MAX)) {
+    if (!strncmp(name, board_info.info.hostname, OMX_HOSTNAMELEN_MAX)) {
       ret = OMX_SUCCESS;
       *index = i;
       break;
@@ -154,18 +154,18 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
 
   ret = OMX_INVALID_PARAMETER;
   for(i=0; i<max; i++) {
-    struct omx_cmd_get_board_id board_id;
+    struct omx_cmd_get_board_info board_info;
 
-    board_id.board_index = i;
-    err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_ID, &board_id);
+    board_info.board_index = i;
+    err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_INFO, &board_info);
     if (err < 0) {
-      ret = omx__errno_to_return("ioctl GET_BOARD_ID");
+      ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
       if (ret != OMX_INVALID_PARAMETER)
 	goto out;
     }
-    OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_id.board_addr, sizeof(board_id.board_addr));
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.board_addr, sizeof(board_info.info.board_addr));
 
-    if (addr == board_id.board_addr) {
+    if (addr == board_info.info.board_addr) {
       ret = OMX_SUCCESS;
       *index = i;
       break;
