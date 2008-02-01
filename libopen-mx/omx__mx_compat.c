@@ -25,6 +25,8 @@
  */
 
 #include "open-mx.h"
+#define OMX_NO_FUNC_WRAPPERS
+#include "myriexpress.h"
 
 void
 mx_finalize(void)
@@ -32,9 +34,70 @@ mx_finalize(void)
   omx_finalize();
 }
 
-omx_return_t
-mx_test(struct omx_endpoint *ep, omx_request_t * request,
-	struct omx_status *status, uint32_t * result)
+mx_return_t
+mx_test(mx_endpoint_t ep, mx_request_t * request,
+	mx_status_t *status, uint32_t * result)
 {
-  return omx_test(ep, request, status, result);
+  return omx_test(ep, request, (struct omx_status *) (void *) status, result);
+}
+
+mx_return_t
+mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
+	    void *in_val, uint32_t in_len,
+	    void *out_val, uint32_t out_len)
+{
+  switch (key) {
+  case MX_NIC_COUNT:
+    return omx_get_info(ep, OMX_INFO_BOARD_COUNT, in_val, in_len, out_val, out_len);
+
+  case MX_NIC_IDS:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_MAX_NATIVE_ENDPOINTS:
+    return omx_get_info(ep, OMX_INFO_ENDPOINT_MAX, in_val, in_len, out_val, out_len);
+
+  case MX_NATIVE_REQUESTS:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_COUNTERS_COUNT:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_COUNTERS_LABELS:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_COUNTERS_VALUES:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_PRODUCT_CODE:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_PART_NUMBER:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_SERIAL_NUMBER:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_PORT_COUNT:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_PIO_SEND_MAX:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_COPY_SEND_MAX:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_NUMA_NODE:
+    return MX_BAD_BAD_BAD; /* TODO */
+
+  case MX_NET_TYPE:
+    * (uint32_t *) out_val = MX_NET_ETHER;
+    return MX_SUCCESS;
+
+  case MX_LINE_SPEED:
+    * (uint32_t *) out_val = MX_SPEED_OPEN_MX;
+    return MX_SUCCESS;
+
+  }
+
+  return MX_BAD_INFO_KEY;
 }

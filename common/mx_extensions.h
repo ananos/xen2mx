@@ -50,6 +50,13 @@ typedef omx_unexp_handler_t mx_unexp_handler_t;
  * MX API wrappers (needed for API compat)
  */
 
+#ifndef OMX_NO_FUNC_WRAPPERS
+/*
+ * only include the following replacements when NOT
+ * building the ABI compat stuff in the lib (and
+ * NOT using it in an external code)
+ */
+
 #define mx_iconnect(ep,nic_id,eid,key,mi,ctx,req) omx_iconnect(ep,nic_id,eid,key,mi,ctx,req)
 #define mx_disconnect(ep,addr) omx_disconnect(ep,addr)
 
@@ -63,5 +70,7 @@ typedef omx_unexp_handler_t mx_unexp_handler_t;
 
 #define mx_set_endpoint_addr_context(addr,ctx) omx_set_endpoint_addr_context(addr,ctx)
 #define mx_get_endpoint_addr_context(addr,ctx) omx_get_endpoint_addr_context(addr,ctx)
+
+#endif /* !OMX_NO_FUNC_WRAPPERS */
 
 #endif /* MX_EXTENSIONS_H */

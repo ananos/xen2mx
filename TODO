@@ -1,7 +1,5 @@
 * add the prototypes of all wrapped functions
-* make the mx_get_info wrapper an actual function in omx__mx_api.c
-  so that there is no static inline in the wrapper anymore and we
-  can implement a real ABI compat
+* assert false in the ABI-different ABI-compat symbols
 
 * free request (and buffers) on close
   + preallocated pool with free list
