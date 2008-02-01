@@ -1,6 +1,3 @@
-* add the prototypes of all wrapped functions
-* assert false in the ABI-different ABI-compat symbols
-
 * free request (and buffers) on close
   + preallocated pool with free list
 

@@ -28,6 +28,14 @@
 #define OMX_NO_FUNC_WRAPPERS
 #include "myriexpress.h"
 
+#include "omx_lib.h"
+
+mx_return_t
+mx__init_api(int api)
+{
+  return omx__init_api(api);
+}
+
 void
 mx_finalize(void)
 {
@@ -35,10 +43,131 @@ mx_finalize(void)
 }
 
 mx_return_t
+mx_open_endpoint(uint32_t board_number, uint32_t endpoint_id,
+		 uint32_t endpoint_key, mx_param_t *params_array, uint32_t params_count,
+		 mx_endpoint_t *endpoint)
+{
+  return omx_open_endpoint(board_number, endpoint_id, endpoint_key, params_array, params_count, endpoint);
+}
+
+mx_return_t
+mx_close_endpoint(mx_endpoint_t endpoint)
+{
+  return omx_close_endpoint(endpoint);
+}
+
+mx_return_t
+mx_disable_progression(mx_endpoint_t ep)
+{
+  return omx_disable_progression(ep);
+}
+
+mx_return_t
+mx_reenable_progression(mx_endpoint_t ep)
+{
+  return omx_reenable_progression(ep);
+}
+
+mx_return_t
+mx_progress(mx_endpoint_t ep)
+{
+  return omx_progress(ep);
+}
+
+mx_return_t
+mx_isend(mx_endpoint_t endpoint, mx_segment_t *segments_list, uint32_t segments_count,
+	 mx_endpoint_addr_t dest_endpoint, uint64_t match_info, void *context,
+	 mx_request_t *request)
+{
+  return omx_isendv(endpoint, (struct omx_seg *) (void *) segments_list, segments_count, dest_endpoint, match_info, context, request);
+}
+
+mx_return_t
+mx_issend(mx_endpoint_t endpoint, mx_segment_t *segments_list, uint32_t segments_count,
+	  mx_endpoint_addr_t dest_endpoint, uint64_t match_info, void *context,
+	  mx_request_t *request)
+{
+  return omx_issendv(endpoint, (struct omx_seg *) (void *) segments_list, segments_count, dest_endpoint, match_info, context, request);
+}
+
+mx_return_t
+mx_irecv(mx_endpoint_t endpoint, mx_segment_t *segments_list, uint32_t segments_count,
+	 uint64_t match_info, uint64_t match_mask, void *context,
+	 mx_request_t *request)
+{
+  return omx_irecvv(endpoint, (struct omx_seg *) (void *) segments_list, segments_count, match_info, match_mask, context, request);
+}
+
+mx_return_t
+mx_cancel(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result)
+{
+  return omx_cancel(endpoint, request, result);
+}
+
+mx_return_t
+mx_forget(mx_endpoint_t endpoint, mx_request_t *request)
+{
+  return omx_forget(endpoint, request);
+}
+
+mx_return_t
 mx_test(mx_endpoint_t ep, mx_request_t * request,
 	mx_status_t *status, uint32_t * result)
 {
   return omx_test(ep, request, (struct omx_status *) (void *) status, result);
+}
+
+mx_return_t
+mx_wait(mx_endpoint_t endpoint, mx_request_t *request,
+	uint32_t timeout, mx_status_t *status, uint32_t *result)
+{
+  return omx_wait(endpoint, request, (struct omx_status *) (void *) status, result, timeout);
+}
+
+mx_return_t
+mx_test_any(mx_endpoint_t endpoint, uint64_t match_info, uint64_t match_mask,
+	    mx_status_t *status, uint32_t *result)
+{
+  return omx_test_any(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result);
+}
+
+mx_return_t
+mx_wait_any(mx_endpoint_t endpoint, uint32_t timeout, uint64_t match_info, uint64_t match_mask,
+	    mx_status_t *status, uint32_t *result)
+{
+  return omx_wait_any(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result, timeout);
+}
+
+mx_return_t
+mx_ipeek(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result)
+{
+  return omx_ipeek(endpoint, request, result);
+}
+
+mx_return_t
+mx_peek(mx_endpoint_t endpoint, uint32_t timeout, mx_request_t *request, uint32_t *result)
+{
+  return omx_peek(endpoint, request, result, timeout);
+}
+
+mx_return_t
+mx_iprobe(mx_endpoint_t endpoint, uint64_t match_info, uint64_t match_mask,
+	  mx_status_t *status, uint32_t *result)
+{
+  return omx_iprobe(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result);
+}
+
+mx_return_t
+mx_probe(mx_endpoint_t endpoint, uint32_t timeout, uint64_t match_info, uint64_t match_mask,
+	 mx_status_t *status, uint32_t *result)
+{
+  return omx_probe(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result, timeout);
+}
+
+mx_return_t
+mx_context(mx_request_t *request, void **context)
+{
+  return omx_context(request, context);
 }
 
 mx_return_t
@@ -100,4 +229,148 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
   }
 
   return MX_BAD_INFO_KEY;
+}
+
+mx_return_t
+mx_hostname_to_nic_id(char *hostname, uint64_t *nic_id)
+{
+  return omx_hostname_to_nic_id(hostname, nic_id);
+}
+
+mx_return_t
+mx_board_number_to_nic_id(uint32_t board_number, uint64_t *nic_id)
+{
+  return omx_board_number_to_nic_id(board_number, nic_id);
+}
+
+mx_return_t
+mx_nic_id_to_board_number(uint64_t nic_id, uint32_t *board_number)
+{
+  return omx_nic_id_to_board_number(nic_id, board_number);
+}
+
+mx_return_t
+mx_nic_id_to_hostname(uint64_t nic_id, char *hostname)
+{
+  return omx_nic_id_to_hostname(nic_id, hostname);
+}
+
+mx_return_t
+mx_connect(mx_endpoint_t endpoint, uint64_t nic_id, uint32_t endpoint_id,
+	   uint32_t key, uint32_t timeout, mx_endpoint_addr_t *addr)
+{
+  return omx_connect(endpoint, nic_id, endpoint_id, key, timeout, addr);
+}
+
+mx_return_t
+mx_iconnect(mx_endpoint_t ep, uint64_t nic_id, uint32_t eid, uint32_t key,
+	    uint64_t match_info, void *context, mx_request_t *request)
+{
+  return omx_iconnect(ep, nic_id, eid, key, match_info, context, request);
+}
+
+mx_return_t
+mx_disconnect(mx_endpoint_t ep, mx_endpoint_addr_t addr)
+{
+  return omx_disconnect(ep, addr);
+}
+
+mx_return_t
+mx_set_request_timeout(mx_endpoint_t endpoint, mx_request_t request, uint32_t milli_seconds)
+{
+  return omx_set_request_timeout(endpoint, request, milli_seconds);
+}
+
+mx_return_t
+mx_decompose_endpoint_addr(mx_endpoint_addr_t endpoint_addr,
+			   uint64_t *nic_id, uint32_t *endpoint_id)
+{
+  return omx_decompose_endpoint_addr(endpoint_addr, nic_id, endpoint_id);
+}
+
+mx_return_t
+mx_get_endpoint_addr(mx_endpoint_t endpoint, mx_endpoint_addr_t *endpoint_addr)
+{
+  return omx_get_endpoint_addr(endpoint, endpoint_addr);
+}
+
+mx_return_t
+mx_set_endpoint_addr_context(mx_endpoint_addr_t endpoint_addr, void *context)
+{
+  return omx_set_endpoint_addr_context(endpoint_addr, context);
+}
+
+mx_return_t
+mx_get_endpoint_addr_context(mx_endpoint_addr_t endpoint_addr, void **context)
+{
+  return omx_get_endpoint_addr_context(endpoint_addr, context);
+}
+
+const char *
+mx_strerror(mx_return_t return_code)
+{
+  return omx_strerror(return_code);
+}
+
+const char *
+mx_strstatus(mx_status_code_t status)
+{
+  return omx_strstatus(status);
+}
+
+/*
+ * Not implemented yet
+ */
+
+mx_return_t mx_wakeup(mx_endpoint_t endpoint)
+{
+  omx__abort("mx_wakeup not implemented\n");
+  return MX_BAD_BAD_BAD;
+}
+
+mx_return_t
+mx_register_unexp_callback(mx_endpoint_t ep, mx_matching_callback_t cb, void *ctxt)
+{
+  omx__abort("mx_register_unexp_callback not implemented\n");
+  /* FIXME */
+  return MX_BAD_BAD_BAD;
+}
+
+mx_return_t
+mx_iput(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
+	mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
+	mx_request_t *request)
+{
+  omx__abort("mx_iput not implemented\n");
+  return MX_BAD_BAD_BAD;
+}
+
+mx_return_t mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
+		    mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
+		    mx_request_t *request)
+{
+  omx__abort("mx_iget not implemented\n");
+  return MX_BAD_BAD_BAD;
+}
+
+mx_return_t
+mx_ibuffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result)
+{
+  omx__abort("mx_ibuffered not implemented\n");
+  return MX_BAD_BAD_BAD;
+}
+
+mx_return_t
+mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uint32_t *result)
+{
+  omx__abort("mx_buffered not implemented\n");
+  return MX_BAD_BAD_BAD;
+}
+
+mx_return_t
+mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
+			    uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id)
+{
+  omx__abort("mx_decompose_endpoint_addr2 not implemented\n");
+  return MX_BAD_BAD_BAD;
 }

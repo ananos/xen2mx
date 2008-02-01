@@ -46,6 +46,23 @@ typedef omx_unexp_handler_t mx_unexp_handler_t;
  * MX API prototypes (needed for symbol-referenced compat)
  */
 
+extern mx_return_t mx_iconnect(mx_endpoint_t ep, uint64_t nic_id, uint32_t eid, uint32_t key,
+			       uint64_t match_info, void *context, mx_request_t *request);
+extern mx_return_t mx_disconnect(mx_endpoint_t ep, mx_endpoint_addr_t addr);
+
+extern mx_return_t mx_register_unexp_handler(mx_endpoint_t ep, mx_unexp_handler_t handler, void *context);
+
+extern mx_return_t mx_forget(mx_endpoint_t endpoint, mx_request_t *request);
+
+extern mx_return_t mx_progress(mx_endpoint_t ep);
+
+extern mx_return_t mx_set_endpoint_addr_context(mx_endpoint_addr_t endpoint_addr, void *context);
+extern mx_return_t mx_get_endpoint_addr_context(mx_endpoint_addr_t endpoint_addr, void **context);
+
+extern mx_return_t mx_set_request_timeout(mx_endpoint_t endpoint, mx_request_t request, uint32_t milli_seconds);
+
+extern mx_return_t mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr, uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id);
+
 /******************************************
  * MX API wrappers (needed for API compat)
  */
