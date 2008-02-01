@@ -112,6 +112,17 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 list_entry((ptr)->next, type, member)
 #endif
 
+/* dev_to_node appeared in 2.6.20 */
+#ifdef OMX_HAVE_DEV_TO_NODE
+static inline int
+omx_ifp_node(struct net_device *ifp)
+{
+  return ifp->dev.parent ? dev_to_node(ifp->dev.parent) : -1;
+}
+#else
+#define omx_ifp_node(ifp) -3
+#endif
+
 #endif /* __omx_hal_h__ */
 
 /*

@@ -199,7 +199,8 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     return omx__get_board_count((uint32_t *) out_val);
 
   case OMX_INFO_BOARD_HOSTNAME:
-  case OMX_INFO_BOARD_IFACENAME: {
+  case OMX_INFO_BOARD_IFACENAME:
+  case OMX_INFO_BOARD_NUMA_NODE: {
     struct omx_board_info tmp;
     struct omx_board_info *info = &tmp;
 
@@ -221,10 +222,17 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 	return ret;
     }
    
-    if (key == OMX_INFO_BOARD_HOSTNAME)
+    if (key == OMX_INFO_BOARD_HOSTNAME) {
       strncpy(out_val, info->hostname, out_len);
-    else
+    } else if (key == OMX_INFO_BOARD_IFACENAME) {
       strncpy(out_val, info->ifacename, out_len);
+    } else if (key == OMX_INFO_BOARD_NUMA_NODE) {
+      if (out_len < sizeof(uint32_t))
+	return OMX_INVALID_PARAMETER;
+      *(uint32_t *) out_val = info->numa_node;
+    } else {
+      assert(0);
+    }
 
     return OMX_SUCCESS;
   }

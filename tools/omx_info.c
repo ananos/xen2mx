@@ -87,6 +87,8 @@ int main(int argc, char *argv[])
     omx__board_addr_sprintf(board_addr_str, board_info.addr);
     printf("%s (board #%d name %s addr %s)\n",
 	   board_info.hostname, i, board_info.ifacename, board_addr_str);
+    if (board_info.numa_node != -1)
+      printf("  attached to numa node %d\n", board_info.numa_node);
     printf("==============================================\n");
 
     omx__peers_dump("  %d) %s %s\n");

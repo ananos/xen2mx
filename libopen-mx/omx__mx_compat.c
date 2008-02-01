@@ -216,7 +216,7 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
     return MX_BAD_BAD_BAD; /* TODO */
 
   case MX_NUMA_NODE:
-    return MX_BAD_BAD_BAD; /* TODO */
+    return omx_get_info(ep, OMX_INFO_BOARD_NUMA_NODE, in_val, in_len, out_val, out_len);
 
   case MX_NET_TYPE:
     * (uint32_t *) out_val = MX_NET_ETHER;

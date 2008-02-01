@@ -213,6 +213,15 @@ else
   AC_MSG_RESULT(no)
 fi
 
+# dev_to_node appeared in 2.6.20
+AC_MSG_CHECKING((in kernel headers) whether dev_to_node is available)
+if grep dev_to_node ${LINUX_HDR}/include/linux/device.h > /dev/null ; then
+  echo "#define OMX_HAVE_DEV_TO_NODE 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+fi
+
 # add the footer
 echo "" >> ${TMP_CHECKS_PATH}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_PATH}

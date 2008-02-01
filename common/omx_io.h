@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x112
+#define OMX_DRIVER_ABI_VERSION		0x113
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -121,6 +121,7 @@ struct omx_cmd_get_board_info {
 	uint8_t board_index;
 	struct omx_board_info {
 		uint64_t addr;
+		uint32_t numa_node;
 		char hostname[OMX_HOSTNAMELEN_MAX];
 		char ifacename[OMX_IF_NAMESIZE];
 	} info;
