@@ -132,7 +132,7 @@ omx_iface_get_info(uint8_t board_index, struct omx_board_info *info)
 
 	ifp = iface->eth_ifp;
 
-	info->board_addr = iface->peer.board_addr;
+	info->addr = iface->peer.board_addr;
 	strncpy(info->ifacename, ifp->name, OMX_IF_NAMESIZE);
 	info->ifacename[OMX_IF_NAMESIZE-1] = '\0';
 	strncpy(info->hostname, iface->peer.hostname, OMX_HOSTNAMELEN_MAX);

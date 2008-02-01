@@ -391,7 +391,7 @@ omx__board_addr_sscanf(char * buffer, uint64_t * addr)
 extern omx_return_t omx__errno_to_return(char * caller);
 
 extern omx_return_t omx__get_board_count(uint32_t * count);
-extern omx_return_t omx__get_board_id(struct omx_endpoint * ep, uint8_t * index, uint64_t * addr, char * hostname, char * ifacename);
+extern omx_return_t omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_info * info);
 extern omx_return_t omx__get_board_index_by_name(const char * name, uint8_t * index);
 
 extern omx_return_t omx__driver_peer_add(uint64_t board_addr, char *hostname);

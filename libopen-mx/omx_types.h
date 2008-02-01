@@ -152,8 +152,7 @@ struct omx__partner {
 struct omx_endpoint {
   int fd;
   int endpoint_index, board_index;
-  char hostname[OMX_HOSTNAMELEN_MAX];
-  char ifacename[OMX_IF_NAMESIZE];
+  struct omx_board_info board_info;
   uint32_t app_key;
   omx_unexp_handler_t unexp_handler;
   void * unexp_handler_context;

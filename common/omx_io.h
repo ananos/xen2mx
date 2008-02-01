@@ -120,7 +120,7 @@ struct omx_endpoint_desc {
 struct omx_cmd_get_board_info {
 	uint8_t board_index;
 	struct omx_board_info {
-		uint64_t board_addr;
+		uint64_t addr;
 		char hostname[OMX_HOSTNAMELEN_MAX];
 		char ifacename[OMX_IF_NAMESIZE];
 	} info;

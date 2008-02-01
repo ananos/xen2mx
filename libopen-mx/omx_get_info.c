@@ -54,11 +54,10 @@ omx__get_board_count(uint32_t * count)
  * index, addr, hostname and ifacename pointers may be NULL is unused.
  */
 omx_return_t
-omx__get_board_id(struct omx_endpoint * ep, uint8_t * index,
-		  uint64_t * addr, char * hostname, char * ifacename)
+omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_info * info)
 {
+  struct omx_cmd_get_board_info get_info;
   omx_return_t ret = OMX_SUCCESS;
-  struct omx_cmd_get_board_info board_info;
   int err, fd;
 
   if (!omx__globals.initialized) {
@@ -72,27 +71,20 @@ omx__get_board_id(struct omx_endpoint * ep, uint8_t * index,
   } else {
     /* use the control fd and the index */
     fd = omx__globals.control_fd;
-    board_info.board_index = *index;
+    get_info.board_index = index;
   }
 
-  err = ioctl(fd, OMX_CMD_GET_BOARD_INFO, &board_info);
+  err = ioctl(fd, OMX_CMD_GET_BOARD_INFO, &get_info);
   if (err < 0) {
     ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
     goto out;
   }
-  OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
-  OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.ifacename, OMX_IF_NAMESIZE);
-  OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.board_addr, sizeof(board_info.info.board_addr));
-  OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.board_index, sizeof(board_info.board_index));
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(get_info.info.hostname, OMX_HOSTNAMELEN_MAX);
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(get_info.info.ifacename, OMX_IF_NAMESIZE);
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&get_info.info.addr, sizeof(get_info.info.addr));
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&get_info.board_index, sizeof(get_info.board_index));
 
-  if (index)
-    *index = board_info.board_index;
-  if (hostname)
-    strncpy(hostname, board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
-  if (ifacename)
-    strncpy(ifacename, board_info.info.ifacename, OMX_IF_NAMESIZE);
-  if (addr)
-    *addr = board_info.info.board_addr;
+  memcpy(info, &get_info.info, sizeof(get_info.info));
 
  out:
   return ret;
@@ -163,9 +155,9 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
       if (ret != OMX_INVALID_PARAMETER)
 	goto out;
     }
-    OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.board_addr, sizeof(board_info.info.board_addr));
+    OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.addr, sizeof(board_info.info.addr));
 
-    if (addr == board_info.info.board_addr) {
+    if (addr == board_info.info.addr) {
       ret = OMX_SUCCESS;
       *index = i;
       break;
@@ -207,20 +199,16 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     return omx__get_board_count((uint32_t *) out_val);
 
   case OMX_INFO_BOARD_HOSTNAME:
-  case OMX_INFO_BOARD_IFACENAME:
+  case OMX_INFO_BOARD_IFACENAME: {
+    struct omx_board_info tmp;
+    struct omx_board_info *info = &tmp;
+
     if (ep) {
       /* use the info stored in the endpoint */
-      if (key == OMX_INFO_BOARD_HOSTNAME)
-	strncpy(out_val, ep->hostname, out_len);
-      else
-	strncpy(out_val, ep->ifacename, out_len);
-      return OMX_SUCCESS;
+      info = &ep->board_info;
 
     } else {
       /* if no endpoint given, ask the driver about the index given in in_val */
-      uint64_t addr;
-      char hostname[OMX_HOSTNAMELEN_MAX];
-      char ifacename[OMX_IF_NAMESIZE];
       uint8_t index;
       omx_return_t ret;
 
@@ -228,15 +216,18 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 	return OMX_INVALID_PARAMETER;
       index = *(uint8_t*)in_val;
 
-      ret = omx__get_board_id(ep, &index, &addr, hostname, ifacename);
+      ret = omx__get_board_info(ep, index, &tmp);
       if (ret != OMX_SUCCESS)
 	return ret;
-
-      if (key == OMX_INFO_BOARD_HOSTNAME)
-	strncpy(out_val, hostname, out_len);
-      else
-	strncpy(out_val, ifacename, out_len);
     }
+   
+    if (key == OMX_INFO_BOARD_HOSTNAME)
+      strncpy(out_val, info->hostname, out_len);
+    else
+      strncpy(out_val, info->ifacename, out_len);
+
+    return OMX_SUCCESS;
+  }
 
   default:
     return OMX_INVALID_PARAMETER;
@@ -253,8 +244,15 @@ omx_return_t
 omx_board_number_to_nic_id(uint32_t board_number,
 			   uint64_t *nic_id)
 {
+  struct omx_board_info info;
   uint8_t index = board_number;
-  return omx__get_board_id(NULL, &index, nic_id, NULL, NULL);
+  omx_return_t ret;
+
+  ret = omx__get_board_info(NULL, index, &info);
+  if (ret == OMX_SUCCESS)
+    *nic_id = info.addr;
+
+  return ret;
 }
 
 omx_return_t

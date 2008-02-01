@@ -163,7 +163,6 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   struct omx_endpoint_desc * desc;
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
-  uint64_t board_addr;
   uint8_t ctxid_bits = 0, ctxid_shift = 0;
   omx_return_t ret = OMX_SUCCESS;
   int err, fd, i;
@@ -260,14 +259,14 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->zombies = 0;
 
   /* get some info */
-  ret = omx__get_board_id(ep, NULL, &board_addr, ep->hostname, ep->ifacename);
+  ret = omx__get_board_info(ep, -1, &ep->board_info);
   if (ret != OMX_SUCCESS)
     goto out_with_large_regions;
 
-  omx__board_addr_sprintf(board_addr_str, board_addr);
+  omx__board_addr_sprintf(board_addr_str, ep->board_info.addr);
   omx__debug_printf(ENDPOINT, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
 		    (unsigned long) endpoint_index, (unsigned long) board_index,
-		    ep->hostname, ep->ifacename, board_addr_str);
+		    ep->board_info.hostname, ep->board_info.ifacename, board_addr_str);
 
   /* allocate partners */
   ep->partners = calloc(omx__driver_desc->peer_max * omx__driver_desc->endpoint_max,
@@ -278,7 +277,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   }
 
   /* connect to myself */
-  ret = omx__connect_myself(ep, board_addr);
+  ret = omx__connect_myself(ep, ep->board_info.addr);
   if (ret != OMX_SUCCESS)
     goto out_with_partners;
 

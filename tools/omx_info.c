@@ -69,12 +69,10 @@ int main(int argc, char *argv[])
 
   for(i=0, found=0; i<max && found<count; i++) {
     uint8_t board_index = i;
-    char hostname[OMX_HOSTNAMELEN_MAX];
-    char ifacename[OMX_IF_NAMESIZE];
-    uint64_t board_addr;
+    struct omx_board_info board_info;
     char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 
-    ret = omx__get_board_id(NULL, &board_index, &board_addr, hostname, ifacename);
+    ret = omx__get_board_info(NULL, board_index, &board_info);
     if (ret == OMX_INVALID_PARAMETER)
       continue;
     if (ret != OMX_SUCCESS) {
@@ -86,9 +84,9 @@ int main(int argc, char *argv[])
     found++;
 
     printf("\n");
-    omx__board_addr_sprintf(board_addr_str, board_addr);
+    omx__board_addr_sprintf(board_addr_str, board_info.addr);
     printf("%s (board #%d name %s addr %s)\n",
-	   hostname, i, ifacename, board_addr_str);
+	   board_info.hostname, i, board_info.ifacename, board_addr_str);
     printf("==============================================\n");
 
     omx__peers_dump("  %d) %s %s\n");

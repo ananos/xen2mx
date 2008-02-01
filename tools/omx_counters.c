@@ -37,9 +37,7 @@ usage(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-  char hostname[OMX_HOSTNAMELEN_MAX];
-  char ifacename[OMX_IF_NAMESIZE];
-  uint64_t board_addr;
+  struct omx_board_info board_info;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   uint8_t board_index = BID;
   omx_return_t ret;
@@ -77,12 +75,12 @@ int main(int argc, char *argv[])
     }
 
   /* get the board id */
-  ret = omx__get_board_id(NULL, &board_index, &board_addr, hostname, ifacename);
+  ret = omx__get_board_info(NULL, board_index, &board_info);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to read board #%d id, %s\n", board_index, omx_strerror(ret));
     goto out;
   }
-  omx__board_addr_sprintf(board_addr_str, board_addr);
+  omx__board_addr_sprintf(board_addr_str, board_info.addr);
   get_counters.board_index = board_index;
   get_counters.clear = clear;
   get_counters.buffer_addr = (uintptr_t) counters;
@@ -96,7 +94,7 @@ int main(int argc, char *argv[])
   OMX_VALGRIND_MEMORY_MAKE_READABLE(counters, sizeof(counters));
 
   printf("%s (board #%d name %s addr %s)\n",
-	 hostname, board_index, ifacename, board_addr_str);
+	 board_info.hostname, board_index, board_info.ifacename, board_addr_str);
   printf("=======================================================\n");
 
   for(i=0; i<OMX_COUNTER_INDEX_MAX; i++)
