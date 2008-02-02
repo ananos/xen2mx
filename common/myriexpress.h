@@ -293,21 +293,21 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
 #define mx_disable_progression(ep) omx_disable_progression(ep)
 #define mx_reenable_progression(ep) omx_reenable_progression(ep)
 
-#define mx_isend(ep, segs, nseg, d, mi, c, r) omx_isendv(ep, (struct omx_seg *) (void *) segs, nseg, d, mi, c, r)
-#define mx_issend(ep, segs, nseg, d, mi, c, r) omx_issendv(ep, (struct omx_seg *) (void *) segs, nseg, d, mi, c, r)
-#define mx_irecv(ep, segs, nseg, mi, mm, c, r) omx_irecvv(ep, (struct omx_seg *) (void *) segs, nseg, mi, mm, c, r)
+#define mx_isend(ep, segs, nseg, d, mi, c, r) omx_isendv(ep, (omx_seg_t *) (void *) segs, nseg, d, mi, c, r)
+#define mx_issend(ep, segs, nseg, d, mi, c, r) omx_issendv(ep, (omx_seg_t *) (void *) segs, nseg, d, mi, c, r)
+#define mx_irecv(ep, segs, nseg, mi, mm, c, r) omx_irecvv(ep, (omx_seg_t *) (void *) segs, nseg, mi, mm, c, r)
 
 #define mx_cancel(ep,req,res) omx_cancel(ep,req,res)
 
 #define mx_test(endpoint, request, status, result) \
-  omx_test(endpoint, request, (struct omx_status *) (void *) status, result)
+  omx_test(endpoint, request, (omx_status_t *) (void *) status, result)
 #define mx_wait(endpoint, request, timeout, status, result) \
-  omx_wait(endpoint, request, (struct omx_status *) (void *) status, result, timeout)
+  omx_wait(endpoint, request, (omx_status_t *) (void *) status, result, timeout)
 
 #define mx_test_any(endpoint, match_info, match_mask, status, result) \
-  omx_test_any(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result)
+  omx_test_any(endpoint, match_info, match_mask, (omx_status_t *) (void *) status, result)
 #define mx_wait_any(endpoint, timeout, match_info, match_mask, status, result) \
-  omx_wait_any(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result, timeout)
+  omx_wait_any(endpoint, match_info, match_mask, (omx_status_t *) (void *) status, result, timeout)
 
 #define mx_ipeek(endpoint, request, result) \
   omx_ipeek(endpoint, request, result)
@@ -315,9 +315,9 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
   omx_peek(endpoint, request, result, timeout)
 
 #define mx_iprobe(endpoint, match_info, match_mask, status, result) \
-  omx_iprobe(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result)
+  omx_iprobe(endpoint, match_info, match_mask, (omx_status_t *) (void *) status, result)
 #define mx_probe(endpoint, timeout, match_info, match_mask, status, result) \
-  omx_probe(endpoint, match_info, match_mask, (struct omx_status *) (void *) status, result, timeout)
+  omx_probe(endpoint, match_info, match_mask, (omx_status_t *) (void *) status, result, timeout)
 
 /* FIXME: mx_ibuffered */
 /* FIXME: mx_buffered */
