@@ -347,108 +347,100 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
  * Appending region pages to send
  */
 
-static inline void
-omx__user_region_segment_append_pages(struct omx_user_region_segment * segment,
-				      unsigned long segment_offset,
-				      struct sk_buff * skb,
-				      unsigned long length,
-				      int *fragp)
+void
+omx_user_region_offset_cache_init(struct omx_user_region *region, struct omx_user_region_offset_cache *cache, unsigned long offset)
 {
-	unsigned long queued = 0;
-	unsigned long remaining = length;
-	unsigned long first_page = (segment_offset+segment->first_page_offset)>>PAGE_SHIFT;
-	unsigned long page_offset = (segment_offset+segment->first_page_offset) & (PAGE_SIZE-1);
-	unsigned long i;
+	struct omx_user_region_segment *seg;
+	unsigned long segoff;
+	unsigned long tmp;
 
-	for(i=first_page; ; i++) {
-		/* compute chunk to take in this page */
-		unsigned long chunk = PAGE_SIZE-page_offset;
-		if (unlikely(chunk > remaining))
-			chunk = remaining;
+	/* find the segment */
+	for(tmp=0, seg = &region->segments[0];
+	    tmp + seg->length <= offset;
+	    tmp += seg->length, seg++);
+	cache->seg = seg;
 
-		/* append the page */
-		get_page(segment->pages[i]);
-		skb_fill_page_desc(skb, *fragp, segment->pages[i], page_offset, chunk);
-		skb->len += chunk;
-		skb->data_len += chunk;
-		dprintk(REG,
-			"appending page #%ld offset %ld to skb frag #%d with length %ld\n",
-			i, page_offset, *fragp, chunk);
+	/* find the segment offset */
+	segoff = offset - tmp;
+	cache->segoff = segoff;
 
-		/* update skb frags counter */
-		(*fragp)++;
-		BUG_ON(*fragp == MAX_SKB_FRAGS-1); /* FIXME: detect earlier and linearize? */
+	/* find the page and offset */
+	cache->page = &seg->pages[(segoff + seg->first_page_offset) >> PAGE_SHIFT];
+	cache->pageoff = (segoff + seg->first_page_offset) & (~PAGE_MASK);
 
-		/* update counters */
-		queued += chunk;
-		remaining -= chunk;
-		if (likely(!remaining))
-			break;
-		page_offset = 0;
-	}
-
-	BUG_ON(queued != length);
+	dprintk(REG, "initialized region offset cache to seg #%ld offset %ld page #%ld offset %d\n",
+		(unsigned long) (seg - &region->segments[0]), segoff,
+		(unsigned long) (cache->page - &seg->pages[0]), cache->pageoff);
 }
 
 int
-omx_user_region_append_pages(struct omx_user_region * region,
-			     unsigned long region_offset,
-			     struct sk_buff * skb,
-			     unsigned long length)
+omx_user_region_append_pages_from_offset_cache(struct omx_user_region * region,
+					       struct omx_user_region_offset_cache * cache,
+					       struct sk_buff * skb,
+					       unsigned long length)
 {
-	unsigned long segment_offset = region_offset;
-	unsigned long queued = 0;
 	unsigned long remaining = length;
-	int iseg;
-	int frag = 0;
+	struct omx_user_region_segment *seg = cache->seg;
+	unsigned long segoff = cache->segoff;
+	unsigned long seglen = seg->length;
+	struct page ** page = cache->page;
+	unsigned pageoff = cache->pageoff;
+	int frags = 0;
 
-	if (region_offset+length > region->total_length)
-		return -EINVAL;
+	while (remaining) {
+		/* compute the chunk size */
+		unsigned chunk = remaining;
+		if (chunk > PAGE_SIZE - pageoff)
+			chunk = PAGE_SIZE - pageoff;
+		if (chunk > seglen - segoff)
+			chunk = seglen - segoff;
 
-	for(iseg=0; iseg<region->nr_segments; iseg++) {
-		struct omx_user_region_segment * segment = &region->segments[iseg];
-		dprintk(REG,
-			"looking at segment #%d length %ld for offset %ld length %ld\n",
-			iseg, (unsigned long) segment->length, segment_offset, remaining);
+		/* append the page */
+		get_page(*page);
+		skb_fill_page_desc(skb, frags, *page, pageoff, chunk);
+		skb->len += chunk;
+		skb->data_len += chunk;
+		dprintk(REG, "appending %d from page\n", chunk);
 
-		/* skip segment if offset is beyond it */
-		if (unlikely(segment_offset >= segment->length)) {
-			segment_offset -= segment->length;
-			continue;
-		}
+		/* update skb frags counter */
+		frags++;
+		BUG_ON(frags == MAX_SKB_FRAGS-1); /* FIXME: return an error, and let the caller free the skb and use a linear one */
 
-		if (unlikely(segment_offset + remaining > segment->length)) {
-			/* take the end of this segment and jump to the next one */
-			unsigned long chunk = segment->length - segment_offset;
-			dprintk(REG,
-				"appending pages from segment #%d offset %ld length %ld\n",
-				iseg, segment_offset, chunk);
-			omx__user_region_segment_append_pages(segment, segment_offset,
-							      skb,
-							      chunk,
-							      &frag);
-			queued += chunk;
-			remaining -= chunk;
-			segment_offset = 0;
-			continue;
+		remaining -= chunk;
 
+		/* update the status */
+		if (segoff + chunk == seg->length) {
+			/* next segment */
+			seg++;
+			segoff = 0;
+			if (seg-&region->segments[0] > region->nr_segments) {
+				/* we went out of the segment array, we got to be at the end of the request */
+				BUG_ON(remaining != 0);
+			} else {
+				seglen = seg->length;
+				page = &seg->pages[0];
+				pageoff = seg->first_page_offset;
+				dprintk(REG, "switching offset cache to next segment #%ld\n",
+					(unsigned long) (seg - &region->segments[0]));
+			}
+		} else if (pageoff + chunk == PAGE_SIZE) {
+			/* next page in same segment */
+			segoff += chunk;
+			page++;
+			pageoff = 0;
+			dprintk(REG, "switching offset cache to next page #%ld\n",
+				(unsigned long) (page - &seg->pages[0]));
 		} else {
-			/* the whole data is in this segment */
-			dprintk(REG,
-				"last appending pages from segment #%d offset %ld length %ld\n",
-				iseg, segment_offset, remaining);
-			omx__user_region_segment_append_pages(segment, segment_offset,
-							      skb,
-							      remaining,
-							      &frag);
-			queued += remaining;
-			remaining = 0;
-			break;
+			/* same page */
+			segoff += chunk;
+			pageoff += chunk;
 		}
 	}
 
-	BUG_ON(queued != length);
-	BUG_ON(remaining != 0);
+	cache->seg = seg;
+	cache->segoff = segoff;
+	cache->page = page;
+	cache->pageoff = pageoff;
 	return 0;
 }
 

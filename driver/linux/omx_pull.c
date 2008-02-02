@@ -930,6 +930,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 	uint32_t pulled_rdma_id = OMX_FROM_PKT_FIELD(pull_request_n->pulled_rdma_id);
 	uint32_t pulled_rdma_offset = OMX_FROM_PKT_FIELD(pull_request_n->pulled_rdma_offset);
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(pull_mh->head.dst_src_peer_index);
+	struct omx_user_region_offset_cache region_cache;
 	struct omx_pkt_pull_reply *pull_reply_n;
 	struct omx_hdr *reply_mh;
 	struct ethhdr *reply_eh;
@@ -1011,6 +1012,9 @@ omx_recv_pull_request(struct omx_iface * iface,
 		- pulled_rdma_offset + first_frame_offset;
 	block_remaining_length = block_length;
 
+	/* initialize the region offset cache */
+	omx_user_region_offset_cache_init(region, &region_cache, current_msg_offset + pulled_rdma_offset);
+
 	/* send all replies */
 	for(i=0; i<replies; i++) {
 		uint32_t frame_length;
@@ -1062,8 +1066,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 		omx_user_region_reacquire(region);
 
 		/* append segment pages */
-		err = omx_user_region_append_pages(region, current_msg_offset + pulled_rdma_offset,
-						   skb, frame_length);
+		err = omx_user_region_append_pages_from_offset_cache(region, &region_cache, skb, frame_length);
 		if (unlikely(err < 0)) {
 			omx_counter_inc(iface, PULL_REPLY_APPEND_FAIL);
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");

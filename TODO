@@ -53,9 +53,7 @@
   + make the window status consistent during registration so that first pages
     may be used while the end is not registered yet
 * keep a current (segment+offset+remaining) in user_region and recompute only when unordered
-  + may be in pull handle on the receive side
-  + cannot be outside of the region on the sender's side?
-    - needs a spin_lock if stored in the region
+  + in pull handle on the receive side with a lock?
 * export rdma_get and rdma window management functions
 * rdma_put
 * write parameter in ioctl to register a region, check it when reading/writing from/to the region
