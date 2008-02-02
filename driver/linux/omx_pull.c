@@ -1017,7 +1017,6 @@ omx_recv_pull_request(struct omx_iface * iface,
 
 	/* send all replies */
 	for(i=0; i<replies; i++) {
-		struct sk_buff *skb;
 		uint32_t frame_length;
 
 		frame_length = (i==0)

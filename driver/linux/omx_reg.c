@@ -348,7 +348,9 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
  */
 
 void
-omx_user_region_offset_cache_init(struct omx_user_region *region, struct omx_user_region_offset_cache *cache, unsigned long offset)
+omx_user_region_offset_cache_init(struct omx_user_region *region,
+				  struct omx_user_region_offset_cache *cache,
+				  unsigned long offset)
 {
 	struct omx_user_region_segment *seg;
 	unsigned long segoff;
