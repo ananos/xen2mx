@@ -238,20 +238,20 @@ omx_context(omx_request_t *request, void ** context);
 
 omx_return_t
 omx_test(omx_endpoint_t ep, omx_request_t * request,
-	 struct omx_status *status, uint32_t * result);
+	 omx_status_t *status, uint32_t * result);
 
 omx_return_t
 omx_wait(omx_endpoint_t ep, omx_request_t * request,
-	 struct omx_status *status, uint32_t * result,
+	 omx_status_t *status, uint32_t * result,
 	 uint32_t timeout);
 
 omx_return_t
-omx_test_any(struct omx_endpoint *ep,
+omx_test_any(omx_endpoint_t ep,
 	     uint64_t match_info, uint64_t match_mask,
 	     omx_status_t *status, uint32_t *result);
 
 omx_return_t
-omx_wait_any(struct omx_endpoint *ep,
+omx_wait_any(omx_endpoint_t ep,
 	     uint64_t match_info, uint64_t match_mask,
 	     omx_status_t *status, uint32_t *result,
 	     uint32_t timeout);
@@ -266,11 +266,11 @@ omx_peek(omx_endpoint_t ep, omx_request_t * request,
 	 uint32_t timeout);
 
 omx_return_t
-omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
+omx_iprobe(omx_endpoint_t ep, uint64_t match_info, uint64_t match_mask,
 	   omx_status_t *status, uint32_t *result);
 
 omx_return_t
-omx_probe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
+omx_probe(omx_endpoint_t ep, uint64_t match_info, uint64_t match_mask,
 	  omx_status_t *status, uint32_t *result,
 	  uint32_t timeout);
 
@@ -321,10 +321,10 @@ omx_return_t
 omx_forget(omx_endpoint_t ep, omx_request_t *request);
 
 omx_return_t
-omx_disable_progression(struct omx_endpoint *ep);
+omx_disable_progression(omx_endpoint_t ep);
 
 omx_return_t
-omx_reenable_progression(struct omx_endpoint *ep);
+omx_reenable_progression(omx_endpoint_t ep);
 
 omx_return_t
 omx_get_info(omx_endpoint_t ep, omx_info_key_t key,
