@@ -180,7 +180,7 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
     return omx_get_info(ep, OMX_INFO_BOARD_COUNT, in_val, in_len, out_val, out_len);
 
   case MX_NIC_IDS:
-    return MX_BAD_BAD_BAD; /* TODO */
+    return omx_get_info(ep, OMX_INFO_BOARD_IDS, in_val, in_len, out_val, out_len);
 
   case MX_MAX_NATIVE_ENDPOINTS:
     return omx_get_info(ep, OMX_INFO_ENDPOINT_MAX, in_val, in_len, out_val, out_len);
@@ -190,13 +190,27 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
     return MX_SUCCESS;
 
   case MX_COUNTERS_COUNT:
-    return MX_BAD_BAD_BAD; /* TODO */
+    return omx_get_info(ep, OMX_INFO_COUNTER_MAX, in_val, in_len, out_val, out_len);
 
-  case MX_COUNTERS_LABELS:
-    return MX_BAD_BAD_BAD; /* TODO */
+  case MX_COUNTERS_LABELS: {
+    omx_return_t ret;
+    uint32_t count,i;
+
+    ret = omx_get_info(ep, OMX_INFO_COUNTER_MAX, NULL, 0, &count, sizeof(count));
+    if (ret != OMX_SUCCESS)
+      return ret;
+
+    if (out_len < count * MX_MAX_STR_LEN)
+      return MX_BAD_INFO_LENGTH;
+
+    for(i=0; i<count; i++)
+      omx_get_info(ep, OMX_INFO_COUNTER_LABEL, NULL, 0, &((char *) out_val)[i*MX_MAX_STR_LEN], MX_MAX_STR_LEN);
+
+    return MX_SUCCESS;
+  }
 
   case MX_COUNTERS_VALUES:
-    return MX_BAD_BAD_BAD; /* TODO */
+    return omx_get_info(ep, OMX_INFO_COUNTER_VALUES, in_val, in_len, out_val, out_len);
 
   case MX_PRODUCT_CODE:
   case MX_PART_NUMBER:

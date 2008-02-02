@@ -198,6 +198,29 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       return OMX_INVALID_PARAMETER;
     return omx__get_board_count((uint32_t *) out_val);
 
+  case OMX_INFO_BOARD_IDS: {
+    uint32_t count, i;
+    omx_return_t ret;
+
+    ret = omx__get_board_count(&count);
+    if (!ret)
+      return ret;
+
+    if (out_len < sizeof (uint64_t) * (count+1))
+      return OMX_INVALID_PARAMETER;
+
+    for (i = 0; i < count; i++) {
+      struct omx_board_info tmp;
+      ret = omx__get_board_info(ep, i, &tmp);
+      if (ret != OMX_SUCCESS)
+	return ret;
+      ((uint64_t *) out_val) [i] = tmp.addr;
+    }
+
+    ((uint64_t *) out_val) [count] = 0;
+    return OMX_SUCCESS;
+  }
+  
   case OMX_INFO_BOARD_HOSTNAME:
   case OMX_INFO_BOARD_IFACENAME:
   case OMX_INFO_BOARD_NUMA_NODE: {
@@ -234,6 +257,46 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       assert(0);
     }
 
+    return OMX_SUCCESS;
+  }
+
+  case OMX_INFO_COUNTER_MAX:
+    if (out_len < sizeof(uint32_t))
+      return OMX_INVALID_PARAMETER;
+    *(uint32_t *) out_val = OMX_COUNTER_INDEX_MAX;
+    return OMX_SUCCESS;
+
+  case OMX_INFO_COUNTER_VALUES: {
+    struct omx_cmd_get_counters get_counters;
+    int err;
+
+    if (out_len < sizeof(uint32_t) * OMX_COUNTER_INDEX_MAX)
+      return OMX_INVALID_PARAMETER;
+
+    get_counters.clear = 0;
+    get_counters.buffer_addr = (uintptr_t) out_val;
+    get_counters.buffer_length = out_len;
+
+    if (ep)
+      get_counters.board_index = ep->board_index;
+    else
+      get_counters.board_index = *(uint8_t*)in_val;
+
+    err = ioctl(omx__globals.control_fd, OMX_CMD_GET_COUNTERS, &get_counters);
+    if (err < 0)
+      return omx__errno_to_return("ioctl GET_COUNTERS");
+
+    return OMX_SUCCESS;
+  }
+
+  case OMX_INFO_COUNTER_LABEL: {
+    int index = *(uint8_t*)in_val;
+    const char *label = omx_strcounter(index);
+
+    if (out_len < strlen(label) + 1)
+      return OMX_INVALID_PARAMETER;
+
+    strcpy((char *) out_val, label);
     return OMX_SUCCESS;
   }
 
