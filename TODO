@@ -1,5 +1,3 @@
-* document shared, self, rcache, ... in the README
-
 * free request (and buffers) on close
   + preallocated pool with free list
 

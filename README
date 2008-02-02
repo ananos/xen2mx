@@ -11,11 +11,15 @@ Contents:
     a. Wire-compatibility
     b. Registration Cache
     c. Interrupt Coalescing
-    d. Avoiding Linearizing on the receive side with old kernels
+    d. Shared/Self communications
+    e. Avoiding Linearizing on the receive side with old kernels
  VII. Native MX Compatibility
     a. Wire-compatibility
     b. API-compatibility
-VIII. Debugging
+VIII. Advanced configuration
+    a. Summary of build-time configuration options
+    b. Summary of runtime configuration options
+  IX. Debugging
 
 See REPORTING-BUGS for problems.
 
@@ -271,8 +275,26 @@ with Open-MX when interrupt coalescing is disabled, a nice configuration
 would to set coalescing to N or N-1 usecs:
 $ ethtool -C eth2 rx-usecs <N-1>
 
++----------------------------------
+| VI.d. Shared/Self communications
+
+Open-MX may use a software loopback to send messages from one endpoint to
+itself (self communications) or to another endpoint of any interface of the
+same host (shared communications). This loopback is faster than going on the
+network up to a switch and then coming back. And it is guaranteed to work
+(while some switches don't send packets back to their sender).
+
+If these shared/self communication are useless, the library overhead may be
+slightly reduced by disabling them either at build-time with --disable-self
+or --disable-shared, or at runtime by setting OMX_DISABLE_SELF=1 or
+OMX_DISABLE_SHARED=1 in the environment.
+
+This is especially the case if there is a single process on each node and
+it doesn't talk to itself, or if multiple processes of the same don't talk
+to each other.
+
 +-----------------------------------------------------------------
-| VI.d. Avoiding Linearizing on the receive side with old kernels
+| VI.e. Avoiding Linearizing on the receive side with old kernels
 |       and frag-based drivers
 
 Some old kernels (<2.6.18) have problems with some drivers that receive
@@ -315,9 +337,90 @@ any problem, it just installs more files. To disable it, you should pass
 Binary compatibility is not supported yet, which means you will always
 have to rebuild against Open-MX headers.
 
-+-----------------+
-| VIII. Debugging |
-+-----------------+
++------------------------------+
+| VIII. Advances configuration |
++------------------------------+
+
+The Open-MX behavior may be either configured at build-time with configure
+options, or at runtime with environment variables.
+
++-----------------------------------------------------
+| VIII.a. Summary of build-time configuration options
+
+--enable-debug
+	Only build a debugging library.
+--disable-debug
+	Only build a non-debugging library.
+  Both a debug and a non-debug are built by default, and the non-debug one
+  is used to link all tests/tools programs.
+
+--disable-endian
+	Disable variable endian architectures support on the wire.
+  Endian-ness independent wire protocol is enabled by default.
+
+--disable-self
+	Disable software loopback between an endpoint and itself.
+  Self software loopback is enabled by default.
+
+--disable-shared
+	Disable software loopback between endpoints of the same node.
+  Shared software loopback is enabled by default.
+
+--enable-valgrind
+	Enable Valgrind hooks in the non-debugging library.
+--disable-valgrind
+	Disable Valgrind hooks in the debugging library.
+  By default, Valgrind is only enabled in the debugging library.
+
+--disable-mx
+	Do not build/export any MX compatibility wrapper.
+--enable-unsupported-mx
+	Build the unsupported routines in the MX compatibility wrappers.
+  Only the supported MX routines have their compatiblity wrappers
+  enabled by default.
+
+--disable-mx-wire
+	Optimize the wire-protocol by not being compatible with MXoE.
+  The wire protocol is compatible with MXoE by default.
+
++--------------------------------------------------
+| VIII.b. Summary of runtime configuration options
+
+OMX_DISABLE_SELF=1
+	Disable software loopback between an endpoint and itself.
+  Self software loopback is enabled by default.
+
+OMX_DISABLE_SHARED=1
+	Disable software loopback between endpoints of the same node.
+  Shared software loopback is enabled by default.
+
+OMX_RCACHE=1
+	Enable registration cache.
+  The registration is disabled by default.
+
+OMX_RESENDS_MAX=1000
+	Try to resend each send request 1000 times before timeout-ing.
+  By default, each request is resent up to 1000 times before timeout-ing.
+
+OMX_VERBOSE=<mask>
+	Display verbose messages from the debugging library.
+  No verbose messages are displayed by default.
+
+OMX_WAITSPIN=1
+	Busy loop instead of sleeping in blocking functions.
+  Blocking functions sleep by default.
+
+OMX_WAITINTR=1
+	Let sleeping functions be interruptible by signals.
+  Blocking functions go back to sleep on signal by default.
+
+OMX_ZOMBIE_SEND=512
+	Tolerate the completion of 512 sends before their actual ack.
+  At most 512 zombies are completed before being acked by default.
+
++---------------+
+| IX. Debugging |
++---------------+
 
 Open-MX provides several debugging features such as verbose messages,
 additional checks, non-optimized building, valgrind hooks, ... For
