@@ -1042,6 +1042,25 @@ omx_recv_pull_request(struct omx_iface * iface,
 		reply_mh = omx_hdr(skb);
 		reply_eh = &reply_mh->head.eth;
 
+		/* append segment pages */
+		err = omx_user_region_append_pages_from_offset_cache(region, &region_cache, skb, frame_length);
+		if (unlikely(err < 0)) {
+			omx_counter_inc(iface, PULL_REPLY_APPEND_FAIL);
+			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
+			/* pages will be released in dev_kfree_skb() */
+			goto out_with_skb;
+		}
+		/* pad the skb if necessary */
+		if (unlikely(skb->len < ETH_ZLEN)) {
+			/* pad to ETH_ZLEN */
+			err = omx_skb_pad(skb, ETH_ZLEN);
+			if (unlikely(err < 0)) {
+				/* skb has already been freed in skb_pad() */
+				goto out_with_region;
+			}
+			skb->len = ETH_ZLEN;
+		}
+
 		/* fill ethernet header */
 		memcpy(reply_eh->h_source, ifp->dev_addr, sizeof (reply_eh->h_source));
 		reply_eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -1063,25 +1082,6 @@ omx_recv_pull_request(struct omx_iface * iface,
 				 (unsigned long) current_frame_seqnum,
 				 (unsigned long) frame_length,
 				 (unsigned long) current_msg_offset);
-
-		/* append segment pages */
-		err = omx_user_region_append_pages_from_offset_cache(region, &region_cache, skb, frame_length);
-		if (unlikely(err < 0)) {
-			omx_counter_inc(iface, PULL_REPLY_APPEND_FAIL);
-			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
-			/* pages will be released in dev_kfree_skb() */
-			goto out_with_skb;
-		}
-
-		if (unlikely(skb->len < ETH_ZLEN)) {
-			/* pad to ETH_ZLEN */
-			err = omx_skb_pad(skb, ETH_ZLEN);
-			if (unlikely(err < 0)) {
-				/* skb has already been freed in skb_pad() */
-				goto out_with_region;
-			}
-			skb->len = ETH_ZLEN;
-		}
 
 		/* reacquire the rdma window once per skb destructor */
 		omx_user_region_reacquire(region);
