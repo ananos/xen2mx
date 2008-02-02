@@ -1017,18 +1017,25 @@ omx_recv_pull_request(struct omx_iface * iface,
 
 	/* send all replies */
 	for(i=0; i<replies; i++) {
+		struct sk_buff *skb;
 		uint32_t frame_length;
 
+		frame_length = (i==0)
+			? OMX_PULL_REPLY_LENGTH_MAX - first_frame_offset
+			: OMX_PULL_REPLY_LENGTH_MAX;
+		if (block_remaining_length < frame_length)
+			frame_length = block_remaining_length;
+
 		/* allocate a skb */
-		struct sk_buff *skb = omx_new_skb(/* only allocate space for the header now,
-						   * we'll attach pages and pad to ETH_ZLEN later
-						   */
-						  reply_hdr_len);
+		skb = omx_new_skb(/* only allocate space for the header now,
+				   * we'll attach pages and pad to ETH_ZLEN later
+				   */
+				  reply_hdr_len);
 		if (unlikely(skb == NULL)) {
 			omx_counter_inc(iface, SEND_NOMEM_SKB);
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply skb");
 			err = -ENOMEM;
-			goto out_with_region_once;
+			goto out_with_region;
 		}
 
 		/* locate headers */
@@ -1040,11 +1047,6 @@ omx_recv_pull_request(struct omx_iface * iface,
 		reply_eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 		/* get the destination address */
 		memcpy(reply_eh->h_dest, pull_eh->h_source, sizeof(reply_eh->h_dest));
-
-		frame_length = (i==0) ? OMX_PULL_REPLY_LENGTH_MAX - first_frame_offset
-			: OMX_PULL_REPLY_LENGTH_MAX;
-		if (block_remaining_length < frame_length)
-			frame_length = block_remaining_length;
 
 		/* fill omx header */
 		pull_reply_n = &reply_mh->body.pull_reply;
@@ -1062,16 +1064,13 @@ omx_recv_pull_request(struct omx_iface * iface,
 				 (unsigned long) frame_length,
 				 (unsigned long) current_msg_offset);
 
-		/* reacquire the rdma window once per reply */
-		omx_user_region_reacquire(region);
-
 		/* append segment pages */
 		err = omx_user_region_append_pages_from_offset_cache(region, &region_cache, skb, frame_length);
 		if (unlikely(err < 0)) {
 			omx_counter_inc(iface, PULL_REPLY_APPEND_FAIL);
 			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
 			/* pages will be released in dev_kfree_skb() */
-			goto out_with_skb_and_region_twice;
+			goto out_with_skb;
 		}
 
 		if (unlikely(skb->len < ETH_ZLEN)) {
@@ -1079,11 +1078,13 @@ omx_recv_pull_request(struct omx_iface * iface,
 			err = omx_skb_pad(skb, ETH_ZLEN);
 			if (unlikely(err < 0)) {
 				/* skb has already been freed in skb_pad() */
-				goto out_with_region_twice;
+				goto out_with_region;
 			}
 			skb->len = ETH_ZLEN;
 		}
 
+		/* reacquire the rdma window once per skb destructor */
+		omx_user_region_reacquire(region);
 		omx_set_skb_destructor(skb, omx_send_pull_reply_skb_destructor, region);
 
 		omx_queue_xmit(iface, skb, PULL_REPLY);
@@ -1094,18 +1095,17 @@ omx_recv_pull_request(struct omx_iface * iface,
 		block_remaining_length -= frame_length;
 	}
 
-	/* release the main hold on the region */
+	/* release the main reference on the region */
 	omx_user_region_release(region);
 
 	omx_endpoint_release(endpoint);
 	return 0;
 
- out_with_skb_and_region_twice:
+ out_with_skb:
 	dev_kfree_skb(skb);
- out_with_region_twice:
+ out_with_region:
 	omx_user_region_release(region);
- out_with_region_once:
-	omx_user_region_release(region);
+	/* release the main reference on the region */
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
