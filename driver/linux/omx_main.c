@@ -51,6 +51,10 @@ int omx_peer_max = 1024;
 module_param_named(peers, omx_peer_max, uint, S_IRUGO);
 MODULE_PARM_DESC(peers, "Maximum number of peer nodes");
 
+int omx_skb_frags = MAX_SKB_FRAGS;
+module_param_named(skbfrags, omx_skb_frags, uint, S_IRUGO);
+MODULE_PARM_DESC(skbfrags, "Optimal number of fragments to attach to skb");
+
 int omx_copybench = 0;
 module_param_named(copybench, omx_copybench, uint, S_IRUGO);
 MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");
@@ -169,6 +173,17 @@ omx_init(void)
 	if (omx_peer_max > OMX_PEER_INDEX_MAX) {
 		printk(KERN_INFO "Open-MX: Cannot use more than %d peers\n",
 		       OMX_PEER_INDEX_MAX);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (omx_skb_frags)
+		printk(KERN_INFO "Open-MX: using at most %d frags per skb\n", omx_skb_frags);
+	else
+		printk(KERN_INFO "Open-MX: using linear skb only (no frags)\n");
+	if (omx_skb_frags > MAX_SKB_FRAGS) {
+		printk(KERN_INFO "Open-MX: Cannot use more than MAX_SKB_FRAGS (%ld) skb frags\n",
+		       (unsigned long) MAX_SKB_FRAGS);
 		ret = -EINVAL;
 		goto out;
 	}

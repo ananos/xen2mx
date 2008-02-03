@@ -40,6 +40,7 @@ struct sk_buff;
 
 /* globals */
 extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */
+extern int omx_skb_frags;
 
 /* main net */
 extern int omx_net_init(const char * ifnames);

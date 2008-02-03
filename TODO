@@ -1,4 +1,5 @@
-* force_linear_skb module parameter for medium send a pull reply
+* callback for append/copy in the cache
+* optimize for non-vectorial by changing the callback
 
 * free request (and buffers) on close
   + preallocated pool with free list

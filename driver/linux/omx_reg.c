@@ -406,7 +406,7 @@ omx_user_region_append_pages_from_offset_cache(struct omx_user_region * region,
 	while (remaining) {
 		unsigned chunk;
 
-		if (unlikely(frags == MAX_SKB_FRAGS))
+		if (unlikely(frags == omx_skb_frags))
 			/* cannot add a new frag, return an error and let the caller free the skb */
 			return -1;
 
@@ -424,11 +424,10 @@ omx_user_region_append_pages_from_offset_cache(struct omx_user_region * region,
 		skb->data_len += chunk;
 		dprintk(REG, "appending %d from page\n", chunk);
 
-		/* update skb frags counter */
+		/* update the status */
 		frags++;
 		remaining -= chunk;
 
-		/* update the status */
 		if (segoff + chunk == seg->length) {
 			/* next segment */
 			seg++;
@@ -498,11 +497,10 @@ omx_user_region_copy_pages_from_offset_cache(struct omx_user_region * region,
 		kunmap_atomic(kpaddr, KM_SKB_DATA_SOFTIRQ);
 		dprintk(REG, "copying %d from kmapped page\n", chunk);
 
-		/* update skb frags counter */
+		/* update the status */
 		remaining -= chunk;
 		buffer += chunk;
 
-		/* update the status */
 		if (segoff + chunk == seg->length) {
 			/* next segment */
 			seg++;

@@ -1033,6 +1033,9 @@ omx_recv_pull_request(struct omx_iface * iface,
 		if (block_remaining_length < frame_length)
 			frame_length = block_remaining_length;
 
+		if (unlikely(!omx_skb_frags))
+			goto linear;
+
 		/* allocate a skb */
 		skb = omx_new_skb(/* only allocate space for the header now,
 				   * we'll attach pages and pad to ETH_ZLEN later
@@ -1070,12 +1073,13 @@ omx_recv_pull_request(struct omx_iface * iface,
 			reply_eh = &reply_mh->head.eth;
 
 		} else {
+			/* pages will be released in dev_kfree_skb() */
+			dev_kfree_skb(skb);
+
+ linear:
 			/* failed to append, revert back to copy into a linear skb */
 			omx_counter_inc(iface, PULL_REPLY_LINEAR);
 			dprintk(PULL, "failed to append pages to pull reply, reverting to linear skb\n");
-
-			/* pages will be released in dev_kfree_skb() */
-			dev_kfree_skb(skb);
 
 			/* allocate a linear skb */
 			skb = omx_new_skb(/* pad to ETH_ZLEN */
