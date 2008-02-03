@@ -1,8 +1,6 @@
 * free request (and buffers) on close
   + preallocated pool with free list
 
-* make sure we don't register 0-length regions?
-
 * atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
   ok if lots of slices in parallel ?
 
@@ -25,11 +23,14 @@
 
 * optimize mediums
   + 2 pages if not mx wire compat
+    - double the recv queue size
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
 
 * improve retransmission
   + cancel a liback if sending a message before, or send liback after dequeuing request
   + split partner pendind queue in four quarter to prevent wrap around, and add throttling
+    - add the throttling_queue for request before giving a seqnum
+    - rename the queued_req_q into a no_resources_req_q
   + throttle if too many partially received medium
   + add session to seqnums
 

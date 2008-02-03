@@ -619,10 +619,8 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 	struct omx_user_region_segment *seg;
 	unsigned long segoff;
 
-	if (offset + length > region->total_length)
+	if (unlikely(!region->nr_segments || offset + length > region->total_length))
 		return -1;
-
-	BUG_ON(region->nr_segments == 0);
 
 	cache->region = region;
 
