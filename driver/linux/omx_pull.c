@@ -1049,7 +1049,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 		}
 
 		/* append segment pages */
-		err = omx_user_region_append_pages_from_offset_cache(region, &region_cache, skb, frame_length);
+		err = region_cache.append_pages_to_skb(&region_cache, skb, frame_length);
 		if (likely(!err)) {
 			/* successfully appended frags */
 
@@ -1099,7 +1099,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 			data = ((char*) reply_mh) + reply_hdr_len;
 
 			/* copy from pages into the skb */
-			omx_user_region_copy_pages_from_offset_cache(region, &region_cache, data, frame_length);
+			region_cache.copy_pages_to_buf(&region_cache, data, frame_length);
 		}
 
 		/* fill ethernet header */

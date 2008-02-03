@@ -1,4 +1,3 @@
-* callback for append/copy in the cache
 * optimize for non-vectorial by changing the callback
 
 * free request (and buffers) on close
