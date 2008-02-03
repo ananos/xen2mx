@@ -24,9 +24,10 @@ VIII. Advanced configuration
 
 See REPORTING-BUGS for problems.
 
-+----------------+
-| I. Quick Start |
-+----------------+
+
+++================++
+|| I. Quick Start ||
+++================++
 
 Assuming you want to connect 2 nodes using their 'eth2' interface:
 
@@ -43,7 +44,8 @@ a. Build and install Open-MX in /opt/open-mx
 
 b. Load the open-mx kernel module and tell it which interface to use
      $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
-   See section II and III for details.
+   See sections II (Building and Installing)
+   and III (Kernel Module and /dev/open-mx Device Node) for details.
 
 c. Look for eth2 MAC addresses in /sbin/ifconfig -a on each node.
    and insert them in a file such as this one:
@@ -53,7 +55,7 @@ c. Look for eth2 MAC addresses in /sbin/ifconfig -a on each node.
 
 d. Make Open-MX use this file:
      $ /path/to/open-mx/bin/omx_init_peers /path/to/the/peers/file
-   See Section IV for details.
+   See section IV (Attaching interfaces) for details.
 
 e. Make sure both interfaces are up with a large MTU
      $ ifconfig eth2 up mtu 9000
@@ -81,9 +83,9 @@ g. Use omx_pingpong to test actual communications, on the first node:
      length   4194304:       8388.608 us   500.00 MB/s       476.83 MiB/s
 
 
-+-----------------------------+
-| II. Building and Installing |
-+-----------------------------+
+++=============================++
+|| II. Building and Installing ||
+++=============================++
 
 +---------------------
 | II.a. Basic Install
@@ -148,9 +150,9 @@ so that it really only installs things without checking whether the
 build is up-to-date.
 
 
-+-------------------------------------------------+
-| III. Kernel Module and /dev/open-mx Device Node |
-+-------------------------------------------------+
+++=================================================++
+|| III. Kernel Module and /dev/open-mx Device Node ||
+++=================================================++
 
 The 'open-mx' kernel module should be loaded prior to any user-space
 usage of Open-MX. If not loaded, a "No device" error will be returned.
@@ -171,9 +173,10 @@ required when using Open-MX.
 Kernels older than 2.6.15 are unlikely to be supported due to various
 important functions being unavailable (especially vm_insert_page).
 
-+--------------------------+
-| IV. Attaching interfaces |
-+--------------------------+
+
+++==========================++
+|| IV. Attaching interfaces ||
+++==========================++
 
 By default, all existing network interfaces in the system will be
 attached to Open-MX (except those above 8 by default). To change
@@ -204,9 +207,9 @@ size, which may depend on the configuration.
 $ ifconfig eth2 mtu 9000
 
 
-+--------------------+
-| V. Peer Table File |
-+--------------------+
+++====================++
+|| V. Peer Table File ||
+++====================++
 
 A file listing peers must be provided to store the list of hostnames
 and mac addresses in the driver. The omx_init_peers tool may be used to
@@ -223,9 +226,9 @@ The contents of the file is one line per peer, each containing
 * a board hostname (<hostname>:<ifacenumber>)
 
 
-+------------------------+
-| VI. Performance tuning |
-+------------------------+
+++========================++
+|| VI. Performance tuning ||
+++========================++
 
 +-------------------------------
 | VI.a. Wire-compatibility
@@ -234,10 +237,12 @@ Open-MX enables 2 types of wire-compatibility by default, native-MX
 compatibility and endian-independent compatibility. Disabling them
 when they are not needed may improve the performance.
 
-If native MX compatibility is not required on the wire (see section VII),
-you might want to pass --disable-mx-wire to the configure command line so
-that larger packets are used for large messages.
-Note that the required MTU will jump from roughly 4kB to 8.
+If native MX compatibility is not required on the wire you might want
+to pass --disable-mx-wire to the configure command line so that larger
+packets are used for large messages. Note that the required MTU will
+jump from roughly 4kB to 8.
+See section VII (Native MX Compatibility) for details about wire
+compatibility.
 
 If the machines on the network all use the same endian-ness, you might
 want to pass --disable-endian to the configure command line so that
@@ -312,9 +317,10 @@ not be linearized uselessly. To enable this workardound, you should pass
 ** Note that this solution is only required under very special
    circumstances and should be avoided in most of the cases. **
 
-+------------------------------+
-| VII. Native MX Compatibility |
-+------------------------------+
+
+++==============================++
+|| VII. Native MX Compatibility ||
+++==============================++
 
 Open-MX provides API- and wire-compatibility with the native MX stack.
 
@@ -338,9 +344,10 @@ any problem, it just installs more files. To disable it, you should pass
 Binary compatibility is not supported yet, which means you will always
 have to rebuild against Open-MX headers.
 
-+------------------------------+
-| VIII. Advances configuration |
-+------------------------------+
+
+++==============================++
+|| VIII. Advances configuration ||
+++==============================++
 
 The Open-MX behavior may be either configured at build-time with configure
 options, or at runtime with environment variables.
@@ -434,7 +441,7 @@ variable for the omx_init or /etc/init.d/open-mx startup script:
 
 ifnames="eth2 eth3"
 	Attach interfaces eth2 and eth3 at startup instead of all interfaces.
-	See section IV for details.
+	See section IV (Attaching interfaces) for details.
 ifaces=32
 	Allow a maximum of 32 interfaces to be attached at the same time.
 	Default is 32.
@@ -453,9 +460,10 @@ copybench=1
 	Enable a memory copy benchmark at startup.
 	Default is disabled (0).
 
-+---------------+
-| IX. Debugging |
-+---------------+
+
+++===============++
+|| IX. Debugging ||
+++===============++
 
 Open-MX provides several debugging features such as verbose messages,
 additional checks, non-optimized building, valgrind hooks, ... For
