@@ -17,8 +17,9 @@ Contents:
     a. Wire-compatibility
     b. API-compatibility
 VIII. Advanced configuration
-    a. Summary of build-time configuration options
-    b. Summary of runtime configuration options
+    a. Build-time configuration options
+    b. Runtime configuration options
+    c. Module parameters
   IX. Debugging
 
 See REPORTING-BUGS for problems.
@@ -347,6 +348,9 @@ options, or at runtime with environment variables.
 +-----------------------------------------------------
 | VIII.a. Summary of build-time configuration options
 
+The following options may be passed to the configure command line before
+building:
+
 --enable-debug
 	Only build a debugging library.
 --disable-debug
@@ -386,6 +390,9 @@ options, or at runtime with environment variables.
 +--------------------------------------------------
 | VIII.b. Summary of runtime configuration options
 
+The following environment variables may be used to change the library
+behavior at runtime:
+
 OMX_DISABLE_SELF=1
 	Disable software loopback between an endpoint and itself.
   Self software loopback is enabled by default.
@@ -417,6 +424,34 @@ OMX_WAITINTR=1
 OMX_ZOMBIE_SEND=512
 	Tolerate the completion of 512 sends before their actual ack.
   At most 512 zombies are completed before being acked by default.
+
++---------------------------
+| VIII.c. Module parameters
+
+The following module parameters may be passed to the driver module when loading,
+either as a parameter to the modprobe command, or through the OMX_MODULE_PARAMS
+variable for the omx_init or /etc/init.d/open-mx startup script:
+
+ifnames="eth2 eth3"
+	Attach interfaces eth2 and eth3 at startup instead of all interfaces.
+	See section IV for details.
+ifaces=32
+	Allow a maximum of 32 interfaces to be attached at the same time.
+	Default is 32.
+endpoints=8
+	Allow a maximum of 8 endpoints to be open by interfaces.
+	Default is 8.
+peers=1024
+	Allow a maximum of 1024 peers to be connected on the network.
+	Default is 1024.
+skbfrags=16
+	Allow a maximum of 16 frags to be attached to socket buffer on the
+	send side. If the underlying driver does not support frags, 0 should
+	be used.
+	The default and maximal value is MAX_SKB_FRAGS (16 on common archs).
+copybench=1
+	Enable a memory copy benchmark at startup.
+	Default is disabled (0).
 
 +---------------+
 | IX. Debugging |
