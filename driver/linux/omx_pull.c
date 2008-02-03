@@ -936,7 +936,6 @@ omx_recv_pull_request(struct omx_iface * iface,
 	struct ethhdr *reply_eh;
 	size_t reply_hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_reply);
 	struct omx_user_region *region;
-	struct sk_buff *skb = NULL;
 	uint32_t current_frame_seqnum, current_msg_offset, block_remaining_length;
 	int replies, i;
 	int err = 0;
@@ -1017,6 +1016,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 
 	/* send all replies */
 	for(i=0; i<replies; i++) {
+		struct sk_buff *skb;
 		uint32_t frame_length;
 
 		frame_length = (i==0)
@@ -1037,27 +1037,55 @@ omx_recv_pull_request(struct omx_iface * iface,
 			goto out_with_region;
 		}
 
-		/* locate headers */
-		reply_mh = omx_hdr(skb);
-		reply_eh = &reply_mh->head.eth;
-
 		/* append segment pages */
 		err = omx_user_region_append_pages_from_offset_cache(region, &region_cache, skb, frame_length);
-		if (unlikely(err < 0)) {
-			omx_counter_inc(iface, PULL_REPLY_APPEND_FAIL);
-			omx_drop_dprintk(pull_eh, "PULL packet due to failure to append pages to skb");
+		if (likely(!err)) {
+			/* successfully appended frags */
+
+			/* pad the skb if necessary */
+			if (unlikely(skb->len < ETH_ZLEN)) {
+				/* pad to ETH_ZLEN */
+				err = omx_skb_pad(skb, ETH_ZLEN);
+				if (unlikely(err < 0)) {
+					/* skb has already been freed in skb_pad() */
+					goto out_with_region;
+				}
+				skb->len = ETH_ZLEN;
+			}
+
+			/* reacquire the region and keep the reference for the destructor */
+			omx_user_region_reacquire(region);
+			omx_set_skb_destructor(skb, omx_send_pull_reply_skb_destructor, region);
+
+			/* locate headers */
+			reply_mh = omx_hdr(skb);
+			reply_eh = &reply_mh->head.eth;
+
+		} else {
+			/* failed to append, revert back to copy into a linear skb */
+			omx_counter_inc(iface, PULL_REPLY_LINEAR);
+			dprintk(PULL, "failed to append pages to pull reply, reverting to linear skb\n");
+
 			/* pages will be released in dev_kfree_skb() */
-			goto out_with_skb;
-		}
-		/* pad the skb if necessary */
-		if (unlikely(skb->len < ETH_ZLEN)) {
-			/* pad to ETH_ZLEN */
-			err = omx_skb_pad(skb, ETH_ZLEN);
-			if (unlikely(err < 0)) {
-				/* skb has already been freed in skb_pad() */
+			dev_kfree_skb(skb);
+
+			/* allocate a linear skb */
+			skb = omx_new_skb(/* pad to ETH_ZLEN */
+					  max_t(unsigned long, reply_hdr_len + frame_length, ETH_ZLEN));
+			if (unlikely(skb == NULL)) {
+				omx_counter_inc(iface, SEND_NOMEM_SKB);
+				omx_drop_dprintk(pull_eh, "PULL packet due to failure to create pull reply linear skb");
+				err = -ENOMEM;
 				goto out_with_region;
 			}
-			skb->len = ETH_ZLEN;
+
+			/* locate new headers */
+			reply_mh = omx_hdr(skb);
+			reply_eh = &reply_mh->head.eth;
+
+			/* copy from pages into the skb */
+			omx_user_region_copy_pages_from_offset_cache(region, &region_cache,
+								     ((char*) reply_mh) + reply_hdr_len, frame_length);
 		}
 
 		/* fill ethernet header */
@@ -1082,10 +1110,6 @@ omx_recv_pull_request(struct omx_iface * iface,
 				 (unsigned long) frame_length,
 				 (unsigned long) current_msg_offset);
 
-		/* reacquire the rdma window once per skb destructor */
-		omx_user_region_reacquire(region);
-		omx_set_skb_destructor(skb, omx_send_pull_reply_skb_destructor, region);
-
 		omx_queue_xmit(iface, skb, PULL_REPLY);
 
 		/* update fields now */
@@ -1100,11 +1124,9 @@ omx_recv_pull_request(struct omx_iface * iface,
 	omx_endpoint_release(endpoint);
 	return 0;
 
- out_with_skb:
-	dev_kfree_skb(skb);
  out_with_region:
-	omx_user_region_release(region);
 	/* release the main reference on the region */
+	omx_user_region_release(region);
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:

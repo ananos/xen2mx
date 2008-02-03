@@ -390,8 +390,14 @@ omx_user_region_append_pages_from_offset_cache(struct omx_user_region * region,
 	int frags = 0;
 
 	while (remaining) {
+		unsigned chunk;
+
+		if (unlikely(frags == MAX_SKB_FRAGS))
+			/* cannot add a new frag, return an error and let the caller free the skb */
+			return -1;
+
 		/* compute the chunk size */
-		unsigned chunk = remaining;
+		chunk = remaining;
 		if (chunk > PAGE_SIZE - pageoff)
 			chunk = PAGE_SIZE - pageoff;
 		if (chunk > seglen - segoff)
@@ -406,8 +412,6 @@ omx_user_region_append_pages_from_offset_cache(struct omx_user_region * region,
 
 		/* update skb frags counter */
 		frags++;
-		BUG_ON(frags == MAX_SKB_FRAGS-1); /* FIXME: return an error, and let the caller free the skb and use a linear one */
-
 		remaining -= chunk;
 
 		/* update the status */
@@ -444,6 +448,75 @@ omx_user_region_append_pages_from_offset_cache(struct omx_user_region * region,
 	cache->page = page;
 	cache->pageoff = pageoff;
 	return 0;
+}
+
+void
+omx_user_region_copy_pages_from_offset_cache(struct omx_user_region * region,
+					     struct omx_user_region_offset_cache * cache,
+					     void *buffer,
+					     unsigned long length)
+{
+	unsigned long remaining = length;
+	struct omx_user_region_segment *seg = cache->seg;
+	unsigned long segoff = cache->segoff;
+	unsigned long seglen = seg->length;
+	struct page ** page = cache->page;
+	unsigned pageoff = cache->pageoff;
+
+	while (remaining) {
+		unsigned chunk;
+		void * kpaddr;
+
+		/* compute the chunk size */
+		chunk = remaining;
+		if (chunk > PAGE_SIZE - pageoff)
+			chunk = PAGE_SIZE - pageoff;
+		if (chunk > seglen - segoff)
+			chunk = seglen - segoff;
+
+		/* append the page */
+		kpaddr = kmap_atomic(*page, KM_SKB_DATA_SOFTIRQ);
+		memcpy(buffer, kpaddr + pageoff, chunk);
+		kunmap_atomic(kpaddr, KM_SKB_DATA_SOFTIRQ);
+		dprintk(REG, "copying %d from kmapped page\n", chunk);
+
+		/* update skb frags counter */
+		remaining -= chunk;
+		buffer += chunk;
+
+		/* update the status */
+		if (segoff + chunk == seg->length) {
+			/* next segment */
+			seg++;
+			segoff = 0;
+			if (seg-&region->segments[0] > region->nr_segments) {
+				/* we went out of the segment array, we got to be at the end of the request */
+				BUG_ON(remaining != 0);
+			} else {
+				seglen = seg->length;
+				page = &seg->pages[0];
+				pageoff = seg->first_page_offset;
+				dprintk(REG, "switching offset cache to next segment #%ld\n",
+					(unsigned long) (seg - &region->segments[0]));
+			}
+		} else if (pageoff + chunk == PAGE_SIZE) {
+			/* next page in same segment */
+			segoff += chunk;
+			page++;
+			pageoff = 0;
+			dprintk(REG, "switching offset cache to next page #%ld\n",
+				(unsigned long) (page - &seg->pages[0]));
+		} else {
+			/* same page */
+			segoff += chunk;
+			pageoff += chunk;
+		}
+	}
+
+	cache->seg = seg;
+	cache->segoff = segoff;
+	cache->page = page;
+	cache->pageoff = pageoff;
 }
 
 /************************************

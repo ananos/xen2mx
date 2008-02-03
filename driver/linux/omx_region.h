@@ -73,6 +73,7 @@ omx_user_region_release(struct omx_user_region * region)
 
 extern void omx_user_region_offset_cache_init(struct omx_user_region *region, struct omx_user_region_offset_cache *cache, unsigned long offset);
 extern int omx_user_region_append_pages_from_offset_cache(struct omx_user_region * region, struct omx_user_region_offset_cache * cache, struct sk_buff * skb, unsigned long length);
+extern void omx_user_region_copy_pages_from_offset_cache(struct omx_user_region * region, struct omx_user_region_offset_cache * cache, void *buffer, unsigned long length);
 extern int omx_user_region_fill_pages(struct omx_user_region * region, unsigned long region_offset, struct sk_buff * skb, unsigned long length);
 extern int omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset, struct omx_user_region * dst_region, unsigned long dst_offset, unsigned long length);
 

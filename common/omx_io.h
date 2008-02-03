@@ -669,7 +669,7 @@ enum omx_counter_index {
 	OMX_COUNTER_PULL_TIMEOUT_HANDLER_FIRST_BLOCK,
 	OMX_COUNTER_PULL_TIMEOUT_HANDLER_SECOND_BLOCK,
 	OMX_COUNTER_PULL_TIMEOUT_ABORT,
-	OMX_COUNTER_PULL_REPLY_APPEND_FAIL,
+	OMX_COUNTER_PULL_REPLY_LINEAR,
 	OMX_COUNTER_PULL_REPLY_FILL_FAILED,
 
 	OMX_COUNTER_DROP_BAD_DATALEN,
@@ -777,8 +777,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Pull Timeout Handler Requests Second Block";
 	case OMX_COUNTER_PULL_TIMEOUT_ABORT:
 		return "Pull Timeout Abort";
-	case OMX_COUNTER_PULL_REPLY_APPEND_FAIL:
-		return "Pull Reply Send Append Pages Failed";
+	case OMX_COUNTER_PULL_REPLY_LINEAR:
+		return "Pull Reply Sent as Linear";
 	case OMX_COUNTER_PULL_REPLY_FILL_FAILED:
 		return "Pull Reply Recv Fill Pages Failed";
 	case OMX_COUNTER_DROP_BAD_DATALEN:
