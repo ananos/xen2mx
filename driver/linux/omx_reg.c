@@ -347,14 +347,17 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
  * Appending region pages to send
  */
 
-void
+int
 omx_user_region_offset_cache_init(struct omx_user_region *region,
 				  struct omx_user_region_offset_cache *cache,
-				  unsigned long offset)
+				  unsigned long offset, unsigned long length)
 {
 	struct omx_user_region_segment *seg;
 	unsigned long segoff;
 	unsigned long tmp;
+
+	if (offset + length > region->total_length)
+		return -1;
 
 	/* find the segment */
 	for(tmp=0, seg = &region->segments[0];
@@ -373,6 +376,13 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 	dprintk(REG, "initialized region offset cache to seg #%ld offset %ld page #%ld offset %d\n",
 		(unsigned long) (seg - &region->segments[0]), segoff,
 		(unsigned long) (cache->page - &seg->pages[0]), cache->pageoff);
+
+#ifdef OMX_DEBUG
+	cache->current_offset = offset;
+	cache->max_offset = offset + length;
+#endif
+
+	return 0;
 }
 
 int
@@ -388,6 +398,10 @@ omx_user_region_append_pages_from_offset_cache(struct omx_user_region * region,
 	struct page ** page = cache->page;
 	unsigned pageoff = cache->pageoff;
 	int frags = 0;
+
+#ifdef OMX_DEBUG
+	BUG_ON(cache->current_offset + length >= cache->max_offset);
+#endif
 
 	while (remaining) {
 		unsigned chunk;
@@ -462,6 +476,10 @@ omx_user_region_copy_pages_from_offset_cache(struct omx_user_region * region,
 	unsigned long seglen = seg->length;
 	struct page ** page = cache->page;
 	unsigned pageoff = cache->pageoff;
+
+#ifdef OMX_DEBUG
+	BUG_ON(cache->current_offset + length >= cache->max_offset);
+#endif
 
 	while (remaining) {
 		unsigned chunk;

@@ -1011,8 +1011,16 @@ omx_recv_pull_request(struct omx_iface * iface,
 		- pulled_rdma_offset + first_frame_offset;
 	block_remaining_length = block_length;
 
-	/* initialize the region offset cache */
-	omx_user_region_offset_cache_init(region, &region_cache, current_msg_offset + pulled_rdma_offset);
+	/* initialize the region offset cache and check length/offset */
+	err = omx_user_region_offset_cache_init(region, &region_cache,
+						current_msg_offset + pulled_rdma_offset, block_length);
+	if (err < 0) {
+		omx_counter_inc(iface, DROP_PULL_BAD_OFFSET_LENGTH);
+		omx_drop_dprintk(pull_eh, "PULL packet due to wrong offset/length");
+		/* no nack but the wire proto should be fixed for this */
+		err = -EINVAL;
+		goto out_with_region;
+	}
 
 	/* send all replies */
 	for(i=0; i<replies; i++) {

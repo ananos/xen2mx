@@ -1,6 +1,3 @@
-* check the length when initializing the region offset cache
-* and at each iteration if debug
-
 * force_linear_skb module parameter for medium send a pull reply
 
 * free request (and buffers) on close
