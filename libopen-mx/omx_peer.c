@@ -137,7 +137,7 @@ omx__peers_dump(const char * format)
 
     ret = omx__driver_peer_from_index(i, &board_addr, hostname);
     if (ret != OMX_SUCCESS)
-      break;
+      continue;
 
     omx__board_addr_sprintf(addr_str, board_addr);
     printf(format, i, addr_str, hostname);
