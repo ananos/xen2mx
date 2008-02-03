@@ -437,10 +437,10 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		return omx_shared_send_medium(endpoint, &cmd);
 #endif
 
-	if (likely(omx_skb_frags)) {
-		skb = omx_new_skb(/* only allocate space for the header now,
-				   * we'll attach pages and pad to ETH_ZLEN later
-				   */
+	if (likely(hdr_len + frag_length >= ETH_ZLEN && omx_skb_frags > 0)) {
+		/* use skb with frags */
+
+		skb = omx_new_skb(/* only allocate space for the header now, we'll attach pages later */
 				   hdr_len);
 		if (unlikely(skb == NULL)) {
 			omx_counter_inc(iface, SEND_NOMEM_SKB);
@@ -460,15 +460,6 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		skb->len += frag_length;
 		skb->data_len = frag_length;
 
-	 	if (unlikely(skb->len < ETH_ZLEN)) {
-			/* pad to ETH_ZLEN */
-			ret = omx_skb_pad(skb, ETH_ZLEN);
-			if (ret)
-				/* skb has been freed in skb_pad */
-				goto out_with_event;
-			skb->len = ETH_ZLEN;
-		}
-
 		/* prepare the deferred event now that we cannot fail anymore */
 		omx_endpoint_reacquire(endpoint); /* keep a reference in the defevent */
 		defevent->endpoint = endpoint;
@@ -476,6 +467,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		omx_set_skb_destructor(skb, omx_medium_frag_skb_destructor, defevent);
 
 	} else {
+		/* use a linear skb */
 		void *data;
 
 		skb = omx_new_skb(/* pad to ETH_ZLEN */

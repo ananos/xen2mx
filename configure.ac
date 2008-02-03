@@ -176,15 +176,6 @@ else
   AC_MSG_RESULT(no)
 fi
 
-# skb_pad returned a new skb up to 2.6.17
-AC_MSG_CHECKING((in kernel headers) skb_pad return type)
-if grep "struct sk_buff *\*[[ 	]]*skb_pad(.*, .*);" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
-  echo "#define OMX_SKB_PAD_RETURNS_NEW_SKB 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(struct sk_buff *)
-else
-  AC_MSG_RESULT(int)
-fi
-
 # uts namespace arrived in 2.6.19
 AC_MSG_CHECKING((in kernel headers) UTS namespace availabilty)
 if grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null ; then

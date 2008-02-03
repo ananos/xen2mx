@@ -84,12 +84,6 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 #define omx_hdr(skb) ((struct omx_hdr *) skb->mac.raw)
 #endif /* OMX_HAVE_SKB_HEADERS */
 
-#ifdef OMX_SKB_PAD_RETURNS_NEW_SKB
-#define omx_skb_pad(skb, pad) ({ skb = skb_pad(skb, pad); skb == NULL ? -ENOMEM : 0; })
-#else
-#define omx_skb_pad skb_pad
-#endif
-
 #ifdef OMX_HAVE_UTS_NAMESPACE
 /* uts namespace introduced in 2.6.19 */
 #define omx_current_utsname current->nsproxy->uts_ns->name

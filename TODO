@@ -3,8 +3,6 @@
 
 * make sure we don't register 0-length regions?
 
-* do not pad a frags skb, just append a dummy frag if necessary
-
 * atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
   ok if lots of slices in parallel ?
 

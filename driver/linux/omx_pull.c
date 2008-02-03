@@ -1033,13 +1033,11 @@ omx_recv_pull_request(struct omx_iface * iface,
 		if (block_remaining_length < frame_length)
 			frame_length = block_remaining_length;
 
-		if (unlikely(!omx_skb_frags))
+		if (unlikely(reply_hdr_len + frame_length < ETH_ZLEN || !omx_skb_frags))
 			goto linear;
 
 		/* allocate a skb */
-		skb = omx_new_skb(/* only allocate space for the header now,
-				   * we'll attach pages and pad to ETH_ZLEN later
-				   */
+		skb = omx_new_skb(/* only allocate space for the header now, we'll attach pages later */
 				  reply_hdr_len);
 		if (unlikely(skb == NULL)) {
 			omx_counter_inc(iface, SEND_NOMEM_SKB);
@@ -1052,17 +1050,6 @@ omx_recv_pull_request(struct omx_iface * iface,
 		err = region_cache.append_pages_to_skb(&region_cache, skb, frame_length);
 		if (likely(!err)) {
 			/* successfully appended frags */
-
-			/* pad the skb if necessary */
-			if (unlikely(skb->len < ETH_ZLEN)) {
-				/* pad to ETH_ZLEN */
-				err = omx_skb_pad(skb, ETH_ZLEN);
-				if (unlikely(err < 0)) {
-					/* skb has already been freed in skb_pad() */
-					goto out_with_region;
-				}
-				skb->len = ETH_ZLEN;
-			}
 
 			/* reacquire the region and keep the reference for the destructor */
 			omx_user_region_reacquire(region);
