@@ -422,6 +422,9 @@ omx_user_region_offset_cache_append_callback(struct omx_user_region_offset_cache
 	cache->segoff = segoff;
 	cache->page = page;
 	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length;
+#endif
 	return 0;
 }
 
@@ -495,6 +498,9 @@ omx_user_region_offset_cache_copy_callback(struct omx_user_region_offset_cache *
 	cache->segoff = segoff;
 	cache->page = page;
 	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length;
+#endif
 }
 
 int
