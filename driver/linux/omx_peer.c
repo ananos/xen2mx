@@ -209,8 +209,8 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 			dprintk(PEER, "attaching local iface %s (%s) with address %012llx as peer #%d %s\n",
 				iface->eth_ifp->name, new->hostname, (unsigned long long) board_addr,
 				index, old->hostname);
-			printk(KERN_INFO "Open-MX: Renaming iface %s (%s) into peer name %s\n",
-			       iface->eth_ifp->name, old->hostname, new->hostname);
+			printk(KERN_INFO "Open-MX: Renaming new iface %s (%s) into peer name %s\n",
+			       iface->eth_ifp->name, new->hostname, old->hostname);
 
 			/* take a reference on the iface */
 			kref_get(&iface->refcount);
