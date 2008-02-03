@@ -1,7 +1,9 @@
-* optimize for non-vectorial by changing the callback
-
 * free request (and buffers) on close
   + preallocated pool with free list
+
+* make sure we don't register 0-length regions?
+
+* do not pad a frags skb, just append a dummy frag if necessary
 
 * atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
   ok if lots of slices in parallel ?
@@ -59,7 +61,6 @@
 * export rdma_get and rdma window management functions
 * rdma_put
 * write parameter in ioctl to register a region, check it when reading/writing from/to the region
-* do not pad a frags skb, just append a dummy frag if necessary
 
 * move recv lib in the kernel
   + limit unexpq size to avoid memory starvation
