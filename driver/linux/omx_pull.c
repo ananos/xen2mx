@@ -1073,6 +1073,8 @@ omx_recv_pull_request(struct omx_iface * iface,
 			reply_eh = &reply_mh->head.eth;
 
 		} else {
+			void *data;
+
 			/* pages will be released in dev_kfree_skb() */
 			dev_kfree_skb(skb);
 
@@ -1094,10 +1096,10 @@ omx_recv_pull_request(struct omx_iface * iface,
 			/* locate new headers */
 			reply_mh = omx_hdr(skb);
 			reply_eh = &reply_mh->head.eth;
+			data = ((char*) reply_mh) + reply_hdr_len;
 
 			/* copy from pages into the skb */
-			omx_user_region_copy_pages_from_offset_cache(region, &region_cache,
-								     ((char*) reply_mh) + reply_hdr_len, frame_length);
+			omx_user_region_copy_pages_from_offset_cache(region, &region_cache, data, frame_length);
 		}
 
 		/* fill ethernet header */

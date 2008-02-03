@@ -437,20 +437,64 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		return omx_shared_send_medium(endpoint, &cmd);
 #endif
 
-	skb = omx_new_skb(/* only allocate space for the header now,
-			   * we'll attach pages and pad to ETH_ZLEN later
-			   */
-			   hdr_len);
-	if (unlikely(skb == NULL)) {
-		omx_counter_inc(iface, SEND_NOMEM_SKB);
-		printk(KERN_INFO "Open-MX: Failed to create medium skb\n");
-		ret = -ENOMEM;
-		goto out_with_event;
-	}
+	if (likely(omx_skb_frags)) {
+		skb = omx_new_skb(/* only allocate space for the header now,
+				   * we'll attach pages and pad to ETH_ZLEN later
+				   */
+				   hdr_len);
+		if (unlikely(skb == NULL)) {
+			omx_counter_inc(iface, SEND_NOMEM_SKB);
+			printk(KERN_INFO "Open-MX: Failed to create medium skb\n");
+			ret = -ENOMEM;
+			goto out_with_event;
+		}
 
-	/* locate headers */
-	mh = omx_hdr(skb);
-	eh = &mh->head.eth;
+		/* locate headers */
+		mh = omx_hdr(skb);
+		eh = &mh->head.eth;
+
+		/* attach the sendq page */
+		page = endpoint->sendq_pages[sendq_page_offset];
+		get_page(page);
+		skb_fill_page_desc(skb, 0, page, 0, frag_length);
+		skb->len += frag_length;
+		skb->data_len = frag_length;
+
+	 	if (unlikely(skb->len < ETH_ZLEN)) {
+			/* pad to ETH_ZLEN */
+			ret = omx_skb_pad(skb, ETH_ZLEN);
+			if (ret)
+				/* skb has been freed in skb_pad */
+				goto out_with_event;
+			skb->len = ETH_ZLEN;
+		}
+
+		/* prepare the deferred event now that we cannot fail anymore */
+		omx_endpoint_reacquire(endpoint); /* keep a reference in the defevent */
+		defevent->endpoint = endpoint;
+		defevent->evt.sendq_page_offset = cmd.sendq_page_offset;
+		omx_set_skb_destructor(skb, omx_medium_frag_skb_destructor, defevent);
+
+	} else {
+		void *data;
+
+		skb = omx_new_skb(/* pad to ETH_ZLEN */
+				  max_t(unsigned long, hdr_len + frag_length, ETH_ZLEN));
+		if (unlikely(skb == NULL)) {
+			omx_counter_inc(iface, SEND_NOMEM_SKB);
+			printk(KERN_INFO "Open-MX: Failed to create linear medium skb\n");
+			ret = -ENOMEM;
+			goto out;
+		}
+
+		/* locate headers */
+		mh = omx_hdr(skb);
+		eh = &mh->head.eth;
+		data = ((char*)mh) + hdr_len;
+
+		/* copy the data in the linear skb */
+		memcpy(data, endpoint->sendq + (sendq_page_offset << PAGE_SHIFT), frag_length);
+	}
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -477,28 +521,6 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(mh->body.medium.frag_pipeline, cmd.frag_pipeline);
 
 	omx_send_dprintk(eh, "MEDIUM FRAG length %ld", (unsigned long) frag_length);
-
-	/* attach the sendq page */
-	page = endpoint->sendq_pages[sendq_page_offset];
-	get_page(page);
-	skb_fill_page_desc(skb, 0, page, 0, frag_length);
-	skb->len += frag_length;
-	skb->data_len = frag_length;
-
- 	if (unlikely(skb->len < ETH_ZLEN)) {
-		/* pad to ETH_ZLEN */
-		ret = omx_skb_pad(skb, ETH_ZLEN);
-		if (ret)
-			/* skb has been freed in skb_pad */
-			goto out_with_event;
-		skb->len = ETH_ZLEN;
-	}
-
-	/* prepare the deferred event now that we cannot fail anymore */
-	omx_endpoint_reacquire(endpoint); /* keep a reference in the defevent */
-	defevent->endpoint = endpoint;
-	defevent->evt.sendq_page_offset = cmd.sendq_page_offset;
-	omx_set_skb_destructor(skb, omx_medium_frag_skb_destructor, defevent);
 
 	omx_queue_xmit(iface, skb, MEDIUM_FRAG);
 
