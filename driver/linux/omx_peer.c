@@ -217,9 +217,9 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 
 			/* board_addr already set */
 			new->index = index;
-			new->reverse_index = old->reverse_index;
+			new->reverse_index = index;
 
-			/* replace the iface hostname withe one from the peer table */
+			/* replace the iface hostname with the one from the peer table */
 			kfree(new->hostname);
 			new->hostname = old->hostname;
 			new->local_iface = iface;

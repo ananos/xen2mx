@@ -281,6 +281,7 @@ omx_iface_attach(struct net_device * ifp)
 	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 	iface->peer.hostname = hostname;
 	iface->peer.index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
+	iface->peer.reverse_index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 	iface->peer.board_addr = omx_board_addr_from_netdevice(ifp);
 
 	iface->eth_ifp = ifp;
