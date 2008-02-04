@@ -658,11 +658,6 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 	omx_notify_exp_event(endpoint,
 			     OMX_EVT_PULL_DONE,
 			     &event, sizeof(event));
-
-	/* make sure the handle will be released, in case we are reporting truncation */
-	handle->frame_missing_bitmap = 0;
-	handle->frame_copying_bitmap = 0;
-	handle->remaining_length = 0;
 }
 
 /************************
