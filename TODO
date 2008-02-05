@@ -37,9 +37,6 @@
 * pull improvements
   + ph_prepare_exit only called when holding the iface mutex, may sleep
     - but last_release may be called from interrupt context
-  + update the handle (and send the request?) before the copy, except when the handle is done (will simplify ioat)
-  + only a single bitmap per handle
-  + support tons of small segment regions by linearizing
 
 * missing features (for PVFS2)
   + thread safety (including omx_wakeup)
