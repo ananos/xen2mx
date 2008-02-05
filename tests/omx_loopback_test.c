@@ -27,6 +27,7 @@
 #define BID 0
 #define EID OMX_ANY_ENDPOINT
 #define ITER 10
+#define PREDEFINED_LENGTHS -1
 
 static int verbose = 0;
 
@@ -149,6 +150,7 @@ usage(int argc, char *argv[])
   fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
+  fprintf(stderr, " -l <n>\tuse length instead of predefined ones\n");
   fprintf(stderr, " -s\tdo not disable shared communications\n");
   fprintf(stderr, " -S\tdo not disable self communications\n");
   fprintf(stderr, " -v\tenable verbose messages\n");
@@ -164,19 +166,23 @@ int main(int argc, char *argv[])
   char hostname[OMX_HOSTNAMELEN_MAX];
   char ifacename[16];
   omx_endpoint_addr_t addr;
+  int length = PREDEFINED_LENGTHS;
   int self = 0;
   int shared = 0;
   int c;
   int i;
   omx_return_t ret;
 
-  while ((c = getopt(argc, argv, "e:b:sSvh")) != -1)
+  while ((c = getopt(argc, argv, "e:b:l:sSvh")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
       break;
     case 'e':
       endpoint_index = atoi(optarg);
+      break;
+    case 'l':
+      length = atoi(optarg);
       break;
     case 's':
       shared = 1;
@@ -247,49 +253,63 @@ int main(int argc, char *argv[])
     goto out_with_ep;
   }
 
-  gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++) {
-    /* send a tiny message */
-    ret = one_iteration(ep, addr, 13, i);
-    if (ret != OMX_SUCCESS)
-      goto out_with_ep;
-  }
-  gettimeofday(&tv2, NULL);
-  printf("tiny latency %lld us\n",
-	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+  if (length == PREDEFINED_LENGTHS) {
+    gettimeofday(&tv1, NULL);
+    for(i=0; i<ITER; i++) {
+      /* send a tiny message */
+      ret = one_iteration(ep, addr, 13, i);
+      if (ret != OMX_SUCCESS)
+        goto out_with_ep;
+    }
+    gettimeofday(&tv2, NULL);
+    printf("tiny (%d bytes) latency %lld us\n", 13,
+	   (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
-  gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++) {
-    /* send a small message */
-    ret = one_iteration(ep, addr, 95, i);
-    if (ret != OMX_SUCCESS)
-      goto out_with_ep;
-  }
-  gettimeofday(&tv2, NULL);
-  printf("small latency %lld us\n",
-	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+    gettimeofday(&tv1, NULL);
+    for(i=0; i<ITER; i++) {
+      /* send a small message */
+      ret = one_iteration(ep, addr, 95, i);
+      if (ret != OMX_SUCCESS)
+        goto out_with_ep;
+    }
+    gettimeofday(&tv2, NULL);
+    printf("small (%d bytes) latency %lld us\n", 95,
+	   (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
-  gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++) {
-    /* send a medium message */
-    ret = one_iteration(ep, addr, 13274, i);
-    if (ret != OMX_SUCCESS)
-      goto out_with_ep;
-  }
-  gettimeofday(&tv2, NULL);
-  printf("medium latency %lld us\n",
-	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+    gettimeofday(&tv1, NULL);
+    for(i=0; i<ITER; i++) {
+      /* send a medium message */
+      ret = one_iteration(ep, addr, 13274, i);
+      if (ret != OMX_SUCCESS)
+        goto out_with_ep;
+    }
+    gettimeofday(&tv2, NULL);
+    printf("medium (%d bytes) latency %lld us\n", 13274,
+	   (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
-  gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++) {
-    /* send a large message */
-    ret = one_iteration(ep, addr, 9327485, i);
-    if (ret != OMX_SUCCESS)
-      goto out_with_ep;
+    gettimeofday(&tv1, NULL);
+    for(i=0; i<ITER; i++) {
+      /* send a large message */
+      ret = one_iteration(ep, addr, 9327485, i);
+      if (ret != OMX_SUCCESS)
+        goto out_with_ep;
+    }
+    gettimeofday(&tv2, NULL);
+    printf("large (%d bytes) latency %lld us\n", 9327485,
+	   (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+
+  } else {
+    gettimeofday(&tv1, NULL);
+    for(i=0; i<ITER; i++) {
+      /* send a large message */
+      ret = one_iteration(ep, addr, length, i);
+      if (ret != OMX_SUCCESS)
+        goto out_with_ep;
+    }
+    gettimeofday(&tv2, NULL);
+    printf("message (%d bytes) latency %lld us\n", length,
+	   (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
   }
-  gettimeofday(&tv2, NULL);
-  printf("large latency %lld us\n",
-	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
   omx_close_endpoint(ep);
   return 0;
