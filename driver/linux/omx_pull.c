@@ -813,50 +813,15 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	return err;
 }
 
-/*
- * Retransmission callback, owns a reference on the handle.
- * Running as long as status is OMX_PULL_HANDLE_STATUS_OK.
+/*************************
+ * Handle timeout handler
  */
-static void
-omx_pull_handle_timeout_handler(unsigned long data)
+
+static inline void
+omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
+						  struct omx_pull_handle * handle)
 {
-	struct omx_pull_handle * handle = (void *) data;
-	struct omx_endpoint * endpoint = handle->endpoint;
-	struct omx_iface * iface = endpoint->iface;
 	struct sk_buff * skb = NULL, * skb2 = NULL;
-
-	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
-
-	spin_lock(&handle->lock);
-
-	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
-		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
-		handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
-
-		dprintk(PULL, "pull handle %p timer exiting\n", handle);
-
-		/*
-		 * the handle has been moved to the done_but_timer_list,
-		 * it's already outside of the idr, no need to lock bh
-		 */
-		write_lock(&endpoint->pull_handles_lock);
-		list_del(&handle->list_elt);
-		write_unlock(&endpoint->pull_handles_lock);
-
-		spin_unlock(&handle->lock);
-		omx_pull_handle_release(handle);
-		return; /* timer will never be called again (status is TIMER_EXITED) */
-	}
-
-	if (jiffies > handle->last_retransmit_jiffies) {
-		omx_counter_inc(iface, PULL_TIMEOUT_ABORT);
-		dprintk(PULL, "pull handle %p last retransmit time reached, reporting an error\n", handle);
-		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
-		omx_pull_handle_timeout_release(handle);
-		return; /* timer will never be called again (status is TIMER_EXITED) */
-	}
-
-	BUG_ON(OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle));
 
 	/* request the first block again */
 	omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_FIRST_BLOCK);
@@ -898,6 +863,55 @@ omx_pull_handle_timeout_handler(unsigned long data)
 		omx_queue_xmit(iface, skb, PULL_REQ);
 	if (likely(skb2))
 		omx_queue_xmit(iface, skb2, PULL_REQ);
+}
+
+/*
+ * Retransmission callback, owns a reference on the handle.
+ * Running as long as status is OMX_PULL_HANDLE_STATUS_OK.
+ */
+static void
+omx_pull_handle_timeout_handler(unsigned long data)
+{
+	struct omx_pull_handle * handle = (void *) data;
+	struct omx_endpoint * endpoint = handle->endpoint;
+	struct omx_iface * iface = endpoint->iface;
+
+	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
+
+	spin_lock(&handle->lock);
+
+	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
+		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
+		handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
+
+		dprintk(PULL, "pull handle %p timer exiting\n", handle);
+
+		/*
+		 * the handle has been moved to the done_but_timer_list,
+		 * it's already outside of the idr, no need to lock bh
+		 */
+		write_lock(&endpoint->pull_handles_lock);
+		list_del(&handle->list_elt);
+		write_unlock(&endpoint->pull_handles_lock);
+
+		spin_unlock(&handle->lock);
+		omx_pull_handle_release(handle);
+		return; /* timer will never be called again (status is TIMER_EXITED) */
+	}
+
+	if (jiffies > handle->last_retransmit_jiffies) {
+		omx_counter_inc(iface, PULL_TIMEOUT_ABORT);
+		dprintk(PULL, "pull handle %p last retransmit time reached, reporting an error\n", handle);
+		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
+		omx_pull_handle_timeout_release(handle);
+		return; /* timer will never be called again (status is TIMER_EXITED) */
+	}
+
+	BUG_ON(OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle));
+
+	/* request more replies if necessary */
+	omx_progress_pull_on_handle_timeout_handle_locked(iface, handle);
+	/* the handle lock has been released */
 }
 
 /*******************************************
