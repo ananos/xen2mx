@@ -795,7 +795,10 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	__mod_timer(&handle->retransmit_timer,
 		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-	/* no need to keep the lock while sending */
+	/*
+	 * do not keep the lock while sending
+	 * since the loopback device may cause reentrancy
+	 */
 	spin_unlock(&handle->lock);
 
 	if (likely(skb))
@@ -884,7 +887,10 @@ omx_pull_handle_timeout_handler(unsigned long data)
 	mod_timer(&handle->retransmit_timer,
 		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-	/* no need to keep the lock while sending */
+	/*
+	 * do not keep the lock while sending
+	 * since the loopback device may cause reentrancy
+	 */
 	spin_unlock(&handle->lock);
 
 	if (likely(skb))
@@ -1339,7 +1345,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		mod_timer(&handle->retransmit_timer,
 			  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-		/* no need to keep the lock while sending */
+		/*
+		 * do not keep the lock while sending
+		 * since the loopback device may cause reentrancy
+		 */
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 
@@ -1418,7 +1427,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		mod_timer(&handle->retransmit_timer,
 			  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
-		/* no need to keep the lock while sending */
+		/*
+		 * do not keep the lock while sending
+		 * since the loopback device may cause reentrancy
+		 */
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 
