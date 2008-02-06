@@ -21,6 +21,7 @@ AC_INIT([Open-MX],
 AC_PREREQ(2.60)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/open-mx)
+AC_PRESERVE_HELP_ORDER
 
 ########################
 # external tools config
@@ -62,13 +63,13 @@ LINUX_BUILD="/lib/modules/"`uname -r`"/build"
 # If the user changes the source, use it as build by default
 # If it changes the build, do not use it as the source by default
 AC_ARG_WITH(linux,
-	[  --with-linux=<dir>			location of the Linux kernel source],
+	[AS_HELP_STRING([--with-linux=<dir>], [location of the Linux kernel source])],
 	LINUX_SRC="$withval"; LINUX_BUILD="$withval")
 AC_ARG_WITH(linux-build,
-	[  --with-linux-build=<dir>		location of the Linux kernel build tree],
+	[AS_HELP_STRING([--with-linux-build=<dir>], [location of the Linux kernel build tree])],
 	LINUX_BUILD="$withval")
 AC_ARG_WITH(linux-release,
-	[  --with-linux-release=<version>	release number of the target kernel],
+	[AS_HELP_STRING([--with-linux-release=<version>], [release number of the target kernel])],
 	LINUX_RELEASE="$withval",
 	LINUX_RELEASE=$(make kernelrelease -C ${LINUX_BUILD} | grep ^2.6.))
 AC_SUBST(LINUX_SRC)
@@ -254,8 +255,9 @@ EOF
 	LIB_TARGETS="$LIB_TARGETS $dir"
 }
 
-AC_ARG_ENABLE(debug, [  --enable-debug		enable debugging features in the driver and main library],
-	      enable_debug=$enableval, enable_debug=optional)
+AC_ARG_ENABLE(debug,
+	[AS_HELP_STRING([--enable-debug], [enable debugging features in the driver and main library])],
+	enable_debug=$enableval, enable_debug=optional)
 AC_MSG_CHECKING(if debug is enabled in the driver and main library)
 AC_MSG_RESULT($enable_debug)
 if test x$enable_debug = xyes; then
@@ -275,8 +277,9 @@ else
 fi fi
 AC_SUBST(LIB_TARGETS)
 
-AC_ARG_ENABLE(profiling, [  --enable-profiling	enable profiling support in the driver],
-	      enable_profiling=$enableval, enable_profiling=no)
+AC_ARG_ENABLE(profiling,
+	[AS_HELP_STRING([--enable-profiling], [enable profiling support in the driver])],
+	enable_profiling=$enableval, enable_profiling=no)
 AC_MSG_CHECKING(if profiling support is enabled in the driver)
 if test x$enable_profiling = xyes; then
   AC_MSG_RESULT(yes)
@@ -301,8 +304,9 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_ARG_ENABLE(valgrind, [  --enable-valgrind		enable Valgrind hooks in the debug or non-debug libraries],
-	      enable_valgrind=$enableval, enable_valgrind=maybe)
+AC_ARG_ENABLE(valgrind,
+	[AS_HELP_STRING([--enable-valgrind], [enable Valgrind hooks in the debug or non-debug libraries])],
+	enable_valgrind=$enableval, enable_valgrind=maybe)
 AC_MSG_CHECKING(if valgrind hooks are enabled in the non-debug library)
 if test x$valgrind_available = xyes -a x$enable_valgrind = xyes ; then
   AC_MSG_RESULT(yes)
@@ -321,8 +325,9 @@ fi
 #######################################
 # self and shared communication config
 
-AC_ARG_ENABLE(self, [  --disable-self		disable communication to myself],
-	      enable_self=$enableval, enable_self=yes)
+AC_ARG_ENABLE(self,
+	[AS_HELP_STRING([--disable-self], [disable communication to myself])],
+	enable_self=$enableval, enable_self=yes)
 AC_MSG_CHECKING(if self communication is enabled)
 if test x$enable_self = xyes; then
   AC_MSG_RESULT(yes)
@@ -331,8 +336,9 @@ else
   AC_DEFINE(OMX_DISABLE_SELF, [1], [Define to disable communication to myself])
 fi
 
-AC_ARG_ENABLE(shared, [  --disable-shared		disable shared communication between endpoints on the same node],
-	      enable_shared=$enableval, enable_shared=yes)
+AC_ARG_ENABLE(shared,
+	[AS_HELP_STRING([--disable-shared], [disable shared communication between endpoints on the same node])],
+	enable_shared=$enableval, enable_shared=yes)
 AC_MSG_CHECKING(if shared communication is enabled)
 if test x$enable_shared = xyes; then
   AC_MSG_RESULT(yes)
@@ -346,10 +352,12 @@ fi
 ############################
 # MX compat and wire config 
 
-AC_ARG_ENABLE(mx, [  --disable-mx			disable MX API compatibility wrappers],
-	      enable_mx=$enableval, enable_mx=yes)
-AC_ARG_ENABLE(unsupported-mx, [  --enable-unsupported-mx	build unsupported MX API compatibility wrappers],
-	      enable_unsupported_mx=$enableval, enable_unsupported_mx=no)
+AC_ARG_ENABLE(mx,
+	[AS_HELP_STRING([--disable-mx], [disable MX API compatibility wrappers])],
+	enable_mx=$enableval, enable_mx=yes)
+AC_ARG_ENABLE(unsupported-mx,
+	[AS_HELP_STRING([--enable-unsupported-mx], [build unsupported MX API compatibility wrappers])],
+	enable_unsupported_mx=$enableval, enable_unsupported_mx=no)
 AC_MSG_CHECKING(if MX API compatibility wrappers are enabled)
 if test x$enable_mx = xyes; then
   AC_MSG_RESULT(yes)
@@ -369,8 +377,9 @@ else
   AC_SUBST(OMX_MX_API_COMPAT, 0)
 fi
 
-AC_ARG_ENABLE(mx-wire, [  --disable-mx-wire		disable MX wire compatibility],
-	      enable_mx_wire=$enableval, enable_mx_wire=yes)
+AC_ARG_ENABLE(mx-wire,
+	[AS_HELP_STRING([--disable-mx-wire], [disable MX wire compatibility])],
+	enable_mx_wire=$enableval, enable_mx_wire=yes)
 AC_MSG_CHECKING(if MX wire compatibility is enabled)
 if test x$enable_mx_wire = xyes; then
   AC_MSG_RESULT(yes)
@@ -379,8 +388,9 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_ARG_WITH(ethertype, [  --with-ethertype=<value>		change Ethertype (default is 0x86DF)],
-	    ethertype=$withval, ethertype=default)
+AC_ARG_WITH(ethertype,
+	[AS_HELP_STRING([--with-ethertype=<value>], [change Ethertype (default is 0x86DF)])],
+	ethertype=$withval, ethertype=default)
 AC_MSG_CHECKING(the Ethertype to use)
 if test x$ethertype = xdefault; then
   AC_MSG_RESULT([default (0x86df)])
@@ -389,8 +399,9 @@ else
   AC_DEFINE_UNQUOTED(ETH_P_OMX, $ethertype, [Define to change the Ethertype])
 fi
 
-AC_ARG_ENABLE(endian, [  --disable-endian		disable endian-independent networking],
-	      enable_endian=$enableval, enable_endian=yes)
+AC_ARG_ENABLE(endian,
+	[AS_HELP_STRING([--disable-endian], [disable endian-independent networking])],
+	enable_endian=$enableval, enable_endian=yes)
 AC_MSG_CHECKING(if endian-independent networking is enabled)
 if test x$enable_endian = xyes; then
   AC_MSG_RESULT(yes)
@@ -402,13 +413,15 @@ fi
 ######################
 # installation config
 
-AC_ARG_WITH(peers-file, [  --with-peers-file=<path>		use argument as a static peers file],
-	    with_peers_file=$withval, with_peers_file=/etc/open-mx/peers)
+AC_ARG_WITH(peers-file,
+	[AS_HELP_STRING([--with-peers-file=<path>], [use argument as a static peers file])],
+	with_peers_file=$withval, with_peers_file=/etc/open-mx/peers)
 AC_MSG_NOTICE(using static peers file in $with_peers_file)
 AC_SUBST(PEERS_FILE, $with_peers_file)
 
-AC_ARG_WITH(device, [  --with-device=<path>:<group>:<mode>	change device node name, group and/or mode],
-	    device_attrs=$withval, device_attrs="")
+AC_ARG_WITH(device,
+	[AS_HELP_STRING([--with-device=<path>:<group>:<mode>], [change device node name, group and/or mode])],
+	device_attrs=$withval, device_attrs="")
 DEVICE_NAME=/dev/open-mx
 device_name=$(echo $device_attrs | cut -d: -f1)
 if ! test -z "$device_name"; then
