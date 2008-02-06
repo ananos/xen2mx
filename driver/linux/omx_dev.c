@@ -783,6 +783,16 @@ omx_dev_init(void)
 {
 	int ret;
 
+#ifdef OMX_DRIVER_DEBUG
+	/* check that there's no hole in the endpoint-based ioctl values */
+	int i;
+	for(i=0; i<ARRAY_SIZE(omx_ioctl_with_endpoint_handlers); i++)
+		if (omx_ioctl_with_endpoint_handlers[i] == NULL) {
+			printk(KERN_ERR "Open-MX: Found a hole in the array of endpoint-based ioctl handlers at offset %d\n", i);
+			return -EINVAL;
+		}
+#endif
+
 	ret = misc_register(&omx_miscdev);
 	if (ret < 0) {
 		printk(KERN_ERR "Open-MX: Failed to register misc device, error %d\n", ret);
