@@ -275,6 +275,19 @@ else
 fi fi
 AC_SUBST(LIB_TARGETS)
 
+AC_ARG_ENABLE(profiling, [  --enable-profiling	enable profiling support in the driver],
+	      enable_profiling=$enableval, enable_profiling=no)
+AC_MSG_CHECKING(if profiling support is enabled in the driver)
+if test x$enable_profiling = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_DRIVER_PROFILING, [1], [Define to enable profiling in the driver])
+  AC_SUBST(OMX_DRIVER_PROFILING, 1)
+else
+  AC_MSG_RESULT(no)
+  AC_SUBST(OMX_DRIVER_PROFILING, 0)
+fi
+
+
 AC_ARG_ENABLE(self, [  --disable-self		disable communication to myself],
 	      enable_self=$enableval, enable_self=yes)
 AC_MSG_CHECKING(if self communication is enabled)

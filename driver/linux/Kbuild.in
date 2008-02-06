@@ -7,6 +7,9 @@ EXTRA_CFLAGS	+=	-I@abs_top_srcdir@/common/
 ifneq ($(SVN_VERSION),)
 	EXTRA_CFLAGS	+=	-DSVN_VERSION=\"$(SVN_VERSION)\"
 endif
+ifeq (@OMX_DRIVER_PROFILING@,1)
+	EXTRA_CFLAGS	+=	-g
+endif
 
 obj-m	+=	open-mx.o
 open-mx-objs	:=	omx_main.o omx_dev.o omx_peer.o \
