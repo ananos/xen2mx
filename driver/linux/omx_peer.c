@@ -44,7 +44,7 @@ static int omx_peer_next_nr;
 
 #define OMX_PEER_ADDR_HASH_NR 256
 
-static inline uint8_t
+static INLINE uint8_t
 omx_peer_addr_hash(uint64_t board_addr)
 {
 	uint32_t tmp24;

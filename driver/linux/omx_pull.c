@@ -212,7 +212,7 @@ static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 #define OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle) \
 	(!((handle)->frames_missing_bitmap & OMX_PULL_HANDLE_SECOND_BLOCK_BITMASK))
 
-static inline void
+static INLINE void
 omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 				     uint32_t block_length,
 				     uint32_t first_frame_offset)
@@ -231,7 +231,7 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 	handle->next_frame_index += new_frames;
 }
 
-static inline void
+static INLINE void
 omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 {
 	uint32_t first_block_frames = handle->block_frames > OMX_PULL_REPLY_PER_BLOCK
@@ -255,7 +255,7 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
  * Either another reference on this handle should be owned,
  * or the endpoint lock should be hold.
  */
-static inline void
+static INLINE void
 omx_pull_handle_acquire(struct omx_pull_handle * handle)
 {
 	kref_get(&handle->refcount);
@@ -279,7 +279,7 @@ __omx_pull_handle_last_release(struct kref * kref)
 /*
  * Release an acquired pull handle
  */
-static inline void
+static INLINE void
 omx_pull_handle_release(struct omx_pull_handle * handle)
 {
 	kref_put(&handle->refcount, __omx_pull_handle_last_release);
@@ -416,7 +416,7 @@ omx_endpoint_pull_handles_force_exit(struct omx_endpoint * endpoint)
 
 static uint32_t omx_endpoint_magic_generation = 0;
 
-static inline uint32_t
+static INLINE uint32_t
 omx_generate_pull_magic(struct omx_endpoint * endpoint)
 {
 	omx_endpoint_magic_generation++;
@@ -430,7 +430,7 @@ omx_generate_pull_magic(struct omx_endpoint * endpoint)
  *
  * Returns an endpoint acquired, on ERR_PTR(-errno) on error
  */
-static inline struct omx_endpoint *
+static INLINE struct omx_endpoint *
 omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
 {
 	uint8_t index = (magic ^ OMX_PULL_HANDLE_MAGIC_XOR) & ((1UL << OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS) - 1);
@@ -441,7 +441,7 @@ omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
  * Pull handles creation
  */
 
-static inline int
+static INLINE int
 omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 			     struct omx_pull_handle * handle,
 			     struct omx_cmd_pull * cmd)
@@ -487,7 +487,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 /*
  * Create a pull handle and return it as acquired and locked.
  */
-static inline struct omx_pull_handle *
+static INLINE struct omx_pull_handle *
 omx_pull_handle_create(struct omx_endpoint * endpoint,
 		       struct omx_cmd_pull * cmd)
 {
@@ -587,7 +587,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
  * Takes an acquired and locked pull handle and complete it.
  * Called by the BH after receiving a pull reply or a nack.
  */
-static inline void
+static INLINE void
 omx_pull_handle_done_release(struct omx_pull_handle * handle)
 {
 	struct omx_user_region * region = handle->region;
@@ -614,7 +614,7 @@ omx_pull_handle_done_release(struct omx_pull_handle * handle)
  * Takes an acquired and locked pull handle and complete it.
  * Called by the retransmit timer when expired.
  */
-static inline void
+static INLINE void
 omx_pull_handle_timeout_release(struct omx_pull_handle * handle)
 {
 	struct omx_user_region * region = handle->region;
@@ -666,7 +666,7 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
  */
 
 /* Called with the handle acquired and locked */
-static inline struct sk_buff *
+static INLINE struct sk_buff *
 omx_fill_pull_block_request(struct omx_pull_handle * handle,
 			    struct omx_pull_block_desc * desc)
 {
@@ -817,7 +817,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
  * Handle timeout handler
  */
 
-static inline void
+static INLINE void
 omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 						  struct omx_pull_handle * handle)
 {
@@ -1159,7 +1159,7 @@ omx_recv_pull_request(struct omx_iface * iface,
  *
  * Called on a acquired and locked handle. Unlocks it before sending and returning.
  */
-static inline void
+static INLINE void
 omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 					    struct omx_pull_handle * handle,
 					    int frame_from_second_block)

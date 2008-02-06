@@ -20,6 +20,12 @@
 #define __omx_debug_h__
 
 #ifdef OMX_DRIVER_DEBUG
+#define INLINE
+#else
+#define INLINE inline
+#endif
+
+#ifdef OMX_DRIVER_DEBUG
 
 #define OMX_DEBUG_SEND (1<<0)
 #define OMX_DEBUG_RECV (1<<1)

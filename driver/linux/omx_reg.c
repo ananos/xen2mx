@@ -673,7 +673,7 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
  * Filling region pages with receive
  */
 
-static inline void
+static INLINE void
 omx__user_region_segment_fill_pages(struct omx_user_region_segment * segment,
 				    unsigned long segment_offset,
 				    struct sk_buff * skb,

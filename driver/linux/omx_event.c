@@ -35,7 +35,7 @@ struct omx_event_waiter {
 	uint8_t status;
 };
 
-static inline void
+static INLINE void
 omx_wakeup_on_event(struct omx_endpoint *endpoint)
 {
 	/* wake up everybody with the event key */

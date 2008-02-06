@@ -33,7 +33,7 @@
  * acquire the destination endpoint or return a nack_type
  * if the endpoint isn't available or the session is wrong.
  */
-static inline struct omx_endpoint *
+static INLINE struct omx_endpoint *
 omx_shared_get_endpoint_or_nack_type(uint16_t dst_peer_index, uint8_t dst_endpoint_index,
 				     uint32_t session_id,
 				     enum omx_nack_type *nack_type)
@@ -68,7 +68,7 @@ omx_shared_get_endpoint_or_nack_type(uint16_t dst_peer_index, uint8_t dst_endpoi
 	return dst_endpoint;
 }
 
-static inline void
+static INLINE void
 omx_shared_notify_nack(struct omx_endpoint *src_endpoint,
 		       uint16_t dst_peer_index, uint8_t dst_endpoint_index, uint16_t seqnum,
 		       enum omx_nack_type nack_type)
@@ -89,7 +89,7 @@ omx_shared_notify_nack(struct omx_endpoint *src_endpoint,
  * acquire the destination endpoint or notify a lib nack
  * if the endpoint isn't available or the session is wrong.
  */
-static inline struct omx_endpoint *
+static INLINE struct omx_endpoint *
 omx_shared_get_endpoint_or_notify_nack(struct omx_endpoint *src_endpoint,
 				       uint16_t dst_peer_index, uint8_t dst_endpoint_index, 
 				       uint32_t session_id, uint16_t seqnum)
