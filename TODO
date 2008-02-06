@@ -1,9 +1,3 @@
-* stop using wake_up since we have our own lock
-* put the event in the ring before waking up everybody
-  + better for latency of polling processes
-  + more sure against racy wakeups
-* use a rwlock
-
 * free request (and buffers) on close
   + preallocated pool with free list
 
