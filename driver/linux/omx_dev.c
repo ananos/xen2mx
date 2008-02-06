@@ -370,7 +370,7 @@ omx_miscdev_release(struct inode * inode, struct file * file)
  * Common command handlers.
  * Use OMX_CMD_INDEX() to only keep the 8 latest bits of the 32bits command flags
  */
-static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
+static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
 	[OMX_CMD_INDEX(OMX_CMD_BENCH)]			= omx_ioctl_bench,
 	[OMX_CMD_INDEX(OMX_CMD_SEND_TINY)]		= omx_ioctl_send_tiny,
 	[OMX_CMD_INDEX(OMX_CMD_SEND_SMALL)]		= omx_ioctl_send_small,
@@ -385,13 +385,36 @@ static int (*omx_cmd_with_endpoint_handlers[])(struct omx_endpoint * endpoint, v
 	[OMX_CMD_INDEX(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
 };
 
+/* call the ioctl handler assuming the caller checked the index */
+static INLINE long
+omx_handle_ioctl_with_endpoint(struct file *file, unsigned cmd_index, void __user * uparam)
+{
+	struct omx_endpoint * endpoint = file->private_data;
+
+	/*
+	 * the endpoint is already acquired by the file,
+	 * just check its status
+	 */
+	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
+		return -EINVAL;
+
+	return omx_ioctl_with_endpoint_handlers[cmd_index](endpoint, uparam);
+}
+
 /*
  * Main ioctl switch where all application ioctls arrive
  */
 static long
 omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 {
+	uint32_t cmd_index = OMX_CMD_INDEX(cmd);
 	int ret = 0;
+
+#ifndef OMX_DRIVER_DEBUG
+	/* optimize the send case */
+	if (likely(cmd_index >= OMX_CMD_INDEX(OMX_CMD_SEND_TINY) && cmd_index <= OMX_CMD_INDEX(OMX_CMD_SEND_TRUC)))
+		return omx_handle_ioctl_with_endpoint(file, cmd_index, (void __user *) arg);
+#endif
 
 	switch (cmd) {
 
@@ -599,22 +622,10 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_DEREGISTER_REGION:
 	case OMX_CMD_WAIT_EVENT:
 	{
-		struct omx_endpoint * endpoint = file->private_data;
-		uint32_t index = OMX_CMD_INDEX(cmd);
+		BUG_ON(cmd_index >= ARRAY_SIZE(omx_ioctl_with_endpoint_handlers));
+		BUG_ON(omx_ioctl_with_endpoint_handlers[cmd_index] == NULL);
 
-		BUG_ON(index >= ARRAY_SIZE(omx_cmd_with_endpoint_handlers));
-		BUG_ON(omx_cmd_with_endpoint_handlers[index] == NULL);
-
-		/*
-		 * the endpoint is already acquired by the file,
-		 * just check its status
-		 */
-		ret = -EINVAL;
-		if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
-			goto out;
-
-		ret = omx_cmd_with_endpoint_handlers[index](endpoint, (void __user *) arg);
-
+		ret = omx_handle_ioctl_with_endpoint(file, cmd_index, (void __user *) arg);
 		break;
 	}
 
@@ -626,7 +637,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
  out:
 	if (ret != 0)
 		dprintk(IOCTL, "cmd %x (%x,%s) returns %d\n",
-			cmd, OMX_CMD_INDEX(cmd), omx_strcmd(cmd), ret);
+			cmd, cmd_index, omx_strcmd(cmd), ret);
 
 	return ret;
 }
