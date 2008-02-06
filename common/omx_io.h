@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x113
+#define OMX_DRIVER_ABI_VERSION		0x114
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -369,7 +369,8 @@ struct omx_cmd_bench {
 #define OMX_CMD_PEER_FROM_ADDR		_IOWR(OMX_CMD_MAGIC, 0x23, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_PEER_FROM_HOSTNAME	_IOWR(OMX_CMD_MAGIC, 0x24, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_OPEN_ENDPOINT		_IOR(OMX_CMD_MAGIC, 0x71, struct omx_cmd_open_endpoint)
-#define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x73, struct omx_cmd_bench)
+/* WARNING: ioctl based cmd numbers must start at OMX_CMD_BENCH and remain consecutive */
+#define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x80, struct omx_cmd_bench)
 #define OMX_CMD_SEND_TINY		_IOR(OMX_CMD_MAGIC, 0x81, struct omx_cmd_send_tiny)
 #define OMX_CMD_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x82, struct omx_cmd_send_small)
 #define OMX_CMD_SEND_MEDIUM		_IOR(OMX_CMD_MAGIC, 0x83, struct omx_cmd_send_medium)
@@ -378,9 +379,9 @@ struct omx_cmd_bench {
 #define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x86, struct omx_cmd_send_notify)
 #define OMX_CMD_SEND_CONNECT		_IOR(OMX_CMD_MAGIC, 0x87, struct omx_cmd_send_connect)
 #define OMX_CMD_SEND_TRUC		_IOR(OMX_CMD_MAGIC, 0x88, struct omx_cmd_send_truc)
-#define OMX_CMD_REGISTER_REGION		_IOR(OMX_CMD_MAGIC, 0x90, struct omx_cmd_register_region)
-#define OMX_CMD_DEREGISTER_REGION	_IOR(OMX_CMD_MAGIC, 0x91, struct omx_cmd_deregister_region)
-#define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x92, struct omx_cmd_wait_event)
+#define OMX_CMD_REGISTER_REGION		_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_register_region)
+#define OMX_CMD_DEREGISTER_REGION	_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_deregister_region)
+#define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8b, struct omx_cmd_wait_event)
 
 static inline const char *
 omx_strcmd(unsigned cmd)

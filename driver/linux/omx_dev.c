@@ -368,26 +368,33 @@ omx_miscdev_release(struct inode * inode, struct file * file)
 
 /*
  * Common command handlers.
- * Use OMX_CMD_INDEX() to only keep the 8 latest bits of the 32bits command flags
+ * Use OMX_CMD_INDEX() to only keep the 8 latest bits of the 32bits command flags.
+ * Handlers are numbered starting from 0 (for OMX_CMD_BENCH).
+ * OMX_CMD_BENCH must be the first endpoint-based ioctl and the other ones
+ * must use contigous numbers.
  */
+
+#define OMX_CMD_HANDLER_SHIFT(index) (index - OMX_CMD_INDEX(OMX_CMD_BENCH))
+#define OMX_CMD_HANDLER_OFFSET(cmd) OMX_CMD_HANDLER_SHIFT(OMX_CMD_INDEX(cmd))
+
 static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
-	[OMX_CMD_INDEX(OMX_CMD_BENCH)]			= omx_ioctl_bench,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_TINY)]		= omx_ioctl_send_tiny,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_SMALL)]		= omx_ioctl_send_small,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_MEDIUM)]		= omx_ioctl_send_medium,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_RNDV)]		= omx_ioctl_send_rndv,
-	[OMX_CMD_INDEX(OMX_CMD_PULL)]			= omx_ioctl_pull,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_NOTIFY)]		= omx_ioctl_send_notify,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_CONNECT)]	       	= omx_ioctl_send_connect,
-	[OMX_CMD_INDEX(OMX_CMD_SEND_TRUC)]		= omx_ioctl_send_truc,
-	[OMX_CMD_INDEX(OMX_CMD_REGISTER_REGION)]	= omx_ioctl_user_region_register,
-	[OMX_CMD_INDEX(OMX_CMD_DEREGISTER_REGION)]	= omx_ioctl_user_region_deregister,
-	[OMX_CMD_INDEX(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_BENCH)]			= omx_ioctl_bench,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_TINY)]		= omx_ioctl_send_tiny,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_SMALL)]		= omx_ioctl_send_small,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_MEDIUM)]		= omx_ioctl_send_medium,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_RNDV)]		= omx_ioctl_send_rndv,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_PULL)]			= omx_ioctl_pull,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_NOTIFY)]		= omx_ioctl_send_notify,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_CONNECT)]	       	= omx_ioctl_send_connect,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_TRUC)]		= omx_ioctl_send_truc,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_REGISTER_REGION)]	= omx_ioctl_user_region_register,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_DEREGISTER_REGION)]	= omx_ioctl_user_region_deregister,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
 };
 
 /* call the ioctl handler assuming the caller checked the index */
 static INLINE long
-omx_handle_ioctl_with_endpoint(struct file *file, unsigned cmd_index, void __user * uparam)
+omx_handle_ioctl_with_endpoint(struct file *file, unsigned handler_offset, void __user * uparam)
 {
 	struct omx_endpoint * endpoint = file->private_data;
 
@@ -398,7 +405,7 @@ omx_handle_ioctl_with_endpoint(struct file *file, unsigned cmd_index, void __use
 	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
 		return -EINVAL;
 
-	return omx_ioctl_with_endpoint_handlers[cmd_index](endpoint, uparam);
+	return omx_ioctl_with_endpoint_handlers[handler_offset](endpoint, uparam);
 }
 
 /*
@@ -407,13 +414,14 @@ omx_handle_ioctl_with_endpoint(struct file *file, unsigned cmd_index, void __use
 static long
 omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 {
-	uint32_t cmd_index = OMX_CMD_INDEX(cmd);
+	unsigned cmd_index = OMX_CMD_INDEX(cmd);
+	unsigned handler_offset = OMX_CMD_HANDLER_SHIFT(cmd_index); /* unsigned, so that we don't have to check >= 0 */
 	int ret = 0;
 
 #ifndef OMX_DRIVER_DEBUG
 	/* optimize the send case */
-	if (likely(cmd_index >= OMX_CMD_INDEX(OMX_CMD_SEND_TINY) && cmd_index <= OMX_CMD_INDEX(OMX_CMD_SEND_TRUC)))
-		return omx_handle_ioctl_with_endpoint(file, cmd_index, (void __user *) arg);
+	if (likely(handler_offset < ARRAY_SIZE(omx_ioctl_with_endpoint_handlers)))
+		return omx_handle_ioctl_with_endpoint(file, handler_offset, (void __user *) arg);
 #endif
 
 	switch (cmd) {
@@ -622,10 +630,10 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_DEREGISTER_REGION:
 	case OMX_CMD_WAIT_EVENT:
 	{
-		BUG_ON(cmd_index >= ARRAY_SIZE(omx_ioctl_with_endpoint_handlers));
-		BUG_ON(omx_ioctl_with_endpoint_handlers[cmd_index] == NULL);
+		BUG_ON(handler_offset >= ARRAY_SIZE(omx_ioctl_with_endpoint_handlers));
+		BUG_ON(omx_ioctl_with_endpoint_handlers[handler_offset] == NULL);
 
-		ret = omx_handle_ioctl_with_endpoint(file, cmd_index, (void __user *) arg);
+		ret = omx_handle_ioctl_with_endpoint(file, handler_offset, (void __user *) arg);
 		break;
 	}
 
