@@ -226,8 +226,8 @@ else
   AC_MSG_NOTICE(creating kernel headers description in ${CHECKS_NAME})
 fi
 
-###############
-# Other config
+#######################################
+# debug, profiling and valgrind config
 
 libopen_mx_dir="libopen-mx/"
 libopen_mx_builddir="${libopen_mx_dir}build/"
@@ -288,28 +288,6 @@ else
 fi
 
 
-AC_ARG_ENABLE(self, [  --disable-self		disable communication to myself],
-	      enable_self=$enableval, enable_self=yes)
-AC_MSG_CHECKING(if self communication is enabled)
-if test x$enable_self = xyes; then
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-  AC_DEFINE(OMX_DISABLE_SELF, [1], [Define to disable communication to myself])
-fi
-
-AC_ARG_ENABLE(shared, [  --disable-shared		disable shared communication between endpoints on the same node],
-	      enable_shared=$enableval, enable_shared=yes)
-AC_MSG_CHECKING(if shared communication is enabled)
-if test x$enable_shared = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_SUBST(OMX_DISABLE_SHARED, 0)
-else
-  AC_MSG_RESULT(no)
-  AC_DEFINE(OMX_DISABLE_SHARED, [1], [Define to disable shared communication between endpoints on the same node])
-  AC_SUBST(OMX_DISABLE_SHARED, 1)
-fi
-
 AC_MSG_CHECKING(if valgrind is available)
 AC_PREPROC_IFELSE([
 #include <valgrind/memcheck.h>
@@ -340,10 +318,33 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_ARG_WITH(peers-file, [  --with-peers-file=<path>		use argument as a static peers file],
-	    with_peers_file=$withval, with_peers_file=/etc/open-mx/peers)
-AC_MSG_NOTICE(using static peers file in $with_peers_file)
-AC_SUBST(PEERS_FILE, $with_peers_file)
+#######################################
+# self and shared communication config
+
+AC_ARG_ENABLE(self, [  --disable-self		disable communication to myself],
+	      enable_self=$enableval, enable_self=yes)
+AC_MSG_CHECKING(if self communication is enabled)
+if test x$enable_self = xyes; then
+  AC_MSG_RESULT(yes)
+else
+  AC_MSG_RESULT(no)
+  AC_DEFINE(OMX_DISABLE_SELF, [1], [Define to disable communication to myself])
+fi
+
+AC_ARG_ENABLE(shared, [  --disable-shared		disable shared communication between endpoints on the same node],
+	      enable_shared=$enableval, enable_shared=yes)
+AC_MSG_CHECKING(if shared communication is enabled)
+if test x$enable_shared = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_SUBST(OMX_DISABLE_SHARED, 0)
+else
+  AC_MSG_RESULT(no)
+  AC_DEFINE(OMX_DISABLE_SHARED, [1], [Define to disable shared communication between endpoints on the same node])
+  AC_SUBST(OMX_DISABLE_SHARED, 1)
+fi
+
+############################
+# MX compat and wire config 
 
 AC_ARG_ENABLE(mx, [  --disable-mx			disable MX API compatibility wrappers],
 	      enable_mx=$enableval, enable_mx=yes)
@@ -397,6 +398,14 @@ if test x$enable_endian = xyes; then
 else
   AC_MSG_RESULT(no)
 fi
+
+######################
+# installation config
+
+AC_ARG_WITH(peers-file, [  --with-peers-file=<path>		use argument as a static peers file],
+	    with_peers_file=$withval, with_peers_file=/etc/open-mx/peers)
+AC_MSG_NOTICE(using static peers file in $with_peers_file)
+AC_SUBST(PEERS_FILE, $with_peers_file)
 
 AC_ARG_WITH(device, [  --with-device=<path>:<group>:<mode>	change device node name, group and/or mode],
 	    device_attrs=$withval, device_attrs="")
