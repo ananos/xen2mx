@@ -568,7 +568,10 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	write_unlock_bh(&endpoint->pull_handles_lock);
 
 	dprintk(PULL, "created and acquired pull handle %p\n", handle);
-	__release(&handle->lock); /* shut-up the sparse checker */
+
+	/* tell the sparse checker that we keep the lock and pass it back to the caller */
+	__release(&handle->lock);
+
 	return handle;
 
  out_with_idr:
@@ -597,6 +600,9 @@ omx_pull_handle_done_release(struct omx_pull_handle * handle)
 	struct omx_user_region * region = handle->region;
 	struct omx_endpoint * endpoint = handle->endpoint;
 
+	/* tell the sparse checker that the caller took the lock */
+	__acquire(&handle->lock);
+
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
 	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
 
@@ -623,6 +629,9 @@ omx_pull_handle_timeout_release(struct omx_pull_handle * handle)
 {
 	struct omx_user_region * region = handle->region;
 	struct omx_endpoint * endpoint = handle->endpoint;
+
+	/* tell the sparse checker that the caller took the lock */
+	__acquire(&handle->lock);
 
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
 	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
@@ -745,13 +754,14 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 
 	/* create, acquire and lock the handle */
 	handle = omx_pull_handle_create(endpoint, &cmd);
-	__acquire(&handle->lock); /* shut-up the sparse checker */
 	if (unlikely(!handle)) {
-		__release(&handle->lock); /* shut-up the sparse checker */
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		err = -ENOMEM;
 		goto out;
 	}
+
+	/* tell the sparse checker that the lock has been taken by omx_pull_handle_create() */
+	__acquire(&handle->lock);
 
 	/* send a first pull block request */
 	block_length = OMX_PULL_BLOCK_LENGTH_MAX
@@ -828,6 +838,9 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 						  struct omx_pull_handle * handle)
 {
 	struct sk_buff * skb = NULL, * skb2 = NULL;
+
+	/* tell the sparse checker that the lock has been taken by the caller */
+	__acquire(&handle->lock);
 
 	/* request the first block again */
 	omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_FIRST_BLOCK);
@@ -910,6 +923,9 @@ omx_pull_handle_timeout_handler(unsigned long data)
 		dprintk(PULL, "pull handle %p last retransmit time reached, reporting an error\n", handle);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
 		omx_pull_handle_timeout_release(handle);
+		/* tell the sparse checker that the lock has been released by omx_pull_handle_timeout_release() */
+		__release(&handle->lock);
+
 		return; /* timer will never be called again (status is TIMER_EXITED) */
 	}
 
@@ -917,7 +933,8 @@ omx_pull_handle_timeout_handler(unsigned long data)
 
 	/* request more replies if necessary */
 	omx_progress_pull_on_handle_timeout_handle_locked(iface, handle);
-	/* the handle lock has been released */
+	/* tell sparse checker that the lock has been released by omx_progress_pull_on_handle_timeout_handle_locked() */
+	__release(&handle->lock);
 }
 
 /*******************************************
@@ -1170,6 +1187,9 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 					    struct omx_pull_handle * handle,
 					    int frame_from_second_block)
 {
+	/* tell the sparse checker that the lock has been taken by the caller */
+	__acquire(&handle->lock);
+
 	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
 		/*
 		 * current first block not done, we basically just need to release the handle
@@ -1436,7 +1456,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* request more replies if necessary */
 	omx_progress_pull_on_recv_pull_reply_locked(iface, handle,
 						    frame_seqnum_offset >= OMX_PULL_REPLY_PER_BLOCK);
-	/* the handle lock has been released */
+	/* tell the sparse checker that the lock has been released by omx_progress_pull_on_recv_pull_reply_locked() */
+	__release(&handle->lock);
 
 	/* fill segment pages */
 	dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
@@ -1456,6 +1477,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		spin_lock(&handle->lock);
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED);
 		omx_pull_handle_done_release(handle);
+		/* tell the sparse checker that the lock has been released by omx_pull_handle_done_release() */
+		__release(&handle->lock);
 		goto out_with_endpoint;
 	}
 
@@ -1480,6 +1503,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		dprintk(PULL, "notifying pull completion\n");
 		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_SUCCESS);
 		omx_pull_handle_done_release(handle);
+		/* tell the sparse checker that the lock has been released by omx_pull_handle_done_release() */
+		__release(&handle->lock);
 	} else {
 		/* there's more to receive or copy, just release the handle */
 		spin_unlock(&handle->lock);
@@ -1601,6 +1626,8 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	/* complete the handle */
 	omx_pull_handle_done_notify(handle, nack_type);
 	omx_pull_handle_done_release(handle);
+	/* tell the sparse checker that the lock has been released by omx_pull_handle_done_release() */
+	__release(&handle->lock);
 	omx_endpoint_release(endpoint);
 
 	return 0;
