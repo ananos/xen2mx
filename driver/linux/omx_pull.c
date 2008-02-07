@@ -98,7 +98,7 @@ struct omx_pull_block_desc {
 struct omx_pull_handle {
 	struct kref refcount;
 	struct list_head list_elt; /* always queued on one of the endpoint lists */
-	uint32_t idr_index;
+	int idr_index; /* that's what idr_get_new wants */
 	uint32_t magic; /* 8bits endpoint index + 24bits handle generation number */
 
 	/* timer for retransmission */
@@ -309,7 +309,7 @@ omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 {
 	/*
 	 * ask all pull handles of the endpoint to stop their timer.
-	 * but we can't take endpoint->pull_handles_lock after handle->lock since that would deadlock
+	 * but we can't take endpoint->pull_handles_lock before handle->lock since that would deadlock
 	 * so we use a tricky loop to take locks in order
 	 */
 
@@ -508,6 +508,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		goto out_with_region;
 	}
+	/* initialize the lock, we will acquire it soon */
+	spin_lock_init(&handle->lock);
 
 	/* while failed, realloc and retry */
  idr_try_alloc:
@@ -518,10 +520,14 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		goto out_with_handle;
 	}
 
+	/* lock the handle lock first we'll need it later and can't take it after the endpoint lock */
+	spin_lock(&handle->lock);
+
 	write_lock_bh(&endpoint->pull_handles_lock);
 	err = idr_get_new(&endpoint->pull_handles_idr, handle, &handle->idr_index);
 	if (unlikely(err == -EAGAIN)) {
 		write_unlock_bh(&endpoint->pull_handles_lock);
+		spin_unlock(&handle->lock);
 		goto idr_try_alloc;
 	}
 
@@ -529,16 +535,12 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	kref_init(&handle->refcount);
 	handle->endpoint = endpoint;
 	handle->region = region;
-
-	/* fill handle */
 	handle->lib_cookie = cmd->lib_cookie;
 	handle->total_length = cmd->length;
 	handle->puller_rdma_offset = cmd->local_offset;
 	handle->pulled_rdma_offset = cmd->remote_offset;
 
 	/* initialize variable stuff */
-	spin_lock_init(&handle->lock);
-	spin_lock(&handle->lock);
 	handle->status = OMX_PULL_HANDLE_STATUS_OK;
 	handle->remaining_length = cmd->length;
 	handle->frame_index = 0;
@@ -566,11 +568,13 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	write_unlock_bh(&endpoint->pull_handles_lock);
 
 	dprintk(PULL, "created and acquired pull handle %p\n", handle);
+	__release(&handle->lock); /* shut-up the sparse checker */
 	return handle;
 
  out_with_idr:
 	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
 	write_unlock_bh(&endpoint->pull_handles_lock);
+	spin_unlock(&handle->lock);
  out_with_handle:
 	kfree(handle);
  out_with_region:
@@ -741,7 +745,9 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 
 	/* create, acquire and lock the handle */
 	handle = omx_pull_handle_create(endpoint, &cmd);
+	__acquire(&handle->lock); /* shut-up the sparse checker */
 	if (unlikely(!handle)) {
+		__release(&handle->lock); /* shut-up the sparse checker */
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		err = -ENOMEM;
 		goto out;
