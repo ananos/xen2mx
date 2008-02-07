@@ -30,11 +30,6 @@
 #include "omx_iface.h"
 #include "omx_endpoint.h"
 
-/* defined as module parameters */
-extern int omx_iface_max;
-extern int omx_endpoint_max;
-extern int omx_copybench;
-
 /******************************
  * Managing interfaces
  */

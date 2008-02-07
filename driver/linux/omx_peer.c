@@ -34,9 +34,6 @@
 #include "omx_hal.h"
 #include "omx_wire_access.h"
 
-/* defined as a module parameter */
-extern int omx_peer_max;
-
 static struct omx_peer ** omx_peer_array;
 static struct list_head * omx_peer_addr_hash_array;
 static struct mutex omx_peers_mutex; /* big mutex protecting concurrent modification, readers are protected by RCU */

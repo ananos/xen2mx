@@ -33,9 +33,6 @@
 #include "omx_endpoint.h"
 #include "omx_region.h"
 
-/* defined as a module parameter */
-extern int omx_endpoint_max;
-
 /******************************
  * Alloc/Release internal endpoint fields once everything is setup/locked
  */
