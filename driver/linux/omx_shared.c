@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 
 #include "omx_endpoint.h"
+#include "omx_shared.h"
 #include "omx_iface.h"
 #include "omx_misc.h"
 #include "omx_region.h"
@@ -250,7 +251,7 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 
 	/* copy the data */
 	err = copy_from_user(dst_endpoint->recvq + recvq_offset,
-			     (void *)(unsigned long) hdr->vaddr,
+			     (__user void *)(unsigned long) hdr->vaddr,
 			     hdr->length);
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read shared send small cmd data\n");
