@@ -103,12 +103,12 @@ omx_board_addr_from_ethhdr_src(struct ethhdr * eh)
 static inline void
 omx_board_addr_to_ethhdr_dst(struct ethhdr * eh, uint64_t board_addr)
 {
-	eh->h_dest[0] = (uint8_t)(board_addr >> 40);
-	eh->h_dest[1] = (uint8_t)(board_addr >> 32);
-	eh->h_dest[2] = (uint8_t)(board_addr >> 24);
-	eh->h_dest[3] = (uint8_t)(board_addr >> 16);
-	eh->h_dest[4] = (uint8_t)(board_addr >> 8);
-	eh->h_dest[5] = (uint8_t)(board_addr >> 0);
+	eh->h_dest[0] = (uint8_t)((board_addr >> 40 & 0xff));
+	eh->h_dest[1] = (uint8_t)((board_addr >> 32 & 0xff));
+	eh->h_dest[2] = (uint8_t)((board_addr >> 24 & 0xff));
+	eh->h_dest[3] = (uint8_t)((board_addr >> 16 & 0xff));
+	eh->h_dest[4] = (uint8_t)((board_addr >> 8 & 0xff));
+	eh->h_dest[5] = (uint8_t)((board_addr >> 0 & 0xff));
 }
 
 #endif /* __omx_misc_h__ */
