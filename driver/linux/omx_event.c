@@ -40,11 +40,12 @@ struct omx_event_waiter {
 static INLINE void
 omx_wakeup_on_event(struct omx_endpoint *endpoint)
 {
-	struct omx_event_waiter *waiter;
+	struct omx_event_waiter *waiter, *next;
 
 	/* wake up everybody with the event key */
-	list_for_each_entry(waiter, &endpoint->waiters, list_elt) {
+	list_for_each_entry_safe(waiter, next, &endpoint->waiters, list_elt) {
 		waiter->status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
+		list_del(&waiter->list_elt);
 		wake_up_process(waiter->task);
 	}
 }
@@ -374,10 +375,12 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 		del_singleshot_timer_sync(&timer);
 
  wakeup:
-	/* remove from the wait queue */
-	spin_lock_bh(&endpoint->event_lock);
-	list_del(&waiter.list_elt);
-	spin_unlock_bh(&endpoint->event_lock);
+	if (waiter.status != OMX_CMD_WAIT_EVENT_STATUS_EVENT) {
+		/* no event removed us from the wait queue, do it now */
+		spin_lock_bh(&endpoint->event_lock);
+		list_del(&waiter.list_elt);
+		spin_unlock_bh(&endpoint->event_lock);
+	}
 
 	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_NONE) {
 		/* status didn't changed, we have been interrupted */
