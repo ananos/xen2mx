@@ -39,7 +39,7 @@ extern int omx_peer_max;
 
 static struct omx_peer ** omx_peer_array;
 static struct list_head * omx_peer_addr_hash_array;
-struct mutex omx_peers_mutex; /* big mutex protecting concurrent modification, readers are protected by RCU */
+static struct mutex omx_peers_mutex; /* big mutex protecting concurrent modification, readers are protected by RCU */
 static int omx_peer_next_nr;
 
 #define OMX_PEER_ADDR_HASH_NR 256
@@ -418,6 +418,7 @@ omx_peer_lookup_by_addr(uint64_t board_addr,
 				*index = peer->index;
 			if (hostname)
 				strcpy(hostname, peer->hostname);
+			rcu_read_unlock();
 			return 0;
 		}
 	}
