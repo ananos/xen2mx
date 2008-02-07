@@ -661,19 +661,17 @@ omx__process_recv(struct omx_endpoint *ep,
 
 omx_return_t
 omx__process_self_send(struct omx_endpoint *ep,
-		       union omx_request *sreq,
-		       uint64_t match_info,
-		       void *context)
+		       union omx_request *sreq)
 {
   union omx_request * rreq = NULL;
   omx_unexp_handler_t handler = ep->unexp_handler;
+  uint64_t match_info = sreq->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   uint32_t msg_length = sreq->send.segs.total_length;
 
   sreq->generic.type = OMX_REQUEST_TYPE_SEND_SELF;
   sreq->generic.partner = ep->myself;
   omx__partner_to_addr(ep->myself, &sreq->generic.status.addr);
-  sreq->generic.status.context = context;
   sreq->generic.status.match_info = match_info;
   sreq->generic.status.msg_length = msg_length;
   /* xfer_length will be set on matching */
@@ -683,7 +681,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 
   /* if no match, try the unexpected handler */
   if (unlikely(handler && !rreq)) {
-    void * context = ep->unexp_handler_context;
+    void * handler_context = ep->unexp_handler_context;
     omx_unexp_handler_action_t ret;
     void * data_if_available;
 
@@ -694,7 +692,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 
     ep->in_handler = 1;
     /* FIXME: lock */
-    ret = handler(context, sreq->generic.status.addr, match_info,
+    ret = handler(handler_context, sreq->generic.status.addr, match_info,
 		  msg_length, data_if_available);
     /* FIXME: unlock */
     ep->in_handler = 0;

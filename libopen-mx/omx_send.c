@@ -95,11 +95,10 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
 static INLINE omx_return_t
 omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
 				union omx_request * req,
-				struct omx__partner * partner,
-				uint64_t match_info,
-				void *context)
+				struct omx__partner * partner)
 {
   struct omx_cmd_send_tiny * tiny_param;
+  uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   uint32_t length = req->send.segs.total_length;
   omx__seqnum_t seqnum;
@@ -131,8 +130,6 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send tiny is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
 
-  req->generic.status.context = context;
-  req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
@@ -175,11 +172,10 @@ omx__post_isend_small(struct omx_endpoint *ep,
 static INLINE omx_return_t
 omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 				 union omx_request *req,
-				 struct omx__partner * partner,
-				 uint64_t match_info,
-				 void *context)
+				 struct omx__partner * partner)
 {
   struct omx_cmd_send_small * small_param;
+  uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   uint32_t length = req->send.segs.total_length;
   void *copy;
@@ -235,8 +231,6 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send small is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
 
-  req->generic.status.context = context;
-  req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
@@ -353,7 +347,8 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 {
   struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
   struct omx__partner * partner = req->generic.partner;
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+  uint64_t match_info = req->generic.status.match_info;
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   uint32_t length = req->generic.status.msg_length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr;
@@ -391,9 +386,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 static INLINE omx_return_t
 omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
 				  union omx_request *req,
-				  struct omx__partner * partner,
-				  uint64_t match_info,
-				  void *context)
+				  struct omx__partner * partner)
 {
   uint32_t length = req->send.segs.total_length;
   omx__seqnum_t seqnum;
@@ -410,8 +403,6 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
    */
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->generic.status.context = context;
-  req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
@@ -463,6 +454,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   struct omx__rndv_data * data_n = (void *) rndv_param->data;
   struct omx__large_region *region;
   struct omx__partner * partner = req->generic.partner;
+  uint64_t match_info = req->generic.status.match_info;
   uint32_t length = req->generic.status.msg_length;
   omx_return_t ret;
 
@@ -476,7 +468,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   rndv_param->hdr.peer_index = partner->peer_index;
   rndv_param->hdr.dest_endpoint = partner->endpoint_index;
   rndv_param->hdr.shared = omx__partner_localization_shared(partner);
-  rndv_param->hdr.match_info = req->generic.status.match_info;
+  rndv_param->hdr.match_info = match_info;
   rndv_param->hdr.length = sizeof(struct omx__rndv_data);
   rndv_param->hdr.seqnum = req->generic.send_seqnum;
   rndv_param->hdr.session_id = partner->true_session_id;
@@ -498,9 +490,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
 static INLINE omx_return_t
 omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
 				 union omx_request *req,
-				 struct omx__partner * partner,
-				 uint64_t match_info,
-				 void *context)
+				 struct omx__partner * partner)
 {
   uint32_t length = req->send.segs.total_length;
   omx__seqnum_t seqnum;
@@ -516,8 +506,6 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
 
   req->generic.partner = partner;
   omx__partner_to_addr(partner, &req->generic.status.addr);
-  req->generic.status.context = context;
-  req->generic.status.match_info = match_info;
   req->generic.status.msg_length = length;
   /* will set xfer_length when receiving the notify */
 
@@ -565,12 +553,12 @@ omx_return_t
 omx__submit_notify(struct omx_endpoint *ep,
 		   union omx_request *req)
 {
-  struct omx__partner * partner;
   struct omx_cmd_send_notify * notify_param;
-  uint32_t ctxid;
+  struct omx__partner * partner;
+  uint64_t match_info = req->generic.status.match_info;
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   omx__seqnum_t seqnum;
 
-  ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
   partner = req->generic.partner;
 
   seqnum = partner->next_send_seq;
@@ -616,8 +604,8 @@ omx__queue_notify(struct omx_endpoint *ep,
 
 static inline omx_return_t
 omx__isend_req(struct omx_endpoint *ep, union omx_request *req,
-	       omx_endpoint_addr_t dest_endpoint, uint64_t match_info,
-	       void *context, union omx_request **requestp)
+	       omx_endpoint_addr_t dest_endpoint,
+	       union omx_request **requestp)
 {
   struct omx__partner * partner = omx__partner_from_addr(&dest_endpoint);
   uint32_t length = req->send.segs.total_length;
@@ -629,17 +617,17 @@ omx__isend_req(struct omx_endpoint *ep, union omx_request *req,
 
 #ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
-    ret = omx__process_self_send(ep, req, match_info, context);
+    ret = omx__process_self_send(ep, req);
   } else
 #endif
     if (likely(length <= OMX_TINY_MAX)) {
-    ret = omx__submit_or_queue_isend_tiny(ep, req, partner, match_info, context);
+    ret = omx__submit_or_queue_isend_tiny(ep, req, partner);
   } else if (length <= OMX_SMALL_MAX) {
-    ret = omx__submit_or_queue_isend_small(ep, req, partner, match_info, context);
+    ret = omx__submit_or_queue_isend_small(ep, req, partner);
   } else if (length <= OMX_MEDIUM_MAX) {
-    ret = omx__submit_or_queue_isend_medium(ep, req, partner, match_info, context);
+    ret = omx__submit_or_queue_isend_medium(ep, req, partner);
   } else {
-    ret = omx__submit_or_queue_isend_large(ep, req, partner, match_info, context);
+    ret = omx__submit_or_queue_isend_large(ep, req, partner);
   }
 
   if (ret == OMX_SUCCESS) {
@@ -669,8 +657,10 @@ omx_isend(struct omx_endpoint *ep,
     return OMX_NO_RESOURCES;
 
   omx_cache_single_segment(&req->send.segs, buffer, length);
+  req->generic.status.match_info = match_info;
+  req->generic.status.context = context;
 
-  return omx__isend_req(ep, req, dest_endpoint, match_info, context, requestp);
+  return omx__isend_req(ep, req, dest_endpoint, requestp);
 }
 
 omx_return_t
@@ -685,8 +675,10 @@ omx_isendv(omx_endpoint_t ep,
     return OMX_NO_RESOURCES;
 
   omx_cache_segments(&req->send.segs, segs, nseg);
+  req->generic.status.match_info = match_info;
+  req->generic.status.context = context;
 
-  return omx__isend_req(ep, req, dest_endpoint, match_info, context, requestp);
+  return omx__isend_req(ep, req, dest_endpoint, requestp);
 }
 
 /*****************************
@@ -695,8 +687,8 @@ omx_isendv(omx_endpoint_t ep,
 
 static inline omx_return_t
 omx__issend_req(struct omx_endpoint *ep, union omx_request *req,
-		omx_endpoint_addr_t dest_endpoint, uint64_t match_info,
-		void *context, union omx_request **requestp)
+		omx_endpoint_addr_t dest_endpoint,
+		union omx_request **requestp)
 {
   struct omx__partner * partner = omx__partner_from_addr(&dest_endpoint);
   omx_return_t ret;
@@ -707,11 +699,11 @@ omx__issend_req(struct omx_endpoint *ep, union omx_request *req,
 
 #ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
-    ret = omx__process_self_send(ep, req, match_info, context);
+    ret = omx__process_self_send(ep, req);
   } else
 #endif
     {
-    ret = omx__submit_or_queue_isend_large(ep, req, partner, match_info, context);
+    ret = omx__submit_or_queue_isend_large(ep, req, partner);
   }
 
   if (ret == OMX_SUCCESS) {
@@ -741,8 +733,10 @@ omx_issend(struct omx_endpoint *ep,
     return OMX_NO_RESOURCES;
 
   omx_cache_single_segment(&req->send.segs, buffer, length);
+  req->generic.status.match_info = match_info;
+  req->generic.status.context = context;
 
-  return omx__issend_req(ep, req, dest_endpoint, match_info, context, requestp);
+  return omx__issend_req(ep, req, dest_endpoint, requestp);
 }
 
 omx_return_t
@@ -757,8 +751,10 @@ omx_issendv(omx_endpoint_t ep,
     return OMX_NO_RESOURCES;
 
   omx_cache_segments(&req->send.segs, segs, nseg);
+  req->generic.status.match_info = match_info;
+  req->generic.status.context = context;
 
-  return omx__issend_req(ep, req, dest_endpoint, match_info, context, requestp);
+  return omx__issend_req(ep, req, dest_endpoint, requestp);
 }
 
 /***********************
