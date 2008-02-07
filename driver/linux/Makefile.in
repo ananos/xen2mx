@@ -22,11 +22,7 @@ MODULE_OBJS	=	open-mx.ko
 # since configure would have to generate Kbuild and omx_checks.h in srcdir
 # instead of builddir
 
-all:
-	@if test "@srcdir@" != "@builddir@" ; then \
-		echo Linking kernel module source files to local directory ; \
-		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || $(LN_S) $$file ; done ; \
-	fi
+all: links
 	@echo Building kernel module
 	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) $(KBUILD_VARS)
 
@@ -43,13 +39,20 @@ install: all installonly
 clean:
 	@echo Cleaning kernel module build
 	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) $(KBUILD_VARS) clean
+
+distclean: clean clean-links
+
+links:
+	@if test "@srcdir@" != "@builddir@" ; then \
+		echo Linking kernel module source files to local directory ; \
+		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || $(LN_S) $$file ; done ; \
+	fi
+
+clean-links:
 	@if test "@srcdir@" != "@builddir@" ; then \
 		echo Removing links to kernel module source files in local directory ; \
 		for file in $(wildcard @srcdir@/*.[ch]) ; do $(RM) $$(basename $$file) ; done ; \
 	fi
-
-# nothing special needed for distclean here
-distclean: clean
 
 wc:
 	wc -cl *.[ch]
