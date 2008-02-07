@@ -367,7 +367,7 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 	omx_send_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
 	/* copy the data right after the header */
-	ret = copy_from_user(data, (void *)(unsigned long) cmd.vaddr, length);
+	ret = copy_from_user(data, (__user void *)(unsigned long) cmd.vaddr, length);
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read send small cmd data\n");
 		ret = -EFAULT;
