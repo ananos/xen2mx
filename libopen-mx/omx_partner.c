@@ -779,15 +779,13 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * from the endpoint multifrag_medium_recv_req_q or unexp_req_q.
    */
   count = 0;
-  while (!omx__partner_partial_queue_empty(partner)) {
-    uint32_t ctxid;
-    req = omx__partner_partial_queue_first_request(partner);
-    ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+  omx__foreach_partner_partial_request_safe(partner, req, next) {
+    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
 
     omx__debug_printf(CONNECT, "Dropping partial medium recv %p\n", req);
 
     /* dequeue and complete with status error */
-    omx__dequeue_partner_partial_request(partner, req);
+    omx___dequeue_partner_partial_request(req);
     omx__dequeue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
                          ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
                          req);

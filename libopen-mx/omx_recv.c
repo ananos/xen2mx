@@ -501,10 +501,10 @@ omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
    * if no more partner partial request, we expect a frag for the new seqnum,
    * if not, we expect the fragment for at least the first partial seqnum
    */
-  if (omx__partner_partial_queue_empty(partner)) {
+  if (omx__empty_partner_partial_queue(partner)) {
     partner->next_frag_recv_seq = partner->next_match_recv_seq;
   } else {
-    union omx_request *req = omx__partner_partial_queue_first_request(partner);
+    union omx_request *req = omx__first_partner_partial_request(partner);
     partner->next_frag_recv_seq = req->recv.seqnum;
   }
 }
