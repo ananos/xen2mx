@@ -301,16 +301,18 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   /* init lib specific fieds */
   ep->unexp_handler = NULL;
   ep->in_handler = 0;
+
   INIT_LIST_HEAD(&ep->queued_send_req_q);
   INIT_LIST_HEAD(&ep->driver_posted_req_q);
   INIT_LIST_HEAD(&ep->multifrag_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->large_send_req_q);
   INIT_LIST_HEAD(&ep->pull_req_q);
   INIT_LIST_HEAD(&ep->connect_req_q);
-  INIT_LIST_HEAD(&ep->partners_to_ack);
   INIT_LIST_HEAD(&ep->non_acked_req_q);
   INIT_LIST_HEAD(&ep->requeued_send_req_q);
   INIT_LIST_HEAD(&ep->send_self_unexp_req_q);
+
+  INIT_LIST_HEAD(&ep->partners_to_ack_list);
 
   omx__progress(ep);
 

@@ -214,7 +214,7 @@ struct omx_endpoint {
   struct omx__partner ** partners;
   struct omx__partner * myself;
 
-  struct list_head partners_to_ack;
+  struct list_head partners_to_ack_list;
 
   struct list_head reg_list; /* registered single-segment windows */
   struct list_head reg_unused_list; /* unused registered single-segment windows, LRU in front */

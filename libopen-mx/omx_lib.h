@@ -339,7 +339,7 @@ omx__partner_needs_to_ack(struct omx_endpoint *ep,
 {
   if (!partner->oldest_recv_time_not_acked) {
     partner->oldest_recv_time_not_acked = omx__driver_desc->jiffies;
-    list_add_tail(&partner->endpoint_partners_to_ack_elt, &ep->partners_to_ack);
+    list_add_tail(&partner->endpoint_partners_to_ack_elt, &ep->partners_to_ack_list);
   }
 }
 

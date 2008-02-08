@@ -238,7 +238,7 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
   last_invokation = now;
 
   list_for_each_entry_safe(partner, next,
-			   &ep->partners_to_ack, endpoint_partners_to_ack_elt) {
+			   &ep->partners_to_ack_list, endpoint_partners_to_ack_elt) {
     if (now - partner->oldest_recv_time_not_acked < omx__globals.ack_delay_jiffies)
       /* the remaining ones are more recent, no need to ack them yet */
       break;
@@ -265,7 +265,7 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
   omx_return_t ret = OMX_SUCCESS;
 
   list_for_each_entry_safe(partner, next,
-			   &ep->partners_to_ack, endpoint_partners_to_ack_elt) {
+			   &ep->partners_to_ack_list, endpoint_partners_to_ack_elt) {
     omx__debug_printf(ACK, "forcing ack back partner (%lld>>%lld)\n",
 		      (unsigned long long) omx__driver_desc->jiffies,
 		      (unsigned long long) partner->oldest_recv_time_not_acked);
@@ -289,10 +289,10 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
   uint64_t wakeup_jiffies = OMX_NO_WAKEUP_JIFFIES;
 
   /* any delayed ack to send soon? */
-  if (!list_empty(&ep->partners_to_ack)) {
+  if (!list_empty(&ep->partners_to_ack_list)) {
     uint64_t tmp;
 
-    partner = list_first_entry(&ep->partners_to_ack, struct omx__partner, endpoint_partners_to_ack_elt);
+    partner = list_first_entry(&ep->partners_to_ack_list, struct omx__partner, endpoint_partners_to_ack_elt);
     tmp = partner->oldest_recv_time_not_acked + omx__globals.ack_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for delayed acks\n",
