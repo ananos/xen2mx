@@ -251,6 +251,12 @@ omx__enqueue_partner_connect_request(struct omx__partner *partner,
 }
 
 static inline void
+omx___dequeue_partner_connect_request(union omx_request *req)
+{
+  list_del(&req->generic.partner_elt);
+}
+
+static inline void
 omx__dequeue_partner_connect_request(struct omx__partner *partner,
 				     union omx_request *req)
 {
@@ -264,23 +270,14 @@ omx__dequeue_partner_connect_request(struct omx__partner *partner,
 
  found:
 #endif /* OMX_LIB_DEBUG */
-  list_del(&req->generic.partner_elt);
-}
-
-static inline union omx_request *
-omx__partner_connect_queue_first_request(struct omx__partner *partner)
-{
-  return list_first_entry(&partner->pending_connect_req_q, union omx_request, generic.partner_elt);
-}
-
-static inline int
-omx__partner_connect_queue_empty(struct omx__partner *partner)
-{
-  return list_empty(&partner->pending_connect_req_q);
+  omx___dequeue_partner_connect_request(req);
 }
 
 #define omx__foreach_partner_connect_request(partner, req)	\
 list_for_each_entry(req, &partner->pending_connect_req_q, generic.partner_elt)
+
+#define omx__foreach_partner_connect_request_safe(partner, req, next)	\
+list_for_each_entry_safe(req, next, &partner->pending_connect_req_q, generic.partner_elt)
 
 /*******************************************
  * Partner partial request queue management

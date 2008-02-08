@@ -291,7 +291,7 @@ omx__connect_common(omx_endpoint_t ep,
     omx__enqueue_partner_connect_request(partner, req);
     omx__connect_complete(ep, req, OMX_STATUS_SUCCESS);
     return OMX_SUCCESS;
-  } 
+  }
 #endif
 
   connect_seqnum = partner->connect_seqnum++;
@@ -764,8 +764,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * from the endpoint connect_req_q.
    */
   count = 0;
-  while (!omx__partner_connect_queue_empty(partner)) {
-    req = omx__partner_connect_queue_first_request(partner);
+  omx__foreach_partner_connect_request_safe(partner, req, next) {
     omx__debug_printf(CONNECT, "Dropping pending connect %p\n", req);
     omx__connect_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
     count++;
