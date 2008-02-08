@@ -330,27 +330,25 @@ list_for_each_entry(req, &partner->partial_recv_req_q, generic.partner_elt)
  */
 
 static inline void
-omx__dequeue_partner_early_packet(struct omx__partner *partner,
-				  struct omx__early_packet *early)
+omx___dequeue_partner_early_packet(struct omx__early_packet *early)
 {
-  /* FIXME: add debug to check that the early is in the queue */
   list_del(&early->partner_elt);
 }
 
 static inline struct omx__early_packet *
-omx__partner_first_early_packet(struct omx__partner *partner)
+omx__first_partner_early_packet(struct omx__partner *partner)
 {
   return list_first_entry(&partner->early_recv_q, struct omx__early_packet, partner_elt);
 }
 
 static inline struct omx__early_packet *
-omx__partner_last_early_packet(struct omx__partner *partner)
+omx__last_partner_early_packet(struct omx__partner *partner)
 {
   return list_last_entry(&partner->early_recv_q, struct omx__early_packet, partner_elt);
 }
 
 static inline int
-omx__partner_early_queue_empty(struct omx__partner *partner)
+omx__empty_partner_early_packet_queue(struct omx__partner *partner)
 {
   return list_empty(&partner->early_recv_q);
 }
@@ -358,5 +356,7 @@ omx__partner_early_queue_empty(struct omx__partner *partner)
 #define omx__foreach_partner_early_packet_safe(partner, early, next)	\
 list_for_each_entry_safe(early, next, &partner->early_recv_q, partner_elt)
 
+#define omx__foreach_partner_early_packet_reverse(partner, early)	\
+list_for_each_entry_reverse(early, &partner->early_recv_q, partner_elt)
 
 #endif /* __omx_request_h__ */

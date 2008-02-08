@@ -654,6 +654,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
 {
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   union omx_request *req, *next;
+  struct omx__early_packet *early, *next_early;
   uint32_t ctxid;
   int count;
 
@@ -801,12 +802,10 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * Drop early fragments from the partner early queue.
    */
   count = 0;
-  while (!omx__partner_early_queue_empty(partner)) {
-    struct omx__early_packet *early = omx__partner_first_early_packet(partner);
-
+  omx__foreach_partner_early_packet_safe(partner, early, next_early) {
+    omx___dequeue_partner_early_packet(early);
     omx__debug_printf(CONNECT, "Dropping early fragment %p\n", early);
 
-    omx__dequeue_partner_early_packet(partner, early);
     if (early->data)
       free(early->data);
     free(early);

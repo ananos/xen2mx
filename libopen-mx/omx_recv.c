@@ -57,8 +57,8 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
  * or drop if duplicate
  */
 static INLINE struct list_head *
-omx__find_previous_early(struct omx__partner * partner,
-			 struct omx_evt_recv_msg *msg)
+omx__find_previous_early_packet(struct omx__partner * partner,
+				struct omx_evt_recv_msg *msg)
 {
   omx__seqnum_t seqnum = msg->seqnum;
   omx__seqnum_t next_match_recv_seq = partner->next_match_recv_seq;
@@ -67,7 +67,7 @@ omx__find_previous_early(struct omx__partner * partner,
   omx__seqnum_t current_index;
 
   /* trivial case, early queue is empty */
-  if (list_empty(&partner->early_recv_q)) {
+  if (omx__empty_partner_early_packet_queue(partner)) {
     omx__debug_printf(EARLY, "insert early in empty queue\n");
     return &partner->early_recv_q;
   }
@@ -75,7 +75,7 @@ omx__find_previous_early(struct omx__partner * partner,
   new_index = OMX__SEQNUM(seqnum - next_match_recv_seq);
 
   /* a little bit less trivial case, append at the end */
-  current = omx__partner_last_early_packet(partner);
+  current = omx__last_partner_early_packet(partner);
   current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index > current_index) {
     omx__debug_printf(EARLY, "inserting early at the end of queue\n");
@@ -83,7 +83,7 @@ omx__find_previous_early(struct omx__partner * partner,
   }
 
   /* a little bit less trivial case, append at the beginning */
-  current = omx__partner_first_early_packet(partner);
+  current = omx__first_partner_early_packet(partner);
   current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index < current_index) {
     omx__debug_printf(EARLY, "inserting early at the beginning of queue\n");
@@ -91,7 +91,7 @@ omx__find_previous_early(struct omx__partner * partner,
   }
 
   /* general case, add at the right position, and drop if duplicate */
-  list_for_each_entry_reverse(current, &partner->early_recv_q, partner_elt) {
+  omx__foreach_partner_early_packet_reverse(partner, current) {
     current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
 
     if (new_index > current_index) {
@@ -144,7 +144,7 @@ omx__postpone_early_packet(struct omx__partner * partner,
   struct omx__early_packet * early;
   struct list_head * prev;
 
-  prev = omx__find_previous_early(partner, msg);
+  prev = omx__find_previous_early_packet(partner, msg);
   if (!prev)
     return OMX_SUCCESS;
 
@@ -629,7 +629,7 @@ omx__process_recv(struct omx_endpoint *ep,
       omx__foreach_partner_early_packet_safe(partner, early, next) {
 	omx__seqnum_t early_index = OMX__SEQNUM(early->msg.seqnum - old_next_match_recv_seq);
 	if (early_index <= early_index_max) {
-	  omx__dequeue_partner_early_packet(partner, early);
+	  omx___dequeue_partner_early_packet(early);
 	  omx__debug_printf(EARLY, "processing early packet with seqnum %d\n",
 			    early->msg.seqnum);
 	  ret = omx__process_partner_ordered_recv(ep, partner, early->msg.seqnum,
