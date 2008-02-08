@@ -226,18 +226,27 @@ omx__enqueue_partner_throttling_request(struct omx__partner *partner,
   list_add_tail(&req->generic.partner_elt, &partner->throttling_send_req_q);
 }
 
+static inline void
+omx___dequeue_partner_throttling_request(union omx_request *req)
+{
+  list_del(&req->generic.partner_elt);
+}
+
 static inline union omx_request *
 omx__dequeue_first_partner_throttling_request(struct omx__partner *partner)
-{
+ {
   union omx_request *req;
 
   if (list_empty(&partner->throttling_send_req_q))
     return NULL;
 
   req = list_first_entry(&partner->throttling_send_req_q, union omx_request, generic.partner_elt);
-  list_del(&req->generic.partner_elt);
+  omx___dequeue_partner_throttling_request(req);
   return req;
 }
+
+#define omx__foreach_partner_throttling_request_safe(partner, req, next)		\
+list_for_each_entry_safe(req, next, &partner->throttling_send_req_q, generic.partner_elt)
 
 /***************************************************
  * Partner pending connect request queue management

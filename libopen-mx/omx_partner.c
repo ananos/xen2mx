@@ -747,10 +747,11 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * are not queued anywhere else.
    */
   count = 0;
-  while ((req = omx__dequeue_first_partner_throttling_request(partner)) != NULL) {
+  omx__foreach_partner_throttling_request_safe(partner, req, next) {
     uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
     omx__debug_printf(CONNECT, "Dropping throttling send %p\n", req);
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_THROTTLING);
+    omx___dequeue_partner_throttling_request(req);
     omx_free_segments(&req->send.segs);
     omx__notify_request_done(ep, ctxid, req);
     count++;
