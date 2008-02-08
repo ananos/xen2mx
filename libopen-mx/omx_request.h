@@ -193,19 +193,8 @@ omx__enqueue_partner_non_acked_request(struct omx__partner *partner,
 }
 
 static inline void
-omx__dequeue_partner_non_acked_request(struct omx__partner *partner,
-				       union omx_request *req)
+omx___dequeue_partner_non_acked_request(union omx_request *req)
 {
-#ifdef OMX_LIB_DEBUG
-  struct list_head *e;
-  list_for_each(e, &partner->non_acked_req_q)
-    if (req == list_entry(e, union omx_request, generic.partner_elt))
-      goto found;
-
-  omx__abort("Failed to find request in partner non-acked queue for dequeueing\n");
-
- found:
-#endif /* OMX_LIB_DEBUG */
   list_del(&req->generic.partner_elt);
 }
 

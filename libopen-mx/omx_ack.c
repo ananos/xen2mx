@@ -117,7 +117,7 @@ omx__handle_ack(struct omx_endpoint *ep,
       if (req_index >= new_acks)
 	break;
 
-      omx__dequeue_partner_non_acked_request(partner, req);
+      omx___dequeue_partner_non_acked_request(req);
       omx__mark_request_acked(ep, req, OMX_STATUS_SUCCESS);
     }
 
@@ -178,7 +178,7 @@ omx__handle_nack(struct omx_endpoint *ep,
       break;
 
     if (nack_index == req_index) {
-      omx__dequeue_partner_non_acked_request(partner, req);
+      omx___dequeue_partner_non_acked_request(req);
       omx__mark_request_acked(ep, req, status);
       return OMX_SUCCESS;
     }
