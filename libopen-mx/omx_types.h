@@ -72,6 +72,12 @@ typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
  */
 #define OMX__EARLY_PACKET_OFFSET_MAX 0xff
 
+/* limit the seqnum of non-acked send, throttle other sends.
+ * it also limits the number of possible partial recv in the remote side,
+ * which means we don't have to check/throttle there
+ */
+#define OMX__THROTTLING_OFFSET_MAX (OMX__SEQNUM_MASK/2)
+
 enum omx__partner_localization {
   OMX__PARTNER_LOCALIZATION_LOCAL,
   OMX__PARTNER_LOCALIZATION_REMOTE,

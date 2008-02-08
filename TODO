@@ -1,3 +1,6 @@
+* add a throttling_queue for when requests too many seqnum weren't acked
+  + add partners to an endpoint_throttling_partners_list and warn in check_ep_status
+
 * free request (and buffers) on close
   + preallocated pool with free list
 
@@ -28,10 +31,6 @@
 
 * improve retransmission
   + cancel a liback if sending a message before, or send liback after dequeuing request
-  + split partner pendind queue in four quarter to prevent wrap around, and add throttling
-    - add the throttling_queue for request before giving a seqnum
-    - rename the queued_req_q into a no_resources_req_q
-  + throttle if too many partially received medium
   + add session to seqnums
 
 * pull improvements

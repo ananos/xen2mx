@@ -609,6 +609,9 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 		    (unsigned long) length, (unsigned) req->send.segs.nseg,
 		    partner->next_send_seq);
 
+  if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX))
+    omx__abort("cannot send request, partner didn't ack enough, throttling\n");
+
 #ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
     ret = omx__process_self_send(ep, req);
@@ -696,6 +699,9 @@ omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   omx__debug_printf(SEND, "ssending %ld bytes in %d segments using seqnum %d\n",
 		    (unsigned long) req->send.segs.total_length, (unsigned) req->send.segs.nseg,
 		    partner->next_send_seq);
+
+  if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX))
+    omx__abort("cannot send request, partner didn't ack enough, throttling\n");
 
 #ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
