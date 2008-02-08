@@ -71,6 +71,12 @@ omx__requeue_request(struct list_head *head,
 }
 
 static inline void
+omx___dequeue_request(union omx_request *req)
+{
+  list_del(&req->generic.queue_elt);
+}
+
+static inline void
 omx__dequeue_request(struct list_head *head,
 		     union omx_request *req)
 {
@@ -84,17 +90,17 @@ omx__dequeue_request(struct list_head *head,
 
  found:
 #endif /* OMX_LIB_DEBUG */
-  list_del(&req->generic.queue_elt);
+  omx___dequeue_request(req);
 }
 
 static inline union omx_request *
-omx__queue_first_request(struct list_head *head)
+omx__first_request(struct list_head *head)
 {
   return list_first_entry(head, union omx_request, generic.queue_elt);
 }
 
 static inline int
-omx__queue_empty(struct list_head *head)
+omx__empty_queue(struct list_head *head)
 {
   return list_empty(head);
 }
@@ -165,14 +171,14 @@ omx__dequeue_done_request(struct omx_endpoint *ep,
 }
 
 static inline union omx_request *
-omx__queue_first_done_request(struct omx_endpoint *ep,
+omx__first_done_request(struct omx_endpoint *ep,
 			      uint32_t ctxid)
 {
   return list_first_entry(&ep->ctxid[ctxid].done_req_q, union omx_request, generic.done_elt);
 }
 
 static inline int
-omx__done_queue_empty(struct omx_endpoint *ep,
+omx__empty_done_queue(struct omx_endpoint *ep,
 		      uint32_t ctxid)
 {
   return list_empty(&ep->ctxid[ctxid].done_req_q);

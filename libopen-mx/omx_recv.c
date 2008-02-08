@@ -378,7 +378,7 @@ omx__match_recv(struct omx_endpoint *ep,
   omx__foreach_request(&ep->ctxid[ctxid].recv_req_q, req)
     if (likely(req->recv.match_info == (req->recv.match_mask & match_info))) {
       /* matched a posted recv */
-      omx__dequeue_request(&ep->ctxid[ctxid].recv_req_q, req);
+      omx___dequeue_request(req);
       *reqp = req;
       return;
     }
@@ -841,7 +841,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
       unexp_buffer = req->recv.segs.single.ptr;
       memcpy(&req->recv.segs, reqsegs, sizeof(*reqsegs));
 
-      omx__dequeue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+      omx___dequeue_request(req);
 
       /* compute xfer_length */
       msg_length = req->generic.status.msg_length;

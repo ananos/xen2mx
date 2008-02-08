@@ -794,7 +794,7 @@ omx__process_queued_requests(struct omx_endpoint *ep)
     omx_return_t ret;
 
     req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
-    omx__dequeue_request(&ep->queued_send_req_q, req);
+    omx___dequeue_request(req);
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
@@ -870,7 +870,7 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       /* the remaining ones are more recent, no need to resend them yet */
       break;
 
-    omx__dequeue_request(&ep->non_acked_req_q, req);
+    omx___dequeue_request(req);
     req->generic.state |= OMX_REQUEST_STATE_REQUEUED;
     omx__enqueue_request(&ep->requeued_send_req_q, req);
   }
@@ -887,7 +887,7 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     }
 
     req->generic.state &= ~OMX_REQUEST_STATE_REQUEUED;
-    omx__dequeue_request(&ep->requeued_send_req_q, req);
+    omx___dequeue_request(req);
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:

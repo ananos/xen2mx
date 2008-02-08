@@ -315,10 +315,10 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
   }
 
   /* any send to resend soon? */
-  if (!omx__queue_empty(&ep->non_acked_req_q)) {
+  if (!omx__empty_queue(&ep->non_acked_req_q)) {
     uint64_t tmp;
 
-    req = omx__queue_first_request(&ep->non_acked_req_q);
+    req = omx__first_request(&ep->non_acked_req_q);
     tmp = req->generic.last_send_jiffies + omx__globals.resend_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
@@ -329,10 +329,10 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
   }
 
   /* any connect to resend soon? */
-  if (!omx__queue_empty(&ep->connect_req_q)) {
+  if (!omx__empty_queue(&ep->connect_req_q)) {
     uint64_t tmp;
 
-    req = omx__queue_first_request(&ep->connect_req_q);
+    req = omx__first_request(&ep->connect_req_q);
     tmp = req->generic.last_send_jiffies + omx__globals.resend_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",

@@ -326,10 +326,10 @@ omx_wait_any(struct omx_endpoint *ep,
 static inline uint32_t
 omx__ipeek_common(struct omx_endpoint *ep, union omx_request **requestp)
 {
-  if (unlikely(omx__done_queue_empty(ep, 0))) {
+  if (unlikely(omx__empty_done_queue(ep, 0))) {
     return 0;
   } else {
-    *requestp = omx__queue_first_done_request(ep, 0);
+    *requestp = omx__first_done_request(ep, 0);
     return 1;
   }
 }

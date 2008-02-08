@@ -686,7 +686,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     if (req->generic.partner != partner)
       continue;
     omx__debug_printf(CONNECT, "Dropping need-reply large send %p\n", req);
-    omx__dequeue_request(&ep->large_send_req_q, req);
+    omx___dequeue_request(req);
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
     req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
     omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
@@ -707,7 +707,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     if (req->generic.partner != partner)
       continue;
 
-    omx__dequeue_request(&ep->queued_send_req_q, req);
+    omx___dequeue_request(req);
     req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
     omx__debug_printf(CONNECT, "Dropping queued send %p\n", req);
 
@@ -818,15 +818,14 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    */
   count = 0;
   for(ctxid=0; ctxid < ep->ctxid_max; ctxid++) {
-    struct list_head *head = &ep->ctxid[ctxid].unexp_req_q;
-    list_for_each_entry_safe(req, next, head, generic.queue_elt) {
+    omx__foreach_request_safe(&ep->ctxid[ctxid].unexp_req_q, req, next) {
       if (req->generic.partner != partner)
         continue;
 
       omx__debug_printf(CONNECT, "Dropping unexpected recv %p\n", req);
 
       /* drop it and that's it */
-      omx__dequeue_request(head, req);
+      omx___dequeue_request(req);
       if (req->generic.type != OMX_REQUEST_TYPE_RECV_LARGE
 	  && req->generic.status.msg_length > 0)
 	/* release the single segment used for unexp buffer */
