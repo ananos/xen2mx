@@ -216,6 +216,30 @@ list_for_each_entry(req, &partner->non_acked_req_q, generic.partner_elt)
 list_for_each_entry_safe(req, next, &partner->non_acked_req_q, generic.partner_elt)
 
 /***************************************************
+ * Partner throttling send request queue management
+ */
+
+static inline void
+omx__enqueue_partner_throttling_request(struct omx__partner *partner,
+					union omx_request *req)
+{
+  list_add_tail(&req->generic.partner_elt, &partner->throttling_send_req_q);
+}
+
+static inline union omx_request *
+omx__dequeue_first_partner_throttling_request(struct omx__partner *partner)
+{
+  union omx_request *req;
+
+  if (list_empty(&partner->throttling_send_req_q))
+    return NULL;
+
+  req = list_first_entry(&partner->throttling_send_req_q, union omx_request, generic.partner_elt);
+  list_del(&req->generic.partner_elt);
+  return req;
+}
+
+/***************************************************
  * Partner pending connect request queue management
  */
 

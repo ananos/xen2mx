@@ -313,6 +313,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   INIT_LIST_HEAD(&ep->send_self_unexp_req_q);
 
   INIT_LIST_HEAD(&ep->partners_to_ack_list);
+  INIT_LIST_HEAD(&ep->throttling_partners_list);
 
   omx__progress(ep);
 

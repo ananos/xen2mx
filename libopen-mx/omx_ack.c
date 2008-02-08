@@ -122,6 +122,18 @@ omx__handle_ack(struct omx_endpoint *ep,
     }
 
     partner->next_acked_send_seq = ack_before;
+
+    /* there are some new seqnum available, dequeue throttling sends */
+    while (new_acks && (req = omx__dequeue_first_partner_throttling_request(partner)) != NULL) {
+      omx_return_t ret;
+      omx__debug_assert(req->generic.state == OMX_REQUEST_STATE_SEND_THROTTLING);
+      req->generic.state = 0;
+      ret = omx__send_throttling_request(ep, partner, req);
+      if (ret != OMX_SUCCESS)
+	omx__abort("Failed to dequeue throttling send request\n");
+      omx__mark_partner_not_throttling(ep, partner);
+      new_acks--;
+    }
   }
 
   return OMX_SUCCESS;

@@ -178,6 +178,7 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
   static uint64_t last_check = 0;
   uint64_t now = omx__driver_desc->jiffies;
   uint64_t driver_status;
+  struct omx__partner *partner;
 
   /* check once every second */
   if (now - last_check < ep->check_status_delay_jiffies)
@@ -210,6 +211,9 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
 	       ep->endpoint_index, ep->board_info.ifacename, ep->board_info.hostname);
     /* FIXME: find a nice way to exit here? */
   }
+
+  list_for_each_entry(partner, &ep->throttling_partners_list, endpoint_throttling_partners_elt)
+    printf("Open-MX: Partner not acking enough, throttling %d send requests\n", partner->throttling_sends_nr);
 
   last_check = now;
 }

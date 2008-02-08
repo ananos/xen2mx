@@ -1,5 +1,6 @@
-* add a throttling_queue for when requests too many seqnum weren't acked
-  + add partners to an endpoint_throttling_partners_list and warn in check_ep_status
+* add dequeue_first or NULL if needed
+
+* group similar fields in structure for cache effects
 
 * free request (and buffers) on close
   + preallocated pool with free list

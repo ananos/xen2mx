@@ -23,6 +23,7 @@
 #include "omx_request.h"
 #include "omx_wire_access.h"
 #include "omx_lib_wire.h"
+#include "omx_segments.h"
 
 /******************************
  * Endpoint address management
@@ -57,6 +58,7 @@ omx__partner_reset(struct omx__partner *partner)
   INIT_LIST_HEAD(&partner->pending_connect_req_q);
   INIT_LIST_HEAD(&partner->partial_recv_req_q);
   INIT_LIST_HEAD(&partner->early_recv_q);
+  INIT_LIST_HEAD(&partner->throttling_send_req_q);
 
   partner->true_session_id = -1; /* will be initialized when we will be connected to the peer */
   partner->back_session_id = -1; /* will be initialized when the partner will connect to me */
@@ -67,6 +69,7 @@ omx__partner_reset(struct omx__partner *partner)
   partner->connect_seqnum = 0;
   partner->last_send_acknum = 0;
   partner->last_recv_acknum = 0;
+  partner->throttling_sends_nr = 0;
 
   /* FIXME: remove the endpoint_partners_to_ack_elt if necessary */
 
@@ -715,7 +718,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
       /* no region has been allocated, just complete the request */
-      omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);      
+      omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
        if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
@@ -736,6 +739,23 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   }
   if (count)
     printf("Dropped %d queued sends to partner\n", count);
+
+  /*
+   * Drop throttling send request to this partner.
+   * Just take them from the partner throttling_send_req_q, they
+   * are not queued anywhere else.
+   */
+  count = 0;
+  while ((req = omx__dequeue_first_partner_throttling_request(partner)) != NULL) {
+    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+    omx__debug_printf(CONNECT, "Dropping throttling send %p\n", req);
+    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_THROTTLING);
+    omx_free_segments(&req->send.segs);
+    omx__notify_request_done(ep, ctxid, req);
+    count++;
+  }
+  if (count)
+    printf("Dropped %d throttling send request to partner\n", count);
 
   /*
    * Drop pending connect request to this partner.

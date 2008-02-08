@@ -325,6 +325,10 @@ extern void
 omx__process_queued_requests(struct omx_endpoint *ep);
 
 extern omx_return_t
+omx__send_throttling_request(struct omx_endpoint *ep, struct omx__partner *partner,
+			     union omx_request *req);
+
+extern omx_return_t
 omx__process_partners_to_ack(struct omx_endpoint *ep);
 
 extern omx_return_t
@@ -351,6 +355,22 @@ omx__partner_ack_sent(struct omx_endpoint *ep,
     partner->oldest_recv_time_not_acked = 0;
     list_del(&partner->endpoint_partners_to_ack_elt);
   }
+}
+
+static inline void
+omx__mark_partner_throttling(struct omx_endpoint *ep,
+			  struct omx__partner *partner)
+{
+  if (!partner->throttling_sends_nr++)
+    list_add_tail(&partner->endpoint_throttling_partners_elt, &ep->throttling_partners_list);
+}
+
+static inline void
+omx__mark_partner_not_throttling(struct omx_endpoint *ep,
+				 struct omx__partner *partner)
+{
+  if (!--partner->throttling_sends_nr)
+    list_del(&partner->endpoint_throttling_partners_elt);
 }
 
 static inline int

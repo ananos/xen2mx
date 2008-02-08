@@ -144,6 +144,11 @@ struct omx__partner {
    * if changing next_frag_recv_seq, ack all the previous seqnums
    */
 
+  /* delayed send because of throttling (too many acks missing) */
+  struct list_head throttling_send_req_q;
+  uint32_t throttling_sends_nr;
+  struct list_head endpoint_throttling_partners_elt;
+
   /* acks */
   uint64_t oldest_recv_time_not_acked;
   struct list_head endpoint_partners_to_ack_elt;
@@ -215,6 +220,7 @@ struct omx_endpoint {
   struct omx__partner * myself;
 
   struct list_head partners_to_ack_list;
+  struct list_head throttling_partners_list;
 
   struct list_head reg_list; /* registered single-segment windows */
   struct list_head reg_unused_list; /* unused registered single-segment windows, LRU in front */
@@ -297,6 +303,8 @@ enum omx__request_state {
   OMX_REQUEST_STATE_INTERNAL = (1<<10),
   /* request is a send to myself, needs to wait for the recv to match */
   OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED = (1<<11),
+  /* request is a send to a partner which didn't ack enough yet */
+  OMX_REQUEST_STATE_SEND_THROTTLING = (1<12),
 };
 
 struct omx__generic_request {
@@ -389,6 +397,10 @@ union omx_request {
     uint32_t session_id;
     uint8_t connect_seqnum;
   } connect;
+
+  struct {
+    int ssend;
+  } throttling;
 };
 
 typedef void (*omx__process_recv_func_t) (struct omx_endpoint *ep,
