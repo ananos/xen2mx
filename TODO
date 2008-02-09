@@ -1,5 +1,3 @@
-* add dequeue_first or NULL if needed
-
 * group similar fields in structure for cache effects
 
 * free request (and buffers) on close

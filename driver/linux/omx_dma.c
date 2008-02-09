@@ -20,10 +20,10 @@
 
 #include "omx_common.h"
 
-/* DMA Engine must be built in the kernel and as a module,
+/* DMA Engine must be built in the kernel (its interface cannot be as a module),
  * and it must provide shareable channels.
  */
-#if (defined CONFIG_DMA_ENGINE || defined CONFIG_DMA_ENGINE_MODULE)
+#ifdef CONFIG_DMA_ENGINE
 #ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
 #define OMX_MAY_USE_DMA_ENGINE 1
 #endif
