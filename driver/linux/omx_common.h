@@ -51,10 +51,6 @@ extern int omx_copybench;
 extern int omx_net_init(const char * ifnames);
 extern void omx_net_exit(void);
 
-/* dma if available */
-extern int omx_dma_init(void);
-extern void omx_dma_exit(void);
-
 /* events */
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);
 extern int omx_notify_exp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
