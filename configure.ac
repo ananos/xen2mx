@@ -91,6 +91,23 @@ if test -z ${LINUX_HDR} ; then
 fi
 AC_MSG_RESULT(found in in ${LINUX_HDR})
 
+# Find where the autoconf header is (to avoid grepping at both places).
+# The one in the build dir is preferred since this is where the configured
+# tree should be
+AC_MSG_CHECKING(kernel configuration in include/linux/autoconf.h)
+LINUX_AUTOCONF_DIR=
+if test -f ${LINUX_BUILD}/include/linux/autoconf.h ; then
+  LINUX_AUTOCONF_DIR=${LINUX_BUILD}
+else if test -f ${LINUX_SRC}/include/linux/autoconf.h ; then
+  LINUX_AUTOCONF_DIR=${LINUX_SRC}
+fi fi
+if test -z ${LINUX_AUTOCONF_DIR} ; then
+  AC_MSG_ERROR(not found)
+fi
+LINUX_AUTOCONF_H=${LINUX_AUTOCONF_DIR}/include/linux/autoconf.h
+AC_MSG_RESULT(found in ${LINUX_AUTOCONF_DIR})
+
+# Find where the kbuild Makefile is
 AC_MSG_CHECKING(kernel build Makefile)
 if ! test -f ${LINUX_BUILD}/Makefile ; then
   AC_MSG_ERROR(not found in ${LINUX_BUILD})
