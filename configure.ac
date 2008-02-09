@@ -89,7 +89,7 @@ fi fi
 if test -z ${LINUX_HDR} ; then
   AC_MSG_ERROR(not found)
 fi
-AC_MSG_RESULT(found in in ${LINUX_HDR})
+AC_MSG_RESULT(found in ${LINUX_HDR})
 
 # Find where the autoconf header is (to avoid grepping at both places).
 # The one in the build dir is preferred since this is where the configured
