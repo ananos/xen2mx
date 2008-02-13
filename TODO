@@ -1,3 +1,5 @@
+* rndv/notify delayed between omx<->mx?
+
 * group similar fields in structure for cache effects
 
 * free request (and buffers) on close

@@ -376,8 +376,6 @@ omx_user_region_offset_cache_contig_append_callback(struct omx_user_region_offse
 		/* append the page */
 		get_page(*page);
 		skb_fill_page_desc(skb, frags, *page, pageoff, chunk);
-		skb->len += chunk;
-		skb->data_len += chunk;
 		dprintk(REG, "appending %d from page\n", chunk);
 
 		/* update the status */
@@ -395,6 +393,9 @@ omx_user_region_offset_cache_contig_append_callback(struct omx_user_region_offse
 			pageoff += chunk;
 		}
 	}
+
+	skb->len += length;
+	skb->data_len += length;
 
 	cache->page = page;
 	cache->pageoff = pageoff;
@@ -439,8 +440,6 @@ omx_user_region_offset_cache_vect_append_callback(struct omx_user_region_offset_
 		/* append the page */
 		get_page(*page);
 		skb_fill_page_desc(skb, frags, *page, pageoff, chunk);
-		skb->len += chunk;
-		skb->data_len += chunk;
 		dprintk(REG, "appending %d from page\n", chunk);
 
 		/* update the status */
@@ -474,6 +473,9 @@ omx_user_region_offset_cache_vect_append_callback(struct omx_user_region_offset_
 			pageoff += chunk;
 		}
 	}
+
+	skb->len += length;
+	skb->data_len += length;
 
 	cache->seg = seg;
 	cache->segoff = segoff;
