@@ -19,12 +19,15 @@
 #ifndef __omx_dma_h__
 #define __omx_dma_h__
 
+/* enable/disable DMA engine usage at runtime */
+extern int omx_dmaengine;
+
 #ifdef CONFIG_DMA_ENGINE
 extern int omx_dma_init(void);
 extern void omx_dma_exit(void);
 #else
 static inline int omx_dma_init(void) { return 0; }
-#define omx_dma_exit() do { /* nothing */ } while (0)
+static inline void omx_dma_exit(void) { /* nothing */ }
 #endif
 
 #endif /* __omx_dma_h__ */
