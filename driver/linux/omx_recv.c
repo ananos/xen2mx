@@ -26,6 +26,7 @@
 #include "omx_iface.h"
 #include "omx_peer.h"
 #include "omx_endpoint.h"
+#include "omx_dma.h"
 
 /***************************
  * Event reporting routines
@@ -358,6 +359,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->msg.lib_piggyack);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
+	void *dma_handle;
 	int err;
 
 	/* check packet length */
@@ -435,7 +437,14 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
 	/* copy data in recvq slot */
-	err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset, frag_length);
+	dma_handle = omx_dma_get_handle(endpoint);
+	if (dma_handle) {
+		struct page * page = endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];
+		err = omx_dma_skb_copy_datagram_to_pages(dma_handle, skb, hdr_len, &page, 0, frag_length);
+		omx_dma_put_handle(endpoint, dma_handle);
+	} else {
+		err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset, frag_length);
+	}
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
 

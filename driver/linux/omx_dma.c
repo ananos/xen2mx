@@ -18,8 +18,11 @@
 
 #include <linux/kernel.h>
 #include <linux/dmaengine.h>
+#include <linux/rcupdate.h>
 
 #include "omx_common.h"
+#include "omx_endpoint.h"
+#include "omx_dma.h"
 
 #ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
 
@@ -64,6 +67,146 @@ omx_dma_event_callback(struct dma_client *client, struct dma_chan *chan,
 static struct dma_client omx_dma_client = {
 	.event_callback = omx_dma_event_callback,
 };
+
+void *
+omx_dma_get_handle(struct omx_endpoint *endpoint)
+{
+	struct dma_chan *chan = NULL;
+	if (omx_dmaengine) {
+		chan = rcu_dereference(omx_dma_chan);
+		if (chan)
+			dma_chan_get(chan);
+	}
+	return chan;
+}
+
+void
+omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle)
+{
+	struct dma_chan *chan  = handle;
+	dma_chan_put(chan);
+}
+
+int
+omx_dma_skb_copy_datagram_to_pages(void *handle,
+				   struct sk_buff *skb, int offset,
+				   struct page **pages, int pgoff,
+				   size_t len)
+{
+	struct dma_chan *chan = handle;
+	int start = skb_headlen(skb);
+	int i, copy;
+	dma_cookie_t cookie = 0;
+
+	/* Copy header. */
+	copy = start - offset;
+	while (copy > 0) {
+		int chunk;
+
+		chunk = min_t(int, copy, len);
+		chunk = min_t(int, copy, PAGE_SIZE - pgoff);
+
+		cookie = dma_async_memcpy_buf_to_pg(chan,
+						    *pages, pgoff,
+						    skb->data + offset,
+						    chunk);
+		if (cookie < 0)
+			goto fault;
+
+		len -= chunk;
+		if (len == 0)
+			goto end;
+
+		copy -= chunk;
+
+		offset += chunk;
+		pgoff += chunk;
+		if (pgoff == PAGE_SIZE)
+			pages++;
+	}
+
+	/* Copy paged appendix. Hmm... why does this look so complicated? */
+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+		int end;
+		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+		struct page *page = frag->page;
+
+		BUG_ON(start > offset + len);
+
+		end = start + skb_shinfo(skb)->frags[i].size;
+		copy = end - offset;
+		while (copy > 0) {
+			int chunk;
+
+			chunk = min_t(int, copy, len);
+			chunk = min_t(int, copy, PAGE_SIZE - pgoff);
+
+			cookie = dma_async_memcpy_pg_to_pg(chan,
+							   *pages, pgoff,
+							   page, frag->page_offset + offset - start,
+							   chunk);
+			if (cookie < 0)
+				goto fault;
+
+			len -= chunk;
+			if (len == 0)
+				goto end;
+
+			copy -= chunk;
+
+			offset += chunk;
+			pgoff += chunk;
+			if (pgoff == PAGE_SIZE)
+				pages++;
+		}
+		start = end;
+	}
+
+	if (skb_shinfo(skb)->frag_list) {
+		struct sk_buff *list = skb_shinfo(skb)->frag_list;
+
+		for (; list; list = list->next) {
+			int end;
+
+			BUG_ON(start > offset + len);
+
+			end = start + list->len;
+			copy = end - offset;
+			if (copy > 0) {
+				if (copy > len)
+					copy = len;
+
+				cookie = omx_dma_skb_copy_datagram_to_pages(chan, list, offset - start, pages, pgoff, copy);
+				if (cookie < 0)
+					goto fault;
+
+				len -= copy;
+				if (len == 0)
+					goto end;
+
+				offset += copy;
+				pgoff += copy;
+				pages += (pgoff >> PAGE_SHIFT);
+				pgoff &= ~PAGE_MASK;
+			}
+			start = end;
+		}
+	}
+
+ end:
+	if (!len) {
+		dma_cookie_t done, used;
+
+		dma_async_memcpy_issue_pending(chan);
+
+		while (dma_async_memcpy_complete(chan, cookie, &done, &used) == DMA_IN_PROGRESS);
+
+		return 0;
+	}
+
+ fault:
+	return -EFAULT;
+}
 
 #endif /* OMX_HAVE_SHAREABLE_DMA_CHANNELS */
 

@@ -22,12 +22,24 @@
 /* enable/disable DMA engine usage at runtime */
 extern int omx_dmaengine;
 
+/* initialization and termination of the dma manager */
 #ifdef CONFIG_DMA_ENGINE
 extern int omx_dma_init(void);
 extern void omx_dma_exit(void);
 #else
 static inline int omx_dma_init(void) { return 0; }
 static inline void omx_dma_exit(void) { /* nothing */ }
+#endif
+
+/* dma channel manipulation, if available */
+#if (defined CONFIG_DMA_ENGINE) && (defined OMX_HAVE_SHAREABLE_DMA_CHANNELS)
+extern void * omx_dma_get_handle(struct omx_endpoint *endpoint);
+extern void omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle);
+extern int omx_dma_skb_copy_datagram_to_pages(void *handle, struct sk_buff *skb, int offset, struct page **pages, int pgoff, size_t len);
+#else
+static inline void * omx_dma_get_handle(struct omx_endpoint *endpoint) { return NULL; }
+static inline void omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle) { /* nothing */ }
+static inline int omx_dma_skb_copy_datagram_to_pages(void *handle, struct sk_buff *skb, int offset, struct page **pages, int pgoff, size_t len) { return -ENOSYS; }
 #endif
 
 #endif /* __omx_dma_h__ */
