@@ -24,6 +24,7 @@
 #ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
 
 static spinlock_t omx_dma_lock;
+struct dma_chan *omx_dma_chan = NULL;
 
 static enum dma_state_client
 omx_dma_event_callback(struct dma_client *client, struct dma_chan *chan,
@@ -34,12 +35,23 @@ omx_dma_event_callback(struct dma_client *client, struct dma_chan *chan,
 	spin_lock(&omx_dma_lock);
 
 	switch (state) {
+
 	case DMA_RESOURCE_AVAILABLE:
-		printk(KERN_INFO "Open-MX: DMA channel available.\n");
+		if (omx_dma_chan == NULL) {
+			printk(KERN_INFO "Open-MX: DMA channel available.\n");
+			rcu_assign_pointer(omx_dma_chan, chan);
+			ack = DMA_ACK;
+		}
 		break;
+
 	case DMA_RESOURCE_REMOVED:
-		printk(KERN_INFO "Open-MX: DMA channel removed.\n");
+		if (omx_dma_chan == chan) {
+			printk(KERN_INFO "Open-MX: DMA channel removed.\n");
+			rcu_assign_pointer(omx_dma_chan, NULL);
+			ack = DMA_ACK;
+		}
 		break;
+
 	default:
 		break;
 	}
