@@ -53,7 +53,7 @@ module_param_named(peers, omx_peer_max, uint, S_IRUGO);
 MODULE_PARM_DESC(peers, "Maximum number of peer nodes");
 
 int omx_skb_frags = MAX_SKB_FRAGS;
-module_param_named(skbfrags, omx_skb_frags, uint, S_IRUGO);
+module_param_named(skbfrags, omx_skb_frags, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(skbfrags, "Maximal number of fragments to attach to skb");
 
 int omx_copybench = 0;
