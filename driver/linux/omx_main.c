@@ -56,6 +56,10 @@ int omx_skb_frags = MAX_SKB_FRAGS;
 module_param_named(skbfrags, omx_skb_frags, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(skbfrags, "Maximal number of fragments to attach to skb");
 
+int omx_dmaengine = 0; /* disabled by default for now */
+module_param_named(dmaengine, omx_dmaengine, uint, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(dmaengine, "Enable DMA engine support\n");
+
 int omx_copybench = 0;
 module_param_named(copybench, omx_copybench, uint, S_IRUGO);
 MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");
