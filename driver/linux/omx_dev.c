@@ -40,7 +40,7 @@
 static int
 omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 {
-	struct page ** sendq_pages;
+	struct page ** sendq_pages, ** recvq_pages;
 	struct omx_endpoint_desc *userdesc;
 	char * buffer;
 	int i;
@@ -88,6 +88,19 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	}
 	endpoint->sendq_pages = sendq_pages;
 
+	recvq_pages = kmalloc(OMX_RECVQ_ENTRY_NR * sizeof(struct page *), GFP_KERNEL);
+	if (!recvq_pages) {
+		printk(KERN_ERR "Open-MX: failed to allocate recvq pages array\n");
+		goto out_with_sendq_pages;
+	}
+	for(i=0; i<OMX_RECVQ_ENTRY_NR; i++) {
+		struct page * page;
+		page = vmalloc_to_page(endpoint->recvq + (i << OMX_RECVQ_ENTRY_SHIFT));
+		BUG_ON(!page);
+		recvq_pages[i] = page;
+	}
+	endpoint->recvq_pages = recvq_pages;
+
 	/* finish initializing queues */
 	omx_endpoint_queues_init(endpoint);
 
@@ -99,6 +112,8 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 
 	return 0;
 
+ out_with_sendq_pages:
+	kfree(endpoint->sendq_pages);
  out_with_userq:
 	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
  out_with_desc:
@@ -114,6 +129,7 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 
 	omx_endpoint_user_regions_exit(endpoint);
 	omx_endpoint_pull_handles_force_exit(endpoint);
+	kfree(endpoint->recvq_pages);
 	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
 	vfree(endpoint->userdesc);

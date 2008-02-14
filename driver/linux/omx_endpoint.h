@@ -67,6 +67,7 @@ struct omx_endpoint {
 	spinlock_t event_lock;
 
 	struct page ** sendq_pages;
+	struct page ** recvq_pages;
 
 	spinlock_t user_regions_lock;
 	struct omx_user_region * user_regions[OMX_USER_REGION_MAX];
