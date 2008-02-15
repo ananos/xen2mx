@@ -293,6 +293,32 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
   return ret;
 }
 
+omx_return_t
+omx__ack_partner_immediately(struct omx_endpoint *ep,
+			     struct omx__partner *partner,
+			     omx__seqnum_t seqnum_offset)
+{
+  omx_return_t ret = OMX_SUCCESS;
+  omx__seqnum_t saved_next_frag_recv_seq = partner->next_frag_recv_seq;
+
+  omx__debug_printf(ACK, "forcing immediate ack back partner (%lld>>%lld)\n",
+		    (unsigned long long) omx__driver_desc->jiffies,
+		    (unsigned long long) partner->oldest_recv_time_not_acked);
+
+  /* apply the offset to the seqnum to ack */
+  partner->next_frag_recv_seq = OMX__SEQNUM(saved_next_frag_recv_seq + seqnum_offset);
+
+  ret = omx__submit_send_liback(ep, partner);
+  /* failed to send one liback? too bad for this peer */
+
+  /* restore the seqnum */
+  partner->next_frag_recv_seq = saved_next_frag_recv_seq;
+
+  omx__partner_ack_sent(ep, partner);
+
+  return ret;
+}
+
 void
 omx__prepare_progress_wakeup(struct omx_endpoint *ep)
 {

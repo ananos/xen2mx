@@ -334,7 +334,11 @@ omx__process_partners_to_ack(struct omx_endpoint *ep);
 extern omx_return_t
 omx__flush_partners_to_ack(struct omx_endpoint *ep);
 
-void
+extern omx_return_t
+omx__ack_partner_immediately(struct omx_endpoint *ep, struct omx__partner *partner,
+			     omx__seqnum_t seqnum_offset);
+
+extern void
 omx__prepare_progress_wakeup(struct omx_endpoint *ep);
 
 static inline void

@@ -580,4 +580,12 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
     omx__dequeue_request(&ep->large_send_req_q, req);
     omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
   }
+
+#ifdef OMX_MX_WIRE_COMPAT
+  /* MX needs an immediate ack for notify
+   * since it cannot mark large recv as zombies.
+   * But the recv seqnum isn't updated yet, so offset it by 1.
+   */
+  omx__ack_partner_immediately(ep, partner, 1);
+#endif
 }
