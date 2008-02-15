@@ -24,7 +24,7 @@
 #ifndef MX_EXTENSIONS_H
 #define MX_EXTENSIONS_H
 
-#include "open-mx.h"
+#include "myriexpress.h"
 
 /***********************************
  * Redefine MX constants and macros
