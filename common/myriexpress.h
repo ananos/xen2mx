@@ -207,7 +207,7 @@ typedef void (*mx_matching_callback_t)(void *context, uint64_t match_value, int 
 
 #define mx_init() mx__init_api(MX_API)
 extern mx_return_t mx__init_api(int);
-extern void mx_finalize();
+extern void mx_finalize(void);
 
 extern mx_return_t mx_open_endpoint(uint32_t board_number, uint32_t endpoint_id,
 				    uint32_t endpoint_key, mx_param_t *params_array, uint32_t params_count,
