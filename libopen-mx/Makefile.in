@@ -1,12 +1,3 @@
-exec_prefix	=	@exec_prefix@
-libdir	=	@libdir@
-prefix	=	@prefix@
-
-LN_S	=	@LN_S@
-
-STATIC_LIB	=	@OPEN_MX_LIB_STATIC@
-DYNAMIC_LIB	=	@OPEN_MX_LIB_DYNAMIC@
-
 TARGETS	=	@LIB_TARGETS@
 
 .PHONY: all install installonly depend clean distclean
@@ -18,12 +9,6 @@ install: all installonly
 
 installonly:
 	+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
-	@if test @OMX_MX_API_COMPAT@ -eq 1; then \
-		echo "Installing MX compat wrapper lib symlinks" ; \
-		$(RM) $(DESTDIR)$(libdir)/libmyriexpress.a $(DESTDIR)$(libdir)/libmyriexpress.so ; \
-		$(LN_S) $(STATIC_LIB) $(DESTDIR)$(libdir)/libmyriexpress.a ; \
-		$(LN_S) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)/libmyriexpress.so ; \
-	fi
 
 distclean:
 	+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; rm -rf $$dir ; done

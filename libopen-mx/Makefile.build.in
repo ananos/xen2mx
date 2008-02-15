@@ -7,6 +7,7 @@ SHARED_LD	=	@CC@ #FIXME?
 AR	=	@AR@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
+LN_S	=	@LN_S@
 
 CPPFLAGS	+=	-imacros @abs_top_builddir@/common/omx_config.h
 CPPFLAGS	+=	-I@abs_top_srcdir@/common
@@ -82,6 +83,12 @@ installonly:
 		$(MKDIR_P) $(DESTDIR)$(libdir)$(libdirsuffix) ; \
 	fi
 	$(INSTALL) -m 0644 $(STATIC_LIB) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/
+	@if test @OMX_MX_API_COMPAT@ -eq 1; then \
+		echo "Installing MX compat wrapper lib symlinks in $(DESTDIR)$(libdir)$(libdirsuffix)/" ; \
+		$(RM) $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.a $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.so ; \
+		$(LN_S) $(STATIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.a ; \
+		$(LN_S) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.so ; \
+	fi
 
 install: all installonly
 
