@@ -169,17 +169,22 @@ omx__partner_localization_shared(struct omx__partner *partner)
 #endif
 }
 
+static inline void
+omx__partner_recv_lookup(struct omx_endpoint *ep,
+			 uint16_t peer_index, uint8_t endpoint_index,
+			 struct omx__partner ** partnerp)
+{
+  uint32_t partner_index = ((uint32_t) endpoint_index)
+    + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
+  *partnerp = ep->partners[partner_index];
+}
+
 extern void
 omx__partner_cleanup(struct omx_endpoint *ep,
 		     struct omx__partner *partner, int disconnect);
 
 extern omx_return_t
 omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr);
-
-extern omx_return_t
-omx__partner_recv_lookup(struct omx_endpoint *ep,
-			 uint16_t peer_index, uint8_t endpoint_index,
-			 struct omx__partner ** partnerp);
 
 extern void
 omx__post_connect(struct omx_endpoint *ep,

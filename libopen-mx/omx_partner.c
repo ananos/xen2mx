@@ -220,23 +220,6 @@ omx__partner_lookup_by_addr(struct omx_endpoint *ep,
 }
 
 omx_return_t
-omx__partner_recv_lookup(struct omx_endpoint *ep,
-			 uint16_t peer_index, uint8_t endpoint_index,
-			 struct omx__partner ** partnerp)
-{
-  uint32_t partner_index;
-  struct omx__partner * partner;
-
-  partner_index = ((uint32_t) endpoint_index)
-    + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
-  partner = ep->partners[partner_index];
-  omx__debug_assert(partner);
-
-  *partnerp = partner;
-  return OMX_SUCCESS;
-}
-
-omx_return_t
 omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
 {
   uint16_t peer_index;

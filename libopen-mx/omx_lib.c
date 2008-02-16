@@ -133,10 +133,12 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     char board_addr_str[OMX_BOARD_ADDR_STRLEN];
     omx_status_code_t status;
 
-    ret = omx__partner_recv_lookup(ep, peer_index, nack_lib->src_endpoint,
-				   &partner);
-    if (unlikely(ret != OMX_SUCCESS))
-      return ret;
+    omx__partner_recv_lookup(ep, peer_index, nack_lib->src_endpoint,
+			     &partner);
+    if (unlikely(!partner)) {
+      ret = OMX_SUCCESS;
+      break;
+    }
 
     omx__peer_index_to_addr(peer_index, &board_addr);
     omx__board_addr_sprintf(board_addr_str, board_addr);

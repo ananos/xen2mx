@@ -599,10 +599,10 @@ omx__process_recv(struct omx_endpoint *ep,
   omx__seqnum_t frag_index_max;
   omx_return_t ret;
 
-  ret = omx__partner_recv_lookup(ep, msg->peer_index, msg->src_endpoint,
-				 &partner);
-  if (unlikely(ret != OMX_SUCCESS))
-    return ret;
+  omx__partner_recv_lookup(ep, msg->peer_index, msg->src_endpoint,
+			   &partner);
+  if (unlikely(!partner))
+    return OMX_SUCCESS;
 
   omx__debug_printf(SEQNUM, "got seqnum %d, expected match at %d, frag at %d\n",
 		    seqnum, partner->next_match_recv_seq, partner->next_frag_recv_seq);
@@ -787,12 +787,11 @@ omx__process_recv_truc(struct omx_endpoint *ep,
   union omx__truc_data *data_n = (void *) truc->data;
   uint8_t truc_type = OMX_FROM_PKT_FIELD(data_n->type);
   struct omx__partner *partner;
-  omx_return_t ret;
 
-  ret = omx__partner_recv_lookup(ep, truc->peer_index, truc->src_endpoint,
-				   &partner);
-  if (unlikely(ret != OMX_SUCCESS))
-    return ret;
+  omx__partner_recv_lookup(ep, truc->peer_index, truc->src_endpoint,
+			   &partner);
+  if (unlikely(!partner))
+    return OMX_SUCCESS;
 
   switch (truc_type) {
   case OMX__TRUC_DATA_TYPE_ACK: {
