@@ -688,6 +688,10 @@ omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
  * Disconnecting from a partner
  */
 
+/*
+ * disconnect should be > 0 if we need to disconnect from peer,
+ * and 2 if we also need to free the partner structure.
+ */
 void
 omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int disconnect)
 {
@@ -911,7 +915,7 @@ omx_disconnect(omx_endpoint_t ep, omx_endpoint_addr_t addr)
 
   omx__progress(ep);
   partner = omx__partner_from_addr(&addr);
-  omx__partner_cleanup(ep, partner, 1);
+  omx__partner_cleanup(ep, partner, 2);
 
   return OMX_SUCCESS;
 }
