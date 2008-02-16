@@ -698,7 +698,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   int count;
 
   omx__board_addr_sprintf(board_addr_str, partner->board_addr);
-  printf("Cleaning partner %s endpoint %d\n", board_addr_str, partner->endpoint_index);
+  if (disconnect <= 1)
+    printf("Cleaning partner %s endpoint %d\n", board_addr_str, partner->endpoint_index);
 
   /*
    * Complete pending send/recv with an error status (they should get nacked earlier most of the times).
@@ -882,12 +883,24 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    */
   omx__partner_reset(partner);
 
-  /*
-   * Change recv_seq to something very different for safety
-   */
   if (disconnect) {
+    /*
+     * Change recv_seq to something very different for safety
+     */
     partner->next_match_recv_seq ^= OMX__SEQNUM(0xb0f0) ;
     partner->next_frag_recv_seq ^= OMX__SEQNUM(0xcf0f);
+
+    if (disconnect > 1) {
+      /*
+       * The application requests a disconnect, so the corresponding endpoint address
+       * is now invalid. Just drop the partner entirely, it will prevent messages
+       * about future reconnections
+       */
+      uint32_t partner_index = ((uint32_t) partner->endpoint_index)
+				+ ((uint32_t) partner->peer_index) * omx__driver_desc->endpoint_max;
+      ep->partners[partner_index] = NULL;
+      free(partner);
+    }
   }
 }
 

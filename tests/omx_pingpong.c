@@ -579,8 +579,10 @@ int main(int argc, char *argv[])
       free(buffer);
     }
 
-    if (slave)
+    if (slave) {
+      omx_disconnect(ep, status.addr);
       goto slave_starts_again;
+    }
   }
 
   omx_close_endpoint(ep);

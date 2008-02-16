@@ -1,6 +1,3 @@
-* kill the partner on disconnect 1 and make the endpoint address invalid?
-  it will avoid disconnect messages when the application explicitely disconnects
-
 * group similar fields in structure for cache effects
 
 * free request (and buffers) on close
