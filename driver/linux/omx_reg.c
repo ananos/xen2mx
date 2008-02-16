@@ -257,7 +257,7 @@ omx_ioctl_user_region_deregister(struct omx_endpoint * endpoint,
 
 	region = endpoint->user_regions[cmd.id];
 	if (unlikely(!region)) {
-		printk(KERN_ERR "Open-MX: Cannot register unexisting region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot deregister unexisting region %d\n", cmd.id);
 		goto out_with_endpoint_lock;
 	}
 
