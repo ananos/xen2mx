@@ -586,6 +586,8 @@ int main(int argc, char *argv[])
     }
 
     if (slave) {
+      usleep(500000);
+      omx_progress(ep);
       omx_disconnect(ep, status.addr);
       goto slave_starts_again;
     }
