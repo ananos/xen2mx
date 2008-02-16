@@ -1,3 +1,6 @@
+* kill the partner on disconnect 1 and make the endpoint address invalid?
+  it will avoid disconnect messages when the application explicitely disconnects
+
 * rndv/notify delayed between omx<->mx?
 
 * group similar fields in structure for cache effects
