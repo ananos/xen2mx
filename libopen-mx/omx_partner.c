@@ -25,6 +25,42 @@
 #include "omx_lib_wire.h"
 #include "omx_segments.h"
 
+/*
+ * Partner session ids management:
+ *
+ * Each endpoint gets a random session identity number from the driver.
+ * The endpoint key/filter is only used to filter connect requests in
+ * the library. All other messages will be filtered by the driver/mcp
+ * through this session number, which won't be the same across multiple
+ * runs. All remote peers pass their session id to us during the connect
+ * handshake.
+ *
+ * Each partner structure actually stores two session numbers.
+ * + true_session_id is the regular one that we get back in the connect
+ *   reply and may be used for normal sends.
+ * + back_session_id is obtained from the connect request of the remote
+ *   peer and we will use for special "back" communications such as acks
+ *   and notify after large messages.
+ *
+ * Both true_ and back_session_id are set when we receive a connect
+ * reply. Only back_session_id is set on connect request.
+ * So back_session_id may be set without true_session_id, while
+ * true_session_id being set implies that back_session_id is set to
+ * the same.
+ *
+ * Updating rules for true_ and back_session_id:
+ * + If true_session_id changes on reply/request, this is the first
+ *   connect (true_session_id was unset), or the remote peer has
+ *   changed (true_session_id was already set), we reset our send
+ *   seqnums to what the remote peer wants to receive.
+ * + If back_session_id changes on reply, this is the first reply
+ *   (back_session_id was unset), or the remote peer has changed
+ *   (back_session_id was already set), we reset our receive seqnums.
+ * + If back_session_id changes on reply/request (and it was already
+ *   set), the remote peer has changed, we cleanup our stuff. It also
+ *   implies that true_session_id was unset or would change.
+ */
+
 /******************************
  * Endpoint address management
  */
@@ -513,7 +549,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     }
 
     if (partner->true_session_id != target_session_id) {
-      /* either the first connect, or a new instance, reset seqnums */
+      /* we were connected to this partner, and it changed, reset our send seqnums */
       partner->next_send_seq = target_recv_seqnum_start;
       partner->next_acked_send_seq = target_recv_seqnum_start;
     }
@@ -560,19 +596,22 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   omx__debug_printf(CONNECT, "got a connect request with session id %lx while we have true %lx back %lx\n",
 		    (unsigned long) src_session_id,
 		    (unsigned long) partner->true_session_id, (unsigned long) partner->back_session_id);
-  if (partner->back_session_id != src_session_id
-      && partner->true_session_id != -1
-      && partner->true_session_id != src_session_id) {
-    /* new instance of the partner */
+  if (partner->back_session_id != src_session_id) {
+    /* either a new (recv) instance, or the first one, we need to reset our recv seqnums */
 
-    printf("Got a connect from a new instance of a partner, cleaning old partner status\n");
-    omx__partner_cleanup(ep, partner, 0);
-    partner->next_match_recv_seq = OMX__SEQNUM(0);
-    partner->next_frag_recv_seq = OMX__SEQNUM(0);
+    if (partner->back_session_id != -1) {
+      /* this partner changed since last time it talked to us, cleanup the stuff */
+      printf("Got a connect from a new instance of a partner, cleaning old partner status\n");
+      omx__partner_cleanup(ep, partner, 0);
+    }
+
+    /* setup recv seqnum */
+    partner->next_match_recv_seq = OMX__SEQNUM(1);
+    partner->next_frag_recv_seq = OMX__SEQNUM(1);
   }
 
   if (partner->true_session_id != src_session_id) {
-    /* we were connected to this partner, and it changed, reset the seqnums */
+    /* we were connected to this partner, and it changed, reset our send seqnums */
     partner->next_send_seq = target_recv_seqnum_start;
     partner->next_acked_send_seq = target_recv_seqnum_start;
   }
