@@ -43,6 +43,7 @@
 #define BUFFER_ALIGN (64*1024) /* page-aligned on any arch */
 #define UNIDIR 0
 #define SYNC 0
+#define PAUSE_MS 100
 
 static int
 next_length(int length, int multiplier, int increment)
@@ -107,6 +108,7 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -I <n>\tchange the length increment [%d]\n", INCREMENT);
   fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
   fprintf(stderr, " -W <n>\tchange number of warmup iterations [%d]\n", WARMUP);
+  fprintf(stderr, " -P <n>\tpause (in milliseconds) between lengths [%d]\n", PAUSE_MS);
   fprintf(stderr, " -U\tswitch to undirectional mode (receiver sends 0-byte replies)\n");
   fprintf(stderr, " -Y\tswitch to synchronous communication mode\n");
 }
@@ -150,6 +152,7 @@ int main(int argc, char *argv[])
   char * buffer;
   int align = 0;
   int wait = 0;
+  int pause_ms = PAUSE_MS;
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -158,7 +161,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:swUYvah")) != -1)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:P:swUYvah")) != -1)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -196,6 +199,9 @@ int main(int argc, char *argv[])
       break;
     case 'W':
       warmup = atoi(optarg);
+      break;
+    case 'P':
+      pause_ms = atoi(optarg);
       break;
     case 's':
       slave = 1;
@@ -405,7 +411,7 @@ int main(int argc, char *argv[])
 
       free(buffer);
 
-      sleep(1);
+      usleep(pause_ms * 1000);
     }
 
   } else {
