@@ -923,6 +923,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
   return ret;
 }
 
+/* API omx_irecv */
 omx_return_t
 omx_irecv(struct omx_endpoint *ep,
 	  void *buffer, size_t length,
@@ -945,6 +946,7 @@ omx_irecv(struct omx_endpoint *ep,
   return ret;
 }
 
+/* API omx_irecvv */
 omx_return_t
 omx_irecvv(omx_endpoint_t ep,
 	   omx_seg_t *segs, uint32_t nseg,

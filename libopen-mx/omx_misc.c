@@ -50,6 +50,7 @@ omx__errno_to_return(char * caller)
   }
 }
 
+/* API omx_strerror */
 const char *
 omx_strerror(omx_return_t ret)
 {
@@ -97,6 +98,7 @@ omx_strerror(omx_return_t ret)
 	     ret);
 }
 
+/* API omx_strstatus */
 const char *
 omx_strstatus(omx_status_code_t code)
 {
@@ -128,6 +130,7 @@ omx_strstatus(omx_status_code_t code)
  * Management of requests
  */
 
+/* API omx_context */
 omx_return_t
 omx_context(omx_request_t *request, void ** context)
 {
@@ -135,6 +138,7 @@ omx_context(omx_request_t *request, void ** context)
   return OMX_SUCCESS;
 }
 
+/* API omx_cancel */
 omx_return_t
 omx_cancel(omx_endpoint_t ep,
 	   omx_request_t *request,

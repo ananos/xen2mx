@@ -65,6 +65,7 @@
  * Endpoint address management
  */
 
+/* API omx_get_endpoint_addr */
 omx_return_t
 omx_get_endpoint_addr(omx_endpoint_t endpoint,
 		      omx_endpoint_addr_t *endpoint_addr)
@@ -73,6 +74,7 @@ omx_get_endpoint_addr(omx_endpoint_t endpoint,
   return OMX_SUCCESS;
 }
 
+/* API omx_decompose_endpoint_addr */
 omx_return_t
 omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
 			    uint64_t *nic_id, uint32_t *endpoint_id)
@@ -351,6 +353,7 @@ omx__connect_common(omx_endpoint_t ep,
   return ret;
 }
 
+/* API omx_connect */
 omx_return_t
 omx_connect(omx_endpoint_t ep,
 	    uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
@@ -405,6 +408,7 @@ omx_connect(omx_endpoint_t ep,
   return ret;
 }
 
+/* API omx_iconnect */
 omx_return_t
 omx_iconnect(omx_endpoint_t ep,
 	     uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
@@ -649,6 +653,7 @@ omx__process_recv_connect(struct omx_endpoint *ep,
  * Endpoint address context
  */
 
+/* API omx_set_endpoint_addr_context */
 omx_return_t
 omx_set_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
 			      void *context)
@@ -658,6 +663,7 @@ omx_set_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
   return OMX_SUCCESS;
 }
 
+/* API omx_get_endpoint_addr_context */
 omx_return_t
 omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
 			      void **context)
@@ -891,6 +897,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   }
 }
 
+/* API omx_disconnect */
 omx_return_t
 omx_disconnect(omx_endpoint_t ep, omx_endpoint_addr_t addr)
 {

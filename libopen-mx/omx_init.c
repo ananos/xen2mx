@@ -28,6 +28,7 @@
 struct omx__globals omx__globals = { 0 };
 volatile struct omx_driver_desc * omx__driver_desc = NULL;
 
+/* API omx__init_api */
 omx_return_t
 omx__init_api(int api)
 {
@@ -226,6 +227,7 @@ omx__init_api(int api)
   return ret;
 }
 
+/* API omx_finalize */
 omx_return_t
 omx_finalize(void)
 {

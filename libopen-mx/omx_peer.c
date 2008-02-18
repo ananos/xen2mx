@@ -174,6 +174,7 @@ omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp)
   return OMX_SUCCESS;
 }
 
+/* API omx_hostname_to_nic_id */
 omx_return_t
 omx_hostname_to_nic_id(char *hostname,
 		       uint64_t *board_addr)
@@ -181,6 +182,7 @@ omx_hostname_to_nic_id(char *hostname,
   return omx__driver_peer_from_hostname(hostname, board_addr, NULL);
 }
 
+/* API omx_nic_id_to_hostname */
 omx_return_t
 omx_nic_id_to_hostname(uint64_t board_addr,
 		       char *hostname)

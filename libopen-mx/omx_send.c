@@ -647,6 +647,7 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   return ret;
 }
 
+/* API omx_isend */
 omx_return_t
 omx_isend(struct omx_endpoint *ep,
 	  void *buffer, size_t length,
@@ -669,6 +670,7 @@ omx_isend(struct omx_endpoint *ep,
   return omx__isend_req(ep, partner, req, requestp);
 }
 
+/* API omx_isendv */
 omx_return_t
 omx_isendv(omx_endpoint_t ep,
 	   omx_seg_t *segs, uint32_t nseg,
@@ -737,6 +739,7 @@ omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   return ret;
 }
 
+/* API omx_issend */
 omx_return_t
 omx_issend(struct omx_endpoint *ep,
 	   void *buffer, size_t length,
@@ -759,6 +762,7 @@ omx_issend(struct omx_endpoint *ep,
   return omx__issend_req(ep, partner, req, requestp);
 }
 
+/* API omx_issendv */
 omx_return_t
 omx_issendv(omx_endpoint_t ep,
 	    omx_seg_t *segs, uint32_t nseg,

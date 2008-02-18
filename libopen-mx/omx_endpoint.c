@@ -153,6 +153,7 @@ omx__open_endpoint(int fd,
  * Endpoint management
  */
 
+/* API omx_open_endpoint */
 omx_return_t
 omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 		  omx_endpoint_param_t * param_array, uint32_t param_count,
@@ -345,6 +346,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   return ret;
 }
 
+/* API omx_close_endpoint */
 omx_return_t
 omx_close_endpoint(struct omx_endpoint *ep)
 {

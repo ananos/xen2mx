@@ -40,6 +40,7 @@ omx__test_success(struct omx_endpoint *ep, union omx_request *req,
   }
 }
 
+/* API omx_forget */
 omx_return_t
 omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
 {
@@ -77,6 +78,7 @@ omx__test_common(struct omx_endpoint *ep, union omx_request **requestp,
   }
 }
 
+/* API omx_test */
 omx_return_t
 omx_test(struct omx_endpoint *ep, union omx_request **requestp,
 	 struct omx_status *status, uint32_t * result)
@@ -93,6 +95,7 @@ omx_test(struct omx_endpoint *ep, union omx_request **requestp,
   return ret;
 }
 
+/* API omx_wait */
 omx_return_t
 omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	 struct omx_status *status, uint32_t * result,
@@ -198,6 +201,7 @@ omx__test_any_common(struct omx_endpoint *ep,
   return 0;
 }
 
+/* API omx_test_any */
 omx_return_t
 omx_test_any(struct omx_endpoint *ep,
 	     uint64_t match_info, uint64_t match_mask,
@@ -226,6 +230,7 @@ omx_test_any(struct omx_endpoint *ep,
   return ret;
 }
 
+/* API omx_wait_any */
 omx_return_t
 omx_wait_any(struct omx_endpoint *ep,
 	     uint64_t match_info, uint64_t match_mask,
@@ -336,6 +341,7 @@ omx__ipeek_common(struct omx_endpoint *ep, union omx_request **requestp)
   }
 }
 
+/* API omx_ipeek */
 omx_return_t
 omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
 	  uint32_t *result)
@@ -357,6 +363,7 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
   return ret;
 }
 
+/* API omx_peek */
 omx_return_t
 omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 	 uint32_t *result, uint32_t ms_timeout)
@@ -466,6 +473,7 @@ omx__iprobe_common(struct omx_endpoint *ep,
   return 0;
 }
 
+/* API omx_iprobe */
 omx_return_t
 omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
 	   omx_status_t *status, uint32_t *result)
@@ -493,6 +501,7 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
   return ret;
 }
 
+/* API omx_probe */
 omx_return_t
 omx_probe(struct omx_endpoint *ep,
 	  uint64_t match_info, uint64_t match_mask,

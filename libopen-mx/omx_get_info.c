@@ -168,9 +168,11 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
   return ret;
 }
 
-/*
+/***********************
  * Returns various info
  */
+
+/* API omx_get_info */
 omx_return_t
 omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 	     const void * in_val, uint32_t in_len,
@@ -311,6 +313,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
  * Translate local board number/addr
  */
 
+/* API omx_board_number_to_nic_id */
 omx_return_t
 omx_board_number_to_nic_id(uint32_t board_number,
 			   uint64_t *nic_id)
@@ -326,6 +329,7 @@ omx_board_number_to_nic_id(uint32_t board_number,
   return ret;
 }
 
+/* API omx_nic_id_to_board_number */
 omx_return_t
 omx_nic_id_to_board_number(uint64_t nic_id,
 			   uint32_t *board_number)

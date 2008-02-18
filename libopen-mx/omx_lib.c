@@ -281,6 +281,7 @@ omx__progress(struct omx_endpoint * ep)
   return OMX_SUCCESS;
 }
 
+/* API omx_register_unexp_handler */
 omx_return_t
 omx_register_unexp_handler(omx_endpoint_t ep,
 			   omx_unexp_handler_t handler,
@@ -292,12 +293,14 @@ omx_register_unexp_handler(omx_endpoint_t ep,
   return OMX_SUCCESS;
 }
 
+/* API omx_progress */
 omx_return_t
 omx_progress(omx_endpoint_t ep)
 {
   return omx__progress(ep);
 }
 
+/* API omx_disable_progression */
 omx_return_t
 omx_disable_progression(struct omx_endpoint *ep)
 {
@@ -308,6 +311,7 @@ omx_disable_progression(struct omx_endpoint *ep)
   return OMX_SUCCESS;
 }
 
+/* API omx_reenable_progression */
 omx_return_t
 omx_reenable_progression(struct omx_endpoint *ep)
 {

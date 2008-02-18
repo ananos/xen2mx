@@ -375,6 +375,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
  * Set Request or Endpoint Timeout
  */
 
+/* API omx_set_request_timeout */
 omx_return_t
 omx_set_request_timeout(struct omx_endpoint *ep,
 			union omx_request *request, uint32_t ms)
