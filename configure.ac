@@ -333,14 +333,14 @@ AC_ARG_ENABLE(valgrind,
 AC_MSG_CHECKING(if valgrind hooks are enabled in the non-debug library)
 if test x$valgrind_available = xyes -a x$enable_valgrind = xyes ; then
   AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_VALGRIND_NONDEBUG, 1, [Enable memory allocation debugging with Valgrind in the non-debug library])
+  AC_DEFINE(OMX_LIB_VALGRIND_NONDEBUG, 1, [Enable memory allocation debugging with Valgrind in the non-debug library])
 else
   AC_MSG_RESULT(no)
 fi
 AC_MSG_CHECKING(if valgrind hooks are enabled in the debug library)
 if test x$valgrind_available = xyes -a x$enable_valgrind != xno ; then
   AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_VALGRIND_DEBUG, 1, [Enable memory allocation debugging with Valgrind in the debug library])
+  AC_DEFINE(OMX_LIB_VALGRIND_DEBUG, 1, [Enable memory allocation debugging with Valgrind in the debug library])
 else
   AC_MSG_RESULT(no)
 fi
