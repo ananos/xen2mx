@@ -597,7 +597,7 @@ omx__process_recv(struct omx_endpoint *ep,
   omx__seqnum_t old_next_match_recv_seq;
   omx__seqnum_t frag_index;
   omx__seqnum_t frag_index_max;
-  omx_return_t ret;
+  omx_return_t ret = OMX_SUCCESS;
 
   omx__partner_recv_lookup(ep, msg->peer_index, msg->src_endpoint,
 			   &partner);
