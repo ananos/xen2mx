@@ -147,6 +147,8 @@ omx_cancel(omx_endpoint_t ep,
   union omx_request * req = *request;
   omx_return_t ret = OMX_SUCCESS;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   /* Search in the send request queue and recv request queue. */
 
   switch (req->generic.type) {
@@ -190,5 +192,6 @@ omx_cancel(omx_endpoint_t ep,
     ret = OMX_CANCEL_NOT_SUPPORTED;
   }
 
+  OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }

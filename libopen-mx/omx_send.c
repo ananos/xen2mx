@@ -657,17 +657,26 @@ omx_isend(struct omx_endpoint *ep,
 {
   struct omx__partner *partner;
   union omx_request *req;
+  omx_return_t ret;
+
+  OMX__ENDPOINT_LOCK(ep);
 
   req = omx__request_alloc(ep);
-  if (unlikely(!req))
-    return OMX_NO_RESOURCES;
+  if (unlikely(!req)) {
+    ret = OMX_NO_RESOURCES;
+    goto out_with_lock;
+  }
 
   omx_cache_single_segment(&req->send.segs, buffer, length);
   req->generic.partner = partner = omx__partner_from_addr(&dest_endpoint);
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
 
-  return omx__isend_req(ep, partner, req, requestp);
+  ret = omx__isend_req(ep, partner, req, requestp);
+
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
 }
 
 /* API omx_isendv */
@@ -682,10 +691,12 @@ omx_isendv(omx_endpoint_t ep,
   union omx_request *req;
   omx_return_t ret;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   req = omx__request_alloc(ep);
   if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
-    goto out;
+    goto out_with_lock;
   }
 
   ret = omx_cache_segments(&req->send.segs, segs, nseg);
@@ -696,11 +707,15 @@ omx_isendv(omx_endpoint_t ep,
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
 
-  return omx__isend_req(ep, partner, req, requestp);
+  ret = omx__isend_req(ep, partner, req, requestp);
+
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
 
  out_with_req:
   omx__request_free(ep, req);
- out:
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
 
@@ -760,17 +775,26 @@ omx_issend(struct omx_endpoint *ep,
 {
   struct omx__partner *partner;
   union omx_request *req;
+  omx_return_t ret;
+
+  OMX__ENDPOINT_LOCK(ep);
 
   req = omx__request_alloc(ep);
-  if (unlikely(!req))
-    return OMX_NO_RESOURCES;
+  if (unlikely(!req)) {
+    ret = OMX_NO_RESOURCES;
+    goto out_with_lock;
+  }
 
   omx_cache_single_segment(&req->send.segs, buffer, length);
   req->generic.partner = partner = omx__partner_from_addr(&dest_endpoint);
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
 
-  return omx__issend_req(ep, partner, req, requestp);
+  ret = omx__issend_req(ep, partner, req, requestp);
+
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
 }
 
 /* API omx_issendv */
@@ -785,10 +809,12 @@ omx_issendv(omx_endpoint_t ep,
   union omx_request *req;
   omx_return_t ret;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   req = omx__request_alloc(ep);
   if (unlikely(!req)) {
     ret = OMX_NO_RESOURCES;
-    goto out;
+    goto out_with_lock;
   }
 
   ret = omx_cache_segments(&req->send.segs, segs, nseg);
@@ -800,11 +826,15 @@ omx_issendv(omx_endpoint_t ep,
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
 
-  return omx__issend_req(ep, partner, req, requestp);
+  ret = omx__issend_req(ep, partner, req, requestp);
+
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
 
  out_with_req:
   omx__request_free(ep, req);
- out:
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
 

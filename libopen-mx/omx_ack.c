@@ -383,6 +383,8 @@ omx_set_request_timeout(struct omx_endpoint *ep,
   uint32_t jiffies = omx__timeout_ms_to_relative_jiffies(ms);
   uint32_t resends = omx__timeout_ms_to_resends(ms);
 
+  /* no need to lock here, there's no possible race condition or so */
+
   if (request) {
     request->generic.resends_max = resends;
   } else {

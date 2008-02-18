@@ -1,3 +1,11 @@
+* thread safety
+  + including omx_wakeup
+  + wakeup sleepers with conditions
+  + check race conditions in wait_any if dequeueing in the waker
+  + signal going out of the handler
+  + wakeup receiver when receiving a self
+  + filter wakeup on recv/send/connect/...
+
 * group similar fields in structure for cache effects
 
 * free request (and buffers) on close
@@ -37,7 +45,6 @@
     - but last_release may be called from interrupt context
 
 * missing features (for PVFS2)
-  + thread safety (including omx_wakeup)
   + omx_set_error_handler - if the default is return, I do not need this 
 
 * ioctls to change board indexes?

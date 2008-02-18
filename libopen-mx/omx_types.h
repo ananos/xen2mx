@@ -23,6 +23,7 @@
 
 #include "omx_io.h"
 #include "omx_list.h"
+#include "omx_threads.h"
 
 /*****************
  * Internal types
@@ -165,6 +166,7 @@ struct omx_endpoint {
   int endpoint_index, board_index;
   struct omx_board_info board_info;
   uint32_t app_key;
+  struct omx__endpoint_lock lock;
   omx_unexp_handler_t unexp_handler;
   void * unexp_handler_context;
   int in_handler;
@@ -226,6 +228,9 @@ struct omx_endpoint {
   struct list_head reg_unused_list; /* unused registered single-segment windows, LRU in front */
   struct list_head reg_vect_list; /* registered vectorial windows (uncached) */
 };
+
+#define OMX__ENDPOINT_LOCK(ep) omx__lock(&(ep)->lock)
+#define OMX__ENDPOINT_UNLOCK(ep) omx__unlock(&(ep)->lock)
 
 enum omx__request_type {
   OMX_REQUEST_TYPE_NONE=0,

@@ -180,7 +180,7 @@ fi
 AC_MSG_CHECKING((in kernel headers) dev_get_by_name prototype)
 if grep "struct net_device.*dev_get_by_name *(.*,.*)" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
   AC_MSG_RESULT(with namespace)
-else  
+else
   echo "#define OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS 1" >> ${TMP_CHECKS_PATH}
   AC_MSG_RESULT(without namespace)
 fi
@@ -373,7 +373,7 @@ else
 fi
 
 ############################
-# MX compat and wire config 
+# MX compat and wire config
 
 AC_ARG_ENABLE(mx,
 	[AS_HELP_STRING([--disable-mx], [disable MX API compatibility wrappers])],
@@ -429,6 +429,20 @@ AC_MSG_CHECKING(if endian-independent networking is enabled)
 if test x$enable_endian = xyes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(OMX_ENDIAN_COMPAT, 1, [Define to enable endian-independent networking])
+else
+  AC_MSG_RESULT(no)
+fi
+
+############################
+# Misc config
+
+AC_ARG_ENABLE(threads,
+	[AS_HELP_STRING([--enable-threads], [enable thread safety in the library])],
+	enable_lib_threads=$enableval, enable_lib_threads=no)
+AC_MSG_CHECKING(if thread safety is enabled in the library)
+if test x$enable_lib_threads = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_LIB_THREAD_SAFETY, 1, [Define to enable thread safety support in the library])
 else
   AC_MSG_RESULT(no)
 fi

@@ -178,6 +178,8 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 	     const void * in_val, uint32_t in_len,
 	     void * out_val, uint32_t out_len)
 {
+  /* no need to lock here, there's no possible race condition or so */
+
   switch (key) {
   case OMX_INFO_BOARD_MAX:
     if (!omx__globals.initialized)
@@ -222,7 +224,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     ((uint64_t *) out_val) [count] = 0;
     return OMX_SUCCESS;
   }
-  
+
   case OMX_INFO_BOARD_HOSTNAME:
   case OMX_INFO_BOARD_IFACENAME:
   case OMX_INFO_BOARD_NUMA_NODE: {
@@ -246,7 +248,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       if (ret != OMX_SUCCESS)
 	return ret;
     }
-   
+
     if (key == OMX_INFO_BOARD_HOSTNAME) {
       strncpy(out_val, info->hostname, out_len);
     } else if (key == OMX_INFO_BOARD_IFACENAME) {

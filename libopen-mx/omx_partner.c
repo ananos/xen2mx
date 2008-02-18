@@ -70,6 +70,8 @@ omx_return_t
 omx_get_endpoint_addr(omx_endpoint_t endpoint,
 		      omx_endpoint_addr_t *endpoint_addr)
 {
+  /* no need to lock here, there's no possible race condition or so */
+
   omx__partner_to_addr(endpoint->myself, endpoint_addr);
   return OMX_SUCCESS;
 }
@@ -80,6 +82,9 @@ omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
 			    uint64_t *nic_id, uint32_t *endpoint_id)
 {
   struct omx__partner *partner = omx__partner_from_addr(&endpoint_addr);
+
+  /* no need to lock here, there's no possible race condition or so */
+
   *nic_id = partner->board_addr;
   *endpoint_id = partner->endpoint_index;
   return OMX_SUCCESS;
@@ -363,10 +368,12 @@ omx_connect(omx_endpoint_t ep,
   union omx_request * req;
   omx_return_t ret;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   req = omx__request_alloc(ep);
   if (!req) {
     ret = OMX_NO_RESOURCES;
-    goto out;
+    goto out_with_lock;
   }
 
   req->generic.type = OMX_REQUEST_TYPE_CONNECT;
@@ -400,11 +407,13 @@ omx_connect(omx_endpoint_t ep,
   }
 
   omx__request_free(ep, req);
+  OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 
  out_with_req:
   omx__request_free(ep, req);
- out:
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
 
@@ -418,10 +427,12 @@ omx_iconnect(omx_endpoint_t ep,
   union omx_request * req;
   omx_return_t ret;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   req = omx__request_alloc(ep);
   if (!req) {
     ret = OMX_NO_RESOURCES;
-    goto out;
+    goto out_with_lock;
   }
 
   req->generic.type = OMX_REQUEST_TYPE_CONNECT;
@@ -440,11 +451,13 @@ omx_iconnect(omx_endpoint_t ep,
     ep->zombies++;
   }
 
+  OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 
  out_with_req:
   omx__request_free(ep, req);
- out:
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
 
@@ -659,6 +672,9 @@ omx_set_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
 			      void *context)
 {
   struct omx__partner *partner = omx__partner_from_addr(&endpoint_addr);
+
+  /* no need to lock here, there's no possible race condition or so */
+
   partner->user_context = context;
   return OMX_SUCCESS;
 }
@@ -669,6 +685,9 @@ omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
 			      void **context)
 {
   struct omx__partner *partner = omx__partner_from_addr(&endpoint_addr);
+
+  /* no need to lock here, there's no possible race condition or so */
+
   *context = partner->user_context;
   return OMX_SUCCESS;
 }
@@ -903,9 +922,12 @@ omx_disconnect(omx_endpoint_t ep, omx_endpoint_addr_t addr)
 {
   struct omx__partner * partner;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   omx__progress(ep);
   partner = omx__partner_from_addr(&addr);
   omx__partner_cleanup(ep, partner, 2);
 
+  OMX__ENDPOINT_UNLOCK(ep);
   return OMX_SUCCESS;
 }

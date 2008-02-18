@@ -46,6 +46,8 @@ omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
 {
   union omx_request * req = *requestp;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   if (!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE)) {
     if (req->generic.state == OMX_REQUEST_STATE_DONE) {
       /* want to forget a request that is ready to complete? just complete it and ignore the return value */
@@ -57,6 +59,8 @@ omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
       ep->zombies++;
     }
   }
+
+  OMX__ENDPOINT_UNLOCK(ep);
 
   *requestp = NULL;
 
@@ -85,13 +89,16 @@ omx_test(struct omx_endpoint *ep, union omx_request **requestp,
 {
   omx_return_t ret = OMX_SUCCESS;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out;
+    goto out_with_lock;
 
   *result = omx__test_common(ep, requestp, status);
 
- out:
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
 
@@ -105,30 +112,36 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
-	goto out;
+	goto out_with_lock;
 
       if (omx__test_common(ep, requestp, status)) {
 	*result = 1;
-	goto out;
+	goto out_with_lock;
       }
 
       if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire)
-	goto out;
+	goto out_with_lock;
+
+      /* release the lock a bit */
+      OMX__ENDPOINT_UNLOCK(ep);
+      OMX__ENDPOINT_LOCK(ep);
     }
   }
 
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out;
+    goto out_with_lock;
 
   if (omx__test_common(ep, requestp, status)) {
     *result = 1;
-    goto out;
+    goto out_with_lock;
   }
 
   wait_param.jiffies_expire = jiffies_expire;
@@ -147,7 +160,12 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     omx__prepare_progress_wakeup(ep);
+
+    /* release the lock while sleeping */
+    OMX__ENDPOINT_UNLOCK(ep);
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX__ENDPOINT_LOCK(ep);
+
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
     omx__debug_printf(WAIT, "omx_wait woken up at %lld\n",
@@ -155,31 +173,32 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 
     if (unlikely(err < 0)) {
       ret = omx__errno_to_return("ioctl WAIT_EVENT");
-      goto out;
+      goto out_with_lock;
     }
 
     omx__debug_printf(WAIT, "omx_wait wait event result %d\n", wait_param.status);
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
-      goto out;
+      goto out_with_lock;
 
     if (omx__test_common(ep, requestp, status)) {
       *result = 1;
-      goto out;
+      goto out_with_lock;
     }
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
 	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
-      goto out;
+      goto out_with_lock;
     }
 
     omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
- out:
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
 
@@ -220,12 +239,16 @@ omx_test_any(struct omx_endpoint *ep,
     goto out;
   }
 
+  OMX__ENDPOINT_LOCK(ep);
+
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out;
+    goto out_with_lock;
 
   *result = omx__test_any_common(ep, match_info, match_mask, status);
 
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
  out:
   return ret;
 }
@@ -252,30 +275,36 @@ omx_wait_any(struct omx_endpoint *ep,
     goto out;
   }
 
+  OMX__ENDPOINT_LOCK(ep);
+
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
-	goto out;
+	goto out_with_lock;
 
       if (omx__test_any_common(ep, match_info, match_mask, status)) {
 	*result = 1;
-	goto out;
+	goto out_with_lock;
       }
 
       if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire)
-	goto out;
+	goto out_with_lock;
+
+      /* release the lock a bit */
+      OMX__ENDPOINT_UNLOCK(ep);
+      OMX__ENDPOINT_LOCK(ep);
     }
   }
 
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out;
+    goto out_with_lock;
 
   if (omx__test_any_common(ep, match_info, match_mask, status)) {
     *result = 1;
-    goto out;
+    goto out_with_lock;
   }
 
   wait_param.jiffies_expire = jiffies_expire;
@@ -294,7 +323,12 @@ omx_wait_any(struct omx_endpoint *ep,
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     omx__prepare_progress_wakeup(ep);
+
+    /* release the lock while sleeping */
+    OMX__ENDPOINT_UNLOCK(ep);
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX__ENDPOINT_LOCK(ep);
+
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
     omx__debug_printf(WAIT, "omx_wait_any woken up at %lld\n",
@@ -302,30 +336,32 @@ omx_wait_any(struct omx_endpoint *ep,
 
     if (unlikely(err < 0)) {
       ret = omx__errno_to_return("ioctl WAIT_EVENT");
-      goto out;
+      goto out_with_lock;
     }
 
     omx__debug_printf(WAIT, "omx_wait_any wait event result %d\n", wait_param.status);
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
-      goto out;
+      goto out_with_lock;
 
     if (omx__test_any_common(ep, match_info, match_mask, status)) {
       *result = 1;
-      goto out;
+      goto out_with_lock;
     }
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
 	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
-      goto out;
+      goto out_with_lock;
     }
 
     omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
  out:
   return ret;
 }
@@ -353,12 +389,16 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
     goto out;
   }
 
+  OMX__ENDPOINT_LOCK(ep);
+
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out;
+    goto out_with_lock;
 
   *result = omx__ipeek_common(ep, requestp);
 
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
  out:
   return ret;
 }
@@ -377,30 +417,36 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
     goto out;
   }
 
+  OMX__ENDPOINT_LOCK(ep);
+
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
-	goto out;
+	goto out_with_lock;
 
       if (omx__ipeek_common(ep, requestp)) {
 	*result = 1;
-	goto out;
+	goto out_with_lock;
       }
 
       if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire)
-	goto out;
+	goto out_with_lock;
+
+      /* release the lock a bit */
+      OMX__ENDPOINT_UNLOCK(ep);
+      OMX__ENDPOINT_LOCK(ep);
     }
   }
 
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out;
+    goto out_with_lock;
 
   if (omx__ipeek_common(ep, requestp)) {
     *result = 1;
-    goto out;
+    goto out_with_lock;
   }
 
   wait_param.jiffies_expire = jiffies_expire;
@@ -419,7 +465,12 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     omx__prepare_progress_wakeup(ep);
+
+    /* release the lock while sleeping */
+    OMX__ENDPOINT_UNLOCK(ep);
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX__ENDPOINT_LOCK(ep);
+
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
     omx__debug_printf(WAIT, "omx_peek woken up at %lld\n",
@@ -427,30 +478,32 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 
     if (unlikely(err < 0)) {
       ret = omx__errno_to_return("ioctl WAIT_EVENT");
-      goto out;
+      goto out_with_lock;
     }
 
     omx__debug_printf(WAIT, "omx_peek wait event result %d\n", wait_param.status);
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
-      goto out;
+      goto out_with_lock;
 
     if (omx__ipeek_common(ep, requestp)) {
       *result = 1;
-      goto out;
+      goto out_with_lock;
     }
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
 	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
-      goto out;
+      goto out_with_lock;
     }
 
     omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
  out:
   return ret;
 }
@@ -491,12 +544,16 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
     goto out;
   }
 
+  OMX__ENDPOINT_LOCK(ep);
+
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out;
+    goto out_with_lock;
 
   *result = omx__iprobe_common(ep, match_info, match_mask, status);
 
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
  out:
   return ret;
 }
@@ -523,30 +580,36 @@ omx_probe(struct omx_endpoint *ep,
     goto out;
   }
 
+  OMX__ENDPOINT_LOCK(ep);
+
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
     while (1) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
-	goto out;
+	goto out_with_lock;
 
       if (omx__iprobe_common(ep, match_info, match_mask, status)) {
 	*result = 1;
-	goto out;
+	goto out_with_lock;
       }
 
       if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire)
-	goto out;
+	goto out_with_lock;
+
+      /* release the lock a bit */
+      OMX__ENDPOINT_UNLOCK(ep);
+      OMX__ENDPOINT_LOCK(ep);
     }
   }
 
   ret = omx__progress(ep);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out;
+    goto out_with_lock;
 
   if (omx__iprobe_common(ep, match_info, match_mask, status)) {
     *result = 1;
-    goto out;
+    goto out_with_lock;
   }
 
   wait_param.jiffies_expire = jiffies_expire;
@@ -565,7 +628,12 @@ omx_probe(struct omx_endpoint *ep,
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     omx__prepare_progress_wakeup(ep);
+
+    /* release the lock while sleeping */
+    OMX__ENDPOINT_UNLOCK(ep);
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX__ENDPOINT_LOCK(ep);
+
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
     omx__debug_printf(WAIT, "omx_probe woken up at %lld\n",
@@ -573,34 +641,37 @@ omx_probe(struct omx_endpoint *ep,
 
     if (unlikely(err < 0)) {
       ret = omx__errno_to_return("ioctl WAIT_EVENT");
-      goto out;
+      goto out_with_lock;
     }
 
     omx__debug_printf(WAIT, "omx_probe wait event result %d\n", wait_param.status);
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
-      goto out;
+      goto out_with_lock;
 
     if (omx__iprobe_common(ep, match_info, match_mask, status)) {
       *result = 1;
-      goto out;
+      goto out_with_lock;
     }
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
 	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
-      goto out;
+      goto out_with_lock;
     }
 
     omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
  out:
   return ret;
 }
 
+/* called with the endpoint lock held */
 omx_return_t
 omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeout)
 {
@@ -620,6 +691,10 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
 
       if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire)
 	return OMX_CONNECTION_TIMEOUT;
+
+      /* release the lock a bit */
+      OMX__ENDPOINT_UNLOCK(ep);
+      OMX__ENDPOINT_LOCK(ep);
     }
   }
 
@@ -647,7 +722,12 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
     omx__prepare_progress_wakeup(ep);
+
+    /* release the lock while sleeping */
+    OMX__ENDPOINT_UNLOCK(ep);
     err = ioctl(ep->fd, OMX_CMD_WAIT_EVENT, &wait_param);
+    OMX__ENDPOINT_LOCK(ep);
+
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
     omx__debug_printf(WAIT, "omx_connect woken up at %lld\n",

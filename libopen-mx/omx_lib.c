@@ -287,9 +287,12 @@ omx_register_unexp_handler(omx_endpoint_t ep,
 			   omx_unexp_handler_t handler,
 			   void *context)
 {
+  OMX__ENDPOINT_LOCK(ep);
+
   ep->unexp_handler = handler;
   ep->unexp_handler_context = context;
 
+  OMX__ENDPOINT_UNLOCK(ep);
   return OMX_SUCCESS;
 }
 
@@ -297,25 +300,42 @@ omx_register_unexp_handler(omx_endpoint_t ep,
 omx_return_t
 omx_progress(omx_endpoint_t ep)
 {
-  return omx__progress(ep);
+  omx_return_t ret = OMX_SUCCESS;
+
+  OMX__ENDPOINT_LOCK(ep);
+
+  ret = omx__progress(ep);
+
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
 }
 
 /* API omx_disable_progression */
 omx_return_t
 omx_disable_progression(struct omx_endpoint *ep)
 {
-  if (unlikely(ep->in_handler))
-    return OMX_NOT_SUPPORTED_IN_HANDLER;
+  omx_return_t ret = OMX_SUCCESS;
 
-  ep->in_handler = 1;
-  return OMX_SUCCESS;
+  OMX__ENDPOINT_LOCK(ep);
+
+  if (unlikely(ep->in_handler))
+    ret = OMX_NOT_SUPPORTED_IN_HANDLER;
+  else
+    ep->in_handler = 1;
+
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
 }
 
 /* API omx_reenable_progression */
 omx_return_t
 omx_reenable_progression(struct omx_endpoint *ep)
 {
+  OMX__ENDPOINT_LOCK(ep);
+
   ep->in_handler = 0;
   omx__progress(ep);
+
+  OMX__ENDPOINT_UNLOCK(ep);
   return OMX_SUCCESS;
 }

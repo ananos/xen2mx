@@ -410,10 +410,12 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
     omx__partner_to_addr(partner, &source);
     ep->in_handler = 1;
-    /* FIXME: lock */
+    OMX__ENDPOINT_UNLOCK(ep);
+
     ret = handler(context, source, msg->match_info,
 		  msg_length, data_if_available);
-    /* FIXME: unlock */
+
+    OMX__ENDPOINT_LOCK(ep);
     ep->in_handler = 0;
     /* FIXME: signal */
     if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED)
@@ -935,13 +937,17 @@ omx_irecv(struct omx_endpoint *ep,
 
   omx_cache_single_segment(&reqsegs, buffer, length);
 
+  OMX__ENDPOINT_LOCK(ep);
+
   ret = omx__irecv_segs(ep, &reqsegs, match_info, match_mask, context, requestp);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out;
+    goto out_with_lock;
 
+  OMX__ENDPOINT_UNLOCK(ep);
   return OMX_SUCCESS;
 
- out:
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
   omx_free_segments(&reqsegs);
   return ret;
 }
@@ -960,13 +966,17 @@ omx_irecvv(omx_endpoint_t ep,
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
+  OMX__ENDPOINT_LOCK(ep);
+
   ret = omx__irecv_segs(ep, &reqsegs, match_info, match_mask, context, requestp);
   if (unlikely(ret != OMX_SUCCESS))
-    goto out_with_segments;
+    goto out_with_lock;
 
+  OMX__ENDPOINT_UNLOCK(ep);
   return OMX_SUCCESS;
 
- out_with_segments:
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
   omx_free_segments(&reqsegs);
  out:
   return ret;

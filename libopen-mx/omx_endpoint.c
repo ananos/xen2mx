@@ -201,6 +201,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = OMX_NO_RESOURCES;
     goto out;
   }
+  omx__lock_init(&ep->lock);
 
   err = open(OMX_DEVNAME, O_RDWR);
   if (err < 0) {
@@ -341,6 +342,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
  out_with_fd:
   close(fd);
  out_with_ep:
+  omx__lock_destroy(&ep->lock);
   free(ep);
  out:
   return ret;
@@ -350,10 +352,15 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 omx_return_t
 omx_close_endpoint(struct omx_endpoint *ep)
 {
+  omx_return_t ret;
   int i;
 
-  if (ep->in_handler)
-    return OMX_NOT_SUPPORTED_IN_HANDLER;
+  OMX__ENDPOINT_LOCK(ep);
+
+  if (ep->in_handler) {
+    ret = OMX_NOT_SUPPORTED_IN_HANDLER;
+    goto out_with_lock;
+  }
 
   omx__flush_partners_to_ack(ep);
 
@@ -371,7 +378,12 @@ omx_close_endpoint(struct omx_endpoint *ep)
   omx__endpoint_sendq_map_exit(ep);
   /* nothing to do for detach, close will do it */
   close(ep->fd);
+  omx__lock_destroy(&ep->lock);
   free(ep);
 
   return OMX_SUCCESS;
+
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
 }
