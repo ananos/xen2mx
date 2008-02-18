@@ -956,16 +956,19 @@ omx_irecvv(omx_endpoint_t ep,
   struct omx__req_seg reqsegs;
   omx_return_t ret;
 
-  omx_cache_segments(&reqsegs, segs, nseg);
-
-  ret = omx__irecv_segs(ep, &reqsegs, match_info, match_mask, context, requestp);
+  ret = omx_cache_segments(&reqsegs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 
+  ret = omx__irecv_segs(ep, &reqsegs, match_info, match_mask, context, requestp);
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out_with_segments;
+
   return OMX_SUCCESS;
 
- out:
+ out_with_segments:
   omx_free_segments(&reqsegs);
+ out:
   return ret;
 }
 
