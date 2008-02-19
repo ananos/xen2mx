@@ -42,7 +42,7 @@ omx_wakeup_on_event(struct omx_endpoint *endpoint)
 {
 	struct omx_event_waiter *waiter, *next;
 
-	/* wake up everybody with the event key */
+	/* wake up everybody with the event status */
 	list_for_each_entry_safe(waiter, next, &endpoint->waiters, list_elt) {
 		waiter->status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
 		list_del(&waiter->list_elt);
@@ -54,6 +54,8 @@ static void
 omx_wakeup_on_timeout_handler(unsigned long data)
 {
 	struct omx_event_waiter *waiter = (struct omx_event_waiter*) data;
+
+	/* wakeup with the timeout status */
 	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT;
 	wake_up_process(waiter->task);
 }
@@ -62,6 +64,8 @@ static void
 omx_wakeup_on_progress_timeout_handler(unsigned long data)
 {
 	struct omx_event_waiter *waiter = (struct omx_event_waiter*) data;
+
+	/* wakeup with the progress status */
 	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_PROGRESS;
 	wake_up_process(waiter->task);
 }
@@ -331,7 +335,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 		goto race;
 	}
 
-	/* queue ourself on the wait wueue */
+	/* queue ourself on the wait queue */
 	list_add_tail(&waiter.list_elt, &endpoint->waiters);
 	waiter.status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
 	waiter.task = current;
