@@ -74,8 +74,9 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   struct omx_cmd_send_tiny * tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned long long) omx__driver_desc->jiffies);
   tiny_param->hdr.piggyack = partner->next_frag_recv_seq;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
@@ -152,8 +153,9 @@ omx__post_isend_small(struct omx_endpoint *ep,
   struct omx_cmd_send_small * small_param = &req->send.specific.small.send_small_ioctl_param;
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned long long) omx__driver_desc->jiffies);
   small_param->piggyack = partner->next_frag_recv_seq;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
@@ -260,8 +262,9 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   int err;
   int i;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned long long) omx__driver_desc->jiffies);
   medium_param->piggyack = partner->next_frag_recv_seq;
 
   if (likely(req->send.segs.nseg == 1)) {
@@ -431,8 +434,9 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned long long) omx__driver_desc->jiffies);
   rndv_param->hdr.piggyack = partner->next_frag_recv_seq;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
@@ -535,8 +539,9 @@ omx__post_notify(struct omx_endpoint *ep,
   struct omx_cmd_send_notify * notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned long long) omx__driver_desc->jiffies);
   notify_param->piggyack = partner->next_frag_recv_seq;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
