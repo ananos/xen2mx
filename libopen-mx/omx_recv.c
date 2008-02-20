@@ -652,7 +652,9 @@ omx__process_recv(struct omx_endpoint *ep,
 				     recv_func);
 
   } else {
-    omx__debug_printf(SEQNUM, "obsolete message %d\n", seqnum);
+    omx__debug_printf(SEQNUM, "obsolete message %d, assume a ack has been lost\n", seqnum);
+    /* assume a ack has been lost, resend a ack now */
+    omx__ack_partner_immediately(ep, partner, 0);
   }
 
   return ret;
