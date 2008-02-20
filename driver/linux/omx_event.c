@@ -45,7 +45,6 @@ omx_wakeup_on_event(struct omx_endpoint *endpoint)
 	/* wake up everybody with the event status */
 	list_for_each_entry_safe(waiter, next, &endpoint->waiters, list_elt) {
 		waiter->status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
-		list_del(&waiter->list_elt);
 		wake_up_process(waiter->task);
 	}
 }
@@ -380,13 +379,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
  wakeup:
 	spin_lock_bh(&endpoint->event_lock);
-	/* always need to lock even if we'll do nothing below
-	 * since the whole status+list_elt need to be coherent
-	 * to avoid race conditions with omx_wakeup_on_event()
-	 */
-	if (waiter.status != OMX_CMD_WAIT_EVENT_STATUS_EVENT)
-		/* no event removed us from the wait queue, do it now */
-		list_del(&waiter.list_elt);
+	__list_del(&waiter.list_elt);
 	spin_unlock_bh(&endpoint->event_lock);
 
 	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_NONE) {

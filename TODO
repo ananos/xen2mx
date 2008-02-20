@@ -6,6 +6,10 @@
   + wakeup receiver when receiving a self
   + filter wakeup on recv/send/connect/...
 
+* unlockify the ring management in the driver event reporting code
+  + use rcu to avoid having to lock the waiter's queue
+    - allocate the waiter struct and free it with a rcu_call
+
 * group similar fields in structure for cache effects
 
 * free request (and buffers) on close
