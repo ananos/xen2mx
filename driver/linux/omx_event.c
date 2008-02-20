@@ -379,7 +379,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
  wakeup:
 	spin_lock_bh(&endpoint->event_lock);
-	__list_del(&waiter.list_elt);
+	list_del(&waiter.list_elt);
 	spin_unlock_bh(&endpoint->event_lock);
 
 	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_NONE) {
