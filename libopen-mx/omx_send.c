@@ -74,6 +74,8 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   struct omx_cmd_send_tiny * tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
   int err;
 
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
   tiny_param->hdr.piggyack = partner->next_frag_recv_seq;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
@@ -150,6 +152,8 @@ omx__post_isend_small(struct omx_endpoint *ep,
   struct omx_cmd_send_small * small_param = &req->send.specific.small.send_small_ioctl_param;
   int err;
 
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
   small_param->piggyack = partner->next_frag_recv_seq;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
@@ -256,6 +260,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   int err;
   int i;
 
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
   medium_param->piggyack = partner->next_frag_recv_seq;
 
   if (likely(req->send.segs.nseg == 1)) {
@@ -425,6 +431,8 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
   int err;
 
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
   rndv_param->hdr.piggyack = partner->next_frag_recv_seq;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
@@ -527,6 +535,8 @@ omx__post_notify(struct omx_endpoint *ep,
   struct omx_cmd_send_notify * notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   int err;
 
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d\n",
+		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1));
   notify_param->piggyack = partner->next_frag_recv_seq;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
@@ -937,7 +947,8 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      printf("Send request timeout, already sent %ld times, resetting partner status\n",
+      printf("Send request (seqnum %d)  timeout, already sent %ld times, resetting partner status\n",
+	     (unsigned int) req->generic.send_seqnum,
 	     (unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
@@ -982,7 +993,8 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      printf("Connect request timeout, already sent %ld times, resetting partner status\n",
+      printf("Connect request (connect seqnum %d) timeout, already sent %ld times, resetting partner status\n",
+	     (unsigned int) req->connect.connect_seqnum,
 	     (unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;

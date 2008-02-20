@@ -609,6 +609,7 @@ omx__process_recv(struct omx_endpoint *ep,
   omx__debug_printf(SEQNUM, "got seqnum %d, expected match at %d, frag at %d\n",
 		    seqnum, partner->next_match_recv_seq, partner->next_frag_recv_seq);
 
+  omx__debug_printf(ACK, "got piggy ack for ack up to %d\n", (unsigned) OMX__SEQNUM(piggyack - 1));
   omx__handle_ack(ep, partner, piggyack);
 
   old_next_match_recv_seq = partner->next_match_recv_seq;
