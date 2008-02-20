@@ -145,9 +145,13 @@ omx_cancel(omx_endpoint_t ep,
 	   uint32_t *result)
 {
   union omx_request * req = *request;
-  omx_return_t ret = OMX_SUCCESS;
+  omx_return_t ret;
 
   OMX__ENDPOINT_LOCK(ep);
+
+  ret = omx__progress(ep);
+  if (ret != OMX_SUCCESS)
+    goto out_with_lock;
 
   /* Search in the send request queue and recv request queue. */
 
@@ -192,6 +196,7 @@ omx_cancel(omx_endpoint_t ep,
     ret = OMX_CANCEL_NOT_SUPPORTED;
   }
 
+ out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
