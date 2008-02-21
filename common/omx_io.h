@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x115
+#define OMX_DRIVER_ABI_VERSION		0x116
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -332,6 +332,10 @@ struct omx_cmd_wait_event {
 	uint32_t next_unexp_event_offset;
 };
 
+struct omx_cmd_wakeup {
+	uint32_t status;
+};
+
 /* level 0 testing, only pass the command and get the endpoint, no parameter given */
 #define OMX_CMD_BENCH_TYPE_PARAMS	0x01
 #define OMX_CMD_BENCH_TYPE_SEND_ALLOC	0x02
@@ -383,7 +387,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_REGISTER_REGION		_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_register_region)
 #define OMX_CMD_DEREGISTER_REGION	_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_deregister_region)
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8b, struct omx_cmd_wait_event)
-#define OMX_CMD_WAKEUP			_IO(OMX_CMD_MAGIC, 0x8c)
+#define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_wakeup)
 
 static inline const char *
 omx_strcmd(unsigned cmd)

@@ -761,19 +761,28 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
   return OMX_SUCCESS;
 }
 
+omx_return_t
+omx__wakeup(struct omx_endpoint *ep, uint32_t status)
+{
+  struct omx_cmd_wakeup wakeup;
+  int err;
+
+  wakeup.status = status;
+
+  err = ioctl(ep->fd, OMX_CMD_WAKEUP, &wakeup);
+  if (unlikely(err < 0))
+    return omx__errno_to_return("ioctl WAKEUP");
+
+  return OMX_SUCCESS;
+}
+
 /* API omx_wakeup */
 omx_return_t
 omx_wakeup(struct omx_endpoint *ep)
 {
-  omx_return_t ret = OMX_SUCCESS;
-  int err;
-
+  omx_return_t ret;
   OMX__ENDPOINT_LOCK(ep);
-
-  err = ioctl(ep->fd, OMX_CMD_WAKEUP);
-  if (unlikely(err < 0))
-    ret = omx__errno_to_return("ioctl WAIT_EVENT");
-
+  ret = omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_WAKEUP);
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }

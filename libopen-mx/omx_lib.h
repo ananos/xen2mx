@@ -220,6 +220,9 @@ omx__put_region(struct omx_endpoint *ep,
 		struct omx__large_region *region,
 		void * reserver);
 
+omx_return_t
+omx__wakeup(struct omx_endpoint *ep, uint32_t status);
+
 void
 omx__post_notify(struct omx_endpoint *ep,
 		 struct omx__partner *partner,

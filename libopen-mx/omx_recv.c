@@ -783,6 +783,8 @@ omx__process_self_send(struct omx_endpoint *ep,
     omx__enqueue_request(&ep->send_self_unexp_req_q, sreq);
   }
 
+  omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+
   return OMX_SUCCESS;
 }
 

@@ -1,10 +1,11 @@
 * thread safety
-  + including omx_wakeup
-  + wakeup sleepers with conditions
-  + check race conditions in wait_any if dequeueing in the waker
-  + signal going out of the handler
-  + wakeup receiver when receiving a self
   + filter wakeup on recv/send/connect/...
+
+* send failed with status (Endpoint Closed)
+  omx_pingpong: /home/bgoglin/open-mx/build-x86_64/../src/libopen-mx/omx_large.c:96: 
+  omx__endpoint_large_region_free: Assertion `array[index].region.use_count == 0' failed.
+
+* when debug enabled, SIGUSR1 dumps the status
 
 * unlockify the ring management in the driver event reporting code
   + use rcu to avoid having to lock the waiter's queue
