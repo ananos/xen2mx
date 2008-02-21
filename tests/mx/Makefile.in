@@ -24,6 +24,8 @@ LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
 
 .PHONY: all installonly install clean distclean
 
+mx_wakeup_test_LIBS	=	-lpthread
+
 all: $(TESTS)
 
 ###############
@@ -37,7 +39,7 @@ include @top_srcdir@/depend.mk
 # build
 
 $(TESTS): %: %.o $(LIB)
-	$(LD) $^ -o $@
+	$(LD) $^ $($(@)_LIBS) -o $@
 
 # build and create dependency file
 $(OBJS): %.o: @srcdir@/%.c
