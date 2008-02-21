@@ -277,6 +277,9 @@ omx_probe(omx_endpoint_t ep, uint64_t match_info, uint64_t match_mask,
 	  omx_status_t *status, uint32_t *result,
 	  uint32_t timeout);
 
+omx_return_t
+omx_ibuffered(omx_endpoint_t ep, omx_request_t *request, uint32_t * result);
+
 enum omx_unexp_handler_action {
   OMX_UNEXP_HANDLER_RECV_CONTINUE = 0,
   OMX_UNEXP_HANDLER_RECV_FINISHED

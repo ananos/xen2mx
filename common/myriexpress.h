@@ -236,6 +236,7 @@ extern mx_return_t mx_ipeek(mx_endpoint_t endpoint, mx_request_t *request, uint3
 extern mx_return_t mx_peek(mx_endpoint_t endpoint, uint32_t timeout, mx_request_t *request, uint32_t *result);
 extern mx_return_t mx_iprobe(mx_endpoint_t endpoint, uint64_t match_info, uint64_t match_mask, mx_status_t *status, uint32_t *result);
 extern mx_return_t mx_probe(mx_endpoint_t endpoint, uint32_t timeout, uint64_t match_info, uint64_t match_mask, mx_status_t *status, uint32_t *result);
+extern mx_return_t mx_ibuffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result);
 
 extern mx_return_t mx_context(mx_request_t *request, void **context);
 extern mx_return_t mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key, void *in_val, uint32_t in_len, void *out_val, uint32_t out_len);
@@ -264,7 +265,6 @@ extern mx_return_t mx_iput(mx_endpoint_t endpoint, void *local_addr, uint32_t le
 extern mx_return_t mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
 			   mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
 			   mx_request_t *request);
-extern mx_return_t mx_ibuffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result);
 extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uint32_t *result);
 #endif
 
@@ -319,7 +319,7 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
 #define mx_probe(endpoint, timeout, match_info, match_mask, status, result) \
   omx_probe(endpoint, match_info, match_mask, (omx_status_t *) (void *) status, result, timeout)
 
-/* FIXME: mx_ibuffered */
+#define mx_ibuffered(endpoint, request, result) omx_ibuffered(endpoint, request, result)
 /* FIXME: mx_buffered */
 
 #define mx_context(req,ctx) omx_context(req,ctx)

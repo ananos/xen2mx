@@ -171,6 +171,12 @@ mx_probe(mx_endpoint_t endpoint, uint32_t timeout, uint64_t match_info, uint64_t
 }
 
 mx_return_t
+mx_ibuffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result)
+{
+  return omx_ibuffered(endpoint, request, result);
+}
+
+mx_return_t
 mx_context(mx_request_t *request, void **context)
 {
   return omx_context(request, context);
@@ -373,16 +379,9 @@ mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
 }
 
 mx_return_t
-mx_ibuffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t *result)
-{
-  omx__abort("mx_ibuffered not implemented\n");
-  return MX_BAD_BAD_BAD;
-}
-
-mx_return_t
 mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uint32_t *result)
 {
-  omx__abort("mx_buffered not implemented\n");
+  omx__abort("mx_buffered not implemented since it is not in MX either\n");
   return MX_BAD_BAD_BAD;
 }
 

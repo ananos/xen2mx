@@ -1,5 +1,6 @@
 * thread safety
   + filter wakeup on recv/send/connect/...
+  + filter on specific request id too
 
 * send failed with status (Endpoint Closed)
   omx_pingpong: /home/bgoglin/open-mx/build-x86_64/../src/libopen-mx/omx_large.c:96: 

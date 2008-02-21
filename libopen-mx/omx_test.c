@@ -523,6 +523,56 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
   return ret;
 }
 
+/****************************************
+ * Test/Wait on a request being buffered
+ */
+
+static inline uint32_t
+omx__buffered_common(struct omx_endpoint *ep, union omx_request **requestp)
+{
+  union omx_request * req = *requestp;
+
+  if (req->generic.type == OMX_REQUEST_TYPE_SEND_TINY
+      || req->generic.type == OMX_REQUEST_TYPE_SEND_SMALL) {
+    /* small and tiny are buffered as soon as they pass the throttling check */
+    if (!(req->generic.state & OMX_REQUEST_STATE_SEND_THROTTLING))
+      return 1;
+
+  } else if (req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM) {
+    /* medium are buffered once they pass the throttling check
+     * and if there are enough resources to avoid queueing
+     */
+    if (!(req->generic.state & (OMX_REQUEST_STATE_SEND_THROTTLING|OMX_REQUEST_STATE_QUEUED)))
+      return 1;
+
+  } else if (req->generic.type == OMX_REQUEST_TYPE_SEND_SELF) {
+    /* communications to self are immediately copied to the receive side */
+    return 1;
+  }
+
+  return 0;
+}
+
+/* API omx_ibuffered */
+omx_return_t
+omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
+	      uint32_t * result)
+{
+  omx_return_t ret = OMX_SUCCESS;
+
+  OMX__ENDPOINT_LOCK(ep);
+
+  ret = omx__progress(ep);
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out_with_lock;
+
+  *result = omx__buffered_common(ep, requestp);
+
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
+}
+
 /********************************
  * Test/Wait unexpected messages
  */
