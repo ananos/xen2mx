@@ -213,6 +213,7 @@ extern mx_return_t mx_open_endpoint(uint32_t board_number, uint32_t endpoint_id,
 				    uint32_t endpoint_key, mx_param_t *params_array, uint32_t params_count,
 				    mx_endpoint_t *endpoint);
 extern mx_return_t mx_close_endpoint(mx_endpoint_t endpoint);
+extern mx_return_t mx_wakeup(mx_endpoint_t endpoint);
 extern mx_return_t mx_disable_progression(mx_endpoint_t ep);
 extern mx_return_t mx_reenable_progression(mx_endpoint_t ep);
 
@@ -256,7 +257,6 @@ extern const char * mx_strstatus(mx_status_code_t status);
 /*
  * Not implemented yet
  */
-extern mx_return_t mx_wakeup(mx_endpoint_t endpoint);
 extern mx_return_t mx_register_unexp_callback(mx_endpoint_t ep, mx_matching_callback_t cb, void *ctxt);
 extern mx_return_t mx_iput(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
 			   mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
@@ -288,7 +288,7 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
 #define mx_open_endpoint(bn,eid,key,pa,pc,ep) omx_open_endpoint(bn,eid,key,pa,pc,ep)
 #define mx_close_endpoint(ep) omx_close_endpoint(ep)
 
-#define mx_wakeup(...) MX_SUCCESS; /* FIXME */
+#define mx_wakeup(ep) omx_wakeup(ep)
 
 #define mx_disable_progression(ep) omx_disable_progression(ep)
 #define mx_reenable_progression(ep) omx_reenable_progression(ep)

@@ -403,6 +403,7 @@ static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_REGISTER_REGION)]	= omx_ioctl_user_region_register,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_DEREGISTER_REGION)]	= omx_ioctl_user_region_deregister,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAKEUP)]		= omx_ioctl_wakeup,
 };
 
 /* call the ioctl handler assuming the caller checked the index */

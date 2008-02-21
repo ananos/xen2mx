@@ -151,6 +151,9 @@ omx_return_t
 omx_close_endpoint(omx_endpoint_t ep);
 
 omx_return_t
+omx_wakeup(omx_endpoint_t ep);
+
+omx_return_t
 omx_get_endpoint_addr(omx_endpoint_t endpoint,
 		      omx_endpoint_addr_t *endpoint_addr);
 

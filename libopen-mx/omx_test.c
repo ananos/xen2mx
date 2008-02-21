@@ -189,6 +189,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
 	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
       goto out_with_lock;
@@ -352,6 +353,7 @@ omx_wait_any(struct omx_endpoint *ep,
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
 	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
       goto out_with_lock;
@@ -494,6 +496,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
 	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
       goto out_with_lock;
@@ -657,6 +660,7 @@ omx_probe(struct omx_endpoint *ep,
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
 	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
       *result = 0;
       goto out_with_lock;
@@ -747,6 +751,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
 	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR))
       return OMX_CONNECTION_TIMEOUT;
 
@@ -754,4 +759,21 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
   }
 
   return OMX_SUCCESS;
+}
+
+/* API omx_wakeup */
+omx_return_t
+omx_wakeup(struct omx_endpoint *ep)
+{
+  omx_return_t ret = OMX_SUCCESS;
+  int err;
+
+  OMX__ENDPOINT_LOCK(ep);
+
+  err = ioctl(ep->fd, OMX_CMD_WAKEUP);
+  if (unlikely(err < 0))
+    ret = omx__errno_to_return("ioctl WAIT_EVENT");
+
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
 }

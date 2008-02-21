@@ -49,6 +49,19 @@ omx_wakeup_on_event(struct omx_endpoint *endpoint)
 	}
 }
 
+/* called with the endpoint event_lock read-held */
+static INLINE void
+omx_wakeup_on_ioctl(struct omx_endpoint *endpoint)
+{
+	struct omx_event_waiter *waiter, *next;
+
+	/* wake up everybody with the event status */
+	list_for_each_entry_safe(waiter, next, &endpoint->waiters, list_elt) {
+		waiter->status = OMX_CMD_WAIT_EVENT_STATUS_WAKEUP;
+		wake_up_process(waiter->task);
+	}
+}
+
 static void
 omx_wakeup_on_timeout_handler(unsigned long data)
 {
@@ -398,6 +411,16 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
  out:
 	return err;
+}
+
+int
+omx_ioctl_wakeup(struct omx_endpoint * endpoint, void __user * uparam)
+{
+	spin_lock_bh(&endpoint->event_lock);
+	omx_wakeup_on_ioctl(endpoint);
+	spin_unlock_bh(&endpoint->event_lock);
+
+	return 0;
 }
 
 /*

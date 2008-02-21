@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x114
+#define OMX_DRIVER_ABI_VERSION		0x115
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -323,6 +323,7 @@ struct omx_cmd_deregister_region {
 #define OMX_CMD_WAIT_EVENT_STATUS_PROGRESS	0x03 /* wake up because of retransmission */
 #define OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT	0x04 /* timeout expired without any event */
 #define OMX_CMD_WAIT_EVENT_STATUS_RACE		0x05 /* some events arrived in the meantime, need to go back to user-space and check them first */
+#define OMX_CMD_WAIT_EVENT_STATUS_WAKEUP	0x06 /* the application called the wakeup ioctl */
 
 struct omx_cmd_wait_event {
 	uint8_t status;
@@ -382,6 +383,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_REGISTER_REGION		_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_register_region)
 #define OMX_CMD_DEREGISTER_REGION	_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_deregister_region)
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8b, struct omx_cmd_wait_event)
+#define OMX_CMD_WAKEUP			_IO(OMX_CMD_MAGIC, 0x8c)
 
 static inline const char *
 omx_strcmd(unsigned cmd)
@@ -431,6 +433,8 @@ omx_strcmd(unsigned cmd)
 		return "Deregister Region";
 	case OMX_CMD_WAIT_EVENT:
 		return "Wait Event";
+	case OMX_CMD_WAKEUP:
+		return "Wakeup";
 	default:
 		return "** Unknown **";
 	}

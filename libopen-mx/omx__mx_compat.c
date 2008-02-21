@@ -57,6 +57,12 @@ mx_close_endpoint(mx_endpoint_t endpoint)
 }
 
 mx_return_t
+mx_wakeup(mx_endpoint_t endpoint)
+{
+  return omx_wakeup(endpoint);
+}
+
+mx_return_t
 mx_disable_progression(mx_endpoint_t ep)
 {
   return omx_disable_progression(ep);
@@ -339,12 +345,6 @@ mx_strstatus(mx_status_code_t status)
 /*
  * Not implemented yet
  */
-
-mx_return_t mx_wakeup(mx_endpoint_t endpoint)
-{
-  omx__abort("mx_wakeup not implemented\n");
-  return MX_BAD_BAD_BAD;
-}
 
 mx_return_t
 mx_register_unexp_callback(mx_endpoint_t ep, mx_matching_callback_t cb, void *ctxt)
