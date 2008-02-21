@@ -325,7 +325,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   req->send.specific.medium.frags_pending_nr = frags_nr;
 
  ok:
-  req->generic.resends_max = ep->req_resends_max;
+  req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
   omx__enqueue_request(&ep->driver_posted_req_q, req);
