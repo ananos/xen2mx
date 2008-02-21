@@ -220,11 +220,29 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
   last_check = now;
 }
 
+static INLINE void
+omx__check_enough_progression(struct omx_endpoint * ep)
+{
+#ifdef OMX_LIB_DEBUG
+  static unsigned long long last_progress = 0;
+  unsigned long long now = omx__driver_desc->jiffies;
+  unsigned long long delay = now - last_progress;
+
+  if (last_progress && delay > omx__driver_desc->hz)
+    omx__debug_printf(MAIN, "No progression occured in the last %lld seconds (%lld jiffies)\n",
+		      delay/omx__driver_desc->hz, delay);
+
+  last_progress = now;
+#endif
+}
+
 omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
   if (unlikely(ep->in_handler))
     return OMX_SUCCESS;
+
+  omx__check_enough_progression(ep);
 
   /* ack partners that didn't get acked recently */
   omx__process_partners_to_ack(ep);
