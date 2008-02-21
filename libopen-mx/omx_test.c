@@ -145,6 +145,8 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
+    omx__check_timeout(ms_timeout, jiffies_expire);
+
     omx__debug_printf(WAIT, "omx_wait woken up at %lld\n",
 		      (unsigned long long) omx__driver_desc->jiffies);
 
@@ -340,6 +342,8 @@ omx_wait_any(struct omx_endpoint *ep,
 
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
+    omx__check_timeout(ms_timeout, jiffies_expire);
+
     omx__debug_printf(WAIT, "omx_wait_any woken up at %lld\n",
 		      (unsigned long long) omx__driver_desc->jiffies);
 
@@ -486,6 +490,8 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
     OMX__ENDPOINT_LOCK(ep);
 
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
+
+    omx__check_timeout(ms_timeout, jiffies_expire);
 
     omx__debug_printf(WAIT, "omx_peek woken up at %lld\n",
 		      (unsigned long long) omx__driver_desc->jiffies);
@@ -705,6 +711,8 @@ omx_probe(struct omx_endpoint *ep,
 
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
 
+    omx__check_timeout(ms_timeout, jiffies_expire);
+
     omx__debug_printf(WAIT, "omx_probe woken up at %lld\n",
 		      (unsigned long long) omx__driver_desc->jiffies);
 
@@ -803,6 +811,8 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
     OMX__ENDPOINT_LOCK(ep);
 
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&wait_param, sizeof(wait_param));
+
+    omx__check_timeout(ms_timeout, jiffies_expire);
 
     omx__debug_printf(WAIT, "omx_connect woken up at %lld\n",
 		      (unsigned long long) omx__driver_desc->jiffies);

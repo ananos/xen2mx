@@ -138,6 +138,18 @@ omx__timeout_ms_to_absolute_jiffies(uint32_t ms)
 		: now + (ms * hz + 1023)/1024;
 }
 
+static inline void
+omx__check_timeout(uint32_t ms, uint64_t expire)
+{
+#ifdef OMX_LIB_DEBUG
+  uint64_t now = omx__driver_desc->jiffies;
+  if (ms != OMX_TIMEOUT_INFINITE && now > expire + 2)
+    /* tolerate 2 jiffies of timeshift */
+    omx__debug_printf(MAIN, "sleep for %ld ms slept until jiffies %lld instead of %lld\n",
+		      (unsigned long) ms, (unsigned long long) now, (unsigned long long) expire);
+#endif
+}
+
 /*********************
  * Internal functions
  */
