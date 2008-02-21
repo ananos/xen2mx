@@ -22,6 +22,10 @@
 #include "omx_lib.h"
 #include "omx_request.h"
 
+/*********************************************
+ * Test/Wait a single request and complete it
+ */
+
 static inline void
 omx__test_success(struct omx_endpoint *ep, union omx_request *req,
 		  struct omx_status *status)
@@ -38,33 +42,6 @@ omx__test_success(struct omx_endpoint *ep, union omx_request *req,
     /* the request is done for real, delete it */
     omx__request_free(ep, req);
   }
-}
-
-/* API omx_forget */
-omx_return_t
-omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
-{
-  union omx_request * req = *requestp;
-
-  OMX__ENDPOINT_LOCK(ep);
-
-  if (!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE)) {
-    if (req->generic.state == OMX_REQUEST_STATE_DONE) {
-      /* want to forget a request that is ready to complete? just complete it and ignore the return value */
-      struct omx_status dummy;
-      omx__test_success(ep, req, &dummy);
-    } else {
-      /* mark as zombie and let the real completion delete it later */
-      req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-      ep->zombies++;
-    }
-  }
-
-  OMX__ENDPOINT_UNLOCK(ep);
-
-  *requestp = NULL;
-
-  return OMX_SUCCESS;
 }
 
 static inline uint32_t
@@ -202,6 +179,37 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
+
+/* API omx_forget */
+omx_return_t
+omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
+{
+  union omx_request * req = *requestp;
+
+  OMX__ENDPOINT_LOCK(ep);
+
+  if (!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE)) {
+    if (req->generic.state == OMX_REQUEST_STATE_DONE) {
+      /* want to forget a request that is ready to complete? just complete it and ignore the return value */
+      struct omx_status dummy;
+      omx__test_success(ep, req, &dummy);
+    } else {
+      /* mark as zombie and let the real completion delete it later */
+      req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+      ep->zombies++;
+    }
+  }
+
+  OMX__ENDPOINT_UNLOCK(ep);
+
+  *requestp = NULL;
+
+  return OMX_SUCCESS;
+}
+
+/***********************************************
+ * Test/Wait any single request and complete it
+ */
 
 static inline uint32_t
 omx__test_any_common(struct omx_endpoint *ep,
@@ -368,6 +376,10 @@ omx_wait_any(struct omx_endpoint *ep,
   return ret;
 }
 
+/*****************************************************
+ * Test/Wait any single request without completing it
+ */
+
 static inline uint32_t
 omx__ipeek_common(struct omx_endpoint *ep, union omx_request **requestp)
 {
@@ -510,6 +522,10 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
  out:
   return ret;
 }
+
+/********************************
+ * Test/Wait unexpected messages
+ */
 
 static inline uint32_t
 omx__iprobe_common(struct omx_endpoint *ep,
@@ -675,6 +691,10 @@ omx_probe(struct omx_endpoint *ep,
   return ret;
 }
 
+/************************************
+ * Synchronous connect specific wait
+ *
+
 /* called with the endpoint lock held */
 omx_return_t
 omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeout)
@@ -760,6 +780,10 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
 
   return OMX_SUCCESS;
 }
+
+/*****************
+ * Wakeup waiters
+ */
 
 omx_return_t
 omx__wakeup(struct omx_endpoint *ep, uint32_t status)
