@@ -693,7 +693,7 @@ omx_probe(struct omx_endpoint *ep,
 
 /************************************
  * Synchronous connect specific wait
- *
+ */
 
 /* called with the endpoint lock held */
 omx_return_t
