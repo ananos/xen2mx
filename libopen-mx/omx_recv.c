@@ -653,8 +653,13 @@ omx__process_recv(struct omx_endpoint *ep,
 
   } else {
     omx__debug_printf(SEQNUM, "obsolete message %d, assume a ack has been lost\n", seqnum);
-    /* assume a ack has been lost, resend a ack now */
-    omx__ack_partner_immediately(ep, partner, 0);
+
+    if (frag_index == OMX__SEQNUM(-1)) {
+      /* assume a ack has been lost, resend a ack now, but only if
+       * the obsolete is the previous packet (so that we don't flood the peer with acks)
+       */
+      omx__ack_partner_immediately(ep, partner, 0);
+    }
   }
 
   return ret;
