@@ -336,11 +336,13 @@ omx_disable_progression(struct omx_endpoint *ep)
 
   OMX__ENDPOINT_LOCK(ep);
 
-  if (unlikely(ep->in_handler))
-    ret = OMX_NOT_SUPPORTED_IN_HANDLER;
-  else
-    ep->in_handler = 1;
+  /* wait for the handler to be done */
+  while (ep->in_handler)
+    OMX__ENDPOINT_HANDLER_DONE_WAIT(ep);
 
+  ep->in_handler++;
+
+ out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
@@ -351,9 +353,10 @@ omx_reenable_progression(struct omx_endpoint *ep)
 {
   OMX__ENDPOINT_LOCK(ep);
 
-  ep->in_handler = 0;
+  ep->in_handler--;
   omx__progress(ep);
 
+  OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep);
   OMX__ENDPOINT_UNLOCK(ep);
   return OMX_SUCCESS;
 }

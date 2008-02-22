@@ -24,24 +24,37 @@
 #include <pthread.h>
 
 struct omx__lock {
-  pthread_mutex_t mutex;
+  pthread_mutex_t _mutex;
 };
 
-#define omx__lock_init(lock) pthread_mutex_init(&(lock)->mutex, NULL)
-#define omx__lock_destroy(lock) pthread_mutex_destroy(&(lock)->mutex)
-#define omx__lock(lock) pthread_mutex_lock(&(lock)->mutex)
-#define omx__unlock(lock) pthread_mutex_unlock(&(lock)->mutex)
+struct omx__cond {
+  pthread_cond_t _cond;
+};
+
+#define omx__lock_init(lock) pthread_mutex_init(&(lock)->_mutex, NULL)
+#define omx__lock_destroy(lock) pthread_mutex_destroy(&(lock)->_mutex)
+#define omx__lock(lock) pthread_mutex_lock(&(lock)->_mutex)
+#define omx__unlock(lock) pthread_mutex_unlock(&(lock)->_mutex)
+
+#define omx__cond_init(cond) pthread_cond_init(&(cond)->_cond, NULL)
+#define omx__cond_destroy(cond) pthread_cond_destroy(&(cond)->_cond)
+#define omx__cond_signal(cond) pthread_cond_signal(&(cond)->_cond)
+#define omx__cond_wait(cond, lock) pthread_cond_wait(&(cond)->_cond, &(lock)->_mutex)
 
 #else /* OMX_LIB_THREAD_SAFETY */
 
-struct omx__lock {
-  /* nothing */
-};
+struct omx__lock { /* nothing */ };
+struct omx__cond { /* nothing */ };
 
 #define omx__lock_init(lock) do { /* nothing */ } while (0)
 #define omx__lock_destroy(lock) do { /* nothing */ } while (0)
 #define omx__lock(lock) do { /* nothing */ } while (0)
 #define omx__unlock(lock) do { /* nothing */ } while (0)
+
+#define omx__cond_init(cond) do { /* nothing */ } while (0)
+#define omx__cond_destroy(cond) do { /* nothing */ } while (0)
+#define omx__cond_signal(cond) do { /* nothing */ } while (0)
+#define omx__cond_wait(cond, lock) do { /* nothing */ } while (0)
 
 #endif /* OMX_LIB_THREAD_SAFETY */
 

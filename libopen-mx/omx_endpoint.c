@@ -202,6 +202,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out;
   }
   omx__lock_init(&ep->lock);
+  omx__cond_init(&ep->in_handler_cond);
 
   err = open(OMX_DEVNAME, O_RDWR);
   if (err < 0) {
@@ -343,6 +344,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   close(fd);
  out_with_ep:
   omx__lock_destroy(&ep->lock);
+  omx__cond_destroy(&ep->in_handler_cond);
   free(ep);
  out:
   return ret;
@@ -379,6 +381,7 @@ omx_close_endpoint(struct omx_endpoint *ep)
   /* nothing to do for detach, close will do it */
   close(ep->fd);
   omx__lock_destroy(&ep->lock);
+  omx__cond_destroy(&ep->in_handler_cond);
   free(ep);
 
   return OMX_SUCCESS;

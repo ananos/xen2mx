@@ -167,9 +167,10 @@ struct omx_endpoint {
   struct omx_board_info board_info;
   uint32_t app_key;
   struct omx__lock lock;
+  int in_handler;
+  struct omx__cond in_handler_cond;
   omx_unexp_handler_t unexp_handler;
   void * unexp_handler_context;
-  int in_handler;
   struct omx_endpoint_desc * desc;
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   void * next_exp_event, * next_unexp_event;
@@ -231,6 +232,8 @@ struct omx_endpoint {
 
 #define OMX__ENDPOINT_LOCK(ep) omx__lock(&(ep)->lock)
 #define OMX__ENDPOINT_UNLOCK(ep) omx__unlock(&(ep)->lock)
+#define OMX__ENDPOINT_HANDLER_DONE_WAIT(ep) omx__cond_wait(&(ep)->in_handler_cond, &(ep)->lock)
+#define OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep) omx__cond_signal(&(ep)->in_handler_cond)
 
 enum omx__request_type {
   OMX_REQUEST_TYPE_NONE=0,

@@ -409,14 +409,15 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       data_if_available = data;
 
     omx__partner_to_addr(partner, &source);
-    ep->in_handler = 1;
+    ep->in_handler++;
     OMX__ENDPOINT_UNLOCK(ep);
 
     ret = handler(context, source, msg->match_info,
 		  msg_length, data_if_available);
 
     OMX__ENDPOINT_LOCK(ep);
-    ep->in_handler = 0;
+    ep->in_handler--;
+    OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep);
     /* FIXME: signal */
     if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED)
       /* the handler took care of the message, we now discard it */
