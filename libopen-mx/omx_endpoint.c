@@ -303,7 +303,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   /* init lib specific fieds */
   ep->unexp_handler = NULL;
-  ep->in_handler = 0;
+  ep->progression_disabled = 0;
 
   INIT_LIST_HEAD(&ep->queued_send_req_q);
   INIT_LIST_HEAD(&ep->driver_posted_req_q);
@@ -359,7 +359,7 @@ omx_close_endpoint(struct omx_endpoint *ep)
 
   OMX__ENDPOINT_LOCK(ep);
 
-  if (ep->in_handler) {
+  if (ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER) {
     ret = OMX_NOT_SUPPORTED_IN_HANDLER;
     goto out_with_lock;
   }

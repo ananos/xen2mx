@@ -410,12 +410,16 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
     omx__partner_to_addr(partner, &source);
 
-    ep->in_handler++;
+    omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_BY_API));
+    omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER));
+    ep->progression_disabled = OMX_PROGRESSION_DISABLED_IN_HANDLER;
     OMX__ENDPOINT_UNLOCK(ep);
+
     ret = handler(handler_context, source, msg->match_info,
 		  msg_length, data_if_available);
+
     OMX__ENDPOINT_LOCK(ep);
-    ep->in_handler--;
+    ep->progression_disabled = 0;
     OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep);
 
     if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED)
@@ -700,12 +704,16 @@ omx__process_self_send(struct omx_endpoint *ep,
     else
       data_if_available = NULL; /* FIXME: copy in a linear buffer first */
 
-    ep->in_handler++;
+    omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_BY_API));
+    omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER));
+    ep->progression_disabled = OMX_PROGRESSION_DISABLED_IN_HANDLER;
     OMX__ENDPOINT_UNLOCK(ep);
+
     ret = handler(handler_context, sreq->generic.status.addr, match_info,
 		  msg_length, data_if_available);
+
     OMX__ENDPOINT_LOCK(ep);
-    ep->in_handler--;
+    ep->progression_disabled = 0;
     OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep);
 
     if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED) {

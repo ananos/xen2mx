@@ -161,13 +161,16 @@ struct omx__partner {
 #define CTXID_FROM_MATCHING(ep, match) ((uint32_t)(((match) >> (ep)->ctxid_shift) & ((ep)->ctxid_max-1)))
 #define CHECK_MATCHING_WITH_CTXID(ep, match) (((match) & (ep)->ctxid_mask) == (ep)->ctxid_mask)
 
+#define OMX_PROGRESSION_DISABLED_IN_HANDLER (1<<0)
+#define OMX_PROGRESSION_DISABLED_BY_API (1<<1)
+
 struct omx_endpoint {
   int fd;
   int endpoint_index, board_index;
   struct omx_board_info board_info;
   uint32_t app_key;
   struct omx__lock lock;
-  int in_handler;
+  int progression_disabled;
   struct omx__cond in_handler_cond;
   omx_unexp_handler_t unexp_handler;
   void * unexp_handler_context;

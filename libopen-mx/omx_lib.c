@@ -239,7 +239,7 @@ omx__check_enough_progression(struct omx_endpoint * ep)
 omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
-  if (unlikely(ep->in_handler))
+  if (unlikely(ep->progression_disabled))
     return OMX_SUCCESS;
 
   omx__check_enough_progression(ep);
@@ -336,11 +336,16 @@ omx_disable_progression(struct omx_endpoint *ep)
 
   OMX__ENDPOINT_LOCK(ep);
 
+  if (ep->progression_disabled & OMX_PROGRESSION_DISABLED_BY_API) {
+    /* progression is already disabled, just ignore */
+    goto out_with_lock;
+  }
+
   /* wait for the handler to be done */
-  while (ep->in_handler)
+  while (ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER)
     OMX__ENDPOINT_HANDLER_DONE_WAIT(ep);
 
-  ep->in_handler++;
+  ep->progression_disabled = OMX_PROGRESSION_DISABLED_BY_API;
 
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
@@ -353,10 +358,15 @@ omx_reenable_progression(struct omx_endpoint *ep)
 {
   OMX__ENDPOINT_LOCK(ep);
 
-  ep->in_handler--;
+  if (!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_BY_API)) {
+    /* progression is already enabled, just ignore */
+    goto out_with_lock;
+  }
+
+  ep->progression_disabled &= ~OMX_PROGRESSION_DISABLED_BY_API;
   omx__progress(ep);
 
-  OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep);
+ out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
   return OMX_SUCCESS;
 }
