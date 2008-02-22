@@ -328,6 +328,10 @@ omx_progress(omx_endpoint_t ep)
   return ret;
 }
 
+#ifdef OMX_LIB_DEBUG
+static uint64_t omx_disable_progression_jiffies_start = 0;
+#endif
+
 /* API omx_disable_progression */
 omx_return_t
 omx_disable_progression(struct omx_endpoint *ep)
@@ -347,6 +351,10 @@ omx_disable_progression(struct omx_endpoint *ep)
 
   ep->progression_disabled = OMX_PROGRESSION_DISABLED_BY_API;
 
+#ifdef OMX_LIB_DEBUG
+  omx_disable_progression_jiffies_start = omx__driver_desc->jiffies;
+#endif
+
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
@@ -364,6 +372,17 @@ omx_reenable_progression(struct omx_endpoint *ep)
   }
 
   ep->progression_disabled &= ~OMX_PROGRESSION_DISABLED_BY_API;
+
+#ifdef OMX_LIB_DEBUG
+  {
+    uint64_t now = omx__driver_desc->jiffies;
+    uint64_t delay = now - omx_disable_progression_jiffies_start;
+    if (delay > omx__driver_desc->hz)
+      omx__debug_printf(MAIN, "application disabled progression during %lld seconds (%lld jiffies)\n",
+			(unsigned long long) delay/omx__driver_desc->hz, (unsigned long long) delay);
+  }
+#endif
+
   omx__progress(ep);
 
  out_with_lock:

@@ -402,6 +402,9 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     omx_unexp_handler_action_t ret;
     omx_endpoint_addr_t source;
     void * data_if_available = NULL;
+#ifdef OMX_LIB_DEBUG
+    uint64_t omx_handler_jiffies_start;
+#endif
 
     if (likely(msg->type == OMX_EVT_RECV_TINY))
       data_if_available = msg->specific.tiny.data;
@@ -413,6 +416,9 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_BY_API));
     omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER));
     ep->progression_disabled = OMX_PROGRESSION_DISABLED_IN_HANDLER;
+#ifdef OMX_LIB_DEBUG
+    omx_handler_jiffies_start = omx__driver_desc->jiffies;
+#endif
     OMX__ENDPOINT_UNLOCK(ep);
 
     ret = handler(handler_context, source, msg->match_info,
@@ -421,6 +427,15 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     OMX__ENDPOINT_LOCK(ep);
     ep->progression_disabled = 0;
     OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep);
+#ifdef OMX_LIB_DEBUG
+  {
+    uint64_t now = omx__driver_desc->jiffies;
+    uint64_t delay = now - omx_handler_jiffies_start;
+    if (delay > omx__driver_desc->hz)
+      omx__debug_printf(MAIN, "unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
+			(unsigned long long) delay/omx__driver_desc->hz, (unsigned long long) delay);
+  }
+#endif
 
     if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED)
       /* the handler took care of the message, we now discard it */
@@ -698,6 +713,9 @@ omx__process_self_send(struct omx_endpoint *ep,
     void * handler_context = ep->unexp_handler_context;
     omx_unexp_handler_action_t ret;
     void * data_if_available;
+#ifdef OMX_LIB_DEBUG
+    uint64_t omx_handler_jiffies_start;
+#endif
 
     if (likely(sreq->send.segs.nseg == 1))
       data_if_available = sreq->send.segs.single.ptr;
@@ -707,6 +725,9 @@ omx__process_self_send(struct omx_endpoint *ep,
     omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_BY_API));
     omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER));
     ep->progression_disabled = OMX_PROGRESSION_DISABLED_IN_HANDLER;
+#ifdef OMX_LIB_DEBUG
+    omx_handler_jiffies_start = omx__driver_desc->jiffies;
+#endif
     OMX__ENDPOINT_UNLOCK(ep);
 
     ret = handler(handler_context, sreq->generic.status.addr, match_info,
@@ -715,6 +736,15 @@ omx__process_self_send(struct omx_endpoint *ep,
     OMX__ENDPOINT_LOCK(ep);
     ep->progression_disabled = 0;
     OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep);
+#ifdef OMX_LIB_DEBUG
+  {
+    uint64_t now = omx__driver_desc->jiffies;
+    uint64_t delay = now - omx_handler_jiffies_start;
+    if (delay > omx__driver_desc->hz)
+      omx__debug_printf(MAIN, "unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
+			(unsigned long long) delay/omx__driver_desc->hz, (unsigned long long) delay);
+  }
+#endif
 
     if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED) {
       /* the handler took care of the message, just complete the send request */
