@@ -112,19 +112,28 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
     }
   }
 
-  ret = omx__progress(ep);
-  if (unlikely(ret != OMX_SUCCESS))
-    goto out_with_lock;
-
-  if (omx__test_common(ep, requestp, status)) {
-    *result = 1;
-    goto out_with_lock;
-  }
-
   wait_param.jiffies_expire = jiffies_expire;
+  wait_param.status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
 
   while (1) {
     int err;
+
+    ret = omx__progress(ep);
+    if (unlikely(ret != OMX_SUCCESS))
+      goto out_with_lock;
+
+    if (omx__test_common(ep, requestp, status)) {
+      *result = 1;
+      goto out_with_lock;
+    }
+
+    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
+	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
+      *result = 0;
+      goto out_with_lock;
+    }
 
     if (ms_timeout == OMX_TIMEOUT_INFINITE)
       omx__debug_printf(WAIT, "omx_wait going to sleep at %lld for ever\n",
@@ -156,25 +165,6 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
     }
 
     omx__debug_printf(WAIT, "omx_wait wait event result %d\n", wait_param.status);
-
-    ret = omx__progress(ep);
-    if (unlikely(ret != OMX_SUCCESS))
-      goto out_with_lock;
-
-    if (omx__test_common(ep, requestp, status)) {
-      *result = 1;
-      goto out_with_lock;
-    }
-
-    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
-	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
-      *result = 0;
-      goto out_with_lock;
-    }
-
-    omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
  out_with_lock:
@@ -309,19 +299,28 @@ omx_wait_any(struct omx_endpoint *ep,
     }
   }
 
-  ret = omx__progress(ep);
-  if (unlikely(ret != OMX_SUCCESS))
-    goto out_with_lock;
-
-  if (omx__test_any_common(ep, match_info, match_mask, status)) {
-    *result = 1;
-    goto out_with_lock;
-  }
-
   wait_param.jiffies_expire = jiffies_expire;
+  wait_param.status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
 
   while (1) {
     int err;
+
+    ret = omx__progress(ep);
+    if (unlikely(ret != OMX_SUCCESS))
+      goto out_with_lock;
+
+    if (omx__test_any_common(ep, match_info, match_mask, status)) {
+      *result = 1;
+      goto out_with_lock;
+    }
+
+    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
+	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
+      *result = 0;
+      goto out_with_lock;
+    }
 
     if (ms_timeout == OMX_TIMEOUT_INFINITE)
       omx__debug_printf(WAIT, "omx_wait_any going to sleep at %lld for ever\n",
@@ -353,25 +352,6 @@ omx_wait_any(struct omx_endpoint *ep,
     }
 
     omx__debug_printf(WAIT, "omx_wait_any wait event result %d\n", wait_param.status);
-
-    ret = omx__progress(ep);
-    if (unlikely(ret != OMX_SUCCESS))
-      goto out_with_lock;
-
-    if (omx__test_any_common(ep, match_info, match_mask, status)) {
-      *result = 1;
-      goto out_with_lock;
-    }
-
-    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
-	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
-      *result = 0;
-      goto out_with_lock;
-    }
-
-    omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
  out_with_lock:
@@ -458,19 +438,28 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
     }
   }
 
-  ret = omx__progress(ep);
-  if (unlikely(ret != OMX_SUCCESS))
-    goto out_with_lock;
-
-  if (omx__ipeek_common(ep, requestp)) {
-    *result = 1;
-    goto out_with_lock;
-  }
-
   wait_param.jiffies_expire = jiffies_expire;
+  wait_param.status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
 
   while (1) {
     int err;
+
+    ret = omx__progress(ep);
+    if (unlikely(ret != OMX_SUCCESS))
+      goto out_with_lock;
+
+    if (omx__ipeek_common(ep, requestp)) {
+      *result = 1;
+      goto out_with_lock;
+    }
+
+    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
+	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
+      *result = 0;
+      goto out_with_lock;
+    }
 
     if (ms_timeout == OMX_TIMEOUT_INFINITE)
       omx__debug_printf(WAIT, "omx_peek going to sleep at %lld for ever\n",
@@ -502,25 +491,6 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
     }
 
     omx__debug_printf(WAIT, "omx_peek wait event result %d\n", wait_param.status);
-
-    ret = omx__progress(ep);
-    if (unlikely(ret != OMX_SUCCESS))
-      goto out_with_lock;
-
-    if (omx__ipeek_common(ep, requestp)) {
-      *result = 1;
-      goto out_with_lock;
-    }
-
-    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
-	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
-      *result = 0;
-      goto out_with_lock;
-    }
-
-    omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
  out_with_lock:
@@ -678,19 +648,28 @@ omx_probe(struct omx_endpoint *ep,
     }
   }
 
-  ret = omx__progress(ep);
-  if (unlikely(ret != OMX_SUCCESS))
-    goto out_with_lock;
-
-  if (omx__iprobe_common(ep, match_info, match_mask, status)) {
-    *result = 1;
-    goto out_with_lock;
-  }
-
   wait_param.jiffies_expire = jiffies_expire;
+  wait_param.status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
 
   while (1) {
     int err;
+
+    ret = omx__progress(ep);
+    if (unlikely(ret != OMX_SUCCESS))
+      goto out_with_lock;
+
+    if (omx__iprobe_common(ep, match_info, match_mask, status)) {
+      *result = 1;
+      goto out_with_lock;
+    }
+
+    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
+	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
+      *result = 0;
+      goto out_with_lock;
+    }
 
     if (ms_timeout == OMX_TIMEOUT_INFINITE)
       omx__debug_printf(WAIT, "omx_probe going to sleep at %lld for ever\n",
@@ -722,25 +701,6 @@ omx_probe(struct omx_endpoint *ep,
     }
 
     omx__debug_printf(WAIT, "omx_probe wait event result %d\n", wait_param.status);
-
-    ret = omx__progress(ep);
-    if (unlikely(ret != OMX_SUCCESS))
-      goto out_with_lock;
-
-    if (omx__iprobe_common(ep, match_info, match_mask, status)) {
-      *result = 1;
-      goto out_with_lock;
-    }
-
-    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
-	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
-      *result = 0;
-      goto out_with_lock;
-    }
-
-    omx__debug_printf(WAIT, "omx_wait going back to sleep\n");
   }
 
  out_with_lock:
@@ -780,18 +740,24 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
     }
   }
 
-  ret = omx__progress(ep);
-  if (ret != OMX_SUCCESS)
-    /* request is queued, do not try to free it */
-    return ret;
-
-  if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
-    return OMX_SUCCESS;
-
   wait_param.jiffies_expire = jiffies_expire;
+  wait_param.status = OMX_CMD_WAIT_EVENT_STATUS_EVENT;
 
   while (1) {
     int err;
+
+    ret = omx__progress(ep);
+    if (unlikely(ret != OMX_SUCCESS))
+      return ret;
+
+    if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
+      return OMX_SUCCESS;
+
+    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
+	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
+	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR))
+      return OMX_CONNECTION_TIMEOUT;
 
     if (ms_timeout == OMX_TIMEOUT_INFINITE)
       omx__debug_printf(WAIT, "omx_connect going to sleep at %lld for ever\n",
@@ -821,21 +787,6 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
       return omx__errno_to_return("ioctl WAIT_EVENT");
 
     omx__debug_printf(WAIT, "omx_connect wait event result %d\n", wait_param.status);
-
-    ret = omx__progress(ep);
-    if (unlikely(ret != OMX_SUCCESS))
-      return ret;
-
-    if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
-      return OMX_SUCCESS;
-
-    if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
-	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
-	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR))
-      return OMX_CONNECTION_TIMEOUT;
-
-    omx__debug_printf(WAIT, "omx_connect going back to sleep\n");
   }
 
   return OMX_SUCCESS;
