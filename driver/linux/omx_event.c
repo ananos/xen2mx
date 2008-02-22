@@ -46,7 +46,7 @@ omx_wakeup_waiter_list(struct omx_endpoint *endpoint,
 	/* wake up everybody with the event status */
 	list_for_each_entry_safe(waiter, next, &endpoint->waiters, list_elt) {
 		waiter->status = status;
-		wake_up_state(waiter->task, TASK_INTERRUPTIBLE);
+		wake_up_process(waiter->task);
 	}
 }
 
@@ -57,7 +57,7 @@ omx_wakeup_on_timeout_handler(unsigned long data)
 
 	/* wakeup with the timeout status */
 	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT;
-	wake_up_state(waiter->task, TASK_INTERRUPTIBLE);
+	wake_up_process(waiter->task);
 }
 
 static void
@@ -67,7 +67,7 @@ omx_wakeup_on_progress_timeout_handler(unsigned long data)
 
 	/* wakeup with the progress status */
 	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_PROGRESS;
-	wake_up_state(waiter->task, TASK_INTERRUPTIBLE);
+	wake_up_process(waiter->task);
 }
 
 /*****************
