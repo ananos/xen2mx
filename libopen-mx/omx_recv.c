@@ -398,7 +398,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
   /* if no match, try the unexpected handler */
   if (unlikely(handler && !req)) {
-    void * context = ep->unexp_handler_context;
+    void * handler_context = ep->unexp_handler_context;
     omx_unexp_handler_action_t ret;
     omx_endpoint_addr_t source;
     void * data_if_available = NULL;
@@ -409,16 +409,15 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       data_if_available = data;
 
     omx__partner_to_addr(partner, &source);
+
     ep->in_handler++;
     OMX__ENDPOINT_UNLOCK(ep);
-
-    ret = handler(context, source, msg->match_info,
+    ret = handler(handler_context, source, msg->match_info,
 		  msg_length, data_if_available);
-
     OMX__ENDPOINT_LOCK(ep);
     ep->in_handler--;
     OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep);
-    /* FIXME: signal */
+
     if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED)
       /* the handler took care of the message, we now discard it */
       return OMX_SUCCESS;
@@ -701,13 +700,14 @@ omx__process_self_send(struct omx_endpoint *ep,
     else
       data_if_available = NULL; /* FIXME: copy in a linear buffer first */
 
-    ep->in_handler = 1;
-    /* FIXME: lock */
+    ep->in_handler++;
+    OMX__ENDPOINT_UNLOCK(ep);
     ret = handler(handler_context, sreq->generic.status.addr, match_info,
 		  msg_length, data_if_available);
-    /* FIXME: unlock */
-    ep->in_handler = 0;
-    /* FIXME: signal */
+    OMX__ENDPOINT_LOCK(ep);
+    ep->in_handler--;
+    OMX__ENDPOINT_HANDLER_DONE_SIGNAL(ep);
+
     if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED) {
       /* the handler took care of the message, just complete the send request */
       sreq->generic.status.xfer_length = msg_length;
