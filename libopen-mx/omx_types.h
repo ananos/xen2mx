@@ -166,7 +166,7 @@ struct omx_endpoint {
   int endpoint_index, board_index;
   struct omx_board_info board_info;
   uint32_t app_key;
-  struct omx__endpoint_lock lock;
+  struct omx__lock lock;
   omx_unexp_handler_t unexp_handler;
   void * unexp_handler_context;
   int in_handler;

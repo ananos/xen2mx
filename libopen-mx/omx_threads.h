@@ -23,7 +23,7 @@
 
 #include <pthread.h>
 
-struct omx__endpoint_lock {
+struct omx__lock {
   pthread_mutex_t mutex;
 };
 
@@ -34,7 +34,7 @@ struct omx__endpoint_lock {
 
 #else /* OMX_LIB_THREAD_SAFETY */
 
-struct omx__endpoint_lock {
+struct omx__lock {
   /* nothing */
 };
 
