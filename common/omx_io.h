@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x116
+#define OMX_DRIVER_ABI_VERSION		0x117
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -79,18 +79,25 @@ typedef uint8_t omx_user_region_id_t;
 
 struct omx_cmd_region_segment {
 	uint64_t vaddr;
+	/* 8 */
 	uint32_t len;
 	uint32_t pad;
+	/* 16 */
 };
 
 /* driver desc */
 struct omx_driver_desc {
 	uint32_t abi_version;
-	uint64_t jiffies;
 	uint32_t hz;
+	/* 8 */
+	uint64_t jiffies;
+	/* 16 */
 	uint32_t board_max;
 	uint32_t endpoint_max;
+	/* 24 */
 	uint32_t peer_max;
+	uint32_t pad;
+	/* 32 */
 };
 
 #define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
@@ -99,13 +106,18 @@ struct omx_driver_desc {
 /* endpoint desc */
 struct omx_endpoint_desc {
 	uint64_t status;
-	uint32_t session_id;
+	/* 8 */
 	uint64_t wakeup_jiffies;
-#define OMX_NO_WAKEUP_JIFFIES 0
+	/* 16 */
+	uint32_t session_id;
+	uint32_t pad;
+	/* 24 */
 };
 
 #define OMX_ENDPOINT_DESC_SIZE	sizeof(struct omx_endpoint_desc)
 #define OMX_ENDPOINT_DESC_FILE_OFFSET	(2*4096*4096)
+
+#define OMX_NO_WAKEUP_JIFFIES 0
 
 #define OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL (1ULL << 0)
 #define OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL (1ULL << 1)
@@ -119,45 +131,71 @@ struct omx_endpoint_desc {
 
 struct omx_cmd_get_board_info {
 	uint8_t board_index;
+	uint8_t pad[7];
+	/* 8 */
 	struct omx_board_info {
 		uint64_t addr;
+		/* 8 */
 		uint32_t numa_node;
+		uint32_t pad;
+		/* 16 */
 		char hostname[OMX_HOSTNAMELEN_MAX];
+		/* 96 */
 		char ifacename[OMX_IF_NAMESIZE];
+		/* 112 */
 	} info;
+	/* 120 */
 };
 
 struct omx_cmd_get_endpoint_info {
 	uint32_t board_index;
 	uint32_t endpoint_index;
+	/* 8 */
 	struct omx_endpoint_info {
 		uint32_t closed;
 		uint32_t pid;
+		/* 8 */
 		char command[OMX_COMMAND_LEN_MAX];
+		/* 40 */
 	} info;
+	/* 48 */
 };
 
 struct omx_cmd_get_counters {
 	uint32_t board_index;
 	uint8_t clear;
+	uint8_t pad1[3];
+	/* 8 */
 	uint64_t buffer_addr;
+	/* 16 */
 	uint32_t buffer_length;
+	uint32_t pad2;
+	/* 24 */
 };
 
 struct omx_cmd_set_hostname {
 	uint32_t board_index;
+	uint32_t pad;
+	/* 8 */
 	char hostname[OMX_HOSTNAMELEN_MAX];
+	/* 88 */
 };
 
 struct omx_cmd_misc_peer_info {
 	uint64_t board_addr;
+	/* 8 */
 	char hostname[OMX_HOSTNAMELEN_MAX];
+	/* 88 */
 	uint32_t index;
+	uint32_t pad;
+	/* 96 */
 };
 
 struct omx_cmd_open_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
+	uint8_t pad[6];
+	/* 8 */
 };
 
 struct omx_cmd_send_tiny {
@@ -175,6 +213,7 @@ struct omx_cmd_send_tiny {
 		uint64_t match_info;
 		/* 24 */
 	} hdr;
+	/* 24 */
 	char data[OMX_TINY_MAX];
 	/* 56 */
 };
@@ -231,6 +270,7 @@ struct omx_cmd_send_rndv {
 		uint64_t match_info;
 		/* 24 */
 	} hdr;
+	/* 24 */
 	char data[OMX_RNDV_DATA_MAX];
 	/* 32 */
 };
@@ -245,6 +285,7 @@ struct omx_cmd_send_connect {
 		uint8_t pad2;
 		/* 8 */
 	} hdr;
+	/* 8 */
 	char data[OMX_CONNECT_DATA_MAX];
 	/* 40 */
 };
@@ -298,6 +339,7 @@ struct omx_cmd_send_truc {
 		uint8_t pad[7];
 		/* 16 */
 	} hdr;
+	/* 16 */
 	char data[OMX_TRUC_DATA_MAX];
 	/* 48 */
 };
@@ -305,14 +347,20 @@ struct omx_cmd_send_truc {
 struct omx_cmd_register_region {
 	uint32_t nr_segments;
 	uint32_t id;
+	/* 8 */
 	uint32_t seqnum;
 	uint32_t pad;
+	/* 16 */
 	uint64_t memory_context;
+	/* 24 */
 	uint64_t segments;
+	/* 32 */
 };
 
 struct omx_cmd_deregister_region {
 	uint32_t id;
+	uint32_t pad;
+	/* 8 */
 };
 
 #define OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE	((uint64_t) -1)
@@ -327,13 +375,19 @@ struct omx_cmd_deregister_region {
 
 struct omx_cmd_wait_event {
 	uint8_t status;
+	uint8_t pad[7];
+	/* 8 */
 	uint64_t jiffies_expire; /* absolute jiffies where to wakeup, or OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE */
+	/* 16 */
 	uint32_t next_exp_event_offset;
 	uint32_t next_unexp_event_offset;
+	/* 24 */
 };
 
 struct omx_cmd_wakeup {
 	uint32_t status;
+	uint32_t pad;
+	/* 8 */
 };
 
 /* level 0 testing, only pass the command and get the endpoint, no parameter given */
@@ -352,6 +406,7 @@ struct omx_cmd_bench {
 		uint8_t pad[7];
 		/* 8 */
 	} hdr;
+	/* 8 */
 	char dummy_data[OMX_TINY_MAX];
 	/* 40 */
 };
@@ -539,7 +594,6 @@ union omx_evt {
 		uint16_t peer_index;
 		uint8_t src_endpoint;
 		uint8_t shared;
-		/* 4 */
 		uint16_t seqnum;
 		uint8_t length;
 		uint8_t pad2;
@@ -548,6 +602,7 @@ union omx_evt {
 		/* 40 */
 		uint8_t pad3[23];
 		uint8_t type;
+		/* 64 */
 	} recv_connect;
 
 	struct omx_evt_recv_truc {
@@ -560,6 +615,7 @@ union omx_evt {
 		/* 56 */
 		uint8_t pad3[7];
 		uint8_t type;
+		/* 64 */
 	} recv_truc;
 
 	struct omx_evt_recv_nack_lib {
@@ -571,6 +627,7 @@ union omx_evt {
 		/* 8 */
 		uint8_t pad3[55];
 		uint8_t type;
+		/* 64 */
 	} recv_nack_lib;
 
 	struct omx_evt_recv_msg {
