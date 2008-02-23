@@ -390,7 +390,7 @@ omx_connect(omx_endpoint_t ep,
   if (ret == OMX_SUCCESS) {
     switch (req->generic.status.code) {
     case OMX_STATUS_SUCCESS:
-      omx__partner_to_addr(req->generic.partner, addr);
+      *addr = req->generic.status.addr;
       ret = OMX_SUCCESS;
       break;
     case OMX_STATUS_BAD_KEY:
