@@ -160,13 +160,13 @@ omx__progress(struct omx_endpoint * ep);
 static inline struct omx__partner *
 omx__partner_from_addr(omx_endpoint_addr_t * addr)
 {
-  return *(struct omx__partner **) addr;
+  return ((struct omx__endpoint_addr *) addr)->partner;
 }
 
 static inline void
 omx__partner_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
 {
-  *(struct omx__partner **) addr = partner;
+  ((struct omx__endpoint_addr *) addr)->partner = partner;
   OMX_VALGRIND_MEMORY_MAKE_READABLE(addr, sizeof(*addr));
 }
 

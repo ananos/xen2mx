@@ -35,6 +35,7 @@ assertions(void)
   CHECK(OMX_IF_NAMESIZE == IF_NAMESIZE);
   CHECK(OMX_MEDIUM_FRAG_LENGTH_MAX <= OMX_RECVQ_ENTRY_SIZE);
   CHECK(OMX_MEDIUM_FRAG_LENGTH_MAX <= OMX_SENDQ_ENTRY_SIZE);
+  CHECK(sizeof(struct omx__endpoint_addr) == sizeof(struct omx_endpoint_addr));
 }
 
 
