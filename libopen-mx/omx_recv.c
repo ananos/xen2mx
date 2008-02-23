@@ -392,6 +392,9 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 {
   union omx_request * req = NULL;
   omx_unexp_handler_t handler = ep->unexp_handler;
+  omx_endpoint_addr_t source;
+ 
+  omx__partner_to_addr(partner, &source);
 
   /* try to match */
   omx__match_recv(ep, msg->match_info, &req);
@@ -400,7 +403,6 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
   if (unlikely(handler && !req)) {
     void * handler_context = ep->unexp_handler_context;
     omx_unexp_handler_action_t ret;
-    omx_endpoint_addr_t source;
     void * data_if_available = NULL;
 #ifdef OMX_LIB_DEBUG
     uint64_t omx_handler_jiffies_start;
@@ -410,8 +412,6 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       data_if_available = msg->specific.tiny.data;
     else if (msg->type == OMX_EVT_RECV_SMALL)
       data_if_available = data;
-
-    omx__partner_to_addr(partner, &source);
 
     omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_BY_API));
     omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER));
@@ -455,8 +455,8 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     uint32_t xfer_length;
 
     req->generic.partner = partner;
-    omx__partner_to_addr(partner, &req->generic.status.addr);
     req->recv.seqnum = seqnum;
+    req->generic.status.addr = source;
     req->generic.status.match_info = msg->match_info;
 
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_NEED_MATCHING);
@@ -500,8 +500,8 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     }
 
     req->generic.partner = partner;
-    omx__partner_to_addr(partner, &req->generic.status.addr);
     req->recv.seqnum = seqnum;
+    req->generic.status.addr = source;
     req->generic.status.match_info = msg->match_info;
     req->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED; /* the state of unexpected recv is always set here */
 
@@ -766,7 +766,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     uint32_t xfer_length;
 
     rreq->generic.partner = ep->myself;
-    omx__partner_to_addr(ep->myself, &rreq->generic.status.addr);
+    rreq->generic.status.addr = sreq->generic.status.addr;
     rreq->generic.status.match_info = match_info;
 
     omx__debug_assert(rreq->generic.state & OMX_REQUEST_STATE_RECV_NEED_MATCHING);
@@ -804,7 +804,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     omx_cache_single_segment(&rreq->recv.segs, unexp_buffer, msg_length);
 
     rreq->generic.partner = ep->myself;
-    omx__partner_to_addr(ep->myself, &rreq->generic.status.addr);
+    rreq->generic.status.addr = sreq->generic.status.addr;
     rreq->generic.status.match_info = match_info;
     rreq->generic.status.msg_length = msg_length;
 
