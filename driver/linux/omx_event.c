@@ -379,6 +379,8 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 		del_singleshot_timer_sync(&timer);
 
  wakeup:
+	set_current_state(TASK_RUNNING);
+
 	spin_lock_bh(&endpoint->event_lock);
 	list_del(&waiter.list_elt);
 	spin_unlock_bh(&endpoint->event_lock);
