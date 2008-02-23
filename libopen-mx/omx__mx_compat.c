@@ -314,14 +314,14 @@ mx_return_t
 mx_decompose_endpoint_addr(mx_endpoint_addr_t endpoint_addr,
 			   uint64_t *nic_id, uint32_t *endpoint_id)
 {
-  return omx_decompose_endpoint_addr(endpoint_addr, nic_id, endpoint_id, NULL);
+  return omx_decompose_endpoint_addr(endpoint_addr, nic_id, endpoint_id);
 }
 
 mx_return_t
 mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
 			    uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id)
 {
-  return omx_decompose_endpoint_addr(endpoint_addr, nic_id, endpoint_id, session_id);
+  return omx_decompose_endpoint_addr_with_session(endpoint_addr, nic_id, endpoint_id, session_id);
 }
 
 mx_return_t

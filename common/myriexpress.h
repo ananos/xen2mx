@@ -330,7 +330,7 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
 #define mx_nic_id_to_hostname(ni,h) omx_nic_id_to_hostname(ni,h)
 
 #define mx_connect(ep,nicid,eid,key,timeout,addr) omx_connect(ep,nicid,eid,key,timeout,addr)
-#define mx_decompose_endpoint_addr(addr,nicid,eid) omx_decompose_endpoint_addr(addr,nicid,eid,NULL)
+#define mx_decompose_endpoint_addr(addr,nicid,eid) omx_decompose_endpoint_addr(addr,nicid,eid)
 #define mx_get_endpoint_addr(ep,addr) omx_get_endpoint_addr(ep,addr)
 
 #define mx_strerror(ret) omx_strerror(ret)

@@ -88,7 +88,7 @@ extern mx_return_t mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
 #define mx_set_endpoint_addr_context(addr,ctx) omx_set_endpoint_addr_context(addr,ctx)
 #define mx_get_endpoint_addr_context(addr,ctx) omx_get_endpoint_addr_context(addr,ctx)
 
-#define mx_decompose_endpoint_addr2(addr,nid,eid,sid) omx_decompose_endpoint_add(addr,nid,eid,sid)
+#define mx_decompose_endpoint_addr2(addr,nid,eid,sid) omx_decompose_endpoint_addr_with_session(addr,nid,eid,sid)
 
 #endif /* !OMX_NO_FUNC_WRAPPERS */
 

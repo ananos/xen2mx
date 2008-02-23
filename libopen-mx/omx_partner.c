@@ -79,19 +79,29 @@ omx_get_endpoint_addr(omx_endpoint_t endpoint,
 /* API omx_decompose_endpoint_addr */
 omx_return_t
 omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
-			    uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id)
+			    uint64_t *nic_id, uint32_t *endpoint_id)
 {
   struct omx__partner *partner = omx__partner_from_addr(&endpoint_addr);
 
   /* no need to lock here, there's no possible race condition or so */
 
-  if (nic_id)
-    *nic_id = partner->board_addr;
-  if (endpoint_id)
-    *endpoint_id = partner->endpoint_index;
-  if (session_id)
-    *session_id = ((struct omx__endpoint_addr *) &endpoint_addr)->session_id;
+  *nic_id = partner->board_addr;
+  *endpoint_id = partner->endpoint_index;
+  return OMX_SUCCESS;
+}
 
+/* API omx_decompose_endpoint_addr_with_session */
+omx_return_t
+omx_decompose_endpoint_addr_with_session(omx_endpoint_addr_t endpoint_addr,
+					 uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id)
+{
+  struct omx__partner *partner = omx__partner_from_addr(&endpoint_addr);
+
+  /* no need to lock here, there's no possible race condition or so */
+
+  *nic_id = partner->board_addr;
+  *endpoint_id = partner->endpoint_index;
+  *session_id = ((struct omx__endpoint_addr *) &endpoint_addr)->session_id;
   return OMX_SUCCESS;
 }
 
