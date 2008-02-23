@@ -314,7 +314,14 @@ mx_return_t
 mx_decompose_endpoint_addr(mx_endpoint_addr_t endpoint_addr,
 			   uint64_t *nic_id, uint32_t *endpoint_id)
 {
-  return omx_decompose_endpoint_addr(endpoint_addr, nic_id, endpoint_id);
+  return omx_decompose_endpoint_addr(endpoint_addr, nic_id, endpoint_id, NULL);
+}
+
+mx_return_t
+mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
+			    uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id)
+{
+  return omx_decompose_endpoint_addr(endpoint_addr, nic_id, endpoint_id, session_id);
 }
 
 mx_return_t
@@ -385,11 +392,4 @@ mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uin
   return MX_BAD_BAD_BAD;
 }
 
-mx_return_t
-mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
-			    uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id)
-{
-  omx__abort("mx_decompose_endpoint_addr2 not implemented\n");
-  return MX_BAD_BAD_BAD;
-}
 #endif /* OMX_MX_API_UNSUPPORTED_COMPAT */

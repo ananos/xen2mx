@@ -465,7 +465,7 @@ int main(int argc, char *argv[])
     unidir = param.unidir;
     sync = param.sync;
 
-    ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index);
+    ret = omx_decompose_endpoint_addr(status.addr, &board_addr, &endpoint_index, NULL);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to decompose sender's address (%s)\n",
 	      omx_strerror(ret));

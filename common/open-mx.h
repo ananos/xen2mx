@@ -174,7 +174,7 @@ omx_disconnect(omx_endpoint_t ep, omx_endpoint_addr_t addr);
 
 omx_return_t
 omx_decompose_endpoint_addr(omx_endpoint_addr_t endpoint_addr,
-			    uint64_t *nic_id, uint32_t *endpoint_id);
+			    uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id);
 
 omx_return_t
 omx_set_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,

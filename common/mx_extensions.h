@@ -61,12 +61,7 @@ extern mx_return_t mx_get_endpoint_addr_context(mx_endpoint_addr_t endpoint_addr
 
 extern mx_return_t mx_set_request_timeout(mx_endpoint_t endpoint, mx_request_t request, uint32_t milli_seconds);
 
-#ifdef OMX_MX_API_UNSUPPORTED_COMPAT
-/*
- * Not implemented yet
- */
 extern mx_return_t mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr, uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id);
-#endif
 
 /******************************************
  * MX API wrappers (needed for API compat)
@@ -92,6 +87,8 @@ extern mx_return_t mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
 
 #define mx_set_endpoint_addr_context(addr,ctx) omx_set_endpoint_addr_context(addr,ctx)
 #define mx_get_endpoint_addr_context(addr,ctx) omx_get_endpoint_addr_context(addr,ctx)
+
+#define mx_decompose_endpoint_addr2(addr,nid,eid,sid) omx_decompose_endpoint_add(addr,nid,eid,sid)
 
 #endif /* !OMX_NO_FUNC_WRAPPERS */
 
