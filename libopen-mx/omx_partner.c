@@ -72,7 +72,7 @@ omx_get_endpoint_addr(omx_endpoint_t endpoint,
 {
   /* no need to lock here, there's no possible race condition or so */
 
-  omx__partner_to_addr(endpoint->myself, endpoint_addr);
+  omx__partner_session_to_addr(endpoint->myself, endpoint->desc->session_id, endpoint_addr);
   return OMX_SUCCESS;
 }
 
@@ -315,7 +315,7 @@ omx__connect_common(omx_endpoint_t ep,
     req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY;
     omx__enqueue_request(&ep->connect_req_q, req);
     omx__enqueue_partner_connect_request(partner, req);
-    omx__connect_complete(ep, req, OMX_STATUS_SUCCESS);
+    omx__connect_complete(ep, req, OMX_STATUS_SUCCESS, ep->desc->session_id);
     return OMX_SUCCESS;
   }
 #endif
@@ -466,7 +466,7 @@ omx_iconnect(omx_endpoint_t ep,
  */
 void
 omx__connect_complete(struct omx_endpoint *ep,
-		      union omx_request * req, omx_status_code_t status)
+		      union omx_request * req, omx_status_code_t status, uint32_t session_id)
 {
   struct omx__partner *partner = req->generic.partner;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
@@ -480,7 +480,7 @@ omx__connect_complete(struct omx_endpoint *ep,
     req->generic.status.code = status;
 
   if (status == OMX_STATUS_SUCCESS)
-    omx__partner_to_addr(partner, &req->generic.status.addr);
+    omx__partner_session_to_addr(partner, session_id, &req->generic.status.addr);
 
   /* move iconnect request to the done queue */
   omx__notify_request_done(ep, ctxid, req);
@@ -530,7 +530,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   omx__debug_printf(CONNECT, "waking up on connect reply\n");
 
   /* complete the request */
-  omx__connect_complete(ep, req, status_code);
+  omx__connect_complete(ep, req, status_code, target_session_id);
 
   /* update the partner afterwards, so that omx__partner_cleanup() does not find the current request too */
   if (status_code == OMX_STATUS_SUCCESS) {
@@ -819,7 +819,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   count = 0;
   omx__foreach_partner_connect_request_safe(partner, req, next) {
     omx__debug_printf(CONNECT, "Dropping pending connect %p\n", req);
-    omx__connect_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    omx__connect_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE, (uint32_t) -1);
     count++;
   }
   if (count)

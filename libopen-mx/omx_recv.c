@@ -393,8 +393,8 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
   union omx_request * req = NULL;
   omx_unexp_handler_t handler = ep->unexp_handler;
   omx_endpoint_addr_t source;
- 
-  omx__partner_to_addr(partner, &source);
+
+  omx__partner_recv_to_addr(partner, &source);
 
   /* try to match */
   omx__match_recv(ep, msg->match_info, &req);

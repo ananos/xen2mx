@@ -193,7 +193,7 @@ omx__handle_nack(struct omx_endpoint *ep,
      * but this protocol is crap so far since we can't distinguish between nacks for send and connect
      */
     if (req->connect.connect_seqnum == seqnum) {
-      omx__connect_complete(ep, req, status);
+      omx__connect_complete(ep, req, status, (uint32_t) -1);
       return OMX_SUCCESS;
     }
   }

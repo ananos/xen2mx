@@ -161,8 +161,9 @@ struct omx__partner {
 /* the internal structure hidden behind an API omx_endpoint_addr */
 struct omx__endpoint_addr {
   struct omx__partner * partner;
+  char pad[sizeof(struct omx_endpoint_addr) - sizeof(struct omx__partner *) - sizeof(uint32_t)];
+  uint32_t session_id;
   /* pad to the exact API size to avoid aliasing problems */
-  char pad[sizeof(struct omx_endpoint_addr) - sizeof(struct omx__partner *)];
 };
 
 #define CTXID_FROM_MATCHING(ep, match) ((uint32_t)(((match) >> (ep)->ctxid_shift) & ((ep)->ctxid_max-1)))

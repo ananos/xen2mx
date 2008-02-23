@@ -164,10 +164,18 @@ omx__partner_from_addr(omx_endpoint_addr_t * addr)
 }
 
 static inline void
-omx__partner_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
+omx__partner_session_to_addr(struct omx__partner * partner, uint32_t session_id,
+			     omx_endpoint_addr_t * addr)
 {
   ((struct omx__endpoint_addr *) addr)->partner = partner;
+  ((struct omx__endpoint_addr *) addr)->session_id = session_id;
   OMX_VALGRIND_MEMORY_MAKE_READABLE(addr, sizeof(*addr));
+}
+
+static inline void
+omx__partner_recv_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
+{
+  omx__partner_session_to_addr(partner, partner->back_session_id, addr);
 }
 
 static inline int
@@ -209,7 +217,7 @@ omx__process_recv_connect(struct omx_endpoint *ep,
 
 extern void
 omx__connect_complete(struct omx_endpoint *ep, union omx_request *req,
-		      omx_status_code_t status);
+		      omx_status_code_t status, uint32_t session_id);
 
 omx_return_t
 omx__connect_wait(omx_endpoint_t ep, union omx_request * req,
