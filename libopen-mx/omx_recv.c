@@ -700,7 +700,6 @@ omx__process_self_send(struct omx_endpoint *ep,
 
   sreq->generic.type = OMX_REQUEST_TYPE_SEND_SELF;
   sreq->generic.partner = ep->myself;
-  omx__partner_to_addr(ep->myself, &sreq->generic.status.addr);
   sreq->generic.status.match_info = match_info;
   sreq->generic.status.msg_length = msg_length;
   /* xfer_length will be set on matching */
