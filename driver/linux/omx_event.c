@@ -370,16 +370,24 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 			(unsigned long long) timer_jiffies, (unsigned long long) jiffies);
 	}
 
-	dprintk(EVENT, "going to sleep at %lld\n", (unsigned long long) jiffies);
-	schedule();
-	dprintk(EVENT, "waking up from sleep at %lld\n", (unsigned long long) jiffies);
+	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_NONE
+	    && !signal_pending(current)) {
+		/* if nothing happened, let's go to sleep */
+		dprintk(EVENT, "going to sleep at %lld\n", (unsigned long long) jiffies);
+		schedule();
+		dprintk(EVENT, "waking up from sleep at %lld\n", (unsigned long long) jiffies);
+
+	} else {
+		/* already "woken-up", no need to sleep */
+		dprintk(EVENT, "not going to sleep, status is already %d\n", (unsigned) waiter.status);
+	}
 
 	/* remove the timer */
 	if (timer_handler)
 		del_singleshot_timer_sync(&timer);
 
  wakeup:
-	set_current_state(TASK_RUNNING);
+	__set_current_state(TASK_RUNNING); /* no need to serialize with below, __set is enough */
 
 	spin_lock_bh(&endpoint->event_lock);
 	list_del(&waiter.list_elt);
