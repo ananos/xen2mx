@@ -782,6 +782,12 @@ omx__process_self_send(struct omx_endpoint *ep,
     omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
     omx__recv_complete(ep, rreq, OMX_STATUS_SUCCESS);
 
+    /*
+     * need to wakeup some possible send-done or recv-done waiters
+     * since this event does not come from the driver
+     */
+    omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+
   } else {
     /* unexpected, even after the handler */
     void *unexp_buffer = NULL;
@@ -820,8 +826,6 @@ omx__process_self_send(struct omx_endpoint *ep,
     sreq->generic.state = OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED; /* the state of unexpected self recv is always set here */
     omx__enqueue_request(&ep->send_self_unexp_req_q, sreq);
   }
-
-  omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
   return OMX_SUCCESS;
 }
@@ -920,6 +924,12 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 	omx__dequeue_request(&ep->send_self_unexp_req_q, sreq);
 	sreq->generic.status.xfer_length = xfer_length;
 	omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
+
+	/*
+	 * need to wakeup some possible send-done or recv-done waiters
+	 * since this event does not come from the driver
+	 */
+	omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
       } else {
 	/* it's a tiny/small/medium, copy the data back to our buffer */

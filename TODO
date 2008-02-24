@@ -1,6 +1,12 @@
 * thread safety
+  + wakeup waiters if completing on event non-coming from the driver
+    - send without ack (zombie)
+    - recv unexpected matched on irecv
+    - local connect
   + filter wakeup on recv/send/connect/...
   + filter on specific request id too
+  + do nothing in wakeup without thread-safety
+    (and add a comment about external thread/event libraries)
 
 * send failed with status (Endpoint Closed)
   omx_pingpong: /home/bgoglin/open-mx/build-x86_64/../src/libopen-mx/omx_large.c:96: 
