@@ -179,7 +179,7 @@ omx__partner_check_localization(struct omx__partner * partner, int shared)
   if (partner->localization == OMX__PARTNER_LOCALIZATION_UNKNOWN) {
     partner->localization = localization;
     if (shared)
-      omx__debug_printf(MAIN, "using shared communication for partner index %d\n", (unsigned) partner->peer_index);
+      omx__debug_printf(CONNECT, "Using shared communication for partner index %d\n", (unsigned) partner->peer_index);
   } else {
     omx__debug_assert(partner->localization == localization);
   }

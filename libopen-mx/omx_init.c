@@ -88,12 +88,14 @@ omx__init_api(int api)
     }
   }
 #endif
+  omx__globals.verbose = OMX_VERBOSE_ALWAYS; /* always shown by default */
+
   if (env) {
     char *next;
     unsigned long val = strtoul(env, &next, 0);
     if (env == next) {
       int i;
-      val = OMX_VERBOSE_MAIN;
+      val = omx__globals.verbose;
       for(i=0; env[i]!='\0'; i++) {
 	switch (env[i]) {
 	case 'P': val |= OMX_VERBOSE_ENDPOINT; break;
@@ -124,12 +126,12 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_MAX_RETRIES");
     if (env)
-      omx__debug_printf(MAIN, "Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
+      omx__debug_printf(ALWAYS, "Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
   }
 #endif
   if (env) {
     omx__globals.req_resends_max = atoi(env);
-    omx__debug_printf(MAIN, "Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
+    omx__debug_printf(ALWAYS, "Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
   }
 
   /* regcache configuration */
@@ -139,12 +141,12 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_RCACHE");
     if (env)
-      omx__debug_printf(MAIN, "Emulating MX_RCACHE as OMX_RCACHE\n");
+      omx__debug_printf(ALWAYS, "Emulating MX_RCACHE as OMX_RCACHE\n");
   }
 #endif
   if (env) {
     omx__globals.regcache = atoi(env);
-    omx__debug_printf(MAIN, "Forcing regcache to %s\n",
+    omx__debug_printf(ALWAYS, "Forcing regcache to %s\n",
 		      omx__globals.regcache ? "enabled" : "disabled");
   }
 
@@ -154,7 +156,7 @@ omx__init_api(int api)
   /* could be enabled by MX_MONOTHREAD */
   if (env) {
     omx__globals.waitspin = atoi(env);
-    omx__debug_printf(MAIN, "Forcing waitspin to %s\n",
+    omx__debug_printf(ALWAYS, "Forcing waitspin to %s\n",
 		      omx__globals.waitspin ? "enabled" : "disabled");
   }
 
@@ -165,12 +167,12 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_ZOMBIE_SEND");
     if (env)
-      omx__debug_printf(MAIN, "Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
+      omx__debug_printf(ALWAYS, "Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
   }
 #endif
   if (env) {
     omx__globals.zombie_max = atoi(env);
-    omx__debug_printf(MAIN, "Forcing zombie max to %d\n",
+    omx__debug_printf(ALWAYS, "Forcing zombie max to %d\n",
 		      omx__globals.zombie_max);
   }
 
@@ -182,12 +184,12 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_DISABLE_SELF");
     if (env)
-      omx__debug_printf(MAIN, "Emulating MX_DISABLE_SELF as OMX_DISABLE_SELF\n");
+      omx__debug_printf(ALWAYS, "Emulating MX_DISABLE_SELF as OMX_DISABLE_SELF\n");
   }
 #endif
   if (env) {
     omx__globals.selfcomms = !atoi(env);
-    omx__debug_printf(MAIN, "Forcing self comms to %s\n",
+    omx__debug_printf(ALWAYS, "Forcing self comms to %s\n",
 		      omx__globals.selfcomms ? "enabled" : "disabled");
   }
 #endif
@@ -200,12 +202,12 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_DISABLE_SHMEM");
     if (env)
-      omx__debug_printf(MAIN, "Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
+      omx__debug_printf(ALWAYS, "Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
   }
 #endif
   if (env) {
     omx__globals.sharedcomms = !atoi(env);
-    omx__debug_printf(MAIN, "Forcing shared comms to %s\n",
+    omx__debug_printf(ALWAYS, "Forcing shared comms to %s\n",
 		      omx__globals.sharedcomms ? "enabled" : "disabled");
   }
 #endif
@@ -215,7 +217,7 @@ omx__init_api(int api)
   env = getenv("OMX_WAITINTR");
   if (env) {
     omx__globals.waitintr = atoi(env);
-    omx__debug_printf(MAIN, "Forcing interrupted wait to %s\n",
+    omx__debug_printf(ALWAYS, "Forcing interrupted wait to %s\n",
 		      omx__globals.waitintr ? "exit as timeout" : "go back to sleep");
   }
 

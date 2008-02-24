@@ -40,7 +40,7 @@
 
 #ifdef OMX_LIB_DEBUG
 
-#define OMX_VERBOSE_MAIN (1<<0)
+#define OMX_VERBOSE_ALWAYS (1<<0)
 #define OMX_VERBOSE_ENDPOINT (1<<1)
 #define OMX_VERBOSE_CONNECT (1<<2)
 #define OMX_VERBOSE_SEND (1<<3)
@@ -59,7 +59,7 @@
 #define INLINE
 #define omx__debug_assert(x) assert(x)
 #define omx__debug_instr(x) do { x; } while (0)
-#define omx__debug_printf(type,args...) do { if (omx__verbose_type_enabled(type)) fprintf(stderr, args); } while (0)
+#define omx__debug_printf(type,args...) do { if (omx__verbose_type_enabled(type)) fprintf(stderr, "Open-MX: " args); } while (0)
 
 #else /* OMX_LIB_DEBUG */
 
@@ -145,7 +145,7 @@ omx__check_timeout(uint32_t ms, uint64_t expire)
   uint64_t now = omx__driver_desc->jiffies;
   if (ms != OMX_TIMEOUT_INFINITE && now > expire + 2)
     /* tolerate 2 jiffies of timeshift */
-    omx__debug_printf(MAIN, "sleep for %ld ms slept until jiffies %lld instead of %lld\n",
+    omx__debug_printf(ALWAYS, "Sleep for %ld ms actually slept until jiffies %lld instead of %lld\n",
 		      (unsigned long) ms, (unsigned long long) now, (unsigned long long) expire);
 #endif
 }

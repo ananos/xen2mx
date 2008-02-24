@@ -432,7 +432,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     uint64_t now = omx__driver_desc->jiffies;
     uint64_t delay = now - omx_handler_jiffies_start;
     if (delay > omx__driver_desc->hz)
-      omx__debug_printf(MAIN, "unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
+      omx__debug_printf(ALWAYS, "Unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
 			(unsigned long long) delay/omx__driver_desc->hz, (unsigned long long) delay);
   }
 #endif
@@ -740,7 +740,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     uint64_t now = omx__driver_desc->jiffies;
     uint64_t delay = now - omx_handler_jiffies_start;
     if (delay > omx__driver_desc->hz)
-      omx__debug_printf(MAIN, "unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
+      omx__debug_printf(ALWAYS, "Unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
 			(unsigned long long) delay/omx__driver_desc->hz, (unsigned long long) delay);
   }
 #endif
