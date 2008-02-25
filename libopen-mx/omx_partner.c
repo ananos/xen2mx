@@ -331,6 +331,13 @@ omx__connect_common(omx_endpoint_t ep,
     omx__enqueue_request(&ep->connect_req_q, req);
     omx__enqueue_partner_connect_request(partner, req);
     omx__connect_complete(ep, req, OMX_STATUS_SUCCESS, ep->desc->session_id);
+
+    /*
+     * need to wakeup some possible connect-done waiters
+     * since this event does not come from the driver
+     */
+    omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+
     return OMX_SUCCESS;
   }
 #endif

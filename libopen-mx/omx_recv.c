@@ -944,6 +944,12 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 	  omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
 	} else {
 	  omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+
+	  /*
+	   * need to wakeup some possible recv-done waiters
+	   * since this event does not come from the driver
+	   */
+	  omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 	}
       }
 

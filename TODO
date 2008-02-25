@@ -1,8 +1,4 @@
 * thread safety
-  + wakeup waiters if completing on event non-coming from the driver
-    - send without ack (zombie)
-    - recv unexpected matched on irecv
-    - local connect
   + filter wakeup on recv/send/connect/...
   + filter on specific request id too
   + add a user-event index in the user ep desc and wait ioctl
