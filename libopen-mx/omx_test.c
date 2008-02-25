@@ -747,7 +747,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
   struct omx_cmd_wait_event wait_param;
   struct omx__sleeper sleeper;
   uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
-  omx_return_t ret;
+  omx_return_t ret = OMX_SUCCESS;
 
   sleeper.need_wakeup = 0;
   list_add_tail(&sleeper.list_elt, &ep->sleepers);
