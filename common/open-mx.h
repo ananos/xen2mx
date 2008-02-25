@@ -55,6 +55,7 @@ enum omx_return {
   OMX_NO_SYSTEM_RESOURCES = 97,
   OMX_INVALID_PARAMETER = 98,
   OMX_NOT_IMPLEMENTED = 99,
+  OMX_RETURN_CODE_MAX = 100,
 };
 typedef enum omx_return omx_return_t;
 

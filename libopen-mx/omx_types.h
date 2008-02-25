@@ -456,5 +456,9 @@ struct omx__globals {
   unsigned resend_delay_jiffies;
   unsigned req_resends_max;
 };
+enum omx__internal_return_code {
+  OMX_INTERNAL_RETURN_CODE_MIN = 101,
+  OMX_INTERNAL_RETURN_CODE_WAIT_ABORT,
+};
 
 #endif /* __omx_types_h__ */

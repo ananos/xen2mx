@@ -93,6 +93,8 @@ omx_strerror(omx_return_t ret)
     return "Invalid parameter";
   case OMX_NOT_IMPLEMENTED:
     return "Not implemented";
+  case OMX_RETURN_CODE_MAX:
+    return "Maximum return code";
   }
   omx__abort("Failed to stringify unknown return value %d\n",
 	     ret);
