@@ -841,25 +841,6 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
 static INLINE omx_return_t
 omx__wakeup(struct omx_endpoint *ep, uint32_t status)
 {
-  struct omx_cmd_wakeup wakeup;
-  int err;
-
-  wakeup.status = status;
-
-  err = ioctl(ep->fd, OMX_CMD_WAKEUP, &wakeup);
-  if (unlikely(err < 0))
-    return omx__errno_to_return("ioctl WAKEUP");
-
-  return OMX_SUCCESS;
-}
-
-/* API omx_wakeup */
-omx_return_t
-omx_wakeup(struct omx_endpoint *ep)
-{
-  omx_return_t ret  = OMX_SUCCESS;
-  OMX__ENDPOINT_LOCK(ep);
-
   if (omx__globals.waitspin) {
     /* change waitspiner's wakeup status */
     struct omx__sleeper *sleeper;
@@ -868,11 +849,17 @@ omx_wakeup(struct omx_endpoint *ep)
 
   } else if (!list_empty(&ep->sleepers)) {
     /* enter the driver to wakeup sleeper if any */
-    ret = omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_WAKEUP);
+    struct omx_cmd_wakeup wakeup;
+    int err;
+
+    wakeup.status = status;
+
+    err = ioctl(ep->fd, OMX_CMD_WAKEUP, &wakeup);
+    if (unlikely(err < 0))
+      return omx__errno_to_return("ioctl WAKEUP");
   }
 
-  OMX__ENDPOINT_UNLOCK(ep);
-  return ret;
+  return OMX_SUCCESS;
 }
 
 /* add a user-generated event and wakeup in-driver sleepers if necessary */
@@ -882,4 +869,15 @@ omx__notify_user_event(struct omx_endpoint *ep)
   ep->desc->user_event_index++;
 
   omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+}
+
+/* API omx_wakeup */
+omx_return_t
+omx_wakeup(struct omx_endpoint *ep)
+{
+  omx_return_t ret  = OMX_SUCCESS;
+  OMX__ENDPOINT_LOCK(ep);
+  ret = omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_WAKEUP);
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
 }
