@@ -133,7 +133,7 @@ omx__notify_request_done_early(struct omx_endpoint *ep, uint32_t ctxid,
    * need to wakeup some possible send-done waiters (or recv-done for notify)
    * since this event does not come from the driver
    */
-  omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+  omx__notify_user_event(ep);
 }
 
 static inline void

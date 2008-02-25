@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x117
+#define OMX_DRIVER_ABI_VERSION		0x118
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -110,7 +110,7 @@ struct omx_endpoint_desc {
 	uint64_t wakeup_jiffies;
 	/* 16 */
 	uint32_t session_id;
-	uint32_t pad;
+	uint32_t user_event_index;
 	/* 24 */
 };
 
@@ -375,12 +375,13 @@ struct omx_cmd_deregister_region {
 
 struct omx_cmd_wait_event {
 	uint8_t status;
-	uint8_t pad[7];
-	/* 8 */
-	uint64_t jiffies_expire; /* absolute jiffies where to wakeup, or OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE */
-	/* 16 */
+	uint8_t pad[3];
+	/* 4 */
+	uint32_t user_event_index;
 	uint32_t next_exp_event_offset;
 	uint32_t next_unexp_event_offset;
+	/* 16 */
+	uint64_t jiffies_expire; /* absolute jiffies where to wakeup, or OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE */
 	/* 24 */
 };
 

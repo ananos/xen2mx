@@ -324,12 +324,15 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
 	/* check for race conditions */
 	if ((cmd.next_exp_event_offset != endpoint->next_exp_eventq_offset)
-	    || (cmd.next_unexp_event_offset != endpoint->next_reserved_unexp_eventq_offset)) {
-		dprintk(EVENT, "wait event race (%ld,%ld) != (%ld,%ld)\n",
+	    || (cmd.next_unexp_event_offset != endpoint->next_reserved_unexp_eventq_offset)
+	    || (cmd.user_event_index != endpoint->userdesc->user_event_index)) {
+		dprintk(EVENT, "wait event race (%ld,%ld,%ld) != (%ld,%ld,%ld)\n",
 			(unsigned long) cmd.next_exp_event_offset,
 			(unsigned long) cmd.next_unexp_event_offset,
+			(unsigned long) cmd.user_event_index,
 			endpoint->next_exp_eventq_offset,
-			endpoint->next_reserved_unexp_eventq_offset);
+			endpoint->next_reserved_unexp_eventq_offset,
+			(unsigned long) endpoint->userdesc->user_event_index);
 		spin_unlock_bh(&endpoint->event_lock);
 		cmd.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
 		goto race;

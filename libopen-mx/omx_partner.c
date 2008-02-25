@@ -336,7 +336,7 @@ omx__connect_common(omx_endpoint_t ep,
      * need to wakeup some possible connect-done waiters
      * since this event does not come from the driver
      */
-    omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+    omx__notify_user_event(ep);
 
     return OMX_SUCCESS;
   }

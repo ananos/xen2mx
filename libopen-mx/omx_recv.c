@@ -786,7 +786,7 @@ omx__process_self_send(struct omx_endpoint *ep,
      * need to wakeup some possible send-done or recv-done waiters
      * since this event does not come from the driver
      */
-    omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+    omx__notify_user_event(ep);
 
   } else {
     /* unexpected, even after the handler */
@@ -929,7 +929,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 	 * need to wakeup some possible send-done or recv-done waiters
 	 * since this event does not come from the driver
 	 */
-	omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+	omx__notify_user_event(ep);
 
       } else {
 	/* it's a tiny/small/medium, copy the data back to our buffer */
@@ -949,7 +949,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 	   * need to wakeup some possible recv-done waiters
 	   * since this event does not come from the driver
 	   */
-	  omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+	  omx__notify_user_event(ep);
 	}
       }
 

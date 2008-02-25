@@ -152,6 +152,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    wait_param.user_event_index = ep->desc->user_event_index;
     omx__prepare_progress_wakeup(ep);
 
     /* release the lock while sleeping */
@@ -343,6 +344,7 @@ omx_wait_any(struct omx_endpoint *ep,
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    wait_param.user_event_index = ep->desc->user_event_index;
     omx__prepare_progress_wakeup(ep);
 
     /* release the lock while sleeping */
@@ -486,6 +488,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    wait_param.user_event_index = ep->desc->user_event_index;
     omx__prepare_progress_wakeup(ep);
 
     /* release the lock while sleeping */
@@ -702,6 +705,7 @@ omx_probe(struct omx_endpoint *ep,
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    wait_param.user_event_index = ep->desc->user_event_index;
     omx__prepare_progress_wakeup(ep);
 
     /* release the lock while sleeping */
@@ -802,6 +806,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
 
     wait_param.next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
     wait_param.next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+    wait_param.user_event_index = ep->desc->user_event_index;
     omx__prepare_progress_wakeup(ep);
 
     /* release the lock while sleeping */
@@ -833,7 +838,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
  * Wakeup waiters
  */
 
-omx_return_t
+static INLINE omx_return_t
 omx__wakeup(struct omx_endpoint *ep, uint32_t status)
 {
   struct omx_cmd_wakeup wakeup;
@@ -868,4 +873,13 @@ omx_wakeup(struct omx_endpoint *ep)
 
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
+}
+
+/* add a user-generated event and wakeup in-driver sleepers if necessary */
+void
+omx__notify_user_event(struct omx_endpoint *ep)
+{
+  ep->desc->user_event_index++;
+
+  omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 }

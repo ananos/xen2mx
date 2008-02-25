@@ -320,6 +320,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   INIT_LIST_HEAD(&ep->sleepers);
 
+  ep->desc->user_event_index = 0;
+
   omx__progress(ep);
 
   *epp = ep;
