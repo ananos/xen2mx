@@ -772,6 +772,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
       OMX__ENDPOINT_LOCK(ep);
     }
 
+    ret = OMX_CONNECTION_TIMEOUT;
     goto out;
   }
 
