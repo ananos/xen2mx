@@ -236,6 +236,8 @@ struct omx_endpoint {
   struct list_head partners_to_ack_list;
   struct list_head throttling_partners_list;
 
+  struct list_head sleepers;
+
   struct list_head reg_list; /* registered single-segment windows */
   struct list_head reg_unused_list; /* unused registered single-segment windows, LRU in front */
   struct list_head reg_vect_list; /* registered vectorial windows (uncached) */

@@ -22,6 +22,11 @@
 #include "omx_lib.h"
 #include "omx_request.h"
 
+struct omx__sleeper {
+  struct list_head list_elt;
+  int need_wakeup;
+};
+
 /*********************************************
  * Test/Wait a single request and complete it
  */
@@ -88,15 +93,18 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 	 uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
+  struct omx__sleeper sleeper;
   uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
   uint32_t result = 0;
 
   OMX__ENDPOINT_LOCK(ep);
+  sleeper.need_wakeup = 0;
+  list_add_tail(&sleeper.list_elt, &ep->sleepers);
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
-    while (1) {
+    while (!sleeper.need_wakeup) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
 	goto out_with_lock;
@@ -111,6 +119,8 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
       OMX__ENDPOINT_UNLOCK(ep);
       OMX__ENDPOINT_LOCK(ep);
     }
+
+    goto out_with_lock;
   }
 
   wait_param.jiffies_expire = jiffies_expire;
@@ -165,6 +175,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   }
 
  out_with_lock:
+  list_del(&sleeper.list_elt);
   OMX__ENDPOINT_UNLOCK(ep);
   *resultp = result;
   return ret;
@@ -262,6 +273,7 @@ omx_wait_any(struct omx_endpoint *ep,
 	     uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
+  struct omx__sleeper sleeper;
   uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
   uint32_t result = 0;
@@ -278,10 +290,12 @@ omx_wait_any(struct omx_endpoint *ep,
   }
 
   OMX__ENDPOINT_LOCK(ep);
+  sleeper.need_wakeup = 0;
+  list_add_tail(&sleeper.list_elt, &ep->sleepers);
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
-    while (1) {
+    while (!sleeper.need_wakeup) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
 	goto out_with_lock;
@@ -296,6 +310,8 @@ omx_wait_any(struct omx_endpoint *ep,
       OMX__ENDPOINT_UNLOCK(ep);
       OMX__ENDPOINT_LOCK(ep);
     }
+
+    goto out_with_lock;
   }
 
   wait_param.jiffies_expire = jiffies_expire;
@@ -350,6 +366,7 @@ omx_wait_any(struct omx_endpoint *ep,
   }
 
  out_with_lock:
+  list_del(&sleeper.list_elt);
   OMX__ENDPOINT_UNLOCK(ep);
  out:
   *resultp = result;
@@ -405,6 +422,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 	 uint32_t *resultp, uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
+  struct omx__sleeper sleeper;
   uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
   uint32_t result = 0;
@@ -415,10 +433,12 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
   }
 
   OMX__ENDPOINT_LOCK(ep);
+  sleeper.need_wakeup = 0;
+  list_add_tail(&sleeper.list_elt, &ep->sleepers);
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
-    while (1) {
+    while (!sleeper.need_wakeup) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
 	goto out_with_lock;
@@ -433,6 +453,8 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
       OMX__ENDPOINT_UNLOCK(ep);
       OMX__ENDPOINT_LOCK(ep);
     }
+
+    goto out_with_lock;
   }
 
   wait_param.jiffies_expire = jiffies_expire;
@@ -487,6 +509,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
   }
 
  out_with_lock:
+  list_del(&sleeper.list_elt);
   OMX__ENDPOINT_UNLOCK(ep);
  out:
   *resultp = result;
@@ -609,6 +632,7 @@ omx_probe(struct omx_endpoint *ep,
 	  uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
+  struct omx__sleeper sleeper;
   uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
   uint32_t result = 0;
@@ -625,10 +649,12 @@ omx_probe(struct omx_endpoint *ep,
   }
 
   OMX__ENDPOINT_LOCK(ep);
+  sleeper.need_wakeup = 0;
+  list_add_tail(&sleeper.list_elt, &ep->sleepers);
 
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
-    while (1) {
+    while (!sleeper.need_wakeup) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
 	goto out_with_lock;
@@ -643,6 +669,8 @@ omx_probe(struct omx_endpoint *ep,
       OMX__ENDPOINT_UNLOCK(ep);
       OMX__ENDPOINT_LOCK(ep);
     }
+
+    goto out_with_lock;
   }
 
   wait_param.jiffies_expire = jiffies_expire;
@@ -697,6 +725,7 @@ omx_probe(struct omx_endpoint *ep,
   }
 
  out_with_lock:
+  list_del(&sleeper.list_elt);
   OMX__ENDPOINT_UNLOCK(ep);
  out:
   *resultp = result;
@@ -712,26 +741,34 @@ omx_return_t
 omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeout)
 {
   struct omx_cmd_wait_event wait_param;
+  struct omx__sleeper sleeper;
   uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret;
 
+  sleeper.need_wakeup = 0;
+  list_add_tail(&sleeper.list_elt, &ep->sleepers);
+
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
-    while (1) {
+    while (!sleeper.need_wakeup) {
       ret = omx__progress(ep);
       if (unlikely(ret != OMX_SUCCESS))
-	return ret;
+	goto out;
 
       if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
-	return OMX_SUCCESS;
+	goto out;
 
-      if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire)
-	return OMX_CONNECTION_TIMEOUT;
+      if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire) {
+	ret = OMX_CONNECTION_TIMEOUT;
+	goto out;
+      }
 
       /* release the lock a bit */
       OMX__ENDPOINT_UNLOCK(ep);
       OMX__ENDPOINT_LOCK(ep);
     }
+
+    goto out;
   }
 
   wait_param.jiffies_expire = jiffies_expire;
@@ -742,16 +779,18 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
 
     ret = omx__progress(ep);
     if (unlikely(ret != OMX_SUCCESS))
-      return ret;
+      goto out;
 
     if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
-      return OMX_SUCCESS;
+      goto out;
 
     if (omx__driver_desc->jiffies >= wait_param.jiffies_expire
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
 	|| wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
-	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR))
-      return OMX_CONNECTION_TIMEOUT;
+	|| (omx__globals.waitintr && wait_param.status == OMX_CMD_WAIT_EVENT_STATUS_INTR)) {
+      ret = OMX_CONNECTION_TIMEOUT;
+      goto out;
+    }
 
     if (ms_timeout == OMX_TIMEOUT_INFINITE)
       omx__debug_printf(WAIT, "omx_connect going to sleep at %lld for ever\n",
@@ -777,13 +816,17 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
     omx__debug_printf(WAIT, "omx_connect woken up at %lld\n",
 		      (unsigned long long) omx__driver_desc->jiffies);
 
-    if (unlikely(err < 0))
-      return omx__errno_to_return("ioctl WAIT_EVENT");
+    if (unlikely(err < 0)) {
+      ret = omx__errno_to_return("ioctl WAIT_EVENT");
+      goto out;
+    }
 
     omx__debug_printf(WAIT, "omx_connect wait event result %d\n", wait_param.status);
   }
 
-  return OMX_SUCCESS;
+ out:
+  list_del(&sleeper.list_elt);
+  return ret;
 }
 
 /*****************
@@ -809,9 +852,20 @@ omx__wakeup(struct omx_endpoint *ep, uint32_t status)
 omx_return_t
 omx_wakeup(struct omx_endpoint *ep)
 {
-  omx_return_t ret;
+  omx_return_t ret  = OMX_SUCCESS;
   OMX__ENDPOINT_LOCK(ep);
-  ret = omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_WAKEUP);
+
+  if (omx__globals.waitspin) {
+    /* change waitspiner's wakeup status */
+    struct omx__sleeper *sleeper;
+    list_for_each_entry(sleeper, &ep->sleepers, list_elt)
+      sleeper->need_wakeup = 1;
+
+  } else if (!list_empty(&ep->sleepers)) {
+    /* enter the driver to wakeup sleeper if any */
+    ret = omx__wakeup(ep, OMX_CMD_WAIT_EVENT_STATUS_WAKEUP);
+  }
+
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
