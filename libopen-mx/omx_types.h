@@ -67,6 +67,19 @@ typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
 #define OMX__SESNUM_ONE (1UL<<OMX__SEQNUM_BITS)
 #define OMX__SESNUM_MASK (((1UL<<OMX__SESNUM_BITS)-1)<<OMX__SEQNUM_BITS)
 #define OMX__SESNUM(x) ((x) & OMX__SESNUM_MASK)
+#define OMX__SESNUM_SHIFTED(x) (OMX__SESNUM(x) >> OMX__SEQNUM_BITS)
+
+#define OMX__SEQNUM_INCREASE_BY(x,n) do {      \
+  omx__seqnum_t old = x;                       \
+  x = OMX__SESNUM(old) | OMX__SEQNUM(old + n); \
+} while (0)
+
+#define OMX__SEQNUM_INCREASE(x) OMX__SEQNUM_INCREASE_BY(x,1)
+
+#define OMX__SEQNUM_RESET(x) do {        \
+  omx__seqnum_t old = x;                 \
+  x = OMX__SESNUM(old) | OMX__SEQNUM(1); \
+} while (0)
 
 /* limit the seqnum offset of early packets,
  * and drop the other ones as obsolete from the previous wrap-around

@@ -109,7 +109,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
   req->generic.type = OMX_REQUEST_TYPE_SEND_TINY;
 
   seqnum = partner->next_send_seq;
-  partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
+  OMX__SEQNUM_INCREASE(partner->next_send_seq);
   req->generic.resends = 0;
 
   tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
@@ -194,7 +194,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   }
 
   seqnum = partner->next_send_seq;
-  partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
+  OMX__SEQNUM_INCREASE(partner->next_send_seq);
   req->generic.resends = 0;
 
   small_param = &req->send.specific.small.send_small_ioctl_param;
@@ -400,7 +400,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
 
   seqnum = partner->next_send_seq;
-  partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
+  OMX__SEQNUM_INCREASE(partner->next_send_seq);
   req->generic.send_seqnum = seqnum;
 
   /* need to wait for a done event, since the sendq pages
@@ -505,7 +505,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   req->generic.type = OMX_REQUEST_TYPE_SEND_LARGE;
 
   seqnum = partner->next_send_seq;
-  partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
+  OMX__SEQNUM_INCREASE(partner->next_send_seq);
   req->generic.send_seqnum = seqnum;
   req->generic.resends = 0;
   req->generic.resends_max = ep->req_resends_max;
@@ -569,7 +569,7 @@ omx__submit_notify(struct omx_endpoint *ep,
   partner = req->generic.partner;
 
   seqnum = partner->next_send_seq;
-  partner->next_send_seq = OMX__SEQNUM(partner->next_send_seq + 1);
+  OMX__SEQNUM_INCREASE(partner->next_send_seq);
 
   req->generic.send_seqnum = seqnum;
   req->generic.resends = 0;

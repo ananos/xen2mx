@@ -311,7 +311,7 @@ omx__ack_partner_immediately(struct omx_endpoint *ep,
 		    (unsigned long long) partner->oldest_recv_time_not_acked);
 
   /* apply the offset to the seqnum to ack */
-  partner->next_frag_recv_seq = OMX__SEQNUM(saved_next_frag_recv_seq + seqnum_offset);
+  OMX__SEQNUM_INCREASE_BY(partner->next_frag_recv_seq, seqnum_offset);
 
   ret = omx__submit_send_liback(ep, partner);
   /* failed to send one liback? too bad for this peer */

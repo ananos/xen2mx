@@ -122,8 +122,8 @@ omx__partner_reset(struct omx__partner *partner)
   partner->back_session_id = -1; /* will be initialized when the partner will connect to me */
   partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   partner->next_acked_send_seq = -1; /* will be initialized when the partner will reply to my connect */
-  partner->next_match_recv_seq = OMX__SEQNUM(1); /* will force the sender's send seq through the connect */
-  partner->next_frag_recv_seq = OMX__SEQNUM(1); /* will force the sender's send seq through the connect */
+  OMX__SEQNUM_RESET(partner->next_match_recv_seq); /* will force the sender's send seq through the connect */
+  OMX__SEQNUM_RESET(partner->next_frag_recv_seq); /* will force the sender's send seq through the connect */
   partner->connect_seqnum = 0;
   partner->last_send_acknum = 0;
   partner->last_recv_acknum = 0;
@@ -628,8 +628,8 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     }
 
     /* setup recv seqnum */
-    partner->next_match_recv_seq = OMX__SEQNUM(1);
-    partner->next_frag_recv_seq = OMX__SEQNUM(1);
+    OMX__SEQNUM_RESET(partner->next_match_recv_seq); /* will force the sender's send seq through the connect */
+    OMX__SEQNUM_RESET(partner->next_frag_recv_seq); /* will force the sender's send seq through the connect */
   }
 
   if (partner->true_session_id != src_session_id) {

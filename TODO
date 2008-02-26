@@ -44,7 +44,9 @@
 
 * improve retransmission
   + cancel a liback if sending a message before, or send liback after dequeuing request
-  + add session to seqnums
+  + queue a liback if too many not-acked packets
+  + don't free partner since we can't change the session anymore?
+    - or randomify the initial session?
 
 * pull improvements
   + ph_prepare_exit only called when holding the iface mutex, may sleep

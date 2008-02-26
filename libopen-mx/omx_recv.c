@@ -588,7 +588,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 
     if (ret == OMX_SUCCESS) {
       /* we matched this seqnum, we now expect the next one */
-      partner->next_match_recv_seq = OMX__SEQNUM(partner->next_match_recv_seq + 1);
+      OMX__SEQNUM_INCREASE(partner->next_match_recv_seq);
       omx__update_partner_next_frag_recv_seq(ep, partner);
       omx__partner_needs_to_ack(ep, partner);
     }
@@ -627,6 +627,20 @@ omx__process_recv(struct omx_endpoint *ep,
 
   omx__debug_printf(SEQNUM, "got seqnum %d, expected match at %d, frag at %d\n",
 		    seqnum, partner->next_match_recv_seq, partner->next_frag_recv_seq);
+
+  if (unlikely(OMX__SESNUM(seqnum ^ partner->next_frag_recv_seq)) != 0) {
+    omx__debug_printf(ALWAYS, "Obsolete session message received (session %d seqnum %d instead of session %d)\n",
+		      (unsigned) OMX__SESNUM_SHIFTED(seqnum), (unsigned) OMX__SEQNUM(seqnum),
+		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq));
+    return OMX_SUCCESS;
+  }
+
+  if (unlikely(OMX__SESNUM(piggyack ^ partner->next_send_seq)) != 0) {
+    omx__debug_printf(ALWAYS, "Obsolete session piggyack received (session %d seqnum %d instead of session %d)\n",
+		      (unsigned) OMX__SESNUM_SHIFTED(piggyack), (unsigned) OMX__SEQNUM(piggyack),
+		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
+    return OMX_SUCCESS;
+  }
 
   omx__debug_printf(ACK, "got piggy ack for ack up to %d\n", (unsigned) OMX__SEQNUM(piggyack - 1));
   omx__handle_ack(ep, partner, piggyack);
