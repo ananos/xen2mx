@@ -572,6 +572,9 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
     if (partner->true_session_id != target_session_id) {
       /* we were connected to this partner, and it changed, reset our send seqnums */
+      omx__debug_printf(SEQNUM, "connect reply (with new session id) requesting next send seqnum %d (#%d)\n",
+			(unsigned) OMX__SEQNUM(target_recv_seqnum_start),
+			(unsigned) OMX__SESNUM_SHIFTED(target_recv_seqnum_start));
       partner->next_send_seq = target_recv_seqnum_start;
       partner->next_acked_send_seq = target_recv_seqnum_start;
     }
@@ -634,6 +637,9 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   if (partner->true_session_id != src_session_id) {
     /* we were connected to this partner, and it changed, reset our send seqnums */
+    omx__debug_printf(SEQNUM, "connect request (with new session id) requesting next send seqnum %d (#%d)\n",
+		      (unsigned) OMX__SEQNUM(target_recv_seqnum_start),
+		      (unsigned) OMX__SESNUM_SHIFTED(target_recv_seqnum_start));
     partner->next_send_seq = target_recv_seqnum_start;
     partner->next_acked_send_seq = target_recv_seqnum_start;
   }
@@ -927,6 +933,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     partner->next_frag_recv_seq ^= OMX__SEQNUM(0xcf0f);
     partner->next_match_recv_seq += OMX__SESNUM_ONE;
     partner->next_frag_recv_seq += OMX__SESNUM_ONE;
+    omx__debug_printf(SEQNUM, "disconnect increasing session number to #%d\n",
+		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_match_recv_seq));
 
     if (disconnect > 1) {
       /*
