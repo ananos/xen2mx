@@ -43,6 +43,8 @@ assertions(void)
   CHECK(OMX_UNEXP_EVENTQ_ENTRY_NR == OMX_RECVQ_ENTRY_NR);
   CHECK((unsigned) OMX_PKT_TYPE_MAX == (1<<(sizeof(((struct omx_pkt_msg*)NULL)->ptype)*8)) - 1);
 
+  CHECK(OMX_PKT_TYPE_MAX <= 255); /* uint8_t is used on the wire */
+  CHECK(OMX_NACK_TYPE_MAX <= 255); /* uint8_t is used on the wire */
   CHECK(OMX_EVT_NACK_LIB_BAD_ENDPT == OMX_NACK_TYPE_BAD_ENDPT);
   CHECK(OMX_EVT_NACK_LIB_ENDPT_CLOSED == OMX_NACK_TYPE_ENDPT_CLOSED);
   CHECK(OMX_EVT_NACK_LIB_BAD_SESSION == OMX_NACK_TYPE_BAD_SESSION);

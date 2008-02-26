@@ -111,6 +111,7 @@ enum omx_nack_type {
 	OMX_NACK_TYPE_ENDPT_CLOSED,
 	OMX_NACK_TYPE_BAD_SESSION,
 	OMX_NACK_TYPE_BAD_RDMAWIN,
+	OMX_NACK_TYPE_MAX,
 };
 
 static inline const char*
@@ -248,7 +249,7 @@ struct omx_pkt_nack_lib {
 	uint8_t ptype;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
-	enum omx_nack_type nack_type;
+	uint8_t nack_type;
 	uint32_t pad;
 	uint8_t pad0;
 	uint8_t dst_endpoint;
@@ -262,7 +263,7 @@ struct omx_pkt_nack_mcp {
 	uint8_t ptype;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
-	enum omx_nack_type nack_type;
+	uint8_t nack_type;
 	uint32_t pad;
 	uint32_t src_pull_handle;
 	uint32_t src_magic;
