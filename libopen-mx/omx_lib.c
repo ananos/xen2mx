@@ -229,8 +229,8 @@ omx__check_enough_progression(struct omx_endpoint * ep)
   unsigned long long delay = now - last_progress;
 
   if (last_progress && delay > omx__driver_desc->hz)
-    omx__debug_printf(ALWAYS, "No progression occured in the last %lld seconds (%lld jiffies)\n",
-		      delay/omx__driver_desc->hz, delay);
+    omx__verbose_printf("No progression occured in the last %lld seconds (%lld jiffies)\n",
+			delay/omx__driver_desc->hz, delay);
 
   last_progress = now;
 #endif
@@ -378,8 +378,8 @@ omx_reenable_progression(struct omx_endpoint *ep)
     uint64_t now = omx__driver_desc->jiffies;
     uint64_t delay = now - omx_disable_progression_jiffies_start;
     if (delay > omx__driver_desc->hz)
-      omx__debug_printf(ALWAYS, "Application disabled progression during %lld seconds (%lld jiffies)\n",
-			(unsigned long long) delay/omx__driver_desc->hz, (unsigned long long) delay);
+      omx__verbose_printf("Application disabled progression during %lld seconds (%lld jiffies)\n",
+			  (unsigned long long) delay/omx__driver_desc->hz, (unsigned long long) delay);
   }
 #endif
 

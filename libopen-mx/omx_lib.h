@@ -40,26 +40,25 @@
 
 #ifdef OMX_LIB_DEBUG
 
-#define OMX_VERBOSE_ALWAYS (1<<0)
-#define OMX_VERBOSE_ENDPOINT (1<<1)
-#define OMX_VERBOSE_CONNECT (1<<2)
-#define OMX_VERBOSE_SEND (1<<3)
-#define OMX_VERBOSE_LARGE (1<<4)
-#define OMX_VERBOSE_MEDIUM (1<<5)
-#define OMX_VERBOSE_SEQNUM (1<<6)
-#define OMX_VERBOSE_RECV (1<<7)
-#define OMX_VERBOSE_UNEXP (1<<8)
-#define OMX_VERBOSE_EARLY (1<<9)
-#define OMX_VERBOSE_ACK (1<<10)
-#define OMX_VERBOSE_EVENT (1<<11)
-#define OMX_VERBOSE_WAIT (1<<12)
-#define OMX_VERBOSE_VECT (1<<13)
-#define omx__verbose_type_enabled(type) (OMX_VERBOSE_##type & omx__globals.verbose)
+#define OMX_VERBDEBUG_ENDPOINT (1<<1)
+#define OMX_VERBDEBUG_CONNECT (1<<2)
+#define OMX_VERBDEBUG_SEND (1<<3)
+#define OMX_VERBDEBUG_LARGE (1<<4)
+#define OMX_VERBDEBUG_MEDIUM (1<<5)
+#define OMX_VERBDEBUG_SEQNUM (1<<6)
+#define OMX_VERBDEBUG_RECV (1<<7)
+#define OMX_VERBDEBUG_UNEXP (1<<8)
+#define OMX_VERBDEBUG_EARLY (1<<9)
+#define OMX_VERBDEBUG_ACK (1<<10)
+#define OMX_VERBDEBUG_EVENT (1<<11)
+#define OMX_VERBDEBUG_WAIT (1<<12)
+#define OMX_VERBDEBUG_VECT (1<<13)
+#define omx__verbdebug_type_enabled(type) (OMX_VERBDEBUG_##type & omx__globals.verbdebug)
 
 #define INLINE
 #define omx__debug_assert(x) assert(x)
 #define omx__debug_instr(x) do { x; } while (0)
-#define omx__debug_printf(type,args...) do { if (omx__verbose_type_enabled(type)) fprintf(stderr, "Open-MX: " args); } while (0)
+#define omx__debug_printf(type,args...) do { if (omx__verbdebug_type_enabled(type)) fprintf(stderr, "Open-MX: " args); } while (0)
 
 #else /* OMX_LIB_DEBUG */
 
@@ -69,6 +68,8 @@
 #define omx__debug_printf(type,args...) /* nothing */
 
 #endif /* OMX_LIB_DEBUG */
+
+#define omx__verbose_printf(args...) do { if (omx__globals.verbose) fprintf(stderr, "Open-MX: " args); } while (0)
 
 #define omx__abort(args...) do { fprintf(stderr, "Open-MX fatal error: " args); assert(0); } while (0)
 

@@ -416,9 +416,14 @@ OMX_RESENDS_MAX=1000
 	Try to resend each send request 1000 times before timeout-ing.
   By default, each request is resent up to 1000 times before timeout-ing.
 
-OMX_VERBOSE=<mask>
-	Display verbose messages from the debugging library.
-  No verbose messages are displayed by default.
+OMX_VERBOSE=1
+	Display verbose messages.
+  No verbose messages are displayed by default, except in the debugging
+  library.
+
+OMX_VERBDEBUG=<mask>
+	Display verbose debugging messages in the debugging library.
+  No verbose debugging messages are displayed by default.
 
 OMX_WAITSPIN=1
 	Busy loop instead of sleeping in blocking functions.

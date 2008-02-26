@@ -76,46 +76,54 @@ omx__init_api(int api)
   omx__globals.ack_delay_jiffies = omx__ack_delay_jiffies();
   omx__globals.resend_delay_jiffies = omx__resend_delay_jiffies();
 
-#ifdef OMX_LIB_DEBUG
+  /* verbose message configuration */
   omx__globals.verbose = 0;
+#ifdef OMX_LIB_DEBUG
+  omx__globals.verbose = 1;
+#endif
   env = getenv("OMX_VERBOSE");
 #ifdef OMX_MX_API_COMPAT
   if (!env) {
     env = getenv("MX_VERBOSE");
     if (env) {
-      printf("Emulating MX_VERBOSE as OMX_VERBOSE=\"\"\n");
+      printf("Emulating MX_VERBOSE as OMX_VERBOSE\n");
       env = "";
     }
   }
 #endif
-  omx__globals.verbose = OMX_VERBOSE_ALWAYS; /* always shown by default */
+  if (env)
+    omx__globals.verbose = atoi(env);
 
+  /* verbose debug message configuration */
+  omx__globals.verbdebug = 0;
+#ifdef OMX_LIB_DEBUG
+  env = getenv("OMX_VERBDEBUG");
   if (env) {
     char *next;
     unsigned long val = strtoul(env, &next, 0);
     if (env == next) {
       int i;
-      val = omx__globals.verbose;
+      val = omx__globals.verbdebug;
       for(i=0; env[i]!='\0'; i++) {
 	switch (env[i]) {
-	case 'P': val |= OMX_VERBOSE_ENDPOINT; break;
-	case 'C': val |= OMX_VERBOSE_CONNECT; break;
-	case 'S': val |= OMX_VERBOSE_SEND; break;
-	case 'L': val |= OMX_VERBOSE_LARGE; break;
-	case 'M': val |= OMX_VERBOSE_MEDIUM; break;
-	case 'Q': val |= OMX_VERBOSE_SEQNUM; break;
-	case 'R': val |= OMX_VERBOSE_RECV; break;
-	case 'U': val |= OMX_VERBOSE_UNEXP; break;
-	case 'E': val |= OMX_VERBOSE_EARLY; break;
-	case 'A': val |= OMX_VERBOSE_ACK; break;
-	case 'T': val |= OMX_VERBOSE_EVENT; break;
-	case 'W': val |= OMX_VERBOSE_WAIT; break;
-	case 'V': val |= OMX_VERBOSE_VECT; break;
-	default: omx__abort("Unknown verbose character '%c'\n", env[i]);
+	case 'P': val |= OMX_VERBDEBUG_ENDPOINT; break;
+	case 'C': val |= OMX_VERBDEBUG_CONNECT; break;
+	case 'S': val |= OMX_VERBDEBUG_SEND; break;
+	case 'L': val |= OMX_VERBDEBUG_LARGE; break;
+	case 'M': val |= OMX_VERBDEBUG_MEDIUM; break;
+	case 'Q': val |= OMX_VERBDEBUG_SEQNUM; break;
+	case 'R': val |= OMX_VERBDEBUG_RECV; break;
+	case 'U': val |= OMX_VERBDEBUG_UNEXP; break;
+	case 'E': val |= OMX_VERBDEBUG_EARLY; break;
+	case 'A': val |= OMX_VERBDEBUG_ACK; break;
+	case 'T': val |= OMX_VERBDEBUG_EVENT; break;
+	case 'W': val |= OMX_VERBDEBUG_WAIT; break;
+	case 'V': val |= OMX_VERBDEBUG_VECT; break;
+	default: omx__abort("Unknown verbose debug character '%c'\n", env[i]);
 	}
       }
     }
-    omx__globals.verbose = val;
+    omx__globals.verbdebug = val;
   }
 #endif /* OMX_LIB_DEBUG */
 
@@ -126,12 +134,12 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_MAX_RETRIES");
     if (env)
-      omx__debug_printf(ALWAYS, "Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
+      omx__verbose_printf("Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
   }
 #endif
   if (env) {
     omx__globals.req_resends_max = atoi(env);
-    omx__debug_printf(ALWAYS, "Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
+    omx__verbose_printf("Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
   }
 
   /* regcache configuration */
@@ -141,13 +149,13 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_RCACHE");
     if (env)
-      omx__debug_printf(ALWAYS, "Emulating MX_RCACHE as OMX_RCACHE\n");
+      omx__verbose_printf("Emulating MX_RCACHE as OMX_RCACHE\n");
   }
 #endif
   if (env) {
     omx__globals.regcache = atoi(env);
-    omx__debug_printf(ALWAYS, "Forcing regcache to %s\n",
-		      omx__globals.regcache ? "enabled" : "disabled");
+    omx__verbose_printf("Forcing regcache to %s\n",
+			omx__globals.regcache ? "enabled" : "disabled");
   }
 
   /* waitspin configuration */
@@ -156,8 +164,8 @@ omx__init_api(int api)
   /* could be enabled by MX_MONOTHREAD */
   if (env) {
     omx__globals.waitspin = atoi(env);
-    omx__debug_printf(ALWAYS, "Forcing waitspin to %s\n",
-		      omx__globals.waitspin ? "enabled" : "disabled");
+    omx__verbose_printf("Forcing waitspin to %s\n",
+			omx__globals.waitspin ? "enabled" : "disabled");
   }
 
   /* zombie send configuration */
@@ -167,13 +175,13 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_ZOMBIE_SEND");
     if (env)
-      omx__debug_printf(ALWAYS, "Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
+      omx__verbose_printf("Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
   }
 #endif
   if (env) {
     omx__globals.zombie_max = atoi(env);
-    omx__debug_printf(ALWAYS, "Forcing zombie max to %d\n",
-		      omx__globals.zombie_max);
+    omx__verbose_printf("Forcing zombie max to %d\n",
+			omx__globals.zombie_max);
   }
 
   /* self comm configuration */
@@ -184,13 +192,13 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_DISABLE_SELF");
     if (env)
-      omx__debug_printf(ALWAYS, "Emulating MX_DISABLE_SELF as OMX_DISABLE_SELF\n");
+      omx__verbose_printf("Emulating MX_DISABLE_SELF as OMX_DISABLE_SELF\n");
   }
 #endif
   if (env) {
     omx__globals.selfcomms = !atoi(env);
-    omx__debug_printf(ALWAYS, "Forcing self comms to %s\n",
-		      omx__globals.selfcomms ? "enabled" : "disabled");
+    omx__verbose_printf("Forcing self comms to %s\n",
+			omx__globals.selfcomms ? "enabled" : "disabled");
   }
 #endif
 
@@ -202,13 +210,13 @@ omx__init_api(int api)
   if (!env) {
     env = getenv("MX_DISABLE_SHMEM");
     if (env)
-      omx__debug_printf(ALWAYS, "Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
+      omx__verbose_printf("Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
   }
 #endif
   if (env) {
     omx__globals.sharedcomms = !atoi(env);
-    omx__debug_printf(ALWAYS, "Forcing shared comms to %s\n",
-		      omx__globals.sharedcomms ? "enabled" : "disabled");
+    omx__verbose_printf("Forcing shared comms to %s\n",
+			omx__globals.sharedcomms ? "enabled" : "disabled");
   }
 #endif
 
@@ -217,8 +225,8 @@ omx__init_api(int api)
   env = getenv("OMX_WAITINTR");
   if (env) {
     omx__globals.waitintr = atoi(env);
-    omx__debug_printf(ALWAYS, "Forcing interrupted wait to %s\n",
-		      omx__globals.waitintr ? "exit as timeout" : "go back to sleep");
+    omx__verbose_printf("Forcing interrupted wait to %s\n",
+			omx__globals.waitintr ? "exit as timeout" : "go back to sleep");
   }
 
   omx__globals.initialized = 1;

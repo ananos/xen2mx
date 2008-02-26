@@ -72,10 +72,10 @@ omx__wait(struct omx_endpoint *ep,
     uint64_t now = omx__driver_desc->jiffies;
     if (ms_timeout != OMX_TIMEOUT_INFINITE && now > wait_param->jiffies_expire + 2) {
       /* tolerate 2 jiffies of timeshift */
-      omx__debug_printf(ALWAYS, "Sleep for %ld ms actually slept until jiffies %lld instead of %lld\n",
-			(unsigned long) ms_timeout,
-			(unsigned long long) now,
-			(unsigned long long) wait_param->jiffies_expire);
+      omx__verbose_printf("Sleep for %ld ms actually slept until jiffies %lld instead of %lld\n",
+			  (unsigned long) ms_timeout,
+			  (unsigned long long) now,
+			  (unsigned long long) wait_param->jiffies_expire);
     }
   }
 #endif
