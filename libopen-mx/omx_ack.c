@@ -101,14 +101,17 @@ omx__handle_ack(struct omx_endpoint *ep,
   omx__seqnum_t new_acks = OMX__SEQNUM(ack_before - partner->next_acked_send_seq);
 
   if (!new_acks || new_acks > missing_acks) {
-    omx__debug_printf(ACK, "got obsolete ack up to %d, %d new for %d missing\n",
-		      (unsigned) OMX__SEQNUM(ack_before - 1), (unsigned) new_acks, (unsigned) missing_acks);
+    omx__debug_printf(ACK, "got obsolete ack up to %d (#%d), %d new for %d missing\n",
+		      (unsigned) OMX__SEQNUM(ack_before - 1),
+		      (unsigned) OMX__SESNUM_SHIFTED(ack_before - 1),
+		      (unsigned) new_acks, (unsigned) missing_acks);
 
   } else {
     union omx_request *req, *next;
 
-    omx__debug_printf(ACK, "marking seqnums up to %d as acked (jiffies %lld)\n",
+    omx__debug_printf(ACK, "marking seqnums up to %d (#%d) as acked (jiffies %lld)\n",
 		      (unsigned) OMX__SEQNUM(ack_before - 1),
+		      (unsigned) OMX__SESNUM_SHIFTED(ack_before - 1),
 		      (unsigned long long) omx__driver_desc->jiffies);
 
     omx__foreach_partner_non_acked_request_safe(partner, req, next) {
@@ -156,7 +159,9 @@ omx__handle_truc_ack(struct omx_endpoint *ep,
   }
   partner->last_recv_acknum = acknum;
 
-  omx__debug_printf(ACK, "got a truc ack for ack up to %d\n", (unsigned) OMX__SEQNUM(ack - 1));
+  omx__debug_printf(ACK, "got a truc ack for ack up to %d (#%d)\n",
+		    (unsigned) OMX__SEQNUM(ack - 1),
+		    (unsigned) OMX__SESNUM_SHIFTED(ack - 1));
   omx__handle_ack(ep, partner, ack);
 }
 
@@ -257,8 +262,9 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
       /* the remaining ones are more recent, no need to ack them yet */
       break;
 
-    omx__debug_printf(ACK, "acking back to partner up to %d (jiffies %lld >> %lld)\n",
-		      (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+    omx__debug_printf(ACK, "acking back to partner up to %d (#%d), jiffies %lld >> %lld\n",
+		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		      (unsigned long long) now,
 		      (unsigned long long) partner->oldest_recv_time_not_acked);
 
@@ -281,8 +287,9 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
 
   list_for_each_entry_safe(partner, next,
 			   &ep->partners_to_ack_list, endpoint_partners_to_ack_elt) {
-    omx__debug_printf(ACK, "forcing ack back to partner up to %d (jiffies %lld instead of %lld)\n",
-		      (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+    omx__debug_printf(ACK, "forcing ack back to partner up to %d (#%d), jiffies %lld instead of %lld\n",
+		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		      (unsigned long long) omx__driver_desc->jiffies,
 		      (unsigned long long) partner->oldest_recv_time_not_acked);
 
@@ -305,8 +312,9 @@ omx__ack_partner_immediately(struct omx_endpoint *ep,
   omx_return_t ret = OMX_SUCCESS;
   omx__seqnum_t saved_next_frag_recv_seq = partner->next_frag_recv_seq;
 
-  omx__debug_printf(ACK, "forcing immediate ack back to partner up to %d (jiffies %lld instead of %lld)\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq + seqnum_offset - 1),
+  omx__debug_printf(ACK, "forcing immediate ack back to partner up to %d (#%d), jiffies %lld instead of %lld\n",
+		    (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq + seqnum_offset - 1),
+		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq + seqnum_offset - 1),
 		    (unsigned long long) omx__driver_desc->jiffies,
 		    (unsigned long long) partner->oldest_recv_time_not_acked);
 
@@ -399,4 +407,3 @@ omx_set_request_timeout(struct omx_endpoint *ep,
 
   return OMX_SUCCESS;
 }
-

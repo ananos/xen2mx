@@ -744,7 +744,9 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    */
   count = 0;
   omx__foreach_partner_non_acked_request_safe(partner, req, next) {
-    omx__debug_printf(CONNECT, "Dropping pending send %p with seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+    omx__debug_printf(CONNECT, "Dropping pending send %p with seqnum %d (#%d)\n", req,
+		      (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+		      (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
     omx___dequeue_partner_non_acked_request(req);
     omx__mark_request_acked(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
     count++;

@@ -74,8 +74,9 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   struct omx_cmd_send_tiny * tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
   tiny_param->hdr.piggyack = partner->next_frag_recv_seq;
 
@@ -152,8 +153,9 @@ omx__post_isend_small(struct omx_endpoint *ep,
   struct omx_cmd_send_small * small_param = &req->send.specific.small.send_small_ioctl_param;
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
   small_param->piggyack = partner->next_frag_recv_seq;
 
@@ -260,8 +262,9 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   int err;
   int i;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
   medium_param->piggyack = partner->next_frag_recv_seq;
 
@@ -431,8 +434,9 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
   rndv_param->hdr.piggyack = partner->next_frag_recv_seq;
 
@@ -535,8 +539,9 @@ omx__post_notify(struct omx_endpoint *ep,
   struct omx_cmd_send_notify * notify_param = &req->recv.specific.large.send_notify_ioctl_param;
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (jiffies %lld)\n",
+  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
   notify_param->piggyack = partner->next_frag_recv_seq;
 
@@ -616,9 +621,10 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   uint32_t length = req->send.segs.total_length;
   omx_return_t ret;
 
-  omx__debug_printf(SEND, "sending %ld bytes in %d segments using seqnum %d\n",
+  omx__debug_printf(SEND, "sending %ld bytes in %d segments using seqnum %d (#%d)\n",
 		    (unsigned long) length, (unsigned) req->send.segs.nseg,
-		    partner->next_send_seq);
+		    (unsigned) OMX__SEQNUM(partner->next_send_seq),
+		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
 
 #ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
@@ -743,9 +749,10 @@ omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 {
   omx_return_t ret;
 
-  omx__debug_printf(SEND, "ssending %ld bytes in %d segments using seqnum %d\n",
+  omx__debug_printf(SEND, "ssending %ld bytes in %d segments using seqnum %d (#%d)\n",
 		    (unsigned long) req->send.segs.total_length, (unsigned) req->send.segs.nseg,
-		    partner->next_send_seq);
+		    (unsigned) OMX__SEQNUM(partner->next_send_seq),
+		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
 
 #ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
@@ -873,21 +880,29 @@ omx__process_queued_requests(struct omx_endpoint *ep)
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf(SEND, "reposting queued send medium request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting queued send medium request %p seqnum %d (#%d)\n", req,
+			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       ret = omx__submit_isend_medium(ep, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf(SEND, "reposting queued send medium request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting queued send medium request %p seqnum %d (#%d)\n", req,
+			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       ret = omx__submit_isend_rndv(ep, req);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
       if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
 	/* if partial, we need to post the pull request to the driver */
-	omx__debug_printf(SEND, "reposting queued recv large request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+	omx__debug_printf(SEND, "reposting queued recv large request %p seqnum %d (#%d)\n", req,
+			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
 	ret = omx__submit_pull(ep, req);
       } else {
 	/* if not partial, the pull is already done, we need to send the notify */
-	omx__debug_printf(SEND, "reposting queued recv large request notify message %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+	omx__debug_printf(SEND, "reposting queued recv large request notify message %p seqnum %d (#%d)\n", req,
+			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
 	ret = omx__submit_notify(ep, req);
       }
       break;
@@ -955,8 +970,9 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      printf("Send request (seqnum %d)  timeout, already sent %ld times, resetting partner status\n",
-	     (unsigned int) req->generic.send_seqnum,
+      printf("Send request (seqnum %d sesnum %d)  timeout, already sent %ld times, resetting partner status\n",
+	     (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+	     (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum),
 	     (unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
@@ -967,23 +983,33 @@ omx__process_resend_requests(struct omx_endpoint *ep)
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:
-      omx__debug_printf(SEND, "reposting requeued send tiny request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued send tiny request %p seqnum %d (#%d)\n", req,
+			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_tiny(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_SMALL:
-      omx__debug_printf(SEND, "reposting requeued send small request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued send small request %p seqnum %d (#%d)\n", req,
+			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_small(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf(SEND, "reposting requeued medium small request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued medium small request %p seqnum %d (#%d)\n", req,
+			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_medium(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf(SEND, "reposting requeued send rndv request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued send rndv request %p seqnum %d (#%d)\n", req,
+			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_rndv(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
-      omx__debug_printf(SEND, "reposting requeued send notify request %p seqnum %d\n", req, (unsigned) req->generic.send_seqnum);
+      omx__debug_printf(SEND, "reposting requeued send notify request %p seqnum %d (#%d)\n", req,
+			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_notify(ep, req->generic.partner, req);
       break;
     default:

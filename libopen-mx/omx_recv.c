@@ -283,8 +283,10 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
   if (unlikely(req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum))) {
     /* already received this frag, requeue back */
-    omx__debug_printf(MEDIUM, "got a duplicate frag seqnum %d for medium seqnum %d\n",
-		      (unsigned) frag_seqnum, (unsigned) req->recv.seqnum);
+    omx__debug_printf(MEDIUM, "got a duplicate frag seqnum %d for medium seqnum %d (#%d)\n",
+		      (unsigned) frag_seqnum,
+		      (unsigned) OMX__SEQNUM(req->recv.seqnum),
+		      (unsigned) OMX__SESNUM_SHIFTED(req->recv.seqnum));
     omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
 			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			 req);
@@ -306,7 +308,9 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
   if (likely(req->recv.specific.medium.accumulated_length == msg_length)) {
     /* was the last frag */
-    omx__debug_printf(MEDIUM, "got last frag of seqnum %d\n", req->recv.seqnum);
+    omx__debug_printf(MEDIUM, "got last frag of seqnum %d (#%d)\n",
+		      (unsigned) OMX__SEQNUM(req->recv.seqnum),
+		      (unsigned) OMX__SESNUM_SHIFTED(req->recv.seqnum));
 
     /* if there were previous frags, remove from the partialq */
     if (unlikely(!new))
@@ -320,7 +324,9 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
   } else {
     /* more frags missing */
-    omx__debug_printf(MEDIUM, "got one frag of seqnum %d\n", req->recv.seqnum);
+    omx__debug_printf(MEDIUM, "got one frag of seqnum %d (#%d)\n",
+		      (unsigned) OMX__SEQNUM(req->recv.seqnum),
+		      (unsigned) OMX__SESNUM_SHIFTED(req->recv.seqnum));
 
     if (unlikely(new)) {
       req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
@@ -625,8 +631,12 @@ omx__process_recv(struct omx_endpoint *ep,
   if (unlikely(!partner))
     return OMX_SUCCESS;
 
-  omx__debug_printf(SEQNUM, "got seqnum %d, expected match at %d, frag at %d\n",
-		    seqnum, partner->next_match_recv_seq, partner->next_frag_recv_seq);
+  omx__debug_printf(SEQNUM, "got seqnum %d (#%d), expected match at %d, frag at %d (#%d)\n",
+		    (unsigned) OMX__SEQNUM(seqnum),
+		    (unsigned) OMX__SESNUM_SHIFTED(seqnum),
+		    (unsigned) OMX__SEQNUM(partner->next_match_recv_seq),
+		    (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq),
+		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq));
 
   if (unlikely(OMX__SESNUM(seqnum ^ partner->next_frag_recv_seq)) != 0) {
     omx__verbose_printf("Obsolete session message received (session %d seqnum %d instead of session %d)\n",
@@ -642,7 +652,9 @@ omx__process_recv(struct omx_endpoint *ep,
     return OMX_SUCCESS;
   }
 
-  omx__debug_printf(ACK, "got piggy ack for ack up to %d\n", (unsigned) OMX__SEQNUM(piggyack - 1));
+  omx__debug_printf(ACK, "got piggy ack for ack up to %d (#%d)\n",
+		    (unsigned) OMX__SEQNUM(piggyack - 1),
+		    (unsigned) OMX__SESNUM_SHIFTED(piggyack - 1));
   omx__handle_ack(ep, partner, piggyack);
 
   old_next_match_recv_seq = partner->next_match_recv_seq;
@@ -666,8 +678,9 @@ omx__process_recv(struct omx_endpoint *ep,
 	omx__seqnum_t early_index = OMX__SEQNUM(early->msg.seqnum - old_next_match_recv_seq);
 	if (early_index <= early_index_max) {
 	  omx___dequeue_partner_early_packet(early);
-	  omx__debug_printf(EARLY, "processing early packet with seqnum %d\n",
-			    early->msg.seqnum);
+	  omx__debug_printf(EARLY, "processing early packet with seqnum %d (#%d)\n",
+			    (unsigned) OMX__SEQNUM(early->msg.seqnum),
+			    (unsigned) OMX__SESNUM_SHIFTED(early->msg.seqnum));
 	  ret = omx__process_partner_ordered_recv(ep, partner, early->msg.seqnum,
 						  &early->msg, early->data, early->msg_length,
 						  early->recv_func);
@@ -685,7 +698,9 @@ omx__process_recv(struct omx_endpoint *ep,
 				     recv_func);
 
   } else {
-    omx__debug_printf(SEQNUM, "obsolete message %d, assume a ack has been lost\n", seqnum);
+    omx__debug_printf(SEQNUM, "obsolete message %d (#%d), assume a ack has been lost\n",
+		      (unsigned) OMX__SEQNUM(seqnum),
+		      (unsigned) OMX__SESNUM_SHIFTED(seqnum));
 
     if (frag_index == OMX__SEQNUM(-1)) {
       /* assume a ack has been lost, resend a ack now, but only if

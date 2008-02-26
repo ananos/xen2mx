@@ -1,3 +1,6 @@
+* check session in truc and nacks, ...
+* cleanup seqnum printing there too
+
 * thread safety
   + filter wakeup on recv/send/connect/...
   + filter on specific request id too
