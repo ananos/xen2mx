@@ -58,8 +58,6 @@ struct omx__connect_reply_data {
   uint8_t status_code;
 };
 
-/* FIXME: assertions so that is_reply is at the same offset/size */
-
 union omx__truc_data {
   uint8_t type;
   struct omx__truc_ack_data {

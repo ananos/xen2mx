@@ -37,6 +37,8 @@ assertions(void)
   CHECK(OMX_MEDIUM_FRAG_LENGTH_MAX <= OMX_SENDQ_ENTRY_SIZE);
   CHECK(sizeof(struct omx__endpoint_addr) == sizeof(struct omx_endpoint_addr));
   CHECK(OMX_RETURN_CODE_MAX < OMX_INTERNAL_RETURN_CODE_MIN);
+  CHECK(sizeof(((struct omx__connect_request_data *) NULL)->is_reply) == sizeof(((struct omx__connect_reply_data *) NULL)->is_reply));
+  CHECK(offsetof(struct omx__connect_request_data, is_reply) == offsetof(struct omx__connect_reply_data, is_reply));
 }
 
 
