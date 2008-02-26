@@ -923,6 +923,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
      */
     partner->next_match_recv_seq ^= OMX__SEQNUM(0xb0f0) ;
     partner->next_frag_recv_seq ^= OMX__SEQNUM(0xcf0f);
+    partner->next_match_recv_seq += OMX__SESNUM_ONE;
+    partner->next_frag_recv_seq += OMX__SESNUM_ONE;
 
     if (disconnect > 1) {
       /*
