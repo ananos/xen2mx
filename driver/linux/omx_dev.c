@@ -643,6 +643,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_REGISTER_REGION:
 	case OMX_CMD_DEREGISTER_REGION:
 	case OMX_CMD_WAIT_EVENT:
+	case OMX_CMD_WAKEUP:
 	{
 		BUG_ON(handler_offset >= ARRAY_SIZE(omx_ioctl_with_endpoint_handlers));
 		BUG_ON(omx_ioctl_with_endpoint_handlers[handler_offset] == NULL);
