@@ -1,5 +1,5 @@
-* check session in truc and nacks, ...
 * cleanup seqnum printing there too
+* set data_n->target_recv_seqnum_start when posting the connect to the driver
 
 * thread safety
   + filter wakeup on recv/send/connect/...

@@ -124,41 +124,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_NACK_LIB: {
-    struct omx_evt_recv_nack_lib * nack_lib = &evt->recv_nack_lib;
-    uint16_t peer_index = nack_lib->peer_index;
-    uint16_t seqnum = nack_lib->seqnum;
-    uint8_t nack_type = nack_lib->nack_type;
-    struct omx__partner * partner;
-    uint64_t board_addr = 0;
-    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-    omx_status_code_t status;
-
-    omx__partner_recv_lookup(ep, peer_index, nack_lib->src_endpoint,
-			     &partner);
-    if (unlikely(!partner)) {
-      ret = OMX_SUCCESS;
-      break;
-    }
-
-    omx__peer_index_to_addr(peer_index, &board_addr);
-    omx__board_addr_sprintf(board_addr_str, board_addr);
-
-    switch (nack_type) {
-    case OMX_EVT_NACK_LIB_BAD_ENDPT:
-      status = OMX_STATUS_BAD_ENDPOINT;
-      break;
-    case OMX_EVT_NACK_LIB_ENDPT_CLOSED:
-      status = OMX_STATUS_ENDPOINT_CLOSED;
-      break;
-    case OMX_EVT_NACK_LIB_BAD_SESSION:
-      status = OMX_STATUS_BAD_SESSION;
-      break;
-    default:
-      omx__abort("Failed to handle NACK with unknown type (%d) from peer %s (index %d) seqnum %d\n",
-		 (unsigned) nack_type, board_addr_str, (unsigned) peer_index, (unsigned) seqnum);
-    }
-
-    ret = omx__handle_nack(ep, partner, seqnum, status);
+    ret = omx__process_recv_nack_lib(ep, &evt->recv_nack_lib);
     break;
   }
 

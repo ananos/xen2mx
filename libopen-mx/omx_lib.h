@@ -312,9 +312,13 @@ extern omx_return_t
 omx__process_pull_done(struct omx_endpoint * ep,
 		       struct omx_evt_pull_done * event);
 
-omx_return_t
+extern omx_return_t
 omx__process_recv_truc(struct omx_endpoint *ep,
 		       struct omx_evt_recv_truc *truc);
+
+extern omx_return_t
+omx__process_recv_nack_lib(struct omx_endpoint *ep,
+			   struct omx_evt_recv_nack_lib *nack_lib);
 
 extern omx_return_t
 omx__handle_ack(struct omx_endpoint *ep,
