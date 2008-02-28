@@ -329,12 +329,12 @@ omx__ack_partner_immediately(struct omx_endpoint *ep,
   OMX__SEQNUM_INCREASE_BY(partner->next_frag_recv_seq, seqnum_offset);
 
   ret = omx__submit_send_liback(ep, partner);
-  /* failed to send one liback? too bad for this peer */
 
   /* restore the seqnum */
   partner->next_frag_recv_seq = saved_next_frag_recv_seq;
 
-  omx__partner_ack_sent(ep, partner);
+  if (ret == OMX_SUCCESS)
+    omx__partner_ack_sent(ep, partner);
 
   return ret;
 }

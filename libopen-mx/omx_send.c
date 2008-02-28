@@ -93,7 +93,9 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__partner_ack_sent(ep, partner);
+
+  if (!err)
+    omx__partner_ack_sent(ep, partner);
 }
 
 static INLINE omx_return_t
@@ -172,7 +174,9 @@ omx__post_isend_small(struct omx_endpoint *ep,
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__partner_ack_sent(ep, partner);
+
+  if (!err)
+    omx__partner_ack_sent(ep, partner);
 }
 
 static INLINE omx_return_t
@@ -330,6 +334,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
   omx__enqueue_request(&ep->driver_posted_req_q, req);
+
+  /* at least one frag was posted, the ack has been sent for sure */
   omx__partner_ack_sent(ep, partner);
 
   return;
@@ -453,7 +459,9 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__partner_ack_sent(ep, partner);
+
+  if (!err)
+    omx__partner_ack_sent(ep, partner);
 }
 
 omx_return_t
@@ -558,7 +566,9 @@ omx__post_notify(struct omx_endpoint *ep,
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__partner_ack_sent(ep, partner);
+
+  if (!err)
+    omx__partner_ack_sent(ep, partner);
 }
 
 omx_return_t
