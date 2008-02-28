@@ -582,10 +582,13 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   }
 
 #ifdef OMX_MX_WIRE_COMPAT
-  /* MX needs an immediate ack for notify
-   * since it cannot mark large recv as zombies.
+  /* MX needs an immediate ack for notify since it cannot mark
+   * large recv as zombies.
    * But the recv seqnum isn't updated yet, so offset it by 1.
+   * But we can only do that if all previous seqnum are ready to be acked
+   * too, which means next_frag == next_match.
    */
-  omx__ack_partner_immediately(ep, partner, 1);
+  if (partner->next_frag_recv_seq == partner->next_match_recv_seq)
+    omx__ack_partner_immediately(ep, partner, 1);
 #endif
 }

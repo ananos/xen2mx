@@ -1,5 +1,4 @@
 * improve retransmission
-  + only ack notify immediately if next_frag = next_match
   + store last_acked_recv_seq, don't update it if send regular/liback failed
   + queue a liback if too many not-acked packets
   + cancel a liback if sending a message before, or send liback after dequeuing request
