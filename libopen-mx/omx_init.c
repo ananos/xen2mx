@@ -39,6 +39,10 @@ omx__init_api(int api)
   if (omx__globals.initialized)
     return OMX_ALREADY_INITIALIZED;
 
+  /*********************************
+   * Open, map and check the driver
+   */
+
   err = open(OMX_DEVNAME, O_RDONLY);
   if (err < 0)
 #if 0
@@ -73,8 +77,16 @@ omx__init_api(int api)
     goto out_with_fd;
   }
 
+  /*****************
+   * Misc constants
+   */
+
   omx__globals.ack_delay_jiffies = omx__ack_delay_jiffies();
   omx__globals.resend_delay_jiffies = omx__resend_delay_jiffies();
+
+  /*******************************************
+   * Verbose and debug messages configuration
+   */
 
   /* verbose message configuration */
   omx__globals.verbose = 0;
@@ -127,78 +139,9 @@ omx__init_api(int api)
   }
 #endif /* OMX_LIB_DEBUG */
 
-  /* resend configuration */
-  omx__globals.req_resends_max = 1000;
-  env = getenv("OMX_RESENDS_MAX");
-#ifdef OMX_MX_API_COMPAT
-  if (!env) {
-    env = getenv("MX_MAX_RETRIES");
-    if (env)
-      omx__verbose_printf("Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
-  }
-#endif
-  if (env) {
-    omx__globals.req_resends_max = atoi(env);
-    omx__verbose_printf("Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
-  }
-
-  /* regcache configuration */
-  omx__globals.regcache = 0;
-  env = getenv("OMX_RCACHE");
-#ifdef OMX_MX_API_COMPAT
-  if (!env) {
-    env = getenv("MX_RCACHE");
-    if (env)
-      omx__verbose_printf("Emulating MX_RCACHE as OMX_RCACHE\n");
-  }
-#endif
-  if (env) {
-    omx__globals.regcache = atoi(env);
-    omx__verbose_printf("Forcing regcache to %s\n",
-			omx__globals.regcache ? "enabled" : "disabled");
-  }
-
-  /* waitspin configuration */
-  omx__globals.waitspin = 0;
-  env = getenv("OMX_WAITSPIN");
-  /* could be enabled by MX_MONOTHREAD */
-  if (env) {
-    omx__globals.waitspin = atoi(env);
-    omx__verbose_printf("Forcing waitspin to %s\n",
-			omx__globals.waitspin ? "enabled" : "disabled");
-  }
-
-  /* zombie send configuration */
-  omx__globals.zombie_max = OMX_ZOMBIE_MAX_DEFAULT;
-  env = getenv("OMX_ZOMBIE_SEND");
-#ifdef OMX_MX_API_COMPAT
-  if (!env) {
-    env = getenv("MX_ZOMBIE_SEND");
-    if (env)
-      omx__verbose_printf("Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
-  }
-#endif
-  if (env) {
-    omx__globals.zombie_max = atoi(env);
-    omx__verbose_printf("Forcing zombie max to %d\n",
-			omx__globals.zombie_max);
-  }
-
-  /* immediate acking threshold */
-  omx__globals.not_acked_max = 4;
-  env = getenv("OMX_NOTACKED_MAX");
-#ifdef OMX_MX_API_COMPAT
-  if (!env) {
-    env = getenv("MX_IMM_ACK");
-    if (env)
-      omx__verbose_printf("Emulating MX_IMM_ACK as OMX_NOTACKED_MAX\n");
-  }
-#endif
-  if (env) {
-    omx__globals.not_acked_max = atoi(env);
-    omx__verbose_printf("Forcing immediate acking threshold to %d\n",
-			omx__globals.not_acked_max);
-  }
+  /**********************************************
+   * Shared and self communication configuration
+   */
 
   /* self comm configuration */
 #ifndef OMX_DISABLE_SELF
@@ -236,6 +179,71 @@ omx__init_api(int api)
   }
 #endif
 
+  /*******************************
+   * Retransmission configuration
+   */
+
+  /* resend configuration */
+  omx__globals.req_resends_max = 1000;
+  env = getenv("OMX_RESENDS_MAX");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_MAX_RETRIES");
+    if (env)
+      omx__verbose_printf("Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
+  }
+#endif
+  if (env) {
+    omx__globals.req_resends_max = atoi(env);
+    omx__verbose_printf("Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
+  }
+
+  /* zombie send configuration */
+  omx__globals.zombie_max = OMX_ZOMBIE_MAX_DEFAULT;
+  env = getenv("OMX_ZOMBIE_SEND");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_ZOMBIE_SEND");
+    if (env)
+      omx__verbose_printf("Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
+  }
+#endif
+  if (env) {
+    omx__globals.zombie_max = atoi(env);
+    omx__verbose_printf("Forcing zombie max to %d\n",
+			omx__globals.zombie_max);
+  }
+
+  /* immediate acking threshold */
+  omx__globals.not_acked_max = 4;
+  env = getenv("OMX_NOTACKED_MAX");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_IMM_ACK");
+    if (env)
+      omx__verbose_printf("Emulating MX_IMM_ACK as OMX_NOTACKED_MAX\n");
+  }
+#endif
+  if (env) {
+    omx__globals.not_acked_max = atoi(env);
+    omx__verbose_printf("Forcing immediate acking threshold to %d\n",
+			omx__globals.not_acked_max);
+  }
+
+  /*************************
+   * Sleeping configuration
+   */
+
+  /* waitspin configuration */
+  omx__globals.waitspin = 0;
+  env = getenv("OMX_WAITSPIN");
+  /* could be enabled by MX_MONOTHREAD */
+  if (env) {
+    omx__globals.waitspin = atoi(env);
+    omx__verbose_printf("Forcing waitspin to %s\n",
+			omx__globals.waitspin ? "enabled" : "disabled");
+  }
+
   /* interrupted wait configuration */
   omx__globals.waitintr = 0;
   env = getenv("OMX_WAITINTR");
@@ -244,6 +252,28 @@ omx__init_api(int api)
     omx__verbose_printf("Forcing interrupted wait to %s\n",
 			omx__globals.waitintr ? "exit as timeout" : "go back to sleep");
   }
+
+  /*************************
+   * Regcache configuration
+   */
+  omx__globals.regcache = 0;
+  env = getenv("OMX_RCACHE");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_RCACHE");
+    if (env)
+      omx__verbose_printf("Emulating MX_RCACHE as OMX_RCACHE\n");
+  }
+#endif
+  if (env) {
+    omx__globals.regcache = atoi(env);
+    omx__verbose_printf("Forcing regcache to %s\n",
+			omx__globals.regcache ? "enabled" : "disabled");
+  }
+
+  /***************************
+   * Terminate initialization
+   */
 
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
