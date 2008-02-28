@@ -2,8 +2,6 @@
   + don't free partner since we can't change the session anymore?
     - or randomify the initial session?
 
-* set data_n->target_recv_seqnum_start when posting the connect to the driver
-
 * thread safety
   + filter wakeup on recv/send/connect/...
   + filter on specific request id too
