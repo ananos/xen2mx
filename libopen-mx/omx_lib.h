@@ -139,12 +139,9 @@ omx__timeout_ms_to_absolute_jiffies(uint32_t ms)
 		: now + (ms * hz + 1023)/1024;
 }
 
-/*********************
- * Internal functions
+/**************************
+ * Partner-related helpers
  */
-
-extern omx_return_t
-omx__progress(struct omx_endpoint * ep);
 
 static inline struct omx__partner *
 omx__partner_from_addr(omx_endpoint_addr_t * addr)
@@ -187,180 +184,6 @@ omx__partner_recv_lookup(struct omx_endpoint *ep,
     + ((uint32_t) peer_index) * omx__driver_desc->endpoint_max;
   *partnerp = ep->partners[partner_index];
 }
-
-extern void
-omx__partner_cleanup(struct omx_endpoint *ep,
-		     struct omx__partner *partner, int disconnect);
-
-extern omx_return_t
-omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr);
-
-extern void
-omx__post_connect(struct omx_endpoint *ep,
-		  struct omx__partner *partner,
-		  union omx_request * req);
-
-extern omx_return_t
-omx__process_recv_connect(struct omx_endpoint *ep,
-			  struct omx_evt_recv_connect *event);
-
-extern void
-omx__connect_complete(struct omx_endpoint *ep, union omx_request *req,
-		      omx_status_code_t status, uint32_t session_id);
-
-omx_return_t
-omx__connect_wait(omx_endpoint_t ep, union omx_request * req,
-		  uint32_t ms_timeout);
-
-extern omx_return_t
-omx__endpoint_large_region_map_init(struct omx_endpoint * ep);
-
-extern void
-omx__endpoint_large_region_map_exit(struct omx_endpoint * ep);
-
-omx_return_t
-omx__get_region(struct omx_endpoint *ep,
-		struct omx__req_seg *segs,
-		struct omx__large_region **regionp,
-		void * reserver);
-
-omx_return_t
-omx__put_region(struct omx_endpoint *ep,
-		struct omx__large_region *region,
-		void * reserver);
-
-void
-omx__notify_user_event(struct omx_endpoint *ep);
-
-void
-omx__post_notify(struct omx_endpoint *ep,
-		 struct omx__partner *partner,
-		 union omx_request * req);
-
-omx_return_t
-omx__submit_isend_medium(struct omx_endpoint *ep,
-			     union omx_request *req);
-
-omx_return_t
-omx__submit_isend_rndv(struct omx_endpoint *ep,
-		       union omx_request *req);
-
-omx_return_t
-omx__submit_notify(struct omx_endpoint *ep,
-		   union omx_request *req);
-
-void
-omx__queue_notify(struct omx_endpoint *ep,
-		  union omx_request *req);
-
-omx_return_t
-omx__submit_pull(struct omx_endpoint * ep,
-	       union omx_request * req);
-
-extern omx_return_t
-omx__submit_or_queue_pull(struct omx_endpoint * ep,
-			  union omx_request * req);
-
-extern omx_return_t
-omx__process_self_send(struct omx_endpoint *ep,
-		       union omx_request *sreq);
-
-extern void
-omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
-		   omx_status_code_t status);
-
-extern void
-omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
-		   omx_status_code_t status);
-
-extern omx_return_t
-omx__process_recv(struct omx_endpoint *ep,
-		  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
-		  omx__process_recv_func_t recv_func);
-
-extern void
-omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
-		       union omx_request *req,
-		       struct omx_evt_recv_msg *msg,
-		       void *data /* unused */, uint32_t msg_length);
-
-extern void
-omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
-			union omx_request *req,
-			struct omx_evt_recv_msg *msg,
-			void *data, uint32_t msg_length);
-
-extern void
-omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *partner,
-			      union omx_request *req,
-			      struct omx_evt_recv_msg *msg,
-			      void *data, uint32_t msg_length);
-
-extern void
-omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
-		       union omx_request *req,
-		       struct omx_evt_recv_msg *msg,
-		       void *data /* unused */, uint32_t msg_length);
-
-extern void
-omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
-			 union omx_request *req,
-			 struct omx_evt_recv_msg *msg,
-			 void *data /* unused */, uint32_t msg_length /* unused */);
-
-extern omx_return_t
-omx__process_pull_done(struct omx_endpoint * ep,
-		       struct omx_evt_pull_done * event);
-
-extern omx_return_t
-omx__process_recv_truc(struct omx_endpoint *ep,
-		       struct omx_evt_recv_truc *truc);
-
-extern omx_return_t
-omx__process_recv_nack_lib(struct omx_endpoint *ep,
-			   struct omx_evt_recv_nack_lib *nack_lib);
-
-extern omx_return_t
-omx__handle_ack(struct omx_endpoint *ep,
-		struct omx__partner *partner, omx__seqnum_t ack);
-
-extern void
-omx__handle_truc_ack(struct omx_endpoint *ep,
-		     struct omx__partner *partner,
-		     struct omx__truc_ack_data *ack_n);
-
-extern omx_return_t
-omx__handle_nack(struct omx_endpoint *ep,
-                 struct omx__partner *partner, omx__seqnum_t seqnum,
-                 omx_status_code_t status);
-
-extern void
-omx__mark_request_acked(struct omx_endpoint *ep,
-			union omx_request *req,
-			omx_status_code_t status);
-
-extern void
-omx__process_resend_requests(struct omx_endpoint *ep);
-
-extern void
-omx__process_queued_requests(struct omx_endpoint *ep);
-
-extern omx_return_t
-omx__send_throttling_request(struct omx_endpoint *ep, struct omx__partner *partner,
-			     union omx_request *req);
-
-extern omx_return_t
-omx__process_partners_to_ack(struct omx_endpoint *ep);
-
-extern omx_return_t
-omx__flush_partners_to_ack(struct omx_endpoint *ep);
-
-extern omx_return_t
-omx__ack_partner_immediately(struct omx_endpoint *ep, struct omx__partner *partner,
-			     omx__seqnum_t seqnum_offset);
-
-extern void
-omx__prepare_progress_wakeup(struct omx_endpoint *ep);
 
 static inline void
 omx__partner_needs_to_ack(struct omx_endpoint *ep,
@@ -432,17 +255,9 @@ omx__board_addr_sscanf(char * buffer, uint64_t * addr)
 	return err;
 }
 
-extern omx_return_t omx__errno_to_return(char * caller);
-
-extern omx_return_t omx__get_board_count(uint32_t * count);
-extern omx_return_t omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_info * info);
-extern omx_return_t omx__get_board_index_by_name(const char * name, uint8_t * index);
-
-extern omx_return_t omx__driver_peer_add(uint64_t board_addr, char *hostname);
-extern omx_return_t omx__driver_peers_clear(void);
-extern omx_return_t omx__peers_dump(const char * format);
-extern omx_return_t omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index);
-extern omx_return_t omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp);
+/*************************************
+ * Enpoint sendq map helpers
+ */
 
 static inline int
 omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
@@ -517,5 +332,231 @@ omx__endpoint_sendq_map_user(struct omx_endpoint * ep,
 
   return user;
 }
+
+/******************************
+ * Various internal prototypes
+ */
+
+/* sending messages */
+
+extern void
+omx__post_notify(struct omx_endpoint *ep,
+		 struct omx__partner *partner,
+		 union omx_request * req);
+
+extern omx_return_t
+omx__submit_isend_medium(struct omx_endpoint *ep,
+			     union omx_request *req);
+
+extern omx_return_t
+omx__submit_isend_rndv(struct omx_endpoint *ep,
+		       union omx_request *req);
+
+extern omx_return_t
+omx__submit_notify(struct omx_endpoint *ep,
+		   union omx_request *req);
+
+extern void
+omx__queue_notify(struct omx_endpoint *ep,
+		  union omx_request *req);
+
+extern omx_return_t
+omx__submit_pull(struct omx_endpoint * ep,
+	       union omx_request * req);
+
+extern omx_return_t
+omx__submit_or_queue_pull(struct omx_endpoint * ep,
+			  union omx_request * req);
+
+extern void
+omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
+		   omx_status_code_t status);
+
+/* receiving messages */
+
+extern omx_return_t
+omx__process_self_send(struct omx_endpoint *ep,
+		       union omx_request *sreq);
+
+extern void
+omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
+		   omx_status_code_t status);
+
+extern omx_return_t
+omx__process_recv(struct omx_endpoint *ep,
+		  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
+		  omx__process_recv_func_t recv_func);
+
+extern void
+omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
+		       union omx_request *req,
+		       struct omx_evt_recv_msg *msg,
+		       void *data /* unused */, uint32_t msg_length);
+
+extern void
+omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
+			union omx_request *req,
+			struct omx_evt_recv_msg *msg,
+			void *data, uint32_t msg_length);
+
+extern void
+omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *partner,
+			      union omx_request *req,
+			      struct omx_evt_recv_msg *msg,
+			      void *data, uint32_t msg_length);
+
+extern void
+omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
+		       union omx_request *req,
+		       struct omx_evt_recv_msg *msg,
+		       void *data /* unused */, uint32_t msg_length);
+
+extern void
+omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
+			 union omx_request *req,
+			 struct omx_evt_recv_msg *msg,
+			 void *data /* unused */, uint32_t msg_length /* unused */);
+
+extern omx_return_t
+omx__process_pull_done(struct omx_endpoint * ep,
+		       struct omx_evt_pull_done * event);
+
+extern omx_return_t
+omx__process_recv_truc(struct omx_endpoint *ep,
+		       struct omx_evt_recv_truc *truc);
+
+extern omx_return_t
+omx__process_recv_nack_lib(struct omx_endpoint *ep,
+			   struct omx_evt_recv_nack_lib *nack_lib);
+
+/* progression */
+
+extern omx_return_t
+omx__progress(struct omx_endpoint * ep);
+
+extern void
+omx__notify_user_event(struct omx_endpoint *ep);
+
+/* connect management */
+
+extern omx_return_t
+omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr);
+
+extern void
+omx__post_connect(struct omx_endpoint *ep,
+		  struct omx__partner *partner,
+		  union omx_request * req);
+
+extern omx_return_t
+omx__process_recv_connect(struct omx_endpoint *ep,
+			  struct omx_evt_recv_connect *event);
+
+extern void
+omx__connect_complete(struct omx_endpoint *ep, union omx_request *req,
+		      omx_status_code_t status, uint32_t session_id);
+
+omx_return_t
+omx__connect_wait(omx_endpoint_t ep, union omx_request * req,
+		  uint32_t ms_timeout);
+
+/* retransmission */
+
+extern omx_return_t
+omx__handle_ack(struct omx_endpoint *ep,
+		struct omx__partner *partner, omx__seqnum_t ack);
+
+extern void
+omx__handle_truc_ack(struct omx_endpoint *ep,
+		     struct omx__partner *partner,
+		     struct omx__truc_ack_data *ack_n);
+
+extern omx_return_t
+omx__handle_nack(struct omx_endpoint *ep,
+                 struct omx__partner *partner, omx__seqnum_t seqnum,
+                 omx_status_code_t status);
+
+extern void
+omx__mark_request_acked(struct omx_endpoint *ep,
+			union omx_request *req,
+			omx_status_code_t status);
+
+extern void
+omx__process_resend_requests(struct omx_endpoint *ep);
+
+extern void
+omx__process_queued_requests(struct omx_endpoint *ep);
+
+extern omx_return_t
+omx__send_throttling_request(struct omx_endpoint *ep, struct omx__partner *partner,
+			     union omx_request *req);
+
+extern omx_return_t
+omx__process_partners_to_ack(struct omx_endpoint *ep);
+
+extern omx_return_t
+omx__flush_partners_to_ack(struct omx_endpoint *ep);
+
+extern omx_return_t
+omx__ack_partner_immediately(struct omx_endpoint *ep, struct omx__partner *partner,
+			     omx__seqnum_t seqnum_offset);
+
+extern void
+omx__prepare_progress_wakeup(struct omx_endpoint *ep);
+
+extern void
+omx__partner_cleanup(struct omx_endpoint *ep,
+		     struct omx__partner *partner, int disconnect);
+
+/* large region management */
+
+extern omx_return_t
+omx__endpoint_large_region_map_init(struct omx_endpoint * ep);
+
+extern void
+omx__endpoint_large_region_map_exit(struct omx_endpoint * ep);
+
+extern omx_return_t
+omx__get_region(struct omx_endpoint *ep,
+		struct omx__req_seg *segs,
+		struct omx__large_region **regionp,
+		void * reserver);
+
+extern omx_return_t
+omx__put_region(struct omx_endpoint *ep,
+		struct omx__large_region *region,
+		void * reserver);
+
+/* board management */
+
+extern omx_return_t
+omx__get_board_count(uint32_t * count);
+
+extern omx_return_t
+omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_info * info);
+
+extern omx_return_t
+omx__get_board_index_by_name(const char * name, uint8_t * index);
+
+/* peer management */
+
+extern omx_return_t
+omx__driver_peer_add(uint64_t board_addr, char *hostname);
+
+extern omx_return_t
+omx__driver_peers_clear(void);
+
+extern omx_return_t
+omx__peers_dump(const char * format);
+
+extern omx_return_t
+omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index);
+
+extern omx_return_t
+omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp);
+
+/* misc helpers */
+
+extern omx_return_t
+omx__errno_to_return(char * caller);
 
 #endif /* __omx_lib_h__ */
