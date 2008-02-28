@@ -1,27 +1,34 @@
-* cleanup seqnum printing there too
+* improve retransmission
+  + only ack notify immediately if next_frag = next_match
+  + store last_acked_recv_seq, don't update it if send regular/liback failed
+  + queue a liback if too many not-acked packets
+  + cancel a liback if sending a message before, or send liback after dequeuing request
+    + add a force field or tweak the last sent for forced immediate acks?
+  + don't free partner since we can't change the session anymore?
+    - or randomify the initial session?
+
 * set data_n->target_recv_seqnum_start when posting the connect to the driver
 
 * thread safety
   + filter wakeup on recv/send/connect/...
   + filter on specific request id too
 
-* send failed with status (Endpoint Closed)
-  omx_pingpong: /home/bgoglin/open-mx/build-x86_64/../src/libopen-mx/omx_large.c:96: 
-  omx__endpoint_large_region_free: Assertion `array[index].region.use_count == 0' failed.
-
 * when debug enabled, SIGUSR1 dumps the status
 
 * unlockify the ring management in the driver event reporting code
   + use rcu to avoid having to lock the waiter's queue
     - allocate the waiter struct and free it with a rcu_call
+  + atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
+    ok if lots of slices in parallel ?
 
 * group similar fields in structure for cache effects
 
 * free request (and buffers) on close
   + preallocated pool with free list
-
-* atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
-  ok if lots of slices in parallel ?
+  + cleanup request to avoid below when killing during large
+    send failed with status (Endpoint Closed)
+    omx_pingpong: /home/bgoglin/open-mx/build-x86_64/../src/libopen-mx/omx_large.c:96: 
+    omx__endpoint_large_region_free: Assertion `array[index].region.use_count == 0' failed.
 
 * drop our region window offset ? (when wire compat will work for large)
   + pull are aligned on the reader's pages because it's the slower side on native MX
@@ -44,12 +51,6 @@
   + 2 pages if not mx wire compat
     - double the recv queue size
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
-
-* improve retransmission
-  + cancel a liback if sending a message before, or send liback after dequeuing request
-  + queue a liback if too many not-acked packets
-  + don't free partner since we can't change the session anymore?
-    - or randomify the initial session?
 
 * pull improvements
   + ph_prepare_exit only called when holding the iface mutex, may sleep

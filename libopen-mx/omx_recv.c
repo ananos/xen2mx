@@ -525,15 +525,23 @@ static INLINE void
 omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
 				       struct omx__partner * partner)
 {
+  omx__seqnum_t old_next_frag_recv_seq = partner->next_frag_recv_seq;
+  omx__seqnum_t new_next_frag_recv_seq;
+
   /* update the seqnum of the next partial fragment to expect
    * if no more partner partial request, we expect a frag for the new seqnum,
    * if not, we expect the fragment for at least the first partial seqnum
    */
   if (omx__empty_partner_partial_queue(partner)) {
-    partner->next_frag_recv_seq = partner->next_match_recv_seq;
+    new_next_frag_recv_seq = partner->next_match_recv_seq;
   } else {
     union omx_request *req = omx__first_partner_partial_request(partner);
-    partner->next_frag_recv_seq = req->recv.seqnum;
+    new_next_frag_recv_seq = req->recv.seqnum;
+  }
+
+  if (new_next_frag_recv_seq != old_next_frag_recv_seq) {
+    partner->next_frag_recv_seq = new_next_frag_recv_seq;
+    omx__partner_needs_to_ack(ep, partner);
   }
 }
 
@@ -556,7 +564,6 @@ omx__continue_partial_request(struct omx_endpoint *ep,
       omx__process_recv_medium_frag(ep, partner, req,
 				    msg, data, msg_length);
       omx__update_partner_next_frag_recv_seq(ep, partner);
-      omx__partner_needs_to_ack(ep, partner);
       return OMX_SUCCESS;
     } else if (req_index > new_index) {
       break;
@@ -597,7 +604,6 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
       /* we matched this seqnum, we now expect the next one */
       OMX__SEQNUM_INCREASE(partner->next_match_recv_seq);
       omx__update_partner_next_frag_recv_seq(ep, partner);
-      omx__partner_needs_to_ack(ep, partner);
     }
 
   } else if (likely(msg->type == OMX_EVT_RECV_MEDIUM
