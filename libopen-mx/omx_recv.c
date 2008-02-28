@@ -540,7 +540,6 @@ omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
   }
 
   if (new_next_frag_recv_seq != old_next_frag_recv_seq) {
-    omx_return_t ret = OMX_INTERNAL_RETURN_CODE_NEED_ACK;
 
     partner->next_frag_recv_seq = new_next_frag_recv_seq;
 
@@ -551,13 +550,10 @@ omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
 			(unsigned) OMX__SEQNUM(new_next_frag_recv_seq-1),
 			(unsigned) OMX__SESNUM_SHIFTED(new_next_frag_recv_seq));
 
-      ret = omx__ack_partner_immediately(ep, partner, 0);
-      if (ret != OMX_SUCCESS)
-	ret = OMX_INTERNAL_RETURN_CODE_NEED_ACK;
+      omx__mark_partner_need_ack_immediate(ep, partner);
+    } else {
+      omx__mark_partner_need_ack_delayed(ep, partner);
     }
-
-    if (ret == OMX_INTERNAL_RETURN_CODE_NEED_ACK)
-      omx__partner_needs_to_ack(ep, partner);
   }
 }
 
@@ -729,7 +725,7 @@ omx__process_recv(struct omx_endpoint *ep,
       /* assume a ack has been lost, resend a ack now, but only if
        * the obsolete is the previous packet (so that we don't flood the peer with acks)
        */
-      omx__ack_partner_immediately(ep, partner, 0);
+      omx__mark_partner_need_ack_immediate(ep, partner);
     }
   }
 

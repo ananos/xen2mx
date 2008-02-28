@@ -130,9 +130,10 @@ omx__partner_reset(struct omx__partner *partner)
   partner->last_recv_acknum = 0;
   partner->throttling_sends_nr = 0;
 
-  /* FIXME: remove the endpoint_partners_to_ack_elt if necessary */
-
-  partner->oldest_recv_time_not_acked = 0;
+  if (partner->need_ack != OMX__PARTNER_NEED_NO_ACK) {
+    partner->need_ack = OMX__PARTNER_NEED_NO_ACK;
+    list_del(&partner->endpoint_partners_to_ack_elt);
+  }
 }
 
 omx_return_t
@@ -151,6 +152,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->endpoint_index = endpoint_index;
   partner->peer_index = peer_index;
   partner->localization = OMX__PARTNER_LOCALIZATION_UNKNOWN; /* will be set by omx__partner_check_localization() */
+  partner->need_ack = OMX__PARTNER_NEED_NO_ACK;
 
   omx__partner_reset(partner);
 

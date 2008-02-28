@@ -210,9 +210,6 @@ omx__progress(struct omx_endpoint * ep)
 
   omx__check_enough_progression(ep);
 
-  /* ack partners that didn't get acked recently */
-  omx__process_partners_to_ack(ep);
-
   /* process unexpected events first,
    * to release the pressure coming from the network
    */
@@ -258,6 +255,9 @@ omx__progress(struct omx_endpoint * ep)
 
   /* post queued requests */
   omx__process_queued_requests(ep);
+
+  /* ack partners that didn't get acked recently */
+  omx__process_partners_to_ack(ep);
 
   /* check the endpoint descriptor */
   omx__check_endpoint_desc(ep);

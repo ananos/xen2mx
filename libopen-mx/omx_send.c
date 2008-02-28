@@ -72,13 +72,14 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
 		     union omx_request * req)
 {
   struct omx_cmd_send_tiny * tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
+  omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
   omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
-		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
-  tiny_param->hdr.piggyack = partner->next_frag_recv_seq;
+  tiny_param->hdr.piggyack = ack_upto;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
   if (unlikely(err < 0)) {
@@ -95,7 +96,7 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   omx__enqueue_request(&ep->non_acked_req_q, req);
 
   if (!err)
-    omx__partner_ack_sent(ep, partner);
+    omx__mark_partner_ack_sent(ep, partner);
 }
 
 static INLINE omx_return_t
@@ -153,13 +154,14 @@ omx__post_isend_small(struct omx_endpoint *ep,
 		      union omx_request * req)
 {
   struct omx_cmd_send_small * small_param = &req->send.specific.small.send_small_ioctl_param;
+  omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
   omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
-		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
-  small_param->piggyack = partner->next_frag_recv_seq;
+  small_param->piggyack = ack_upto;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
   if (unlikely(err < 0)) {
@@ -176,7 +178,7 @@ omx__post_isend_small(struct omx_endpoint *ep,
   omx__enqueue_request(&ep->non_acked_req_q, req);
 
   if (!err)
-    omx__partner_ack_sent(ep, partner);
+    omx__mark_partner_ack_sent(ep, partner);
 }
 
 static INLINE omx_return_t
@@ -258,6 +260,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 		       union omx_request *req)
 {
   struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
+  omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   uint32_t length = req->generic.status.msg_length;
   uint32_t remaining = length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
@@ -267,10 +270,10 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   int i;
 
   omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
-		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
-  medium_param->piggyack = partner->next_frag_recv_seq;
+  medium_param->piggyack = ack_upto;
 
   if (likely(req->send.segs.nseg == 1)) {
     /* optimize the contigous send medium */
@@ -336,7 +339,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   omx__enqueue_request(&ep->driver_posted_req_q, req);
 
   /* at least one frag was posted, the ack has been sent for sure */
-  omx__partner_ack_sent(ep, partner);
+  omx__mark_partner_ack_sent(ep, partner);
 
   return;
 
@@ -438,13 +441,14 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
 		     union omx_request * req)
 {
   struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
+  omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
   omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
-		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
-  rndv_param->hdr.piggyack = partner->next_frag_recv_seq;
+  rndv_param->hdr.piggyack = ack_upto;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
   if (unlikely(err < 0)) {
@@ -461,7 +465,7 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   omx__enqueue_request(&ep->non_acked_req_q, req);
 
   if (!err)
-    omx__partner_ack_sent(ep, partner);
+    omx__mark_partner_ack_sent(ep, partner);
 }
 
 omx_return_t
@@ -545,13 +549,14 @@ omx__post_notify(struct omx_endpoint *ep,
 		 union omx_request * req)
 {
   struct omx_cmd_send_notify * notify_param = &req->recv.specific.large.send_notify_ioctl_param;
+  omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
   omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
-		    (unsigned int) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
-		    (unsigned int) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
+		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
+		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
-  notify_param->piggyack = partner->next_frag_recv_seq;
+  notify_param->piggyack = ack_upto;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
   if (unlikely(err < 0)) {
@@ -568,7 +573,7 @@ omx__post_notify(struct omx_endpoint *ep,
   omx__enqueue_request(&ep->non_acked_req_q, req);
 
   if (!err)
-    omx__partner_ack_sent(ep, partner);
+    omx__mark_partner_ack_sent(ep, partner);
 }
 
 omx_return_t

@@ -186,29 +186,60 @@ omx__partner_recv_lookup(struct omx_endpoint *ep,
 }
 
 static inline void
-omx__partner_needs_to_ack(struct omx_endpoint *ep,
-			  struct omx__partner *partner)
+omx__mark_partner_need_ack_delayed(struct omx_endpoint *ep,
+				   struct omx__partner *partner)
 {
-  if (!partner->oldest_recv_time_not_acked) {
+  /* nothing to do if already NEED_ACK_DELAYED or NEED_ACK_IMMEDIATE */
+
+  if (partner->need_ack == OMX__PARTNER_NEED_NO_ACK) {
+    partner->need_ack = OMX__PARTNER_NEED_ACK_DELAYED;
     partner->oldest_recv_time_not_acked = omx__driver_desc->jiffies;
-    list_add_tail(&partner->endpoint_partners_to_ack_elt, &ep->partners_to_ack_list);
+    list_add_tail(&partner->endpoint_partners_to_ack_elt, &ep->partners_to_ack_delayed_list);
   }
 }
 
 static inline void
-omx__partner_ack_sent(struct omx_endpoint *ep,
-		      struct omx__partner *partner)
+omx__mark_partner_need_ack_immediate(struct omx_endpoint *ep,
+				     struct omx__partner *partner)
 {
-  if (partner->oldest_recv_time_not_acked) {
-    partner->oldest_recv_time_not_acked = 0;
+  /* nothing to do if already NEED_ACK_IMMEDIATE */
+
+  if (partner->need_ack != OMX__PARTNER_NEED_ACK_IMMEDIATE) {
+    /* queue a new immediate ack, after removing the delayed one if needed */
+    if (partner->need_ack == OMX__PARTNER_NEED_ACK_DELAYED) {
+      list_move(&partner->endpoint_partners_to_ack_elt, &ep->partners_to_ack_immediate_list);
+    } else {
+      list_add_tail(&partner->endpoint_partners_to_ack_elt, &ep->partners_to_ack_immediate_list);
+    }
+
+    partner->need_ack = OMX__PARTNER_NEED_ACK_IMMEDIATE;
+  }
+}
+
+static inline omx__seqnum_t
+omx__get_partner_needed_ack(struct omx_endpoint *ep,
+			    struct omx__partner *partner)
+{
+  return partner->next_frag_recv_seq;
+}
+
+static inline void
+omx__mark_partner_ack_sent(struct omx_endpoint *ep,
+			   struct omx__partner *partner)
+{
+  /* drop the previous DELAYED or IMMEDIATE ack */
+  if (partner->need_ack != OMX__PARTNER_NEED_NO_ACK) {
+    partner->need_ack = OMX__PARTNER_NEED_NO_ACK;
     list_del(&partner->endpoint_partners_to_ack_elt);
   }
+
+  /* update the last acked seqnum */
   partner->last_acked_recv_seq = partner->next_frag_recv_seq;
 }
 
 static inline void
 omx__mark_partner_throttling(struct omx_endpoint *ep,
-			  struct omx__partner *partner)
+			     struct omx__partner *partner)
 {
   if (!partner->throttling_sends_nr++)
     list_add_tail(&partner->endpoint_throttling_partners_elt, &ep->throttling_partners_list);
@@ -495,10 +526,6 @@ omx__process_partners_to_ack(struct omx_endpoint *ep);
 
 extern omx_return_t
 omx__flush_partners_to_ack(struct omx_endpoint *ep);
-
-extern omx_return_t
-omx__ack_partner_immediately(struct omx_endpoint *ep, struct omx__partner *partner,
-			     omx__seqnum_t seqnum_offset);
 
 extern void
 omx__prepare_progress_wakeup(struct omx_endpoint *ep);

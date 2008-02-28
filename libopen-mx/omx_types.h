@@ -98,6 +98,12 @@ enum omx__partner_localization {
   OMX__PARTNER_LOCALIZATION_UNKNOWN,
 };
 
+enum omx__partner_need_ack {
+  OMX__PARTNER_NEED_NO_ACK,
+  OMX__PARTNER_NEED_ACK_DELAYED,
+  OMX__PARTNER_NEED_ACK_IMMEDIATE,
+};
+
 struct omx__partner {
   uint64_t board_addr;
   uint16_t peer_index;
@@ -167,8 +173,10 @@ struct omx__partner {
   struct list_head endpoint_throttling_partners_elt;
 
   /* acks */
-  uint64_t oldest_recv_time_not_acked;
   struct list_head endpoint_partners_to_ack_elt;
+  enum omx__partner_need_ack need_ack;
+  /* when a ack is need but not immediately (need_ack == ACK_DELAYED) */
+  uint64_t oldest_recv_time_not_acked;
 
   /* user private data for get/set_endpoint_addr_context */
   void * user_context;
@@ -249,7 +257,8 @@ struct omx_endpoint {
   struct omx__partner ** partners;
   struct omx__partner * myself;
 
-  struct list_head partners_to_ack_list;
+  struct list_head partners_to_ack_immediate_list;
+  struct list_head partners_to_ack_delayed_list;
   struct list_head throttling_partners_list;
 
   struct list_head sleepers;
@@ -477,7 +486,6 @@ struct omx__globals {
 enum omx__internal_return_code {
   OMX_INTERNAL_RETURN_CODE_MIN = 101,
   OMX_INTERNAL_RETURN_CODE_WAIT_ABORT,
-  OMX_INTERNAL_RETURN_CODE_NEED_ACK,
 };
 
 #endif /* __omx_types_h__ */

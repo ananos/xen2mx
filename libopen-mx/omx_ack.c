@@ -225,6 +225,7 @@ omx__submit_send_liback(struct omx_endpoint *ep,
 {
   struct omx_cmd_send_truc truc_param;
   union omx__truc_data *data_n = (void *) &truc_param.data;
+  omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
   partner->last_send_acknum++;
@@ -237,8 +238,8 @@ omx__submit_send_liback(struct omx_endpoint *ep,
   OMX_PKT_FIELD_FROM(data_n->type, OMX__TRUC_DATA_TYPE_ACK);
   OMX_PKT_FIELD_FROM(data_n->ack.acknum, partner->last_send_acknum);
   OMX_PKT_FIELD_FROM(data_n->ack.session_id, partner->back_session_id);
-  OMX_PKT_FIELD_FROM(data_n->ack.lib_seqnum, partner->next_frag_recv_seq);
-  OMX_PKT_FIELD_FROM(data_n->ack.send_seq, partner->next_frag_recv_seq); /* FIXME? partner->send_seq */
+  OMX_PKT_FIELD_FROM(data_n->ack.lib_seqnum, ack_upto);
+  OMX_PKT_FIELD_FROM(data_n->ack.send_seq, ack_upto); /* FIXME? partner->send_seq */
   OMX_PKT_FIELD_FROM(data_n->ack.requeued, 0); /* FIXME? partner->requeued */
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TRUC, &truc_param);
@@ -256,20 +257,37 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
   struct omx__partner *partner, *next;
   uint64_t now = omx__driver_desc->jiffies;
   omx_return_t ret = OMX_SUCCESS;
-
-  /* no need to bother looking in the queue if the time didn't change */
   static uint64_t last_invokation = 0;
+
+  /* look at the immediate list */
+  list_for_each_entry_safe(partner, next,
+			   &ep->partners_to_ack_immediate_list, endpoint_partners_to_ack_elt) {
+    omx__debug_printf(ACK, "acking immediately back to partner up to %d (#%d) at jiffies %lld\n",
+		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
+		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
+		      (unsigned long long) now);
+
+    ret = omx__submit_send_liback(ep, partner);
+    if (ret != OMX_SUCCESS)
+      /* failed to send one liback, no need to try more */
+      break;
+
+    omx__mark_partner_ack_sent(ep, partner);
+  }
+
+  /* no need to bother looking at the delayed list if the time didn't change */
   if (now == last_invokation)
     return OMX_SUCCESS;
   last_invokation = now;
 
+  /* look at the delayed list */
   list_for_each_entry_safe(partner, next,
-			   &ep->partners_to_ack_list, endpoint_partners_to_ack_elt) {
+			   &ep->partners_to_ack_delayed_list, endpoint_partners_to_ack_elt) {
     if (now - partner->oldest_recv_time_not_acked < omx__globals.ack_delay_jiffies)
       /* the remaining ones are more recent, no need to ack them yet */
       break;
 
-    omx__debug_printf(ACK, "acking back to partner up to %d (#%d), jiffies %lld >> %lld\n",
+    omx__debug_printf(ACK, "delayed acking back to partner up to %d (#%d), jiffies %lld >> %lld\n",
 		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
 		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		      (unsigned long long) now,
@@ -280,7 +298,7 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
       /* failed to send one liback, no need to try more */
       break;
 
-    omx__partner_ack_sent(ep, partner);
+    omx__mark_partner_ack_sent(ep, partner);
   }
 
   return ret;
@@ -292,8 +310,12 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
   struct omx__partner *partner, *next;
   omx_return_t ret = OMX_SUCCESS;
 
+  /* immediate list should have been emptied at the end of the previous round of progression */
+  omx__debug_assert(list_empty(&ep->partners_to_ack_immediate_list));
+
+  /* look at the delayed list */
   list_for_each_entry_safe(partner, next,
-			   &ep->partners_to_ack_list, endpoint_partners_to_ack_elt) {
+			   &ep->partners_to_ack_delayed_list, endpoint_partners_to_ack_elt) {
     omx__debug_printf(ACK, "forcing ack back to partner up to %d (#%d), jiffies %lld instead of %lld\n",
 		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
 		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
@@ -305,36 +327,8 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
       /* failed to send one liback, too bad for this peer */
       continue;
 
-    omx__partner_ack_sent(ep, partner);
+    omx__mark_partner_ack_sent(ep, partner);
   }
-
-  return ret;
-}
-
-omx_return_t
-omx__ack_partner_immediately(struct omx_endpoint *ep,
-			     struct omx__partner *partner,
-			     omx__seqnum_t seqnum_offset)
-{
-  omx_return_t ret = OMX_SUCCESS;
-  omx__seqnum_t saved_next_frag_recv_seq = partner->next_frag_recv_seq;
-
-  omx__debug_printf(ACK, "forcing immediate ack back to partner up to %d (#%d), jiffies %lld instead of %lld\n",
-		    (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq + seqnum_offset - 1),
-		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq + seqnum_offset - 1),
-		    (unsigned long long) omx__driver_desc->jiffies,
-		    (unsigned long long) partner->oldest_recv_time_not_acked);
-
-  /* apply the offset to the seqnum to ack */
-  OMX__SEQNUM_INCREASE_BY(partner->next_frag_recv_seq, seqnum_offset);
-
-  ret = omx__submit_send_liback(ep, partner);
-
-  /* restore the seqnum */
-  partner->next_frag_recv_seq = saved_next_frag_recv_seq;
-
-  if (ret == OMX_SUCCESS)
-    omx__partner_ack_sent(ep, partner);
 
   return ret;
 }
@@ -347,10 +341,10 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
   uint64_t wakeup_jiffies = OMX_NO_WAKEUP_JIFFIES;
 
   /* any delayed ack to send soon? */
-  if (!list_empty(&ep->partners_to_ack_list)) {
+  if (!list_empty(&ep->partners_to_ack_delayed_list)) {
     uint64_t tmp;
 
-    partner = list_first_entry(&ep->partners_to_ack_list, struct omx__partner, endpoint_partners_to_ack_elt);
+    partner = list_first_entry(&ep->partners_to_ack_delayed_list, struct omx__partner, endpoint_partners_to_ack_elt);
     tmp = partner->oldest_recv_time_not_acked + omx__globals.ack_delay_jiffies;
 
     omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for delayed acks\n",
