@@ -184,6 +184,22 @@ omx__init_api(int api)
 			omx__globals.zombie_max);
   }
 
+  /* immediate acking threshold */
+  omx__globals.not_acked_max = 4;
+  env = getenv("OMX_NOTACKED_MAX");
+#ifdef OMX_MX_API_COMPAT
+  if (!env) {
+    env = getenv("MX_IMM_ACK");
+    if (env)
+      omx__verbose_printf("Emulating MX_IMM_ACK as OMX_NOTACKED_MAX\n");
+  }
+#endif
+  if (env) {
+    omx__globals.not_acked_max = atoi(env);
+    omx__verbose_printf("Forcing immediate acking threshold to %d\n",
+			omx__globals.not_acked_max);
+  }
+
   /* self comm configuration */
 #ifndef OMX_DISABLE_SELF
   omx__globals.selfcomms = 1;

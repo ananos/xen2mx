@@ -416,6 +416,10 @@ OMX_RESENDS_MAX=1000
 	Try to resend each send request 1000 times before timeout-ing.
   By default, each request is resent up to 1000 times before timeout-ing.
 
+OMX_NOTACKED_MAX=4
+	Allow a maximum of 4 messages not acked per partner. When passing
+  this threshold, an explicit ack is sent immediatly if needed.
+
 OMX_VERBOSE=1
 	Display verbose messages.
   No verbose messages are displayed by default, except in the debugging

@@ -540,8 +540,24 @@ omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
   }
 
   if (new_next_frag_recv_seq != old_next_frag_recv_seq) {
+    omx_return_t ret = OMX_INTERNAL_RETURN_CODE_NEED_ACK;
+
     partner->next_frag_recv_seq = new_next_frag_recv_seq;
-    omx__partner_needs_to_ack(ep, partner);
+
+    /* if too many non-acked message, ack now */
+    if (OMX__SEQNUM(new_next_frag_recv_seq - partner->last_acked_recv_seq) >= omx__globals.not_acked_max) {
+      omx__debug_printf(SEQNUM, "seqnums %d-%d (#%d) not acked yet, sending immediate ack\n",
+			(unsigned) OMX__SEQNUM(partner->last_acked_recv_seq),
+			(unsigned) OMX__SEQNUM(new_next_frag_recv_seq-1),
+			(unsigned) OMX__SESNUM_SHIFTED(new_next_frag_recv_seq));
+
+      ret = omx__ack_partner_immediately(ep, partner, 0);
+      if (ret != OMX_SUCCESS)
+	ret = OMX_INTERNAL_RETURN_CODE_NEED_ACK;
+    }
+
+    if (ret == OMX_INTERNAL_RETURN_CODE_NEED_ACK)
+      omx__partner_needs_to_ack(ep, partner);
   }
 }
 

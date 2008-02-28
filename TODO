@@ -1,5 +1,4 @@
 * improve retransmission
-  + queue a liback if too many not-acked packets
   + cancel a liback if sending a message before, or send liback after dequeuing request
     + add a force field or tweak the last sent for forced immediate acks?
   + don't free partner since we can't change the session anymore?
