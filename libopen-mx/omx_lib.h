@@ -380,6 +380,7 @@ omx__partner_ack_sent(struct omx_endpoint *ep,
     partner->oldest_recv_time_not_acked = 0;
     list_del(&partner->endpoint_partners_to_ack_elt);
   }
+  partner->last_acked_recv_seq = partner->next_frag_recv_seq;
 }
 
 static inline void

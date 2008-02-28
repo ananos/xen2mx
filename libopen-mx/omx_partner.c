@@ -123,7 +123,8 @@ omx__partner_reset(struct omx__partner *partner)
   partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   partner->next_acked_send_seq = -1; /* will be initialized when the partner will reply to my connect */
   OMX__SEQNUM_RESET(partner->next_match_recv_seq); /* will force the sender's send seq through the connect */
-  OMX__SEQNUM_RESET(partner->next_frag_recv_seq); /* will force the sender's send seq through the connect */
+  partner->next_frag_recv_seq = partner->next_match_recv_seq; /* will force the sender's send seq through the connect */
+  partner->last_acked_recv_seq = partner->next_frag_recv_seq; /* nothing to ack yet */
   partner->connect_seqnum = 0;
   partner->last_send_acknum = 0;
   partner->last_recv_acknum = 0;

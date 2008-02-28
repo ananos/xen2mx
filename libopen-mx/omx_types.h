@@ -145,6 +145,9 @@ struct omx__partner {
    */
   omx__seqnum_t next_frag_recv_seq;
 
+  /* seqnum of the next seqnum used in the last ack/piggyack that we sent */
+  omx__seqnum_t last_acked_recv_seq;
+
   /*
    * when matching, increase recv_seq
    * when event, compare message seqnum with next_match_recv_seq:

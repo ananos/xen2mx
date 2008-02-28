@@ -1,5 +1,5 @@
 * improve retransmission
-  + store last_acked_recv_seq, don't update it if send regular/liback failed
+  + don't update last_acked_recv_seq if send regular/liback failed
   + queue a liback if too many not-acked packets
   + cancel a liback if sending a message before, or send liback after dequeuing request
     + add a force field or tweak the last sent for forced immediate acks?
