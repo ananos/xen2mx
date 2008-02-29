@@ -1050,6 +1050,6 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     }
 
     /* no need to dequeue/requeue */
-    omx__post_connect(ep, req->generic.partner, req);
+    omx__post_connect_request(ep, req->generic.partner, req);
   }
 }

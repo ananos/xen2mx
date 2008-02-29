@@ -288,9 +288,9 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
  */
 
 void
-omx__post_connect(struct omx_endpoint *ep,
-		  struct omx__partner *partner,
-		  union omx_request * req)
+omx__post_connect_request(struct omx_endpoint *ep,
+			  struct omx__partner *partner,
+			  union omx_request * req)
 {
   struct omx_cmd_send_connect * connect_param = &req->connect.send_connect_ioctl_param;
   struct omx__connect_request_data * data_n = (void *) &connect_param->data;
@@ -365,7 +365,7 @@ omx__connect_common(omx_endpoint_t ep,
   OMX_PKT_FIELD_FROM(data_n->is_reply, 0);
   OMX_PKT_FIELD_FROM(data_n->connect_seqnum, connect_seqnum);
 
-  omx__post_connect(ep, partner, req);
+  omx__post_connect_request(ep, partner, req);
 
   /* no need to wait for a done event, tiny is synchronous */
   req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY;
@@ -664,6 +664,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   reply_data_n->src_session_id = request_data_n->src_session_id;
   OMX_PKT_FIELD_FROM(reply_data_n->target_session_id, ep->desc->session_id);
   OMX_PKT_FIELD_FROM(reply_data_n->is_reply, 1);
+  OMX_PKT_FIELD_FROM(reply_data_n->target_recv_seqnum_start, partner->next_match_recv_seq);
   reply_data_n->connect_seqnum = request_data_n->connect_seqnum;
   OMX_PKT_FIELD_FROM(reply_data_n->status_code, status_code);
 

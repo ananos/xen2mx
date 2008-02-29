@@ -474,9 +474,9 @@ extern omx_return_t
 omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr);
 
 extern void
-omx__post_connect(struct omx_endpoint *ep,
-		  struct omx__partner *partner,
-		  union omx_request * req);
+omx__post_connect_request(struct omx_endpoint *ep,
+			  struct omx__partner *partner,
+			  union omx_request * req);
 
 extern omx_return_t
 omx__process_recv_connect(struct omx_endpoint *ep,

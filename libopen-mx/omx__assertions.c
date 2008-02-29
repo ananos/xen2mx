@@ -39,8 +39,6 @@ assertions(void)
   CHECK(OMX_RETURN_CODE_MAX < OMX_INTERNAL_RETURN_CODE_MIN);
   CHECK(sizeof(((struct omx__connect_request_data *) NULL)->is_reply) == sizeof(((struct omx__connect_reply_data *) NULL)->is_reply));
   CHECK(offsetof(struct omx__connect_request_data, is_reply) == offsetof(struct omx__connect_reply_data, is_reply));
-  CHECK(sizeof(((struct omx__connect_request_data *) NULL)->target_recv_seqnum_start) == sizeof(((struct omx__connect_reply_data *) NULL)->target_recv_seqnum_start));
-  CHECK(offsetof(struct omx__connect_request_data, target_recv_seqnum_start) == offsetof(struct omx__connect_reply_data, target_recv_seqnum_start));
 }
 
 
