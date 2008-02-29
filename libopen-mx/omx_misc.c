@@ -58,7 +58,7 @@ omx_strerror(omx_return_t ret)
   case OMX_SUCCESS:
     return "Success";
   case OMX_BAD_ERROR:
-    return "Bad (internal?) error";
+    return "Bad error";
   case OMX_ALREADY_INITIALIZED:
     return "Already initialized";
   case OMX_NOT_INITIALIZED:
