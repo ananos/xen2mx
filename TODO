@@ -1,3 +1,6 @@
+* omx_set_error_handler
+  + special one before omx_init()
+
 * document why --enable-threads is needed, even for external lib,
   unless they don't block (we'll need a generic omx__wait API for this),
   and don't use the unexpected handler (or they'll have to lock in there)
@@ -54,9 +57,6 @@
 * pull improvements
   + ph_prepare_exit only called when holding the iface mutex, may sleep
     - but last_release may be called from interrupt context
-
-* missing features (for PVFS2)
-  + omx_set_error_handler - if the default is return, I do not need this 
 
 * ioctls to change board indexes?
   + except if some endpoints are attached

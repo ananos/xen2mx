@@ -45,16 +45,7 @@ omx__init_api(int api)
 
   err = open(OMX_DEVNAME, O_RDONLY);
   if (err < 0)
-#if 0
-    return omx__errno_to_return("init open control fd");
-#else
-    {
-      /* FIXME: the standard error handler exits by default */
-      fprintf(stderr, "Cannot open Open-MX device: code %d\n",
-              omx__errno_to_return("init open control fd"));
-      exit(1);
-    }
-#endif
+    return omx__error(omx__errno_to_return("open control device"), "Failed to open control device");
 
   omx__globals.control_fd = err;
 
