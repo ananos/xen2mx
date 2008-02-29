@@ -237,6 +237,16 @@ else
   AC_MSG_RESULT(no)
 fi
 
+# net_device.dev appeared in 2.6.21
+AC_MSG_CHECKING((in kernel headers) device type in net_device)
+if sed -ne '/^struct net_device/,/^};/p' ${LINUX_HDR}/include/linux/netdevice.h \
+  | grep "struct class_device" > /dev/null ; then
+  echo "#define OMX_HAVE_NETDEVICE_CLASS_DEVICE 1" >> ${TMP_CHECKS_PATH}
+  AC_MSG_RESULT(struct class_device)
+else
+  AC_MSG_RESULT(struct device)
+fi
+
 # add the footer
 echo "" >> ${TMP_CHECKS_PATH}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_PATH}

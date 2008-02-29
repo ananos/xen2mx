@@ -111,7 +111,12 @@ list_entry((ptr)->next, type, member)
 static inline int
 omx_ifp_node(struct net_device *ifp)
 {
+/* net_device switch from class_device to device in 2.6.21 */
+#ifdef OMX_HAVE_NETDEVICE_CLASS_DEVICE
+  return ifp->class_dev.dev ? dev_to_node(ifp->class_dev.dev) : -1;
+#else
   return ifp->dev.parent ? dev_to_node(ifp->dev.parent) : -1;
+#endif
 }
 #else
 #define omx_ifp_node(ifp) -3
