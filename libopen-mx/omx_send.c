@@ -859,8 +859,6 @@ omx_issendv(omx_endpoint_t ep,
   if (unlikely(ret != OMX_SUCCESS))
     goto out_with_req;
 
-  omx_cache_segments(&req->send.segs, segs, nseg);
-
   req->generic.partner = partner = omx__partner_from_addr(&dest_endpoint);
   req->generic.status.addr = dest_endpoint;
   req->generic.status.match_info = match_info;
