@@ -57,14 +57,12 @@ omx__init_api(int api)
   }
 
   if (omx__driver_desc->abi_version > OMX_DRIVER_ABI_VERSION) {
-    fprintf(stderr, "Library (ABI 0x%x) is too old for driver (ABI 0x%x), did you relink your program with the new library?\n",
+    ret = omx__error(OMX_BAD_ERROR, "Library (ABI 0x%x) is too old for driver (ABI 0x%x), did you relink your program with the new library?",
 	    OMX_DRIVER_ABI_VERSION, omx__driver_desc->abi_version);
-    ret = OMX_BAD_ERROR;
     goto out_with_fd;
   } else if (omx__driver_desc->abi_version < OMX_DRIVER_ABI_VERSION) {
-    fprintf(stderr, "Driver (ABI 0x%x) is too old for library (ABI 0x%x), did you rebuild/reload the new driver?\n",
+    ret = omx__error(OMX_BAD_ERROR, "Driver (ABI 0x%x) is too old for library (ABI 0x%x), did you rebuild/reload the new driver?",
 	    omx__driver_desc->abi_version, OMX_DRIVER_ABI_VERSION);
-    ret = OMX_BAD_ERROR;
     goto out_with_fd;
   }
 
@@ -278,6 +276,8 @@ omx__init_api(int api)
 omx_return_t
 omx_finalize(void)
 {
+  /* FIXME: check that it is initialized */
+
   /* FIXME: check that no endpoint is still open */
 
   close(omx__globals.control_fd);
