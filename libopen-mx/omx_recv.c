@@ -1125,7 +1125,7 @@ omx_irecvv(omx_endpoint_t ep,
   struct omx__req_seg reqsegs;
   omx_return_t ret;
 
-  ret = omx_cache_segments(&reqsegs, segs, nseg);
+  ret = omx_cache_segments(ep, &reqsegs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS))
     goto out;
 

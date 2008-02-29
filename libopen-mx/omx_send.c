@@ -733,7 +733,7 @@ omx_isendv(omx_endpoint_t ep,
     goto out_with_lock;
   }
 
-  ret = omx_cache_segments(&req->send.segs, segs, nseg);
+  ret = omx_cache_segments(ep, &req->send.segs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS))
     goto out_with_req;
 
@@ -855,7 +855,7 @@ omx_issendv(omx_endpoint_t ep,
     goto out_with_lock;
   }
 
-  ret = omx_cache_segments(&req->send.segs, segs, nseg);
+  ret = omx_cache_segments(ep, &req->send.segs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS))
     goto out_with_req;
 

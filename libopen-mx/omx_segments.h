@@ -35,7 +35,8 @@ omx_cache_single_segment(struct omx__req_seg * reqsegs, void * buffer, uint32_t 
 }
 
 static inline omx_return_t
-omx_cache_segments(struct omx__req_seg * reqsegs, omx_seg_t * segs, uint32_t nseg)
+omx_cache_segments(struct omx_endpoint *ep,
+		   struct omx__req_seg * reqsegs, omx_seg_t * segs, uint32_t nseg)
 {
 
   if (nseg == 0) {
@@ -50,7 +51,7 @@ omx_cache_segments(struct omx__req_seg * reqsegs, omx_seg_t * segs, uint32_t nse
 
     reqsegs->segs = malloc(nseg * sizeof(omx_seg_t));
     if (!reqsegs->segs)
-      return OMX_NO_RESOURCES;
+      return omx__error_with_ep(ep, OMX_NO_RESOURCES, "Failed to allocated room to copy segments");
 
     memcpy(reqsegs->segs, segs, nseg * sizeof(omx_seg_t));
 
