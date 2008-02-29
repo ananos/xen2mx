@@ -1,3 +1,25 @@
+Open-MX 0.4.0 (February 29th 2008, svn r1402)
+=============================================
+The PVFS2 release.
+
+Major enhancements:
+* Add thread-safety support, to be enabled with --enable-threads.
+
+Other improvements from previous release:
+* Add omx_wakeup(), omx_ibuffered() and mx_decompose_endpoint_addr2()
+  functions.
+* Add support for many info keys in omx_get_info()
+* Fix and improve retransmission and reconnection.
+* Fix support for mixed 32/64bits systems.
+* Fix some race conditions when sleeping in the driver.
+* Minor fixes in the MXoE wire and API compatibility.
+* Many minor fixes, tiny optimizations, and documentation improvements
+  all over the place.
+
+Caveats:
+* No background progression or retransmission is done if the application does
+  not invoke an Open-MX routine explicitly.
+
 Open-MX 0.3.0 (February 1st 2008, svn r1234)
 ============================================
 The Many-new-Features release.
@@ -26,10 +48,6 @@ Other improvements from previous release:
 * Various debug messages improvements.
 * Include the official mx_pingpong and mx_stream benchmarks to ease
   wire-compatiblity testing.
-
-Caveats:
-* No background progression or retransmission is done if the application does
-  not invoke an Open-MX routine explicitly.
 
 Open-MX 0.2.0 (January 16th 2008, svn r1072)
 ============================================
