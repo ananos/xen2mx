@@ -2,7 +2,7 @@
   unless they don't block (we'll need a generic omx__wait API for this),
   and don't use the unexpected handler (or they'll have to lock in there)
 
-* documentat cpu/irq binding
+* document cpu/irq binding
 
 * improve retransmission
   + don't free partner since we can't change the session anymore?

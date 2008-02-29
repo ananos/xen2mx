@@ -79,7 +79,7 @@ typedef enum omx_status_code omx_status_code_t;
 
 struct omx_endpoint_addr {
   char data[OMX_SIZEOF_ADDR];
-};
+} __attribute__ ((aligned (8)));
 typedef struct omx_endpoint_addr omx_endpoint_addr_t;
 
 struct omx_status {

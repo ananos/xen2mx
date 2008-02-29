@@ -188,7 +188,7 @@ struct omx__endpoint_addr {
   char pad[sizeof(struct omx_endpoint_addr) - sizeof(struct omx__partner *) - sizeof(uint32_t)];
   uint32_t session_id;
   /* pad to the exact API size to avoid aliasing problems */
-};
+} __attribute__((aligned (8)));
 
 #define CTXID_FROM_MATCHING(ep, match) ((uint32_t)(((match) >> (ep)->ctxid_shift) & ((ep)->ctxid_max-1)))
 #define CHECK_MATCHING_WITH_CTXID(ep, match) (((match) & (ep)->ctxid_mask) == (ep)->ctxid_mask)
