@@ -152,6 +152,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   partner->endpoint_index = endpoint_index;
   partner->peer_index = peer_index;
   partner->localization = OMX__PARTNER_LOCALIZATION_UNKNOWN; /* will be set by omx__partner_check_localization() */
+  partner->next_match_recv_seq = 0; /* first session, seqnum will be initialized by omx__partner_reset() */
   partner->need_ack = OMX__PARTNER_NEED_NO_ACK;
 
   omx__partner_reset(partner);
