@@ -593,8 +593,8 @@ extern omx_return_t
 omx__error_with_ep(struct omx_endpoint *ep,
 		   omx_return_t ret, const char *fmt, ...);
 
-extern omx_return_t
+extern omx_status_code_t
 omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
-		    omx_return_t ret, const char *fmt, ...);
+		    omx_status_code_t code, const char *fmt, ...);
 
 #endif /* __omx_lib_h__ */

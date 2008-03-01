@@ -87,21 +87,21 @@ omx__error_with_ep(struct omx_endpoint *ep,
   return omx__error_handler(buffer, ret);
 }
 
-omx_return_t
+omx_status_code_t
 omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
-		    omx_return_t ret, const char *fmt, ...)
+		    omx_status_code_t code, const char *fmt, ...)
 {
   char buffer[BUFFER_MAX];
   va_list va;
   int err;
 
-  if (ret == OMX_SUCCESS)
-    return OMX_SUCCESS;
+  if (code == OMX_STATUS_SUCCESS)
+    return OMX_STATUS_SUCCESS;
 
   va_start(va, fmt);
   err = vsnprintf(buffer, BUFFER_MAX, fmt, va);
   omx__debug_assert(err < BUFFER_MAX);
   va_end(va);
 
-  return omx__error_handler(buffer, ret);
+  return (omx_status_code_t) omx__error_handler(buffer, (omx_return_t) code);
 }
