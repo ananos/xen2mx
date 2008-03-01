@@ -45,6 +45,9 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
     }
   }
 
+  if (req->generic.state & OMX_REQUEST_STATE_SEND_THROTTLING)
+    goto nothing_specific;
+
   switch (req->generic.type) {
   case OMX_REQUEST_TYPE_SEND_SMALL:
     free(req->send.specific.small.copy);
@@ -55,6 +58,8 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
   default:
     break;
   }
+
+ nothing_specific:
 
   /* the request is acked, we can free the segments */
   omx_free_segments(&req->send.segs);

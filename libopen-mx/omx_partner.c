@@ -835,13 +835,10 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    */
   count = 0;
   omx__foreach_partner_throttling_request_safe(partner, req, next) {
-    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
     omx__debug_printf(CONNECT, "Dropping throttling send %p\n", req);
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_THROTTLING);
     omx___dequeue_partner_throttling_request(req);
-    omx_free_segments(&req->send.segs);
-    req->generic.status.code = OMX_STATUS_ENDPOINT_UNREACHABLE;
-    omx__notify_request_done(ep, ctxid, req);
+    omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
     count++;
   }
   if (count)
