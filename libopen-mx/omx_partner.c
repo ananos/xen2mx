@@ -840,6 +840,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_THROTTLING);
     omx___dequeue_partner_throttling_request(req);
     omx_free_segments(&req->send.segs);
+    req->generic.status.code = OMX_STATUS_ENDPOINT_UNREACHABLE;
     omx__notify_request_done(ep, ctxid, req);
     count++;
   }
