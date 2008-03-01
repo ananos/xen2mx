@@ -43,6 +43,7 @@ if test -n "$KCC" ; then
 	AC_MSG_CHECKING(which compiler to use for kernel modules)
 	AC_MSG_RESULT($KCC)
 fi
+KCC_VERSION=`$KCC --version 2> /dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
 
 #####################
 # build flags config
@@ -60,14 +61,15 @@ AC_SUBST(DBGCFLAGS)
 
 LINUX_SRC="/lib/modules/"`uname -r`"/source"
 LINUX_BUILD="/lib/modules/"`uname -r`"/build"
+LINUX_GCC_VERSION=`sed -e 's/.*gcc version \(.\..\).*/\1/' /proc/version`
 # If the user changes the source, use it as build by default
 # If it changes the build, do not use it as the source by default
 AC_ARG_WITH(linux,
 	[AS_HELP_STRING([--with-linux=<dir>], [location of the Linux kernel source])],
-	LINUX_SRC="$withval"; LINUX_BUILD="$withval")
+	LINUX_SRC="$withval"; LINUX_BUILD="$withval"; LINUX_GCC_VERSION="")
 AC_ARG_WITH(linux-build,
 	[AS_HELP_STRING([--with-linux-build=<dir>], [location of the Linux kernel build tree])],
-	LINUX_BUILD="$withval")
+	LINUX_BUILD="$withval"; LINUX_GCC_VERSION="")
 AC_ARG_WITH(linux-release,
 	[AS_HELP_STRING([--with-linux-release=<version>], [release number of the target kernel])],
 	LINUX_RELEASE="$withval",
@@ -75,6 +77,13 @@ AC_ARG_WITH(linux-release,
 AC_SUBST(LINUX_SRC)
 AC_SUBST(LINUX_BUILD)
 AC_SUBST(LINUX_RELEASE)
+
+# Issue a warning if the kernel compiler seems to be different
+if test x$KCC_VERSION != x && test x$LINUX_GCC_VERSION != x && test $KCC_VERSION != $LINUX_GCC_VERSION ; then
+  AC_WARN(the kernel seems to be compiled with gcc $LINUX_GCC_VERSION)
+  AC_WARN(while the Open-MX module would be built using $KCC_VERSION)
+  AC_WARN(you might need to change the kernel module compiler with KCC)
+fi
 
 # Find where the headers are (to avoid grepping at both places).
 # Do not check for autoconf.h or version.h since these are in
