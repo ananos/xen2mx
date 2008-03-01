@@ -810,14 +810,13 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
-       if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
+      if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
         /* pull request needs to the pushed to the driver, no region allocated yet, just complete the request */
 	req->generic.state &= OMX_REQUEST_STATE_RECV_PARTIAL;
-	omx__recv_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
       } else {
         /* the pull is already done, just drop the notify */
-	omx__recv_complete(ep, req, OMX_REQUEST_STATE_RECV_PARTIAL);
-       }
+      }
+      omx__recv_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
       break;
     default:
       omx__abort("Failed to handle queued request with type %d\n",
