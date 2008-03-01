@@ -39,9 +39,9 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
     /* only set the status if it is not already set to an error */
     if (likely(status == OMX_STATUS_SUCCESS)) {
       if (unlikely(req->generic.status.xfer_length < req->generic.status.msg_length))
-	req->generic.status.code = OMX_STATUS_TRUNCATED;
+	req->generic.status.code = omx__error_with_req(ep, req, OMX_STATUS_TRUNCATED, "Send truncated");
     } else {
-      req->generic.status.code = status;
+      req->generic.status.code = omx__error_with_req(ep, req, status, "Send failed");
     }
   }
 

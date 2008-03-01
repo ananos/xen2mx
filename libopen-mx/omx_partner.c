@@ -422,11 +422,11 @@ omx_connect(omx_endpoint_t ep,
       ret = OMX_SUCCESS;
       break;
     case OMX_STATUS_BAD_KEY:
-      ret = OMX_BAD_CONNECTION_KEY;
+      ret = omx__error_with_ep(ep, OMX_BAD_CONNECTION_KEY, "Connection failed");
       break;
     case OMX_STATUS_ENDPOINT_CLOSED:
     case OMX_STATUS_BAD_ENDPOINT:
-      ret = OMX_CONNECTION_FAILED;
+      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Connection failed");
       break;
     default:
       omx__abort("Failed to handle connect status %s\n",
@@ -503,9 +503,15 @@ omx__connect_complete(struct omx_endpoint *ep,
   omx__dequeue_partner_connect_request(partner, req);
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
 
-  if (likely(req->generic.status.code == OMX_STATUS_SUCCESS))
+  if (likely(req->generic.status.code == OMX_STATUS_SUCCESS)) {
     /* only set the status if it is not already set to an error */
-    req->generic.status.code = status;
+
+    /* call the request error handler for iconnect only, connect will call the main error handler later */
+    if (!(req->generic.state & OMX_REQUEST_STATE_INTERNAL))
+      req->generic.status.code = omx__error_with_req(ep, req, status, "Connection failed");
+    else
+      req->generic.status.code = status;
+  }
 
   if (status == OMX_STATUS_SUCCESS)
     omx__partner_session_to_addr(partner, session_id, &req->generic.status.addr);

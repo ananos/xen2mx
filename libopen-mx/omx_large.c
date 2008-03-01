@@ -499,6 +499,11 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx_status_code_t status;
 
   /* FIXME: use cookie since region might be used for something else? */
+  req = (void *) reqptr;
+  region = &ep->large_region_map.array[region_id].region;
+  omx__debug_assert(req);
+  omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
+  omx__debug_assert(req->recv.specific.large.local_region == region);
 
   omx__debug_printf(LARGE, "pull done with status %d\n", event->status);
 
@@ -507,33 +512,27 @@ omx__process_pull_done(struct omx_endpoint * ep,
     status = OMX_STATUS_SUCCESS;
     break;
   case OMX_EVT_PULL_DONE_BAD_ENDPT:
-    status = OMX_STATUS_BAD_ENDPOINT;
+    status = omx__error_with_req(ep, req, OMX_STATUS_BAD_ENDPOINT, "Large receive failed");
     break;
   case OMX_EVT_PULL_DONE_ENDPT_CLOSED:
-    status = OMX_STATUS_ENDPOINT_CLOSED;
+    status = omx__error_with_req(ep, req, OMX_STATUS_ENDPOINT_CLOSED, "Large receive failed");
     break;
   case OMX_EVT_PULL_DONE_BAD_SESSION:
-    status = OMX_STATUS_BAD_SESSION;
+    status = omx__error_with_req(ep, req, OMX_STATUS_BAD_SESSION, "Large receive failed");
     break;
   case OMX_EVT_PULL_DONE_BAD_RDMAWIN:
-    status = OMX_STATUS_BAD_RDMAWIN;
+    status = omx__error_with_req(ep, req, OMX_STATUS_BAD_RDMAWIN, "Large receive failed");
     break;
   case OMX_EVT_PULL_DONE_ABORTED:
-    status = OMX_STATUS_ABORTED;
+    status = omx__error_with_req(ep, req, OMX_STATUS_ABORTED, "Large receive failed");
     break;
   case OMX_EVT_PULL_DONE_TIMEOUT:
-    status = OMX_STATUS_ENDPOINT_UNREACHABLE;
+    status = omx__error_with_req(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE, "Large receive failed");
     break;
   default:
     omx__abort("Failed to handle NACK status %d\n",
 	       event->status);
   }
-
-  req = (void *) reqptr;
-  region = &ep->large_region_map.array[region_id].region;
-  omx__debug_assert(req);
-  omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
-  omx__debug_assert(req->recv.specific.large.local_region == region);
 
   if (unlikely(status != OMX_STATUS_SUCCESS)) {
     req->generic.status.xfer_length = 0;
