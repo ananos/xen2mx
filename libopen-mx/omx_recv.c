@@ -812,6 +812,7 @@ omx__process_self_send(struct omx_endpoint *ep,
   if (likely(rreq)) {
     /* expected, or matched through the handler */
     uint32_t xfer_length;
+    omx_status_code_t status_code = OMX_STATUS_SUCCESS;
 
     rreq->generic.partner = ep->myself;
     rreq->generic.status.addr = sreq->generic.status.addr;
@@ -821,14 +822,19 @@ omx__process_self_send(struct omx_endpoint *ep,
     rreq->generic.state &= ~OMX_REQUEST_STATE_RECV_NEED_MATCHING;
 
     rreq->generic.status.msg_length = msg_length;
-    xfer_length = rreq->recv.segs.total_length < msg_length ? rreq->recv.segs.total_length : msg_length;
+    if (rreq->recv.segs.total_length < msg_length) {
+      xfer_length = rreq->recv.segs.total_length;
+      status_code = OMX_STATUS_TRUNCATED;
+    } else {
+      xfer_length = msg_length;
+    }
     rreq->generic.status.xfer_length = xfer_length;
     sreq->generic.status.xfer_length = xfer_length;
 
     omx_copy_from_to_segments(&rreq->recv.segs, &sreq->send.segs, xfer_length);
     sreq->generic.state = 0; /* the state of expected self send is always set here */
-    omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
-    omx__recv_complete(ep, rreq, OMX_STATUS_SUCCESS);
+    omx__send_complete(ep, sreq, status_code);
+    omx__recv_complete(ep, rreq, status_code);
 
     /*
      * need to wakeup some possible send-done or recv-done waiters
@@ -1012,17 +1018,18 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
       } else if (unlikely(req->generic.type == OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED)) {
 	/* it's a unexpected from self, we need to complete the corresponding send */
 	union omx_request *sreq = req->recv.specific.self_unexp.sreq;
+	omx_status_code_t status_code = xfer_length < msg_length ? OMX_STATUS_TRUNCATED : OMX_STATUS_SUCCESS;
 
 	omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length);
 	if (msg_length)
 	  free(unexp_buffer);
-	omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+	omx__recv_complete(ep, req, status_code);
 
 	omx__debug_assert(sreq->generic.state & OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED);
 	sreq->generic.state &= ~OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED;
 	omx__dequeue_request(&ep->send_self_unexp_req_q, sreq);
 	sreq->generic.status.xfer_length = xfer_length;
-	omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
+	omx__send_complete(ep, sreq, status_code);
 
 	/*
 	 * need to wakeup some possible send-done or recv-done waiters
