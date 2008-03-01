@@ -213,8 +213,8 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
       return ret;
 
     if (out_len < count * MX_MAX_STR_LEN)
-      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Not enough room to copy counters label (%ld<%ld)",
-				out_len, count * MX_MAX_STR_LEN);
+      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Copy counters labels (%ld bytes into %ld)",
+				(unsigned long) out_len, (unsigned long)(count * MX_MAX_STR_LEN));
 
     for(i=0; i<count; i++)
       omx_get_info(ep, OMX_INFO_COUNTER_LABEL, NULL, 0, &((char *) out_val)[i*MX_MAX_STR_LEN], MX_MAX_STR_LEN);
@@ -229,8 +229,8 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
   case MX_PART_NUMBER:
   case MX_SERIAL_NUMBER:
     if (out_len < MX_MAX_STR_LEN)
-      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Not enough room to copy info",
-				out_len, MX_MAX_STR_LEN);
+      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Copy info (%ld bytes into %ld)",
+				(unsigned long) out_len, (unsigned long) MX_MAX_STR_LEN);
     strcpy((char*)out_val, "N/A (Open-MX)");
     return MX_SUCCESS;
 
@@ -259,7 +259,7 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
 
   }
 
-  return omx__error_with_ep(ep, MX_BAD_INFO_KEY, "Invalid info key %ld",
+  return omx__error_with_ep(ep, MX_BAD_INFO_KEY, "Get Info with key %ld",
 			    (unsigned long) key);
 }
 

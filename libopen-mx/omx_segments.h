@@ -51,7 +51,7 @@ omx_cache_segments(struct omx_endpoint *ep,
 
     reqsegs->segs = malloc(nseg * sizeof(omx_seg_t));
     if (!reqsegs->segs)
-      return omx__error_with_ep(ep, OMX_NO_RESOURCES, "Failed to allocated room to copy segments");
+      return omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocate room to copy segments");
 
     memcpy(reqsegs->segs, segs, nseg * sizeof(omx_seg_t));
 

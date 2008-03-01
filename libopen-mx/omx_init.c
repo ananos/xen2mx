@@ -45,7 +45,7 @@ omx__init_api(int api)
 
   err = open(OMX_DEVNAME, O_RDONLY);
   if (err < 0)
-    return omx__error(omx__errno_to_return("open control device"), "Failed to open control device");
+    return omx__error(omx__errno_to_return("open control device"), "Open Control Device");
 
   omx__globals.control_fd = err;
 
@@ -58,11 +58,11 @@ omx__init_api(int api)
 
   if (omx__driver_desc->abi_version > OMX_DRIVER_ABI_VERSION) {
     ret = omx__error(OMX_BAD_ERROR, "Library (ABI 0x%x) is too old for driver (ABI 0x%x), did you relink your program with the new library?",
-	    OMX_DRIVER_ABI_VERSION, omx__driver_desc->abi_version);
+		     OMX_DRIVER_ABI_VERSION, omx__driver_desc->abi_version);
     goto out_with_fd;
   } else if (omx__driver_desc->abi_version < OMX_DRIVER_ABI_VERSION) {
     ret = omx__error(OMX_BAD_ERROR, "Driver (ABI 0x%x) is too old for library (ABI 0x%x), did you rebuild/reload the new driver?",
-	    omx__driver_desc->abi_version, OMX_DRIVER_ABI_VERSION);
+		     omx__driver_desc->abi_version, OMX_DRIVER_ABI_VERSION);
     goto out_with_fd;
   }
 
