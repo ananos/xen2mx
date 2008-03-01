@@ -42,8 +42,10 @@ if test -n "$KCC" ; then
 	AC_CHECK_PROG(KCC, gcc, $CC)
 	AC_MSG_CHECKING(which compiler to use for kernel modules)
 	AC_MSG_RESULT($KCC)
+	KCC_VERSION=`$KCC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
+else
+	KCC_VERSION=`$CC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
 fi
-KCC_VERSION=`$KCC --version 2> /dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
 
 #####################
 # build flags config
@@ -79,10 +81,18 @@ AC_SUBST(LINUX_BUILD)
 AC_SUBST(LINUX_RELEASE)
 
 # Issue a warning if the kernel compiler seems to be different
-if test x$KCC_VERSION != x && test x$LINUX_GCC_VERSION != x && test $KCC_VERSION != $LINUX_GCC_VERSION ; then
-  AC_WARN(the kernel seems to be compiled with gcc $LINUX_GCC_VERSION)
-  AC_WARN(while the Open-MX module would be built using $KCC_VERSION)
-  AC_WARN(you might need to change the kernel module compiler with KCC)
+if test x$KCC_VERSION != x && test x$LINUX_GCC_VERSION != x ; then
+  if test $KCC_VERSION != $LINUX_GCC_VERSION ; then
+    AC_WARN([the kernel seems to be compiled with gcc $LINUX_GCC_VERSION])
+    AC_WARN([while the Open-MX module would be built using $KCC_VERSION])
+    AC_WARN([you might need to change the kernel module compiler with KCC])
+  fi
+else
+  if test x$KCC != x ; then
+    AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is set correctly ($KCC)])
+  else
+    AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is unset on purpose])
+  fi
 fi
 
 # Find where the headers are (to avoid grepping at both places).
