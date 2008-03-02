@@ -50,6 +50,33 @@ omx__errno_to_return(char * caller)
   }
 }
 
+const char *
+omx__strreqtype(enum omx__request_type type)
+{
+  switch (type) {
+  case OMX_REQUEST_TYPE_CONNECT:
+    return "Connect";
+  case OMX_REQUEST_TYPE_SEND_TINY:
+    return "Send Tiny";
+  case OMX_REQUEST_TYPE_SEND_SMALL:
+    return "Send Small";
+  case OMX_REQUEST_TYPE_SEND_MEDIUM:
+    return "Send Medium";
+  case OMX_REQUEST_TYPE_SEND_LARGE:
+    return "Send Large";
+  case OMX_REQUEST_TYPE_RECV:
+    return "Receive";
+  case OMX_REQUEST_TYPE_RECV_LARGE:
+    return "Receive Large";
+  case OMX_REQUEST_TYPE_SEND_SELF:
+    return "Send Self";
+  case OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED:
+    return "Receive Self Unexpected";
+  default:
+    omx__abort("unknown request type %d\n", (unsigned) type);
+  }
+}
+
 /* API omx_strerror */
 const char *
 omx_strerror(omx_return_t ret)

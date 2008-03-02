@@ -586,6 +586,9 @@ omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp);
 extern omx_return_t
 omx__errno_to_return(char * caller);
 
+extern const char *
+omx__strreqtype(enum omx__request_type type);
+
 extern omx_return_t
 omx__error(omx_return_t ret, const char *fmt, ...);
 
