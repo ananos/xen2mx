@@ -422,11 +422,13 @@ omx_connect(omx_endpoint_t ep,
       ret = OMX_SUCCESS;
       break;
     case OMX_STATUS_BAD_KEY:
-      ret = omx__error_with_ep(ep, OMX_BAD_CONNECTION_KEY, "Connection failed");
+      ret = omx__error_with_ep(ep, OMX_BAD_CONNECTION_KEY, "Bad Connection Key");
       break;
     case OMX_STATUS_ENDPOINT_CLOSED:
+      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Remote Endpoint Closed");
+      break;
     case OMX_STATUS_BAD_ENDPOINT:
-      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Connection failed");
+      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Bad Remote Endpoint");
       break;
     default:
       omx__abort("Failed to handle connect status %s\n",
