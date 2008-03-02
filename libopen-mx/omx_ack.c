@@ -184,6 +184,10 @@ omx__handle_nack(struct omx_endpoint *ep,
   omx__seqnum_t nack_index = OMX__SEQNUM(seqnum - partner->next_acked_send_seq);
   union omx_request *req;
 
+  if (unlikely(OMX__SESNUM(seqnum ^ partner->next_send_seq)) != 0)
+    /* This cannot be a real send since the sesnum is wrong, but it can be a connect */
+    goto try_pending_connect_req;
+
   /* look in the list of pending real messages */
   omx__foreach_partner_non_acked_request(partner, req) {
     omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->next_acked_send_seq);
@@ -197,6 +201,8 @@ omx__handle_nack(struct omx_endpoint *ep,
       return OMX_SUCCESS;
     }
   }
+
+ try_pending_connect_req:
 
   /* look in the list of pending connect requests */
   omx__foreach_partner_connect_request(partner, req) {

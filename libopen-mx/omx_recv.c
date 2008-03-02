@@ -936,13 +936,6 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
   if (unlikely(!partner))
     return OMX_SUCCESS;
 
-  if (unlikely(OMX__SESNUM(seqnum ^ partner->next_send_seq)) != 0) {
-    omx__verbose_printf("Obsolete session nack lib received (session %d seqnum %d instead of session %d)\n",
-                        (unsigned) OMX__SESNUM_SHIFTED(seqnum), (unsigned) OMX__SEQNUM(seqnum),
-                        (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
-    return OMX_SUCCESS;
-  }
-
   omx__peer_index_to_addr(peer_index, &board_addr);
   omx__board_addr_sprintf(board_addr_str, board_addr);
 
