@@ -213,7 +213,7 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
       return ret;
 
     if (out_len < count * MX_MAX_STR_LEN)
-      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Copy counters labels (%ld bytes into %ld)",
+      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Copying counters labels (%ld bytes into %ld)",
 				(unsigned long) out_len, (unsigned long)(count * MX_MAX_STR_LEN));
 
     for(i=0; i<count; i++)
@@ -229,7 +229,7 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
   case MX_PART_NUMBER:
   case MX_SERIAL_NUMBER:
     if (out_len < MX_MAX_STR_LEN)
-      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Copy info (%ld bytes into %ld)",
+      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Copying info (%ld bytes into %ld)",
 				(unsigned long) out_len, (unsigned long) MX_MAX_STR_LEN);
     strcpy((char*)out_val, "N/A (Open-MX)");
     return MX_SUCCESS;
@@ -259,7 +259,7 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
 
   }
 
-  return omx__error_with_ep(ep, MX_BAD_INFO_KEY, "Get Info with key %ld",
+  return omx__error_with_ep(ep, MX_BAD_INFO_KEY, "Getting info with key %ld",
 			    (unsigned long) key);
 }
 

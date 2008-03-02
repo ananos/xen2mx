@@ -40,10 +40,10 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
     if (likely(status == OMX_STATUS_SUCCESS)) {
       if (unlikely(req->generic.status.xfer_length < req->generic.status.msg_length))
 	req->generic.status.code = omx__error_with_req(ep, req, OMX_STATUS_TRUNCATED,
-						       "Send Request Truncated from %ld to %ld bytes",
+						       "Completing send request, truncated from %ld to %ld bytes",
 						       req->generic.status.msg_length, req->generic.status.xfer_length);
     } else {
-      req->generic.status.code = omx__error_with_req(ep, req, status, "Send Request Failed");
+      req->generic.status.code = omx__error_with_req(ep, req, status, "Completing send request");
     }
   }
 
@@ -740,9 +740,11 @@ omx_isendv(omx_endpoint_t ep,
     goto out_with_lock;
   }
 
-  ret = omx_cache_segments(ep, &req->send.segs, segs, nseg);
-  if (unlikely(ret != OMX_SUCCESS))
+  ret = omx_cache_segments(&req->send.segs, segs, nseg);
+  if (unlikely(ret != OMX_SUCCESS)) {
+    ret = omx__error_with_ep(ep, ret, "Allocating vectorial send request segment array");
     goto out_with_req;
+  }
 
   req->generic.partner = partner = omx__partner_from_addr(&dest_endpoint);
   req->generic.status.addr = dest_endpoint;
@@ -862,9 +864,11 @@ omx_issendv(omx_endpoint_t ep,
     goto out_with_lock;
   }
 
-  ret = omx_cache_segments(ep, &req->send.segs, segs, nseg);
-  if (unlikely(ret != OMX_SUCCESS))
+  ret = omx_cache_segments(&req->send.segs, segs, nseg);
+  if (unlikely(ret != OMX_SUCCESS)) {
+    ret = omx__error_with_ep(ep, ret, "Allocating vectorial send request segment array");
     goto out_with_req;
+  }
 
   req->generic.partner = partner = omx__partner_from_addr(&dest_endpoint);
   req->generic.status.addr = dest_endpoint;

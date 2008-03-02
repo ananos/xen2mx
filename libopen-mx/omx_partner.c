@@ -422,13 +422,13 @@ omx_connect(omx_endpoint_t ep,
       ret = OMX_SUCCESS;
       break;
     case OMX_STATUS_BAD_KEY:
-      ret = omx__error_with_ep(ep, OMX_BAD_CONNECTION_KEY, "Bad Connection Key");
+      ret = omx__error_with_ep(ep, OMX_BAD_CONNECTION_KEY, "Completing connection with bad key");
       break;
     case OMX_STATUS_ENDPOINT_CLOSED:
-      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Remote Endpoint Closed");
+      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Completing connection to closed endpoint");
       break;
     case OMX_STATUS_BAD_ENDPOINT:
-      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Bad Remote Endpoint");
+      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Completing connection to bad endpoint");
       break;
     default:
       omx__abort("Failed to handle connect status %s\n",
@@ -510,7 +510,7 @@ omx__connect_complete(struct omx_endpoint *ep,
 
     /* call the request error handler for iconnect only, connect will call the main error handler later */
     if (!(req->generic.state & OMX_REQUEST_STATE_INTERNAL))
-      req->generic.status.code = omx__error_with_req(ep, req, status, "Connection failed");
+      req->generic.status.code = omx__error_with_req(ep, req, status, "Completing iconnect request");
     else
       req->generic.status.code = status;
   }

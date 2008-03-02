@@ -55,7 +55,7 @@ omx__mark_request_acked(struct omx_endpoint *ep,
       /* keep the request in the driver_posted_req_q for now until it returns from the driver */
       if (req->generic.status.code == OMX_STATUS_SUCCESS)
 	/* set the status (success for ack, error for nack) only if there has been no error early */
-	req->generic.status.code = omx__error_with_req(ep, req, status, "Send Request Ack");
+	req->generic.status.code = omx__error_with_req(ep, req, status, "Send request nacked");
     } else {
       omx__dequeue_request(queue, req);
       omx__send_complete(ep, req, status);

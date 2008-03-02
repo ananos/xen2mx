@@ -45,7 +45,7 @@ omx__init_api(int api)
 
   err = open(OMX_DEVNAME, O_RDONLY);
   if (err < 0)
-    return omx__error(omx__errno_to_return("open control device"), "Open Control Device");
+    return omx__error(omx__errno_to_return("open control device"), "Opening control device");
 
   omx__globals.control_fd = err;
 

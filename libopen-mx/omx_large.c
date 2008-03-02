@@ -512,27 +512,29 @@ omx__process_pull_done(struct omx_endpoint * ep,
     status = OMX_STATUS_SUCCESS;
     break;
   case OMX_EVT_PULL_DONE_BAD_ENDPT:
-    status = omx__error_with_req(ep, req, OMX_STATUS_BAD_ENDPOINT, "Large receive failed");
+    status = OMX_STATUS_BAD_ENDPOINT;
     break;
   case OMX_EVT_PULL_DONE_ENDPT_CLOSED:
-    status = omx__error_with_req(ep, req, OMX_STATUS_ENDPOINT_CLOSED, "Large receive failed");
+    status = OMX_STATUS_ENDPOINT_CLOSED;
     break;
   case OMX_EVT_PULL_DONE_BAD_SESSION:
-    status = omx__error_with_req(ep, req, OMX_STATUS_BAD_SESSION, "Large receive failed");
+    status = OMX_STATUS_BAD_SESSION;
     break;
   case OMX_EVT_PULL_DONE_BAD_RDMAWIN:
-    status = omx__error_with_req(ep, req, OMX_STATUS_BAD_RDMAWIN, "Large receive failed");
+    status = OMX_STATUS_BAD_RDMAWIN;
     break;
   case OMX_EVT_PULL_DONE_ABORTED:
-    status = omx__error_with_req(ep, req, OMX_STATUS_ABORTED, "Large receive failed");
+    status = OMX_STATUS_ABORTED;
     break;
   case OMX_EVT_PULL_DONE_TIMEOUT:
-    status = omx__error_with_req(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE, "Large receive failed");
+    status = OMX_STATUS_ENDPOINT_UNREACHABLE;
     break;
   default:
     omx__abort("Failed to handle NACK status %d\n",
 	       event->status);
   }
+  if (unlikely(status != OMX_STATUS_SUCCESS))
+    status = omx__error_with_req(ep, req, status, "Completing large receive request");
 
   if (unlikely(status != OMX_STATUS_SUCCESS)) {
     req->generic.status.xfer_length = 0;

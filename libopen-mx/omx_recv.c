@@ -38,10 +38,10 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
     if (likely(status == OMX_STATUS_SUCCESS)) {
       if (unlikely(req->generic.status.xfer_length < req->generic.status.msg_length))
 	req->generic.status.code = omx__error_with_req(ep, req, OMX_STATUS_TRUNCATED,
-						       "Receive Request Truncated from %ld to %ld bytes",
+						       "Completing receive request, truncated from %ld to %ld bytes",
 						       req->generic.status.msg_length, req->generic.status.xfer_length);
     } else {
-      req->generic.status.code = omx__error_with_req(ep, req, status, "Receive Request Failed");
+      req->generic.status.code = omx__error_with_req(ep, req, status, "Completing receive request");
     }
   }
 
@@ -1127,9 +1127,11 @@ omx_irecvv(omx_endpoint_t ep,
   struct omx__req_seg reqsegs;
   omx_return_t ret;
 
-  ret = omx_cache_segments(ep, &reqsegs, segs, nseg);
-  if (unlikely(ret != OMX_SUCCESS))
+  ret = omx_cache_segments(&reqsegs, segs, nseg);
+  if (unlikely(ret != OMX_SUCCESS)) {
+    ret = omx__error_with_ep(ep, ret, "Allocating vectorial receive request segment array");
     goto out;
+  }
 
   OMX__ENDPOINT_LOCK(ep);
 
