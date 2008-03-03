@@ -1,3 +1,5 @@
+* more return codes for various errors
+
 * omx_set_error_handler
   + special one before omx_init()
   + no handler if zombie?
@@ -42,6 +44,8 @@
 
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
+
+* get info irq affinity
 
 * factorize early and msg seqnum index computing (cache them?)
 
