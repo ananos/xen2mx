@@ -43,6 +43,11 @@ struct omx__connect_request_data {
   uint8_t pad2;
 };
 
+enum omx__connect_status_code {
+  OMX__CONNECT_SUCCESS = 0,
+  OMX__CONNECT_BAD_KEY = 11, /* enforced by wire compatibility */
+};
+
 struct omx__connect_reply_data {
   /* the sender's session id (so that we know when the connect has been sent) */
   uint32_t src_session_id;
@@ -55,7 +60,7 @@ struct omx__connect_reply_data {
   /* sequence number of this connect request (in case multiple have been sent/lost) */
   uint8_t connect_seqnum;
   /* the status code to return in the connecter request */
-  uint8_t status_code;
+  uint8_t connect_status_code;
 };
 
 union omx__truc_data {

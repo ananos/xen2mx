@@ -535,9 +535,22 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   uint8_t connect_seqnum = OMX_FROM_PKT_FIELD(reply_data_n->connect_seqnum);
   uint32_t target_session_id = OMX_FROM_PKT_FIELD(reply_data_n->target_session_id);
   uint16_t target_recv_seqnum_start = OMX_FROM_PKT_FIELD(reply_data_n->target_recv_seqnum_start);
-  uint8_t status_code = OMX_FROM_PKT_FIELD(reply_data_n->status_code);
+  enum omx__connect_status_code connect_status_code = OMX_FROM_PKT_FIELD(reply_data_n->connect_status_code);
+  omx_status_code_t status_code;
   union omx_request * req;
   omx_return_t ret;
+
+  switch (connect_status_code) {
+  case OMX__CONNECT_SUCCESS:
+    status_code = OMX_STATUS_SUCCESS;
+    break;
+  case OMX__CONNECT_BAD_KEY:
+    status_code = OMX_STATUS_BAD_KEY;
+    break;
+  default:
+    /* invalid connect_reply, just ignore it */
+    return OMX_SUCCESS;
+  }
 
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
@@ -614,7 +627,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   uint32_t src_session_id = OMX_FROM_PKT_FIELD(request_data_n->src_session_id);
   uint16_t target_recv_seqnum_start = OMX_FROM_PKT_FIELD(request_data_n->target_recv_seqnum_start);
   omx_return_t ret;
-  omx_status_code_t status_code;
+  enum omx__connect_status_code connect_status_code;
   int err;
 
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
@@ -627,9 +640,9 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   omx__partner_check_localization(partner, event->shared);
 
   if (app_key == ep->app_key) {
-    status_code = OMX_STATUS_SUCCESS;
+    connect_status_code = OMX__CONNECT_SUCCESS;
   } else {
-    status_code = OMX_STATUS_BAD_KEY;
+    connect_status_code = OMX__CONNECT_BAD_KEY;
   }
 
   omx__debug_printf(CONNECT, "got a connect request with session id %lx while we have true %lx back %lx\n",
@@ -675,7 +688,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   OMX_PKT_FIELD_FROM(reply_data_n->is_reply, 1);
   OMX_PKT_FIELD_FROM(reply_data_n->target_recv_seqnum_start, partner->next_match_recv_seq);
   reply_data_n->connect_seqnum = request_data_n->connect_seqnum;
-  OMX_PKT_FIELD_FROM(reply_data_n->status_code, status_code);
+  OMX_PKT_FIELD_FROM(reply_data_n->connect_status_code, connect_status_code);
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);
   if (err < 0) {

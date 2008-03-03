@@ -41,8 +41,8 @@ assertions(void)
   /* enforce connect lib data layout and values */
   CHECK(sizeof(((struct omx__connect_request_data *) NULL)->is_reply) == sizeof(((struct omx__connect_reply_data *) NULL)->is_reply));
   CHECK(offsetof(struct omx__connect_request_data, is_reply) == offsetof(struct omx__connect_reply_data, is_reply));
-  CHECK(OMX_STATUS_SUCCESS == 0);
-  CHECK(OMX_STATUS_BAD_KEY == 11);
+  CHECK(OMX__CONNECT_SUCCESS == 0);
+  CHECK(OMX__CONNECT_BAD_KEY == 11);
 }
 
 
