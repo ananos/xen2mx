@@ -30,7 +30,7 @@
 omx_return_t
 omx__errors_are_fatal(const char *buffer, omx_return_t ret)
 {
-  fprintf(stderr, "Open-MX: %s: %s\n", omx_strerror(ret), buffer);
+  fprintf(stderr, "Open-MX: %s: %s\n", buffer, omx_strerror(ret));
   exit(-1);
 }
 
