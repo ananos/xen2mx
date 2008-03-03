@@ -535,8 +535,10 @@ omx__process_pull_done(struct omx_endpoint * ep,
   }
 
   if (unlikely(status != OMX_SUCCESS)) {
-    status = omx__error_with_req(ep, req, status, "Completing large receive request");
+    req->generic.status.code = omx__error_with_req(ep, req, status,
+						   "Completing large receive request");
     req->generic.status.xfer_length = 0;
+
   } else if (unlikely(req->generic.status.xfer_length != xfer_length)) {
     omx__abort("pull success returns length %ld instead of %ld\n",
 	       (unsigned long) xfer_length,
