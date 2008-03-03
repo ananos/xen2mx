@@ -1,7 +1,6 @@
 * omx_set_error_handler
   + special one before omx_init()
   + no handler if zombie?
-  + omx_set_request_error_handler()?
 
 * document why --enable-threads is needed, even for external lib,
   unless they don't block (we'll need a generic omx__wait API for this),

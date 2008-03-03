@@ -78,7 +78,7 @@ compat_assertions(void)
 
   /* check the size of enums */
   CHECK(sizeof(mx_return_t) == sizeof(omx_return_t));
-  CHECK(sizeof(mx_status_code_t) == sizeof(omx_status_code_t));
+  CHECK(sizeof(mx_status_code_t) == sizeof(omx_return_t));
 }
 
 #endif

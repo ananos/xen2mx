@@ -337,7 +337,7 @@ omx__connect_common(omx_endpoint_t ep,
     req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY;
     omx__enqueue_request(&ep->connect_req_q, req);
     omx__enqueue_partner_connect_request(partner, req);
-    omx__connect_complete(ep, req, OMX_STATUS_SUCCESS, ep->desc->session_id);
+    omx__connect_complete(ep, req, OMX_SUCCESS, ep->desc->session_id);
 
     /*
      * need to wakeup some possible connect-done waiters
@@ -416,23 +416,10 @@ omx_connect(omx_endpoint_t ep,
   omx__debug_printf(CONNECT, "connect done\n");
 
   if (ret == OMX_SUCCESS) {
-    switch (req->generic.status.code) {
-    case OMX_STATUS_SUCCESS:
+    if (req->generic.status.code == OMX_SUCCESS) {
       *addr = req->generic.status.addr;
-      ret = OMX_SUCCESS;
-      break;
-    case OMX_STATUS_BAD_KEY:
-      ret = omx__error_with_ep(ep, OMX_BAD_CONNECTION_KEY, "Completing connection with bad key");
-      break;
-    case OMX_STATUS_ENDPOINT_CLOSED:
-      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Completing connection to closed endpoint");
-      break;
-    case OMX_STATUS_BAD_ENDPOINT:
-      ret = omx__error_with_ep(ep, OMX_CONNECTION_FAILED, "Completing connection to bad endpoint");
-      break;
-    default:
-      omx__abort("Failed to handle connect status %s\n",
-		 omx_strstatus(req->generic.status.code));
+    } else {
+      ret = omx__error_with_ep(ep, req->generic.status.code, "Completing connection");
     }
   }
 
@@ -496,7 +483,7 @@ omx_iconnect(omx_endpoint_t ep,
  */
 void
 omx__connect_complete(struct omx_endpoint *ep,
-		      union omx_request * req, omx_status_code_t status, uint32_t session_id)
+		      union omx_request * req, omx_return_t status, uint32_t session_id)
 {
   struct omx__partner *partner = req->generic.partner;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
@@ -505,7 +492,7 @@ omx__connect_complete(struct omx_endpoint *ep,
   omx__dequeue_partner_connect_request(partner, req);
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
 
-  if (likely(req->generic.status.code == OMX_STATUS_SUCCESS)) {
+  if (likely(req->generic.status.code == OMX_SUCCESS)) {
     /* only set the status if it is not already set to an error */
 
     /* call the request error handler for iconnect only, connect will call the main error handler later */
@@ -515,7 +502,7 @@ omx__connect_complete(struct omx_endpoint *ep,
       req->generic.status.code = status;
   }
 
-  if (status == OMX_STATUS_SUCCESS)
+  if (status == OMX_SUCCESS)
     omx__partner_session_to_addr(partner, session_id, &req->generic.status.addr);
 
   /* move iconnect request to the done queue */
@@ -536,16 +523,16 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   uint32_t target_session_id = OMX_FROM_PKT_FIELD(reply_data_n->target_session_id);
   uint16_t target_recv_seqnum_start = OMX_FROM_PKT_FIELD(reply_data_n->target_recv_seqnum_start);
   enum omx__connect_status_code connect_status_code = OMX_FROM_PKT_FIELD(reply_data_n->connect_status_code);
-  omx_status_code_t status_code;
+  omx_return_t status_code;
   union omx_request * req;
   omx_return_t ret;
 
   switch (connect_status_code) {
   case OMX__CONNECT_SUCCESS:
-    status_code = OMX_STATUS_SUCCESS;
+    status_code = OMX_SUCCESS;
     break;
   case OMX__CONNECT_BAD_KEY:
-    status_code = OMX_STATUS_BAD_KEY;
+    status_code = OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY;
     break;
   default:
     /* invalid connect_reply, just ignore it */
@@ -582,7 +569,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   omx__connect_complete(ep, req, status_code, target_session_id);
 
   /* update the partner afterwards, so that omx__partner_cleanup() does not find the current request too */
-  if (status_code == OMX_STATUS_SUCCESS) {
+  if (status_code == OMX_SUCCESS) {
     /* connection successfull, initialize stuff */
 
     omx__debug_printf(CONNECT, "got a connect reply with session id %lx while we have true %lx back %lx\n",
@@ -781,7 +768,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
 		      (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 		      (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
     omx___dequeue_partner_non_acked_request(req);
-    omx__mark_request_acked(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    omx__mark_request_acked(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
     count++;
   }
   if (count)
@@ -798,7 +785,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     omx___dequeue_request(req);
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
     req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
-    omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
     count++;
   }
   if (count)
@@ -824,11 +811,11 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
       /* no sendq slot has been allocated, make sure none will be released and complete the request */
       req->send.specific.medium.frags_nr = 0;
-      omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+      omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
       /* no region has been allocated, just complete the request */
-      omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+      omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
       if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
@@ -837,7 +824,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       } else {
         /* the pull is already done, just drop the notify */
       }
-      omx__recv_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+      omx__recv_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
       break;
     default:
       omx__abort("Failed to handle queued request with type %d\n",
@@ -859,7 +846,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     omx__debug_printf(CONNECT, "Dropping throttling send %p\n", req);
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_THROTTLING);
     omx___dequeue_partner_throttling_request(req);
-    omx__send_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
     count++;
   }
   if (count)
@@ -873,7 +860,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   count = 0;
   omx__foreach_partner_connect_request_safe(partner, req, next) {
     omx__debug_printf(CONNECT, "Dropping pending connect %p\n", req);
-    omx__connect_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE, (uint32_t) -1);
+    omx__connect_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE, (uint32_t) -1);
     count++;
   }
   if (count)
@@ -896,7 +883,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
                          ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
                          req);
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
-    omx__recv_complete(ep, req, OMX_STATUS_ENDPOINT_UNREACHABLE);
+    omx__recv_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
     count++;
   }
   if (count)

@@ -28,16 +28,16 @@
 
 void
 omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
-		   omx_status_code_t status)
+		   omx_return_t status)
 {
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
 
-  if (likely(req->generic.status.code == OMX_STATUS_SUCCESS)) {
+  if (likely(req->generic.status.code == OMX_SUCCESS)) {
     /* only set the status if it is not already set to an error */
-    if (likely(status == OMX_STATUS_SUCCESS)) {
+    if (likely(status == OMX_SUCCESS)) {
       if (unlikely(req->generic.status.xfer_length < req->generic.status.msg_length))
-	req->generic.status.code = omx__error_with_req(ep, req, OMX_STATUS_TRUNCATED,
+	req->generic.status.code = omx__error_with_req(ep, req, OMX_MESSAGE_TRUNCATED,
 						       "Completing receive request, truncated from %ld to %ld bytes",
 						       req->generic.status.msg_length, req->generic.status.xfer_length);
     } else {
@@ -237,7 +237,7 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   else
-    omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+    omx__recv_complete(ep, req, OMX_SUCCESS);
 }
 
 void
@@ -253,7 +253,7 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   else
-    omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+    omx__recv_complete(ep, req, OMX_SUCCESS);
 }
 
 static inline void
@@ -323,7 +323,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
       omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
     else
-      omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+      omx__recv_complete(ep, req, OMX_SUCCESS);
 
   } else {
     /* more frags missing */
@@ -798,7 +798,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED) {
       /* the handler took care of the message, just complete the send request */
       sreq->generic.status.xfer_length = msg_length;
-      omx__send_complete(ep, sreq, OMX_STATUS_SUCCESS);
+      omx__send_complete(ep, sreq, OMX_SUCCESS);
       return OMX_SUCCESS;
     }
 
@@ -814,7 +814,7 @@ omx__process_self_send(struct omx_endpoint *ep,
   if (likely(rreq)) {
     /* expected, or matched through the handler */
     uint32_t xfer_length;
-    omx_status_code_t status_code = OMX_STATUS_SUCCESS;
+    omx_return_t status_code;
 
     rreq->generic.partner = ep->myself;
     rreq->generic.status.addr = sreq->generic.status.addr;
@@ -826,8 +826,9 @@ omx__process_self_send(struct omx_endpoint *ep,
     rreq->generic.status.msg_length = msg_length;
     if (rreq->recv.segs.total_length < msg_length) {
       xfer_length = rreq->recv.segs.total_length;
-      status_code = OMX_STATUS_TRUNCATED;
+      status_code = OMX_MESSAGE_TRUNCATED;
     } else {
+      status_code = OMX_SUCCESS;
       xfer_length = msg_length;
     }
     rreq->generic.status.xfer_length = xfer_length;
@@ -929,7 +930,7 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
   struct omx__partner * partner;
   uint64_t board_addr = 0;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-  omx_status_code_t status;
+  omx_return_t status;
 
   omx__partner_recv_lookup(ep, peer_index, nack_lib->src_endpoint,
 			   &partner);
@@ -941,13 +942,13 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
 
   switch (nack_type) {
   case OMX_EVT_NACK_LIB_BAD_ENDPT:
-    status = OMX_STATUS_BAD_ENDPOINT;
+    status = OMX_REMOTE_ENDPOINT_BAD_ID;
     break;
   case OMX_EVT_NACK_LIB_ENDPT_CLOSED:
-    status = OMX_STATUS_ENDPOINT_CLOSED;
+    status = OMX_REMOTE_ENDPOINT_CLOSED;
     break;
   case OMX_EVT_NACK_LIB_BAD_SESSION:
-    status = OMX_STATUS_BAD_SESSION;
+    status = OMX_REMOTE_ENDPOINT_BAD_SESSION;
     break;
   default:
     omx__abort("Failed to handle NACK with unknown type (%d) from peer %s (index %d) seqnum %d (#%d)\n",
@@ -1013,7 +1014,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
       } else if (unlikely(req->generic.type == OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED)) {
 	/* it's a unexpected from self, we need to complete the corresponding send */
 	union omx_request *sreq = req->recv.specific.self_unexp.sreq;
-	omx_status_code_t status_code = xfer_length < msg_length ? OMX_STATUS_TRUNCATED : OMX_STATUS_SUCCESS;
+	omx_return_t status_code = xfer_length < msg_length ? OMX_MESSAGE_TRUNCATED : OMX_SUCCESS;
 
 	omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length);
 	if (msg_length)
@@ -1044,7 +1045,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 	  /* no need to reset the scan_state, the unexpected buffer didn't use since its contigous */
 	  omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
 	} else {
-	  omx__recv_complete(ep, req, OMX_STATUS_SUCCESS);
+	  omx__recv_complete(ep, req, OMX_SUCCESS);
 
 	  /*
 	   * need to wakeup some possible recv-done waiters

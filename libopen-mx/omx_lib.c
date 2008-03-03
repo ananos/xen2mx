@@ -106,7 +106,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     if (likely(req->generic.state & OMX_REQUEST_STATE_NEED_ACK))
       omx__enqueue_request(&ep->non_acked_req_q, req);
     else
-      omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+      omx__send_complete(ep, req, OMX_SUCCESS);
 
     break;
   }

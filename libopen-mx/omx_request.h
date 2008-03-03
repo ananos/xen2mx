@@ -41,7 +41,7 @@ omx__request_alloc(struct omx_endpoint *ep)
   if (unlikely(!req))
     return NULL;
 
-  req->generic.status.code = OMX_STATUS_SUCCESS;
+  req->generic.status.code = OMX_SUCCESS;
 
   return req;
 }

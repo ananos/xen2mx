@@ -698,7 +698,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
 	goto out;
 
       if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire) {
-	ret = OMX_CONNECTION_TIMEOUT;
+	ret = OMX_TIMEOUT;
 	goto out;
       }
 
@@ -707,7 +707,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
       OMX__ENDPOINT_LOCK(ep);
     }
 
-    ret = OMX_CONNECTION_TIMEOUT;
+    ret = OMX_TIMEOUT;
     goto out;
   }
 
@@ -725,7 +725,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
     ret = omx__wait(ep, &wait_param, ms_timeout, "omx_connect");
     if (ret != OMX_SUCCESS) {
       if (ret == OMX_INTERNAL_RETURN_CODE_WAIT_ABORT)
-	ret = OMX_CONNECTION_TIMEOUT;
+	ret = OMX_TIMEOUT;
       goto out;
     }
   }

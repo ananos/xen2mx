@@ -100,18 +100,30 @@ omx_strerror(omx_return_t ret)
     return "No resources available";
   case OMX_BUSY:
     return "Resource Busy";
-  case OMX_CONNECTION_TIMEOUT:
-    return "Connection Timeout";
-  case OMX_CONNECTION_FAILED:
-    return "Connection Failed";
-  case OMX_BAD_CONNECTION_KEY:
-    return "Bad Connection Key";
+  case OMX_TIMEOUT:
+    return "Command Timeout";
+  case OMX_REMOTE_ENDPOINT_BAD_ID:
+    return "Remote Endpoint Id is Wrong";
+  case OMX_REMOTE_ENDPOINT_CLOSED:
+    return "Remote Endpoint is Closed";
+  case OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY:
+    return "Connection Key to Remote Endpoint is Invalid";
   case OMX_CANCEL_NOT_SUPPORTED:
     return "Cancel not supported for this request";
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return "Matching info does not respect context id mask";
   case OMX_NOT_SUPPORTED_WITH_CONTEXT_ID:
     return "Operation not supported when context id are enabled";
+  case OMX_REMOTE_RDMA_WINDOW_BAD_ID:
+    return "Remote Window Id is Invalid";
+  case OMX_REMOTE_ENDPOINT_UNREACHABLE:
+    return "Remote Endpoint Unreachable";
+  case OMX_REMOTE_ENDPOINT_BAD_SESSION:
+    return "Wrong Remote Endpoint Session";
+  case OMX_MESSAGE_ABORTED:
+    return "Message Aborted";
+  case OMX_MESSAGE_TRUNCATED:
+    return "Message Truncated";
   case OMX_NOT_SUPPORTED_IN_HANDLER:
     return "Operation not supported in the handler";
   case OMX_NO_SYSTEM_RESOURCES:
@@ -125,34 +137,6 @@ omx_strerror(omx_return_t ret)
   }
   omx__abort("Failed to stringify unknown return value %d\n",
 	     ret);
-}
-
-/* API omx_strstatus */
-const char *
-omx_strstatus(omx_status_code_t code)
-{
-  switch (code) {
-  case OMX_STATUS_SUCCESS:
-    return "Success";
-  case OMX_STATUS_TRUNCATED:
-    return "Message Truncated";
-  case OMX_STATUS_ENDPOINT_CLOSED:
-    return "Endpoint Closed";
-  case OMX_STATUS_ENDPOINT_UNREACHABLE:
-    return "Endpoint Unreachable";
-  case OMX_STATUS_BAD_SESSION:
-    return "Bad Session";
-  case OMX_STATUS_BAD_KEY:
-    return "Bad Connection Key";
-  case OMX_STATUS_BAD_ENDPOINT:
-    return "Bad Endpoint";
-  case OMX_STATUS_BAD_RDMAWIN:
-    return "Bad RDMA Window";
-  case OMX_STATUS_ABORTED:
-    return "Aborted";
-  }
-  omx__abort("Failed to stringify unknown status code %d\n",
-	     code);
 }
 
 /*************************

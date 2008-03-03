@@ -30,16 +30,16 @@
 
 void
 omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
-		   omx_status_code_t status)
+		   omx_return_t status)
 {
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
 
-  if (likely(req->generic.status.code == OMX_STATUS_SUCCESS)) {
+  if (likely(req->generic.status.code == OMX_SUCCESS)) {
     /* only set the status if it is not already set to an error */
-    if (likely(status == OMX_STATUS_SUCCESS)) {
+    if (likely(status == OMX_SUCCESS)) {
       if (unlikely(req->generic.status.xfer_length < req->generic.status.msg_length))
-	req->generic.status.code = omx__error_with_req(ep, req, OMX_STATUS_TRUNCATED,
+	req->generic.status.code = omx__error_with_req(ep, req, OMX_MESSAGE_TRUNCATED,
 						       "Completing send request, truncated from %ld to %ld bytes",
 						       req->generic.status.msg_length, req->generic.status.xfer_length);
     } else {

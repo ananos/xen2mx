@@ -496,7 +496,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   uint32_t xfer_length = event->pulled_length;
   uint32_t region_id = event->local_rdma_id;
   struct omx__large_region * region;
-  omx_status_code_t status;
+  omx_return_t status;
 
   /* FIXME: use cookie since region might be used for something else? */
   req = (void *) reqptr;
@@ -509,34 +509,33 @@ omx__process_pull_done(struct omx_endpoint * ep,
 
   switch (event->status) {
   case OMX_EVT_PULL_DONE_SUCCESS:
-    status = OMX_STATUS_SUCCESS;
+    status = OMX_SUCCESS;
     break;
   case OMX_EVT_PULL_DONE_BAD_ENDPT:
-    status = OMX_STATUS_BAD_ENDPOINT;
+    status = OMX_REMOTE_ENDPOINT_BAD_ID;
     break;
   case OMX_EVT_PULL_DONE_ENDPT_CLOSED:
-    status = OMX_STATUS_ENDPOINT_CLOSED;
+    status = OMX_REMOTE_ENDPOINT_CLOSED;
     break;
   case OMX_EVT_PULL_DONE_BAD_SESSION:
-    status = OMX_STATUS_BAD_SESSION;
+    status = OMX_REMOTE_ENDPOINT_BAD_SESSION;
     break;
   case OMX_EVT_PULL_DONE_BAD_RDMAWIN:
-    status = OMX_STATUS_BAD_RDMAWIN;
+    status = OMX_REMOTE_RDMA_WINDOW_BAD_ID;
     break;
   case OMX_EVT_PULL_DONE_ABORTED:
-    status = OMX_STATUS_ABORTED;
+    status = OMX_MESSAGE_ABORTED;
     break;
   case OMX_EVT_PULL_DONE_TIMEOUT:
-    status = OMX_STATUS_ENDPOINT_UNREACHABLE;
+    status = OMX_REMOTE_ENDPOINT_UNREACHABLE;
     break;
   default:
     omx__abort("Failed to handle NACK status %d\n",
 	       event->status);
   }
-  if (unlikely(status != OMX_STATUS_SUCCESS))
-    status = omx__error_with_req(ep, req, status, "Completing large receive request");
 
-  if (unlikely(status != OMX_STATUS_SUCCESS)) {
+  if (unlikely(status != OMX_SUCCESS)) {
+    status = omx__error_with_req(ep, req, status, "Completing large receive request");
     req->generic.status.xfer_length = 0;
   } else if (unlikely(req->generic.status.xfer_length != xfer_length)) {
     omx__abort("pull success returns length %ld instead of %ld\n",
@@ -579,7 +578,7 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
     /* keep the request in the non_acked_req_q */
   } else {
     omx__dequeue_request(&ep->large_send_req_q, req);
-    omx__send_complete(ep, req, OMX_STATUS_SUCCESS);
+    omx__send_complete(ep, req, OMX_SUCCESS);
   }
 
 #ifdef OMX_MX_WIRE_COMPAT

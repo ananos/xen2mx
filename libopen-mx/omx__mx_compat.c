@@ -354,7 +354,7 @@ mx_strerror(mx_return_t return_code)
 const char *
 mx_strstatus(mx_status_code_t status)
 {
-  return omx_strstatus(status);
+  return omx_strerror(status);
 }
 
 #ifdef OMX_MX_API_UNSUPPORTED_COMPAT

@@ -30,7 +30,7 @@
 void
 omx__mark_request_acked(struct omx_endpoint *ep,
 			union omx_request *req,
-			omx_status_code_t status)
+			omx_return_t status)
 {
   struct list_head *queue;
 
@@ -53,7 +53,7 @@ omx__mark_request_acked(struct omx_endpoint *ep,
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
     if (unlikely(req->generic.state & OMX_REQUEST_STATE_IN_DRIVER)) {
       /* keep the request in the driver_posted_req_q for now until it returns from the driver */
-      if (req->generic.status.code == OMX_STATUS_SUCCESS)
+      if (req->generic.status.code == OMX_SUCCESS)
 	/* set the status (success for ack, error for nack) only if there has been no error early */
 	req->generic.status.code = omx__error_with_req(ep, req, status, "Send request nacked");
     } else {
@@ -65,7 +65,7 @@ omx__mark_request_acked(struct omx_endpoint *ep,
   case OMX_REQUEST_TYPE_SEND_LARGE:
     /* if the request was already replied, it would have been acked at the same time */
     omx__dequeue_request(queue, req);
-    if (unlikely(status != OMX_STATUS_SUCCESS)) {
+    if (unlikely(status != OMX_SUCCESS)) {
       /* the request has been nacked, there won't be any reply */
       req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
       omx__send_complete(ep, req, status);
@@ -123,7 +123,7 @@ omx__handle_ack(struct omx_endpoint *ep,
 	break;
 
       omx___dequeue_partner_non_acked_request(req);
-      omx__mark_request_acked(ep, req, OMX_STATUS_SUCCESS);
+      omx__mark_request_acked(ep, req, OMX_SUCCESS);
     }
 
     partner->next_acked_send_seq = ack_before;
@@ -179,7 +179,7 @@ omx__handle_truc_ack(struct omx_endpoint *ep,
 omx_return_t
 omx__handle_nack(struct omx_endpoint *ep,
 		 struct omx__partner *partner, omx__seqnum_t seqnum,
-		 omx_status_code_t status)
+		 omx_return_t status)
 {
   omx__seqnum_t nack_index = OMX__SEQNUM(seqnum - partner->next_acked_send_seq);
   union omx_request *req;

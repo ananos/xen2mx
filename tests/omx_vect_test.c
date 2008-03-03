@@ -89,11 +89,11 @@ vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   ret = omx_wait(ep, &sreq, &status, &result, OMX_TIMEOUT_INFINITE);
   assert(ret == OMX_SUCCESS);
   assert(result);
-  assert(status.code == OMX_STATUS_SUCCESS);
+  assert(status.code == OMX_SUCCESS);
   ret = omx_wait(ep, &rreq, &status, &result, OMX_TIMEOUT_INFINITE);
   assert(ret == OMX_SUCCESS);
   assert(result);
-  assert(status.code == OMX_STATUS_SUCCESS);
+  assert(status.code == OMX_SUCCESS);
 
   /* check recv segment are chars between REAL_SEND_FIRST_CHAR and REAL_SEND_LAST_CHAR */
   c = REAL_SEND_FIRST_CHAR;
@@ -162,11 +162,11 @@ contig_send_to_vect_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   ret = omx_wait(ep, &sreq, &status, &result, OMX_TIMEOUT_INFINITE);
   assert(ret == OMX_SUCCESS);
   assert(result);
-  assert(status.code == OMX_STATUS_SUCCESS);
+  assert(status.code == OMX_SUCCESS);
   ret = omx_wait(ep, &rreq, &status, &result, OMX_TIMEOUT_INFINITE);
   assert(ret == OMX_SUCCESS);
   assert(result);
-  assert(status.code == OMX_STATUS_SUCCESS);
+  assert(status.code == OMX_SUCCESS);
 
   /* check recv segments are chars between REAL_SEND_FIRST_CHAR and REAL_SEND_LAST_CHAR */
   c = REAL_SEND_FIRST_CHAR;

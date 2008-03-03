@@ -41,16 +41,22 @@ enum omx_return {
 
   OMX_BUSY = 20,
 
-  OMX_CONNECTION_TIMEOUT = 30,
+  OMX_TIMEOUT = 30,
 
-  OMX_CONNECTION_FAILED = 33, /* FIXME: various error codes for bad endpoint id and closed endpoint */
-  OMX_BAD_CONNECTION_KEY = 34,
+  OMX_REMOTE_ENDPOINT_BAD_ID = 32,
+  OMX_REMOTE_ENDPOINT_CLOSED = 33,
+  OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY = 34,
 
   OMX_CANCEL_NOT_SUPPORTED = 40,
 
   OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK = 42,
   OMX_NOT_SUPPORTED_WITH_CONTEXT_ID = 43,
 
+  OMX_REMOTE_RDMA_WINDOW_BAD_ID = 91,
+  OMX_REMOTE_ENDPOINT_UNREACHABLE = 92,
+  OMX_REMOTE_ENDPOINT_BAD_SESSION = 93,
+  OMX_MESSAGE_ABORTED = 94,
+  OMX_MESSAGE_TRUNCATED = 95,
   OMX_NOT_SUPPORTED_IN_HANDLER = 96,
   OMX_NO_SYSTEM_RESOURCES = 97,
   OMX_INVALID_PARAMETER = 98,
@@ -58,22 +64,6 @@ enum omx_return {
   OMX_RETURN_CODE_MAX = 100,
 };
 typedef enum omx_return omx_return_t;
-
-enum omx_status_code {
-  OMX_STATUS_SUCCESS = 0,
-
-  OMX_STATUS_TRUNCATED = 5,
-
-  OMX_STATUS_ENDPOINT_CLOSED = 8,
-  OMX_STATUS_ENDPOINT_UNREACHABLE = 9,
-  OMX_STATUS_BAD_SESSION = 10,
-  OMX_STATUS_BAD_KEY = 11,
-  OMX_STATUS_BAD_ENDPOINT = 12,
-  OMX_STATUS_BAD_RDMAWIN = 13,
-  OMX_STATUS_ABORTED = 14,
-
-};
-typedef enum omx_status_code omx_status_code_t;
 
 #define OMX_SIZEOF_ADDR 16
 
@@ -83,7 +73,7 @@ struct omx_endpoint_addr {
 typedef struct omx_endpoint_addr omx_endpoint_addr_t;
 
 struct omx_status {
-  enum omx_status_code code;
+  enum omx_return code;
   omx_endpoint_addr_t addr;
   uint64_t match_info;
   uint32_t msg_length;
@@ -104,9 +94,6 @@ omx_finalize(void);
 
 const char *
 omx_strerror(omx_return_t ret);
-
-const char *
-omx_strstatus(omx_status_code_t code);
 
 omx_return_t
 omx_board_number_to_nic_id(uint32_t board_number,

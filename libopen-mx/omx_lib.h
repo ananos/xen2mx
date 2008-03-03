@@ -401,7 +401,7 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
 
 extern void
 omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
-		   omx_status_code_t status);
+		   omx_return_t status);
 
 /* receiving messages */
 
@@ -411,7 +411,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 
 extern void
 omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
-		   omx_status_code_t status);
+		   omx_return_t status);
 
 extern omx_return_t
 omx__process_recv(struct omx_endpoint *ep,
@@ -484,7 +484,7 @@ omx__process_recv_connect(struct omx_endpoint *ep,
 
 extern void
 omx__connect_complete(struct omx_endpoint *ep, union omx_request *req,
-		      omx_status_code_t status, uint32_t session_id);
+		      omx_return_t status, uint32_t session_id);
 
 omx_return_t
 omx__connect_wait(omx_endpoint_t ep, union omx_request * req,
@@ -504,12 +504,12 @@ omx__handle_truc_ack(struct omx_endpoint *ep,
 extern omx_return_t
 omx__handle_nack(struct omx_endpoint *ep,
                  struct omx__partner *partner, omx__seqnum_t seqnum,
-                 omx_status_code_t status);
+                 omx_return_t status);
 
 extern void
 omx__mark_request_acked(struct omx_endpoint *ep,
 			union omx_request *req,
-			omx_status_code_t status);
+			omx_return_t status);
 
 extern void
 omx__process_resend_requests(struct omx_endpoint *ep);
@@ -596,8 +596,8 @@ extern omx_return_t
 omx__error_with_ep(struct omx_endpoint *ep,
 		   omx_return_t ret, const char *fmt, ...);
 
-extern omx_status_code_t
+extern omx_return_t
 omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
-		    omx_status_code_t code, const char *fmt, ...);
+		    omx_return_t code, const char *fmt, ...);
 
 #endif /* __omx_lib_h__ */

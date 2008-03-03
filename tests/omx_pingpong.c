@@ -303,9 +303,9 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
-    if (status.code != OMX_STATUS_SUCCESS) {
+    if (status.code != OMX_SUCCESS) {
       fprintf(stderr, "isend param message failed with status (%s)\n",
-	      omx_strstatus(status.code));
+	      omx_strerror(status.code));
       goto out_with_ep;
     }
 
@@ -328,9 +328,9 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
-    if (status.code != OMX_STATUS_SUCCESS) {
+    if (status.code != OMX_SUCCESS) {
       fprintf(stderr, "param ack message failed with status (%s)\n",
-	      omx_strstatus(status.code));
+	      omx_strerror(status.code));
       goto out_with_ep;
     }
 
@@ -370,9 +370,9 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	if (status.code != OMX_STATUS_SUCCESS) {
+	if (status.code != OMX_SUCCESS) {
 	  fprintf(stderr, "send failed with status (%s)\n",
-		  omx_strstatus(status.code));
+		  omx_strerror(status.code));
 		  goto out_with_ep;
 	}
 
@@ -391,9 +391,9 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	if (status.code != OMX_STATUS_SUCCESS) {
+	if (status.code != OMX_SUCCESS) {
 	  fprintf(stderr, "irecv failed with status (%s)\n",
-		  omx_strstatus(status.code));
+		  omx_strerror(status.code));
 		  goto out_with_ep;
 	}
 
@@ -448,9 +448,9 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
-    if (status.code != OMX_STATUS_SUCCESS) {
+    if (status.code != OMX_SUCCESS) {
       fprintf(stderr, "irecv param message failed with status (%s)\n",
-	      omx_strstatus(status.code));
+	      omx_strerror(status.code));
       goto out_with_ep;
     }
 
@@ -494,9 +494,9 @@ int main(int argc, char *argv[])
 	      omx_strerror(ret));
       goto out_with_ep;
     }
-    if (status.code != OMX_STATUS_SUCCESS) {
+    if (status.code != OMX_SUCCESS) {
       fprintf(stderr, "send param ack message failed with status (%s)\n",
-	      omx_strstatus(status.code));
+	      omx_strerror(status.code));
       goto out_with_ep;
     }
 
@@ -551,9 +551,9 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	if (status.code != OMX_STATUS_SUCCESS) {
+	if (status.code != OMX_SUCCESS) {
 	  fprintf(stderr, "irecv failed with status (%s)\n",
-		  omx_strstatus(status.code));
+		  omx_strerror(status.code));
 		  goto out_with_ep;
 	}
 
@@ -573,9 +573,9 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	if (status.code != OMX_STATUS_SUCCESS) {
+	if (status.code != OMX_SUCCESS) {
 	  fprintf(stderr, "send failed with status (%s)\n",
-		  omx_strstatus(status.code));
+		  omx_strerror(status.code));
 		  goto out_with_ep;
 	}
       }
