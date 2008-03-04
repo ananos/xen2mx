@@ -203,7 +203,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     return omx__get_board_count((uint32_t *) out_val);
 
   case OMX_INFO_BOARD_IDS: {
-    uint32_t count, i;
+    uint32_t count, i, j;
     omx_return_t ret;
 
     ret = omx__get_board_count(&count);
@@ -213,15 +213,16 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     if (out_len < sizeof (uint64_t) * (count+1))
       return OMX_INVALID_PARAMETER;
 
-    for (i = 0; i < count; i++) {
+    for (i = 0, j = 0; i < count && j < omx__driver_desc->board_max; j++) {
       struct omx_board_info tmp;
-      ret = omx__get_board_info(ep, i, &tmp);
+      ret = omx__get_board_info(ep, j, &tmp);
       if (ret != OMX_SUCCESS)
 	return ret;
       ((uint64_t *) out_val) [i] = tmp.addr;
+      i++;
     }
 
-    ((uint64_t *) out_val) [count] = 0;
+    ((uint64_t *) out_val) [i] = 0;
     return OMX_SUCCESS;
   }
 
