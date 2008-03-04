@@ -203,7 +203,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
     if ((result = omx__test_common(ep, requestp, status)) != 0)
       goto out_with_lock;
 
-    ret = omx__wait(ep, &wait_param, ms_timeout, "omx_wait");
+    ret = omx__wait(ep, &wait_param, ms_timeout, "wait");
     if (ret != OMX_SUCCESS) {
       if (ret == OMX_TIMEOUT)
 	ret = OMX_SUCCESS;
@@ -278,7 +278,7 @@ omx_test_any(struct omx_endpoint *ep,
 
   if (unlikely(match_info & ~match_mask)) {
     ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
-			     "omx_test_any with match info %llx mask %llx",
+			     "test_any with match info %llx mask %llx",
 			     (unsigned long long) match_info, (unsigned long long) match_mask);
     goto out;
   }
@@ -286,7 +286,7 @@ omx_test_any(struct omx_endpoint *ep,
   /* check that there's no wildcard in the context id range */
   if (unlikely(ep->ctxid_mask & ~match_mask)) {
     ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
-			     "omx_test_any with match mask %llx and ctxid mask %llx",
+			     "test_any with match mask %llx and ctxid mask %llx",
 			     (unsigned long long) match_mask, ep->ctxid_mask);
     goto out;
   }
@@ -321,7 +321,7 @@ omx_wait_any(struct omx_endpoint *ep,
 
   if (unlikely(match_info & ~match_mask)) {
     ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
-			     "omx_wait_any with match info %llx mask %llx",
+			     "wait_any with match info %llx mask %llx",
 			     (unsigned long long) match_info, (unsigned long long) match_mask);
     goto out;
   }
@@ -329,7 +329,7 @@ omx_wait_any(struct omx_endpoint *ep,
   /* check that there's no wildcard in the context id range */
   if (unlikely(ep->ctxid_mask & ~match_mask)) {
     ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
-			     "omx_wait_any with match mask %llx and ctxid mask %llx",
+			     "wait_any with match mask %llx and ctxid mask %llx",
 			     (unsigned long long) match_mask, ep->ctxid_mask);
     goto out;
   }
@@ -370,7 +370,7 @@ omx_wait_any(struct omx_endpoint *ep,
     if ((result = omx__test_any_common(ep, match_info, match_mask, status)) != 0)
       goto out_with_lock;
 
-    ret = omx__wait(ep, &wait_param, ms_timeout, "omx_wait_any");
+    ret = omx__wait(ep, &wait_param, ms_timeout, "wait_any");
     if (ret != OMX_SUCCESS) {
       if (ret == OMX_TIMEOUT)
 	ret = OMX_SUCCESS;
@@ -411,7 +411,7 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
 
   if (unlikely(ep->ctxid_bits)) {
     ret = omx__error_with_ep(ep, OMX_NOT_SUPPORTED_WITH_CONTEXT_ID,
-			     "omx_ipeek with ctxid bits %d\n",
+			     "ipeek with ctxid bits %d\n",
 			     (unsigned) ep->ctxid_bits);
     goto out;
   }
@@ -444,7 +444,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 
   if (unlikely(ep->ctxid_bits)) {
     ret = omx__error_with_ep(ep, OMX_NOT_SUPPORTED_WITH_CONTEXT_ID,
-			     "omx_peek with ctxid bits %d\n",
+			     "peek with ctxid bits %d\n",
 			     (unsigned) ep->ctxid_bits);
     goto out;
   }
@@ -485,7 +485,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
     if ((result = omx__ipeek_common(ep, requestp)) != 0)
       goto out_with_lock;
 
-    ret = omx__wait(ep, &wait_param, ms_timeout, "omx_peek");
+    ret = omx__wait(ep, &wait_param, ms_timeout, "peek");
     if (ret != OMX_SUCCESS) {
       if (ret == OMX_TIMEOUT)
 	ret = OMX_SUCCESS;
@@ -585,7 +585,7 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
 
   if (unlikely(match_info & ~match_mask)) {
     ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
-			     "omx_iprobe with match info %llx mask %llx",
+			     "iprobe with match info %llx mask %llx",
 			     (unsigned long long) match_info, (unsigned long long) match_mask);
     goto out;
   }
@@ -593,7 +593,7 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
   /* check that there's no wildcard in the context id range */
   if (unlikely(ep->ctxid_mask & ~match_mask)) {
     ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
-			     "omx_iprobe with match mask %llx and ctxid mask %llx",
+			     "iprobe with match mask %llx and ctxid mask %llx",
 			     (unsigned long long) match_mask, ep->ctxid_mask);
     goto out;
   }
@@ -628,7 +628,7 @@ omx_probe(struct omx_endpoint *ep,
 
   if (unlikely(match_info & ~match_mask)) {
     ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
-			     "omx_probe with match info %llx mask %llx",
+			     "probe with match info %llx mask %llx",
 			     (unsigned long long) match_info, (unsigned long long) match_mask);
     goto out;
   }
@@ -636,7 +636,7 @@ omx_probe(struct omx_endpoint *ep,
   /* check that there's no wildcard in the context id range */
   if (unlikely(ep->ctxid_mask & ~match_mask)) {
     ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
-			     "omx_probe with match mask %llx and ctxid mask %llx",
+			     "probe with match mask %llx and ctxid mask %llx",
 			     (unsigned long long) match_mask, ep->ctxid_mask);
     goto out;
   }
@@ -677,7 +677,7 @@ omx_probe(struct omx_endpoint *ep,
     if ((result = omx__iprobe_common(ep, match_info, match_mask, status)) != 0)
       goto out_with_lock;
 
-    ret = omx__wait(ep, &wait_param, ms_timeout, "omx_probe");
+    ret = omx__wait(ep, &wait_param, ms_timeout, "probe");
     if (ret != OMX_SUCCESS) {
       if (ret == OMX_TIMEOUT)
 	ret = OMX_SUCCESS;
@@ -746,7 +746,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
     if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
       goto out;
 
-    ret = omx__wait(ep, &wait_param, ms_timeout, "omx_connect");
+    ret = omx__wait(ep, &wait_param, ms_timeout, "connect");
     if (ret != OMX_SUCCESS) {
       /* keep OMX_TIMEOUT as is and let the caller handle errors */
       goto out;
