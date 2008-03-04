@@ -50,6 +50,7 @@ omx_cache_segments(struct omx__req_seg * reqsegs, omx_seg_t * segs, uint32_t nse
 
     reqsegs->segs = malloc(nseg * sizeof(omx_seg_t));
     if (!reqsegs->segs)
+      /* the caller checks error codes */
       return OMX_NO_RESOURCES;
 
     memcpy(reqsegs->segs, segs, nseg * sizeof(omx_seg_t));
