@@ -501,7 +501,7 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
   return OMX_SUCCESS;
 }
 
-omx_return_t
+void
 omx__process_pull_done(struct omx_endpoint * ep,
 		       struct omx_evt_pull_done * event)
 {
@@ -564,8 +564,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
 
   omx__submit_notify(ep, req);
-
-  return OMX_SUCCESS;
 }
 
 void

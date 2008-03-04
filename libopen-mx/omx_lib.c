@@ -30,42 +30,40 @@
  * Event processing
  */
 
-static omx_return_t
+static void
 omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 {
-  omx_return_t ret = OMX_SUCCESS;
-
   omx__debug_printf(EVENT, "received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
 
   case OMX_EVT_RECV_CONNECT: {
-    ret = omx__process_recv_connect(ep, &evt->recv_connect);
+    omx__process_recv_connect(ep, &evt->recv_connect);
     break;
   }
 
   case OMX_EVT_RECV_TINY: {
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    ret = omx__process_recv(ep,
-			    msg, msg->specific.tiny.data, msg->specific.tiny.length,
-			    omx__process_recv_tiny);
+    omx__process_recv(ep,
+		      msg, msg->specific.tiny.data, msg->specific.tiny.length,
+		      omx__process_recv_tiny);
     break;
   }
 
   case OMX_EVT_RECV_SMALL: {
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
     char * recvq_buffer = ep->recvq + msg->specific.small.recvq_offset;
-    ret = omx__process_recv(ep,
-			    msg, recvq_buffer, msg->specific.small.length,
-			    omx__process_recv_small);
+    omx__process_recv(ep,
+		      msg, recvq_buffer, msg->specific.small.length,
+		      omx__process_recv_small);
     break;
   }
 
   case OMX_EVT_RECV_MEDIUM: {
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
     char * recvq_buffer = ep->recvq + msg->specific.medium.recvq_offset;
-    ret = omx__process_recv(ep,
-			    msg, recvq_buffer, msg->specific.medium.msg_length,
-			    omx__process_recv_medium_frag);
+    omx__process_recv(ep,
+		      msg, recvq_buffer, msg->specific.medium.msg_length,
+		      omx__process_recv_medium_frag);
     break;
   }
 
@@ -73,17 +71,17 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
     struct omx__rndv_data * data_n = (void *) msg->specific.rndv.data;
     uint32_t msg_length = OMX_FROM_PKT_FIELD(data_n->msg_length);
-    ret = omx__process_recv(ep,
-			    msg, NULL, msg_length,
-			    omx__process_recv_rndv);
+    omx__process_recv(ep,
+		      msg, NULL, msg_length,
+		      omx__process_recv_rndv);
     break;
   }
 
   case OMX_EVT_RECV_NOTIFY: {
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    ret = omx__process_recv(ep,
-			    msg, NULL, 0,
-			    omx__process_recv_notify);
+    omx__process_recv(ep,
+		      msg, NULL, 0,
+		      omx__process_recv_notify);
     break;
   }
 
@@ -119,12 +117,12 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_TRUC: {
-    ret = omx__process_recv_truc(ep, &evt->recv_truc);
+    omx__process_recv_truc(ep, &evt->recv_truc);
     break;
   }
 
   case OMX_EVT_RECV_NACK_LIB: {
-    ret = omx__process_recv_nack_lib(ep, &evt->recv_nack_lib);
+    omx__process_recv_nack_lib(ep, &evt->recv_nack_lib);
     break;
   }
 
@@ -132,8 +130,6 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     omx__abort("Failed to handle event with unknown type %d\n",
 	       evt->generic.type);
   }
-
-  return ret;
 }
 
 /**************

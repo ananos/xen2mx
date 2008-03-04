@@ -642,7 +642,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
   return ret;
 }
 
-omx_return_t
+void
 omx__process_recv(struct omx_endpoint *ep,
 		  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
 		  omx__process_recv_func_t recv_func)
@@ -653,12 +653,11 @@ omx__process_recv(struct omx_endpoint *ep,
   omx__seqnum_t old_next_match_recv_seq;
   omx__seqnum_t frag_index;
   omx__seqnum_t frag_index_max;
-  omx_return_t ret = OMX_SUCCESS;
 
   omx__partner_recv_lookup(ep, msg->peer_index, msg->src_endpoint,
 			   &partner);
   if (unlikely(!partner))
-    return OMX_SUCCESS;
+    return;
 
   omx__debug_printf(SEQNUM, "got seqnum %d (#%d), expected match at %d, frag at %d (#%d)\n",
 		    (unsigned) OMX__SEQNUM(seqnum),
@@ -671,14 +670,14 @@ omx__process_recv(struct omx_endpoint *ep,
     omx__verbose_printf("Obsolete session message received (session %d seqnum %d instead of session %d)\n",
 			(unsigned) OMX__SESNUM_SHIFTED(seqnum), (unsigned) OMX__SEQNUM(seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq));
-    return OMX_SUCCESS;
+    return;
   }
 
   if (unlikely(OMX__SESNUM(piggyack ^ partner->next_send_seq)) != 0) {
     omx__verbose_printf("Obsolete session piggyack received (session %d seqnum %d instead of session %d)\n",
 			(unsigned) OMX__SESNUM_SHIFTED(piggyack), (unsigned) OMX__SEQNUM(piggyack),
 			(unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
-    return OMX_SUCCESS;
+    return;
   }
 
   omx__debug_printf(ACK, "got piggy ack for ack up to %d (#%d)\n",
@@ -691,6 +690,8 @@ omx__process_recv(struct omx_endpoint *ep,
   frag_index_max = OMX__SEQNUM(old_next_match_recv_seq - partner->next_frag_recv_seq);
 
   if (likely(frag_index <= frag_index_max)) {
+    omx_return_t ret;
+
     /* either the new expected seqnum (to match)
      * or a incomplete previous multi-fragment medium messages (to accumulate)
      * or an old obsolete duplicate packet (to drop)
@@ -722,6 +723,8 @@ omx__process_recv(struct omx_endpoint *ep,
     }
 
   } else if (frag_index <= frag_index_max + OMX__EARLY_PACKET_OFFSET_MAX) {
+    omx_return_t ret;
+
     /* early fragment or message, postpone it */
     ret = omx__postpone_early_packet(partner,
 				     msg, data,
@@ -740,8 +743,6 @@ omx__process_recv(struct omx_endpoint *ep,
       omx__mark_partner_need_ack_immediate(ep, partner);
     }
   }
-
-  return ret;
 }
 
 /******************************
@@ -903,7 +904,7 @@ omx__process_self_send(struct omx_endpoint *ep,
  * Truc Message Receive
  */
 
-omx_return_t
+void
 omx__process_recv_truc(struct omx_endpoint *ep,
 		       struct omx_evt_recv_truc *truc)
 {
@@ -914,7 +915,7 @@ omx__process_recv_truc(struct omx_endpoint *ep,
   omx__partner_recv_lookup(ep, truc->peer_index, truc->src_endpoint,
 			   &partner);
   if (unlikely(!partner))
-    return OMX_SUCCESS;
+    return;
 
   switch (truc_type) {
   case OMX__TRUC_DATA_TYPE_ACK: {
@@ -924,15 +925,13 @@ omx__process_recv_truc(struct omx_endpoint *ep,
   default:
     omx__abort("Failed to handle truc message with type %d\n", truc_type);
   }
-
-  return OMX_SUCCESS;
 }
 
 /***************************
  * Nack Lib Message Receive
  */
 
-omx_return_t
+void
 omx__process_recv_nack_lib(struct omx_endpoint *ep,
 			   struct omx_evt_recv_nack_lib *nack_lib)
 {
@@ -947,7 +946,7 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
   omx__partner_recv_lookup(ep, peer_index, nack_lib->src_endpoint,
 			   &partner);
   if (unlikely(!partner))
-    return OMX_SUCCESS;
+    return;
 
   omx__peer_index_to_addr(peer_index, &board_addr);
   omx__board_addr_sprintf(board_addr_str, board_addr);
@@ -969,7 +968,7 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
 	       (unsigned) OMX__SESNUM_SHIFTED(seqnum));
   }
 
-  return omx__handle_nack(ep, partner, seqnum, status);
+  omx__handle_nack(ep, partner, seqnum, status);
 }
 
 /**************************

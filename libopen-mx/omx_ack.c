@@ -92,7 +92,7 @@ omx__mark_request_acked(struct omx_endpoint *ep,
  * Handle Received Acks
  */
 
-omx_return_t
+void
 omx__handle_ack(struct omx_endpoint *ep,
 		struct omx__partner *partner, omx__seqnum_t ack_before)
 {
@@ -145,8 +145,6 @@ omx__handle_ack(struct omx_endpoint *ep,
       new_acks--;
     }
   }
-
-  return OMX_SUCCESS;
 }
 
 void
@@ -181,7 +179,7 @@ omx__handle_truc_ack(struct omx_endpoint *ep,
  * Handle Received Nacks
  */
 
-omx_return_t
+void
 omx__handle_nack(struct omx_endpoint *ep,
 		 struct omx__partner *partner, omx__seqnum_t seqnum,
 		 omx_return_t status)
@@ -203,7 +201,7 @@ omx__handle_nack(struct omx_endpoint *ep,
     if (nack_index == req_index) {
       omx___dequeue_partner_non_acked_request(req);
       omx__mark_request_acked(ep, req, status);
-      return OMX_SUCCESS;
+      return;
     }
   }
 
@@ -217,13 +215,12 @@ omx__handle_nack(struct omx_endpoint *ep,
      */
     if (req->connect.connect_seqnum == seqnum) {
       omx__connect_complete(ep, req, status, (uint32_t) -1);
-      return OMX_SUCCESS;
+      return;
     }
   }
 
   omx__debug_printf(ACK, "Failed to find request to nack for seqnum %d, could be a duplicate, ignoring\n",
 		    seqnum);
-  return OMX_SUCCESS;
 }
 
 /**********************

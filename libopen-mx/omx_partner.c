@@ -521,7 +521,7 @@ omx__connect_complete(struct omx_endpoint *ep,
 /*
  * End the connection process to another peer
  */
-static INLINE omx_return_t
+static INLINE void
 omx__process_recv_connect_reply(struct omx_endpoint *ep,
 				struct omx_evt_recv_connect *event)
 {
@@ -545,14 +545,14 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     break;
   default:
     /* invalid connect_reply, just ignore it */
-    return OMX_SUCCESS;
+    return;
   }
 
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_INVALID_PARAMETER)
       fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
-    return ret;
+    return;
   }
 
   omx__partner_check_localization(partner, event->shared);
@@ -569,7 +569,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   }
 
   /* invalid connect reply, just ignore it */
-  return OMX_SUCCESS;
+  return;
 
  found:
   omx__debug_printf(CONNECT, "waking up on connect reply\n");
@@ -604,14 +604,12 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
     partner->true_session_id = target_session_id;
   }
-
-  return OMX_SUCCESS;
 }
 
 /*
  * Another peer is connecting to us
  */
-static INLINE omx_return_t
+static INLINE void
 omx__process_recv_connect_request(struct omx_endpoint *ep,
 				  struct omx_evt_recv_connect *event)
 {
@@ -631,7 +629,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     if (ret == OMX_INVALID_PARAMETER)
       fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
     /* just ignore the connect request */
-    return OMX_SUCCESS;
+    return;
   }
 
   omx__partner_check_localization(partner, event->shared);
@@ -692,22 +690,20 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     /* just ignore the error, the peer will resend the connect request */
   }
   /* no need to wait for a done event, connect is synchronous */
-
-  return OMX_SUCCESS;
 }
 
 /*
  * Incoming connection message
  */
-omx_return_t
+void
 omx__process_recv_connect(struct omx_endpoint *ep,
 			  struct omx_evt_recv_connect *event)
 {
   struct omx__connect_request_data * data = (void *) event->data;
   if (data->is_reply)
-    return omx__process_recv_connect_reply(ep, event);
+    omx__process_recv_connect_reply(ep, event);
   else
-    return omx__process_recv_connect_request(ep, event);
+    omx__process_recv_connect_request(ep, event);
 }
 
 /***************************

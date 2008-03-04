@@ -413,7 +413,7 @@ extern void
 omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
 		   omx_return_t status);
 
-extern omx_return_t
+extern void
 omx__process_recv(struct omx_endpoint *ep,
 		  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
 		  omx__process_recv_func_t recv_func);
@@ -448,15 +448,15 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
 			 struct omx_evt_recv_msg *msg,
 			 void *data /* unused */, uint32_t msg_length /* unused */);
 
-extern omx_return_t
+extern void
 omx__process_pull_done(struct omx_endpoint * ep,
 		       struct omx_evt_pull_done * event);
 
-extern omx_return_t
+extern void
 omx__process_recv_truc(struct omx_endpoint *ep,
 		       struct omx_evt_recv_truc *truc);
 
-extern omx_return_t
+extern void
 omx__process_recv_nack_lib(struct omx_endpoint *ep,
 			   struct omx_evt_recv_nack_lib *nack_lib);
 
@@ -478,7 +478,7 @@ omx__post_connect_request(struct omx_endpoint *ep,
 			  struct omx__partner *partner,
 			  union omx_request * req);
 
-extern omx_return_t
+extern void
 omx__process_recv_connect(struct omx_endpoint *ep,
 			  struct omx_evt_recv_connect *event);
 
@@ -492,7 +492,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req,
 
 /* retransmission */
 
-extern omx_return_t
+extern void
 omx__handle_ack(struct omx_endpoint *ep,
 		struct omx__partner *partner, omx__seqnum_t ack);
 
@@ -501,7 +501,7 @@ omx__handle_truc_ack(struct omx_endpoint *ep,
 		     struct omx__partner *partner,
 		     struct omx__truc_ack_data *ack_n);
 
-extern omx_return_t
+extern void
 omx__handle_nack(struct omx_endpoint *ep,
                  struct omx__partner *partner, omx__seqnum_t seqnum,
                  omx_return_t status);

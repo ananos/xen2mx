@@ -1,6 +1,5 @@
 * more return codes for various errors
 
-* need return values for all recv/event callbacks ?
 * less return values in early/matching/unexp functions
 
 * cleanup error recovery if failed to send a throttling req
