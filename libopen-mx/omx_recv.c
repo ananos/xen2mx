@@ -1130,6 +1130,7 @@ omx_irecvv(omx_endpoint_t ep,
 
   ret = omx_cache_segments(&reqsegs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS)) {
+    /* the callee let us check errors */
     ret = omx__error_with_ep(ep, ret, "Allocating vectorial receive request segment array");
     goto out;
   }
