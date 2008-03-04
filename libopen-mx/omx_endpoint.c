@@ -36,6 +36,7 @@ omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
 
   array = malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct omx__sendq_entry));
   if (!array)
+    /* let the caller handle the error */
     return OMX_NO_RESOURCES;
 
   ep->sendq_map.array = array;
@@ -75,6 +76,7 @@ omx__open_one_endpoint(int fd,
   open_param.endpoint_index = endpoint_index;
   err = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
   if (err < 0)
+    /* let the caller handle the error */
     return omx__errno_to_return("ioctl OPEN_ENDPOINT");
 
   return OMX_SUCCESS;
@@ -112,6 +114,7 @@ omx__open_endpoint_in_range(int fd,
 	*endpoint_found_p = endpoint;
 	return OMX_SUCCESS;
       } else if (ret != OMX_BUSY && ret != OMX_NO_DEVICE) {
+	/* let the caller handle the error */
 	return ret;
       }
 
@@ -147,6 +150,7 @@ omx__open_endpoint(int fd,
   return omx__open_endpoint_in_range(fd,
 				     board_start, board_end, board_index_p,
 				     endpoint_start, endpoint_end, endpoint_index_p);
+  /* let the caller handle the error */
 }
 
 /**********************
@@ -169,17 +173,17 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   int err, fd, i;
 
   if (!omx__globals.initialized) {
-    ret = OMX_NOT_INITIALIZED;
+    ret = omx__error(OMX_NOT_INITIALIZED, "Opening endpoint");
     goto out;
   }
 
   for(i=0; i<param_count; i++) {
     switch (param_array[i].key) {
     case OMX_ENDPOINT_PARAM_ERROR_HANDLER:
-      printf("setting endpoint error handler ignored for now\n");
+      omx__verbose_printf("setting endpoint error handler ignored for now\n");
       break;
     case OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX:
-      printf("setting endpoint unexp queue max ignored for now\n");
+      omx__verbose_printf("setting endpoint unexp queue max ignored for now\n");
       break;
     case OMX_ENDPOINT_PARAM_CONTEXT_ID:
       if (param_array[i].val.context_id.bits > OMX_ENDPOINT_CONTEXT_ID_BITS_MAX
@@ -191,14 +195,15 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
       ctxid_shift = param_array[i].val.context_id.shift;
       break;
     default:
-      ret = OMX_INVALID_PARAMETER;
+      ret = omx__error(OMX_INVALID_PARAMETER,
+		       "Reading endpoint parameter key %d", (unsigned) key);
       goto out;
     }
   }
 
   ep = malloc(sizeof(struct omx_endpoint));
   if (!ep) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint");
     goto out;
   }
   omx__lock_init(&ep->lock);
@@ -206,20 +211,25 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   err = open(OMX_DEVNAME, O_RDWR);
   if (err < 0) {
-    ret = omx__errno_to_return("open");
+    ret = omx__error(omx__errno_to_return("open"),
+		     "Opening driver device to open endpoint");
     goto out_with_ep;
   }
   fd = err;
 
   /* try to open */
   ret = omx__open_endpoint(fd, &board_index, &endpoint_index);
-  if (ret != OMX_SUCCESS)
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error(ret, "Attaching endpoint to driver device");
     goto out_with_fd;
+  }
 
   /* prepare the sendq */
   ret = omx__endpoint_sendq_map_init(ep);
-  if (ret != OMX_SUCCESS)
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error(ret, "Initializing new endpoint send queue map");
     goto out_with_attached;
+  }
 
   /* mmap */
   desc = mmap(0, OMX_ENDPOINT_DESC_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_ENDPOINT_DESC_FILE_OFFSET);
@@ -233,7 +243,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
       || recvq == (void *) -1
       || exp_eventq == (void *) -1
       || unexp_eventq == (void *) -1) {
-    ret = omx__errno_to_return("mmap");
+    ret = omx__error(omx__errno_to_return("mmap"),
+		    "Mapping endpoint structures in user-space");
     goto out_with_sendq_map;
   }
   omx__debug_printf(ENDPOINT, "desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
@@ -241,8 +252,10 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   /* prepare the large regions */
   ret = omx__endpoint_large_region_map_init(ep);
-  if (ret != OMX_SUCCESS)
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error(ret, "Initializing new endpoint large region map");
     goto out_with_userq_mmap;
+  }
 
   /* init driver specific fields */
   ep->fd = fd;
@@ -264,8 +277,10 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   /* get some info */
   ret = omx__get_board_info(ep, -1, &ep->board_info);
-  if (ret != OMX_SUCCESS)
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error(ret, "Getting new endpoint board info");
     goto out_with_large_regions;
+  }
 
   omx__board_addr_sprintf(board_addr_str, ep->board_info.addr);
   omx__debug_printf(ENDPOINT, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
@@ -276,14 +291,16 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->partners = calloc(omx__driver_desc->peer_max * omx__driver_desc->endpoint_max,
 			sizeof(*ep->partners));
   if (!ep->partners) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint partners array");
     goto out_with_large_regions;
   }
 
   /* connect to myself */
   ret = omx__connect_myself(ep, ep->board_info.addr);
-  if (ret != OMX_SUCCESS)
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error(ret, "Connecting new endpoint to itself");
     goto out_with_partners;
+  }
 
   /* context id fields */
   ep->ctxid_bits = ctxid_bits;
@@ -293,7 +310,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   ep->ctxid = malloc(ep->ctxid_max * sizeof(*ep->ctxid));
   if (!ep->ctxid) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint ctxids array");
     goto out_with_myself;
   }
   for(i=0; i<ep->ctxid_max; i++) {
@@ -366,7 +383,7 @@ omx_close_endpoint(struct omx_endpoint *ep)
   OMX__ENDPOINT_LOCK(ep);
 
   if (ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER) {
-    ret = OMX_NOT_SUPPORTED_IN_HANDLER;
+    ret = omx__error_with_ep(ep, OMX_NOT_SUPPORTED_IN_HANDLER, "Closing endpoint during unexpected handler");
     goto out_with_lock;
   }
 

@@ -1,5 +1,7 @@
 * more return codes for various errors
 
+* need return values for all recv_* callbacks ?
+
 * cleanup error recovery if failed to send a throttling req
   + move the loop into omx_send
 

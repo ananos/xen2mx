@@ -146,6 +146,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
 
   partner = malloc(sizeof(*partner));
   if (unlikely(!partner))
+    /* let the caller handle the error if retransmission cannot recover this */
     return OMX_NO_RESOURCES;
 
   partner->board_addr = board_addr;
@@ -207,6 +208,7 @@ omx__partner_lookup(struct omx_endpoint *ep,
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to find peer address of index %d (%s)\n",
 	      (unsigned) peer_index, omx_strerror(ret));
+      /* let the caller handle this */
       return ret;
     }
 
@@ -232,6 +234,7 @@ omx__partner_lookup_by_addr(struct omx_endpoint *ep,
     omx__board_addr_sprintf(board_addr_str, board_addr);
     fprintf(stderr, "Failed to find peer index of board %s (%s)\n",
 	    board_addr_str, omx_strerror(ret));
+    /* let the caller handle this */
     return ret;
   }
 
@@ -259,6 +262,7 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
     omx__board_addr_sprintf(board_addr_str, board_addr);
     fprintf(stderr, "Failed to find peer index of local board %s (%s)\n",
 	    board_addr_str, omx_strerror(ret));
+    /* let open_endpoint handle the error */
     return ret;
   }
 
@@ -266,6 +270,7 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
 			    board_addr, ep->endpoint_index,
 			    &ep->myself);
   if (ret != OMX_SUCCESS)
+    /* let open_endpoint handle the error */
     return ret;
 
   ep->myself->next_send_seq = OMX__SEQNUM(1);
@@ -328,8 +333,10 @@ omx__connect_common(omx_endpoint_t ep,
   omx_return_t ret;
 
   ret = omx__partner_lookup_by_addr(ep, nic_id, endpoint_id, &partner);
-  if (ret != OMX_SUCCESS)
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error_with_ep(ep, ret, "Searching/Creating partner for connection");
     goto out;
+  }
 
 #ifndef OMX_DISABLE_SELF
   if (partner == ep->myself) {
@@ -400,7 +407,7 @@ omx_connect(omx_endpoint_t ep,
 
   req = omx__request_alloc(ep);
   if (!req) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating connect request");
     goto out_with_lock;
   }
 
@@ -408,8 +415,10 @@ omx_connect(omx_endpoint_t ep,
   req->generic.state = OMX_REQUEST_STATE_INTERNAL; /* the state of synchronous connect is always initialized here */
 
   ret = omx__connect_common(ep, nic_id, endpoint_id, key, req);
-  if (ret != OMX_SUCCESS)
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error_with_ep(ep, ret, "Allocating connect request");
     goto out_with_req;
+  }
 
   omx__debug_printf(CONNECT, "waiting for connect reply\n");
   ret = omx__connect_wait(ep, req, timeout);
@@ -448,7 +457,7 @@ omx_iconnect(omx_endpoint_t ep,
 
   req = omx__request_alloc(ep);
   if (!req) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating iconnect request");
     goto out_with_lock;
   }
 
@@ -621,7 +630,8 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_INVALID_PARAMETER)
       fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
-    return ret;
+    /* just ignore the connect request */
+    return OMX_SUCCESS;
   }
 
   omx__partner_check_localization(partner, event->shared);
@@ -679,15 +689,11 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);
   if (err < 0) {
-    ret = omx__errno_to_return("ioctl SEND_CONNECT reply");
-    goto out_with_req;
+    /* just ignore the error, the peer will resend the connect request */
   }
   /* no need to wait for a done event, connect is synchronous */
 
   return OMX_SUCCESS;
-
- out_with_req:
-  return ret;
 }
 
 /*
