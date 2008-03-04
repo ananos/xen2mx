@@ -20,7 +20,6 @@
 * display CC/LD/... unless make V=1
 
 * endpoint parameters
-  + error_handler
   + unexp queue length
 
 * document why --enable-threads is needed, even for external lib,

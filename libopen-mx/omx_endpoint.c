@@ -169,6 +169,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   struct omx_endpoint_desc * desc;
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   uint8_t ctxid_bits = 0, ctxid_shift = 0;
+  omx_error_handler_t error_handler = NULL;
   omx_return_t ret = OMX_SUCCESS;
   int err, fd, i;
 
@@ -187,7 +188,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   for(i=0; i<param_count; i++) {
     switch (param_array[i].key) {
     case OMX_ENDPOINT_PARAM_ERROR_HANDLER: {
-      omx__verbose_printf("setting endpoint error handler ignored for now\n");
+      error_handler = param_array[i].val.error_handler;
       break;
     }
     case OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX: {
@@ -293,7 +294,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->check_status_delay_jiffies = omx__driver_desc->hz; /* once per second */
   ep->zombie_max = omx__globals.zombie_max;
   ep->zombies = 0;
-  ep->error_handler = NULL;
+  ep->error_handler = error_handler;
 
   /* get some info */
   ret = omx__get_board_info(ep, -1, &ep->board_info);
