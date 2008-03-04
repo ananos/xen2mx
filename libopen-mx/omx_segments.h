@@ -48,6 +48,10 @@ omx_cache_segments(struct omx__req_seg * reqsegs, omx_seg_t * segs, uint32_t nse
   } else {
     int i;
 
+    if (nseg > OMX_MAX_SEGMENTS)
+      /* the caller checks error codes */
+      return OMX_SEGMENTS_BAD_COUNT;
+
     reqsegs->segs = malloc(nseg * sizeof(omx_seg_t));
     if (!reqsegs->segs)
       /* the caller checks error codes */

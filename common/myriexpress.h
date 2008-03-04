@@ -94,7 +94,7 @@ enum mx_return_code { /* FIXME */
 	MX_BAD_ENDPOINT		= 109, /* FIXME: use it in omx_close_endpoint */
 	MX_BAD_SEG_LIST		= 110, /* unused in MX */
 	MX_BAD_SEG_MEM		= 111, /* unused in MX */
-	MX_BAD_SEG_CNT		= 112, /* FIXME: use in isend/recv if too many segs */
+	MX_BAD_SEG_CNT		= OMX_SEGMENTS_BAD_COUNT,
 	MX_BAD_REQUEST		= 113, /* FIXME: use in ibuffered and merge with OMX_CANCEL_NOT_SUPPORTED ? */
 	MX_BAD_MATCH_MASK	= OMX_BAD_MATCH_MASK,
 	MX_NO_RESOURCES		= OMX_NO_RESOURCES,

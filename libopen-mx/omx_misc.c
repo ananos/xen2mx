@@ -94,6 +94,8 @@ omx_strerror(omx_return_t ret)
     return "No device";
   case OMX_ACCESS_DENIED:
     return "Access denied";
+  case OMX_SEGMENTS_BAD_COUNT:
+    return "Multiple Segments Count Invalid";
   case OMX_BAD_MATCH_MASK:
     return "Bad match mask.";
   case OMX_NO_RESOURCES:
