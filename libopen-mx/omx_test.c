@@ -44,7 +44,7 @@ omx__wait(struct omx_endpoint *ep,
       || wait_param->status == OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT
       || wait_param->status == OMX_CMD_WAIT_EVENT_STATUS_WAKEUP
       || (omx__globals.waitintr && wait_param->status == OMX_CMD_WAIT_EVENT_STATUS_INTR))
-    return OMX_INTERNAL_RETURN_CODE_WAIT_ABORT;
+    return OMX_TIMEOUT;
 
   if (ms_timeout == OMX_TIMEOUT_INFINITE)
     omx__debug_printf(WAIT, "%s going to sleep at %lld for ever\n",
@@ -203,7 +203,7 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
 
     ret = omx__wait(ep, &wait_param, ms_timeout, "omx_wait");
     if (ret != OMX_SUCCESS) {
-      if (ret == OMX_INTERNAL_RETURN_CODE_WAIT_ABORT)
+      if (ret == OMX_TIMEOUT)
 	ret = OMX_SUCCESS;
       goto out_with_lock;
     }
@@ -362,7 +362,7 @@ omx_wait_any(struct omx_endpoint *ep,
 
     ret = omx__wait(ep, &wait_param, ms_timeout, "omx_wait_any");
     if (ret != OMX_SUCCESS) {
-      if (ret == OMX_INTERNAL_RETURN_CODE_WAIT_ABORT)
+      if (ret == OMX_TIMEOUT)
 	ret = OMX_SUCCESS;
       goto out_with_lock;
     }
@@ -473,7 +473,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
 
     ret = omx__wait(ep, &wait_param, ms_timeout, "omx_peek");
     if (ret != OMX_SUCCESS) {
-      if (ret == OMX_INTERNAL_RETURN_CODE_WAIT_ABORT)
+      if (ret == OMX_TIMEOUT)
 	ret = OMX_SUCCESS;
       goto out_with_lock;
     }
@@ -657,7 +657,7 @@ omx_probe(struct omx_endpoint *ep,
 
     ret = omx__wait(ep, &wait_param, ms_timeout, "omx_probe");
     if (ret != OMX_SUCCESS) {
-      if (ret == OMX_INTERNAL_RETURN_CODE_WAIT_ABORT)
+      if (ret == OMX_TIMEOUT)
 	ret = OMX_SUCCESS;
       goto out_with_lock;
     }
@@ -724,8 +724,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
 
     ret = omx__wait(ep, &wait_param, ms_timeout, "omx_connect");
     if (ret != OMX_SUCCESS) {
-      if (ret == OMX_INTERNAL_RETURN_CODE_WAIT_ABORT)
-	ret = OMX_TIMEOUT;
+      /* keep OMX_TIMEOUT as is */
       goto out;
     }
   }
