@@ -32,12 +32,14 @@ omx__get_board_count(uint32_t * count)
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
+    /* let the caller handle this */
     goto out;
   }
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_COUNT, count);
   if (err < 0) {
     ret = omx__errno_to_return("ioctl GET_BOARD_COUNT");
+    /* let the caller handle this */
     goto out;
   }
 
@@ -62,6 +64,7 @@ omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_in
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
+    /* let the caller handle this */
     goto out;
   }
 
@@ -77,6 +80,7 @@ omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_in
   err = ioctl(fd, OMX_CMD_GET_BOARD_INFO, &get_info);
   if (err < 0) {
     ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
+    /* let the caller handle this */
     goto out;
   }
   OMX_VALGRIND_MEMORY_MAKE_READABLE(get_info.info.hostname, OMX_HOSTNAMELEN_MAX);
@@ -102,6 +106,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
+    /* let the caller handle this */
     goto out;
   }
 
@@ -114,6 +119,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
     if (err < 0) {
       ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
       if (ret != OMX_INVALID_PARAMETER)
+	/* let the caller handle this */
 	goto out;
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
@@ -141,6 +147,7 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
+    /* let the caller handle this */
     goto out;
   }
 
@@ -153,6 +160,7 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     if (err < 0) {
       ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
       if (ret != OMX_INVALID_PARAMETER)
+	/* let the caller handle this */
 	goto out;
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.addr, sizeof(board_info.info.addr));
@@ -182,24 +190,40 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 
   switch (key) {
   case OMX_INFO_BOARD_MAX:
+
     if (!omx__globals.initialized)
-      return OMX_NOT_INITIALIZED;
+      return omx__error(OMX_NOT_INITIALIZED,
+			"Getting board max");
+
     if (out_len < sizeof(uint32_t))
-      return OMX_INVALID_PARAMETER;
+      return omx__error(OMX_INVALID_PARAMETER,
+			"Getting board max into %ld bytes instead of %z",
+			(unsigned long) out_len, sizeof(uint32_t));
+
     *(uint32_t *) out_val = omx__driver_desc->board_max;
     return OMX_SUCCESS;
 
   case OMX_INFO_ENDPOINT_MAX:
+
     if (!omx__globals.initialized)
-      return OMX_NOT_INITIALIZED;
+      return omx__error(OMX_NOT_INITIALIZED,
+			"Getting endpoint max");
+
     if (out_len < sizeof(uint32_t))
-      return OMX_INVALID_PARAMETER;
+      return omx__error(OMX_INVALID_PARAMETER,
+			"Getting endpoint max into %ld bytes instead of %z",
+			(unsigned long) out_len, sizeof(uint32_t));
+
     *(uint32_t *) out_val = omx__driver_desc->endpoint_max;
     return OMX_SUCCESS;
 
   case OMX_INFO_BOARD_COUNT:
+
     if (out_len < sizeof(uint32_t))
-      return OMX_INVALID_PARAMETER;
+      return omx__error(OMX_INVALID_PARAMETER,
+			"Getting board count max into %ld bytes instead of %z",
+			(unsigned long) out_len, sizeof(uint32_t));
+
     return omx__get_board_count((uint32_t *) out_val);
 
   case OMX_INFO_BOARD_IDS: {
@@ -208,16 +232,20 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 
     ret = omx__get_board_count(&count);
     if (!ret)
-      return ret;
+      return omx__error(ret, "Getting board count for board ids");
 
     if (out_len < sizeof (uint64_t) * (count+1))
-      return OMX_INVALID_PARAMETER;
+      return omx__error(OMX_INVALID_PARAMETER,
+			"Getting board count into %ld instead of %z",
+			(unsigned long) out_len, sizeof (uint64_t) * (count+1));
 
     for (i = 0, j = 0; i < count && j < omx__driver_desc->board_max; j++) {
       struct omx_board_info tmp;
+
       ret = omx__get_board_info(ep, j, &tmp);
       if (ret != OMX_SUCCESS)
-	return ret;
+	return omx__error(ret, "Getting board #%ld id", (unsigned long) j);
+
       ((uint64_t *) out_val) [i] = tmp.addr;
       i++;
     }
@@ -242,22 +270,29 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       omx_return_t ret;
 
       if (!in_val || !in_len)
-	return OMX_INVALID_PARAMETER;
+	return omx__error(OMX_INVALID_PARAMETER,
+			  "Getting board info for index given in %ld bytes at %p",
+			  (unsigned long) in_len, in_val);
       index = *(uint8_t*)in_val;
 
       ret = omx__get_board_info(ep, index, &tmp);
       if (ret != OMX_SUCCESS)
-	return ret;
+	return omx__error(ret, "Getting board %ld info", (unsigned long) index);
     }
 
     if (key == OMX_INFO_BOARD_HOSTNAME) {
       strncpy(out_val, info->hostname, out_len);
+
     } else if (key == OMX_INFO_BOARD_IFACENAME) {
       strncpy(out_val, info->ifacename, out_len);
+
     } else if (key == OMX_INFO_BOARD_NUMA_NODE) {
       if (out_len < sizeof(uint32_t))
-	return OMX_INVALID_PARAMETER;
+	return omx__error(OMX_INVALID_PARAMETER,
+			  "Getting board numa node into %ld bytes instead of %z",
+			  (unsigned long) out_len, sizeof(uint32_t));
       *(uint32_t *) out_val = info->numa_node;
+
     } else {
       assert(0);
     }
@@ -266,8 +301,12 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
   }
 
   case OMX_INFO_COUNTER_MAX:
+
     if (out_len < sizeof(uint32_t))
-      return OMX_INVALID_PARAMETER;
+      return omx__error(OMX_INVALID_PARAMETER,
+			"Getting counter max %ld bytes instead of %z",
+			(unsigned long) out_len, sizeof(uint32_t));
+
     *(uint32_t *) out_val = OMX_COUNTER_INDEX_MAX;
     return OMX_SUCCESS;
 
@@ -276,7 +315,9 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     int err;
 
     if (out_len < sizeof(uint32_t) * OMX_COUNTER_INDEX_MAX)
-      return OMX_INVALID_PARAMETER;
+      return omx__error(OMX_INVALID_PARAMETER,
+			"Getting counter values %ld bytes instead of %z",
+			(unsigned long) out_len, sizeof(uint32_t) * OMX_COUNTER_INDEX_MAX);
 
     get_counters.clear = 0;
     get_counters.buffer_addr = (uintptr_t) out_val;
@@ -289,7 +330,8 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_COUNTERS, &get_counters);
     if (err < 0)
-      return omx__errno_to_return("ioctl GET_COUNTERS");
+      return omx__error(omx__errno_to_return("ioctl GET_COUNTERS"),
+			"Getting counter values");
 
     return OMX_SUCCESS;
   }
@@ -299,14 +341,18 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     const char *label = omx_strcounter(index);
 
     if (out_len < strlen(label) + 1)
-      return OMX_INVALID_PARAMETER;
+      return omx__error(OMX_INVALID_PARAMETER,
+			"Getting counter values %ld bytes instead of %",
+			(unsigned long) out_len, strlen(label) + 1);
 
     strcpy((char *) out_val, label);
     return OMX_SUCCESS;
   }
 
   default:
-    return OMX_INVALID_PARAMETER;
+    return omx__error(OMX_INVALID_PARAMETER,
+		      "Getting info key %ld",
+		      (unsigned long) key);;
   }
 
   return OMX_SUCCESS;
@@ -329,7 +375,8 @@ omx_board_number_to_nic_id(uint32_t board_number,
   if (ret == OMX_SUCCESS)
     *nic_id = info.addr;
 
-  return ret;
+  return omx__error(ret, "board_number_to_nic_id %ld",
+		    (unsigned long) board_number);
 }
 
 /* API omx_nic_id_to_board_number */
@@ -343,5 +390,7 @@ omx_nic_id_to_board_number(uint64_t nic_id,
   ret = omx__get_board_index_by_addr(nic_id, &index);
   if (ret == OMX_SUCCESS)
     *board_number = index;
-  return ret;
+
+  return omx__error(ret, "nic_id_to_board_number %llx",
+		    (unsigned long long) nic_id);
 }

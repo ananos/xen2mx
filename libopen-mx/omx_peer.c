@@ -35,7 +35,9 @@ omx__driver_peer_add(uint64_t board_addr, char *hostname)
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_ADD, &peer_info);
   if (err < 0)
+    /* let the caller handle errors */
     return omx__errno_to_return("OMX_CMD_PEER_ADD");
+
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
   return OMX_SUCCESS;
@@ -48,6 +50,7 @@ omx__driver_peers_clear()
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEERS_CLEAR);
   if (err < 0)
+    /* let the caller handle errors */
     return omx__errno_to_return("OMX_CMD_PEERS_CLEAR");
 
   return 0;
@@ -67,7 +70,9 @@ omx__driver_peer_from_index(uint32_t index, uint64_t *board_addr, char *hostname
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_INDEX, &peer_info);
   if (err < 0)
+    /* let the caller handle errors */
     return omx__errno_to_return("OMX_CMD_PEER_FROM_INDEX");
+
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
   if (board_addr)
@@ -88,7 +93,9 @@ omx__driver_peer_from_addr(uint64_t board_addr, char *hostname, uint32_t *index)
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_ADDR, &peer_info);
   if (err < 0)
+    /* let the caller handle errors */
     return omx__errno_to_return("OMX_CMD_PEER_FROM_ADDR");
+
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
   if (index)
@@ -109,7 +116,9 @@ omx__driver_peer_from_hostname(char *hostname, uint64_t *board_addr, uint32_t *i
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_HOSTNAME, &peer_info);
   if (err < 0)
+    /* let the caller handle errors */
     return omx__errno_to_return("OMX_CMD_PEER_FROM_HOSTNAME");
+
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
   if (index)
@@ -154,6 +163,7 @@ omx__peer_addr_to_index(uint64_t board_addr, uint16_t *indexp)
 
   ret = omx__driver_peer_from_addr(board_addr, NULL, &index);
   if (ret != OMX_SUCCESS)
+    /* let the caller handle errors */
     return ret;
 
   *indexp = index;
@@ -168,6 +178,7 @@ omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp)
 
   ret = omx__driver_peer_from_index(index, &board_addr, NULL);
   if (ret != OMX_SUCCESS)
+    /* let the caller handle errors */
     return ret;
 
   *board_addrp = board_addr;
@@ -179,7 +190,12 @@ omx_return_t
 omx_hostname_to_nic_id(char *hostname,
 		       uint64_t *board_addr)
 {
-  return omx__driver_peer_from_hostname(hostname, board_addr, NULL);
+  omx_return_t ret;
+
+  ret = omx__driver_peer_from_hostname(hostname, board_addr, NULL);
+
+  return omx__error(ret, "hostname_to_nic_id %s",
+		    hostname);
 }
 
 /* API omx_nic_id_to_hostname */
@@ -187,5 +203,10 @@ omx_return_t
 omx_nic_id_to_hostname(uint64_t board_addr,
 		       char *hostname)
 {
-  return omx__driver_peer_from_addr(board_addr, hostname, NULL);
+  omx_return_t ret;
+
+  ret = omx__driver_peer_from_addr(board_addr, hostname, NULL);
+
+  return omx__error(ret, "nic_id_to_hostname %llx",
+		    (unsigned long long) board_addr);
 }
