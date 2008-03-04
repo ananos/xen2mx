@@ -564,7 +564,7 @@ omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
   }
 }
 
-static INLINE omx_return_t
+static INLINE void
 omx__continue_partial_request(struct omx_endpoint *ep,
 			      struct omx__partner * partner, omx__seqnum_t seqnum,
 			      struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length)
@@ -583,16 +583,16 @@ omx__continue_partial_request(struct omx_endpoint *ep,
       omx__process_recv_medium_frag(ep, partner, req,
 				    msg, data, msg_length);
       omx__update_partner_next_frag_recv_seq(ep, partner);
-      return OMX_SUCCESS;
+      return;
+
     } else if (req_index > new_index) {
-      break;
+      /* just ignore the packet, it could be a duplicate of already completed
+       * medium with seqnum higher than a non-completed medium
+       */
+      return;
     }
   }
 
-  /* just ignore the packet, it can be a duplicate of already completed
-   * medium with seqnum higher than a non-completed medium
-   */
-  return OMX_SUCCESS;
 }
 
 static INLINE omx_return_t
@@ -629,10 +629,8 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
   } else if (likely(msg->type == OMX_EVT_RECV_MEDIUM
 		    && frag_index < frag_index_max)) {
     /* fragment of already matched but incomplete medium message */
-    ret = omx__continue_partial_request(ep, partner, seqnum,
-					msg, data, msg_length);
-
-    /* ignore errors, the packet will be resent anyway */
+    omx__continue_partial_request(ep, partner, seqnum,
+				  msg, data, msg_length);
 
   } else {
     /* obsolete fragment or message, just ignore it */
