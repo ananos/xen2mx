@@ -266,6 +266,8 @@ struct omx_endpoint {
   struct list_head reg_list; /* registered single-segment windows */
   struct list_head reg_unused_list; /* unused registered single-segment windows, LRU in front */
   struct list_head reg_vect_list; /* registered vectorial windows (uncached) */
+
+  omx_error_handler_t error_handler;
 };
 
 #define OMX__ENDPOINT_LOCK(ep) omx__lock(&(ep)->lock)

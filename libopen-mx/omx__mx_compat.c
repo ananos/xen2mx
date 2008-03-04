@@ -42,6 +42,24 @@ mx_finalize(void)
   omx_finalize();
 }
 
+mx_error_handler_t
+mx_set_error_handler(mx_error_handler_t handler)
+{
+  return omx_set_error_handler(NULL, handler);
+}
+
+mx_return_t
+MX_ERRORS_ARE_FATAL(char *str, mx_return_t ret)
+{
+  return OMX_ERRORS_ARE_FATAL(str, ret);
+}
+
+mx_return_t
+MX_ERRORS_RETURN(char *str, mx_return_t ret)
+{
+  return OMX_ERRORS_RETURN(str, ret);
+}
+
 mx_return_t
 mx_open_endpoint(uint32_t board_number, uint32_t endpoint_id,
 		 uint32_t endpoint_key, mx_param_t *params_array, uint32_t params_count,

@@ -118,6 +118,12 @@ typedef enum omx_endpoint_param_key omx_endpoint_param_key_t;
 
 typedef omx_return_t (*omx_error_handler_t)(char *str, omx_return_t ret);
 
+omx_error_handler_t
+omx_set_error_handler(omx_endpoint_t ep, omx_error_handler_t handler);
+
+extern const omx_error_handler_t OMX_ERRORS_ARE_FATAL;
+extern const omx_error_handler_t OMX_ERRORS_RETURN;
+
 typedef struct {
   omx_endpoint_param_key_t key;
   union {

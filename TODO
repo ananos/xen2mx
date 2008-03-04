@@ -1,14 +1,19 @@
 * more return codes for various errors
 
-* omx_set_error_handler
+* error handler
+  + add missing calls to omx__error* in all API functions
   + special one before omx_init()
   + no handler if zombie?
+
+* endpoint parameters
+  + error_handler
+  + unexp queue length
 
 * document why --enable-threads is needed, even for external lib,
   unless they don't block (we'll need a generic omx__wait API for this),
   and don't use the unexpected handler (or they'll have to lock in there)
-
 * document cpu/irq binding
+* quick best perf howto
 
 * improve retransmission
   + don't free partner since we can't change the session anymore?
@@ -25,6 +30,8 @@
     - allocate the waiter struct and free it with a rcu_call
   + atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
     ok if lots of slices in parallel ?
+  + add a driver-private field in event where the reporter will test_and_set BUSY
+    before posting the event and finally posting the type and removing BUSY
 
 * group similar fields in structure for cache effects
 
@@ -44,6 +51,10 @@
 
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
+
+* prefetch non-temporal from the event ring ro prevent cache line bounces?
+
+* --enable-32b/64b
 
 * get info irq affinity
 

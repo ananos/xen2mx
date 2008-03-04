@@ -260,6 +260,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->check_status_delay_jiffies = omx__driver_desc->hz; /* once per second */
   ep->zombie_max = omx__globals.zombie_max;
   ep->zombies = 0;
+  ep->error_handler = NULL;
 
   /* get some info */
   ret = omx__get_board_info(ep, -1, &ep->board_info);

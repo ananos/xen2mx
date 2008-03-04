@@ -33,12 +33,14 @@ omx__errors_are_fatal(const char *buffer, omx_return_t ret)
   fprintf(stderr, "Open-MX: %s: %s\n", buffer, omx_strerror(ret));
   exit(-1);
 }
+const omx_error_handler_t OMX_ERRORS_ARE_FATAL = (omx_error_handler_t) omx__errors_are_fatal;
 
 omx_return_t
 omx__errors_return(const char *buffer, omx_return_t ret)
 {
   return ret;
 }
+const omx_error_handler_t OMX_ERRORS_RETURN = (omx_error_handler_t) omx__errors_return;
 
 /* the current handler is fatal by default */
 static
@@ -72,6 +74,7 @@ omx_return_t
 omx__error_with_ep(struct omx_endpoint *ep,
 		   omx_return_t ret, const char *fmt, ...)
 {
+  omx_error_handler_t handler;
   char buffer[BUFFER_MAX];
   va_list va;
   int err;
@@ -84,13 +87,15 @@ omx__error_with_ep(struct omx_endpoint *ep,
   omx__debug_assert(err < BUFFER_MAX);
   va_end(va);
 
-  return omx__error_handler(buffer, ret);
+  handler = ep->error_handler ? : omx__error_handler;
+  return handler(buffer, ret);
 }
 
 omx_return_t
 omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
 		    omx_return_t code, const char *fmt, ...)
 {
+  omx_error_handler_t handler;
   char buffer[BUFFER_MAX];
   va_list va;
   int err;
@@ -103,5 +108,30 @@ omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
   omx__debug_assert(err < BUFFER_MAX);
   va_end(va);
 
-  return omx__error_handler(buffer, code);
+  handler = ep->error_handler ? : omx__error_handler;
+  return handler(buffer, code);
 }
+
+/************************
+ * Change error handlers
+ */
+
+/* API omx_set_error_handler */
+omx_error_handler_t
+omx_set_error_handler(omx_endpoint_t ep, omx_error_handler_t new_handler)
+{
+  omx_error_handler_t old_handler;
+
+  if (ep) {
+    OMX__ENDPOINT_LOCK(ep);
+    old_handler = ep->error_handler;
+    ep->error_handler = new_handler;
+    OMX__ENDPOINT_UNLOCK(ep);
+  } else {
+    old_handler = omx__error_handler;
+    omx__error_handler = new_handler;
+  }
+
+  return old_handler;
+}
+

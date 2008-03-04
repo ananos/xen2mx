@@ -43,8 +43,6 @@
 #define MX_PARAM_UNEXP_QUEUE_MAX OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX
 #define MX_PARAM_CONTEXT_ID OMX_ENDPOINT_PARAM_CONTEXT_ID
 
-#define MX_ERRORS_RETURN 0 /* FIXME */
-
 #define MX_CONTEXT_ID_BITS_MAX OMX_ENDPOINT_CONTEXT_ID_MAX
 
 #define MX_MATCH_MASK_NONE (~(uint64_t)0)
@@ -208,6 +206,7 @@ typedef void (*mx_matching_callback_t)(void *context, uint64_t match_value, int 
 #define mx_init() mx__init_api(MX_API)
 extern mx_return_t mx__init_api(int);
 extern void mx_finalize(void);
+extern mx_error_handler_t mx_set_error_handler(mx_error_handler_t);
 
 extern mx_return_t mx_open_endpoint(uint32_t board_number, uint32_t endpoint_id,
 				    uint32_t endpoint_key, mx_param_t *params_array, uint32_t params_count,
@@ -283,7 +282,9 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
 #define mx_init() mx__init_api(MX_API)
 #define mx_finalize() omx_finalize()
 
-#define mx_set_error_handler(...) MX_SUCCESS; /* FIXME */
+#define mx_set_error_handler(hdlr) omx_set_error_handler(NULL, hdlr)
+#define MX_ERRORS_ARE_FATAL OMX_ERRORS_ARE_FATAL
+#define MX_ERRORS_RETURN OMX_ERRORS_RETURN
 
 #define mx_open_endpoint(bn,eid,key,pa,pc,ep) omx_open_endpoint(bn,eid,key,pa,pc,ep)
 #define mx_close_endpoint(ep) omx_close_endpoint(ep)
