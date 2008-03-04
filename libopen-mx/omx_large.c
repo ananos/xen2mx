@@ -36,6 +36,7 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
 
   array = malloc(OMX_USER_REGION_MAX * sizeof(struct omx__large_region_slot));
   if (!array)
+    /* let the caller handle the error */
     return OMX_NO_RESOURCES;
 
   ep->large_region_map.array = array;
@@ -68,6 +69,7 @@ omx__endpoint_large_region_try_alloc(struct omx_endpoint * ep,
 
   index = ep->large_region_map.first_free;
   if (unlikely(index == -1))
+    /* let the caller handle the error */
     return OMX_NO_RESOURCES;
 
   array = ep->large_region_map.array;
@@ -144,6 +146,7 @@ omx__register_region(struct omx_endpoint *ep,
     ret = omx__errno_to_return("ioctl REGISTER");
     if (ret == OMX_BUSY)
       omx__abort("region %d already registered\n", region->id);
+    /* FIXME: abort too? delay if no resources? */
   }
 
   return OMX_SUCCESS;
@@ -160,6 +163,7 @@ omx__deregister_region(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_DEREGISTER_REGION, &dereg);
   if (unlikely(err < 0))
+    /* FIXME: abort */
     return omx__errno_to_return("ioctl REGISTER");
 
   return OMX_SUCCESS;
@@ -206,6 +210,7 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
     }
   }
 
+  /* let the caller handle errors */
   return ret;
 }
 
@@ -220,6 +225,7 @@ omx__create_region(struct omx_endpoint *ep,
 
   ret = omx__endpoint_large_region_alloc(ep, &region);
   if (unlikely(ret != OMX_SUCCESS))
+    /* let the caller handle the error */
     goto out;
 
   region->offset = offset;
@@ -228,6 +234,7 @@ omx__create_region(struct omx_endpoint *ep,
 
   ret = omx__register_region(ep, region);
   if (ret != OMX_SUCCESS)
+    /* let the caller handle the error */
     goto out_with_region;
 
   region->reserver = NULL;
@@ -279,7 +286,8 @@ omx__get_contigous_region(struct omx_endpoint *ep,
 
   rsegs = malloc(sizeof(*rsegs));
   if (!rsegs) {
-    ret = omx__errno_to_return("alloc register segments");
+    ret = OMX_NO_RESOURCES;
+    /* let the caller handle the error */
     goto out;
   }
   rsegs[0].vaddr = vaddr;
@@ -287,6 +295,7 @@ omx__get_contigous_region(struct omx_endpoint *ep,
 
   ret = omx__create_region(ep, rsegs, 1, offset, &region);
   if (ret != OMX_SUCCESS)
+    /* let the caller handle the error */
     goto out_with_segments;
 
   list_add_tail(&region->reg_elt, &ep->reg_list);
@@ -330,7 +339,8 @@ omx__get_vect_region(struct omx_endpoint *ep,
 
   segs = malloc(sizeof(*segs) * nseg);
   if (!segs) {
-    ret = omx__errno_to_return("alloc register segments");
+    ret = OMX_NO_RESOURCES;
+    /* let the caller handle the error */
     goto out;
   }
 
@@ -342,6 +352,7 @@ omx__get_vect_region(struct omx_endpoint *ep,
 
   ret = omx__create_region(ep, segs, nseg, 0, &region);
   if (ret != OMX_SUCCESS)
+    /* let the caller handle the error */
     goto out_with_segments;
 
   list_add_tail(&region->reg_elt, &ep->reg_vect_list);
@@ -419,11 +430,13 @@ omx__submit_pull(struct omx_endpoint * ep,
   int err;
 
   if (unlikely(ep->avail_exp_events < 1))
+    /* let the caller handle the error */
     return OMX_NO_RESOURCES;
 
   /* FIXME: could register xfer_length instead of the whole segments */
   ret = omx__get_region(ep, &req->recv.segs, &region, NULL);
   if (unlikely(ret != OMX_SUCCESS))
+    /* let the caller handle the error */
     return ret;
 
   pull_param.peer_index = partner->peer_index;
@@ -447,6 +460,7 @@ omx__submit_pull(struct omx_endpoint * ep,
     }
 
     omx__put_region(ep, region, NULL);
+    /* let the caller handle the error */
     return ret;
   }
   ep->avail_exp_events--;

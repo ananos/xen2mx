@@ -205,6 +205,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   copy = malloc(length);
   if (unlikely(!copy)) {
     omx__request_free(ep, req);
+    /* let the caller handle the error */
     return OMX_NO_RESOURCES;
   }
 
@@ -383,6 +384,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 
   if (unlikely(ep->avail_exp_events < frags_nr
 	       || omx__endpoint_sendq_map_get(ep, frags_nr, req, sendq_index) < 0))
+    /* let the caller handle the error */
     return OMX_NO_RESOURCES;
 
   req->generic.resends = 0;
@@ -489,6 +491,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
 
   ret = omx__get_region(ep, &req->send.segs, &region, req);
   if (unlikely(ret != OMX_SUCCESS))
+    /* let the caller handle the error */
     return ret;
 
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is always initialized here */
@@ -670,6 +673,7 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   } else {
     ret = omx__submit_or_queue_isend_large(ep, req, partner);
   }
+  /* FIXME: error handler for the above, or queue */
 
   if (ret == OMX_SUCCESS) {
     if (requestp) {
@@ -702,7 +706,7 @@ omx_isend(struct omx_endpoint *ep,
 
   req = omx__request_alloc(ep);
   if (unlikely(!req)) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating isend request");
     goto out_with_lock;
   }
 
@@ -736,14 +740,14 @@ omx_isendv(omx_endpoint_t ep,
 
   req = omx__request_alloc(ep);
   if (unlikely(!req)) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating vectorial isend request");
     goto out_with_lock;
   }
 
   ret = omx_cache_segments(&req->send.segs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS)) {
     /* the callee let us check errors */
-    ret = omx__error_with_ep(ep, ret, "Allocating vectorial send request segment array");
+    ret = omx__error_with_ep(ep, ret, "Allocating vectorial isend request segment array");
     goto out_with_req;
   }
 
@@ -795,6 +799,7 @@ omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   } else {
     ret = omx__submit_or_queue_isend_large(ep, req, partner);
   }
+  /* FIXME: error handler for the above, or queue */
 
   if (ret == OMX_SUCCESS) {
     if (requestp) {
@@ -827,7 +832,7 @@ omx_issend(struct omx_endpoint *ep,
 
   req = omx__request_alloc(ep);
   if (unlikely(!req)) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating issend request");
     goto out_with_lock;
   }
 
@@ -861,14 +866,14 @@ omx_issendv(omx_endpoint_t ep,
 
   req = omx__request_alloc(ep);
   if (unlikely(!req)) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating vectorial issend request");
     goto out_with_lock;
   }
 
   ret = omx_cache_segments(&req->send.segs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS)) {
     /* the callee let us check errors */
-    ret = omx__error_with_ep(ep, ret, "Allocating vectorial send request segment array");
+    ret = omx__error_with_ep(ep, ret, "Allocating vectorial issend request segment array");
     goto out_with_req;
   }
 

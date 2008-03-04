@@ -1,17 +1,20 @@
 * more return codes for various errors
 
-* need return values for all recv_* callbacks ?
+* need return values for all recv/event callbacks ?
+* less return values in early/matching/unexp functions
 
 * cleanup error recovery if failed to send a throttling req
   + move the loop into omx_send
 
 * prealloc the small copy buffer to prevent omx__submit_or_queue_isend_small from failing
+* submit_pull cannot fail too
 * find a way to defer self unexp alloc if no memory
 
 * error handler
-  + add missing calls to omx__error* in all API functions
   + special one before omx_init()
   + no handler if zombie?
+
+* handle register/deregister lowlevel errors
 
 * display CC/LD/... unless make V=1
 

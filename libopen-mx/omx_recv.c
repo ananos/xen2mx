@@ -152,6 +152,7 @@ omx__postpone_early_packet(struct omx__partner * partner,
 
   early = malloc(sizeof(*early));
   if (unlikely(!early))
+    /* let the caller handle the error */
     return OMX_NO_RESOURCES;
 
   /* copy the whole event, the callback, and the data */
@@ -172,6 +173,7 @@ omx__postpone_early_packet(struct omx__partner * partner,
     char * early_data = malloc(length);
     if (!early_data) {
       free(early);
+      /* let the caller handle the error */
       return OMX_NO_RESOURCES;
     }
     memcpy(early_data, data, length);
@@ -185,6 +187,7 @@ omx__postpone_early_packet(struct omx__partner * partner,
     char * early_data = malloc(frag_length);
     if (unlikely(!early_data)) {
       free(early);
+      /* let the caller handle the error */
       return OMX_NO_RESOURCES;
     }
     memcpy(early_data, data, frag_length);
@@ -485,6 +488,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
     req = omx__request_alloc(ep);
     if (unlikely(!req))
+      /* let the caller handle the error */
       return OMX_NO_RESOURCES;
 
     req->generic.type = OMX_REQUEST_TYPE_RECV;
@@ -501,6 +505,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 	if (unlikely(!unexp_buffer)) {
 	  fprintf(stderr, "Failed to allocate buffer for unexpected messages, dropping\n");
 	  omx__request_free(ep, req);
+	  /* let the caller handle the error */
 	  return OMX_NO_RESOURCES;
 	}
       }
@@ -612,6 +617,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
       ret = omx__try_match_next_recv(ep, partner, seqnum,
 				     msg, data, msg_length,
 				     recv_func);
+      /* ignore errors, the packet will be resent anyway */
     }
 
     if (ret == OMX_SUCCESS) {
@@ -625,6 +631,8 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
     /* fragment of already matched but incomplete medium message */
     ret = omx__continue_partial_request(ep, partner, seqnum,
 					msg, data, msg_length);
+
+    /* ignore errors, the packet will be resent anyway */
 
   } else {
     /* obsolete fragment or message, just ignore it */
@@ -690,6 +698,7 @@ omx__process_recv(struct omx_endpoint *ep,
     ret = omx__process_partner_ordered_recv(ep, partner, seqnum,
 					    msg, data, msg_length,
 					    recv_func);
+    /* ignore errors, the packet will be resent anyway: FIXME: ok? */
 
     /* process early packets in case they match the new expected seqnum */
     if (likely(old_next_match_recv_seq != partner->next_match_recv_seq)) {
@@ -717,6 +726,7 @@ omx__process_recv(struct omx_endpoint *ep,
     ret = omx__postpone_early_packet(partner,
 				     msg, data,
 				     recv_func);
+    /* ignore errors, the packet will be resent anyway */
 
   } else {
     omx__debug_printf(SEQNUM, "obsolete message %d (#%d), assume a ack has been lost\n",
@@ -851,6 +861,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 
     rreq = omx__request_alloc(ep);
     if (unlikely(!rreq))
+      /* FIXME */
       return OMX_NO_RESOURCES;
 
     rreq->generic.type = OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED;
@@ -860,6 +871,7 @@ omx__process_self_send(struct omx_endpoint *ep,
       if (unlikely(!unexp_buffer)) {
 	fprintf(stderr, "Failed to allocate buffer for unexpected message, dropping\n");
 	omx__request_free(ep, rreq);
+	/* FIXME */
 	return OMX_NO_RESOURCES;
       }
     }
@@ -975,17 +987,6 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
   uint32_t msg_length;
   uint32_t xfer_length;
 
-  if (unlikely(match_info & ~match_mask)) {
-    ret = OMX_BAD_MATCH_MASK;
-    goto out;
-  }
-
-  /* check that there's no wildcard in the context id range */
-  if (unlikely(ep->ctxid_mask & ~match_mask)) {
-    ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
-    goto out;
-  }
-
   omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
     if (likely((req->generic.status.match_info & match_mask) == match_info)) {
       /* matched an unexpected */
@@ -1062,7 +1063,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
   /* allocate a new recv request */
   req = omx__request_alloc(ep);
   if (unlikely(!req)) {
-    ret = OMX_NO_RESOURCES;
+    ret = omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating irecv request");
     goto out;
   }
 
@@ -1101,6 +1102,21 @@ omx_irecv(struct omx_endpoint *ep,
   struct omx__req_seg reqsegs;
   omx_return_t ret;
 
+  if (unlikely(match_info & ~match_mask)) {
+    ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
+			     "irecv with match info %llx mask %llx",
+			     (unsigned long long) match_info, (unsigned long long) match_mask);
+    goto out;
+  }
+
+  /* check that there's no wildcard in the context id range */
+  if (unlikely(ep->ctxid_mask & ~match_mask)) {
+    ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
+			     "irecv with match mask %llx and ctxid mask %llx",
+			     (unsigned long long) match_mask, ep->ctxid_mask);
+    goto out;
+  }
+
   omx_cache_single_segment(&reqsegs, buffer, length);
 
   OMX__ENDPOINT_LOCK(ep);
@@ -1115,6 +1131,7 @@ omx_irecv(struct omx_endpoint *ep,
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
   omx_free_segments(&reqsegs);
+ out:
   return ret;
 }
 
@@ -1127,6 +1144,21 @@ omx_irecvv(omx_endpoint_t ep,
 {
   struct omx__req_seg reqsegs;
   omx_return_t ret;
+
+  if (unlikely(match_info & ~match_mask)) {
+    ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
+			     "irecvv with match info %llx mask %llx",
+			     (unsigned long long) match_info, (unsigned long long) match_mask);
+    goto out;
+  }
+
+  /* check that there's no wildcard in the context id range */
+  if (unlikely(ep->ctxid_mask & ~match_mask)) {
+    ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
+			     "irecvv with match mask %llx and ctxid mask %llx",
+			     (unsigned long long) match_mask, ep->ctxid_mask);
+    goto out;
+  }
 
   ret = omx_cache_segments(&reqsegs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS)) {
