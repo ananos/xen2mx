@@ -968,6 +968,7 @@ omx__send_throttling_request(struct omx_endpoint *ep, struct omx__partner *partn
   } else {
     return omx__submit_or_queue_isend_large(ep, req, partner);
   }
+  /* let the caller handle errors */
 }
 
 /******************

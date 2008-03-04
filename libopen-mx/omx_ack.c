@@ -134,8 +134,13 @@ omx__handle_ack(struct omx_endpoint *ep,
       omx__debug_assert(req->generic.state == OMX_REQUEST_STATE_SEND_THROTTLING);
       req->generic.state = 0;
       ret = omx__send_throttling_request(ep, partner, req);
+
       if (ret != OMX_SUCCESS)
+	/* FIXME: warn and break, we'll try again later when getting a new ack,
+	 * but that would break the order if something else is submitted
+	 */
 	omx__abort("Failed to dequeue throttling send request\n");
+
       omx__mark_partner_not_throttling(ep, partner);
       new_acks--;
     }
@@ -250,24 +255,26 @@ omx__submit_send_liback(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TRUC, &truc_param);
   if (unlikely(err < 0))
-    return omx__errno_to_return("ioctl SEND_TRUC"); /* no need to call the handler here, it's not bad */
+    /* no need to call the handler here,we can resend later */
+    return omx__errno_to_return("ioctl SEND_TRUC");
 
   /* no need to wait for a done event, tiny is synchronous */
 
   return OMX_SUCCESS;
 }
 
-omx_return_t
+void
 omx__process_partners_to_ack(struct omx_endpoint *ep)
 {
   struct omx__partner *partner, *next;
   uint64_t now = omx__driver_desc->jiffies;
-  omx_return_t ret = OMX_SUCCESS;
   static uint64_t last_invokation = 0;
 
   /* look at the immediate list */
   list_for_each_entry_safe(partner, next,
 			   &ep->partners_to_ack_immediate_list, endpoint_partners_to_ack_elt) {
+    omx_return_t ret;
+
     omx__debug_printf(ACK, "acking immediately back to partner up to %d (#%d) at jiffies %lld\n",
 		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
 		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
@@ -289,6 +296,8 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
   /* look at the delayed list */
   list_for_each_entry_safe(partner, next,
 			   &ep->partners_to_ack_delayed_list, endpoint_partners_to_ack_elt) {
+    omx_return_t ret;
+
     if (now - partner->oldest_recv_time_not_acked < omx__globals.ack_delay_jiffies)
       /* the remaining ones are more recent, no need to ack them yet */
       break;
@@ -307,21 +316,21 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
     omx__mark_partner_ack_sent(ep, partner);
   }
 
-  return ret;
+  /* no need to notify errors */
 }
 
-omx_return_t
+void
 omx__flush_partners_to_ack(struct omx_endpoint *ep)
 {
   struct omx__partner *partner, *next;
-  omx_return_t ret = OMX_SUCCESS;
-
   /* immediate list should have been emptied at the end of the previous round of progression */
   omx__debug_assert(list_empty(&ep->partners_to_ack_immediate_list));
 
   /* look at the delayed list */
   list_for_each_entry_safe(partner, next,
 			   &ep->partners_to_ack_delayed_list, endpoint_partners_to_ack_elt) {
+    omx_return_t ret;
+
     omx__debug_printf(ACK, "forcing ack back to partner up to %d (#%d), jiffies %lld instead of %lld\n",
 		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
 		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
@@ -336,7 +345,7 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
     omx__mark_partner_ack_sent(ep, partner);
   }
 
-  return ret;
+  /* no need to notify errors */
 }
 
 void

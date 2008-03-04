@@ -521,10 +521,10 @@ extern omx_return_t
 omx__send_throttling_request(struct omx_endpoint *ep, struct omx__partner *partner,
 			     union omx_request *req);
 
-extern omx_return_t
+extern void
 omx__process_partners_to_ack(struct omx_endpoint *ep);
 
-extern omx_return_t
+extern void
 omx__flush_partners_to_ack(struct omx_endpoint *ep);
 
 extern void

@@ -1,5 +1,11 @@
 * more return codes for various errors
 
+* cleanup error recovery if failed to send a throttling req
+  + move the loop into omx_send
+
+* prealloc the small copy buffer to prevent omx__submit_or_queue_isend_small from failing
+* find a way to defer self unexp alloc if no memory
+
 * error handler
   + add missing calls to omx__error* in all API functions
   + special one before omx_init()
