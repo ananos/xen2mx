@@ -45,14 +45,16 @@ omx__init_api(int api)
 
   err = open(OMX_DEVNAME, O_RDONLY);
   if (err < 0)
-    return omx__error(omx__errno_to_return("open control device"), "Opening control device");
+    return omx__error(omx__errno_to_return("open control device"),
+		      "Opening control device");
 
   omx__globals.control_fd = err;
 
   omx__driver_desc = mmap(NULL, OMX_DRIVER_DESC_SIZE, PROT_READ, MAP_SHARED,
 			  omx__globals.control_fd, OMX_DRIVER_DESC_FILE_OFFSET);
   if (omx__driver_desc == MAP_FAILED) {
-    ret = omx__errno_to_return("mmap driver descriptor");
+    ret = omx__error(omx__errno_to_return("mmap driver descriptor"),
+		     "Mapping control device");
     goto out_with_fd;
   }
 

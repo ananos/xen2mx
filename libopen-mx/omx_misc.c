@@ -206,7 +206,8 @@ omx_cancel(omx_endpoint_t ep,
 
   default:
     /* SEND_* are NOT cancellable with omx_cancel() */
-    ret = OMX_CANCEL_NOT_SUPPORTED;
+    ret = omx__error_with_ep(ep, OMX_CANCEL_NOT_SUPPORTED,
+			     "Cancelling %s request", omx__strreqtype(req->generic.type));
   }
 
  out_with_lock:
