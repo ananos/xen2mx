@@ -302,8 +302,6 @@ static uint64_t omx_disable_progression_jiffies_start = 0;
 omx_return_t
 omx_disable_progression(struct omx_endpoint *ep)
 {
-  omx_return_t ret = OMX_SUCCESS;
-
   OMX__ENDPOINT_LOCK(ep);
 
   if (ep->progression_disabled & OMX_PROGRESSION_DISABLED_BY_API) {
@@ -323,7 +321,7 @@ omx_disable_progression(struct omx_endpoint *ep)
 
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
-  return ret;
+  return OMX_SUCCESS;
 }
 
 /* API omx_reenable_progression */
