@@ -104,6 +104,12 @@ omx_strerror(omx_return_t ret)
     return "Bad Info Key";
   case OMX_BAD_INFO_ADDRESS:
     return "Bad Info Value Address";
+  case OMX_ENDPOINT_PARAMS_BAD_LIST:
+    return "Bad Endpoint Parameter List";
+  case OMX_ENDPOINT_PARAM_BAD_KEY:
+    return "Bad Endpoint Parameter Key";
+  case OMX_ENDPOINT_PARAM_BAD_VALUE:
+    return "Bad Endpoint Parameter Value";
   case OMX_TIMEOUT:
     return "Command Timeout";
   case OMX_REMOTE_ENDPOINT_BAD_ID:

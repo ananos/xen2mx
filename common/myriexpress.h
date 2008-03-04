@@ -106,9 +106,9 @@ enum mx_return_code { /* FIXME */
 	MX_BAD_INFO_KEY		= OMX_BAD_INFO_KEY,
 	MX_BAD_INFO_VAL		= OMX_BAD_INFO_ADDRESS,
 	MX_BAD_NIC		= 123, /* unused in MX */
-	MX_BAD_PARAM_LIST	= 124, /* FIXME: use it in omx_open_endpoint */
-	MX_BAD_PARAM_NAME	= 125, /* FIXME: use it in omx_open_endpoint */
-	MX_BAD_PARAM_VAL	= 126, /* FIXME: use it in omx_open_endpoint */
+	MX_BAD_PARAM_LIST	= OMX_ENDPOINT_PARAMS_BAD_LIST,
+	MX_BAD_PARAM_NAME	= OMX_ENDPOINT_PARAM_BAD_KEY,
+	MX_BAD_PARAM_VAL	= OMX_ENDPOINT_PARAM_BAD_VALUE,
 	MX_BAD_HOSTNAME_ARGS	= 127, /* unused in MX */
 	MX_HOST_NOT_FOUND	= 128, /* FIXME: use in hostname_from/to_nic_id */
 	MX_REQUEST_PENDING	= 129, /* unused in MX */

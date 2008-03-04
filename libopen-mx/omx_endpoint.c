@@ -177,27 +177,47 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out;
   }
 
+  if (param_count && !param_array) {
+    ret = omx__error(OMX_ENDPOINT_PARAMS_BAD_LIST,
+		     "Endpoint parameter list at NULL with %ld elements",
+		     (unsigned long) param_count);
+    goto out;
+  }
+
   for(i=0; i<param_count; i++) {
     switch (param_array[i].key) {
-    case OMX_ENDPOINT_PARAM_ERROR_HANDLER:
+    case OMX_ENDPOINT_PARAM_ERROR_HANDLER: {
       omx__verbose_printf("setting endpoint error handler ignored for now\n");
       break;
-    case OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX:
+    }
+    case OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX: {
       omx__verbose_printf("setting endpoint unexp queue max ignored for now\n");
       break;
-    case OMX_ENDPOINT_PARAM_CONTEXT_ID:
-      if (param_array[i].val.context_id.bits > OMX_ENDPOINT_CONTEXT_ID_BITS_MAX
-          || param_array[i].val.context_id.bits + param_array[i].val.context_id.shift > 64) {
-	ret = OMX_INVALID_PARAMETER;
+    }
+    case OMX_ENDPOINT_PARAM_CONTEXT_ID: {
+      uint8_t bits = param_array[i].val.context_id.bits;
+      uint8_t shift = param_array[i].val.context_id.shift;
+      if (bits > OMX_ENDPOINT_CONTEXT_ID_BITS_MAX) {
+	ret = omx__error(OMX_ENDPOINT_PARAM_BAD_VALUE,
+			 "Opening Endpoint with %d ctxid bits",
+			 (unsigned) bits);
+	goto out;
+      }
+      if (bits + shift > 64) {
+	ret = omx__error(OMX_ENDPOINT_PARAM_BAD_VALUE,
+			 "Opening Endpoint with %d ctxid bits at shift %d",
+			 (unsigned) bits, (unsigned) shift);
 	goto out;
       }
       ctxid_bits = param_array[i].val.context_id.bits;
       ctxid_shift = param_array[i].val.context_id.shift;
       break;
-    default:
-      ret = omx__error(OMX_INVALID_PARAMETER,
+    }
+    default: {
+      ret = omx__error(OMX_ENDPOINT_PARAM_BAD_KEY,
 		       "Reading endpoint parameter key %d", (unsigned) key);
       goto out;
+    }
     }
   }
 
