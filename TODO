@@ -5,6 +5,8 @@
   + special one before omx_init()
   + no handler if zombie?
 
+* display CC/LD/... unless make V=1
+
 * endpoint parameters
   + error_handler
   + unexp queue length

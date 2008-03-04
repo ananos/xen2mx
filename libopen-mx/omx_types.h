@@ -191,7 +191,6 @@ struct omx__endpoint_addr {
 } __attribute__((aligned (8)));
 
 #define CTXID_FROM_MATCHING(ep, match) ((uint32_t)(((match) >> (ep)->ctxid_shift) & ((ep)->ctxid_max-1)))
-#define CHECK_MATCHING_WITH_CTXID(ep, match) (((match) & (ep)->ctxid_mask) == (ep)->ctxid_mask)
 
 #define OMX_PROGRESSION_DISABLED_IN_HANDLER (1<<0)
 #define OMX_PROGRESSION_DISABLED_BY_API (1<<1)

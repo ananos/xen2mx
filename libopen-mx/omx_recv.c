@@ -981,7 +981,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
   }
 
   /* check that there's no wildcard in the context id range */
-  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
+  if (unlikely(ep->ctxid_mask & ~match_mask)) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }

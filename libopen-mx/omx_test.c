@@ -280,7 +280,7 @@ omx_test_any(struct omx_endpoint *ep,
   }
 
   /* check that there's no wildcard in the context id range */
-  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
+  if (unlikely(ep->ctxid_mask & ~match_mask)) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }
@@ -319,7 +319,7 @@ omx_wait_any(struct omx_endpoint *ep,
   }
 
   /* check that there's no wildcard in the context id range */
-  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
+  if (unlikely(ep->ctxid_mask & ~match_mask)) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }
@@ -575,7 +575,7 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
   }
 
   /* check that there's no wildcard in the context id range */
-  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
+  if (unlikely(ep->ctxid_mask & ~match_mask)) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }
@@ -614,7 +614,7 @@ omx_probe(struct omx_endpoint *ep,
   }
 
   /* check that there's no wildcard in the context id range */
-  if (unlikely(!CHECK_MATCHING_WITH_CTXID(ep, match_mask))) {
+  if (unlikely(ep->ctxid_mask & ~match_mask)) {
     ret = OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
     goto out;
   }
