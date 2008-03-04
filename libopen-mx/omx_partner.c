@@ -519,22 +519,18 @@ omx__connect_complete(struct omx_endpoint *ep,
 }
 
 /*
- * End the connection process to another peer
+ * Handle the reply message on the found corresponding connect request
  */
 static INLINE void
-omx__process_recv_connect_reply(struct omx_endpoint *ep,
-				struct omx_evt_recv_connect *event)
+omx__handle_connect_reply(struct omx_endpoint *ep,
+			  struct omx__partner * partner,
+			  union omx_request * req,
+			  struct omx__connect_reply_data * reply_data_n)
 {
-  struct omx__partner * partner;
-  struct omx__connect_reply_data * reply_data_n = (void *) event->data;
-  uint32_t src_session_id = OMX_FROM_PKT_FIELD(reply_data_n->src_session_id);
-  uint8_t connect_seqnum = OMX_FROM_PKT_FIELD(reply_data_n->connect_seqnum);
   uint32_t target_session_id = OMX_FROM_PKT_FIELD(reply_data_n->target_session_id);
   uint16_t target_recv_seqnum_start = OMX_FROM_PKT_FIELD(reply_data_n->target_recv_seqnum_start);
   enum omx__connect_status_code connect_status_code = OMX_FROM_PKT_FIELD(reply_data_n->connect_status_code);
   omx_return_t status_code;
-  union omx_request * req;
-  omx_return_t ret;
 
   switch (connect_status_code) {
   case OMX__CONNECT_SUCCESS:
@@ -548,30 +544,6 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     return;
   }
 
-  ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
-  if (ret != OMX_SUCCESS) {
-    if (ret == OMX_INVALID_PARAMETER)
-      fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
-    return;
-  }
-
-  omx__partner_check_localization(partner, event->shared);
-
-  omx__foreach_request(&ep->connect_req_q, req) {
-    /* check the endpoint session (so that the endpoint didn't close/reopen in the meantime)
-     * and the partner and the connection seqnum given by this partner
-     */
-    if (src_session_id == ep->desc->session_id
-	&& partner == req->generic.partner
-	&& connect_seqnum == req->connect.connect_seqnum) {
-      goto found;
-    }
-  }
-
-  /* invalid connect reply, just ignore it */
-  return;
-
- found:
   omx__debug_printf(CONNECT, "waking up on connect reply\n");
 
   /* complete the request */
@@ -603,6 +575,42 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     }
 
     partner->true_session_id = target_session_id;
+  }
+}
+
+/*
+ * Find the connect request corresponding to a reply and call the handler
+ */
+static INLINE void
+omx__process_recv_connect_reply(struct omx_endpoint *ep,
+				struct omx_evt_recv_connect *event)
+{
+  struct omx__partner * partner;
+  struct omx__connect_reply_data * reply_data_n = (void *) event->data;
+  uint32_t src_session_id = OMX_FROM_PKT_FIELD(reply_data_n->src_session_id);
+  uint8_t connect_seqnum = OMX_FROM_PKT_FIELD(reply_data_n->connect_seqnum);
+  union omx_request * req;
+  omx_return_t ret;
+
+  ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
+  if (ret != OMX_SUCCESS) {
+    if (ret == OMX_INVALID_PARAMETER)
+      fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
+    return;
+  }
+
+  omx__partner_check_localization(partner, event->shared);
+
+  omx__foreach_request(&ep->connect_req_q, req) {
+    /* check the endpoint session (so that the endpoint didn't close/reopen in the meantime)
+     * and the partner and the connection seqnum given by this partner
+     */
+    if (src_session_id == ep->desc->session_id
+	&& partner == req->generic.partner
+	&& connect_seqnum == req->connect.connect_seqnum) {
+      omx__handle_connect_reply(ep, partner, req, reply_data_n);
+      break;
+    }
   }
 }
 
