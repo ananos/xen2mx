@@ -103,8 +103,8 @@ enum mx_return_code { /* FIXME */
 	MX_BAD_ROOT		= 118, /* unused in MX */
 	MX_NOT_COMPLETED	= 119, /* unused in MX */
 	MX_BUSY			= OMX_BUSY,
-	MX_BAD_INFO_KEY		= 121, /* FIXME: use it in get_info */
-	MX_BAD_INFO_VAL		= 122, /* FIXME: use it in get_info */
+	MX_BAD_INFO_KEY		= OMX_BAD_INFO_KEY,
+	MX_BAD_INFO_VAL		= OMX_BAD_INFO_ADDRESS,
 	MX_BAD_NIC		= 123, /* unused in MX */
 	MX_BAD_PARAM_LIST	= 124, /* FIXME: use it in omx_open_endpoint */
 	MX_BAD_PARAM_NAME	= 125, /* FIXME: use it in omx_open_endpoint */
@@ -117,7 +117,7 @@ enum mx_return_code { /* FIXME */
 	MX_BAD_ENDPOINT_ID	= OMX_REMOTE_ENDPOINT_BAD_ID,
 	MX_CONNECTION_FAILED	= OMX_REMOTE_ENDPOINT_CLOSED,
 	MX_BAD_CONNECTION_KEY	= OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY,
-	MX_BAD_INFO_LENGTH	= 135, /* FIXME: use it in get_info */
+	MX_BAD_INFO_LENGTH	= OMX_BAD_INFO_LENGTH,
 	MX_NIC_NOT_FOUND	= 136, /* FIXME: use it in connect_common */
 	MX_BAD_KERNEL_VERSION	= 137, /* FIXME: use it in init */
 	MX_BAD_LIB_VERSION	= 138, /* FIXME: use it in init */

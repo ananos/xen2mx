@@ -188,6 +188,15 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 {
   /* no need to lock here, there's no possible race condition or so */
 
+  if (out_val == NULL) {
+    if (ep)
+      return omx__error_with_ep(ep, OMX_BAD_INFO_ADDRESS,
+				"Getting info with NULL out value pointer");
+    else
+      return omx__error(OMX_BAD_INFO_ADDRESS,
+			"Getting info with NULL out value pointer");
+  }
+
   switch (key) {
   case OMX_INFO_BOARD_MAX:
 
@@ -196,7 +205,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 			"Getting board max");
 
     if (out_len < sizeof(uint32_t))
-      return omx__error(OMX_INVALID_PARAMETER,
+      return omx__error(OMX_BAD_INFO_LENGTH,
 			"Getting board max into %ld bytes instead of %z",
 			(unsigned long) out_len, sizeof(uint32_t));
 
@@ -210,7 +219,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 			"Getting endpoint max");
 
     if (out_len < sizeof(uint32_t))
-      return omx__error(OMX_INVALID_PARAMETER,
+      return omx__error(OMX_BAD_INFO_LENGTH,
 			"Getting endpoint max into %ld bytes instead of %z",
 			(unsigned long) out_len, sizeof(uint32_t));
 
@@ -220,7 +229,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
   case OMX_INFO_BOARD_COUNT:
 
     if (out_len < sizeof(uint32_t))
-      return omx__error(OMX_INVALID_PARAMETER,
+      return omx__error(OMX_BAD_INFO_LENGTH,
 			"Getting board count max into %ld bytes instead of %z",
 			(unsigned long) out_len, sizeof(uint32_t));
 
@@ -235,7 +244,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       return omx__error(ret, "Getting board count for board ids");
 
     if (out_len < sizeof (uint64_t) * (count+1))
-      return omx__error(OMX_INVALID_PARAMETER,
+      return omx__error(OMX_BAD_INFO_LENGTH,
 			"Getting board count into %ld instead of %z",
 			(unsigned long) out_len, sizeof (uint64_t) * (count+1));
 
@@ -269,10 +278,10 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       uint8_t index;
       omx_return_t ret;
 
-      if (!in_val || !in_len)
-	return omx__error(OMX_INVALID_PARAMETER,
-			  "Getting board info for index given in %ld bytes at %p",
-			  (unsigned long) in_len, in_val);
+      if (!in_val)
+	return omx__error(OMX_BAD_INFO_ADDRESS, "Getting board info for index given at %p", in_val);
+      if (!in_len)
+	return omx__error(OMX_BAD_INFO_LENGTH, "Getting board info for index given in %ld bytes", (unsigned long) in_len);
       index = *(uint8_t*)in_val;
 
       ret = omx__get_board_info(ep, index, &tmp);
@@ -288,7 +297,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 
     } else if (key == OMX_INFO_BOARD_NUMA_NODE) {
       if (out_len < sizeof(uint32_t))
-	return omx__error(OMX_INVALID_PARAMETER,
+	return omx__error(OMX_BAD_INFO_LENGTH,
 			  "Getting board numa node into %ld bytes instead of %z",
 			  (unsigned long) out_len, sizeof(uint32_t));
       *(uint32_t *) out_val = info->numa_node;
@@ -303,7 +312,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
   case OMX_INFO_COUNTER_MAX:
 
     if (out_len < sizeof(uint32_t))
-      return omx__error(OMX_INVALID_PARAMETER,
+      return omx__error(OMX_BAD_INFO_LENGTH,
 			"Getting counter max %ld bytes instead of %z",
 			(unsigned long) out_len, sizeof(uint32_t));
 
@@ -315,7 +324,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     int err;
 
     if (out_len < sizeof(uint32_t) * OMX_COUNTER_INDEX_MAX)
-      return omx__error(OMX_INVALID_PARAMETER,
+      return omx__error(OMX_BAD_INFO_LENGTH,
 			"Getting counter values %ld bytes instead of %z",
 			(unsigned long) out_len, sizeof(uint32_t) * OMX_COUNTER_INDEX_MAX);
 
@@ -341,7 +350,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
     const char *label = omx_strcounter(index);
 
     if (out_len < strlen(label) + 1)
-      return omx__error(OMX_INVALID_PARAMETER,
+      return omx__error(OMX_BAD_INFO_LENGTH,
 			"Getting counter values %ld bytes instead of %",
 			(unsigned long) out_len, strlen(label) + 1);
 
@@ -350,7 +359,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
   }
 
   default:
-    return omx__error(OMX_INVALID_PARAMETER,
+    return omx__error(OMX_BAD_INFO_KEY,
 		      "Getting info key %ld",
 		      (unsigned long) key);;
   }

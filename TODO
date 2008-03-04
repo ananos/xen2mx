@@ -1,3 +1,5 @@
+* check 4GB-1 messages
+
 * more return codes for various errors
 
 * less return values in early/matching/unexp functions
@@ -6,7 +8,7 @@
   + move the loop into omx_send
 
 * prealloc the small copy buffer to prevent omx__submit_or_queue_isend_small from failing
-* submit_pull cannot fail too
+* submit_or_queue_pull cannot fail too
 * find a way to defer self unexp alloc if no memory
 
 * error handler

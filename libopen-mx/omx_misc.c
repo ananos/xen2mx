@@ -100,6 +100,10 @@ omx_strerror(omx_return_t ret)
     return "No resources available";
   case OMX_BUSY:
     return "Resource Busy";
+  case OMX_BAD_INFO_KEY:
+    return "Bad Info Key";
+  case OMX_BAD_INFO_ADDRESS:
+    return "Bad Info Value Address";
   case OMX_TIMEOUT:
     return "Command Timeout";
   case OMX_REMOTE_ENDPOINT_BAD_ID:
@@ -108,6 +112,8 @@ omx_strerror(omx_return_t ret)
     return "Remote Endpoint is Closed";
   case OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY:
     return "Connection Key to Remote Endpoint is Invalid";
+  case OMX_BAD_INFO_LENGTH:
+    return "Bad Info Value Length";
   case OMX_CANCEL_NOT_SUPPORTED:
     return "Cancel not supported for this request";
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
