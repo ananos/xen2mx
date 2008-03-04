@@ -290,7 +290,7 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
 
   /* no need to bother looking at the delayed list if the time didn't change */
   if (now == last_invokation)
-    return OMX_SUCCESS;
+    return;
   last_invokation = now;
 
   /* look at the delayed list */
