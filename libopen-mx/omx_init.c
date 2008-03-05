@@ -58,13 +58,10 @@ omx__init_api(int api)
     goto out_with_fd;
   }
 
-  if (omx__driver_desc->abi_version > OMX_DRIVER_ABI_VERSION) {
-    ret = omx__error(OMX_BAD_ERROR, "Library (ABI 0x%x) is too old for driver (ABI 0x%x), did you relink your program with the new library?",
+  if (omx__driver_desc->abi_version != OMX_DRIVER_ABI_VERSION) {
+    ret = omx__error(omx__driver_desc->abi_version < OMX_DRIVER_ABI_VERSION ? OMX_BAD_KERNEL_ABI : OMX_BAD_LIB_ABI,
+		     "Comparing library (ABI 0x%x) with driver (ABI 0x%x)",
 		     OMX_DRIVER_ABI_VERSION, omx__driver_desc->abi_version);
-    goto out_with_fd;
-  } else if (omx__driver_desc->abi_version < OMX_DRIVER_ABI_VERSION) {
-    ret = omx__error(OMX_BAD_ERROR, "Driver (ABI 0x%x) is too old for library (ABI 0x%x), did you rebuild/reload the new driver?",
-		     omx__driver_desc->abi_version, OMX_DRIVER_ABI_VERSION);
     goto out_with_fd;
   }
 
