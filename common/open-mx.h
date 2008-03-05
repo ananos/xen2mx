@@ -191,7 +191,7 @@ omx_return_t
 omx_get_endpoint_addr_context(omx_endpoint_addr_t endpoint_addr,
 			      void **context);
 
-#define OMX_MAX_SEGMENTS 1
+#define OMX_MAX_SEGMENTS 256
 
 typedef void * omx_seg_ptr_t;
 
