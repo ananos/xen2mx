@@ -334,6 +334,8 @@ omx__connect_common(omx_endpoint_t ep,
 
   ret = omx__partner_lookup_by_addr(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS) {
+    if (ret == OMX_INVALID_PARAMETER)
+      ret = OMX_NIC_ID_NOT_FOUND;
     ret = omx__error_with_ep(ep, ret, "Searching/Creating partner for connection");
     goto out;
   }

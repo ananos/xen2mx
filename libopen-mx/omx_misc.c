@@ -122,6 +122,8 @@ omx_strerror(omx_return_t ret)
     return "Connection Key to Remote Endpoint is Invalid";
   case OMX_BAD_INFO_LENGTH:
     return "Bad Info Value Length";
+  case OMX_NIC_ID_NOT_FOUND:
+    return "Nic ID not Found in Peer Table";
   case OMX_CANCEL_NOT_SUPPORTED:
     return "Cancel not supported for this request";
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
