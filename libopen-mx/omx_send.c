@@ -747,7 +747,9 @@ omx_isendv(omx_endpoint_t ep,
   ret = omx_cache_segments(&req->send.segs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS)) {
     /* the callee let us check errors */
-    ret = omx__error_with_ep(ep, ret, "Allocating vectorial isend request segment array");
+    ret = omx__error_with_ep(ep, ret,
+			     "Allocating %ld-vectorial isend request segment array",
+			     (unsigned long long) nseg);
     goto out_with_req;
   }
 
@@ -873,7 +875,9 @@ omx_issendv(omx_endpoint_t ep,
   ret = omx_cache_segments(&req->send.segs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS)) {
     /* the callee let us check errors */
-    ret = omx__error_with_ep(ep, ret, "Allocating vectorial issend request segment array");
+    ret = omx__error_with_ep(ep, ret,
+			     "Allocating %ld-vectorial issend request segment array",
+			     (unsigned long long) nseg);
     goto out_with_req;
   }
 
