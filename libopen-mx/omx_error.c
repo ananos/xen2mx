@@ -27,6 +27,13 @@
  * Predefined error handlers
  */
 
+static omx_return_t
+omx__errors_before_init(const char *buffer, omx_return_t ret)
+{
+  fprintf(stderr, "Open-MX before Init: %s: %s\n", buffer, omx_strerror(ret));
+  exit(-1);
+}
+
 omx_return_t
 omx__errors_are_fatal(const char *buffer, omx_return_t ret)
 {
@@ -42,9 +49,14 @@ omx__errors_return(const char *buffer, omx_return_t ret)
 }
 const omx_error_handler_t OMX_ERRORS_RETURN = (omx_error_handler_t) omx__errors_return;
 
-/* the current handler is fatal by default */
-static
-omx_error_handler_t omx__error_handler = (omx_error_handler_t) omx__errors_are_fatal;
+/* the current handler is fatal by default, with a special one before init */
+static omx_error_handler_t omx__error_handler = (omx_error_handler_t) omx__errors_before_init;
+
+void
+omx__init_error_handler(void)
+{
+  omx__error_handler = (omx_error_handler_t) omx__errors_are_fatal;
+}
 
 /***********************************************************
  * Internal error callback to use in case of internal error

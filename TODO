@@ -1,21 +1,24 @@
-* check 4GB-1 messages
+* error handler
+  + no handler if zombie?
 
-* more return codes for various errors
-
-* less return values in early/matching/unexp functions
+* OMX_BAD_REQUEST for ibuffered (for cancel too?)
+* OMX_BOARD_UNKNOWN for open_endpoint
+* OMX_BAD_ENDPOINT for close endpoint
+  + needs a global endpoint list
 
 * cleanup error recovery if failed to send a throttling req
   + move the loop into omx_send
 
-* prealloc the small copy buffer to prevent omx__submit_or_queue_isend_small from failing
-* submit_or_queue_pull cannot fail too
-* find a way to defer self unexp alloc if no memory
+* less return values in early/matching/unexp functions
 
-* error handler
-  + special one before omx_init()
-  + no handler if zombie?
+* less return errors in the send functions
+  + prealloc the small copy buffer to prevent omx__submit_or_queue_isend_small from failing
+  + submit_or_queue_pull cannot fail too
+  + find a way to defer self unexp alloc if no memory
 
 * handle register/deregister lowlevel errors
+
+* check 4GB-1 messages
 
 * display CC/LD/... unless make V=1
 
@@ -37,6 +40,7 @@
   + filter on specific request id too
 
 * when debug enabled, SIGUSR1 dumps the status
+  + needs a global endpoint list
 
 * unlockify the ring management in the driver event reporting code
   + use rcu to avoid having to lock the waiter's queue

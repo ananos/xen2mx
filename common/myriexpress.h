@@ -83,8 +83,8 @@ typedef struct mx_segment mx_segment_t;
 
 enum mx_return_code { /* FIXME */
 	MX_SUCCESS		= OMX_SUCCESS,
-	MX_BAD_BAD_BAD		= OMX_BAD_ERROR,
-	MX_FAILURE		= 102, /* FIXME: fix vs OMX_BAD_ERROR */
+	MX_BAD_BAD_BAD		= OMX_BAD_ERROR, /* not used anymore in Open-MX */
+	MX_FAILURE		= 102, /* unused in Open-MX so far */
 	MX_ALREADY_INITIALIZED	= OMX_ALREADY_INITIALIZED,
 	MX_NOT_INITIALIZED	= OMX_NOT_INITIALIZED,
 	MX_NO_DEV		= OMX_NO_DEVICE,

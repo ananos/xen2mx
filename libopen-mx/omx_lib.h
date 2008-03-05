@@ -583,6 +583,9 @@ omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp);
 
 /* misc helpers */
 
+extern void
+omx__init_error_handler(void);
+
 extern omx_return_t
 omx__errno_to_return(char * caller);
 

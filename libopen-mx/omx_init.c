@@ -263,6 +263,7 @@ omx__init_api(int api)
    * Terminate initialization
    */
 
+  omx__init_error_handler();
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
 
