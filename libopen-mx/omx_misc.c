@@ -112,6 +112,8 @@ omx_strerror(omx_return_t ret)
     return "Bad Endpoint Parameter Key";
   case OMX_ENDPOINT_PARAM_BAD_VALUE:
     return "Bad Endpoint Parameter Value";
+  case OMX_HOST_NOT_FOUND:
+    return "Host Not Found in the Peer Table";
   case OMX_TIMEOUT:
     return "Command Timeout";
   case OMX_REMOTE_ENDPOINT_BAD_ID:

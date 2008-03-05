@@ -194,8 +194,13 @@ omx_hostname_to_nic_id(char *hostname,
 
   ret = omx__driver_peer_from_hostname(hostname, board_addr, NULL);
 
-  return omx__error(ret, "hostname_to_nic_id %s",
-		    hostname);
+  if (ret != OMX_SUCCESS) {
+    omx__debug_assert(ret == OMX_INVALID_PARAMETER);
+    return omx__error(OMX_HOST_NOT_FOUND, "hostname_to_nic_id %s",
+		      hostname);
+  } else {
+    return OMX_SUCCESS;
+  }
 }
 
 /* API omx_nic_id_to_hostname */
@@ -207,6 +212,11 @@ omx_nic_id_to_hostname(uint64_t board_addr,
 
   ret = omx__driver_peer_from_addr(board_addr, hostname, NULL);
 
-  return omx__error(ret, "nic_id_to_hostname %llx",
-		    (unsigned long long) board_addr);
+  if (ret != OMX_SUCCESS) {
+    omx__debug_assert(ret == OMX_INVALID_PARAMETER);
+    return omx__error(OMX_HOST_NOT_FOUND, "nic_id_to_hostname %llx",
+		      (unsigned long long) board_addr);
+  } else {
+    return OMX_SUCCESS;
+  }
 }
