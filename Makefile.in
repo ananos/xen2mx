@@ -8,9 +8,16 @@ MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 SED	=	@SED@
 
-COMPONENTS	=	driver lib other tools tests
-ifeq (@OMX_MX_API_COMPAT@, 1)
-	COMPONENTS	+=	mxtests
+COMPONENTS	=	
+ifeq (@OMX_BUILD_DRIVER@,1)
+	COMPONENTS	+=	driver
+endif
+ifeq (@OMX_BUILD_LIB@,1)
+	COMPONENTS	+=	lib tools tests
+	ifeq (@OMX_MX_API_COMPAT@,1)
+		COMPONENTS	+=	mxtests
+	endif
+	COMPONENTS	+=	other
 endif
 
 .PHONY: all installonly install clean distcleqn

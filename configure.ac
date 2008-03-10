@@ -49,6 +49,56 @@ if test -z "$DBGCFLAGS" ; then
 fi
 AC_SUBST(DBGCFLAGS)
 
+#####################
+# what to build?
+
+libopen_mx_dir="libopen-mx/"
+driver_dir="driver/"
+
+AC_MSG_CHECKING(whether driver source is available)
+if test -d "$srcdir/$driver_dir" ; then
+  AC_MSG_RESULT(yes)
+  build_driver=yes
+else
+  AC_MSG_RESULT(no)
+  build_driver=no
+fi
+
+AC_MSG_CHECKING(whether the driver has to be built)
+AC_ARG_ENABLE(driver-build,
+	[AS_HELP_STRING([--disable-driver-build], [do not build the driver])],
+	build_driver=$enableval)
+AC_MSG_RESULT($build_driver)
+
+if test x$build_driver = xyes ; then
+	driver_ac_output="driver/linux/Makefile driver/linux/Kbuild"
+	AC_SUBST(OMX_BUILD_DRIVER, 1)
+else
+	AC_SUBST(OMX_BUILD_DRIVER, 0)
+fi
+
+AC_MSG_CHECKING(whether the library source is available)
+if test -d "$srcdir/$libopen_mx_dir" ; then
+  AC_MSG_RESULT(yes)
+  build_lib=yes
+else
+  AC_MSG_RESULT(no)
+  build_lib=no
+fi
+
+AC_MSG_CHECKING(whether the library and user-space tools have to be built)
+AC_ARG_ENABLE(library-build,
+	[AS_HELP_STRING([--disable-library-build], [do not build the library and user-space tools])],
+	build_lib=$enableval)
+AC_MSG_RESULT($build_lib)
+
+if test x$build_lib = xyes ; then
+	lib_ac_output="libopen-mx/Makefile libopen-mx/Makefile.build tools/Makefile tests/Makefile tests/mx/Makefile"
+	AC_SUBST(OMX_BUILD_LIB, 1)
+else
+	AC_SUBST(OMX_BUILD_LIB, 0)
+fi
+
 ########################
 # Kernel related config
 
@@ -282,7 +332,6 @@ fi
 #######################################
 # debug, profiling and valgrind config
 
-libopen_mx_dir="libopen-mx/"
 libopen_mx_builddir="${libopen_mx_dir}build/"
 libopen_mx_name="libopen-mx"
 LIB_TARGETS=""
@@ -517,6 +566,4 @@ AC_SUBST(OPEN_MX_LIB_STATIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.a)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.so)
 
 AC_CONFIG_HEADER(common/omx_config.h)
-AC_OUTPUT(Makefile driver/linux/Makefile driver/linux/Kbuild
-	  libopen-mx/Makefile libopen-mx/Makefile.build
-	  tools/Makefile tests/Makefile tests/mx/Makefile)
+AC_OUTPUT(Makefile $driver_ac_output $lib_ac_output)

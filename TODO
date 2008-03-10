@@ -18,6 +18,8 @@
 
 * handle register/deregister lowlevel errors
 
+* do not check kernel/lib stuff in kernel/lib build is disabled
+
 * check 4GB-1 messages
 
 * display CC/LD/... unless make V=1
