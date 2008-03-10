@@ -8,18 +8,60 @@ MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 SED	=	@SED@
 
-.PHONY: all install clean distcleqn
+COMPONENTS	=	driver lib other tools tests
+ifeq (@OMX_MX_API_COMPAT@, 1)
+	COMPONENTS	+=	mxtests
+endif
+
+.PHONY: all installonly install clean distcleqn
 .PHONY: driver driver-installonly driver-install driver-clean driver-distclean
 .PHONY: lib lib-installonly lib-install lib-clean lib-distclean
 .PHONY: tools tools-installonly tools-install tools-clean tools-distclean
 .PHONY: tests tests-installonly tests-install tests-clean tests-distclean
 .PHONY: mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean
+.PHONY: other other-installonly other-install other-clean other-distclean
 
-all: driver lib tools tests
+all: $(COMPONENTS)
 
-installonly: other-installonly driver-installonly lib-installonly tools-installonly tests-installonly
+installonly: $(patsubst %,%-installonly,$(COMPONENTS))
 
-install: other-install driver-install lib-install tools-install tests-install
+install: $(patsubst %,%-install,$(COMPONENTS))
+
+clean: $(patsubst %,%-clean,$(COMPONENTS))
+
+distclean: $(patsubst %,%-distclean,$(COMPONENTS))
+
+#################
+# driver targets
+
+driver driver-installonly driver-install driver-clean driver-distclean:
+	$(MAKE) -C driver/linux $(shell echo $@ | cut -s -d- -f2)
+
+##############
+# lib targets
+
+lib lib-installonly lib-install lib-clean lib-distclean:
+	$(MAKE) -C libopen-mx $(shell echo $@ | cut -s -d- -f2)
+
+##########################
+# tools and tests targets
+
+# the lib is required before linking the tools or tests
+tools tests mxtests: lib
+
+tools tools-installonly tools-install tools-clean tools-distclean:
+	$(MAKE) -C tools $(shell echo $@ | cut -s -d- -f2)
+
+tests tests-installonly tests-install tests-clean tests-distclean:
+	$(MAKE) -C tests bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
+
+mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean:
+	$(MAKE) -C tests/mx bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
+
+################
+# other targets
+
+other other-clean other-distclean:
 
 other-installonly:
 	@echo "Installing headers to $(DESTDIR)$(includedir)"
@@ -41,35 +83,8 @@ other-installonly:
 
 other-install: other-installonly
 
-clean: driver-clean lib-clean tools-clean tests-clean
-
-distclean: driver-distclean lib-distclean tools-distclean tests-distclean
-
-driver driver-installonly driver-install driver-clean driver-distclean:
-	$(MAKE) -C driver/linux $(shell echo $@ | cut -s -d- -f2)
-
-lib lib-installonly lib-install lib-clean lib-distclean:
-	$(MAKE) -C libopen-mx $(shell echo $@ | cut -s -d- -f2)
-
-# the lib is required before linking the tools or tests
-tools tests: lib
-
-tools tools-installonly tools-install tools-clean tools-distclean:
-	$(MAKE) -C tools $(shell echo $@ | cut -s -d- -f2)
-
-tests tests-installonly tests-install tests-clean tests-distclean:
-	$(MAKE) -C tests bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
-
-ifeq (@OMX_MX_API_COMPAT@, 1)
-all: mxtests
-installonly: mxtests-installonly
-install: mxtests-install
-clean: mxtests-clean
-distclean: mxtests-distclean
-mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean:
-	$(MAKE) -C tests/mx bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
-mxtests: lib
-endif
+#######
+# misc
 
 .PHONY: wc
 wc:
