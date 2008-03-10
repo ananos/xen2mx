@@ -94,6 +94,8 @@ omx_strerror(omx_return_t ret)
     return "No device";
   case OMX_ACCESS_DENIED:
     return "Access denied";
+  case OMX_BOARD_NOT_FOUND:
+    return "Board Not Found";
   case OMX_SEGMENTS_BAD_COUNT:
     return "Multiple Segments Count Invalid";
   case OMX_BAD_MATCH_MASK:

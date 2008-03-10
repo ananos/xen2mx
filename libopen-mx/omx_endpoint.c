@@ -123,7 +123,7 @@ omx__open_endpoint_in_range(int fd,
     }
 
   /* didn't find any endpoint available */
-  return busy ? OMX_BUSY : OMX_NO_DEVICE;
+  return busy ? OMX_BUSY : OMX_BOARD_NOT_FOUND;
 }
 
 static INLINE omx_return_t

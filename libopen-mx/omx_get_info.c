@@ -80,6 +80,8 @@ omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_in
   err = ioctl(fd, OMX_CMD_GET_BOARD_INFO, &get_info);
   if (err < 0) {
     ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
+    if (!ep && ret == OMX_INVALID_PARAMETER)
+      ret = OMX_BOARD_NOT_FOUND;
     /* let the caller handle this */
     goto out;
   }
@@ -110,7 +112,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
     goto out;
   }
 
-  ret = OMX_INVALID_PARAMETER;
+  ret = OMX_BOARD_NOT_FOUND;
   for(i=0; i<max; i++) {
     struct omx_cmd_get_board_info board_info;
 
@@ -151,7 +153,7 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     goto out;
   }
 
-  ret = OMX_INVALID_PARAMETER;
+  ret = OMX_BOARD_NOT_FOUND;
   for(i=0; i<max; i++) {
     struct omx_cmd_get_board_info board_info;
 

@@ -90,7 +90,7 @@ enum mx_return_code { /* FIXME */
 	MX_NO_DEV		= OMX_NO_DEVICE,
 	MX_NO_DRIVER		= 106, /* FIXME: fix vs OMX_NO_DEVICE */
 	MX_NO_PERM		= OMX_ACCESS_DENIED,
-	MX_BOARD_UNKNOWN	= 108, /* FIXME: use it in omx_open_endpoint and get_info */
+	MX_BOARD_UNKNOWN	= OMX_BOARD_NOT_FOUND,
 	MX_BAD_ENDPOINT		= 109, /* FIXME: use it in omx_close_endpoint */
 	MX_BAD_SEG_LIST		= 110, /* unused in MX */
 	MX_BAD_SEG_MEM		= 111, /* unused in MX */

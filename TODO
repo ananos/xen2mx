@@ -2,7 +2,6 @@
   + no handler if zombie?
 
 * OMX_BAD_REQUEST for ibuffered (for cancel too?)
-* OMX_BOARD_UNKNOWN for open_endpoint
 * OMX_BAD_ENDPOINT for close endpoint
   + needs a global endpoint list
 
@@ -21,6 +20,10 @@
 * do not check kernel/lib stuff in kernel/lib build is disabled
 
 * check 4GB-1 messages
+
+* 64bit internals by default
+* 64bit API by default, unless OMX_32BITS_LENGTH is defined
+  + how to force the #define OMX_32BITS_LENGTH once compiled and installed?
 
 * display CC/LD/... unless make V=1
 

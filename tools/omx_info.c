@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
     char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 
     ret = omx__get_board_info(NULL, board_index, &board_info);
-    if (ret == OMX_INVALID_PARAMETER)
+    if (ret == OMX_BOARD_NOT_FOUND)
       continue;
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to read board #%d id, %s\n", i, omx_strerror(ret));

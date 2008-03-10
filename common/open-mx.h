@@ -35,6 +35,7 @@ enum omx_return {
   OMX_NO_DEVICE = 5,
 
   OMX_ACCESS_DENIED = 7,
+  OMX_BOARD_NOT_FOUND = 8,
 
   OMX_SEGMENTS_BAD_COUNT = 12,
 
