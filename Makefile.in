@@ -4,6 +4,8 @@ bindir	=	@bindir@
 includedir	=	@includedir@
 srcdir	=	@srcdir@
 
+include @abs_top_srcdir@/common.mk
+
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 SED	=	@SED@
@@ -71,18 +73,20 @@ mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean:
 other other-clean other-distclean:
 
 other-installonly:
-	@echo "Installing headers to $(DESTDIR)$(includedir)"
-	@if test ! -d $(DESTDIR)$(includedir); then \
-		echo "$(DESTDIR)$(includedir) didn't exist, creating it" ; \
+	$(CMDECHO) "  MKDIR   $(DESTDIR)$(includedir)"
+	$(CMDPREFIX) if test ! -d $(DESTDIR)$(includedir); then \
 		$(MKDIR_P) $(DESTDIR)$(includedir) ; \
 	fi
-	$(INSTALL) -m 0644 $(srcdir)/common/open-mx.h $(DESTDIR)$(includedir)
-	@if test @OMX_MX_API_COMPAT@ -eq 1; then \
-		echo "Installing MX API compatibility wrappers" ; \
+
+	$(CMDECHO) "  INSTALL $(DESTDIR)$(includedir)/open-mx.h"
+	$(CMDPREFIX) $(INSTALL) -m 0644 $(srcdir)/common/open-mx.h $(DESTDIR)$(includedir)
+
+	$(CMDPREFIX) if test @OMX_MX_API_COMPAT@ -eq 1; then \
+		$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/myriexpress.h" ; \
 		$(INSTALL) -m 0644 $(srcdir)/common/myriexpress.h $(DESTDIR)$(includedir) ; \
+		$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)//mx_extensions.h" ; \
 		$(INSTALL) -m 0644 $(srcdir)/common/mx_extensions.h $(DESTDIR)$(includedir) ; \
 		if test @OMX_MX_API_UNSUPPORTED_COMPAT@ -ne 1; then \
-			echo "Removing unsupported MX API wrappers" ; \
 			$(SED) -e '/#ifdef OMX_MX_API_UNSUPPORTED_COMPAT/,/#endif/d' \
 				-i $(DESTDIR)$(includedir)/myriexpress.h $(DESTDIR)$(includedir)/mx_extensions.h ; \
 		fi \

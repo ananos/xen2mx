@@ -2,6 +2,8 @@ exec_prefix	=	@exec_prefix@
 prefix  =       @prefix@
 libdir	=	@libdir@
 
+include @abs_top_srcdir@/common.mk
+
 KCC	=	@KCC@
 MKDIR_P	=	@MKDIR_P@
 LN_S	=	@LN_S@
@@ -23,34 +25,34 @@ MODULE_OBJS	=	open-mx.ko
 # instead of builddir
 
 all: links
-	@echo Building kernel module
-	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) $(KBUILD_VARS)
+	$(CMDECHO) "  MAKE    DRIVER"
+	$(CMDPREFIX) +$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) $(KBUILD_VARS)
 
 installonly:
-	@echo "Installing kernel module to $(INSTALL_MOD_PATH)"
-	@if test ! -d $(DESTDIR)$(INSTALL_MOD_PATH); then \
-		echo "Directory didn't exist, creating it" ; \
+	$(CMDECHO) "  MKDIR   $(DESTDIR)$(INSTALL_MOD_PATH)"
+	$(CMDPREFIX) if test ! -d $(DESTDIR)$(INSTALL_MOD_PATH); then \
 		$(MKDIR_P) -p $(DESTDIR)$(INSTALL_MOD_PATH) ; \
 	fi
-	$(INSTALL) -m 0644 $(MODULE_OBJS) $(DESTDIR)$(INSTALL_MOD_PATH)/
+
+	$(CMDECHO) "  INSTALL DRIVER"
+	$(CMDPREFIX) $(INSTALL) -m 0644 $(MODULE_OBJS) $(DESTDIR)$(INSTALL_MOD_PATH)/
 
 install: all installonly
 
 clean:
-	@echo Cleaning kernel module build
-	+$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) $(KBUILD_VARS) clean
+	$(CMDECHO) "  LN      DRIVER SOURCES"
+	$(CMDECHO) "  CLEAN   DRIVER"
+	$(CMDPREFIX) +$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) $(KBUILD_VARS) clean
 
 distclean: clean clean-links
 
 links:
-	@if test "@srcdir@" != "@builddir@" ; then \
-		echo Linking kernel module source files to local directory ; \
+	$(CMDPREFIX) if test "@srcdir@" != "@builddir@" ; then \
 		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || $(LN_S) $$file ; done ; \
 	fi
 
 clean-links:
-	@if test "@srcdir@" != "@builddir@" ; then \
-		echo Removing links to kernel module source files in local directory ; \
+	$(CMDPREFIX) if test "@srcdir@" != "@builddir@" ; then \
 		for file in $(wildcard @srcdir@/*.[ch]) ; do $(RM) $$(basename $$file) ; done ; \
 	fi
 

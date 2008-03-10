@@ -24,8 +24,6 @@
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
   + how to force the #define OMX_32BITS_LENGTH once compiled and installed?
 
-* display CC/LD/... unless make V=1
-
 * endpoint parameters
   + unexp queue length
 

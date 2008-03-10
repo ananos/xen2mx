@@ -10,12 +10,12 @@ ONLYDEPFLAGS	=	-MMD -MM
 # create a dependency file when it doesn't exist (called by the include line below)
 ifeq ($(BUILD_O_AND_LO_OBJECTS),1)
 $(DEPS): %.d: $(DEPSRCDIR)/%.c
-	@echo "Generating dependency file for $(subst .d,.c,$@)"
-	@$(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(DEPSRCDIR)/$(subst .d,.c,$@) -MT $(subst .d,.o,$@) -MT $(subst .d,.lo,$@)
+	$(CMDECHO) "  DEP     $(REL_DIR)$@"
+	$(CMDPREFIX) $(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(DEPSRCDIR)/$(subst .d,.c,$@) -MT $(subst .d,.o,$@) -MT $(subst .d,.lo,$@)
 else
 $(DEPS): %.d: $(DEPSRCDIR)/%.c
-	@echo "Generating dependency file for $(subst .d,.c,$@)"
-	@$(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(DEPSRCDIR)/$(subst .d,.c,$@)
+	$(CMDECHO) "  DEP     $(REL_DIR)$@"
+	$(CMDPREFIX) $(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(DEPSRCDIR)/$(subst .d,.c,$@)
 endif
 
 # include dependencies, except when cleaning (so that we don't re-create for nothing)

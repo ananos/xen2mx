@@ -3,12 +3,12 @@ TARGETS	=	@LIB_TARGETS@
 .PHONY: all install installonly depend clean distclean
 
 all depend clean:
-	+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
+	@+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
 
 install: all installonly
 
 installonly:
-	+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
+	@+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
 
 distclean:
-	+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; rm -rf $$dir ; done
+	@+for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; rm -rf $$dir ; done

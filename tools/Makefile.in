@@ -3,6 +3,9 @@ sbindir = @sbindir@
 exec_prefix = @exec_prefix@
 prefix = @prefix@
 
+include @abs_top_srcdir@/common.mk
+REL_DIR	=	tools/
+
 SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 TOOLS	=	$(subst .o,,$(OBJS))
@@ -35,40 +38,48 @@ include @top_srcdir@/depend.mk
 # build
 
 $(TOOLS): %: %.o $(LIB)
-	$(LD) $^ -o $@
+	$(CMDECHO) "  LD      $(REL_DIR)$@"
+	$(CMDPREFIX) $(LD) $^ -o $@
 
 # build and create dependency file
 $(OBJS): %.o: @srcdir@/%.c
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+	$(CMDECHO) "  CC      $(REL_DIR)$@"
+	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
 
 ##########
 # install
 
 installonly:
-	@echo "Installing tools to $(DESTDIR)$(bindir)/"
-	@if test ! -d $(DESTDIR)$(bindir); then \
-		echo "'$(DESTDIR)$(bindir)' didn't exist, creating it" ; \
+	$(CMDECHO) "  MKDIR   $(DESTDIR)$(bindir)"
+	$(CMDPREFIX) if test ! -d $(DESTDIR)$(bindir); then \
 		$(MKDIR_P) $(DESTDIR)$(bindir) ; \
 	fi
-	$(INSTALL) -m 0755 $(TOOLS) $(DESTDIR)$(bindir)/
+
+	$(CMDECHO) "  INSTALL $(patsubst %,$(DESTDIR)$(bindir)/%,$(TOOLS))"
+	$(CMDPREFIX) $(INSTALL) -m 0755 $(TOOLS) $(DESTDIR)$(bindir)/
 	
-	@echo "Installing init script to $(DESTDIR)$(sbindir)/"
-	@if test ! -d $(DESTDIR)$(sbindir); then \
-		echo "'$(DESTDIR)$(sbindir)' didn't exist, creating it" ; \
+	$(CMDECHO) "  MKDIR   $(DESTDIR)$(sbindir)"
+	$(CMDPREFIX) if test ! -d $(DESTDIR)$(sbindir); then \
 		$(MKDIR_P) $(DESTDIR)$(sbindir) ; \
 	fi
-	$(SED)	-e 's£@omx_install_prefix@£$(prefix)£' \
+
+	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/omx_init"
+	$(CMDPREFIX) $(SED)	-e 's£@omx_install_prefix@£$(prefix)£' \
 		-e 's£@omx_device_name@£@DEVICE_NAME@£' \
 		-e 's£@omx_device_group@£@DEVICE_GROUP@£' \
 		-e 's£@omx_device_mode@£@DEVICE_MODE@£' \
 		-e 's£@omx_peers_file@£@PEERS_FILE@£' \
 		< @srcdir@/omx_init.in > omx_init
-	$(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/
-	$(SED)	-e 's£@omx_install_prefix@£$(prefix)£' \
+	$(CMDPREFIX) $(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/
+
+	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/omx_local_install"
+	$(CMDPREFIX) $(SED)	-e 's£@omx_install_prefix@£$(prefix)£' \
 		< @srcdir@/omx_local_install.in > omx_local_install
-	$(INSTALL) -m 0755 omx_local_install $(DESTDIR)$(sbindir)/
-	cp @srcdir@/open-mx.conf.in open-mx.conf
-	$(INSTALL) -m 0644 open-mx.conf $(DESTDIR)$(sbindir)/
+	$(CMDPREFIX) $(INSTALL) -m 0755 omx_local_install $(DESTDIR)$(sbindir)/
+
+	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/open-mx.conf"
+	$(CMDPREFIX) cp @srcdir@/open-mx.conf.in open-mx.conf
+	$(CMDPREFIX) $(INSTALL) -m 0644 open-mx.conf $(DESTDIR)$(sbindir)/
 
 install: all installonly
 
@@ -76,7 +87,9 @@ install: all installonly
 # clean
 
 clean:
-	$(RM) $(TOOLS) $(OBJS)
+	$(CMDECHO) "  RM      $(patsubst %,$(REL_DIR)%,$(TOOLS)) $(patsubst %,$(REL_DIR)%,$(OBJS))"
+	$(CMDPREFIX) $(RM) $(TOOLS) $(OBJS)
 
 distclean: clean
-	$(RM) $(DEPS)
+	$(CMDECHO) "  RM      $(patsubst %,$(REL_DIR)%,$(DEPS))"
+	$(CMDPREFIX) $(RM) $(DEPS)

@@ -347,6 +347,7 @@ generate_lib_build() {
 	cat >${libopen_mx_dir}${dir}/Makefile <<EOF
 omx_build_lib_debug = $debug
 omx_build_lib_name = $name
+omx_build_lib_dir = ${libopen_mx_dir}${dir}
 libdirsuffix = ${installsuffix}
 include ../Makefile.build
 EOF

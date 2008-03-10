@@ -2,6 +2,9 @@ bindir = @bindir@
 exec_prefix = @exec_prefix@
 prefix = @prefix@
 
+include @abs_top_srcdir@/common.mk
+REL_DIR	=	tests/
+
 SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 TESTS	=	$(subst .o,,$(OBJS))
@@ -37,22 +40,25 @@ include @top_srcdir@/depend.mk
 # build
 
 $(TESTS): %: %.o $(LIB)
-	$(LD) $^ -o $@
+	$(CMDECHO) "  LD      $(REL_DIR)$@"
+	$(CMDPREFIX) $(LD) $^ -o $@
 
 # build and create dependency file
 $(OBJS): %.o: @srcdir@/%.c
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+	$(CMDECHO) "  CC      $(REL_DIR)$@"
+	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
 
 ##########
 # install
 
 installonly:
-	@echo "Installing tests to $(DESTDIR)$(bindir)/"
-	@if test ! -d $(DESTDIR)$(bindir); then \
-		echo "'$(DESTDIR)$(bindir)' didn't exist, creating it" ; \
+	$(CMDECHO) "  MKDIR   $(DESTDIR)$(bindir)/"
+	$(CMDPREFIX) if test ! -d $(DESTDIR)$(bindir); then \
 		$(MKDIR_P) $(DESTDIR)$(bindir) ; \
 	fi
-	$(INSTALL) -m 0755 $(TESTS) $(DESTDIR)$(bindir)/
+
+	$(CMDECHO) "  INSTALL $(patsubst %,$(DESTDIR)$(bindir)/%,$(TESTS))"
+	$(CMDPREFIX) $(INSTALL) -m 0755 $(TESTS) $(DESTDIR)$(bindir)/
 
 install: all installonly
 
@@ -60,7 +66,9 @@ install: all installonly
 # clean
 
 clean:
-	$(RM) $(TESTS) $(OBJS)
+	$(CMDECHO) "  RM      $(patsubst %,$(REL_DIR)%,$(TESTS)) $(patsubst %,$(REL_DIR)%,$(OBJS))"
+	$(CMDPREFIX) $(RM) $(TESTS) $(OBJS)
 
 distclean: clean
-	$(RM) $(DEPS)
+	$(CMDECHO) "  RM      $(patsubst %,$(REL_DIR)%,$(DEPS))"
+	$(CMDPREFIX) $(RM) $(DEPS)
