@@ -38,15 +38,6 @@ if test $AR = false; then
   AC_MSG_ERROR(ar program not found in \$PATH)
 fi
 
-if test -n "$KCC" ; then
-	AC_CHECK_PROG(KCC, gcc, $CC)
-	AC_MSG_CHECKING(which compiler to use for kernel modules)
-	AC_MSG_RESULT($KCC)
-	KCC_VERSION=`$KCC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
-else
-	KCC_VERSION=`$CC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
-fi
-
 #####################
 # build flags config
 
@@ -60,6 +51,15 @@ AC_SUBST(DBGCFLAGS)
 
 ########################
 # Kernel related config
+
+if test -n "$KCC" ; then
+	AC_CHECK_PROG(KCC, gcc, $CC)
+	AC_MSG_CHECKING(which compiler to use for kernel modules)
+	AC_MSG_RESULT($KCC)
+	KCC_VERSION=`$KCC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
+else
+	KCC_VERSION=`$CC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
+fi
 
 LINUX_SRC="/lib/modules/"`uname -r`"/source"
 LINUX_BUILD="/lib/modules/"`uname -r`"/build"
