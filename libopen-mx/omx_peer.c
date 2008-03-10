@@ -196,7 +196,7 @@ omx_hostname_to_nic_id(char *hostname,
 
   if (ret != OMX_SUCCESS) {
     omx__debug_assert(ret == OMX_INVALID_PARAMETER);
-    return omx__error(OMX_HOST_NOT_FOUND, "hostname_to_nic_id %s",
+    return omx__error(OMX_PEER_NOT_FOUND, "hostname_to_nic_id %s",
 		      hostname);
   } else {
     return OMX_SUCCESS;
@@ -214,7 +214,7 @@ omx_nic_id_to_hostname(uint64_t board_addr,
 
   if (ret != OMX_SUCCESS) {
     omx__debug_assert(ret == OMX_INVALID_PARAMETER);
-    return omx__error(OMX_HOST_NOT_FOUND, "nic_id_to_hostname %llx",
+    return omx__error(OMX_PEER_NOT_FOUND, "nic_id_to_hostname %llx",
 		      (unsigned long long) board_addr);
   } else {
     return OMX_SUCCESS;
