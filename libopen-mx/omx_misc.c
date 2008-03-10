@@ -96,6 +96,8 @@ omx_strerror(omx_return_t ret)
     return "Access denied";
   case OMX_BOARD_NOT_FOUND:
     return "Board Not Found";
+  case OMX_BAD_ENDPOINT:
+    return "Bad Endpoint";
   case OMX_SEGMENTS_BAD_COUNT:
     return "Multiple Segments Count Invalid";
   case OMX_BAD_MATCH_MASK:

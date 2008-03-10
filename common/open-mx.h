@@ -36,6 +36,7 @@ enum omx_return {
 
   OMX_ACCESS_DENIED = 7,
   OMX_BOARD_NOT_FOUND = 8,
+  OMX_BAD_ENDPOINT = 9,
 
   OMX_SEGMENTS_BAD_COUNT = 12,
 

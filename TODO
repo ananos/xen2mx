@@ -2,8 +2,7 @@
   + no handler if zombie?
 
 * OMX_BAD_REQUEST for ibuffered (for cancel too?)
-* OMX_BAD_ENDPOINT for close endpoint
-  + needs a global endpoint list
+* OMX_INVALID_PARAMETER only internal?
 
 * cleanup error recovery if failed to send a throttling req
   + move the loop into omx_send
@@ -45,7 +44,6 @@
   + filter on specific request id too
 
 * when debug enabled, SIGUSR1 dumps the status
-  + needs a global endpoint list
 
 * unlockify the ring management in the driver event reporting code
   + use rcu to avoid having to lock the waiter's queue

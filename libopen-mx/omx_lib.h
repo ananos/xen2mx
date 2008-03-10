@@ -581,16 +581,13 @@ omx__peer_addr_to_index(uint64_t board_addr, uint16_t *index);
 extern omx_return_t
 omx__peer_index_to_addr(uint16_t index, uint64_t *board_addrp);
 
-/* misc helpers */
+/* error management */
 
 extern void
 omx__init_error_handler(void);
 
 extern omx_return_t
 omx__errno_to_return(char * caller);
-
-extern const char *
-omx__strreqtype(enum omx__request_type type);
 
 extern omx_return_t
 omx__error(omx_return_t ret, const char *fmt, ...);
@@ -602,5 +599,13 @@ omx__error_with_ep(struct omx_endpoint *ep,
 extern omx_return_t
 omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
 		    omx_return_t code, const char *fmt, ...);
+
+/* misc helpers */
+
+extern const char *
+omx__strreqtype(enum omx__request_type type);
+
+extern void
+omx__init_endpoint_list(void);
 
 #endif /* __omx_lib_h__ */

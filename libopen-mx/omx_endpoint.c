@@ -24,6 +24,51 @@
 
 #include "omx_lib.h"
 
+/***************************
+ * Endpoint list management
+ */
+
+static struct list_head omx_endpoints_list;
+#ifdef OMX_LIB_THREAD_SAFETY
+static struct omx__lock omx_endpoints_list_lock;
+#endif
+
+void
+omx__init_endpoint_list(void)
+{
+  INIT_LIST_HEAD(&omx_endpoints_list);
+  omx__lock_init(&omx_endpoints_list_lock);
+}
+
+static INLINE void
+omx__add_endpoint_to_list(struct omx_endpoint *endpoint)
+{
+  omx__lock(&omx_endpoints_list_lock);
+  list_add_tail(&endpoint->omx_endpoints_list_elt, &omx_endpoints_list);
+  omx__unlock(&omx_endpoints_list_lock);
+}
+
+static INLINE omx_return_t
+omx__remove_endpoint_from_list(struct omx_endpoint *endpoint)
+{
+  struct omx_endpoint *current;
+  omx_return_t ret = OMX_BAD_ENDPOINT;
+
+  omx__lock(&omx_endpoints_list_lock);
+
+  list_for_each_entry(current, &omx_endpoints_list, omx_endpoints_list_elt)
+    if (current == endpoint) {
+      list_del(&endpoint->omx_endpoints_list_elt);
+      ret = OMX_SUCCESS;
+      break;
+    }
+
+  omx__unlock(&omx_endpoints_list_lock);
+
+  /* let the caller handle errors */
+  return ret;
+}
+
 /************************
  * Send queue management
  */
@@ -362,6 +407,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   ep->desc->user_event_index = 0;
 
+  omx__add_endpoint_to_list(ep);
+
   omx__progress(ep);
 
   *epp = ep;
@@ -405,6 +452,12 @@ omx_close_endpoint(struct omx_endpoint *ep)
 
   if (ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER) {
     ret = omx__error_with_ep(ep, OMX_NOT_SUPPORTED_IN_HANDLER, "Closing endpoint during unexpected handler");
+    goto out_with_lock;
+  }
+
+  ret = omx__remove_endpoint_from_list(ep);
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error(ret, "Closing endpoint");
     goto out_with_lock;
   }
 
