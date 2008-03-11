@@ -257,12 +257,12 @@ omx__get_contigous_region(struct omx_endpoint *ep,
   struct omx_cmd_region_segment *rsegs;
   omx_return_t ret;
   uint64_t vaddr;
-  uint32_t rdma_length;
+  uint64_t rdma_length;
   uint16_t offset;
 
   vaddr = ((uintptr_t) buffer) & ~4095;
   offset = ((uintptr_t) buffer) & 4095;
-  rdma_length = (offset + length + 4095) & ~4095;
+  rdma_length = ((uint64_t) offset + (uint64_t) length + 4095) & ~4095;
 
   if (reserver)
     omx__debug_printf(LARGE, "need a region reserved for object %p\n", reserver);

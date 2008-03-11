@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x118
+#define OMX_DRIVER_ABI_VERSION		0x119
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -80,8 +80,7 @@ typedef uint8_t omx_user_region_id_t;
 struct omx_cmd_region_segment {
 	uint64_t vaddr;
 	/* 8 */
-	uint32_t len;
-	uint32_t pad;
+	uint64_t len;
 	/* 16 */
 };
 
