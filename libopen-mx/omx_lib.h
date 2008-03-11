@@ -517,9 +517,8 @@ omx__process_resend_requests(struct omx_endpoint *ep);
 extern void
 omx__process_queued_requests(struct omx_endpoint *ep);
 
-extern omx_return_t
-omx__send_throttling_request(struct omx_endpoint *ep, struct omx__partner *partner,
-			     union omx_request *req);
+extern void
+omx__send_throttling_requests(struct omx_endpoint *ep, struct omx__partner *partner, int nr);
 
 extern void
 omx__process_partners_to_ack(struct omx_endpoint *ep);

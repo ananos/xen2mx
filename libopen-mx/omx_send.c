@@ -960,7 +960,7 @@ omx__process_queued_requests(struct omx_endpoint *ep)
  * Send throttling Requests
  */
 
-omx_return_t
+static INLINE omx_return_t
 omx__send_throttling_request(struct omx_endpoint *ep, struct omx__partner *partner,
 			     union omx_request *req)
 {
@@ -978,6 +978,29 @@ omx__send_throttling_request(struct omx_endpoint *ep, struct omx__partner *partn
     return omx__submit_or_queue_isend_large(ep, req, partner);
   }
   /* let the caller handle errors */
+}
+
+void
+omx__send_throttling_requests(struct omx_endpoint *ep, struct omx__partner *partner, int nr)
+{
+  union omx_request *req;
+
+  while (nr && (req = omx__dequeue_first_partner_throttling_request(partner)) != NULL) {
+    omx_return_t ret;
+
+    omx__debug_assert(req->generic.state == OMX_REQUEST_STATE_SEND_THROTTLING);
+    req->generic.state = 0;
+    ret = omx__send_throttling_request(ep, partner, req);
+
+    if (ret != OMX_SUCCESS)
+      /* FIXME: warn and break, we'll try again later when getting a new ack,
+       * but that would break the order if something else is submitted
+       */
+      omx__abort("Failed to dequeue throttling send request\n");
+
+    omx__mark_partner_not_throttling(ep, partner);
+    nr--;
+  }
 }
 
 /******************

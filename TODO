@@ -1,11 +1,9 @@
-* error handler
-  + no handler if zombie?
+* error handler when completing zombie send/recv only if ep totally open, with special message
 
 * OMX_BAD_REQUEST for ibuffered (for cancel too?)
 * OMX_INVALID_PARAMETER only internal?
 
 * cleanup error recovery if failed to send a throttling req
-  + move the loop into omx_send
 
 * less return values in early/matching/unexp functions
 
@@ -13,6 +11,8 @@
   + prealloc the small copy buffer to prevent omx__submit_or_queue_isend_small from failing
   + submit_or_queue_pull cannot fail too
   + find a way to defer self unexp alloc if no memory
+
+* use the sendq for small messages since allocating/pioing isn't faster than copying/attaching?
 
 * handle register/deregister lowlevel errors
 
