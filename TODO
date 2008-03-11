@@ -3,12 +3,8 @@
 * OMX_BAD_REQUEST for ibuffered (for cancel too?)
 * OMX_INVALID_PARAMETER only internal?
 
-* cleanup error recovery if failed to send a throttling req
-
 * less return values in early/matching/unexp functions
 
-* less return errors in the send functions
-  + submit_or_queue_pull cannot fail too
 * always return success from send and put all early errors in the status ?
 
 * use the sendq for small messages since allocating/pioing isn't faster than copying/attaching?

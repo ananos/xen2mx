@@ -747,7 +747,7 @@ omx__process_recv(struct omx_endpoint *ep,
  * Receive Message from Myself
  */
 
-omx_return_t
+void
 omx__process_self_send(struct omx_endpoint *ep,
 		       union omx_request *sreq)
 {
@@ -809,7 +809,7 @@ omx__process_self_send(struct omx_endpoint *ep,
       /* the handler took care of the message, just complete the send request */
       sreq->generic.status.xfer_length = msg_length;
       omx__send_complete(ep, sreq, OMX_SUCCESS);
-      return OMX_SUCCESS;
+      return;
     }
 
     /* if not FINISHED, return MUST be CONTINUE */
@@ -899,7 +899,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 
   }
 
-  return OMX_SUCCESS;
+  return;
 
  failed:
   sreq->generic.state = 0; /* reset the state before completion */
@@ -910,9 +910,6 @@ omx__process_self_send(struct omx_endpoint *ep,
    * since this event does not come from the driver
    */
   omx__notify_user_event(ep);
-
-  /* the failure has been notified in the request status, return success here */
-  return OMX_SUCCESS;
 }
 
 /***********************

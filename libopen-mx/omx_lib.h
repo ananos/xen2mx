@@ -383,7 +383,7 @@ extern omx_return_t
 omx__submit_isend_rndv(struct omx_endpoint *ep,
 		       union omx_request *req);
 
-extern omx_return_t
+extern void
 omx__submit_notify(struct omx_endpoint *ep,
 		   union omx_request *req);
 
@@ -395,7 +395,7 @@ extern omx_return_t
 omx__submit_pull(struct omx_endpoint * ep,
 	       union omx_request * req);
 
-extern omx_return_t
+extern void
 omx__submit_or_queue_pull(struct omx_endpoint * ep,
 			  union omx_request * req);
 
@@ -405,7 +405,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
 
 /* receiving messages */
 
-extern omx_return_t
+extern void
 omx__process_self_send(struct omx_endpoint *ep,
 		       union omx_request *sreq);
 

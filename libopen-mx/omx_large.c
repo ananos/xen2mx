@@ -472,7 +472,7 @@ omx__submit_pull(struct omx_endpoint * ep,
   return OMX_SUCCESS;
 }
 
-omx_return_t
+void
 omx__submit_or_queue_pull(struct omx_endpoint * ep,
 			  union omx_request * req)
 {
@@ -497,8 +497,6 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
     omx__queue_notify(ep, req);
   }
-
-  return OMX_SUCCESS;
 }
 
 void
