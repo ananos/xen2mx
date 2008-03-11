@@ -45,8 +45,8 @@
 #define SYNC 0
 #define PAUSE_MS 100
 
-static int
-next_length(int length, int multiplier, int increment)
+static unsigned long long
+next_length(unsigned long long length, unsigned long long multiplier, unsigned long long increment)
 {
   if (length)
     return length*multiplier+increment;
@@ -116,14 +116,25 @@ usage(int argc, char *argv[])
 struct param {
   uint32_t iter;
   uint32_t warmup;
-  uint32_t min;
-  uint32_t max;
-  uint32_t multiplier;
-  uint32_t increment;
-  uint32_t align;
+  uint32_t min_low;
+  uint32_t min_high;
+  uint32_t max_low;
+  uint32_t max_high;
+  uint32_t multiplier_low;
+  uint32_t multiplier_high;
+  uint32_t increment_low;
+  uint32_t increment_high;
+  uint8_t align;
   uint8_t unidir;
   uint8_t sync;
 };
+
+#define HTON_DU32(dstlow, dsthigh, val) do { \
+  dstlow = htonl((uint32_t)(val & 0xffffffff)); \
+  dsthigh = htonl((uint32_t)(val >> 32)); \
+} while (0)
+
+#define NTOH_DU32(srclow, srchigh) ((uint64_t) ntohl(srclow)) + (((uint64_t) ntohl(srchigh)) << 32)
 
 int main(int argc, char *argv[])
 {
@@ -136,10 +147,10 @@ int main(int argc, char *argv[])
   int rid = RID;
   int iter = ITER;
   int warmup = WARMUP;
-  int min = MIN;
-  int max = MAX;
-  int multiplier = MULTIPLIER;
-  int increment = INCREMENT;
+  unsigned long long min = MIN;
+  unsigned long long max = MAX;
+  unsigned long long multiplier = MULTIPLIER;
+  unsigned long long increment = INCREMENT;
   int unidir = UNIDIR;
   int sync = SYNC;
   int slave = 0;
@@ -183,16 +194,16 @@ int main(int argc, char *argv[])
       rid = atoi(optarg);
       break;
     case 'S':
-      min = atoi(optarg);
+      min = atoll(optarg);
       break;
     case 'E':
-      max = atoi(optarg);
+      max = atoll(optarg);
       break;
     case 'M':
-      multiplier = atoi(optarg);
+      multiplier = atoll(optarg);
       break;
     case 'I':
-      increment = atoi(optarg);
+      increment = atoll(optarg);
       break;
     case 'N':
       iter = atoi(optarg);
@@ -267,7 +278,7 @@ int main(int argc, char *argv[])
     struct param param;
     struct timeval tv1, tv2;
     unsigned long long us;
-    int length;
+    unsigned long long length;
     int i;
 
     printf("Starting sender to '%s'...\n", dest_hostname);
@@ -282,11 +293,11 @@ int main(int argc, char *argv[])
     /* send the param message */
     param.iter = htonl(iter);
     param.warmup = htonl(warmup);
-    param.min = htonl(min);
-    param.max = htonl(max);
-    param.multiplier = htonl(multiplier);
-    param.increment = htonl(increment);
-    param.align = htonl(align);
+    HTON_DU32(param.min_low, param.min_high, min);
+    HTON_DU32(param.max_low, param.max_high, max);
+    HTON_DU32(param.multiplier_low, param.multiplier_high, multiplier);
+    HTON_DU32(param.increment_low, param.increment_high, increment);
+    param.align = align;
     param.unidir = unidir;
     param.sync = sync;
     ret = omx_isend(ep, &param, sizeof(param),
@@ -310,8 +321,8 @@ int main(int argc, char *argv[])
     }
 
     if (verbose)
-      printf("Sent parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d, unidir=%d)\n",
-	     iter, warmup, min, max, multiplier, unidir, increment);
+      printf("Sent parameters (iter=%d, warmup=%d, min=%lld, max=%lld, mult=%lld, incr=%lld, unidir=%d)\n",
+	     iter, warmup, min, max, multiplier, increment, unidir);
 
     /* wait for the ok message */
     ret = omx_irecv(ep, NULL, 0,
@@ -405,7 +416,7 @@ int main(int argc, char *argv[])
       us = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
       if (verbose)
 	printf("Total Duration: %lld us\n", us);
-      printf("length % 9d:\t%.3f us\t%.2f MB/s\t %.2f MiB/s\n",
+      printf("length % 9lld:\t%.3f us\t%.2f MB/s\t %.2f MiB/s\n",
 	     length, ((float) us)/(2.-unidir)/iter,
 	     (2.-unidir)*iter*length/us, (2.-unidir)*iter*length/us/1.048576);
 
@@ -424,7 +435,7 @@ int main(int argc, char *argv[])
     omx_endpoint_addr_t addr;
     uint64_t board_addr;
     uint32_t endpoint_index;
-    int length;
+    unsigned long long length;
     int i;
 
   slave_starts_again:
@@ -457,11 +468,11 @@ int main(int argc, char *argv[])
     /* retrieve parameters */
     iter = ntohl(param.iter);
     warmup = ntohl(param.warmup);
-    min = ntohl(param.min);
-    max = ntohl(param.max);
-    multiplier = ntohl(param.multiplier);
-    increment = ntohl(param.increment);
-    align = ntohl(param.align);
+    min = NTOH_DU32(param.min_low, param.min_high);
+    max = NTOH_DU32(param.max_low, param.max_high);
+    multiplier = NTOH_DU32(param.multiplier_low, param.multiplier_high);
+    increment = NTOH_DU32(param.increment_low, param.increment_high);
+    align = param.align;
     unidir = param.unidir;
     sync = param.sync;
 
@@ -477,7 +488,7 @@ int main(int argc, char *argv[])
       strcpy(dest_hostname, "<unknown peer>");
 
     if (verbose)
-      printf("Got parameters (iter=%d, warmup=%d, min=%d, max=%d, mult=%d, incr=%d, unidir=%d) from peer %s\n",
+      printf("Got parameters (iter=%d, warmup=%d, min=%lld, max=%lld, mult=%lld, incr=%lld, unidir=%d) from peer %s\n",
 	     iter, warmup, min, max, multiplier, increment, unidir, dest_hostname);
 
     /* connect back, using iconnect for fun */
