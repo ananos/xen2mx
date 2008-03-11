@@ -756,6 +756,7 @@ omx__process_self_send(struct omx_endpoint *ep,
   uint64_t match_info = sreq->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   uint32_t msg_length = sreq->send.segs.total_length;
+  omx_return_t status_code;
 
   sreq->generic.type = OMX_REQUEST_TYPE_SEND_SELF;
   sreq->generic.partner = ep->myself;
@@ -859,21 +860,23 @@ omx__process_self_send(struct omx_endpoint *ep,
     void *unexp_buffer = NULL;
 
     rreq = omx__request_alloc(ep);
-    if (unlikely(!rreq))
-      /* FIXME */
-      return OMX_NO_RESOURCES;
-
-    rreq->generic.type = OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED;
+    if (unlikely(!rreq)) {
+      status_code = omx__error_with_ep(ep, OMX_NO_RESOURCES,
+				       "Allocating unexpected receive for self send");
+      goto failed;
+    }
 
     if (msg_length) {
       unexp_buffer = malloc(msg_length);
       if (unlikely(!unexp_buffer)) {
-	fprintf(stderr, "Failed to allocate buffer for unexpected message, dropping\n");
 	omx__request_free(ep, rreq);
-	/* FIXME */
-	return OMX_NO_RESOURCES;
+	status_code = omx__error_with_ep(ep, OMX_NO_RESOURCES,
+					 "Allocating unexpected buffer for self send");
+	goto failed;
       }
     }
+
+    rreq->generic.type = OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED;
 
     omx_cache_single_segment(&rreq->recv.segs, unexp_buffer, msg_length);
 
@@ -893,8 +896,22 @@ omx__process_self_send(struct omx_endpoint *ep,
      */
     sreq->generic.state = OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED; /* the state of unexpected self recv is always set here */
     omx__enqueue_request(&ep->send_self_unexp_req_q, sreq);
+
   }
 
+  return OMX_SUCCESS;
+
+ failed:
+  sreq->generic.state = 0; /* reset the state before completion */
+  omx__send_complete(ep, sreq, status_code);
+
+  /*
+   * need to wakeup some possible send-done waiters
+   * since this event does not come from the driver
+   */
+  omx__notify_user_event(ep);
+
+  /* the failure has been notified in the request status, return success here */
   return OMX_SUCCESS;
 }
 
