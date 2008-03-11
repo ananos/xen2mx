@@ -16,8 +16,6 @@
 
 * handle register/deregister lowlevel errors
 
-* do not check kernel/lib stuff in kernel/lib build is disabled
-
 * check 4GB-1 messages
 
 * 64bit internals by default
@@ -82,6 +80,7 @@
   + what's in src_generation ? unset/unchecked in OMX
   + no rdmawin_seqnum set/checked
   + lib ack contents
+* wire-compat at runtime
 
 * optimize mediums
   + 2 pages if not mx wire compat

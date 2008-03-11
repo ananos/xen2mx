@@ -102,232 +102,236 @@ fi
 ########################
 # Kernel related config
 
-if test -n "$KCC" ; then
+if test x$build_driver = xyes ; then
+
+    if test -n "$KCC" ; then
 	AC_CHECK_PROG(KCC, gcc, $CC)
 	AC_MSG_CHECKING(which compiler to use for kernel modules)
 	AC_MSG_RESULT($KCC)
 	KCC_VERSION=`$KCC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
-else
+    else
 	KCC_VERSION=`$CC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
-fi
+    fi
 
-LINUX_SRC="/lib/modules/"`uname -r`"/source"
-LINUX_BUILD="/lib/modules/"`uname -r`"/build"
-LINUX_GCC_VERSION=`sed -e 's/.*gcc version \(.\..\).*/\1/' /proc/version`
-# If the user changes the source, use it as build by default
-# If it changes the build, do not use it as the source by default
-AC_ARG_WITH(linux,
+    LINUX_SRC="/lib/modules/"`uname -r`"/source"
+    LINUX_BUILD="/lib/modules/"`uname -r`"/build"
+    LINUX_GCC_VERSION=`sed -e 's/.*gcc version \(.\..\).*/\1/' /proc/version`
+    # If the user changes the source, use it as build by default
+    # If it changes the build, do not use it as the source by default
+    AC_ARG_WITH(linux,
 	[AS_HELP_STRING([--with-linux=<dir>], [location of the Linux kernel source])],
 	LINUX_SRC="$withval"; LINUX_BUILD="$withval"; LINUX_GCC_VERSION="")
-AC_ARG_WITH(linux-build,
+    AC_ARG_WITH(linux-build,
 	[AS_HELP_STRING([--with-linux-build=<dir>], [location of the Linux kernel build tree])],
 	LINUX_BUILD="$withval"; LINUX_GCC_VERSION="")
-AC_ARG_WITH(linux-release,
+    AC_ARG_WITH(linux-release,
 	[AS_HELP_STRING([--with-linux-release=<version>], [release number of the target kernel])],
 	LINUX_RELEASE="$withval",
 	LINUX_RELEASE=$(make kernelrelease -C ${LINUX_BUILD} | grep ^2.6.))
-AC_SUBST(LINUX_SRC)
-AC_SUBST(LINUX_BUILD)
-AC_SUBST(LINUX_RELEASE)
+    AC_SUBST(LINUX_SRC)
+    AC_SUBST(LINUX_BUILD)
+    AC_SUBST(LINUX_RELEASE)
 
-# Issue a warning if the kernel compiler seems to be different
-if test x$KCC_VERSION != x && test x$LINUX_GCC_VERSION != x ; then
-  if test $KCC_VERSION != $LINUX_GCC_VERSION ; then
-    AC_WARN([the kernel seems to be compiled with gcc $LINUX_GCC_VERSION])
-    AC_WARN([while the Open-MX module would be built using $KCC_VERSION])
-    AC_WARN([you might need to change the kernel module compiler with KCC])
-  fi
-else
-  if test x$KCC != x ; then
-    AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is set correctly ($KCC)])
-  else
-    AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is unset on purpose])
-  fi
-fi
+    # Issue a warning if the kernel compiler seems to be different
+    if test x$KCC_VERSION != x && test x$LINUX_GCC_VERSION != x ; then
+      if test $KCC_VERSION != $LINUX_GCC_VERSION ; then
+        AC_WARN([the kernel seems to be compiled with gcc $LINUX_GCC_VERSION])
+        AC_WARN([while the Open-MX module would be built using $KCC_VERSION])
+        AC_WARN([you might need to change the kernel module compiler with KCC])
+      fi
+    else
+      if test x$KCC != x ; then
+        AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is set correctly ($KCC)])
+      else
+        AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is unset on purpose])
+      fi
+    fi
 
-# Find where the headers are (to avoid grepping at both places).
-# Do not check for autoconf.h or version.h since these are in
-# both the source and the build directory.
-AC_MSG_CHECKING(kernel header include/linux/kernel.h)
-LINUX_HDR=
-if test -f ${LINUX_SRC}/include/linux/kernel.h ; then
-  LINUX_HDR=$LINUX_SRC
-else if test -f ${LINUX_BUILD}/include/linux/kernel.h ; then
-  LINUX_HDR=$LINUX_BUILD
-fi fi
-if test -z ${LINUX_HDR} ; then
-  AC_MSG_ERROR(not found)
-fi
-AC_MSG_RESULT(found in ${LINUX_HDR})
+    # Find where the headers are (to avoid grepping at both places).
+    # Do not check for autoconf.h or version.h since these are in
+    # both the source and the build directory.
+    AC_MSG_CHECKING(kernel header include/linux/kernel.h)
+    LINUX_HDR=
+    if test -f ${LINUX_SRC}/include/linux/kernel.h ; then
+      LINUX_HDR=$LINUX_SRC
+    else if test -f ${LINUX_BUILD}/include/linux/kernel.h ; then
+      LINUX_HDR=$LINUX_BUILD
+    fi fi
+    if test -z ${LINUX_HDR} ; then
+      AC_MSG_ERROR(not found)
+    fi
+    AC_MSG_RESULT(found in ${LINUX_HDR})
 
-# Find where the autoconf header is (to avoid grepping at both places).
-# The one in the build dir is preferred since this is where the configured
-# tree should be
-AC_MSG_CHECKING(kernel configuration in include/linux/autoconf.h)
-LINUX_AUTOCONF_DIR=
-if test -f ${LINUX_BUILD}/include/linux/autoconf.h ; then
-  LINUX_AUTOCONF_DIR=${LINUX_BUILD}
-else if test -f ${LINUX_SRC}/include/linux/autoconf.h ; then
-  LINUX_AUTOCONF_DIR=${LINUX_SRC}
-fi fi
-if test -z ${LINUX_AUTOCONF_DIR} ; then
-  AC_MSG_ERROR(not found)
-fi
-LINUX_AUTOCONF_H=${LINUX_AUTOCONF_DIR}/include/linux/autoconf.h
-AC_MSG_RESULT(found in ${LINUX_AUTOCONF_DIR})
+    # Find where the autoconf header is (to avoid grepping at both places).
+    # The one in the build dir is preferred since this is where the configured
+    # tree should be
+    AC_MSG_CHECKING(kernel configuration in include/linux/autoconf.h)
+    LINUX_AUTOCONF_DIR=
+    if test -f ${LINUX_BUILD}/include/linux/autoconf.h ; then
+      LINUX_AUTOCONF_DIR=${LINUX_BUILD}
+    else if test -f ${LINUX_SRC}/include/linux/autoconf.h ; then
+      LINUX_AUTOCONF_DIR=${LINUX_SRC}
+    fi fi
+    if test -z ${LINUX_AUTOCONF_DIR} ; then
+      AC_MSG_ERROR(not found)
+    fi
+    LINUX_AUTOCONF_H=${LINUX_AUTOCONF_DIR}/include/linux/autoconf.h
+    AC_MSG_RESULT(found in ${LINUX_AUTOCONF_DIR})
 
-# Find where the kbuild Makefile is
-AC_MSG_CHECKING(kernel build Makefile)
-if ! test -f ${LINUX_BUILD}/Makefile ; then
-  AC_MSG_ERROR(not found in ${LINUX_BUILD})
-fi
-AC_MSG_RESULT(found in ${LINUX_BUILD})
+    # Find where the kbuild Makefile is
+    AC_MSG_CHECKING(kernel build Makefile)
+    if ! test -f ${LINUX_BUILD}/Makefile ; then
+      AC_MSG_ERROR(not found in ${LINUX_BUILD})
+    fi
+    AC_MSG_RESULT(found in ${LINUX_BUILD})
 
-# Find the kernel release
-AC_MSG_CHECKING(kernel release)
-if test x${LINUX_RELEASE} = x; then
-  AC_MSG_ERROR(not found)
-fi
-AC_MSG_RESULT(${LINUX_RELEASE})
+    # Find the kernel release
+    AC_MSG_CHECKING(kernel release)
+    if test x${LINUX_RELEASE} = x; then
+      AC_MSG_ERROR(not found)
+    fi
+    AC_MSG_RESULT(${LINUX_RELEASE})
 
-# create the output file
-CHECKS_NAME=driver/linux/omx_checks.h
-CHECKS_PATH=`pwd`/${CHECKS_NAME}
-CHECKS_DATE_PREFIX="This file has been first generated on "
-TMP_CHECKS_PATH=${CHECKS_PATH}.tmp
-rm -f ${TMP_CHECKS_PATH}
-mkdir -p $(dirname ${TMP_CHECKS_PATH})
+    # create the output file
+    CHECKS_NAME=driver/linux/omx_checks.h
+    CHECKS_PATH=`pwd`/${CHECKS_NAME}
+    CHECKS_DATE_PREFIX="This file has been first generated on "
+    TMP_CHECKS_PATH=${CHECKS_PATH}.tmp
+    rm -f ${TMP_CHECKS_PATH}
+    mkdir -p $(dirname ${TMP_CHECKS_PATH})
 
-# add the header
-echo "#ifndef __omx_checks_h__" >> ${TMP_CHECKS_PATH}
-echo "#define __omx_checks_h__ 1" >> ${TMP_CHECKS_PATH}
-echo "" >> ${TMP_CHECKS_PATH}
+    # add the header
+    echo "#ifndef __omx_checks_h__" >> ${TMP_CHECKS_PATH}
+    echo "#define __omx_checks_h__ 1" >> ${TMP_CHECKS_PATH}
+    echo "" >> ${TMP_CHECKS_PATH}
 
-# what command line was used to generate with file
-echo "/*" >> ${TMP_CHECKS_PATH}
-echo " * ${CHECKS_DATE_PREFIX}"`date` >> ${TMP_CHECKS_PATH}
-echo " * The configure line was: $ac_configure $ac_configure_args" >> ${TMP_CHECKS_PATH}
-echo " * It checked kernel headers in ${LINUX_HDR}/include/" >> ${TMP_CHECKS_PATH}
-echo " */" >> ${TMP_CHECKS_PATH}
-echo "" >> ${TMP_CHECKS_PATH}
+    # what command line was used to generate with file
+    echo "/*" >> ${TMP_CHECKS_PATH}
+    echo " * ${CHECKS_DATE_PREFIX}"`date` >> ${TMP_CHECKS_PATH}
+    echo " * The configure line was: $ac_configure $ac_configure_args" >> ${TMP_CHECKS_PATH}
+    echo " * It checked kernel headers in ${LINUX_HDR}/include/" >> ${TMP_CHECKS_PATH}
+    echo " */" >> ${TMP_CHECKS_PATH}
+    echo "" >> ${TMP_CHECKS_PATH}
 
-# remap_vmalloc_range and vmalloc_user appeared in 2.6.18
-AC_MSG_CHECKING((in kernel headers) remap_vmalloc_range availability)
-if grep "remap_vmalloc_range *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null ; then
-  echo "#define OMX_HAVE_REMAP_VMALLOC_RANGE 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-fi
+    # remap_vmalloc_range and vmalloc_user appeared in 2.6.18
+    AC_MSG_CHECKING((in kernel headers) remap_vmalloc_range availability)
+    if grep "remap_vmalloc_range *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null ; then
+      echo "#define OMX_HAVE_REMAP_VMALLOC_RANGE 1" >> ${TMP_CHECKS_PATH}
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
 
-# miscdevice pointed to a class_device before 2.6.20
-AC_MSG_CHECKING((in kernel headers) device type in miscdevice)
-if sed -ne '/^struct miscdevice/,/^};/p' ${LINUX_HDR}/include/linux/miscdevice.h \
-   | grep "struct class_device" > /dev/null ; then
-  echo "#define OMX_MISCDEV_HAVE_CLASS_DEVICE 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(struct class_device)
-else
-  AC_MSG_RESULT(struct device)
-fi
+    # miscdevice pointed to a class_device before 2.6.20
+    AC_MSG_CHECKING((in kernel headers) device type in miscdevice)
+    if sed -ne '/^struct miscdevice/,/^};/p' ${LINUX_HDR}/include/linux/miscdevice.h \
+       | grep "struct class_device" > /dev/null ; then
+      echo "#define OMX_MISCDEV_HAVE_CLASS_DEVICE 1" >> ${TMP_CHECKS_PATH}
+      AC_MSG_RESULT(struct class_device)
+    else
+      AC_MSG_RESULT(struct device)
+    fi
 
-# dev_base list replaced with for_each_netdev added in 2.6.22
-# and modified for net namespaces in 2.6.24
-AC_MSG_CHECKING((in kernel headers) for_each_netdev availability)
-if grep "for_each_netdev *(" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
-  if grep "for_each_netdev *(.*,.*)" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
-    echo "#define OMX_HAVE_FOR_EACH_NETDEV 1" >> ${TMP_CHECKS_PATH}
-    AC_MSG_RESULT(yes)
-  else
-    echo "#define OMX_HAVE_FOR_EACH_NETDEV_WITHOUT_NS 1" >> ${TMP_CHECKS_PATH}
-    AC_MSG_RESULT([yes, without namespaces])
-  fi
-else
-  AC_MSG_RESULT(no)
-fi
+    # dev_base list replaced with for_each_netdev added in 2.6.22
+    # and modified for net namespaces in 2.6.24
+    AC_MSG_CHECKING((in kernel headers) for_each_netdev availability)
+    if grep "for_each_netdev *(" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
+      if grep "for_each_netdev *(.*,.*)" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
+        echo "#define OMX_HAVE_FOR_EACH_NETDEV 1" >> ${TMP_CHECKS_PATH}
+        AC_MSG_RESULT(yes)
+      else
+        echo "#define OMX_HAVE_FOR_EACH_NETDEV_WITHOUT_NS 1" >> ${TMP_CHECKS_PATH}
+        AC_MSG_RESULT([yes, without namespaces])
+      fi
+    else
+      AC_MSG_RESULT(no)
+    fi
 
-# dev_get_by_name got a namespace argument in 2.6.24
-AC_MSG_CHECKING((in kernel headers) dev_get_by_name prototype)
-if grep "struct net_device.*dev_get_by_name *(.*,.*)" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
-  AC_MSG_RESULT(with namespace)
-else
-  echo "#define OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(without namespace)
-fi
+    # dev_get_by_name got a namespace argument in 2.6.24
+    AC_MSG_CHECKING((in kernel headers) dev_get_by_name prototype)
+    if grep "struct net_device.*dev_get_by_name *(.*,.*)" ${LINUX_HDR}/include/linux/netdevice.h > /dev/null ; then
+      AC_MSG_RESULT(with namespace)
+    else
+      echo "#define OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS 1" >> ${TMP_CHECKS_PATH}
+      AC_MSG_RESULT(without namespace)
+    fi
 
-# skb got mac/network/transport headers in 2.6.22
-AC_MSG_CHECKING((in kernel headers) skb headers availability)
-if grep "sk_buff_data_t.*mac_header;" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
-  echo "#define OMX_HAVE_SKB_HEADERS 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-fi
+    # skb got mac/network/transport headers in 2.6.22
+    AC_MSG_CHECKING((in kernel headers) skb headers availability)
+    if grep "sk_buff_data_t.*mac_header;" ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
+      echo "#define OMX_HAVE_SKB_HEADERS 1" >> ${TMP_CHECKS_PATH}
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
 
-# uts namespace arrived in 2.6.19
-AC_MSG_CHECKING((in kernel headers) UTS namespace availabilty)
-if grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null ; then
-  echo "#define OMX_HAVE_UTS_NAMESPACE 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-fi
+    # uts namespace arrived in 2.6.19
+    AC_MSG_CHECKING((in kernel headers) UTS namespace availabilty)
+    if grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null ; then
+      echo "#define OMX_HAVE_UTS_NAMESPACE 1" >> ${TMP_CHECKS_PATH}
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
 
-# dmaengine must be built in the kernel, first
-AC_MSG_CHECKING((in kernel headers) whether DMA engine support is built-in)
-if grep CONFIG_DMA_ENGINE ${LINUX_AUTOCONF_H} > /dev/null ; then
-  AC_MSG_RESULT(yes)
-  # dmaengine really usable when channel may be shared among clients, arrived in 2.6.23
-  AC_MSG_CHECKING((in kernel headers) whether DMA engine channels are shareable)
-  if grep DMA_RESOURCE_AVAILABLE ${LINUX_HDR}/include/linux/dmaengine.h > /dev/null ; then
-    echo "#define OMX_HAVE_SHAREABLE_DMA_CHANNELS 1" >> ${TMP_CHECKS_PATH}
-    AC_MSG_RESULT(yes)
-  else
-    AC_MSG_RESULT(no)
-  fi
-else
-  AC_MSG_RESULT(no)
-fi
+    # dmaengine must be built in the kernel, first
+    AC_MSG_CHECKING((in kernel headers) whether DMA engine support is built-in)
+    if grep CONFIG_DMA_ENGINE ${LINUX_AUTOCONF_H} > /dev/null ; then
+      AC_MSG_RESULT(yes)
+      # dmaengine really usable when channel may be shared among clients, arrived in 2.6.23
+      AC_MSG_CHECKING((in kernel headers) whether DMA engine channels are shareable)
+      if grep DMA_RESOURCE_AVAILABLE ${LINUX_HDR}/include/linux/dmaengine.h > /dev/null ; then
+        echo "#define OMX_HAVE_SHAREABLE_DMA_CHANNELS 1" >> ${TMP_CHECKS_PATH}
+        AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+      fi
+    else
+      AC_MSG_RESULT(no)
+    fi
 
-# mutexes appeared in 2.6.16
-AC_MSG_CHECKING((in kernel headers) whether mutexes are available)
-if test -e ${LINUX_HDR}/include/linux/mutex.h > /dev/null ; then
-  echo "#define OMX_HAVE_MUTEX 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-fi
+    # mutexes appeared in 2.6.16
+    AC_MSG_CHECKING((in kernel headers) whether mutexes are available)
+    if test -e ${LINUX_HDR}/include/linux/mutex.h > /dev/null ; then
+      echo "#define OMX_HAVE_MUTEX 1" >> ${TMP_CHECKS_PATH}
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
 
-# dev_to_node appeared in 2.6.20
-AC_MSG_CHECKING((in kernel headers) whether dev_to_node is available)
-if grep dev_to_node ${LINUX_HDR}/include/linux/device.h > /dev/null ; then
-  echo "#define OMX_HAVE_DEV_TO_NODE 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(yes)
-else
-  AC_MSG_RESULT(no)
-fi
+    # dev_to_node appeared in 2.6.20
+    AC_MSG_CHECKING((in kernel headers) whether dev_to_node is available)
+    if grep dev_to_node ${LINUX_HDR}/include/linux/device.h > /dev/null ; then
+      echo "#define OMX_HAVE_DEV_TO_NODE 1" >> ${TMP_CHECKS_PATH}
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
 
-# net_device.dev appeared in 2.6.21
-AC_MSG_CHECKING((in kernel headers) device type in net_device)
-if sed -ne '/^struct net_device/,/^};/p' ${LINUX_HDR}/include/linux/netdevice.h \
-  | grep "struct class_device" > /dev/null ; then
-  echo "#define OMX_HAVE_NETDEVICE_CLASS_DEVICE 1" >> ${TMP_CHECKS_PATH}
-  AC_MSG_RESULT(struct class_device)
-else
-  AC_MSG_RESULT(struct device)
-fi
+    # net_device.dev appeared in 2.6.21
+    AC_MSG_CHECKING((in kernel headers) device type in net_device)
+    if sed -ne '/^struct net_device/,/^};/p' ${LINUX_HDR}/include/linux/netdevice.h \
+      | grep "struct class_device" > /dev/null ; then
+      echo "#define OMX_HAVE_NETDEVICE_CLASS_DEVICE 1" >> ${TMP_CHECKS_PATH}
+      AC_MSG_RESULT(struct class_device)
+    else
+      AC_MSG_RESULT(struct device)
+    fi
 
-# add the footer
-echo "" >> ${TMP_CHECKS_PATH}
-echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_PATH}
+    # add the footer
+    echo "" >> ${TMP_CHECKS_PATH}
+    echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_PATH}
 
-# install final file
-if diff -q ${CHECKS_PATH} ${TMP_CHECKS_PATH} --ignore-matching-lines="${CHECKS_DATE_PREFIX}" >/dev/null 2>&1; then
-  rm -f ${TMP_CHECKS_PATH}
-  AC_MSG_NOTICE(${CHECKS_NAME} is unchanged)
-else
-  mv -f ${TMP_CHECKS_PATH} ${CHECKS_PATH}
-  AC_MSG_NOTICE(creating kernel headers description in ${CHECKS_NAME})
-fi
+    # install final file
+    if diff -q ${CHECKS_PATH} ${TMP_CHECKS_PATH} --ignore-matching-lines="${CHECKS_DATE_PREFIX}" >/dev/null 2>&1; then
+      rm -f ${TMP_CHECKS_PATH}
+      AC_MSG_NOTICE(${CHECKS_NAME} is unchanged)
+    else
+      mv -f ${TMP_CHECKS_PATH} ${CHECKS_PATH}
+      AC_MSG_NOTICE(creating kernel headers description in ${CHECKS_NAME})
+    fi
+
+fi # end of $build_driver = yes
 
 #######################################
 # debug, profiling and valgrind config
@@ -341,6 +345,8 @@ generate_lib_build() {
 	name=$1; shift
 	debug=$1; shift
 	installsuffix=$1; shift
+
+	if test x$build_lib != xyes ; then return ; fi
 
 	mkdir -p ${libopen_mx_dir}${dir} || exit -1
 
@@ -391,7 +397,6 @@ else
   AC_MSG_RESULT(no)
   AC_SUBST(OMX_DRIVER_PROFILING, 0)
 fi
-
 
 AC_MSG_CHECKING(if valgrind is available)
 AC_PREPROC_IFELSE([
@@ -513,7 +518,7 @@ else
 fi
 
 ############################
-# Misc config
+# misc config
 
 AC_ARG_ENABLE(threads,
 	[AS_HELP_STRING([--enable-threads], [enable thread safety in the library])],
