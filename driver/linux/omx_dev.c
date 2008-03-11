@@ -159,9 +159,9 @@ __omx_endpoint_last_release(struct kref *kref)
 	endpoint->iface = NULL;
 	omx_iface_release(iface);
 
-	spin_lock(&omx_endpoints_cleanup_lock);
+	spin_lock_bh(&omx_endpoints_cleanup_lock);
 	list_add(&endpoint->list_elt, &omx_endpoints_cleanup_list);
-	spin_unlock(&omx_endpoints_cleanup_lock);
+	spin_unlock_bh(&omx_endpoints_cleanup_lock);
 }
 
 void

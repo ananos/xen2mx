@@ -32,6 +32,7 @@ struct omx_user_region {
 	struct kref refcount;
 
 	struct rcu_head rcu_head; /* rcu deferred releasing callback */
+	struct list_head list_elt; /* deferred cleanup thread freeing */
 
 	unsigned nr_segments;
 	unsigned long total_length;
@@ -71,6 +72,7 @@ extern int omx_ioctl_user_region_register(struct omx_endpoint * endpoint, void _
 extern int omx_ioctl_user_region_deregister(struct omx_endpoint * endpoint, void __user * uparam);
 extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
 extern void __omx_user_region_last_release(struct kref * kref);
+extern void omx_user_regions_cleanup(void);
 
 static inline void
 omx_user_region_reacquire(struct omx_user_region * region)

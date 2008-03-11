@@ -148,6 +148,7 @@ omx_kthread_func(void *dummy)
 		msleep(1000);
 
 		omx_endpoints_cleanup();
+		omx_user_regions_cleanup();
 	}
 
 	/*
@@ -155,6 +156,7 @@ omx_kthread_func(void *dummy)
 	 * have been stopped before other resources were cleaned up
 	 */
 	omx_endpoints_cleanup();
+	omx_user_regions_cleanup();
 
 	printk(KERN_INFO "Open-MX: kthread stopping\n");
 	return 0;

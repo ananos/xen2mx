@@ -57,7 +57,7 @@ omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 	aligned_len = PAGE_ALIGN(offset + useglen);
 	nr_pages = aligned_len >> PAGE_SHIFT;
 
-	pages = kmalloc(nr_pages * sizeof(struct page *), GFP_KERNEL);
+	pages = vmalloc(nr_pages * sizeof(struct page *));
 	if (unlikely(!pages)) {
 		printk(KERN_ERR "Open-MX: Failed to allocate user region segment page array\n");
 		ret = -ENOMEM;
@@ -79,7 +79,7 @@ omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 	return 0;
 
  out_with_pages:
-	kfree(pages);
+	vfree(pages);
  out:
 	return ret;
 }
@@ -88,9 +88,12 @@ static void
 omx_user_region_deregister_segment(struct omx_user_region_segment * segment)
 {
 	unsigned long i;
+
+	might_sleep();
+
 	for(i=0; i<segment->nr_pages; i++)
 		put_page(segment->pages[i]);
-	kfree(segment->pages);
+	vfree(segment->pages);
 }
 
 static void
@@ -212,6 +215,13 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
  * Region deregistration
  */
 
+/* vfree cannot be called from BH, so we just
+ * let the cleanup thread take care of it by moving
+ * regions to a cleanup list first
+ */
+static spinlock_t omx_regions_cleanup_lock = SPIN_LOCK_UNLOCKED;
+static LIST_HEAD(omx_regions_cleanup_list);
+
 /* Called when the last reference on the region is released */
 void
 __omx_user_region_last_release(struct kref * kref)
@@ -221,8 +231,28 @@ __omx_user_region_last_release(struct kref * kref)
 	dprintk(KREF, "releasing the last reference on region %p\n",
 		region);
 
-	omx_user_region_deregister_segments(region);
-	kfree(region);
+	spin_lock_bh(&omx_regions_cleanup_lock);
+	list_add_tail(&region->list_elt, &omx_regions_cleanup_list);
+	spin_unlock_bh(&omx_regions_cleanup_lock);
+}
+
+void
+omx_user_regions_cleanup(void)
+{
+        struct omx_user_region * region, * next;
+	LIST_HEAD(private_head);
+
+	/* move the whole list to our private head at once */
+	spin_lock_bh(&omx_regions_cleanup_lock);
+	list_splice(&omx_regions_cleanup_list, &private_head);
+	INIT_LIST_HEAD(&omx_regions_cleanup_list);
+	spin_unlock_bh(&omx_regions_cleanup_lock);
+
+	/* and now free all regions without needing any lock */
+	list_for_each_entry_safe(region, next, &private_head, list_elt) {
+		omx_user_region_deregister_segments(region);
+		kfree(region);
+	}
 }
 
 static void

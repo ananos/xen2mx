@@ -11,9 +11,7 @@
 
 * handle register/deregister lowlevel errors
 
-* check 4GB-1 messages
-  + need to vmalloc the region page array
-  + need to move vfree in to cleanup thread since cannot be called in interrupt context
+* move pull offset to 64bits to avoid wrapping around on almost 4GB messages
 
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
