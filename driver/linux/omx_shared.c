@@ -75,7 +75,7 @@ omx_shared_notify_nack(struct omx_endpoint *src_endpoint,
 		       enum omx_nack_type nack_type)
 {
 	struct omx_evt_recv_nack_lib event;
-	
+
 	event.peer_index = dst_peer_index;
 	event.src_endpoint = dst_endpoint_index;
 	event.seqnum = seqnum;
@@ -92,7 +92,7 @@ omx_shared_notify_nack(struct omx_endpoint *src_endpoint,
  */
 static INLINE struct omx_endpoint *
 omx_shared_get_endpoint_or_notify_nack(struct omx_endpoint *src_endpoint,
-				       uint16_t dst_peer_index, uint8_t dst_endpoint_index, 
+				       uint16_t dst_peer_index, uint8_t dst_endpoint_index,
 				       uint32_t session_id, uint16_t seqnum)
 {
 	struct omx_endpoint * dst_endpoint;

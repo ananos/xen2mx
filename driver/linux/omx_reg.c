@@ -894,7 +894,7 @@ omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long
 			kunmap_atomic(spageaddr, KM_USER0);
 			sseg++;
 			sseglen = sseg->length;
-			dprintk(REG, "shared region copy switching to source seg %ld len %ld, %ld remaining\n", 
+			dprintk(REG, "shared region copy switching to source seg %ld len %ld, %ld remaining\n",
 				(unsigned long) (sseg-&src_region->segments[0]), sseglen, remaining);
 			ssegoff = 0;
 			spage = &sseg->pages[0];
