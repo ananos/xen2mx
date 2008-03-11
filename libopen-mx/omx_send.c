@@ -204,9 +204,21 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 
   copy = malloc(length);
   if (unlikely(!copy)) {
-    omx__request_free(ep, req);
-    /* let the caller handle the error */
-    return OMX_NO_RESOURCES;
+    omx_return_t status_code = omx__error_with_ep(ep, OMX_NO_RESOURCES,
+						  "Allocating unexpected buffer for self send");
+
+    req->send.specific.small.copy = NULL; /* make sure free won't do anything */
+    req->generic.state = 0; /* reset the state before completion */
+    omx__send_complete(ep, req, status_code);
+
+    /*
+     * need to wakeup some possible send-done waiters
+     * since this event does not come from the driver
+     */
+    omx__notify_user_event(ep);
+
+    /* the failure has been notified in the request status, return success here */
+    return OMX_SUCCESS;
   }
 
   seqnum = partner->next_send_seq;

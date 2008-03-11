@@ -8,9 +8,7 @@
 * less return values in early/matching/unexp functions
 
 * less return errors in the send functions
-  + prealloc the small copy buffer to prevent omx__submit_or_queue_isend_small from failing
   + submit_or_queue_pull cannot fail too
-
 * always return success from send and put all early errors in the status ?
 
 * use the sendq for small messages since allocating/pioing isn't faster than copying/attaching?
