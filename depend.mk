@@ -7,15 +7,19 @@ BUILDDEPFLAGS	=	-MMD
 # output dependency file in .d for .c
 ONLYDEPFLAGS	=	-MMD -MM
 
+ifeq ($(REL_DEPDIR),)
+	REL_DEPDIR	=	$(REL_DIR)
+endif
+
 # create a dependency file when it doesn't exist (called by the include line below)
 ifeq ($(BUILD_O_AND_LO_OBJECTS),1)
-$(DEPS): %.d: $(DEPSRCDIR)/%.c
-	$(CMDECHO) "  DEP     $(REL_DIR)$@"
-	$(CMDPREFIX) $(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(DEPSRCDIR)/$(subst .d,.c,$@) -MT $(subst .d,.o,$@) -MT $(subst .d,.lo,$@)
+$(DEPS): $(DEPDIR)%.d: $(DEPSRCDIR)%.c
+	$(CMDECHO) "  DEP     $(REL_DEPDIR)$(notdir $@)"
+	$(CMDPREFIX) $(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(patsubst $(DEPDIR)%.d,$(DEPSRCDIR)%.c,$@) -MT $(patsubst $(DEPDIR)%.d,%.o,$@) -MT $(patsubst $(DEPDIR)%.d,.lo,$@)
 else
-$(DEPS): %.d: $(DEPSRCDIR)/%.c
-	$(CMDECHO) "  DEP     $(REL_DIR)$@"
-	$(CMDPREFIX) $(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(DEPSRCDIR)/$(subst .d,.c,$@)
+$(DEPS): $(DEPDIR)%.d: $(DEPSRCDIR)%.c
+	$(CMDECHO) "  DEP     $(REL_DEPDIR)$(notdir $@)"
+	$(CMDPREFIX) $(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(patsubst $(DEPDIR)%.d,$(DEPSRCDIR)%.c,$@)
 endif
 
 # include dependencies, except when cleaning (so that we don't re-create for nothing)

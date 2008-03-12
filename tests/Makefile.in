@@ -33,7 +33,7 @@ all: $(TESTS)
 # dependencies
 
 DEPS	=	$(subst .o,.d,$(OBJS))
-DEPSRCDIR	=	@srcdir@
+DEPSRCDIR	=	@srcdir@/
 include @top_srcdir@/depend.mk
 
 ########

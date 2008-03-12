@@ -50,8 +50,10 @@ all: assertions $(STATIC_LIB) $(DYNAMIC_LIB)
 ###############
 # dependencies
 
-DEPS	=	$(patsubst @abs_srcdir@/%.c,%.d,$(SRCS))
-DEPSRCDIR	=	@abs_srcdir@
+DEPSRCDIR	=	@abs_srcdir@/
+DEPDIR	=	../
+REL_DEPDIR	=	$(shell echo $(REL_DIR)$(DEPDIR) | sed -r -e 's@[^/]+/\.\./@@')
+DEPS	=	$(patsubst $(DEPSRCDIR)%.c,$(DEPDIR)%.d,$(SRCS))
 # make sure the dependency contains both .lo and .o targets
 BUILD_O_AND_LO_OBJECTS	=	1
 
@@ -74,11 +76,11 @@ assertions: $(ASSERTIONS_STATIC_OBJ)
 
 $(STATIC_OBJS): %.o: @abs_srcdir@/%.c
 	$(CMDECHO) "  CC      $(REL_DIR)$@"
-	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(STATIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .o,.lo,$@) $< -o $@
+	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(STATIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .o,.lo,$@) -MF $(patsubst %.o,$(DEPDIR)%.d, $@) $< -o $@
 
 $(DYNAMIC_OBJS): %.lo: @abs_srcdir@/%.c
 	$(CMDECHO) "  CC      $(REL_DIR)$@"
-	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(DYNAMIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .lo,.o,$@) $< -o $@
+	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(DYNAMIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .lo,.o,$@) -MF $(patsubst %.lo,$(DEPDIR)%.d, $@) $< -o $@
 
 ##########
 # install
