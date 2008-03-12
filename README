@@ -465,6 +465,11 @@ skbfrags=16
 	send side. If the underlying driver does not support frags, 0 should
 	be used.
 	The default and maximal value is MAX_SKB_FRAGS (16 on common archs).
+skbcopy=0
+	Copy buffers upto 0 bytes into a linear skb instead of attaching
+	pages. If the underlying driver is slow sending frags, increasing
+	this parameter to copy small frags into linear skb may be faster
+	than using frags as usual.
 copybench=1
 	Enable a memory copy benchmark at startup.
 	Default is disabled (0).

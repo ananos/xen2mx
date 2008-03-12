@@ -40,11 +40,12 @@ struct sk_buff;
 
 /* globals */
 extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */
-extern int omx_skb_frags;
 /* defined as module parameters */
 extern int omx_iface_max;
 extern int omx_endpoint_max;
 extern int omx_peer_max;
+extern int omx_skb_frags;
+extern int omx_skb_copy_max;
 extern int omx_copybench;
 
 /* main net */

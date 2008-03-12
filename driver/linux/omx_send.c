@@ -437,7 +437,9 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		return omx_shared_send_medium(endpoint, &cmd);
 #endif
 
-	if (likely(hdr_len + frag_length >= ETH_ZLEN && omx_skb_frags > 0)) {
+	if (unlikely(frag_length > omx_skb_copy_max
+		     && hdr_len + frag_length >= ETH_ZLEN
+		     && omx_skb_frags > 0)) {
 		/* use skb with frags */
 
 		skb = omx_new_skb(/* only allocate space for the header now, we'll attach pages later */

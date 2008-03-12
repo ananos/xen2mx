@@ -1072,7 +1072,9 @@ omx_recv_pull_request(struct omx_iface * iface,
 		if (block_remaining_length < frame_length)
 			frame_length = block_remaining_length;
 
-		if (unlikely(reply_hdr_len + frame_length < ETH_ZLEN || !omx_skb_frags))
+		if (unlikely(frame_length <= omx_skb_copy_max
+			     || reply_hdr_len + frame_length < ETH_ZLEN
+			     || !omx_skb_frags))
 			goto linear;
 
 		/* allocate a skb */
