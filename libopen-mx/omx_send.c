@@ -374,7 +374,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   omx__enqueue_request(&ep->non_acked_req_q, req);
 }
 
-omx_return_t
+static INLINE omx_return_t
 omx__submit_isend_medium(struct omx_endpoint *ep,
 			 union omx_request *req)
 {
@@ -483,7 +483,7 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
     omx__mark_partner_ack_sent(ep, partner);
 }
 
-omx_return_t
+static INLINE omx_return_t
 omx__submit_isend_rndv(struct omx_endpoint *ep,
 		       union omx_request *req)
 {
@@ -557,7 +557,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
  * Send Notify
  */
 
-void
+static INLINE void
 omx__post_notify(struct omx_endpoint *ep,
 		 struct omx__partner *partner,
 		 union omx_request * req)

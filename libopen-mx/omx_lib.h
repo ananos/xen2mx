@@ -371,19 +371,6 @@ omx__endpoint_sendq_map_user(struct omx_endpoint * ep,
 /* sending messages */
 
 extern void
-omx__post_notify(struct omx_endpoint *ep,
-		 struct omx__partner *partner,
-		 union omx_request * req);
-
-extern omx_return_t
-omx__submit_isend_medium(struct omx_endpoint *ep,
-			     union omx_request *req);
-
-extern omx_return_t
-omx__submit_isend_rndv(struct omx_endpoint *ep,
-		       union omx_request *req);
-
-extern void
 omx__submit_notify(struct omx_endpoint *ep,
 		   union omx_request *req);
 
@@ -518,7 +505,9 @@ extern void
 omx__process_queued_requests(struct omx_endpoint *ep);
 
 extern void
-omx__send_throttling_requests(struct omx_endpoint *ep, struct omx__partner *partner, int nr);
+omx__send_throttling_requests(struct omx_endpoint *ep,
+			      struct omx__partner *partner,
+			      int nr);
 
 extern void
 omx__process_partners_to_ack(struct omx_endpoint *ep);
