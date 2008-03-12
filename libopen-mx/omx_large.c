@@ -70,7 +70,7 @@ omx__endpoint_large_region_try_alloc(struct omx_endpoint * ep,
   index = ep->large_region_map.first_free;
   if (unlikely(index == -1))
     /* let the caller handle the error */
-    return OMX_NO_RESOURCES;
+    return OMX_INTERNAL_NEED_RETRY;
 
   array = ep->large_region_map.array;
   next_free = array[index].next_free;
@@ -188,7 +188,7 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
   /* try once */
   ret = omx__endpoint_large_region_try_alloc(ep, regionp);
 
-  if (unlikely(ret == OMX_NO_RESOURCES && omx__globals.regcache)) {
+  if (unlikely(ret == OMX_INTERNAL_NEED_RETRY && omx__globals.regcache)) {
     /* try to free some unused region in the cache */
     if (!list_empty(&ep->reg_unused_list)) {
       struct omx__large_region *region;
@@ -424,7 +424,7 @@ omx__submit_pull(struct omx_endpoint * ep,
 
   if (unlikely(ep->avail_exp_events < 1))
     /* let the caller handle the error */
-    return OMX_NO_RESOURCES;
+    return OMX_INTERNAL_NEED_RETRY;
 
   /* FIXME: could register xfer_length instead of the whole segments */
   ret = omx__get_region(ep, &req->recv.segs, &region, NULL);
