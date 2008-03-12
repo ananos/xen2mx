@@ -1,5 +1,7 @@
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
+* check all ioctl return values
+
 * OMX_BAD_REQUEST for ibuffered (for cancel too?)
 * OMX_INVALID_PARAMETER only internal?
 
@@ -8,8 +10,6 @@
 * always return success from send and put all early errors in the status ?
 
 * use the sendq for small messages since allocating/pioing isn't faster than copying/attaching?
-
-* handle register/deregister lowlevel errors
 
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined

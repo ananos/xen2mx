@@ -127,11 +127,12 @@ omx__endpoint_large_region_map_exit(struct omx_endpoint * ep)
  * Low-level Registration/Deregistration
  */
 
-static omx_return_t
+static INLINE omx_return_t
 omx__register_region(struct omx_endpoint *ep,
 		     struct omx__large_region *region)
 {
   struct omx_cmd_register_region reg;
+  omx_return_t ret = OMX_SUCCESS;
   int err;
 
   reg.nr_segments = region->nseg;
@@ -142,17 +143,16 @@ omx__register_region(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_REGISTER_REGION, &reg);
   if (unlikely(err < 0)) {
-    omx_return_t ret;
     ret = omx__errno_to_return("ioctl REGISTER");
-    if (ret == OMX_BUSY)
-      omx__abort("region %d already registered\n", region->id);
-    /* FIXME: abort too? delay if no resources? */
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      omx__abort("failed to register region %d, got error %m\n", region->id);
   }
 
-  return OMX_SUCCESS;
+  /* let the caller handle errors */
+  return ret;
 }
 
-static omx_return_t
+static INLINE void
 omx__deregister_region(struct omx_endpoint *ep,
 		       struct omx__large_region *region)
 {
@@ -163,10 +163,7 @@ omx__deregister_region(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_DEREGISTER_REGION, &dereg);
   if (unlikely(err < 0))
-    /* FIXME: abort */
-    return omx__errno_to_return("ioctl REGISTER");
-
-  return OMX_SUCCESS;
+    omx__abort("failed to deregister region %d, error %m\n", region->id);
 }
 
 /***************************
@@ -177,11 +174,7 @@ static void
 omx__destroy_region(struct omx_endpoint *ep,
 		    struct omx__large_region *region)
 {
-  omx_return_t ret;
-
-  ret = omx__deregister_region(ep, region);
-  omx__debug_assert(ret == OMX_SUCCESS);
-
+  omx__deregister_region(ep, region);
   list_del(&region->reg_elt);
   free(region->segs);
   omx__endpoint_large_region_free(ep, region);
