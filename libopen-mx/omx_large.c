@@ -57,7 +57,7 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
   return OMX_SUCCESS;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__endpoint_large_region_try_alloc(struct omx_endpoint * ep,
 				     struct omx__large_region ** regionp)
 {
@@ -86,7 +86,7 @@ omx__endpoint_large_region_try_alloc(struct omx_endpoint * ep,
   return OMX_SUCCESS;
 }
 
-static inline void
+static INLINE void
 omx__endpoint_large_region_free(struct omx_endpoint * ep,
 				struct omx__large_region * region)
 {
@@ -180,7 +180,7 @@ omx__destroy_region(struct omx_endpoint *ep,
   omx__endpoint_large_region_free(ep, region);
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_region **regionp)
 {
   omx_return_t ret;
@@ -240,7 +240,7 @@ omx__create_region(struct omx_endpoint *ep,
   return ret;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__get_contigous_region(struct omx_endpoint *ep,
 			  char * buffer, size_t length,
 			  struct omx__large_region **regionp,
@@ -311,7 +311,7 @@ omx__get_contigous_region(struct omx_endpoint *ep,
   return ret;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__get_vect_region(struct omx_endpoint *ep,
 		     struct omx__req_seg *reqsegs,
 		     struct omx__large_region **regionp,

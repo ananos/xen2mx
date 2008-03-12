@@ -100,7 +100,7 @@ omx__wait(struct omx_endpoint *ep,
  * Test/Wait a single request and complete it
  */
 
-static inline void
+static INLINE void
 omx__test_success(struct omx_endpoint *ep, union omx_request *req,
 		  struct omx_status *status)
 {
@@ -118,7 +118,7 @@ omx__test_success(struct omx_endpoint *ep, union omx_request *req,
   }
 }
 
-static inline uint32_t
+static INLINE uint32_t
 omx__test_common(struct omx_endpoint *ep, union omx_request **requestp,
 		 struct omx_status *status)
 {
@@ -249,7 +249,7 @@ omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
  * Test/Wait any single request and complete it
  */
 
-static inline uint32_t
+static INLINE uint32_t
 omx__test_any_common(struct omx_endpoint *ep,
 		     uint64_t match_info, uint64_t match_mask,
 		     omx_status_t *status)
@@ -390,7 +390,7 @@ omx_wait_any(struct omx_endpoint *ep,
  * Test/Wait any single request without completing it
  */
 
-static inline uint32_t
+static INLINE uint32_t
 omx__ipeek_common(struct omx_endpoint *ep, union omx_request **requestp)
 {
   if (unlikely(omx__empty_done_queue(ep, 0))) {
@@ -505,7 +505,7 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
  * Test/Wait on a request being buffered
  */
 
-static inline uint32_t
+static INLINE uint32_t
 omx__buffered_common(struct omx_endpoint *ep, union omx_request **requestp)
 {
   union omx_request * req = *requestp;
@@ -557,7 +557,7 @@ omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
  * Test/Wait unexpected messages
  */
 
-static inline uint32_t
+static INLINE uint32_t
 omx__iprobe_common(struct omx_endpoint *ep,
 		   uint64_t match_info, uint64_t match_mask,
 		   omx_status_t *status)

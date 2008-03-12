@@ -259,7 +259,7 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
     omx__recv_complete(ep, req, OMX_SUCCESS);
 }
 
-static inline void
+static INLINE void
 omx__init_process_recv_medium(union omx_request *req)
 {
   req->recv.specific.medium.frags_received_mask = 0;
@@ -987,7 +987,7 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
  * Main IRECV and IRECVV routines
  */
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 		uint64_t match_info, uint64_t match_mask,
 		void *context, union omx_request **requestp)

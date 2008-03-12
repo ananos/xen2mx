@@ -60,7 +60,7 @@ omx__driver_peers_clear()
  * Low-Level Peer Lookup
  */
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__driver_peer_from_index(uint32_t index, uint64_t *board_addr, char *hostname)
 {
   struct omx_cmd_misc_peer_info peer_info;
@@ -83,7 +83,7 @@ omx__driver_peer_from_index(uint32_t index, uint64_t *board_addr, char *hostname
   return OMX_SUCCESS;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__driver_peer_from_addr(uint64_t board_addr, char *hostname, uint32_t *index)
 {
   struct omx_cmd_misc_peer_info peer_info;
@@ -106,7 +106,7 @@ omx__driver_peer_from_addr(uint64_t board_addr, char *hostname, uint32_t *index)
   return OMX_SUCCESS;
 }
 
-static inline omx_return_t
+static INLINE omx_return_t
 omx__driver_peer_from_hostname(char *hostname, uint64_t *board_addr, uint32_t *index)
 {
   struct omx_cmd_misc_peer_info peer_info;
