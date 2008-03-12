@@ -594,7 +594,7 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   }
 
 #ifdef OMX_MX_WIRE_COMPAT
-  /* MX needs an immediate ack for notify since it cannot mark
+  /* MX < 1.2.5 needs an immediate ack for notify since it cannot mark
    * large recv as zombies.
    * But we can only do that if all previous seqnum are ready to be acked
    * too, which means next_frag == next_match.
