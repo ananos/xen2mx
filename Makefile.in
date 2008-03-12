@@ -44,13 +44,13 @@ distclean: $(patsubst %,%-distclean,$(COMPONENTS))
 # driver targets
 
 driver driver-installonly driver-install driver-clean driver-distclean:
-	$(MAKE) -C driver/linux $(shell echo $@ | cut -s -d- -f2)
+	$(CMDPREFIX) $(MAKE) -C driver/linux $(shell echo $@ | cut -s -d- -f2)
 
 ##############
 # lib targets
 
 lib lib-installonly lib-install lib-clean lib-distclean:
-	$(MAKE) -C libopen-mx $(shell echo $@ | cut -s -d- -f2)
+	$(CMDPREFIX) $(MAKE) -C libopen-mx $(shell echo $@ | cut -s -d- -f2)
 
 ##########################
 # tools and tests targets
@@ -59,13 +59,13 @@ lib lib-installonly lib-install lib-clean lib-distclean:
 tools tests mxtests: lib
 
 tools tools-installonly tools-install tools-clean tools-distclean:
-	$(MAKE) -C tools $(shell echo $@ | cut -s -d- -f2)
+	$(CMDPREFIX) $(MAKE) -C tools $(shell echo $@ | cut -s -d- -f2)
 
 tests tests-installonly tests-install tests-clean tests-distclean:
-	$(MAKE) -C tests bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
+	$(CMDPREFIX) $(MAKE) -C tests bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
 
 mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean:
-	$(MAKE) -C tests/mx bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
+	$(CMDPREFIX) $(MAKE) -C tests/mx bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
 
 ################
 # other targets
