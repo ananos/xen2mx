@@ -482,6 +482,7 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
     /* we need to pull some data */
     ret = omx__submit_pull(ep, req);
     if (unlikely(ret != OMX_SUCCESS)) {
+      /* FIXME: should use OMX_INTERNAL_NEED_RETRY and complete if different */
       omx__debug_printf(LARGE, "queueing large request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_QUEUED;
       omx__enqueue_request(&ep->queued_send_req_q, req);
