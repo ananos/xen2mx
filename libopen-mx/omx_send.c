@@ -441,7 +441,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   ret = omx__submit_isend_medium(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
-    omx__debug_printf(MEDIUM, "queueing medium request %p\n", req);
+    omx__debug_printf(SEND, "queueing medium request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED; /* the state of send medium is initialized here (or in submit() above) */
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
@@ -549,7 +549,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   ret = omx__submit_isend_rndv(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     /* FIXME: should use OMX_INTERNAL_NEED_RETRY and complete if different */
-    omx__debug_printf(LARGE, "queueing large send request %p\n", req);
+    omx__debug_printf(SEND, "queueing large send request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
