@@ -34,9 +34,13 @@ omx__driver_peer_add(uint64_t board_addr, char *hostname)
   strncpy(peer_info.hostname, hostname, OMX_HOSTNAMELEN_MAX);
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_ADD, &peer_info);
-  if (err < 0)
+  if (err < 0) {
+    omx_return_t ret = omx__errno_to_return("OMX_CMD_PEER_ADD");
+    if (ret != OMX_INVALID_PARAMETER && ret != OMX_BUSY && ret != OMX_NO_SYSTEM_RESOURCES)
+      omx__abort("Failed to add peer, driver replied %m");
     /* let the caller handle errors */
-    return omx__errno_to_return("OMX_CMD_PEER_ADD");
+    return ret;
+  }
 
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
@@ -49,9 +53,13 @@ omx__driver_peers_clear()
   int err;
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEERS_CLEAR);
-  if (err < 0)
+  if (err < 0) {
+    omx_return_t ret = omx__errno_to_return("OMX_CMD_PEERS_CLEAR");
+    if (ret != OMX_ACCESS_DENIED)
+      omx__abort("Failed to clear peers, driver replied %m\n");
     /* let the caller handle errors */
-    return omx__errno_to_return("OMX_CMD_PEERS_CLEAR");
+    return ret;
+  }
 
   return 0;
 }
@@ -69,9 +77,13 @@ omx__driver_peer_from_index(uint32_t index, uint64_t *board_addr, char *hostname
   peer_info.index = index;
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_INDEX, &peer_info);
-  if (err < 0)
-    /* let the caller handle errors */
-    return omx__errno_to_return("OMX_CMD_PEER_FROM_INDEX");
+  if (err < 0) {
+    omx_return_t ret = omx__errno_to_return("OMX_CMD_PEER_FROM_INDEX");
+    if (ret != OMX_INVALID_PARAMETER)
+      omx__abort("Failed to lookup peer by index, driver replied %m");
+     /* let the caller handle errors */
+    return ret;
+  }
 
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
@@ -92,9 +104,13 @@ omx__driver_peer_from_addr(uint64_t board_addr, char *hostname, uint32_t *index)
   peer_info.board_addr = board_addr;
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_ADDR, &peer_info);
-  if (err < 0)
-    /* let the caller handle errors */
-    return omx__errno_to_return("OMX_CMD_PEER_FROM_ADDR");
+  if (err < 0) {
+    omx_return_t ret = omx__errno_to_return("OMX_CMD_PEER_FROM_ADDR");
+    if (ret != OMX_INVALID_PARAMETER)
+      omx__abort("Failed to lookup peer by addr, driver replied %m");
+     /* let the caller handle errors */
+    return ret;
+  }
 
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 
@@ -115,9 +131,13 @@ omx__driver_peer_from_hostname(char *hostname, uint64_t *board_addr, uint32_t *i
   strncpy(peer_info.hostname, hostname, OMX_HOSTNAMELEN_MAX);
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_HOSTNAME, &peer_info);
-  if (err < 0)
-    /* let the caller handle errors */
-    return omx__errno_to_return("OMX_CMD_PEER_FROM_HOSTNAME");
+  if (err < 0) {
+    omx_return_t ret = omx__errno_to_return("OMX_CMD_PEER_FROM_HOSTNAME");
+    if (ret != OMX_INVALID_PARAMETER)
+      omx__abort("Failed to lookup peer by hostname, driver replied %m");
+     /* let the caller handle errors */
+    return ret;
+  }
 
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
 

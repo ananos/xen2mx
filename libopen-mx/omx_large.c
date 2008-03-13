@@ -145,7 +145,7 @@ omx__register_region(struct omx_endpoint *ep,
   if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl REGISTER");
     if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("failed to register region %d, got error %m\n", region->id);
+      omx__abort("Failed to register region %d, driver replied %m\n", region->id);
   }
 
   /* let the caller handle errors */
@@ -163,7 +163,7 @@ omx__deregister_region(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_DEREGISTER_REGION, &dereg);
   if (unlikely(err < 0))
-    omx__abort("failed to deregister region %d, error %m\n", region->id);
+    omx__abort("Failed to deregister region %d, driver replied %m\n", region->id);
 }
 
 /***************************
@@ -448,9 +448,8 @@ omx__submit_pull(struct omx_endpoint * ep,
   err = ioctl(ep->fd, OMX_CMD_PULL, &pull_param);
   if (unlikely(err < 0)) {
     ret = omx__errno_to_return("ioctl PULL");
-    if (ret != OMX_NO_SYSTEM_RESOURCES) {
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
       omx__abort("Failed to post PULL, driver replied %m\n");
-    }
 
     omx__put_region(ep, region, NULL);
     /* let the caller handle the error */

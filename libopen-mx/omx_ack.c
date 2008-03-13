@@ -237,9 +237,14 @@ omx__submit_send_liback(struct omx_endpoint *ep,
   OMX_PKT_FIELD_FROM(data_n->ack.requeued, 0); /* FIXME? partner->requeued */
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TRUC, &truc_param);
-  if (unlikely(err < 0))
-    /* no need to call the handler here,we can resend later */
-    return omx__errno_to_return("ioctl SEND_TRUC");
+  if (unlikely(err < 0)) {
+    omx_return_t ret = omx__errno_to_return("ioctl SEND_TRUC");
+    if (ret != OMX_NO_SYSTEM_RESOURCES)
+      omx__abort("ioctl SEND_TRUC returned unexpected error %m\n");
+
+    /* no need to call the handler here, we can resend later */
+    return ret;
+  }
 
   /* no need to wait for a done event, tiny is synchronous */
 

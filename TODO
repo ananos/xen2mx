@@ -1,7 +1,6 @@
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
-* check all ioctl return values
-* change ENOMEM into NEED_TRY
+* change ENOMEM into NEED_TRY for region creation
 
 * OMX_BAD_REQUEST for ibuffered (for cancel too?)
 * OMX_INVALID_PARAMETER only internal?

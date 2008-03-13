@@ -37,11 +37,8 @@ omx__get_board_count(uint32_t * count)
   }
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_COUNT, count);
-  if (err < 0) {
-    ret = omx__errno_to_return("ioctl GET_BOARD_COUNT");
-    /* let the caller handle this */
-    goto out;
-  }
+  if (err < 0)
+    omx__abort("Failed to get board count, driver replied %m\n");
 
   OMX_VALGRIND_MEMORY_MAKE_READABLE(count, sizeof(*count));
 
@@ -80,7 +77,9 @@ omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_in
   err = ioctl(fd, OMX_CMD_GET_BOARD_INFO, &get_info);
   if (err < 0) {
     ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
-    if (!ep && ret == OMX_INVALID_PARAMETER)
+    if (ret != OMX_INVALID_PARAMETER)
+      omx__abort("Failed to get board info, driver replied %m\n");
+    if (!ep)
       ret = OMX_BOARD_NOT_FOUND;
     /* let the caller handle this */
     goto out;
@@ -121,8 +120,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
     if (err < 0) {
       ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
       if (ret != OMX_INVALID_PARAMETER)
-	/* let the caller handle this */
-	goto out;
+	omx__abort("Failed to get board info to find index by name, driver replied %m\n");
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
 
@@ -162,8 +160,7 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     if (err < 0) {
       ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
       if (ret != OMX_INVALID_PARAMETER)
-	/* let the caller handle this */
-	goto out;
+	omx__abort("Failed to get board info to find index by name, driver replied %m\n");
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.addr, sizeof(board_info.info.addr));
 
@@ -340,9 +337,12 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
       get_counters.board_index = *(uint8_t*)in_val;
 
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_COUNTERS, &get_counters);
-    if (err < 0)
-      return omx__error(omx__errno_to_return("ioctl GET_COUNTERS"),
-			"Getting counter values");
+    if (err < 0) {
+      omx_return_t ret = omx__errno_to_return("ioctl GET_COUNTERS");
+      if (ret != OMX_INVALID_PARAMETER && ret != OMX_ACCESS_DENIED)
+	omx__abort("Failed to get counters values, driver replied %m");
+      return omx__error(ret, "Getting counter values");
+    }
 
     return OMX_SUCCESS;
   }

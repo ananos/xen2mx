@@ -91,7 +91,6 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
   if (unlikely(err < 0)) {
     omx_return_t ret = omx__errno_to_return("ioctl SEND_TINY");
-
     if (ret != OMX_NO_SYSTEM_RESOURCES)
       omx__abort("ioctl SEND_TINY returned unexpected error %m\n");
 
@@ -171,7 +170,6 @@ omx__post_isend_small(struct omx_endpoint *ep,
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
   if (unlikely(err < 0)) {
     omx_return_t ret = omx__errno_to_return("ioctl SEND_SMALL");
-
     if (ret != OMX_NO_SYSTEM_RESOURCES)
       omx__abort("ioctl SEND_SMALL returned unexpected error %m\n");
 
@@ -504,7 +502,6 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
   if (unlikely(err < 0)) {
     omx_return_t ret = omx__errno_to_return("ioctl SEND_RNDV");
-
     if (ret != OMX_NO_SYSTEM_RESOURCES)
       omx__abort("ioctl SEND_RNDV returned unexpected error %m\n");
 
@@ -612,7 +609,6 @@ omx__post_notify(struct omx_endpoint *ep,
   err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
   if (unlikely(err < 0)) {
     omx_return_t ret = omx__errno_to_return("ioctl SEND_NOTIFY");
-
     if (ret != OMX_NO_SYSTEM_RESOURCES)
       omx__abort("ioctl SEND_NOTIFY returned unexpected error %m\n");
 
