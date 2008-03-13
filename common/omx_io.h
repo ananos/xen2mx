@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x119
+#define OMX_DRIVER_ABI_VERSION		0x120
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -730,12 +730,13 @@ enum omx_counter_index {
 	OMX_COUNTER_UNEXP_EVENTQ_FULL,
 	OMX_COUNTER_SEND_NOMEM_SKB,
 	OMX_COUNTER_SEND_NOMEM_MEDIUM_DEFEVENT,
+	OMX_COUNTER_MEDIUM_FRAG_SEND_LINEAR,
 	OMX_COUNTER_PULL_SECOND_BLOCK_DONE_EARLY,
 	OMX_COUNTER_PULL_REQUEST_BOTH_BLOCKS,
 	OMX_COUNTER_PULL_TIMEOUT_HANDLER_FIRST_BLOCK,
 	OMX_COUNTER_PULL_TIMEOUT_HANDLER_SECOND_BLOCK,
 	OMX_COUNTER_PULL_TIMEOUT_ABORT,
-	OMX_COUNTER_PULL_REPLY_LINEAR,
+	OMX_COUNTER_PULL_REPLY_SEND_LINEAR,
 	OMX_COUNTER_PULL_REPLY_FILL_FAILED,
 
 	OMX_COUNTER_DROP_BAD_DATALEN,
@@ -834,6 +835,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Skbuff Alloc Failed";
 	case OMX_COUNTER_SEND_NOMEM_MEDIUM_DEFEVENT:
 		return "Send Medium Deferred Event Alloc Failed";
+	case OMX_COUNTER_MEDIUM_FRAG_SEND_LINEAR:
+		return "Medium Frag Sent as Linear";
 	case OMX_COUNTER_PULL_SECOND_BLOCK_DONE_EARLY:
 		return "Pull Second Block Done before First One";
 	case OMX_COUNTER_PULL_REQUEST_BOTH_BLOCKS:
@@ -844,7 +847,7 @@ omx_strcounter(enum omx_counter_index index)
 		return "Pull Timeout Handler Requests Second Block";
 	case OMX_COUNTER_PULL_TIMEOUT_ABORT:
 		return "Pull Timeout Abort";
-	case OMX_COUNTER_PULL_REPLY_LINEAR:
+	case OMX_COUNTER_PULL_REPLY_SEND_LINEAR:
 		return "Pull Reply Sent as Linear";
 	case OMX_COUNTER_PULL_REPLY_FILL_FAILED:
 		return "Pull Reply Recv Fill Pages Failed";

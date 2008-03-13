@@ -396,7 +396,6 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 	struct net_device * ifp = iface->eth_ifp;
 	uint16_t sendq_page_offset;
 	struct page * page;
-	struct omx_deferred_event * defevent;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag);
 	int ret;
 	uint32_t frag_length;
@@ -424,14 +423,6 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	defevent = kmalloc(sizeof(*defevent), GFP_KERNEL);
-	if (unlikely(!defevent)) {
-		omx_counter_inc(iface, SEND_NOMEM_MEDIUM_DEFEVENT);
-		printk(KERN_INFO "Open-MX: Failed to allocate event\n");
-		ret = -ENOMEM;
-		goto out;
-	}
-
 #ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_medium(endpoint, &cmd);
@@ -442,18 +433,36 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		     && omx_skb_frags > 0)) {
 		/* use skb with frags */
 
+		struct omx_deferred_event * defevent;
+
 		skb = omx_new_skb(/* only allocate space for the header now, we'll attach pages later */
 				   hdr_len);
 		if (unlikely(skb == NULL)) {
 			omx_counter_inc(iface, SEND_NOMEM_SKB);
 			printk(KERN_INFO "Open-MX: Failed to create medium skb\n");
 			ret = -ENOMEM;
-			goto out_with_event;
+			goto out;
+		}
+
+		defevent = kmalloc(sizeof(*defevent), GFP_KERNEL);
+		if (unlikely(!defevent)) {
+			omx_counter_inc(iface, SEND_NOMEM_MEDIUM_DEFEVENT);
+			printk(KERN_INFO "Open-MX: Failed to allocate event\n");
+			ret = -ENOMEM;
+			goto out_with_skb;
 		}
 
 		/* locate headers */
 		mh = omx_hdr(skb);
 		eh = &mh->head.eth;
+
+		/* set destination peer */
+		ret = omx_set_target_peer(mh, cmd.peer_index);
+		if (ret < 0) {
+			printk(KERN_INFO "Open-MX: Failed to fill target peer in medium header\n");
+			kfree(defevent);
+			goto out_with_skb;
+		}
 
 		/* attach the sendq page */
 		page = endpoint->sendq_pages[sendq_page_offset];
@@ -470,7 +479,10 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 
 	} else {
 		/* use a linear skb */
+		struct omx_evt_send_medium_frag_done evt;
 		void *data;
+
+		omx_counter_inc(iface, MEDIUM_FRAG_SEND_LINEAR);
 
 		skb = omx_new_skb(/* pad to ETH_ZLEN */
 				  max_t(unsigned long, hdr_len + frag_length, ETH_ZLEN));
@@ -486,20 +498,26 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		eh = &mh->head.eth;
 		data = ((char*)mh) + hdr_len;
 
+		/* set destination peer */
+		ret = omx_set_target_peer(mh, cmd.peer_index);
+		if (ret < 0) {
+			printk(KERN_INFO "Open-MX: Failed to fill target peer in medium header\n");
+			goto out_with_skb;
+		}
+
 		/* copy the data in the linear skb */
 		memcpy(data, endpoint->sendq + (sendq_page_offset << PAGE_SHIFT), frag_length);
+
+		/* notify the event right now */
+		evt.sendq_page_offset = cmd.sendq_page_offset;
+		omx_notify_exp_event(endpoint,
+				     OMX_EVT_SEND_MEDIUM_FRAG_DONE,
+				     &evt, sizeof(evt));
 	}
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
-
-	/* set destination peer */
-	ret = omx_set_target_peer(mh, cmd.peer_index);
-	if (ret < 0) {
-		printk(KERN_INFO "Open-MX: Failed to fill target peer in medium header\n");
-		goto out_with_skb;
-	}
 
 	/* fill omx header */
 	OMX_PKT_FIELD_FROM(mh->body.medium.msg.src_endpoint, endpoint->endpoint_index);
@@ -522,8 +540,6 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 
  out_with_skb:
 	dev_kfree_skb(skb);
- out_with_event:
-	kfree(defevent);
  out:
 	return ret;
 }
