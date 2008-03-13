@@ -531,6 +531,18 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_ARG_ENABLE(dynamic-tools,
+	[AS_HELP_STRING([--enable-dynamic-tools], [links tools and tests dynamically])],
+	enable_dynamic_tools=$enableval, enable_dynamic_tools=no)
+AC_MSG_CHECKING(if tools and tests are statically linked)
+if test x$enable_dynamic_tools = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_SUBST(OMX_DYNAMIC_TOOLS, 1)
+else
+  AC_MSG_RESULT(no)
+  AC_SUBST(OMX_DYNAMIC_TOOLS, 0)
+fi
+
 ######################
 # installation config
 
@@ -570,6 +582,7 @@ AC_SUBST(OPEN_MX_LIB_STATIC, ${libopen_mx_name}.a)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC, ${libopen_mx_name}.so)
 AC_SUBST(OPEN_MX_LIB_STATIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.a)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.so)
+AC_SUBST(OPEN_MX_LIB_DYNAMIC_LINK_OPT, ${libopen_mx_name/lib/-l})
 
 AC_CONFIG_HEADER(common/omx_config.h)
 AC_OUTPUT(Makefile $driver_ac_output $lib_ac_output)

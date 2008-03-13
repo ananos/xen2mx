@@ -23,7 +23,9 @@ ifeq (@omx_debug_tests@,1)
 	CFLAGS	+=	@DBGCFLAGS@
 endif
 
-LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
+STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
+DYNAMIC_LIB_DIR	=	$(dir @top_builddir@/@OPEN_MX_LIB_DYNAMIC_PATH@)
+DYNAMIC_LIB_OPT	=	@OPEN_MX_LIB_DYNAMIC_LINK_OPT@
 
 .PHONY: all installonly install clean distclean
 
@@ -41,9 +43,15 @@ include @top_srcdir@/depend.mk
 ########
 # build
 
-$(TESTS): %: %.o $(LIB)
+ifeq (@OMX_DYNAMIC_TOOLS@,1)
+$(TESTS): %: %.o
+	$(CMDECHO) "  LD      $(REL_DIR)$@"
+	$(CMDPREFIX) $(LD) $^ -L $(DYNAMIC_LIB_DIR) $(DYNAMIC_LIB_OPT) $($(@)_LIBS) -o $@
+else
+$(TESTS): %: %.o $(STATIC_LIB)
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
 	$(CMDPREFIX) $(LD) $^ $($(@)_LIBS) -o $@
+endif
 
 # build and create dependency file
 $(OBJS): %.o: @srcdir@/%.c
