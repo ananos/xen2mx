@@ -138,7 +138,7 @@ omx__find_previous_early_packet(struct omx__partner * partner,
   omx__abort("Found no previous early");
 }
 
-static INLINE omx_return_t
+static INLINE void
 omx__postpone_early_packet(struct omx__partner * partner,
 			   struct omx_evt_recv_msg *msg, void *data,
 			   omx__process_recv_func_t recv_func)
@@ -148,12 +148,13 @@ omx__postpone_early_packet(struct omx__partner * partner,
 
   prev = omx__find_previous_early_packet(partner, msg);
   if (!prev)
-    return OMX_SUCCESS;
+    /* obsolete early ? ignore */
+    return;
 
   early = malloc(sizeof(*early));
   if (unlikely(!early))
-    /* let the caller handle the error */
-    return OMX_NO_RESOURCES;
+    /* cannot store early? just drop, it will be resent */
+    return;
 
   /* copy the whole event, the callback, and the data */
   memcpy(&early->msg, msg, sizeof(*msg));
@@ -173,8 +174,8 @@ omx__postpone_early_packet(struct omx__partner * partner,
     char * early_data = malloc(length);
     if (!early_data) {
       free(early);
-      /* let the caller handle the error */
-      return OMX_NO_RESOURCES;
+      /* cannot store early? just drop, it will be resent */
+      return;
     }
     memcpy(early_data, data, length);
     early->data = early_data;
@@ -187,8 +188,8 @@ omx__postpone_early_packet(struct omx__partner * partner,
     char * early_data = malloc(frag_length);
     if (unlikely(!early_data)) {
       free(early);
-      /* let the caller handle the error */
-      return OMX_NO_RESOURCES;
+      /* cannot store early? just drop, it will be resent */
+      return;
     }
     memcpy(early_data, data, frag_length);
     early->data = early_data;
@@ -219,8 +220,6 @@ omx__postpone_early_packet(struct omx__partner * partner,
 		    (unsigned) OMX__SESNUM_SHIFTED(msg->seqnum));
 
   list_add(&early->partner_elt, prev);
-
-  return OMX_SUCCESS;
 }
 
 /*****************************************
@@ -392,7 +391,7 @@ omx__match_recv(struct omx_endpoint *ep,
       /* matched a posted recv */
       omx___dequeue_request(req);
       *reqp = req;
-      return;
+      break;
     }
 }
 
@@ -634,7 +633,6 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 
   } else {
     /* obsolete fragment or message, just ignore it */
-    ret = OMX_SUCCESS;
   }
 
   return ret;
@@ -697,7 +695,7 @@ omx__process_recv(struct omx_endpoint *ep,
     ret = omx__process_partner_ordered_recv(ep, partner, seqnum,
 					    msg, data, msg_length,
 					    recv_func);
-    /* ignore errors, the packet will be resent anyway: FIXME: ok? */
+    /* ignore errors, the packet will be resent anyway, the recv seqnums didn't increase */
 
     /* process early packets in case they match the new expected seqnum */
     if (likely(old_next_match_recv_seq != partner->next_match_recv_seq)) {
@@ -710,9 +708,12 @@ omx__process_recv(struct omx_endpoint *ep,
 	  omx__debug_printf(EARLY, "processing early packet with seqnum %d (#%d)\n",
 			    (unsigned) OMX__SEQNUM(early->msg.seqnum),
 			    (unsigned) OMX__SESNUM_SHIFTED(early->msg.seqnum));
+
 	  ret = omx__process_partner_ordered_recv(ep, partner, early->msg.seqnum,
 						  &early->msg, early->data, early->msg_length,
 						  early->recv_func);
+	  /* ignore errors, the packet will be resent anyway, the recv seqnums didn't increase */
+
 	  if (early->data)
 	    free(early->data);
 	  free(early);
@@ -721,13 +722,10 @@ omx__process_recv(struct omx_endpoint *ep,
     }
 
   } else if (frag_index <= frag_index_max + OMX__EARLY_PACKET_OFFSET_MAX) {
-    omx_return_t ret;
-
     /* early fragment or message, postpone it */
-    ret = omx__postpone_early_packet(partner,
-				     msg, data,
-				     recv_func);
-    /* ignore errors, the packet will be resent anyway */
+    omx__postpone_early_packet(partner,
+			       msg, data,
+			       recv_func);
 
   } else {
     omx__debug_printf(SEQNUM, "obsolete message %d (#%d), assume a ack has been lost\n",
