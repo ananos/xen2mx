@@ -186,31 +186,20 @@ omx__post_isend_small(struct omx_endpoint *ep,
     omx__mark_partner_ack_sent(ep, partner);
 }
 
-static INLINE void
-omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
-				 union omx_request *req,
-				 struct omx__partner * partner)
+static INLINE omx_return_t
+omx__submit_isend_small(struct omx_endpoint *ep,
+			union omx_request *req)
 {
   struct omx_cmd_send_small * small_param;
+  struct omx__partner * partner = req->generic.partner;
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
-  uint32_t length = req->send.segs.total_length;
+  uint32_t length = req->generic.status.msg_length;
   void *copy;
-  omx__seqnum_t seqnum;
-  omx_return_t status_code;
-
-  req->generic.type = OMX_REQUEST_TYPE_SEND_SMALL;
 
   copy = malloc(length);
-  if (unlikely(!copy)) {
-    status_code = omx__error_with_ep(ep, OMX_NO_RESOURCES,
-				     "Allocating unexpected buffer for self send");
-    goto failed;
-  }
-
-  seqnum = partner->next_send_seq;
-  OMX__SEQNUM_INCREASE(partner->next_send_seq);
-  req->generic.resends = 0;
+  if (unlikely(!copy))
+    return OMX_INTERNAL_NEED_RETRY;
 
   small_param = &req->send.specific.small.send_small_ioctl_param;
   small_param->peer_index = partner->peer_index;
@@ -218,7 +207,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   small_param->shared = omx__partner_localization_shared(partner);
   small_param->match_info = match_info;
   small_param->length = length;
-  small_param->seqnum = seqnum;
+  small_param->seqnum = req->generic.send_seqnum;
   small_param->session_id = partner->true_session_id;
 
   /*
@@ -243,29 +232,42 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   }
   req->send.specific.small.copy = copy;
 
-  req->generic.send_seqnum = seqnum;
+  req->generic.resends = 0;
   req->generic.resends_max = ep->req_resends_max;
   req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send small is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
 
-  req->generic.status.msg_length = length;
-  req->generic.status.xfer_length = length; /* truncation not notified to the sender */
-
   /* mark the request as done now, it will be resent/zombified later if necessary */
   omx__notify_request_done_early(ep, ctxid, req);
 
-  return;
+  return OMX_SUCCESS;
+}
 
- failed:
-  req->send.specific.small.copy = NULL; /* make sure free won't do anything */
-  req->generic.state = 0; /* reset the state before completion */
-  omx__send_complete(ep, req, status_code);
+static INLINE void
+omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
+				 union omx_request *req,
+				 struct omx__partner * partner)
+{
+  uint32_t length = req->send.segs.total_length;
+  omx__seqnum_t seqnum;
+  omx_return_t ret;
 
-  /*
-   * need to wakeup some possible send-done waiters
-   * since this event does not come from the driver
-   */
-  omx__notify_user_event(ep);
+  req->generic.type = OMX_REQUEST_TYPE_SEND_SMALL;
+
+  seqnum = partner->next_send_seq;
+  OMX__SEQNUM_INCREASE(partner->next_send_seq);
+  req->generic.send_seqnum = seqnum;
+
+  req->generic.status.msg_length = length;
+  req->generic.status.xfer_length = length; /* truncation not notified to the sender */
+
+  ret = omx__submit_isend_small(ep, req);
+  if (unlikely(ret != OMX_SUCCESS)) {
+    omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
+    omx__debug_printf(SEND, "queueing send request %p\n", req);
+    req->generic.state = OMX_REQUEST_STATE_QUEUED; /* the state of send small is initialized here (or in submit() above) */
+    omx__enqueue_request(&ep->queued_send_req_q, req);
+  }
 }
 
 /**************
@@ -895,6 +897,12 @@ omx__process_queued_requests(struct omx_endpoint *ep)
     omx___dequeue_request(req);
 
     switch (req->generic.type) {
+    case OMX_REQUEST_TYPE_SEND_SMALL:
+      omx__debug_printf(SEND, "reposting queued send small request %p seqnum %d (#%d)\n", req,
+			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
+      ret = omx__submit_isend_small(ep, req);
+      break;
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
       omx__debug_printf(SEND, "reposting queued send medium request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
