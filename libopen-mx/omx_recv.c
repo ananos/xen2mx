@@ -902,6 +902,10 @@ omx__process_self_send(struct omx_endpoint *ep,
   return;
 
  failed:
+  /*
+   * queueing would be a mess. and there's no connection/seqnums to break
+   * here if the message isn't received. just complete with an error.
+   */
   sreq->generic.state = 0; /* reset the state before completion */
   omx__send_complete(ep, sreq, status_code);
 

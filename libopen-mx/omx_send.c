@@ -314,8 +314,20 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 	memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), data + offset, chunk);
 
       err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
-      if (unlikely(err < 0))
+      if (unlikely(err < 0)) {
+	/* finish copying frags if not done already */
+	if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED))) {
+	  int j;
+	  for(j=i+1; j<frags_nr; i++) {
+	    unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
+	      ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
+	    memcpy(ep->sendq + (sendq_index[j] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), data + offset, chunk);
+	    remaining -= chunk;
+	    offset += chunk;
+	  }
+	}
 	goto err;
+      }
 
       ep->avail_exp_events--;
       remaining -= chunk;
@@ -342,8 +354,21 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 						&state);
 
       err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
-      if (unlikely(err < 0))
+      if (unlikely(err < 0)) {
+	/* finish copying frags if not done already */
+	if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED))) {
+	  int j;
+	  for(j=i+1; j<frags_nr; i++) {
+	    unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
+	      ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
+	    omx_continue_partial_copy_from_segments(ep->sendq + (sendq_index[j] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT),
+						    &req->send.segs, chunk,
+						    &state);
+	    remaining -= chunk;
+	  }
+	}
 	goto err;
+      }
 
       ep->avail_exp_events--;
       remaining -= chunk;
@@ -364,15 +389,23 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   return;
 
  err:
+  /* assume some frags got lost and let retransmission take care of it later */
   ret = omx__errno_to_return("ioctl SEND_MEDIUM");
   if (unlikely(ret != OMX_NO_SYSTEM_RESOURCES))
     omx__abort("Failed to post SEND MEDIUM, driver replied %m\n");
 
   req->send.specific.medium.frags_pending_nr = i;
   if (i)
-    /* if some frags were posted, behave as if other frags were lost */
+    /*
+     * some frags were posted, mark the request as IN_DRIVER
+     * and let retransmission wait for send done events first
+     */
     goto ok;
 
+  /*
+   * no frags were posted, keep the request as NEED_ACK
+   * and let retransmission occur later
+   */
   omx__enqueue_request(&ep->non_acked_req_q, req);
 }
 
