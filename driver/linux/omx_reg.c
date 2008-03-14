@@ -167,7 +167,8 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 	down_write(&current->mm->mmap_sem);
 
 	for(i=0, seg = &region->segments[0]; i<cmd.nr_segments; i++) {
-		dprintk(REG, "register looking at useg %d len %d\n", i, usegs[i].len);
+		dprintk(REG, "register looking at useg %d len %lld\n",
+			i, (unsigned long long) usegs[i].len);
 		if (!usegs[i].len)
 			continue;
 		ret = omx_user_region_register_segment(&usegs[i], seg);
