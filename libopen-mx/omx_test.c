@@ -504,10 +504,20 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
  * Test/Wait on a request being buffered
  */
 
-static INLINE uint32_t
-omx__buffered_common(struct omx_endpoint *ep, union omx_request **requestp)
+/* API omx_ibuffered */
+omx_return_t
+omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
+	      uint32_t *resultp)
 {
-  union omx_request * req = *requestp;
+  union omx_request *req = *requestp;
+  omx_return_t ret = OMX_SUCCESS;
+  uint32_t result = 0;
+
+  OMX__ENDPOINT_LOCK(ep);
+
+  ret = omx__progress(ep);
+  if (unlikely(ret != OMX_SUCCESS))
+    goto out_with_lock;
 
   if (req->generic.type == OMX_REQUEST_TYPE_SEND_TINY
       || req->generic.type == OMX_REQUEST_TYPE_SEND_SMALL
@@ -519,31 +529,16 @@ omx__buffered_common(struct omx_endpoint *ep, union omx_request **requestp)
      * and if there are enough resources to avoid queueing
      */
     if (!(req->generic.state & (OMX_REQUEST_STATE_SEND_THROTTLING|OMX_REQUEST_STATE_QUEUED)))
-      return 1;
+      result = 1;
 
   } else if (req->generic.type == OMX_REQUEST_TYPE_SEND_SELF) {
     /* communications to self are immediately copied to the receive side */
-    return 1;
+    result = 1;
+
+  } else if (req->generic.type != OMX_REQUEST_TYPE_SEND_LARGE) {
+    /* all non-send requests cannot be buffered */
+    ret = OMX_BAD_REQUEST;
   }
-
-  return 0;
-}
-
-/* API omx_ibuffered */
-omx_return_t
-omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
-	      uint32_t *resultp)
-{
-  omx_return_t ret = OMX_SUCCESS;
-  uint32_t result = 0;
-
-  OMX__ENDPOINT_LOCK(ep);
-
-  ret = omx__progress(ep);
-  if (unlikely(ret != OMX_SUCCESS))
-    goto out_with_lock;
-
-  result = omx__buffered_common(ep, requestp);
 
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);

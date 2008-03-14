@@ -100,6 +100,8 @@ omx_strerror(omx_return_t ret)
     return "Bad Endpoint";
   case OMX_SEGMENTS_BAD_COUNT:
     return "Multiple Segments Count Invalid";
+  case OMX_BAD_REQUEST:
+    return "This Function cannot be applied to this Request";
   case OMX_BAD_MATCH_MASK:
     return "Bad match mask.";
   case OMX_NO_RESOURCES:
@@ -134,8 +136,6 @@ omx_strerror(omx_return_t ret)
     return "Kernel ABI too old, did you rebuild/reload the new driver?";
   case OMX_BAD_LIB_ABI:
     return "Library ABI too old, did you relink your program with the new library?";
-  case OMX_CANCEL_NOT_SUPPORTED:
-    return "Cancel not supported for this request";
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return "Matching info does not respect context id mask";
   case OMX_NOT_SUPPORTED_WITH_CONTEXT_ID:
@@ -232,7 +232,7 @@ omx_cancel(omx_endpoint_t ep,
 
   default:
     /* SEND_* are NOT cancellable with omx_cancel() */
-    ret = omx__error_with_ep(ep, OMX_CANCEL_NOT_SUPPORTED,
+    ret = omx__error_with_ep(ep, OMX_BAD_REQUEST,
 			     "Cancelling %s request", omx__strreqtype(req->generic.type));
   }
 

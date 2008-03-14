@@ -4,9 +4,6 @@
   + add a counter of failure and abort if too many
   + move to a different queue so that it does not prevent other queued req
 
-* OMX_BAD_REQUEST for ibuffered (for cancel too?)
-* OMX_INVALID_PARAMETER only internal?
-
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
   + how to force the #define OMX_32BITS_LENGTH once compiled and installed?
