@@ -23,6 +23,7 @@
 * thread safety
   + filter wakeup on recv/send/connect/...
   + filter on specific request id too
+  + progress thread only woken up if nobody else
 
 * when debug enabled, SIGUSR1 dumps the status
 
@@ -76,9 +77,6 @@
   + ph_prepare_exit only called when holding the iface mutex, may sleep
     - but last_release may be called from interrupt context
 
-* ioctls to change board indexes?
-  + except if some endpoints are attached
-
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request
 * overlap registration with rndv and pull
@@ -86,8 +84,6 @@
   + drop the pull request if it arrives
   + make the window status consistent during registration so that first pages
     may be used while the end is not registered yet
-* keep a current (segment+offset+remaining) in user_region and recompute only when unordered
-  + in pull handle on the receive side with a lock?
 * export rdma_get and rdma window management functions
 * rdma_put
 * write parameter in ioctl to register a region, check it when reading/writing from/to the region
@@ -99,13 +95,6 @@
   + need to keep partner's recv_seqnum in the kernel
     - and synchronize with user-space which takes care of acking
     - share mapping of peer-index based array of recv seqnums between kernel and user-space?
-
-* sleep on various event type to not wake up everybody
-* thread safety
-* omx_wakeup
-* progress thread sleeps on a special queue
-  - some event wakeup both queues (force_wakeup)
-  - other events wakeup the progress thread only if no one on the regular queue
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
@@ -137,12 +126,3 @@
   + for medium, how to report an event and wakeup userspace efficiently
     if we are not notified of the IOAT completion end?
   + might be easier medium with kernel matching?
-
-* non MXoE compatible extensions:
-  + rdma in both direction with optional notification containing the target window id ?
-  + no notify message, report event on rdma get completion ?
-  + multiple segments in large messages, with random page offset (support in the driver, not used by the lib)
-  + extend threshold for small/tiny ?
-  + cleanup connect request/reply data
-  + no bidirectionnal connect in the background
-  + if pulling outside of the remote window, send a nack?
