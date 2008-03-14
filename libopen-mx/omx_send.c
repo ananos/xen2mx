@@ -529,9 +529,11 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   omx_return_t ret;
 
   ret = omx__get_region(ep, &req->send.segs, &region, req);
-  if (unlikely(ret != OMX_SUCCESS))
+  if (unlikely(ret != OMX_SUCCESS)) {
+    omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
     /* let the caller handle the error */
     return ret;
+  }
 
   req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is always initialized here */
   omx__enqueue_partner_non_acked_request(partner, req);
@@ -580,7 +582,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
 
   ret = omx__submit_isend_rndv(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
-    /* FIXME: should use OMX_INTERNAL_NEED_RETRY and complete if different */
+    omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
     omx__debug_printf(SEND, "queueing large send request %p\n", req);
     req->generic.state = OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
@@ -966,7 +968,7 @@ omx__process_queued_requests(struct omx_endpoint *ep)
     }
 
     if (unlikely(ret != OMX_SUCCESS)) {
-      /* FIXME: should use OMX_INTERNAL_NEED_RETRY and complete if different */
+      omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
       /* put back at the head of the queue */
       omx__debug_printf(SEND, "requeueing queued request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_QUEUED;

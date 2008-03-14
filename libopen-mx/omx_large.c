@@ -146,6 +146,7 @@ omx__register_region(struct omx_endpoint *ep,
     ret = omx__errno_to_return("ioctl REGISTER");
     if (ret != OMX_NO_SYSTEM_RESOURCES)
       omx__abort("Failed to register region %d, driver replied %m\n", region->id);
+    ret = OMX_INTERNAL_NEED_RETRY;
   }
 
   /* let the caller handle errors */
@@ -428,9 +429,11 @@ omx__submit_pull(struct omx_endpoint * ep,
 
   /* FIXME: could register xfer_length instead of the whole segments */
   ret = omx__get_region(ep, &req->recv.segs, &region, NULL);
-  if (unlikely(ret != OMX_SUCCESS))
+  if (unlikely(ret != OMX_SUCCESS)) {
+    omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
     /* let the caller handle the error */
     return ret;
+  }
 
   pull_param.peer_index = partner->peer_index;
   pull_param.dest_endpoint = partner->endpoint_index;
@@ -474,7 +477,7 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
     /* we need to pull some data */
     ret = omx__submit_pull(ep, req);
     if (unlikely(ret != OMX_SUCCESS)) {
-      /* FIXME: should use OMX_INTERNAL_NEED_RETRY and complete if different */
+      omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
       omx__debug_printf(SEND, "queueing large request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_QUEUED;
       omx__enqueue_request(&ep->queued_send_req_q, req);

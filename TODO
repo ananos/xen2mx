@@ -1,8 +1,7 @@
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
-* change ENOMEM into NEED_RETRY for region creation
-  + add a counter of failure and abort if too many
-  + move to a different queue so that it does not prevent other queued req
+* add a counter of failure to register with ENOMEM and abort if too many?
+  + move to a different queue so that it does not prevent other queued req from being processed?
 
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
