@@ -36,7 +36,7 @@ omx__driver_peer_add(uint64_t board_addr, char *hostname)
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_ADD, &peer_info);
   if (err < 0) {
     omx_return_t ret = omx__errno_to_return("OMX_CMD_PEER_ADD");
-    if (ret != OMX_INVALID_PARAMETER && ret != OMX_BUSY && ret != OMX_NO_SYSTEM_RESOURCES)
+    if (ret != OMX_BUSY && ret != OMX_NO_SYSTEM_RESOURCES)
       omx__abort("Failed to add peer, driver replied %m");
     /* let the caller handle errors */
     return ret;

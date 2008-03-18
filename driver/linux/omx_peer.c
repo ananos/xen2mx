@@ -101,9 +101,7 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	uint8_t hash;
 	int err;
 
-	err = -EINVAL;
-	if (!hostname)
-		goto out;
+	BUG_ON(!hostname);
 
 	err = -ENOMEM;
 	new_hostname = kstrdup(hostname, GFP_KERNEL);
