@@ -111,7 +111,6 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
     goto out;
   }
 
-  ret = OMX_BOARD_NOT_FOUND;
   for(i=0; i<max; i++) {
     struct omx_cmd_get_board_info board_info;
 
@@ -121,15 +120,17 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
       ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
       if (ret != OMX_INVALID_PARAMETER)
 	omx__abort("Failed to get board info to find index by name, driver replied %m\n");
+      continue;
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
 
-    if (!strncmp(name, board_info.info.hostname, OMX_HOSTNAMELEN_MAX)) {
-      ret = OMX_SUCCESS;
+    if (ret == OMX_SUCCESS
+	&& !strncmp(name, board_info.info.hostname, OMX_HOSTNAMELEN_MAX)) {
       *index = i;
-      break;
+      goto out;
     }
   }
+  ret = OMX_BOARD_NOT_FOUND;
 
  out:
   return ret;
@@ -151,7 +152,6 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     goto out;
   }
 
-  ret = OMX_BOARD_NOT_FOUND;
   for(i=0; i<max; i++) {
     struct omx_cmd_get_board_info board_info;
 
@@ -161,15 +161,17 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
       ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
       if (ret != OMX_INVALID_PARAMETER)
 	omx__abort("Failed to get board info to find index by name, driver replied %m\n");
+      continue;
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.addr, sizeof(board_info.info.addr));
 
-    if (addr == board_info.info.addr) {
-      ret = OMX_SUCCESS;
+    if (ret == OMX_SUCCESS
+	&& addr == board_info.info.addr) {
       *index = i;
-      break;
+      goto out;
     }
   }
+  ret = OMX_BOARD_NOT_FOUND;
 
  out:
   return ret;
