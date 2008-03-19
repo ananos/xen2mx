@@ -124,8 +124,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
 
-    if (ret == OMX_SUCCESS
-	&& !strncmp(name, board_info.info.hostname, OMX_HOSTNAMELEN_MAX)) {
+    if (!strncmp(name, board_info.info.hostname, OMX_HOSTNAMELEN_MAX)) {
       *index = i;
       goto out;
     }
@@ -165,8 +164,7 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.addr, sizeof(board_info.info.addr));
 
-    if (ret == OMX_SUCCESS
-	&& addr == board_info.info.addr) {
+    if (addr == board_info.info.addr) {
       *index = i;
       goto out;
     }
