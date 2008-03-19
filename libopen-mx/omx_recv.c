@@ -956,13 +956,17 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
   uint64_t board_addr = 0;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   omx_return_t status;
+  omx_return_t ret;
 
   omx__partner_recv_lookup(ep, peer_index, nack_lib->src_endpoint,
 			   &partner);
   if (unlikely(!partner))
     return;
 
-  omx__peer_index_to_addr(peer_index, &board_addr);
+  ret = omx__peer_index_to_addr(peer_index, &board_addr);
+  /* if the partner exists, the peer has to exist too */
+  omx__debug_assert(ret == OMX_SUCCESS);
+
   omx__board_addr_sprintf(board_addr_str, board_addr);
 
   switch (nack_type) {
