@@ -79,11 +79,11 @@ omx__driver_peer_from_index(uint32_t index, uint64_t *board_addr, char *hostname
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_INDEX, &peer_info);
   if (err < 0) {
-    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
-							  OMX_SUCCESS,
-							  "lookup peer by index");
+    omx__ioctl_errno_to_return_checked(OMX_INTERNAL_MISC_EINVAL,
+				       OMX_SUCCESS,
+				       "lookup peer by index");
     /* let the caller handle errors */
-    return ret;
+    return OMX_PEER_NOT_FOUND;
   }
 
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
@@ -106,11 +106,11 @@ omx__driver_peer_from_addr(uint64_t board_addr, char *hostname, uint32_t *index)
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_ADDR, &peer_info);
   if (err < 0) {
-    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
-							  OMX_SUCCESS,
-							  "lookup peer by addr");
+    omx__ioctl_errno_to_return_checked(OMX_INTERNAL_MISC_EINVAL,
+				       OMX_SUCCESS,
+				       "lookup peer by addr");
     /* let the caller handle errors */
-    return ret;
+    return OMX_PEER_NOT_FOUND;
   }
 
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
@@ -133,11 +133,11 @@ omx__driver_peer_from_hostname(char *hostname, uint64_t *board_addr, uint32_t *i
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_FROM_HOSTNAME, &peer_info);
   if (err < 0) {
-    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
-							  OMX_SUCCESS,
-							  "lookup peer by hostname");
+    omx__ioctl_errno_to_return_checked(OMX_INTERNAL_MISC_EINVAL,
+				       OMX_SUCCESS,
+				       "lookup peer by hostname");
     /* let the caller handle errors */
-    return ret;
+    return OMX_PEER_NOT_FOUND;
   }
 
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&peer_info, sizeof(peer_info));
@@ -216,7 +216,7 @@ omx_hostname_to_nic_id(char *hostname,
   ret = omx__driver_peer_from_hostname(hostname, board_addr, NULL);
 
   if (ret != OMX_SUCCESS) {
-    omx__debug_assert(ret == OMX_INVALID_PARAMETER);
+    omx__debug_assert(ret == OMX_PEER_NOT_FOUND);
     return omx__error(OMX_PEER_NOT_FOUND, "hostname_to_nic_id %s",
 		      hostname);
   } else {
@@ -234,7 +234,7 @@ omx_nic_id_to_hostname(uint64_t board_addr,
   ret = omx__driver_peer_from_addr(board_addr, hostname, NULL);
 
   if (ret != OMX_SUCCESS) {
-    omx__debug_assert(ret == OMX_INVALID_PARAMETER);
+    omx__debug_assert(ret == OMX_PEER_NOT_FOUND);
     return omx__error(OMX_PEER_NOT_FOUND, "nic_id_to_hostname %llx",
 		      (unsigned long long) board_addr);
   } else {

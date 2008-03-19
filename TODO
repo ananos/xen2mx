@@ -1,6 +1,3 @@
-* change INVALID_PARAM into INTERNAL and convert it into real error
-  as soon we exit the ioctl
-
 * time_after
 
 * error handler when completing zombie send/recv only if ep totally open, with special message

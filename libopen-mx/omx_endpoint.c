@@ -122,14 +122,16 @@ omx__open_one_endpoint(int fd,
   err = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
   if (err < 0) {
     /* let the caller handle the error */
-    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
-							  OMX_NO_SYSTEM_RESOURCES,
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
 							  OMX_BUSY,
+							  OMX_INTERNAL_MISC_EINVAL,
 							  OMX_INTERNAL_MISC_ENODEV,
 							  OMX_SUCCESS,
 							  "open board #%d endpoint #%d",
 							  board_index, endpoint_index);
-    if (ret == OMX_INTERNAL_MISC_ENODEV)
+    if (ret == OMX_INTERNAL_MISC_EINVAL)
+      ret = OMX_BAD_ENDPOINT;
+    else if (ret == OMX_INTERNAL_MISC_ENODEV)
       ret = OMX_BOARD_NOT_FOUND;
     return ret;
   }

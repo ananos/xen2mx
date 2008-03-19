@@ -63,7 +63,7 @@ omx__peers_read(const char * filename)
   file = fopen(filename, "r");
   if (!file) {
     fprintf(stderr, "Cannot open file '%s'\n", filename);
-    return OMX_INVALID_PARAMETER;
+    return OMX_BAD_ERROR;
   }
 
   while (fgets(line, OMX_PEERS_FILELINELEN_MAX, file)) {
@@ -87,7 +87,7 @@ omx__peers_read(const char * filename)
 	       hostname)
 	!= 7) {
       fprintf(stderr, "Unrecognized peer line '%s'\n", line);
-      ret = OMX_INVALID_PARAMETER;
+      ret = OMX_BAD_ERROR;
       goto out_with_file;
     }
 

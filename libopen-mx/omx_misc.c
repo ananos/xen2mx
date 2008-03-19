@@ -32,7 +32,7 @@ omx__errno_to_return(void)
 {
   switch (errno) {
   case EINVAL:
-    return OMX_INVALID_PARAMETER;
+    return OMX_INTERNAL_MISC_EINVAL;
   case EACCES:
   case EPERM:
     return OMX_ACCESS_DENIED;
@@ -189,8 +189,6 @@ omx_strerror(omx_return_t ret)
     return "Operation not supported in the handler";
   case OMX_NO_SYSTEM_RESOURCES:
     return "No resources available in the system";
-  case OMX_INVALID_PARAMETER:
-    return "Invalid parameter";
   case OMX_NOT_IMPLEMENTED:
     return "Not implemented";
   case OMX_RETURN_CODE_MAX:

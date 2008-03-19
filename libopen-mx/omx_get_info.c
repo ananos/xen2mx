@@ -77,11 +77,15 @@ omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_in
 
   err = ioctl(fd, OMX_CMD_GET_BOARD_INFO, &get_info);
   if (err < 0) {
-    ret = omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
-					     OMX_SUCCESS,
-					     "get board info");
-    if (!ep)
+    if (!ep) {
+      omx__ioctl_errno_to_return_checked(OMX_INTERNAL_MISC_EINVAL,
+					 OMX_SUCCESS,
+					 "get board info");
       ret = OMX_BOARD_NOT_FOUND;
+    } else {
+      omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
+					 "get board info");
+    }
     /* let the caller handle this */
     goto out;
   }
@@ -118,7 +122,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
     board_info.board_index = i;
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_INFO, &board_info);
     if (err < 0) {
-      omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
+      omx__ioctl_errno_to_return_checked(OMX_INTERNAL_MISC_EINVAL,
 					 OMX_SUCCESS,
 					 "get board info to find index by name");
       continue;
@@ -158,7 +162,7 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     board_info.board_index = i;
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_INFO, &board_info);
     if (err < 0) {
-      omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
+      omx__ioctl_errno_to_return_checked(OMX_INTERNAL_MISC_EINVAL,
 					 OMX_SUCCESS,
 					 "get board info to find index by addr");
       continue;
@@ -339,10 +343,12 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_COUNTERS, &get_counters);
     if (err < 0) {
-      omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
+      omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_INTERNAL_MISC_EINVAL,
 							    OMX_ACCESS_DENIED,
 							    OMX_SUCCESS,
 							    "get counters");
+      if (ret == OMX_INTERNAL_MISC_EINVAL)
+	ret = OMX_BOARD_NOT_FOUND;
       return omx__error(ret, "Getting counter values");
     }
 

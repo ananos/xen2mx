@@ -332,7 +332,7 @@ omx__connect_common(omx_endpoint_t ep,
 
   ret = omx__partner_lookup_by_addr(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS) {
-    if (ret == OMX_INVALID_PARAMETER)
+    if (ret == OMX_PEER_NOT_FOUND)
       ret = OMX_NIC_ID_NOT_FOUND;
     ret = omx__error_with_ep(ep, ret, "Searching/Creating partner for connection");
     goto out;
@@ -594,7 +594,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
-    if (ret == OMX_INVALID_PARAMETER)
+    if (ret == OMX_PEER_NOT_FOUND)
       fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
     return;
   }
@@ -634,7 +634,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
-    if (ret == OMX_INVALID_PARAMETER)
+    if (ret == OMX_PEER_NOT_FOUND)
       fprintf(stderr, "Open-MX: Received connect from unknown peer\n");
     /* just ignore the connect request */
     return;

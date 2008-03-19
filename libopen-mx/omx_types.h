@@ -491,6 +491,7 @@ enum omx__internal_return_code {
   OMX_INTERNAL_NEED_RETRY,
   OMX_INTERNAL_UNEXPECTED_ERRNO,
   OMX_INTERNAL_MISC_ENODEV,
+  OMX_INTERNAL_MISC_EINVAL,
 };
 
 #endif /* __omx_types_h__ */
