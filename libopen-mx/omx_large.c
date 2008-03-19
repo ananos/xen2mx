@@ -456,7 +456,8 @@ omx__submit_pull(struct omx_endpoint * ep,
 
     omx__put_region(ep, region, NULL);
     /* let the caller handle the error */
-    return ret;
+    /* change no system resources into a regular retry, FIXME? */
+    return OMX_INTERNAL_NEED_RETRY;
   }
   ep->avail_exp_events--;
 
