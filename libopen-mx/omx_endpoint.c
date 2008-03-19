@@ -120,15 +120,19 @@ omx__open_one_endpoint(int fd,
   open_param.board_index = board_index;
   open_param.endpoint_index = endpoint_index;
   err = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
-  if (err < 0)
+  if (err < 0) {
     /* let the caller handle the error */
-    return omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
-					      OMX_NO_SYSTEM_RESOURCES,
-					      OMX_BUSY,
-					      OMX_NO_DEVICE,
-					      OMX_SUCCESS,
-					      "open board #%d endpoint #%d",
-					      board_index, endpoint_index);
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
+							  OMX_NO_SYSTEM_RESOURCES,
+							  OMX_BUSY,
+							  OMX_INTERNAL_MISC_ENODEV,
+							  OMX_SUCCESS,
+							  "open board #%d endpoint #%d",
+							  board_index, endpoint_index);
+    if (ret == OMX_INTERNAL_MISC_ENODEV)
+      ret = OMX_BOARD_NOT_FOUND;
+    return ret;
+  }
 
   return OMX_SUCCESS;
 }
@@ -164,7 +168,7 @@ omx__open_endpoint_in_range(int fd,
 	*board_found_p = board;
 	*endpoint_found_p = endpoint;
 	return OMX_SUCCESS;
-      } else if (ret != OMX_BUSY && ret != OMX_NO_DEVICE) {
+      } else if (ret != OMX_BUSY && ret != OMX_BOARD_NOT_FOUND) {
 	/* let the caller handle the error */
 	return ret;
       }
@@ -286,6 +290,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = omx__errno_to_return();
     if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
       ret = omx__error(OMX_BAD_ERROR, "Opening endpoint control device (%m)");
+    else if (ret == OMX_INTERNAL_MISC_ENODEV)
+      ret = omx__error(OMX_NO_DRIVER, "Opening endpoint control device");
     else
       ret = omx__error(ret, "Opening endpoint control device");
     goto out_with_ep;
@@ -319,7 +325,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
       || exp_eventq == (void *) -1
       || unexp_eventq == (void *) -1) {
     ret = omx__errno_to_return();
-    if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+    if (ret == OMX_INTERNAL_MISC_ENODEV || ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
       ret = omx__error(OMX_BAD_ERROR, "Mapping endpoint control device (%m)");
     else
       ret = omx__error(ret, "Mapping endpoint control device");

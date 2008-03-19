@@ -41,8 +41,9 @@ omx__errno_to_return(void)
   case ENOMEM:
     return OMX_NO_SYSTEM_RESOURCES;
   case ENODEV:
+    return OMX_INTERNAL_MISC_ENODEV;
   case ENOENT:
-    return OMX_NO_DEVICE;
+    return OMX_NO_DEVICE_FILE;
   case EBUSY:
     return OMX_BUSY;
   default:
@@ -122,8 +123,10 @@ omx_strerror(omx_return_t ret)
     return "Already initialized";
   case OMX_NOT_INITIALIZED:
     return "Not initialized";
-  case OMX_NO_DEVICE:
-    return "No device";
+  case OMX_NO_DEVICE_FILE:
+    return "No device file";
+  case OMX_NO_DRIVER:
+    return "Unusable device file (driver loaded?)";
   case OMX_ACCESS_DENIED:
     return "Access denied";
   case OMX_BOARD_NOT_FOUND:

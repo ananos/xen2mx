@@ -490,6 +490,7 @@ enum omx__internal_return_code {
   OMX_INTERNAL_RETURN_CODE_MIN = 101,
   OMX_INTERNAL_NEED_RETRY,
   OMX_INTERNAL_UNEXPECTED_ERRNO,
+  OMX_INTERNAL_MISC_ENODEV,
 };
 
 #endif /* __omx_types_h__ */
