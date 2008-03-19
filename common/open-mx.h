@@ -28,7 +28,7 @@ typedef union omx_request * omx_request_t;
 
 enum omx_return {
   OMX_SUCCESS = 0,
-  OMX_BAD_ERROR = 1,
+  OMX_BAD_ERROR = 1, /* only used for unexpected errno from open/mmap */
 
   OMX_ALREADY_INITIALIZED = 3,
   OMX_NOT_INITIALIZED = 4,

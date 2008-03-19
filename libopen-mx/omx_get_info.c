@@ -38,7 +38,8 @@ omx__get_board_count(uint32_t * count)
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_COUNT, count);
   if (err < 0)
-    omx__abort("Failed to get board count, driver replied %m\n");
+    omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
+				       "get board count");
 
   OMX_VALGRIND_MEMORY_MAKE_READABLE(count, sizeof(*count));
 
@@ -76,9 +77,9 @@ omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_in
 
   err = ioctl(fd, OMX_CMD_GET_BOARD_INFO, &get_info);
   if (err < 0) {
-    ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
-    if (ret != OMX_INVALID_PARAMETER)
-      omx__abort("Failed to get board info, driver replied %m\n");
+    ret = omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
+					     OMX_SUCCESS,
+					     "get board info");
     if (!ep)
       ret = OMX_BOARD_NOT_FOUND;
     /* let the caller handle this */
@@ -117,9 +118,9 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
     board_info.board_index = i;
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_INFO, &board_info);
     if (err < 0) {
-      ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
-      if (ret != OMX_INVALID_PARAMETER)
-	omx__abort("Failed to get board info to find index by name, driver replied %m\n");
+      omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
+					 OMX_SUCCESS,
+					 "get board info to find index by name");
       continue;
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(board_info.info.hostname, OMX_HOSTNAMELEN_MAX);
@@ -157,9 +158,9 @@ omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
     board_info.board_index = i;
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_BOARD_INFO, &board_info);
     if (err < 0) {
-      ret = omx__errno_to_return("ioctl GET_BOARD_INFO");
-      if (ret != OMX_INVALID_PARAMETER)
-	omx__abort("Failed to get board info to find index by name, driver replied %m\n");
+      omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
+					 OMX_SUCCESS,
+					 "get board info to find index by addr");
       continue;
     }
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&board_info.info.addr, sizeof(board_info.info.addr));
@@ -338,9 +339,10 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 
     err = ioctl(omx__globals.control_fd, OMX_CMD_GET_COUNTERS, &get_counters);
     if (err < 0) {
-      omx_return_t ret = omx__errno_to_return("ioctl GET_COUNTERS");
-      if (ret != OMX_INVALID_PARAMETER && ret != OMX_ACCESS_DENIED)
-	omx__abort("Failed to get counters values, driver replied %m");
+      omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
+							    OMX_ACCESS_DENIED,
+							    OMX_SUCCESS,
+							    "get counters");
       return omx__error(ret, "Getting counter values");
     }
 

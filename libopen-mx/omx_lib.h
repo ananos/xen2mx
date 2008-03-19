@@ -575,9 +575,6 @@ extern void
 omx__init_error_handler(void);
 
 extern omx_return_t
-omx__errno_to_return(char * caller);
-
-extern omx_return_t
 omx__error(omx_return_t ret, const char *fmt, ...);
 
 extern omx_return_t
@@ -589,6 +586,12 @@ omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
 		    omx_return_t code, const char *fmt, ...);
 
 /* misc helpers */
+
+extern omx_return_t
+omx__errno_to_return(void);
+
+extern omx_return_t
+omx__ioctl_errno_to_return_checked(omx_return_t ok, ...);
 
 extern const char *
 omx__strreqtype(enum omx__request_type type);

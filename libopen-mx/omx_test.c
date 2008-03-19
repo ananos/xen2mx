@@ -86,7 +86,8 @@ omx__wait(struct omx_endpoint *ep,
 		    (unsigned long long) omx__driver_desc->jiffies);
 
   if (unlikely(err < 0))
-    omx__abort("Failed to wait event, driver replied %m\n");
+    omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
+				       "wait event in the driver");
 
   omx__debug_printf(WAIT, "%s wait event result %d\n",
 		    caller,
@@ -773,7 +774,8 @@ omx__wakeup(struct omx_endpoint *ep, uint32_t status)
 
     err = ioctl(ep->fd, OMX_CMD_WAKEUP, &wakeup);
     if (unlikely(err < 0))
-      omx__abort("Failed to wakeup sleepers, driver replied %m\n");
+      omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
+					 "wakeup sleepers in the driver");
   }
 
   return OMX_SUCCESS;

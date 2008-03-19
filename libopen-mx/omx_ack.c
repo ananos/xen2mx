@@ -238,11 +238,13 @@ omx__submit_send_liback(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TRUC, &truc_param);
   if (unlikely(err < 0)) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_TRUC");
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("ioctl SEND_TRUC returned unexpected error %m\n");
-
-    /* no need to call the handler here, we can resend later */
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+							  OMX_SUCCESS,
+							  "send truc message");
+    /*
+     * no need to call the handler here, we can resend later.
+     * but notify the caller anyway so that partner's acking status are updated
+     */
     return ret;
   }
 

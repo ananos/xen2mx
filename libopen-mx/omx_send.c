@@ -90,10 +90,9 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_TINY, tiny_param);
   if (unlikely(err < 0)) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_TINY");
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("ioctl SEND_TINY returned unexpected error %m\n");
-
+    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				       OMX_SUCCESS,
+				       "send tiny message");
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
@@ -169,10 +168,9 @@ omx__post_isend_small(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_SMALL, small_param);
   if (unlikely(err < 0)) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_SMALL");
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("ioctl SEND_SMALL returned unexpected error %m\n");
-
+    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				       OMX_SUCCESS,
+				       "send small message");
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
@@ -283,7 +281,6 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   uint32_t remaining = length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr = req->send.specific.medium.frags_nr;
-  omx_return_t ret;
   int err;
   int i;
 
@@ -388,9 +385,9 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 
  err:
   /* assume some frags got lost and let retransmission take care of it later */
-  ret = omx__errno_to_return("ioctl SEND_MEDIUM");
-  if (unlikely(ret != OMX_NO_SYSTEM_RESOURCES))
-    omx__abort("Failed to post SEND MEDIUM, driver replied %m\n");
+  omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				     OMX_SUCCESS,
+				     "send medium message fragment");
 
   req->send.specific.medium.frags_pending_nr = i;
   if (i)
@@ -501,10 +498,9 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
   if (unlikely(err < 0)) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_RNDV");
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("ioctl SEND_RNDV returned unexpected error %m\n");
-
+    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				       OMX_SUCCESS,
+				       "send rndv message");
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
@@ -610,10 +606,9 @@ omx__post_notify(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_NOTIFY, notify_param);
   if (unlikely(err < 0)) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_NOTIFY");
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("ioctl SEND_NOTIFY returned unexpected error %m\n");
-
+    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				       OMX_SUCCESS,
+				       "send notify message");
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 

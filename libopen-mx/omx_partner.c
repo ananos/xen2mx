@@ -306,10 +306,9 @@ omx__post_connect_request(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, connect_param);
   if (err < 0) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_CONNECT");
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("ioctl SEND_CONNECT returned unexpected error %m\n");
-
+    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				       OMX_SUCCESS,
+				       "post connect message");
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
@@ -696,10 +695,9 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);
   if (err < 0) {
-    omx_return_t ret = omx__errno_to_return("ioctl SEND_CONNECT");
-    if (ret != OMX_NO_SYSTEM_RESOURCES)
-      omx__abort("ioctl SEND_CONNECT returned unexpected error %m\n");
-
+    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				       OMX_SUCCESS,
+				       "post connect reply");
     /* just ignore the error, the peer will resend the connect request */
   }
   /* no need to wait for a done event, connect is synchronous */

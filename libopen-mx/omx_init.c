@@ -36,25 +36,34 @@ omx__init_api(int api)
   char *env;
   int err;
 
-  if (omx__globals.initialized)
-    return OMX_ALREADY_INITIALIZED;
+  if (omx__globals.initialized) {
+    ret = OMX_ALREADY_INITIALIZED;
+    goto out;
+  }
 
   /*********************************
    * Open, map and check the driver
    */
 
   err = open(OMX_DEVNAME, O_RDONLY);
-  if (err < 0)
-    return omx__error(omx__errno_to_return("open control device"),
-		      "Opening control device");
-
+  if (err < 0) {
+    ret = omx__errno_to_return();
+    if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+      ret = omx__error(OMX_BAD_ERROR, "Opening global control device (%m)");
+    else
+      ret = omx__error(ret, "Opening global control device");
+    goto out;
+  }
   omx__globals.control_fd = err;
 
   omx__driver_desc = mmap(NULL, OMX_DRIVER_DESC_SIZE, PROT_READ, MAP_SHARED,
 			  omx__globals.control_fd, OMX_DRIVER_DESC_FILE_OFFSET);
   if (omx__driver_desc == MAP_FAILED) {
-    ret = omx__error(omx__errno_to_return("mmap driver descriptor"),
-		     "Mapping control device");
+    ret = omx__errno_to_return();
+    if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+      ret = omx__error(OMX_BAD_ERROR, "Mapping global control device (%m)");
+    else
+      ret = omx__error(ret, "Mapping global control device");
     goto out_with_fd;
   }
 
@@ -271,6 +280,7 @@ omx__init_api(int api)
 
  out_with_fd:
   close(omx__globals.control_fd);
+ out:
   return ret;
 }
 

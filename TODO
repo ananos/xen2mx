@@ -1,4 +1,13 @@
+* change INVALID_PARAM into INTERNAL and convert it into real error
+  as soon we exit the ioctl
+
+* time_after
+
 * error handler when completing zombie send/recv only if ep totally open, with special message
+
+* replace pull handle's BH lock + ird with RCU + array ?
+
+* limit the number of pull/send_large to avoid deadlock caused by 255 rdma windows
 
 * add a counter of failure to register with ENOMEM and abort if too many?
   + move to a different queue so that it does not prevent other queued req from being processed?
@@ -24,6 +33,9 @@
   + filter wakeup on recv/send/connect/...
   + filter on specific request id too
   + progress thread only woken up if nobody else
+  + split the progression timer out of the timeout timer and make it global
+    and wakeup a single process
+  + change the wakeup_jiffies mapped value into an ioctl parameter?
 
 * when debug enabled, SIGUSR1 dumps the status
 

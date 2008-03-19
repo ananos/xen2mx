@@ -17,6 +17,7 @@
  */
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <errno.h>
 
 #include "omx_lib.h"
@@ -27,7 +28,7 @@
  */
 
 omx_return_t
-omx__errno_to_return(char * caller)
+omx__errno_to_return(void)
 {
   switch (errno) {
   case EINVAL:
@@ -45,9 +46,40 @@ omx__errno_to_return(char * caller)
   case EBUSY:
     return OMX_BUSY;
   default:
-    omx__abort("%s got unexpected errno %d (%m)\n",
-	       caller, errno);
+    return OMX_INTERNAL_UNEXPECTED_ERRNO;
   }
+}
+
+#define OMX_ERRNO_ABORT_MSG_LENGTH 255
+
+/*
+ * must be called with some acceptable omx_return_t followed by OMX_SUCCESS
+ * and then a char * format with its optional parameters
+ */
+omx_return_t
+omx__ioctl_errno_to_return_checked(omx_return_t ok, ...)
+{
+  omx_return_t ret = omx__errno_to_return();
+  char * callerfmt;
+  char callermsg[OMX_ERRNO_ABORT_MSG_LENGTH];
+  va_list va;
+
+  va_start(va, ok);
+
+  while (ok != OMX_SUCCESS) {
+    if (ret == ok) {
+      va_end(va);
+      return ret;
+    }
+    ok = va_arg(va, omx_return_t);
+  }
+
+  callerfmt = va_arg(va, char*);
+  vsnprintf(callermsg, OMX_ERRNO_ABORT_MSG_LENGTH, callerfmt, va);
+
+  va_end(va);
+
+  omx__abort("Failed to %s, driver replied %m\n", callermsg);
 }
 
 const char *

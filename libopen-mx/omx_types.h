@@ -489,6 +489,7 @@ struct omx__globals {
 enum omx__internal_return_code {
   OMX_INTERNAL_RETURN_CODE_MIN = 101,
   OMX_INTERNAL_NEED_RETRY,
+  OMX_INTERNAL_UNEXPECTED_ERRNO,
 };
 
 #endif /* __omx_types_h__ */

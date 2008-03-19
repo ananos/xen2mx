@@ -122,7 +122,13 @@ omx__open_one_endpoint(int fd,
   err = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
   if (err < 0)
     /* let the caller handle the error */
-    return omx__errno_to_return("ioctl OPEN_ENDPOINT");
+    return omx__ioctl_errno_to_return_checked(OMX_INVALID_PARAMETER,
+					      OMX_NO_SYSTEM_RESOURCES,
+					      OMX_BUSY,
+					      OMX_NO_DEVICE,
+					      OMX_SUCCESS,
+					      "open board #%d endpoint #%d",
+					      board_index, endpoint_index);
 
   return OMX_SUCCESS;
 }
@@ -277,8 +283,11 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   err = open(OMX_DEVNAME, O_RDWR);
   if (err < 0) {
-    ret = omx__error(omx__errno_to_return("open"),
-		     "Opening driver device to open endpoint");
+    ret = omx__errno_to_return();
+    if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+      ret = omx__error(OMX_BAD_ERROR, "Opening endpoint control device (%m)");
+    else
+      ret = omx__error(ret, "Opening endpoint control device");
     goto out_with_ep;
   }
   fd = err;
@@ -309,8 +318,11 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
       || recvq == (void *) -1
       || exp_eventq == (void *) -1
       || unexp_eventq == (void *) -1) {
-    ret = omx__error(omx__errno_to_return("mmap"),
-		    "Mapping endpoint structures in user-space");
+    ret = omx__errno_to_return();
+    if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+      ret = omx__error(OMX_BAD_ERROR, "Mapping endpoint control device (%m)");
+    else
+      ret = omx__error(ret, "Mapping endpoint control device");
     goto out_with_sendq_map;
   }
   omx__debug_printf(ENDPOINT, "desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
