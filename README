@@ -13,6 +13,7 @@ Contents:
     c. Interrupt Coalescing
     d. Shared/Self communications
     e. Avoiding Linearizing on the receive side with old kernels
+    f. Quick benchmarking how-to
  VII. Native MX Compatibility
     a. Wire-compatibility
     b. API-compatibility
@@ -316,6 +317,23 @@ not be linearized uselessly. To enable this workardound, you should pass
 
 ** Note that this solution is only required under very special
    circumstances and should be avoided in most of the cases. **
+
++---------------------------------
+| VI.f. Quick benchmarking how-to
+
+To get best performance for benchmarking purposes between homogeneous hosts,
+you might want to:
+* Build Open-MX with --disable-endian, --disable-mx-wire, probably --disable-self
+  as well, and even --disable-shared if there is a single process per host.
+* Make sure no cores are sleeping since they would be slow to process incoming
+  packets. Booting Linux with idle=poll is an easy way to prevent this sleeping.
+  Another one is to have a task using 100% on each core as any real-life
+  application would do.
+* To reduce cache-effects without sharing a single core power between bottom
+  halves and the main process, bind the process on one core (close to the
+  network interface, with numactl or taskset), and bind the interrupts of the
+  Ethernet interface on a very close core (by writing the corresponding mask
+  into /proc/irq/<n>/smp_affinity).
 
 
 ++==============================++
