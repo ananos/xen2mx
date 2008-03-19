@@ -19,8 +19,9 @@ Contents:
     b. API-compatibility
 VIII. Advanced configuration
     a. Build-time configuration options
-    b. Runtime configuration options
-    c. Module parameters
+    b. Configurations tricks for middleware
+    c. Runtime configuration options
+    d. Module parameters
   IX. Debugging
 
 See REPORTING-BUGS for problems.
@@ -491,6 +492,27 @@ skbcopy=0
 copybench=1
 	Enable a memory copy benchmark at startup.
 	Default is disabled (0).
+
++----------------------------------------------
+| VIII.d. Configuration tricks for middlewares
+
+If you plan to use Open-MX within a middleware such as a MPI layer, you
+should read the following configuration advices:
+* MX API compatibility:
+  Passing --disable-mx to the Open-MX configure line is only possible if all
+  middlewares involved use the native Open-MX API. In most cases, keeping the
+  MX API compatibility enabled should cause no harm and is thus recommended.
+  Once Open-MX is installed, passing its installation path to the middleware
+  configuration system as the MX installation path should do the trick.
+* Thread-safety:
+  A thread-safe middleware should generally rely on a thread safe Open-MX.
+  Building Open-MX without --enable-threads may only work if caller uses
+  neither any blocking Open-MX functions nor the unexpected handler, and
+  obviously serializes Open-MX calls.
+* Self and Shared communications:
+  Most MPI layers implement there own shared memory protocol as well as
+  communication to self. It may then be a good idea to build Open-MX with
+  --disable-shared and --disable-self.
 
 
 ++===============++
