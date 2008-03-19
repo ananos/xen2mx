@@ -210,7 +210,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 	/* test whether the endpoint is ok to be open
 	 * and mark it as initializing */
 	spin_lock(&endpoint->status_lock);
-	ret = -EINVAL;
+	ret = -EBUSY;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_FREE) {
 		spin_unlock(&endpoint->status_lock);
 		goto out;
