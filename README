@@ -96,6 +96,9 @@ g. Use omx_pingpong to test actual communications, on the first node:
     $ make
     $ make install
 
+To display full build command line instead of the default short messages,
+V=1 should be passed to make.
+
 By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
 the configure line to change this (or set prefix on the 'make install'
 command line).
