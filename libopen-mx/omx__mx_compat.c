@@ -27,6 +27,7 @@
 #include "open-mx.h"
 #define OMX_NO_FUNC_WRAPPERS
 #include "myriexpress.h"
+#include "mx_extensions.h"
 
 #include "omx_lib.h"
 
@@ -78,6 +79,12 @@ mx_return_t
 mx_wakeup(mx_endpoint_t endpoint)
 {
   return omx_wakeup(endpoint);
+}
+
+mx_return_t
+mx_register_unexp_handler(mx_endpoint_t ep, mx_unexp_handler_t handler, void *context)
+{
+  return omx_register_unexp_handler(ep, handler, context);
 }
 
 mx_return_t
