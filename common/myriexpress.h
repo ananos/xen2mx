@@ -213,6 +213,7 @@ extern mx_return_t mx_open_endpoint(uint32_t board_number, uint32_t endpoint_id,
 				    mx_endpoint_t *endpoint);
 extern mx_return_t mx_close_endpoint(mx_endpoint_t endpoint);
 extern mx_return_t mx_wakeup(mx_endpoint_t endpoint);
+
 extern mx_return_t mx_disable_progression(mx_endpoint_t ep);
 extern mx_return_t mx_reenable_progression(mx_endpoint_t ep);
 
@@ -291,6 +292,7 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
 
 #define mx_wakeup(ep) omx_wakeup(ep)
 
+/* no API compat wrapper for mx_register_unexp_callback, it's hardwired as deprecated in omx__mx_compat.c */
 #define mx_disable_progression(ep) omx_disable_progression(ep)
 #define mx_reenable_progression(ep) omx_reenable_progression(ep)
 
@@ -321,7 +323,7 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
   omx_probe(endpoint, match_info, match_mask, (omx_status_t *) (void *) status, result, timeout)
 
 #define mx_ibuffered(endpoint, request, result) omx_ibuffered(endpoint, request, result)
-/* FIXME: mx_buffered */
+/* no API compat wrapper for mx_buffered, it's hardwired as not-supported in omx__mx_compat.c */
 
 #define mx_context(req,ctx) omx_context(req,ctx)
 

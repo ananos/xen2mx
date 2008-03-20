@@ -390,8 +390,7 @@ mx_strstatus(mx_status_code_t status)
 mx_return_t
 mx_register_unexp_callback(mx_endpoint_t ep, mx_matching_callback_t cb, void *ctxt)
 {
-  omx__abort("mx_register_unexp_callback not implemented\n");
-  /* FIXME */
+  omx__abort("mx_register_unexp_callback not implemented since it's deprecated by mx_register_unexp_handler\n");
   return MX_BAD_BAD_BAD;
 }
 

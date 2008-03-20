@@ -2,8 +2,6 @@
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
-* register_unexp_callback wrapper
-
 * replace pull handle's BH lock + idr with RCU + array ?
 
 * limit the number of pull/send_large to avoid deadlock caused by 255 rdma windows
