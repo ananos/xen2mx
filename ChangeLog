@@ -1,3 +1,30 @@
+Open-MX 0.5.0 (March xyth 2008, svn r15xy)
+==========================================
+The Full-MX-API release.
+
+Major enhancements:
+* The whole MX API is now supported thanks to the addition of
+  omx_set_error_handler().
+
+Other improvements from previous release:
+* Merge status and return codes into a single type and add many new
+  values for more descriptive error codes. This breaks the library
+  ABI, all existing softwares using Open-MX must be rebuilt.
+* Fix completion of medium message send in case of a very short last
+  fragment.
+* Fix support for very large messages, up-to 4GB-1 (32bits length).
+* Fix reporting of connection errors to the application.
+* Fix management of queued requests in case of resource shortage.
+* Cleanup the build system.
+* Many minor fixes, tiny optimizations, and documentation improvements
+  all over the place.
+
+Caveats:
+* No dynamic peer discovery, omx_init_peers should be invoked manually
+  to setup a static peer table.
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 0.4.0 (February 29th 2008, svn r1408)
 =============================================
 The PVFS2 release.
@@ -15,10 +42,6 @@ Other improvements from previous release:
 * Minor fixes in the MXoE wire and API compatibility.
 * Many minor fixes, tiny optimizations, and documentation improvements
   all over the place.
-
-Caveats:
-* No background progression or retransmission is done if the application does
-  not invoke an Open-MX routine explicitly.
 
 Open-MX 0.3.0 (February 1st 2008, svn r1234)
 ============================================

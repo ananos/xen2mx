@@ -1,8 +1,10 @@
-* time_after
+* make ioat recv medium asynchronous, post it earlier, wait it later
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
-* replace pull handle's BH lock + ird with RCU + array ?
+* register_unexp_callback wrapper
+
+* replace pull handle's BH lock + idr with RCU + array ?
 
 * limit the number of pull/send_large to avoid deadlock caused by 255 rdma windows
 
@@ -60,6 +62,7 @@
 * netif_wake_queue(dev) after xmit?
 
 * prefetch non-temporal from the event ring ro prevent cache line bounces?
+* or write event with non-temporal? hard in the kernel
 
 * --enable-32b/64b
 
