@@ -6,8 +6,15 @@
 
 * limit the number of pull/send_large to avoid deadlock caused by 255 rdma windows
 
-* add a counter of failure to register with ENOMEM and abort if too many?
-  + move to a different queue so that it does not prevent other queued req from being processed?
+* split queued queue into hierarchic queueing
+  + no system resources first
+    - add a counter of failure to register with ENOMEM and abort if too many?
+  + no recvq slot then
+  + no sendq slot then?
+  + no rdmawin then
+  + no rdmawin without deadlock then
+  + requeue to the right one and keep dequeueing unless requeueing to the same one
+    - move the requeueing to the failing callee
 
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
@@ -93,6 +100,8 @@
 * export rdma_get and rdma window management functions
 * rdma_put
 * write parameter in ioctl to register a region, check it when reading/writing from/to the region
+  + different rdmawin id for sender/receiver
+    - no need to check for deadlock if too many sender's rdmawin registered
 
 * move recv lib in the kernel
   + limit unexpq size to avoid memory starvation
