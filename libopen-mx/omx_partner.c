@@ -857,7 +857,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   count = 0;
   omx__foreach_partner_throttling_request_safe(partner, req, next) {
     omx__debug_printf(CONNECT, "Dropping throttling send %p\n", req);
-    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_THROTTLING);
+    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_NEED_SEQNUM);
     omx___dequeue_partner_throttling_request(req);
     omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
     count++;

@@ -6,15 +6,17 @@
 
 * limit the number of pull/send_large to avoid deadlock caused by 255 rdma windows
 
-* split queued queue into hierarchic queueing
-  + no system resources first
+* add flags for all queued state and split throttling/queued queue into per-flag queue
+  + let the callee requeue and return need_retry if did not queue to a better queue
+  + and use them and completing requests
+  + need memory for small
     - add a counter of failure to register with ENOMEM and abort if too many?
-  + no recvq slot then
-  + no sendq slot then?
-  + no rdmawin then
-  + no rdmawin without deadlock then
-  + requeue to the right one and keep dequeueing unless requeueing to the same one
-    - move the requeueing to the failing callee
+  + need exp events for medium and pull
+  + need sendq slots for medium
+  + need region for send large without deadlock
+  + need region for recv large
+  + need system resources for send large and recv large
+    - add a counter of failure to register with ENOMEM and abort if too many?
 
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined

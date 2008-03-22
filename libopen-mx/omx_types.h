@@ -353,7 +353,7 @@ enum omx__request_state {
   /* request is a send to myself, needs to wait for the recv to match */
   OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED = (1<<11),
   /* request is a send to a partner which didn't ack enough yet */
-  OMX_REQUEST_STATE_SEND_THROTTLING = (1<12),
+  OMX_REQUEST_STATE_SEND_NEED_SEQNUM = (1<12),
 };
 
 struct omx__generic_request {

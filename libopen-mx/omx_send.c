@@ -47,7 +47,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
     }
   }
 
-  if (req->generic.state & OMX_REQUEST_STATE_SEND_THROTTLING)
+  if (req->generic.state & OMX_REQUEST_STATE_SEND_NEED_SEQNUM)
     goto nothing_specific;
 
   switch (req->generic.type) {
@@ -689,7 +689,7 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 #endif
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
-    req->generic.state = OMX_REQUEST_STATE_SEND_THROTTLING;
+    req->generic.state = OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
     req->throttling.ssend = 0;
     omx__enqueue_partner_throttling_request(partner, req);
     omx__mark_partner_throttling(ep, partner);
@@ -811,7 +811,7 @@ omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 #endif
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
-    req->generic.state = OMX_REQUEST_STATE_SEND_THROTTLING;
+    req->generic.state = OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
     req->throttling.ssend = 1;
     omx__enqueue_partner_throttling_request(partner, req);
     omx__mark_partner_throttling(ep, partner);
@@ -977,34 +977,29 @@ omx__process_queued_requests(struct omx_endpoint *ep)
  * Send throttling Requests
  */
 
-static INLINE void
-omx__send_throttling_request(struct omx_endpoint *ep, struct omx__partner *partner,
-			     union omx_request *req)
-{
-  uint32_t length = req->send.segs.total_length;
-
-  if (req->throttling.ssend) {
-    omx__submit_or_queue_isend_large(ep, req, partner);
-  } else if (likely(length <= OMX_TINY_MAX)) {
-    omx__submit_or_queue_isend_tiny(ep, req, partner);
-  } else if (length <= OMX_SMALL_MAX) {
-    return omx__submit_or_queue_isend_small(ep, req, partner);
-  } else if (length <= OMX_MEDIUM_MAX) {
-    omx__submit_or_queue_isend_medium(ep, req, partner);
-  } else {
-    omx__submit_or_queue_isend_large(ep, req, partner);
-  }
-}
-
 void
 omx__send_throttling_requests(struct omx_endpoint *ep, struct omx__partner *partner, int nr)
 {
   union omx_request *req;
 
   while (nr && (req = omx__dequeue_first_partner_throttling_request(partner)) != NULL) {
-    omx__debug_assert(req->generic.state == OMX_REQUEST_STATE_SEND_THROTTLING);
+    uint32_t length = req->send.segs.total_length;
+
+    omx__debug_assert(req->generic.state == OMX_REQUEST_STATE_SEND_NEED_SEQNUM);
     req->generic.state = 0;
-    omx__send_throttling_request(ep, partner, req);
+
+    if (req->throttling.ssend) {
+      omx__submit_or_queue_isend_large(ep, req, partner);
+    } else if (likely(length <= OMX_TINY_MAX)) {
+      omx__submit_or_queue_isend_tiny(ep, req, partner);
+    } else if (length <= OMX_SMALL_MAX) {
+      omx__submit_or_queue_isend_small(ep, req, partner);
+    } else if (length <= OMX_MEDIUM_MAX) {
+      omx__submit_or_queue_isend_medium(ep, req, partner);
+    } else {
+      omx__submit_or_queue_isend_large(ep, req, partner);
+    }
+
     omx__mark_partner_not_throttling(ep, partner);
     nr--;
   }
