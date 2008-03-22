@@ -53,6 +53,7 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
   INIT_LIST_HEAD(&ep->reg_list);
   INIT_LIST_HEAD(&ep->reg_unused_list);
   INIT_LIST_HEAD(&ep->reg_vect_list);
+  ep->large_sends_avail_nr = OMX_USER_REGION_MAX/2;
 
   return OMX_SUCCESS;
 }
@@ -579,6 +580,8 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
 
   omx__put_region(ep, req->send.specific.large.region, req);
+  ep->large_sends_avail_nr++;
+
   req->generic.status.xfer_length = xfer_length;
 
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;

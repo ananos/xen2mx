@@ -265,6 +265,8 @@ struct omx_endpoint {
   struct list_head reg_list; /* registered single-segment windows */
   struct list_head reg_unused_list; /* unused registered single-segment windows, LRU in front */
   struct list_head reg_vect_list; /* registered vectorial windows (uncached) */
+  int large_sends_avail_nr; /* number of simultaneous large send that may be posted,
+			     * limited to prevent deadlocks */
 
   omx_error_handler_t error_handler;
 

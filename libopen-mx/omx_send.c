@@ -524,9 +524,14 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   uint32_t length = req->generic.status.msg_length;
   omx_return_t ret;
 
+  if (unlikely(!ep->large_sends_avail_nr))
+    return OMX_INTERNAL_NEED_RETRY;
+  ep->large_sends_avail_nr--;
+
   ret = omx__get_region(ep, &req->send.segs, &region, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
+    ep->large_sends_avail_nr++;
     /* let the caller handle the error */
     return ret;
   }
