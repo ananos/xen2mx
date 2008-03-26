@@ -843,7 +843,6 @@ omx__process_self_send(struct omx_endpoint *ep,
     sreq->generic.status.xfer_length = xfer_length;
 
     omx_copy_from_to_segments(&rreq->recv.segs, &sreq->send.segs, xfer_length);
-    sreq->generic.state = 0; /* the state of expected self send is always set here */
     omx__send_complete(ep, sreq, status_code);
     omx__recv_complete(ep, rreq, status_code);
 
@@ -886,13 +885,13 @@ omx__process_self_send(struct omx_endpoint *ep,
     rreq->recv.specific.self_unexp.sreq = sreq;
     omx_copy_from_segments(unexp_buffer, &sreq->send.segs, msg_length);
 
-    rreq->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED; /* the state of unexpected self send is always set here */
+    rreq->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED; /* the state of unexpected self recv is always set here */
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, rreq);
 
     /* self communication are always synchronous,
      * the send will be completed on matching
      */
-    sreq->generic.state = OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED; /* the state of unexpected self recv is always set here */
+    sreq->generic.state |= OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED;
     omx__enqueue_request(&ep->send_self_unexp_req_q, sreq);
 
   }

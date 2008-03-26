@@ -137,7 +137,7 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
 
   req->generic.send_seqnum = seqnum;
   req->generic.resends_max = ep->req_resends_max;
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send tiny is always initialized here */
+  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
 
   req->generic.status.msg_length = length;
@@ -230,7 +230,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 
   req->generic.resends = 0;
   req->generic.resends_max = ep->req_resends_max;
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send small is always initialized here */
+  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
@@ -261,7 +261,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
     omx__debug_printf(SEND, "queueing send request %p\n", req);
-    req->generic.state = OMX_REQUEST_STATE_QUEUED; /* the state of send small is initialized here (or in submit() above) */
+    req->generic.state |= OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
 }
@@ -427,7 +427,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 
   req->generic.resends = 0;
   req->generic.resends_max = ep->req_resends_max;
-  req->generic.state = OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is initialized here and modified in post() (or set to QUEUED in submit_or_queue()) */
+  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
 
   medium_param->peer_index = partner->peer_index;
@@ -472,7 +472,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
     omx__debug_printf(SEND, "queueing medium request %p\n", req);
-    req->generic.state = OMX_REQUEST_STATE_QUEUED; /* the state of send medium is initialized here (or in submit() above) */
+    req->generic.state |= OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
 }
@@ -536,7 +536,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
     return ret;
   }
 
-  req->generic.state = OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK; /* the state of send medium is always initialized here */
+  req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
 
   rndv_param->hdr.peer_index = partner->peer_index;
@@ -585,7 +585,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
     omx__debug_printf(SEND, "queueing large send request %p\n", req);
-    req->generic.state = OMX_REQUEST_STATE_QUEUED;
+    req->generic.state |= OMX_REQUEST_STATE_QUEUED;
     omx__enqueue_request(&ep->queued_send_req_q, req);
   }
 }
@@ -694,7 +694,7 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 #endif
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
-    req->generic.state = OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
+    req->generic.state |= OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
     req->throttling.ssend = 0;
     omx__enqueue_partner_throttling_request(partner, req);
     omx__mark_partner_throttling(ep, partner);
@@ -816,7 +816,7 @@ omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 #endif
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
-    req->generic.state = OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
+    req->generic.state |= OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
     req->throttling.ssend = 1;
     omx__enqueue_partner_throttling_request(partner, req);
     omx__mark_partner_throttling(ep, partner);
