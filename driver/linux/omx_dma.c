@@ -83,8 +83,24 @@ omx_dma_get_handle(struct omx_endpoint *endpoint)
 void
 omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle)
 {
-	struct dma_chan *chan  = handle;
+	struct dma_chan *chan = handle;
 	dma_chan_put(chan);
+}
+
+void
+omx_dma_handle_push(void *handle)
+{
+	struct dma_chan *chan = handle;
+	dma_async_memcpy_issue_pending(chan);
+}
+
+void
+omx_dma_handle_wait(void *handle, struct sk_buff *skb)
+{
+	struct dma_chan *chan = handle;
+	dma_cookie_t done, used, cookie = skb->dma_cookie;
+
+	while (dma_async_memcpy_complete(chan, cookie, &done, &used) == DMA_IN_PROGRESS);
 }
 
 int
@@ -195,13 +211,8 @@ omx_dma_skb_copy_datagram_to_pages(void *handle,
 
  end:
 	if (!len) {
-		dma_cookie_t done, used;
-
-		dma_async_memcpy_issue_pending(chan);
-
-		while (dma_async_memcpy_complete(chan, cookie, &done, &used) == DMA_IN_PROGRESS);
-
-		return 0;
+		skb->dma_cookie = cookie;
+		return cookie;
 	}
 
  fault:

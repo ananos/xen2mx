@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x120
+#define OMX_DRIVER_ABI_VERSION		0x121
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -726,6 +726,8 @@ enum omx_counter_index {
 	OMX_COUNTER_RECV_PULL_REQ,
 	OMX_COUNTER_RECV_PULL_REPLY,
 
+	OMX_COUNTER_DMARECV_MEDIUM_FRAG,
+
 	OMX_COUNTER_EXP_EVENTQ_FULL,
 	OMX_COUNTER_UNEXP_EVENTQ_FULL,
 	OMX_COUNTER_SEND_NOMEM_SKB,
@@ -827,6 +829,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Recv Pull Request";
 	case OMX_COUNTER_RECV_PULL_REPLY:
 		return "Recv Pull Reply";
+	case OMX_COUNTER_DMARECV_MEDIUM_FRAG:
+		return "DMA Recv Medium Frag";
 	case OMX_COUNTER_EXP_EVENTQ_FULL:
 		return "Expected Event Queue Full";
 	case OMX_COUNTER_UNEXP_EVENTQ_FULL:

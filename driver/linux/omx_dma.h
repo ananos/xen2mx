@@ -33,13 +33,25 @@ static inline void omx_dma_exit(void) { /* nothing */ }
 
 /* dma channel manipulation, if available */
 #if (defined CONFIG_DMA_ENGINE) && (defined OMX_HAVE_SHAREABLE_DMA_CHANNELS)
+
 extern void * omx_dma_get_handle(struct omx_endpoint *endpoint);
 extern void omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle);
+
+extern void omx_dma_handle_push(void *handle);
+extern void omx_dma_handle_wait(void *handle, struct sk_buff *skb);
+
 extern int omx_dma_skb_copy_datagram_to_pages(void *handle, struct sk_buff *skb, int offset, struct page **pages, int pgoff, size_t len);
+
 #else
+
 static inline void * omx_dma_get_handle(struct omx_endpoint *endpoint) { return NULL; }
 static inline void omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle) { /* nothing */ }
+
+static inline void omx_dma_handle_push(void *handle) { /* nothing */ }
+static inline void omx_dma_handle_wait(void *handle, struct sk_buff *skb) { /* nothing */ }
+
 static inline int omx_dma_skb_copy_datagram_to_pages(void *handle, struct sk_buff *skb, int offset, struct page **pages, int pgoff, size_t len) { return -ENOSYS; }
+
 #endif
 
 #endif /* __omx_dma_h__ */

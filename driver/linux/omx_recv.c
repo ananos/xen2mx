@@ -422,6 +422,21 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
+	/* try to submit the dma copy */
+	dma_handle = omx_dma_get_handle(endpoint);
+	if (dma_handle) {
+		struct page * page = endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];
+		err = omx_dma_skb_copy_datagram_to_pages(dma_handle, skb, hdr_len, &page, 0, frag_length);
+		if (err < 0) {
+			/* revert back to regular copy */
+			omx_dma_put_handle(endpoint, dma_handle);
+			dma_handle = NULL;
+		} else {
+			omx_dma_handle_push(dma_handle);
+			omx_counter_inc(iface, DMARECV_MEDIUM_FRAG);
+		}
+	}
+
 	/* fill event */
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
@@ -436,17 +451,15 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
-	/* copy data in recvq slot */
-	dma_handle = omx_dma_get_handle(endpoint);
+	/* end the copy */
 	if (dma_handle) {
-		struct page * page = endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];
-		err = omx_dma_skb_copy_datagram_to_pages(dma_handle, skb, hdr_len, &page, 0, frag_length);
+		omx_dma_handle_wait(dma_handle, skb);
 		omx_dma_put_handle(endpoint, dma_handle);
 	} else {
 		err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset, frag_length);
+		/* cannot fail since pages are allocated by us */
+		BUG_ON(err < 0);
 	}
-	/* cannot fail since pages are allocated by us */
-	BUG_ON(err < 0);
 
 	/* notify the event */
 	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_MEDIUM, &event, sizeof(event));
