@@ -491,6 +491,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       return OMX_NO_RESOURCES;
 
     req->generic.type = OMX_REQUEST_TYPE_RECV;
+    req->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED;
 
     if (msg->type == OMX_EVT_RECV_MEDIUM)
       omx__init_process_recv_medium(req);
@@ -516,8 +517,6 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     req->recv.seqnum = seqnum;
     req->generic.status.addr = source;
     req->generic.status.match_info = msg->match_info;
-    req->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED; /* the state of unexpected recv is always set here */
-
     req->generic.status.msg_length = msg_length;
 
     (*recv_func)(ep, partner, req, msg, data, msg_length);
@@ -874,6 +873,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     }
 
     rreq->generic.type = OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED;
+    rreq->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED;
 
     omx_cache_single_segment(&rreq->recv.segs, unexp_buffer, msg_length);
 
@@ -884,8 +884,6 @@ omx__process_self_send(struct omx_endpoint *ep,
 
     rreq->recv.specific.self_unexp.sreq = sreq;
     omx_copy_from_segments(unexp_buffer, &sreq->send.segs, msg_length);
-
-    rreq->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED; /* the state of unexpected self recv is always set here */
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, rreq);
 
     /* self communication are always synchronous,
@@ -1059,7 +1057,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 
 	if (unlikely(req->generic.state)) {
 	  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);
-	  /* no need to reset the scan_state, the unexpected buffer didn't use since its contigous */
+	  /* no need to reset the scan_state, the unexpected buffer didn't use it since it's contigous */
 	  omx__enqueue_request(&ep->multifrag_medium_recv_req_q, req);
 	} else {
 	  omx__recv_complete(ep, req, OMX_SUCCESS);
@@ -1086,7 +1084,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
   memcpy(&req->recv.segs, reqsegs, sizeof(*reqsegs));
 
   req->generic.type = OMX_REQUEST_TYPE_RECV;
-  req->generic.state = OMX_REQUEST_STATE_RECV_NEED_MATCHING; /* the state of non-matched recv is always set here */
+  req->generic.state = OMX_REQUEST_STATE_RECV_NEED_MATCHING;
   req->generic.status.context = context;
   req->recv.match_info = match_info;
   req->recv.match_mask = match_mask;

@@ -338,10 +338,11 @@ omx__connect_common(omx_endpoint_t ep,
     goto out;
   }
 
+  req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY;
+
 #ifndef OMX_DISABLE_SELF
   if (partner == ep->myself) {
     req->generic.partner = ep->myself;
-    req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY;
     omx__enqueue_request(&ep->connect_req_q, req);
     omx__enqueue_partner_connect_request(partner, req);
     omx__connect_complete(ep, req, OMX_SUCCESS, ep->desc->session_id);
@@ -375,8 +376,7 @@ omx__connect_common(omx_endpoint_t ep,
 
   omx__post_connect_request(ep, partner, req);
 
-  /* no need to wait for a done event, tiny is synchronous */
-  req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY;
+  /* no need to wait for a done event, connect is synchronous */
   omx__enqueue_request(&ep->connect_req_q, req);
   omx__enqueue_partner_connect_request(partner, req);
 
@@ -412,7 +412,7 @@ omx_connect(omx_endpoint_t ep,
   }
 
   req->generic.type = OMX_REQUEST_TYPE_CONNECT;
-  req->generic.state = OMX_REQUEST_STATE_INTERNAL; /* the state of synchronous connect is always initialized here */
+  req->generic.state = OMX_REQUEST_STATE_INTERNAL; /* synchronous connects are internal requests */
 
   ret = omx__connect_common(ep, nic_id, endpoint_id, key, req);
   if (ret != OMX_SUCCESS) {
@@ -462,7 +462,6 @@ omx_iconnect(omx_endpoint_t ep,
   }
 
   req->generic.type = OMX_REQUEST_TYPE_CONNECT;
-  req->generic.state = 0; /* iconnect is not INTERNAL */ /* the state of Asynchronous Iconnect is always initialized here */
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
 
