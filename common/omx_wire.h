@@ -19,18 +19,22 @@
 #ifndef __omx_wire_h__
 #define __omx_wire_h__
 
-/******************************
- * Packet definition
+/************
+ * Constants
  */
 
+/* EtherType */
 #define DEFAULT_ETH_P_OMX 0x86DF
-
 #ifndef ETH_P_OMX
 #define ETH_P_OMX DEFAULT_ETH_P_OMX
 #endif
 
 #define OMX_ENDPOINT_INDEX_MAX 256
 #define OMX_PEER_INDEX_MAX 65536
+
+/******************
+ * Packet Subtypes
+ */
 
 enum omx_pkt_type {
 	/* must start with NONE and end with MAX */
@@ -105,6 +109,10 @@ omx_strpkttype(enum omx_pkt_type ptype)
 	}
 }
 
+/***********************
+ * Nack Packet Subtypes
+ */
+
 enum omx_nack_type {
 	OMX_NACK_TYPE_NONE = 0,
 	OMX_NACK_TYPE_BAD_ENDPT,
@@ -133,6 +141,10 @@ omx_strnacktype(enum omx_nack_type ntype)
 	}
 }
 
+/*********************
+ * Packet definitions
+ */
+
 #include <linux/if_ether.h>
 
 struct omx_pkt_head {
@@ -147,7 +159,8 @@ struct omx_pkt_truc {
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint8_t length;
-	uint8_t pad[3];
+	uint8_t pad1[3];
+	/* 8 */
 	uint32_t session;
 	/* 12 */
 };
@@ -158,10 +171,11 @@ struct omx_pkt_connect {
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint8_t length;
-	uint8_t pad[3];
+	uint8_t pad1[3];
+	/* 8 */
 	uint16_t lib_seqnum;
 	uint16_t src_dst_peer_index; /* MX's dest_peer_index */
-	uint32_t pad0;
+	uint32_t pad2;
 	/* 16 */
 };
 
@@ -171,10 +185,12 @@ struct omx_pkt_msg {
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint16_t length;
-	uint16_t pad;
+	uint16_t pad1;
+	/* 8 */
 	uint16_t lib_seqnum;
 	uint16_t lib_piggyack;
 	uint32_t match_a;
+	/* 16 */
 	uint32_t match_b;
 	uint32_t session;
 	/* 24 */
@@ -182,48 +198,67 @@ struct omx_pkt_msg {
 
 struct omx_pkt_medium_frag { /* similar to MX's pkt_msg_t + pkt_frame_t */
 	struct omx_pkt_msg msg;
+	/* 24 */
 	uint16_t frag_length;
 	uint8_t frag_seqnum;
 	uint8_t frag_pipeline;
-	uint32_t pad;
-	/* 24+8 */
+	uint32_t pad1;
+	/* 32 */
 };
 
+#ifdef OMX_MX_WIRE_COMPAT
 struct omx_pkt_pull_request {
 	uint8_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint32_t session;
+	/* 8 */
 	uint32_t total_length; /* total pull length */
-#ifdef OMX_MX_WIRE_COMPAT
 	uint8_t pulled_rdma_id;
 	uint8_t pulled_rdma_seqnum; /* FIXME: unused ? */
 	uint16_t pulled_rdma_offset;
-#else
-	uint32_t pulled_rdma_id;
-	uint8_t pulled_rdma_seqnum; /* FIXME: unused ? */
-	uint8_t pad[3];
-	uint32_t pulled_rdma_offset; /* FIXME: we could use 64bits ? */
-#endif
+	/* 16 */
 	uint32_t src_pull_handle; /* sender's handle id, MX's src_send_handle */
 	uint32_t src_magic; /* sender's endpoint magic, MX's magic */
-#ifdef OMX_MX_WIRE_COMPAT
+	/* 24 */
 	uint16_t first_frame_offset; /* pull iteration offset in the first frame (for the first iteration, set to pulled_rdma_offset), MX's offset */
 	uint16_t block_length; /* current pull block length (nr * pagesize - target offset), MX's pull_length */
-#else
+	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull), MX's index */
+	/* 32 */
+};
+#else /* ~OMX_MX_WIRE_COMPAT */
+struct omx_pkt_pull_request {
+	uint8_t ptype;
+	uint8_t dst_endpoint;
+	uint8_t src_endpoint;
+	uint8_t src_generation; /* FIXME: unused ? */
+	uint32_t session;
+	/* 8 */
+	uint32_t total_length; /* total pull length */
+	uint32_t pulled_rdma_id;
+	/* 16 */
+	uint8_t pulled_rdma_seqnum; /* FIXME: unused ? */
+	uint8_t pad1[3];
+	uint32_t pulled_rdma_offset; /* FIXME: we could use 64bits ? */
+	/* 24 */
+	uint32_t src_pull_handle; /* sender's handle id, MX's src_send_handle */
+	uint32_t src_magic; /* sender's endpoint magic, MX's magic */
+	/* 32 */
 	uint32_t first_frame_offset;
 	uint32_t block_length;
-#endif
+	/* 40 */
 	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull), MX's index */
-	/* 32 in MX wire compat mode */
+	/* 44 */
 };
+#endif /* ~OMX_MX_WIRE_COMPAT */
 
 struct omx_pkt_pull_reply {
 	uint8_t ptype;
 	uint8_t frame_seqnum; /* sender's pull index + page number in this frame, %256 */
 	uint16_t frame_length; /* pagesize - frame_offset */
 	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
+	/* 8 */
 	uint32_t dst_pull_handle; /* sender's handle id */
 	uint32_t dst_magic; /* sender's endpoint magic */
 	/* 16 */
@@ -235,13 +270,16 @@ struct omx_pkt_notify {
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint32_t session;
+	/* 8 */
 	uint32_t total_length;
 	uint8_t puller_rdma_id;
 	uint8_t puller_rdma_seqnum;
-	uint16_t pad0[2];
+	uint16_t pad1;
+	/* 16 */
+	uint16_t pad2;
 	uint16_t lib_seqnum;
 	uint16_t lib_piggyack;
-	uint16_t pad1;
+	uint16_t pad3;
 	/* 24 */
 };
 
@@ -250,12 +288,13 @@ struct omx_pkt_nack_lib {
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint8_t nack_type;
-	uint32_t pad;
-	uint8_t pad0;
+	uint32_t pad1;
+	/* 8 */
+	uint8_t pad2;
 	uint8_t dst_endpoint;
 	uint16_t dst_src_peer_index; /* MX's dest_peer_index */
 	uint16_t lib_seqnum;
-	uint16_t pad1;
+	uint16_t pad3;
 	/* 16 */
 };
 
@@ -264,7 +303,8 @@ struct omx_pkt_nack_mcp {
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint8_t nack_type;
-	uint32_t pad;
+	uint32_t pad1;
+	/* 8 */
 	uint32_t src_pull_handle;
 	uint32_t src_magic;
 	/* 16 */
@@ -302,33 +342,35 @@ struct omx_hdr {
  * + pull->total_length = the total_length of the pull
  * + pull->pulled_rdmawin_id/seqnum/offset = req->remote_rdmawin_id/seqnum/offset
  * + pull->src_pull_handle = internal handle id
- * + pull->magic = internal endpoint pull magic number
- * + pull->block_length = (PAGE*MAX_FRAMES_PER_PULL) - req->remote_rdma_offset,
+ * + pull->src_magic = internal endpoint pull magic number
+ * + pull->block_length = PULL_REPLY_LENGTH_MAX*MAX_FRAMES_PER_PULL - req->remote_rdma_offset,
  *        (align the transfer on page boundaries on the receiver's side)
- * + pull->pull_offset = req->target_rdma_offset
+ * + pull->first_frame_offset = req->remote_offset
  * + pull->frame_index = 0
  *
  * Once this pull is done, a new one is sent with the following changes
- * + pull->block_length = PAGE*MAX_FRAMES_PER_PULL
+ * + pull->block_length = PULL_REPLY_LENGTH_MAX*MAX_FRAMES_PER_PULL
  * + pull->pull_offset = 0
  * + pull->frame_index += MAX_FRAMES_PER_PULL
  *
  * When a pull arrives, the replier sends a pull_reply with
- * reply->frame_seqnum = pull->index
- * reply->frame_length = PAGE - pull->pulled_offset
- * reply->msg_offset = pull->index * PAGE - pull->pulled_rdma_offset + pull->pull_offset
+ * reply->frame_seqnum = pull->frame_index
+ * reply->frame_length = PULL_REPLY_LENGTH_MAX - pull->pulled_offset
+ * reply->msg_offset = pull->frame_index*PULL_REPLY_LENGTH_MAX - pull->pulled_rdma_offset + pull->first_frame_offset
  * reply->src_send_handle = pull->src_send_handle
  * reply->magic = pull->magic
  *
  * The next pull replies have the following changes
  * reply->frame_seqnum += 1
- * reply->frame_length += PAGE
- * reply->msg_offset += prev_frame_length
+ * reply->frame_length = PULL_REPLY_LENGTH_MAX
+ * reply->msg_offset += previos frame_length
  *
  * The replier pulls reply->frame_length bytes from its rdmawin at offset
- * pull->offset first, then reply->frame_seqnum * PAGE
+ *   frame_index * PULL_REPLY_LENGTH_MAX + pull->first_frame_offset
+ * first, then at the same + the previous frame length, ...
  * The puller writes reply->frame_length bytes to its rdmawin at offset
- * req->local_rdma_offset + reply->msg_offset
+ *   req->local_rdma_offset + reply->msg_offset
+ * first, then...
  */
 
 #endif /* __omx_wire_h__ */
