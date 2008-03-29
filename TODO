@@ -1,6 +1,6 @@
 * I/O AT
-  + queue dma'ed skb (with a lock) a complete them asynchronously in wait
-  + only I/O AT if >= 4096 ?
+  + only I/O AT if >= 1024 ?
+  + disable for medium by default, or use it or shared large/medium too?
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 

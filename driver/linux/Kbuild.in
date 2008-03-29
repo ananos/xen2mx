@@ -16,7 +16,7 @@ open-mx-objs	:=	omx_main.o omx_dev.o omx_peer.o \
 			omx_net.o omx_send.o omx_recv.o \
 			omx_reg.o omx_pull.o omx_event.o
 
-ifeq ($(CONFIG_DMA_ENGINE),y)
+ifeq ($(CONFIG_NET_DMA),y)
 open-mx-objs	+=	omx_dma.o
 endif
 

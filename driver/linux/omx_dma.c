@@ -26,35 +26,6 @@
 #include "omx_endpoint.h"
 #include "omx_dma.h"
 
-#ifdef CONFIG_DMA_ENGINE
-
-void *
-omx_dma_get_handle(struct omx_endpoint *endpoint)
-{
-	return get_softnet_dma();
-}
-
-void
-omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle)
-{
-	dma_chan_put((struct dma_chan *) handle);
-}
-
-void
-omx_dma_handle_push(void *handle)
-{
-	dma_async_memcpy_issue_pending((struct dma_chan *) handle);
-}
-
-void
-omx_dma_handle_wait(void *handle, struct sk_buff *skb)
-{
-	struct dma_chan *chan = handle;
-	dma_cookie_t done, used, cookie = skb->dma_cookie;
-
-	while (dma_async_memcpy_complete(chan, cookie, &done, &used) == DMA_IN_PROGRESS);
-}
-
 int
 omx_dma_skb_copy_datagram_to_pages(void *handle,
 				   struct sk_buff *skb, int offset,
@@ -169,19 +140,6 @@ omx_dma_skb_copy_datagram_to_pages(void *handle,
 
  fault:
 	return -EFAULT;
-}
-
-#endif /* CONFIG_DMA_ENGINE */
-
-int
-omx_dma_init(void)
-{
-	return 0;
-}
-
-void
-omx_dma_exit(void)
-{
 }
 
 /*
