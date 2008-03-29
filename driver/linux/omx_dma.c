@@ -18,80 +18,32 @@
 
 #include <linux/kernel.h>
 #include <linux/dmaengine.h>
+#include <linux/netdevice.h>
+#include <net/netdma.h>
 #include <linux/rcupdate.h>
 
 #include "omx_common.h"
 #include "omx_endpoint.h"
 #include "omx_dma.h"
 
-#ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
-
-static spinlock_t omx_dma_lock;
-struct dma_chan *omx_dma_chan = NULL;
-
-static enum dma_state_client
-omx_dma_event_callback(struct dma_client *client, struct dma_chan *chan,
-		       enum dma_state state)
-{
-	enum dma_state_client ack = DMA_DUP; /* default: take no action */
-
-	spin_lock(&omx_dma_lock);
-
-	switch (state) {
-
-	case DMA_RESOURCE_AVAILABLE:
-		if (omx_dma_chan == NULL) {
-			printk(KERN_INFO "Open-MX: DMA channel available.\n");
-			rcu_assign_pointer(omx_dma_chan, chan);
-			ack = DMA_ACK;
-		}
-		break;
-
-	case DMA_RESOURCE_REMOVED:
-		if (omx_dma_chan == chan) {
-			printk(KERN_INFO "Open-MX: DMA channel removed.\n");
-			rcu_assign_pointer(omx_dma_chan, NULL);
-			ack = DMA_ACK;
-		}
-		break;
-
-	default:
-		break;
-	}
-
-	spin_unlock(&omx_dma_lock);
-
-	return ack;
-}
-
-static struct dma_client omx_dma_client = {
-	.event_callback = omx_dma_event_callback,
-};
+#ifdef CONFIG_DMA_ENGINE
 
 void *
 omx_dma_get_handle(struct omx_endpoint *endpoint)
 {
-	struct dma_chan *chan = NULL;
-	if (omx_dmaengine) {
-		chan = rcu_dereference(omx_dma_chan);
-		if (chan)
-			dma_chan_get(chan);
-	}
-	return chan;
+	return get_softnet_dma();
 }
 
 void
 omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle)
 {
-	struct dma_chan *chan = handle;
-	dma_chan_put(chan);
+	dma_chan_put((struct dma_chan *) handle);
 }
 
 void
 omx_dma_handle_push(void *handle)
 {
-	struct dma_chan *chan = handle;
-	dma_async_memcpy_issue_pending(chan);
+	dma_async_memcpy_issue_pending((struct dma_chan *) handle);
 }
 
 void
@@ -219,29 +171,17 @@ omx_dma_skb_copy_datagram_to_pages(void *handle,
 	return -EFAULT;
 }
 
-#endif /* OMX_HAVE_SHAREABLE_DMA_CHANNELS */
+#endif /* CONFIG_DMA_ENGINE */
 
 int
 omx_dma_init(void)
 {
-#ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
-	spin_lock_init(&omx_dma_lock);
-	dma_cap_set(DMA_MEMCPY, omx_dma_client.cap_mask);
-	dma_async_client_register(&omx_dma_client);
-	dma_async_client_chan_request(&omx_dma_client);
-	printk(KERN_INFO "Open-MX: Registered DMA event callback\n");
-#else
-	printk(KERN_INFO "Open-MX: Not using DMA engine channels since they are not shareable\n");
-#endif
 	return 0;
 }
 
 void
 omx_dma_exit(void)
 {
-#ifdef OMX_HAVE_SHAREABLE_DMA_CHANNELS
-	dma_async_client_unregister(&omx_dma_client);
-#endif
 }
 
 /*

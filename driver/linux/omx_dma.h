@@ -32,7 +32,7 @@ static inline void omx_dma_exit(void) { /* nothing */ }
 #endif
 
 /* dma channel manipulation, if available */
-#if (defined CONFIG_DMA_ENGINE) && (defined OMX_HAVE_SHAREABLE_DMA_CHANNELS)
+#ifdef CONFIG_DMA_ENGINE
 
 extern void * omx_dma_get_handle(struct omx_endpoint *endpoint);
 extern void omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle);
