@@ -62,7 +62,7 @@ MODULE_PARM_DESC(skbcopy, "Maximum length of data to copy in linear skb instead 
 
 int omx_dmaengine = 0; /* disabled by default for now */
 module_param_named(dmaengine, omx_dmaengine, uint, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(dmaengine, "Enable DMA engine support\n");
+MODULE_PARM_DESC(dmaengine, "Enable DMA engine support");
 
 int omx_copybench = 0;
 module_param_named(copybench, omx_copybench, uint, S_IRUGO);
