@@ -482,6 +482,9 @@ endpoints=8
 peers=1024
 	Allow a maximum of 1024 peers to be connected on the network.
 	Default is 1024.
+dmaengine=1
+	Enable DMA engine to offload memory copies.
+	Default is 0 (disabled).
 skbfrags=16
 	Allow a maximum of 16 frags to be attached to socket buffer on the
 	send side. If the underlying driver does not support frags, 0 should
