@@ -30,8 +30,6 @@
 #define OMX_PULL_REPLY_PER_BLOCK 31
 #endif
 
-#define OMX_MTU_MIN ((unsigned)(sizeof(struct omx_hdr)+max(OMX_PULL_REPLY_LENGTH_MAX,OMX_SENDQ_ENTRY_SIZE)))
-
 struct omx_iface;
 struct omx_endpoint;
 struct sk_buff;
