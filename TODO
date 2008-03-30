@@ -1,5 +1,4 @@
 * I/O AT
-  + only I/O AT if >= 1024 ?
   + disable for medium by default, or use it or shared large/medium too?
 
 * error handler when completing zombie send/recv only if ep totally open, with special message

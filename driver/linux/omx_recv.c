@@ -359,7 +359,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->msg.lib_piggyack);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
-	void *dma_handle;
+	void *dma_handle = NULL;
 	int err;
 
 	/* check packet length */
@@ -423,17 +423,20 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* try to submit the dma copy */
-	dma_handle = omx_dma_get_handle(endpoint);
-	if (dma_handle) {
-		struct page * page = endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];
-		err = omx_dma_skb_copy_datagram_to_pages(dma_handle, skb, hdr_len, &page, 0, frag_length);
-		if (err < 0) {
-			/* revert back to regular copy */
-			omx_dma_put_handle(endpoint, dma_handle);
-			dma_handle = NULL;
-		} else {
-			omx_dma_handle_push(dma_handle);
-			omx_counter_inc(iface, DMARECV_MEDIUM_FRAG);
+	if (frag_length >= omx_dma_min) {
+		dma_handle = omx_dma_get_handle(endpoint);
+		if (dma_handle) {
+			struct page * page = endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];
+			err = omx_dma_skb_copy_datagram_to_pages(dma_handle, skb, hdr_len, &page, 0, frag_length);
+			/* FIXME: what if the copy was partially submitted? */
+			if (err < 0) {
+				/* revert back to regular copy */
+				omx_dma_put_handle(endpoint, dma_handle);
+				dma_handle = NULL;
+			} else {
+				omx_dma_handle_push(dma_handle);
+				omx_counter_inc(iface, DMARECV_MEDIUM_FRAG);
+			}
 		}
 	}
 

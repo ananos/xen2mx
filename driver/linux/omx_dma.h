@@ -27,6 +27,8 @@
 
 /* enable/disable DMA engine usage at runtime */
 extern int omx_dmaengine;
+/* threshold to offload copy */
+extern int omx_dma_min;
 
 /* initialization and termination of the dma manager */
 static inline int omx_dma_init(void) { return 0; }
