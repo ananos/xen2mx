@@ -701,7 +701,7 @@ omx_fill_pull_block_request(struct omx_pull_handle * handle,
 	}
 
 	/* locate headers */
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	pull_n = &mh->body.pull;
 
 	/* copy common pkt hdrs from the handle */
@@ -1097,7 +1097,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 			omx_set_skb_destructor(skb, omx_send_pull_reply_skb_destructor, region);
 
 			/* locate headers */
-			reply_mh = omx_hdr(skb);
+			reply_mh = omx_skb_mac_header(skb);
 			reply_eh = &reply_mh->head.eth;
 
 		} else {
@@ -1122,7 +1122,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 			}
 
 			/* locate new headers */
-			reply_mh = omx_hdr(skb);
+			reply_mh = omx_skb_mac_header(skb);
 			reply_eh = &reply_mh->head.eth;
 			data = ((char*) reply_mh) + reply_hdr_len;
 

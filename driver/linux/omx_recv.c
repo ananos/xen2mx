@@ -914,7 +914,7 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	iface = omx_iface_find_by_ifp(ifp);
 	if (unlikely(!iface)) {
 		/* at least the ethhdr is linear in the skb */
-		omx_drop_dprintk(&omx_hdr(skb)->head.eth, "packet on non-Open-MX interface %s",
+		omx_drop_dprintk(&omx_skb_mac_header(skb)->head.eth, "packet on non-Open-MX interface %s",
 				 ifp->name);
 		goto out;
 	}
@@ -928,7 +928,7 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 		mh = &linear_header;
 	} else {
 		/* no need to linearize the header */
-		mh = omx_hdr(skb);
+		mh = omx_skb_mac_header(skb);
 	}
 
 	/* no need to check ptype since there is a default error handler

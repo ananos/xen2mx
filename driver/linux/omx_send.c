@@ -161,7 +161,7 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	eh = &mh->head.eth;
 	data = ((char*)mh) + hdr_len;
 
@@ -249,7 +249,7 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	eh = &mh->head.eth;
 	data = ((char*)mh) + hdr_len;
 
@@ -339,7 +339,7 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	eh = &mh->head.eth;
 	data = ((char*)mh) + hdr_len;
 
@@ -453,7 +453,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		}
 
 		/* locate headers */
-		mh = omx_hdr(skb);
+		mh = omx_skb_mac_header(skb);
 		eh = &mh->head.eth;
 
 		/* set destination peer */
@@ -494,7 +494,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		}
 
 		/* locate headers */
-		mh = omx_hdr(skb);
+		mh = omx_skb_mac_header(skb);
 		eh = &mh->head.eth;
 		data = ((char*)mh) + hdr_len;
 
@@ -589,7 +589,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	eh = &mh->head.eth;
 	data = ((char*)mh) + hdr_len;
 
@@ -667,7 +667,7 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
@@ -749,7 +749,7 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 	}
 
 	/* locate headers */
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	eh = &mh->head.eth;
 	data = ((char*)mh) + hdr_len;
 
@@ -811,7 +811,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	}
 
 	/* locate headers */
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
@@ -868,7 +868,7 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	}
 
 	/* locate headers */
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	eh = &mh->head.eth;
 
 	/* fill ethernet header */
@@ -945,7 +945,7 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	if (cmd.type == OMX_CMD_BENCH_TYPE_SEND_ALLOC)
 		goto out_with_skb;
 
-	mh = omx_hdr(skb);
+	mh = omx_skb_mac_header(skb);
 	eh = &mh->head.eth;
 	memset(eh, 0, sizeof(*eh));
 	omx_board_addr_to_ethhdr_dst(eh, (uint64_t)-1ULL);

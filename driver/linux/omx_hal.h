@@ -77,11 +77,11 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 #ifdef OMX_HAVE_SKB_HEADERS
 #define omx_skb_reset_mac_header skb_reset_mac_header
 #define omx_skb_reset_network_header skb_reset_network_header
-#define omx_hdr(skb) ((struct omx_hdr *) skb_mac_header(skb))
+#define omx_skb_mac_header(skb) ((struct omx_hdr *) skb_mac_header(skb))
 #else /* OMX_HAVE_SKB_HEADERS */
 #define omx_skb_reset_mac_header(skb) skb->mac.raw = skb->data
 #define omx_skb_reset_network_header(skb) skb->nh.raw = skb->mac.raw
-#define omx_hdr(skb) ((struct omx_hdr *) skb->mac.raw)
+#define omx_skb_mac_header(skb) ((struct omx_hdr *) skb->mac.raw)
 #endif /* OMX_HAVE_SKB_HEADERS */
 
 #ifdef OMX_HAVE_UTS_NAMESPACE
