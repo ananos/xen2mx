@@ -330,7 +330,7 @@ omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index)
 }
 
 int
-omx_set_target_peer(struct omx_hdr *mh, uint16_t index)
+omx_set_target_peer(struct omx_pkt_head *ph, uint16_t index)
 {
 	struct omx_peer *peer;
 	int err = -EINVAL;
@@ -344,8 +344,8 @@ omx_set_target_peer(struct omx_hdr *mh, uint16_t index)
 	if (!peer)
 		goto out_with_lock;
 
-	omx_board_addr_to_ethhdr_dst(&mh->head.eth, peer->board_addr);
-	OMX_PKT_FIELD_FROM(mh->head.dst_src_peer_index, peer->reverse_index);
+	omx_board_addr_to_ethhdr_dst(&ph->eth, peer->board_addr);
+	OMX_PKT_FIELD_FROM(ph->dst_src_peer_index, peer->reverse_index);
 
 	rcu_read_unlock();
 	return 0;

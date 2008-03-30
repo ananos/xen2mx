@@ -118,7 +118,9 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
+	struct omx_pkt_connect *connect_n;
 	struct omx_cmd_send_connect_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -162,27 +164,29 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 
 	/* locate headers */
 	mh = omx_skb_mac_header(skb);
-	eh = &mh->head.eth;
-	data = ((char*)mh) + hdr_len;
+	ph = &mh->head;
+	eh = &ph->eth;
+	connect_n = (struct omx_pkt_connect *) (ph + 1);
+	data = (char*) (connect_n + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(mh, cmd.peer_index);
+	ret = omx_set_target_peer(ph, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in connect header\n");
 		goto out_with_skb;
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->body.connect.src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(mh->body.connect.dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.connect.ptype, OMX_PKT_TYPE_CONNECT);
-	OMX_PKT_FIELD_FROM(mh->body.connect.length, length);
-	OMX_PKT_FIELD_FROM(mh->body.connect.lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(mh->body.connect.src_dst_peer_index, cmd.peer_index);
+	OMX_PKT_FIELD_FROM(connect_n->src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(connect_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(connect_n->ptype, OMX_PKT_TYPE_CONNECT);
+	OMX_PKT_FIELD_FROM(connect_n->length, length);
+	OMX_PKT_FIELD_FROM(connect_n->lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(connect_n->src_dst_peer_index, cmd.peer_index);
 
 	omx_send_dprintk(eh, "CONNECT length %ld", (unsigned long) length);
 
@@ -210,7 +214,9 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
+	struct omx_pkt_msg *tiny_n;
 	struct omx_cmd_send_tiny_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -250,29 +256,31 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 
 	/* locate headers */
 	mh = omx_skb_mac_header(skb);
-	eh = &mh->head.eth;
-	data = ((char*)mh) + hdr_len;
+	ph = &mh->head;
+	eh = &ph->eth;
+	tiny_n = (struct omx_pkt_msg *) (ph + 1);
+	data = (char*) (tiny_n + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(mh, cmd.peer_index);
+	ret = omx_set_target_peer(ph, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in tiny header\n");
 		goto out_with_skb;
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->body.tiny.src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(mh->body.tiny.dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.tiny.ptype, OMX_PKT_TYPE_TINY);
-	OMX_PKT_FIELD_FROM(mh->body.tiny.length, length);
-	OMX_PKT_FIELD_FROM(mh->body.tiny.lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(mh->body.tiny.lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(mh->body.tiny.session, cmd.session_id);
-	OMX_PKT_MATCH_INFO_FROM(&mh->body.tiny, cmd.match_info);
+	OMX_PKT_FIELD_FROM(tiny_n->src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(tiny_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(tiny_n->ptype, OMX_PKT_TYPE_TINY);
+	OMX_PKT_FIELD_FROM(tiny_n->length, length);
+	OMX_PKT_FIELD_FROM(tiny_n->lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(tiny_n->lib_piggyack, cmd.piggyack);
+	OMX_PKT_FIELD_FROM(tiny_n->session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(tiny_n, cmd.match_info);
 
 	omx_send_dprintk(eh, "TINY length %ld", (unsigned long) length);
 
@@ -300,7 +308,9 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
+	struct omx_pkt_msg *small_n;
 	struct omx_cmd_send_small cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -340,29 +350,31 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 
 	/* locate headers */
 	mh = omx_skb_mac_header(skb);
-	eh = &mh->head.eth;
-	data = ((char*)mh) + hdr_len;
+	ph = &mh->head;
+	eh = &ph->eth;
+	small_n = (struct omx_pkt_msg *) (ph + 1);
+	data = (char*) (small_n + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(mh, cmd.peer_index);
+	ret = omx_set_target_peer(ph, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in small header\n");
 		goto out_with_skb;
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->body.small.src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(mh->body.small.dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.small.ptype, OMX_PKT_TYPE_SMALL);
-	OMX_PKT_FIELD_FROM(mh->body.small.length, length);
-	OMX_PKT_FIELD_FROM(mh->body.small.lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(mh->body.small.lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(mh->body.small.session, cmd.session_id);
-	OMX_PKT_MATCH_INFO_FROM(& mh->body.small, cmd.match_info);
+	OMX_PKT_FIELD_FROM(small_n->src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(small_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(small_n->ptype, OMX_PKT_TYPE_SMALL);
+	OMX_PKT_FIELD_FROM(small_n->length, length);
+	OMX_PKT_FIELD_FROM(small_n->lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(small_n->lib_piggyack, cmd.piggyack);
+	OMX_PKT_FIELD_FROM(small_n->session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(small_n, cmd.match_info);
 
 	omx_send_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
@@ -390,7 +402,9 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
+	struct omx_pkt_medium_frag *medium_n;
 	struct omx_cmd_send_medium cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -454,10 +468,12 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 
 		/* locate headers */
 		mh = omx_skb_mac_header(skb);
-		eh = &mh->head.eth;
+		ph = &mh->head;
+		eh = &ph->eth;
+		medium_n = (struct omx_pkt_medium_frag *) (ph + 1);
 
 		/* set destination peer */
-		ret = omx_set_target_peer(mh, cmd.peer_index);
+		ret = omx_set_target_peer(ph, cmd.peer_index);
 		if (ret < 0) {
 			printk(KERN_INFO "Open-MX: Failed to fill target peer in medium header\n");
 			kfree(defevent);
@@ -495,11 +511,13 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 
 		/* locate headers */
 		mh = omx_skb_mac_header(skb);
-		eh = &mh->head.eth;
-		data = ((char*)mh) + hdr_len;
+		ph = &mh->head;
+		eh = &ph->eth;
+		medium_n = (struct omx_pkt_medium_frag *) (ph + 1);
+		data = (char*) (medium_n + 1);
 
 		/* set destination peer */
-		ret = omx_set_target_peer(mh, cmd.peer_index);
+		ret = omx_set_target_peer(ph, cmd.peer_index);
 		if (ret < 0) {
 			printk(KERN_INFO "Open-MX: Failed to fill target peer in medium header\n");
 			goto out_with_skb;
@@ -520,17 +538,17 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->body.medium.msg.src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(mh->body.medium.msg.dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.medium.msg.ptype, OMX_PKT_TYPE_MEDIUM);
-	OMX_PKT_FIELD_FROM(mh->body.medium.msg.length, cmd.msg_length);
-	OMX_PKT_FIELD_FROM(mh->body.medium.msg.lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(mh->body.medium.msg.lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(mh->body.medium.msg.session, cmd.session_id);
-	OMX_PKT_MATCH_INFO_FROM(& mh->body.medium.msg, cmd.match_info);
-	OMX_PKT_FIELD_FROM(mh->body.medium.frag_length, frag_length);
-	OMX_PKT_FIELD_FROM(mh->body.medium.frag_seqnum, cmd.frag_seqnum);
-	OMX_PKT_FIELD_FROM(mh->body.medium.frag_pipeline, cmd.frag_pipeline);
+	OMX_PKT_FIELD_FROM(medium_n->msg.src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(medium_n->msg.dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(medium_n->msg.ptype, OMX_PKT_TYPE_MEDIUM);
+	OMX_PKT_FIELD_FROM(medium_n->msg.length, cmd.msg_length);
+	OMX_PKT_FIELD_FROM(medium_n->msg.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(medium_n->msg.lib_piggyack, cmd.piggyack);
+	OMX_PKT_FIELD_FROM(medium_n->msg.session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(&medium_n->msg, cmd.match_info);
+	OMX_PKT_FIELD_FROM(medium_n->frag_length, frag_length);
+	OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, cmd.frag_seqnum);
+	OMX_PKT_FIELD_FROM(medium_n->frag_pipeline, cmd.frag_pipeline);
 
 	omx_send_dprintk(eh, "MEDIUM FRAG length %ld", (unsigned long) frag_length);
 
@@ -550,7 +568,9 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
+	struct omx_pkt_msg *rndv_n;
 	struct omx_cmd_send_rndv_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -590,29 +610,31 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 
 	/* locate headers */
 	mh = omx_skb_mac_header(skb);
-	eh = &mh->head.eth;
-	data = ((char*)mh) + hdr_len;
+	ph = &mh->head;
+	eh = &ph->eth;
+	rndv_n = (struct omx_pkt_msg *) (ph + 1);
+	data = (char*) (rndv_n + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(mh, cmd.peer_index);
+	ret = omx_set_target_peer(ph, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in rndv header\n");
 		goto out_with_skb;
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->body.rndv.src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(mh->body.rndv.dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.rndv.ptype, OMX_PKT_TYPE_RNDV);
-	OMX_PKT_FIELD_FROM(mh->body.rndv.length, length);
-	OMX_PKT_FIELD_FROM(mh->body.rndv.lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(mh->body.rndv.lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(mh->body.rndv.session, cmd.session_id);
-	OMX_PKT_MATCH_INFO_FROM(& mh->body.rndv, cmd.match_info);
+	OMX_PKT_FIELD_FROM(rndv_n->src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(rndv_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(rndv_n->ptype, OMX_PKT_TYPE_RNDV);
+	OMX_PKT_FIELD_FROM(rndv_n->length, length);
+	OMX_PKT_FIELD_FROM(rndv_n->lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(rndv_n->lib_piggyack, cmd.piggyack);
+	OMX_PKT_FIELD_FROM(rndv_n->session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(rndv_n, cmd.match_info);
 
 	omx_send_dprintk(eh, "RNDV length %ld", (unsigned long) length);
 
@@ -640,7 +662,9 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
+	struct omx_pkt_notify *notify_n;
 	struct omx_cmd_send_notify cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -668,29 +692,31 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 
 	/* locate headers */
 	mh = omx_skb_mac_header(skb);
-	eh = &mh->head.eth;
+	ph = &mh->head;
+	eh = &ph->eth;
+	notify_n = (struct omx_pkt_notify *) (ph + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(mh, cmd.peer_index);
+	ret = omx_set_target_peer(ph, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in notify header\n");
 		goto out_with_skb;
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->body.notify.src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(mh->body.notify.dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.notify.ptype, OMX_PKT_TYPE_NOTIFY);
-	OMX_PKT_FIELD_FROM(mh->body.notify.total_length, cmd.total_length);
-	OMX_PKT_FIELD_FROM(mh->body.notify.lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(mh->body.notify.lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(mh->body.notify.session, cmd.session_id);
-	OMX_PKT_FIELD_FROM(mh->body.notify.puller_rdma_id, cmd.puller_rdma_id);
-	OMX_PKT_FIELD_FROM(mh->body.notify.puller_rdma_seqnum, cmd.puller_rdma_seqnum);
+	OMX_PKT_FIELD_FROM(notify_n->src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(notify_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(notify_n->ptype, OMX_PKT_TYPE_NOTIFY);
+	OMX_PKT_FIELD_FROM(notify_n->total_length, cmd.total_length);
+	OMX_PKT_FIELD_FROM(notify_n->lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(notify_n->lib_piggyack, cmd.piggyack);
+	OMX_PKT_FIELD_FROM(notify_n->session, cmd.session_id);
+	OMX_PKT_FIELD_FROM(notify_n->puller_rdma_id, cmd.puller_rdma_id);
+	OMX_PKT_FIELD_FROM(notify_n->puller_rdma_seqnum, cmd.puller_rdma_seqnum);
 
 	omx_send_dprintk(eh, "NOTIFY");
 
@@ -710,7 +736,9 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
+	struct omx_pkt_truc *truc_n;
 	struct omx_cmd_send_truc_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -750,26 +778,28 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 
 	/* locate headers */
 	mh = omx_skb_mac_header(skb);
-	eh = &mh->head.eth;
-	data = ((char*)mh) + hdr_len;
+	ph = &mh->head;
+	eh = &ph->eth;
+	truc_n = (struct omx_pkt_truc *) (ph + 1);
+	data = (char*) (truc_n + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(mh, cmd.peer_index);
+	ret = omx_set_target_peer(ph, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in truc header\n");
 		goto out_with_skb;
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->body.truc.src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(mh->body.truc.dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.truc.ptype, OMX_PKT_TYPE_TRUC);
-	OMX_PKT_FIELD_FROM(mh->body.truc.length, length);
-	OMX_PKT_FIELD_FROM(mh->body.truc.session, cmd.session_id);
+	OMX_PKT_FIELD_FROM(truc_n->src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(truc_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(truc_n->ptype, OMX_PKT_TYPE_TRUC);
+	OMX_PKT_FIELD_FROM(truc_n->length, length);
+	OMX_PKT_FIELD_FROM(truc_n->session, cmd.session_id);
 
 	omx_send_dprintk(eh, "TRUC length %ld", (unsigned long) length);
 
@@ -797,7 +827,9 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
+	struct omx_pkt_nack_lib *nack_lib_n;
 	struct net_device * ifp = iface->eth_ifp;
 	int ret;
 
@@ -812,27 +844,29 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	/* locate headers */
 	mh = omx_skb_mac_header(skb);
-	eh = &mh->head.eth;
+	ph = &mh->head;
+	eh = &ph->eth;
+	nack_lib_n = (struct omx_pkt_nack_lib *) (ph + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(mh, peer_index);
+	ret = omx_set_target_peer(ph, peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in notify header\n");
 		/* FIXME: BUG? */
 		goto out_with_skb;
 	}
-	mh->body.nack_lib.dst_src_peer_index = mh->head.dst_src_peer_index;
+	nack_lib_n->dst_src_peer_index = ph->dst_src_peer_index;
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->body.nack_lib.src_endpoint, src_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.nack_lib.dst_endpoint, dst_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.nack_lib.ptype, OMX_PKT_TYPE_NACK_LIB);
-	OMX_PKT_FIELD_FROM(mh->body.nack_lib.nack_type, nack_type);
-	OMX_PKT_FIELD_FROM(mh->body.nack_lib.lib_seqnum, lib_seqnum);
+	OMX_PKT_FIELD_FROM(nack_lib_n->src_endpoint, src_endpoint);
+	OMX_PKT_FIELD_FROM(nack_lib_n->dst_endpoint, dst_endpoint);
+	OMX_PKT_FIELD_FROM(nack_lib_n->ptype, OMX_PKT_TYPE_NACK_LIB);
+	OMX_PKT_FIELD_FROM(nack_lib_n->nack_type, nack_type);
+	OMX_PKT_FIELD_FROM(nack_lib_n->lib_seqnum, lib_seqnum);
 
 	omx_send_dprintk(eh, "NACK LIB type %d", nack_type);
 
@@ -854,7 +888,9 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
+	struct omx_pkt_nack_mcp *nack_mcp_n;
 	struct net_device * ifp = iface->eth_ifp;
 	int ret;
 
@@ -869,14 +905,16 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 
 	/* locate headers */
 	mh = omx_skb_mac_header(skb);
-	eh = &mh->head.eth;
+	ph = &mh->head;
+	eh = &ph->eth;
+	nack_mcp_n = (struct omx_pkt_nack_mcp *) (ph + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(mh, peer_index);
+	ret = omx_set_target_peer(ph, peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in notify header\n");
 		/* FIXME: BUG? */
@@ -884,11 +922,11 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.src_endpoint, src_endpoint);
-	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.ptype, OMX_PKT_TYPE_NACK_MCP);
-	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.nack_type, nack_type);
-	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.src_pull_handle, src_pull_handle);
-	OMX_PKT_FIELD_FROM(mh->body.nack_mcp.src_magic, src_magic);
+	OMX_PKT_FIELD_FROM(nack_mcp_n->src_endpoint, src_endpoint);
+	OMX_PKT_FIELD_FROM(nack_mcp_n->ptype, OMX_PKT_TYPE_NACK_MCP);
+	OMX_PKT_FIELD_FROM(nack_mcp_n->nack_type, nack_type);
+	OMX_PKT_FIELD_FROM(nack_mcp_n->src_pull_handle, src_pull_handle);
+	OMX_PKT_FIELD_FROM(nack_mcp_n->src_magic, src_magic);
 
 	omx_send_dprintk(eh, "NACK MCP type %d", nack_type);
 
@@ -912,6 +950,7 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
@@ -946,7 +985,8 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 		goto out_with_skb;
 
 	mh = omx_skb_mac_header(skb);
-	eh = &mh->head.eth;
+	ph = &mh->head;
+	eh = &ph->eth;
 	memset(eh, 0, sizeof(*eh));
 	omx_board_addr_to_ethhdr_dst(eh, (uint64_t)-1ULL);
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));

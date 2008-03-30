@@ -5,8 +5,6 @@
 
 * replace pull handle's BH lock + idr with RCU + array ?
 
-* drop struct omx_hdr and merge omx_pkt_head into subtypes ?
-
 * add flags for all queued state and split throttling/queued queue into per-flag queue
   + let the callee requeue and return need_retry if did not queue to a better queue
   + and use them and completing requests

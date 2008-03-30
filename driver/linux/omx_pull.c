@@ -449,7 +449,8 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_hdr * mh = &handle->pkt_hdr;
-	struct ethhdr * eh = &mh->head.eth;
+	struct omx_pkt_head * ph = &mh->head;
+	struct ethhdr * eh = &ph->eth;
 	struct omx_pkt_pull_request * pull_n = &mh->body.pull;
 	int ret;
 
@@ -458,7 +459,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(mh, cmd->peer_index);
+	ret = omx_set_target_peer(ph, cmd->peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in pull request header\n");
 		goto out;
@@ -956,7 +957,8 @@ omx_recv_pull_request(struct omx_iface * iface,
 {
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_endpoint * endpoint;
-	struct ethhdr *pull_eh = &pull_mh->head.eth;
+	struct omx_pkt_head *pull_ph = &pull_mh->head;
+	struct ethhdr *pull_eh = &pull_ph->eth;
 	struct omx_pkt_pull_request *pull_request_n = &pull_mh->body.pull;
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(pull_request_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(pull_request_n->src_endpoint);
@@ -972,6 +974,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 	struct omx_user_region_offset_cache region_cache;
 	struct omx_pkt_pull_reply *pull_reply_n;
 	struct omx_hdr *reply_mh;
+	struct omx_pkt_head *reply_ph;
 	struct ethhdr *reply_eh;
 	size_t reply_hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_reply);
 	struct omx_user_region *region;
@@ -1098,7 +1101,8 @@ omx_recv_pull_request(struct omx_iface * iface,
 
 			/* locate headers */
 			reply_mh = omx_skb_mac_header(skb);
-			reply_eh = &reply_mh->head.eth;
+			reply_ph = &reply_mh->head;
+			reply_eh = &reply_ph->eth;
 
 		} else {
 			void *data;
@@ -1123,7 +1127,8 @@ omx_recv_pull_request(struct omx_iface * iface,
 
 			/* locate new headers */
 			reply_mh = omx_skb_mac_header(skb);
-			reply_eh = &reply_mh->head.eth;
+			reply_ph = &reply_mh->head;
+			reply_eh = &reply_ph->eth;
 			data = ((char*) reply_mh) + reply_hdr_len;
 
 			/* copy from pages into the skb */
