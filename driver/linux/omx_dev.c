@@ -31,7 +31,7 @@
 #include "omx_iface.h"
 #include "omx_peer.h"
 #include "omx_endpoint.h"
-#include "omx_region.h"
+#include "omx_reg.h"
 
 /******************************
  * Alloc/Release internal endpoint fields once everything is setup/locked

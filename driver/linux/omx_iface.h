@@ -55,6 +55,9 @@ struct omx_iface {
 	uint32_t counters[OMX_COUNTER_INDEX_MAX];
 };
 
+extern int omx_net_init(void);
+extern void omx_net_exit(void);
+
 extern void omx_iface_release(struct omx_iface * iface);
 
 extern int omx_ifnames_get(char *buf, struct kernel_param *kp);

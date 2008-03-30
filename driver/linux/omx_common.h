@@ -46,10 +46,6 @@ extern int omx_skb_frags;
 extern int omx_skb_copy_max;
 extern int omx_copybench;
 
-/* main net */
-extern int omx_net_init(void);
-extern void omx_net_exit(void);
-
 /* events */
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);
 extern int omx_notify_exp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);

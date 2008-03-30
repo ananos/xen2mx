@@ -22,7 +22,7 @@
 #include "omx_shared.h"
 #include "omx_iface.h"
 #include "omx_misc.h"
-#include "omx_region.h"
+#include "omx_reg.h"
 #include "omx_common.h"
 #include "omx_io.h"
 
