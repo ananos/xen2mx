@@ -184,9 +184,11 @@ important functions being unavailable (especially vm_insert_page).
 ++==========================++
 
 By default, all existing network interfaces in the system will be
-attached to Open-MX (except those above 8 by default). To change
-the order or select which interfaces to attach, you may use the
-ifnames module parameter when loading:
+attached to Open-MX (except those above 8 by default), except the
+ones that are not Ethernet, are not up, or have a small MTU.
+
+To change the order or select which interfaces to attach, you may
+use the ifnames module parameter when loading:
 $ modprobe open-mx ifnames="eth3 eth2"
 
 The current list of attached interfaces may be observed by reading

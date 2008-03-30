@@ -835,11 +835,26 @@ omx_net_init(const char * ifnames)
 		kfree(copy);
 
 	} else {
-		/* attach everything (limited to omx_iface_max) */
+		/* attach everything ethernet/up/large-mtu (limited to omx_iface_max) */
 		struct net_device * ifp;
 
 		read_lock(&dev_base_lock);
 		omx_for_each_netdev(ifp) {
+			/* check that it is an Ethernet device, that it is up, and that the MTU is large enough */
+			if (ifp->type != ARPHRD_ETHER) {
+				printk(KERN_INFO "Open-MX: not attaching non-Ethernet interface '%s' by default\n",
+				       ifp->name);
+				continue;
+			} else if (!(dev_get_flags(ifp) & IFF_UP)) {
+				printk(KERN_INFO "Open-MX: not attaching non-up interface '%s' by default\n",
+				       ifp->name);
+				continue;
+			} else if (ifp->mtu < OMX_MTU_MIN) {
+				printk(KERN_INFO "Open-MX: not attaching interface '%s' with small MTU %d by default\n",
+				       ifp->name, ifp->mtu);
+				continue;
+			}
+
 			dev_hold(ifp);
 			if (omx_iface_attach(ifp) < 0) {
 				dev_put(ifp);
