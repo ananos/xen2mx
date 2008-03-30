@@ -189,7 +189,7 @@ ones that are not Ethernet, are not up, or have a small MTU.
 
 To change the order or select which interfaces to attach, you may
 use the ifnames module parameter when loading:
-$ modprobe open-mx ifnames="eth3 eth2"
+$ modprobe open-mx ifnames="eth3,eth2"
 
 The current list of attached interfaces may be observed by reading
 the /sys/class/misc/open-mx/ifaces special file.
@@ -197,7 +197,8 @@ Writing 'foo' or '+foo' in the file will attach interface 'foo'.
 Writing '-bar' will detach interface 'bar', except if some endpoints
 are still using it. To force the removal of an interface even if some
 endpoints are still using it, '--bar' should be written in the special
-file.
+file. Multiple commands may be sent at once by separating them with
+commas.
 
 The list of currently open endpoints may be seen with:
 $ omx_endpoint_info

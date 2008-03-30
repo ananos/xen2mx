@@ -38,7 +38,7 @@
 
 static char * omx_ifnames = OMX_IFNAMES_DEFAULT;
 module_param_named(ifnames, omx_ifnames, charp, S_IRUGO); /* modifiable by the attached sysfs file */
-MODULE_PARM_DESC(ifnames, "Interfaces to attach on startup");
+MODULE_PARM_DESC(ifnames, "Interfaces to attach on startup, comma-separated");
 
 int omx_iface_max = 32;
 module_param_named(ifaces, omx_iface_max, uint, S_IRUGO);

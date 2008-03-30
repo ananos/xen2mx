@@ -440,36 +440,29 @@ omx_ifaces_show(char *buf)
 }
 
 /*
- * Attach/Detach ifaces depending on the given string.
+ * Attach/Detach one iface depending on the given string.
  *
- * +name adds an iface
+ * name or +name adds an iface
  * -name removes one
+ * --name removes one by force, even if some endpoints are open
  */
-int
-omx_ifaces_store(const char *buf, size_t size)
+static int
+omx_ifaces_store_one(const char *buf)
 {
-	char tmp[IFNAMSIZ+2];
-	size_t tmpsize = size > IFNAMSIZ+2 ? IFNAMSIZ+2 : size;
-	char *ptr;
+	int ret = 0;
 
-	/* remove the ending \n if required, so copy first since buf is const */
-	strncpy(tmp, buf, tmpsize);
-	tmp[tmpsize-1] = '\0';
-	ptr = strchr(tmp, '\n');
-	if (ptr)
-		*ptr = '\0';
-
-	if (tmp[0] == '-') {
-		char *ifname;
-		int ret = -EINVAL;
+	if (buf[0] == '-') {
+		const char *ifname;
 		int force = 0;
 		int i;
+
 		/* if none matches, we return -EINVAL.
 		 * if one matches, it sets ret accordingly.
 		 */
+		ret = -EINVAL;
 
 		/* remove the first '-' and possibly another one for force */
-		ifname = tmp+1;
+		ifname = buf+1;
 		if (ifname[0] == '-') {
 			ifname++;
 			force = 1;
@@ -507,16 +500,15 @@ omx_ifaces_store(const char *buf, size_t size)
 			printk(KERN_ERR "Open-MX: Cannot find any attached interface '%s' to detach\n", ifname);
 
 	} else {
-		char *ifname = tmp;
+		const char *ifname = buf;
 		struct net_device * ifp;
 
 		/* remove the first optional '+' */
-		if (tmp[0] == '+')
+		if (buf[0] == '+')
 			ifname++;
 
 		ifp = omx_dev_get_by_name(ifname);
 		if (ifp) {
-			int ret;
 			mutex_lock(&omx_ifaces_mutex);
 			ret = omx_iface_attach(ifp);
 			mutex_unlock(&omx_ifaces_mutex);
@@ -525,8 +517,47 @@ omx_ifaces_store(const char *buf, size_t size)
 		} else {
 			printk(KERN_ERR "Open-MX: Cannot find interface '%s' to attach\n", ifname);
 		}
-
 	}
+
+	return ret;
+}
+
+/*
+ * Attach/Detach one or multiple ifaces depending on the given string, comma-separated.
+ */
+int
+omx_ifaces_store(const char *buf, size_t size)
+{
+	const char *ptr = buf;
+	ssize_t remaining = size;
+
+	do {
+		char tmp[IFNAMSIZ+2];
+		size_t len;
+		char *end;
+
+		end = strnchr(ptr, remaining, ',');
+		if (!end) {
+			end = strnchr(ptr, remaining, '\n');
+			if (!end) {
+				end = strnchr(ptr, remaining, '\0');
+				if (!end)
+					end = ((char*) ptr) + remaining;
+			}
+		}
+
+		/* copy the word in tmp, and keep one byte to add the ending \0 */
+		len = end-ptr;
+		if (len >= sizeof(tmp))
+			break;
+		strncpy(tmp, ptr, len);
+		tmp[len] = '\0';
+
+		omx_ifaces_store_one(tmp);
+
+		remaining -= len+1;
+		ptr = end+1;
+	} while (remaining > 0);
 
 	/* always return the length to empty the buffer, even on error */
 	return size;
@@ -819,20 +850,7 @@ omx_net_init(const char * ifnames)
 
 	if (strcmp(ifnames, OMX_IFNAMES_DEFAULT)) {
 		/* attach ifaces whose name are in ifnames (limited to omx_iface_max) */
-		char * copy = kstrdup(ifnames, GFP_KERNEL);
-		char * ifname;
-
-		while ((ifname = strsep(&copy, ",")) != NULL) {
-			struct net_device * ifp;
-			ifp = omx_dev_get_by_name(ifname);
-			if (ifp)
-				if (omx_iface_attach(ifp) < 0) {
-					dev_put(ifp);
-					break;
-				}
-		}
-
-		kfree(copy);
+		omx_ifaces_store(ifnames, strlen(ifnames)+1);
 
 	} else {
 		/* attach everything ethernet/up/large-mtu (limited to omx_iface_max) */
