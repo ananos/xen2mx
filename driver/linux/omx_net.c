@@ -196,7 +196,7 @@ omx_iface_set_hostname(uint8_t board_index, char * hostname)
 	if (!iface)
 		goto out_with_lock;
 
-	printk(KERN_INFO "Open-MX: changing board %d (iface %s) hostname from %s to %s\n",
+	printk(KERN_INFO "Open-MX: changing board %d (interface '%s') hostname from %s to %s\n",
 	       board_index, iface->eth_ifp->name, iface->peer.hostname, hostname);
 
 	old_hostname = iface->peer.hostname;
@@ -240,7 +240,7 @@ omx_iface_attach(struct net_device * ifp)
 	}
 
 	if (omx_iface_find_by_ifp(ifp)) {
-		printk(KERN_ERR "Open-MX: Interface %s already attached\n", ifp->name);
+		printk(KERN_ERR "Open-MX: Interface '%s' already attached\n", ifp->name);
 		ret = -EBUSY;
 		goto out_with_ifp_hold;
 	}
@@ -256,7 +256,7 @@ omx_iface_attach(struct net_device * ifp)
 		goto out_with_ifp_hold;
 	}
 
-	printk(KERN_INFO "Open-MX: Attaching %sEthernet device '%s' as #%i, MTU=%d\n",
+	printk(KERN_INFO "Open-MX: Attaching %sEthernet interface '%s' as #%i, MTU=%d\n",
 	       (ifp->type == ARPHRD_ETHER ? "" : "non-"), ifp->name, i, mtu);
 	if (!(dev_get_flags(ifp) & IFF_UP))
 		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' is not up\n",
@@ -315,7 +315,7 @@ __omx_iface_last_release(struct kref *kref)
 	struct omx_iface * iface = container_of(kref, struct omx_iface, refcount);
 	struct net_device * ifp = iface->eth_ifp;
 
-	dprintk(KREF, "releasing the last reference on iface %s (%s)\n",
+	dprintk(KREF, "releasing the last reference on %s (interface '%s')\n",
 		iface->peer.hostname, ifp->name);
 
 	kfree(iface->endpoints);
@@ -355,8 +355,8 @@ omx_iface_detach(struct omx_iface * iface, int force)
 
 	ret = -EBUSY;
 	if (!force && iface->endpoint_nr) {
-		printk(KERN_INFO "Open-MX: cannot detach interface #%d '%s', still %d endpoints open\n",
-		       iface->index, iface->eth_ifp->name, iface->endpoint_nr);
+		printk(KERN_INFO "Open-MX: cannot detach interface '%s' (#%d), still %d endpoints open\n",
+		       iface->eth_ifp->name, iface->index, iface->endpoint_nr);
 		mutex_unlock(&iface->endpoints_mutex);
 		goto out;
 	}
@@ -366,8 +366,8 @@ omx_iface_detach(struct omx_iface * iface, int force)
 		if (!endpoint)
 			continue;
 
-		printk(KERN_INFO "Open-MX: forcing close of endpoint #%d attached to iface #%d '%s'\n",
-		       i, iface->index, iface->eth_ifp->name);
+		printk(KERN_INFO "Open-MX: forcing close of endpoint #%d attached to interface '%s' (#%d)\n",
+		       i, iface->eth_ifp->name, iface->index);
 
 		/* notify the interface removal to userspace */
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED;
@@ -385,7 +385,8 @@ omx_iface_detach(struct omx_iface * iface, int force)
 
 	mutex_unlock(&iface->endpoints_mutex);
 
-	printk(KERN_INFO "Open-MX: Detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
+	printk(KERN_INFO "Open-MX: Detaching interface '%s' (#%d)\n",
+	       iface->eth_ifp->name, iface->index);
 
 	/* remove from the peer table */
 	omx_peers_notify_iface_detach(iface);
@@ -497,7 +498,8 @@ omx_ifaces_store_one(const char *buf)
 		mutex_unlock(&omx_ifaces_mutex);
 
 		if (ret == -EINVAL)
-			printk(KERN_ERR "Open-MX: Cannot find any attached interface '%s' to detach\n", ifname);
+			printk(KERN_ERR "Open-MX: Cannot find any attached interface '%s' to detach\n",
+			       ifname);
 
 	} else {
 		const char *ifname = buf;
@@ -515,7 +517,8 @@ omx_ifaces_store_one(const char *buf)
 			if (ret < 0)
 				dev_put(ifp);
 		} else {
-			printk(KERN_ERR "Open-MX: Cannot find interface '%s' to attach\n", ifname);
+			printk(KERN_ERR "Open-MX: Cannot find interface '%s' to attach\n",
+			       ifname);
 		}
 	}
 
