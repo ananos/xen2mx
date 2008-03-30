@@ -27,6 +27,7 @@
 
 #include "omx_common.h"
 #include "omx_peer.h"
+#include "omx_iface.h"
 #include "omx_endpoint.h"
 #include "omx_region.h"
 #include "omx_dma.h"
@@ -36,8 +37,7 @@
  * Module parameters
  */
 
-static char * omx_ifnames = OMX_IFNAMES_DEFAULT;
-module_param_named(ifnames, omx_ifnames, charp, S_IRUGO); /* modifiable by the attached sysfs file */
+module_param_call(ifnames, omx_ifnames_set, omx_ifnames_get, NULL, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(ifnames, "Interfaces to attach on startup, comma-separated");
 
 int omx_iface_max = 32;
@@ -275,7 +275,7 @@ omx_init(void)
 	if (ret < 0)
 		goto out_with_dma;
 
-	ret = omx_net_init((const char *) omx_ifnames);
+	ret = omx_net_init();
 	if (ret < 0)
 		goto out_with_peers;
 

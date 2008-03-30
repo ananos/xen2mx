@@ -37,7 +37,7 @@
 /*
  * Array, number and lock for the list of ifaces
  */
-static struct omx_iface ** omx_ifaces;
+static struct omx_iface ** omx_ifaces = NULL; /* must be NULL during init so that module param are delayed */
 static unsigned omx_iface_nr = 0;
 static struct mutex omx_ifaces_mutex;
 
@@ -414,7 +414,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
  * Format a buffer containing the list of attached ifaces.
  */
 int
-omx_ifaces_show(char *buf)
+omx_ifnames_get(char *buf, struct kernel_param *kp)
 {
 	int total = 0;
 	int i;
@@ -529,7 +529,7 @@ omx_ifaces_store_one(const char *buf)
  * Attach/Detach one or multiple ifaces depending on the given string,
  * comma- or \n-separated, and \0-terminated.
  */
-void
+static void
 omx_ifaces_store(const char *buf)
 {
 	const char *ptr = buf;
@@ -555,6 +555,21 @@ omx_ifaces_store(const char *buf)
 			break;
 		ptr++;
 	}
+}
+
+static char *omx_delayed_ifnames = NULL;
+
+int
+omx_ifnames_set(const char *buf, struct kernel_param *kp)
+{
+	if (omx_ifaces) {
+		/* module parameter values are guaranteed to be \0-terminated */
+		omx_ifaces_store(buf);
+	} else {
+		/* the module init isn't done yet, let the string be parsed later */
+		omx_delayed_ifnames = kstrdup(buf, GFP_KERNEL);
+	}
+	return 0;
 }
 
 /******************************
@@ -816,7 +831,7 @@ omx_net_copy_bench(void)
  */
 
 int
-omx_net_init(const char * ifnames)
+omx_net_init(void)
 {
 	int ret = 0;
 
@@ -842,10 +857,11 @@ omx_net_init(const char * ifnames)
 		goto out_with_notifier;
 	}
 
-	if (strcmp(ifnames, OMX_IFNAMES_DEFAULT)) {
+	if (omx_delayed_ifnames) {
 		/* attach ifaces whose name are in ifnames (limited to omx_iface_max) */
 		/* module parameter values are guaranteed to be \0-terminated */
-		omx_ifaces_store(ifnames);
+		omx_ifaces_store(omx_delayed_ifnames);
+		kfree(omx_delayed_ifnames);
 
 	} else {
 		/* attach everything ethernet/up/large-mtu (limited to omx_iface_max) */

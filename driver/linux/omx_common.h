@@ -32,8 +32,6 @@
 
 #define OMX_MTU_MIN ((unsigned)(sizeof(struct omx_hdr)+max(OMX_PULL_REPLY_LENGTH_MAX,OMX_SENDQ_ENTRY_SIZE)))
 
-#define OMX_IFNAMES_DEFAULT "all"
-
 struct omx_iface;
 struct omx_endpoint;
 struct sk_buff;
@@ -49,7 +47,7 @@ extern int omx_skb_copy_max;
 extern int omx_copybench;
 
 /* main net */
-extern int omx_net_init(const char * ifnames);
+extern int omx_net_init(void);
 extern void omx_net_exit(void);
 
 /* events */

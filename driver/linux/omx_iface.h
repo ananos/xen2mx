@@ -22,6 +22,7 @@
 #include <linux/netdevice.h>
 #include <linux/spinlock.h>
 #include <linux/kref.h>
+#include <linux/moduleparam.h>
 #ifdef OMX_HAVE_MUTEX
 #include <linux/mutex.h>
 #endif
@@ -56,8 +57,9 @@ struct omx_iface {
 
 extern void omx_iface_release(struct omx_iface * iface);
 
-extern int omx_ifaces_show(char *buf);
-extern void omx_ifaces_store(const char *buf);
+extern int omx_ifnames_get(char *buf, struct kernel_param *kp);
+extern int omx_ifnames_set(const char *buf, struct kernel_param *kp);
+
 extern int omx_ifaces_get_count(void);
 extern int omx_iface_get_info(uint8_t board_index, struct omx_board_info *info);
 extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);

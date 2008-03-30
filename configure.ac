@@ -222,16 +222,6 @@ if test x$build_driver = xyes ; then
       AC_MSG_RESULT(no)
     fi
 
-    # miscdevice pointed to a class_device before 2.6.20
-    AC_MSG_CHECKING((in kernel headers) device type in miscdevice)
-    if sed -ne '/^struct miscdevice/,/^};/p' ${LINUX_HDR}/include/linux/miscdevice.h \
-       | grep "struct class_device" > /dev/null ; then
-      echo "#define OMX_MISCDEV_HAVE_CLASS_DEVICE 1" >> ${TMP_CHECKS_PATH}
-      AC_MSG_RESULT(struct class_device)
-    else
-      AC_MSG_RESULT(struct device)
-    fi
-
     # dev_base list replaced with for_each_netdev added in 2.6.22
     # and modified for net namespaces in 2.6.24
     AC_MSG_CHECKING((in kernel headers) for_each_netdev availability)

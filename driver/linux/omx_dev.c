@@ -727,73 +727,6 @@ omx_miscdev = {
 };
 
 /******************************
- * Device attributes
- */
-
-#ifdef OMX_MISCDEV_HAVE_CLASS_DEVICE
-
-static ssize_t
-omx_ifaces_attr_show(struct class_device *dev, char *buf)
-{
-	return omx_ifaces_show(buf);
-}
-
-static ssize_t
-omx_ifaces_attr_store(struct class_device *dev, const char *buf, size_t size)
-{
-	/* sysfs write are guaranteed to be \0-terminated */
-	omx_ifaces_store(buf);
-	return size;
-}
-
-static CLASS_DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, omx_ifaces_attr_show, omx_ifaces_attr_store);
-
-static int
-omx_init_attributes(void)
-{
-	return class_device_create_file(omx_miscdev.class, &class_device_attr_ifaces);
-}
-
-static void
-omx_exit_attributes(void)
-{
-	class_device_remove_file(omx_miscdev.class, &class_device_attr_ifaces);
-}
-
-#else /* !OMX_MISCDEV_HAVE_CLASS_DEVICE */
-
-static ssize_t
-omx_ifaces_attr_show(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return omx_ifaces_show(buf);
-}
-
-static ssize_t
-omx_ifaces_attr_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
-{
-	/* sysfs write are guaranteed to be \0-terminated */
-	omx_ifaces_store(buf);
-	return size;
-}
-
-static DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, omx_ifaces_attr_show, omx_ifaces_attr_store);
-
-static int
-omx_init_attributes(void)
-{
-	return device_create_file(omx_miscdev.this_device, &dev_attr_ifaces);
-}
-
-static void
-omx_exit_attributes(void)
-{
-	device_remove_file(omx_miscdev.this_device, &dev_attr_ifaces);
-}
-
-#endif /* !OMX_MISCDEV_HAVE_CLASS_DEVICE */
-
-
-/******************************
  * Device registration
  */
 
@@ -818,16 +751,8 @@ omx_dev_init(void)
 		goto out;
 	}
 
-	ret = omx_init_attributes();
-	if (ret < 0) {
-		printk(KERN_ERR "Open-MX: failed to create misc device attributes, error %d\n", ret);
-		goto out_with_device;
-	}
-
 	return 0;
 
- out_with_device:
-	misc_deregister(&omx_miscdev);
  out:
 	return ret;
 }
@@ -835,7 +760,6 @@ omx_dev_init(void)
 void
 omx_dev_exit(void)
 {
-	omx_exit_attributes();
 	misc_deregister(&omx_miscdev);
 }
 
