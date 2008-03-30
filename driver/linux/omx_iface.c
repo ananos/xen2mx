@@ -426,7 +426,10 @@ omx_ifnames_get(char *buf, struct kernel_param *kp)
 		if (iface) {
 			char * ifname = iface->eth_ifp->name;
 			int length = strlen(ifname);
-			/* FIXME: check total+length+2 <= PAGE_SIZE ? */
+			if (total + length + 2 > PAGE_SIZE) {
+				printk(KERN_ERR "Open-MX: Failed to get all interface names within a single page, ignoring the last ones\n");
+				break;
+			}
 			strcpy(buf, ifname);
 			buf += length;
 			strcpy(buf, "\n");
