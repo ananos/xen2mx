@@ -385,7 +385,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
 
 	mutex_unlock(&iface->endpoints_mutex);
 
-	printk(KERN_INFO "Open-MX: detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
+	printk(KERN_INFO "Open-MX: Detaching interface #%d '%s'\n", iface->index, iface->eth_ifp->name);
 
 	/* remove from the peer table */
 	omx_peers_notify_iface_detach(iface);
@@ -523,44 +523,35 @@ omx_ifaces_store_one(const char *buf)
 }
 
 /*
- * Attach/Detach one or multiple ifaces depending on the given string, comma-separated.
+ * Attach/Detach one or multiple ifaces depending on the given string,
+ * comma- or \n-separated, and \0-terminated.
  */
-int
-omx_ifaces_store(const char *buf, size_t size)
+void
+omx_ifaces_store(const char *buf)
 {
 	const char *ptr = buf;
-	ssize_t remaining = size;
 
-	do {
+	while (1) {
 		char tmp[IFNAMSIZ+2];
 		size_t len;
-		char *end;
 
-		end = strnchr(ptr, remaining, ',');
-		if (!end) {
-			end = strnchr(ptr, remaining, '\n');
-			if (!end) {
-				end = strnchr(ptr, remaining, '\0');
-				if (!end)
-					end = ((char*) ptr) + remaining;
-			}
-		}
+		len = strcspn(ptr, ",\n\0");
+		if (!len)
+			goto next;
+		if (len >= sizeof(tmp))
+			goto next;
 
 		/* copy the word in tmp, and keep one byte to add the ending \0 */
-		len = end-ptr;
-		if (len >= sizeof(tmp))
-			break;
 		strncpy(tmp, ptr, len);
 		tmp[len] = '\0';
-
 		omx_ifaces_store_one(tmp);
 
-		remaining -= len+1;
-		ptr = end+1;
-	} while (remaining > 0);
-
-	/* always return the length to empty the buffer, even on error */
-	return size;
+	next:
+		ptr += len;
+		if (*ptr == '\0')
+			break;
+		ptr++;
+	}
 }
 
 /******************************
@@ -850,7 +841,8 @@ omx_net_init(const char * ifnames)
 
 	if (strcmp(ifnames, OMX_IFNAMES_DEFAULT)) {
 		/* attach ifaces whose name are in ifnames (limited to omx_iface_max) */
-		omx_ifaces_store(ifnames, strlen(ifnames)+1);
+		/* module parameter values are guaranteed to be \0-terminated */
+		omx_ifaces_store(ifnames);
 
 	} else {
 		/* attach everything ethernet/up/large-mtu (limited to omx_iface_max) */

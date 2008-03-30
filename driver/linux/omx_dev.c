@@ -741,7 +741,9 @@ omx_ifaces_attr_show(struct class_device *dev, char *buf)
 static ssize_t
 omx_ifaces_attr_store(struct class_device *dev, const char *buf, size_t size)
 {
-	return omx_ifaces_store(buf, size);
+	/* sysfs write are guaranteed to be \0-terminated */
+	omx_ifaces_store(buf);
+	return size;
 }
 
 static CLASS_DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, omx_ifaces_attr_show, omx_ifaces_attr_store);
@@ -769,7 +771,9 @@ omx_ifaces_attr_show(struct device *dev, struct device_attribute *attr, char *bu
 static ssize_t
 omx_ifaces_attr_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t size)
 {
-	return omx_ifaces_store(buf, size);
+	/* sysfs write are guaranteed to be \0-terminated */
+	omx_ifaces_store(buf);
+	return size;
 }
 
 static DEVICE_ATTR(ifaces, S_IRUGO|S_IWUSR, omx_ifaces_attr_show, omx_ifaces_attr_store);
