@@ -97,15 +97,6 @@ other-install: other-installonly
 #######
 # misc
 
-.PHONY: wc
-wc:
-	wc -cl \
-		driver/linux/*.[ch] \
-		common/*.h \
-		libopen-mx/*.[ch] \
-		tools/*.c \
-		tests/*.c
-
 .PHONY: svndist curdist
 
 ifeq ($(SUFFIX),date)
