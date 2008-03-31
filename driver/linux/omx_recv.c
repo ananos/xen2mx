@@ -360,7 +360,9 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
 #ifdef CONFIG_NET_DMA
+	int remaining_copy;
 	struct dma_chan *dma_chan = NULL;
+	dma_cookie_t dma_cookie;
 #endif
 	int err;
 
@@ -425,22 +427,23 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 #ifdef CONFIG_NET_DMA
+	remaining_copy = frag_length;
+
 	/* try to submit the dma copy */
 	if (frag_length >= omx_dma_min) {
 		dma_chan = get_softnet_dma();
 		if (dma_chan) {
 			struct page * page = endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];
-			err = omx_dma_skb_copy_datagram_to_pages(dma_chan,
-								 skb, hdr_len,
-								 &page, 0,
-								 frag_length);
-			/* FIXME: what if the copy was partially submitted? */
-			if (err < 0) {
-				/* revert back to regular copy */
-				dma_chan_put(dma_chan);
-				dma_chan = NULL;
+			remaining_copy = omx_dma_skb_copy_datagram_to_pages(dma_chan, &dma_cookie,
+									    skb, hdr_len,
+									    &page, 0,
+									    frag_length);
+			dma_async_memcpy_issue_pending(dma_chan);
+			if (remaining_copy) {
+				printk(KERN_INFO "Open-MX: DMA copy of medium frag partially submitted, %d/%d remaining\n",
+				       remaining_copy, (unsigned) frag_length);
+				omx_counter_inc(iface, DMARECV_PARTIAL_MEDIUM_FRAG);
 			} else {
-				dma_async_memcpy_issue_pending(dma_chan);
 				omx_counter_inc(iface, DMARECV_MEDIUM_FRAG);
 			}
 		}
@@ -461,20 +464,21 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
-	/* end the copy */
-#ifdef CONFIG_NET_DMA
-	if (dma_chan) {
-		while (dma_async_memcpy_complete(dma_chan,
-						 skb->dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
-		dma_chan_put(dma_chan);
-
-	} else
-#endif
-	{
-		err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset, frag_length);
+	/* copy what's remaining */
+	if (remaining_copy) {
+		int offset = frag_length - remaining_copy;
+		err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset + offset, remaining_copy);
 		/* cannot fail since pages are allocated by us */
 		BUG_ON(err < 0);
 	}
+
+	/* end the offloaded copy */
+#ifdef CONFIG_NET_DMA
+	if (dma_chan) {
+		while (dma_async_memcpy_complete(dma_chan, dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
+		dma_chan_put(dma_chan);
+	}
+#endif
 
 	/* notify the event */
 	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_MEDIUM, &event, sizeof(event));

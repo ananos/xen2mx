@@ -27,15 +27,15 @@
 #include "omx_dma.h"
 
 int
-omx_dma_skb_copy_datagram_to_pages(void *handle,
+omx_dma_skb_copy_datagram_to_pages(struct dma_chan *chan, dma_cookie_t *cookiep,
 				   struct sk_buff *skb, int offset,
 				   struct page **pages, int pgoff,
 				   size_t len)
 {
-	struct dma_chan *chan = handle;
 	int start = skb_headlen(skb);
 	int i, copy;
 	dma_cookie_t cookie = 0;
+	int err;
 
 	/* Copy header. */
 	copy = start - offset;
@@ -50,7 +50,7 @@ omx_dma_skb_copy_datagram_to_pages(void *handle,
 						    skb->data + offset,
 						    chunk);
 		if (cookie < 0)
-			goto fault;
+			goto end;
 
 		len -= chunk;
 		if (len == 0)
@@ -85,7 +85,7 @@ omx_dma_skb_copy_datagram_to_pages(void *handle,
 							   page, frag->page_offset + offset - start,
 							   chunk);
 			if (cookie < 0)
-				goto fault;
+				goto end;
 
 			len -= chunk;
 			if (len == 0)
@@ -115,9 +115,11 @@ omx_dma_skb_copy_datagram_to_pages(void *handle,
 				if (copy > len)
 					copy = len;
 
-				cookie = omx_dma_skb_copy_datagram_to_pages(chan, list, offset - start, pages, pgoff, copy);
-				if (cookie < 0)
-					goto fault;
+				err = omx_dma_skb_copy_datagram_to_pages(chan, &cookie, list, offset - start, pages, pgoff, copy);
+				if (err > 0) {
+					len -= (copy - err);
+					goto end;
+				}
 
 				len -= copy;
 				if (len == 0)
@@ -133,13 +135,8 @@ omx_dma_skb_copy_datagram_to_pages(void *handle,
 	}
 
  end:
-	if (!len) {
-		skb->dma_cookie = cookie;
-		return cookie;
-	}
-
- fault:
-	return -EFAULT;
+	*cookiep = cookie;
+	return len;
 }
 
 /*

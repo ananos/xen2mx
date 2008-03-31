@@ -727,6 +727,7 @@ enum omx_counter_index {
 	OMX_COUNTER_RECV_PULL_REPLY,
 
 	OMX_COUNTER_DMARECV_MEDIUM_FRAG,
+	OMX_COUNTER_DMARECV_PARTIAL_MEDIUM_FRAG,
 
 	OMX_COUNTER_EXP_EVENTQ_FULL,
 	OMX_COUNTER_UNEXP_EVENTQ_FULL,
@@ -831,6 +832,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Recv Pull Reply";
 	case OMX_COUNTER_DMARECV_MEDIUM_FRAG:
 		return "DMA Recv Medium Frag";
+	case OMX_COUNTER_DMARECV_PARTIAL_MEDIUM_FRAG:
+		return "DMA Recv Medium Frag Only Partial";
 	case OMX_COUNTER_EXP_EVENTQ_FULL:
 		return "Expected Event Queue Full";
 	case OMX_COUNTER_UNEXP_EVENTQ_FULL:
