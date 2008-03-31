@@ -1,4 +1,11 @@
 * I/O AT
+  + vectorial callbacks for ioat in large regions
+  + conditional ioat usage on omx_dmaengine && length > omx_dma_min
+  + overlap ioat with the rest of the recv pull reply stuff
+  + queue skb and poll for completion later
+    - in the last frag, with blocking
+    - in the timer
+    - when switching to a new block
   + disable for medium by default, or use it or shared large/medium too?
 
 * howto setup wire compat with mx

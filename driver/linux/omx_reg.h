@@ -61,6 +61,10 @@ struct omx_user_region_offset_cache {
 	/* callbacks */
 	int (*append_pages_to_skb) (struct omx_user_region_offset_cache * cache, struct sk_buff * skb, unsigned long length);
 	void (*copy_pages_to_buf) (struct omx_user_region_offset_cache * cache, void *buffer, unsigned long length);
+#ifdef CONFIG_NET_DMA
+	int (*dma_memcpy_from_pg) (struct omx_user_region_offset_cache * cache, struct dma_chan *chan, dma_cookie_t *cookiep, struct page *page, int pgoff, unsigned long length);
+	int (*dma_memcpy_from_buf) (struct omx_user_region_offset_cache * cache, struct dma_chan *chan, dma_cookie_t *cookiep, void *buf, unsigned long length);
+#endif
 
 #ifdef OMX_DEBUG
 	unsigned long current_offset;

@@ -670,6 +670,169 @@ omx_user_region_offset_cache_vect_copy_callback(struct omx_user_region_offset_ca
 #endif
 }
 
+#ifdef CONFIG_NET_DMA
+/**************************
+ * DMA Copy to User-Region
+ */
+
+static int
+omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback(struct omx_user_region_offset_cache *cache,
+								 struct dma_chan *chan, dma_cookie_t *cookiep,
+								 void *buffer,
+								 unsigned long length)
+{
+	unsigned long remaining = length;
+	struct page ** page = cache->page;
+	unsigned pageoff = cache->pageoff;
+
+#ifdef OMX_DEBUG
+	BUG_ON(cache->current_offset + length >= cache->max_offset);
+#endif
+
+	while (remaining) {
+		unsigned chunk;
+		dma_cookie_t cookie;
+
+		/* compute the chunk size */
+		chunk = remaining;
+		if (chunk > PAGE_SIZE - pageoff)
+			chunk = PAGE_SIZE - pageoff;
+
+		/* append the page */
+		cookie = dma_async_memcpy_buf_to_pg(chan,
+						    *page, pageoff,
+						    buffer,
+						    chunk);
+		if (cookie < 0)
+			goto out;
+		*cookiep = cookie;
+
+		dprintk(REG, "dma copying %d from buffer to region\n", chunk);
+
+		/* update the status */
+		remaining -= chunk;
+		buffer += chunk;
+
+		if (pageoff + chunk == PAGE_SIZE) {
+			/* next page */
+			page++;
+			pageoff = 0;
+			dprintk(REG, "switching offset cache to next page #%ld\n",
+				(unsigned long) (page - &cache->seg->pages[0]));
+		} else {
+			/* same page */
+			pageoff += chunk;
+		}
+	}
+
+	cache->page = page;
+	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length;
+#endif
+	return 0;
+
+ out:
+	cache->page = page;
+	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length-remaining;
+#endif
+	return remaining;
+}
+
+static int
+omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback(struct omx_user_region_offset_cache *cache,
+							       struct dma_chan *chan, dma_cookie_t *cookiep,
+							       void *buffer,
+							       unsigned long length)
+{
+	BUG();
+	return length;
+}
+
+static int
+omx_user_region_offset_cache_dma_contig_memcpy_from_pg_callback(struct omx_user_region_offset_cache *cache,
+								struct dma_chan *chan, dma_cookie_t *cookiep,
+								struct page * skbpage, int skbpgoff,
+								unsigned long length)
+{
+	unsigned long remaining = length;
+	struct page ** page = cache->page;
+	unsigned pageoff = cache->pageoff;
+
+#ifdef OMX_DEBUG
+	BUG_ON(cache->current_offset + length >= cache->max_offset);
+#endif
+
+	while (remaining) {
+		unsigned chunk;
+		dma_cookie_t cookie;
+
+		/* compute the chunk size */
+		chunk = remaining;
+		if (chunk > PAGE_SIZE - pageoff)
+			chunk = PAGE_SIZE - pageoff;
+
+		/* append the page */
+		cookie = dma_async_memcpy_pg_to_pg(chan,
+						   *page, pageoff,
+						   skbpage, skbpgoff,
+						   chunk);
+		if (cookie < 0)
+			goto out;
+		*cookiep = cookie;
+
+		dprintk(REG, "dma copying %d from buffer to region\n", chunk);
+
+		/* update the status */
+		remaining -= chunk;
+		skbpgoff += chunk;
+
+		if (pageoff + chunk == PAGE_SIZE) {
+			/* next page */
+			page++;
+			pageoff = 0;
+			dprintk(REG, "switching offset cache to next page #%ld\n",
+				(unsigned long) (page - &cache->seg->pages[0]));
+		} else {
+			/* same page */
+			pageoff += chunk;
+		}
+	}
+
+	cache->page = page;
+	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length;
+#endif
+	return 0;
+
+ out:
+	cache->page = page;
+	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length-remaining;
+#endif
+	return remaining;
+}
+
+static int
+omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback(struct omx_user_region_offset_cache *cache,
+							      struct dma_chan *chan, dma_cookie_t *cookiep,
+							      struct page * page, int pgoff,
+							      unsigned long length)
+{
+	BUG();
+	return length;
+}
+
+#endif /* CONFIG_NET_DMA */
+
+/*********************
+ * Generic Cache Init
+ */
+
 int
 omx_user_region_offset_cache_init(struct omx_user_region *region,
 				  struct omx_user_region_offset_cache *cache,
@@ -689,6 +852,10 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 		/* vectorial callbacks */
 		cache->append_pages_to_skb = omx_user_region_offset_cache_vect_append_callback;
 		cache->copy_pages_to_buf = omx_user_region_offset_cache_vect_copy_callback;
+#ifdef CONFIG_NET_DMA
+		cache->dma_memcpy_from_pg = omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback;
+		cache->dma_memcpy_from_buf = omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback;
+#endif
 
 		/* find the segment */
 		for(tmp=0, seg = &region->segments[0];
@@ -702,6 +869,10 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 		/* vectorial callbacks */
 		cache->append_pages_to_skb = omx_user_region_offset_cache_contig_append_callback;
 		cache->copy_pages_to_buf = omx_user_region_offset_cache_contig_copy_callback;
+#ifdef CONFIG_NET_DMA
+		cache->dma_memcpy_from_pg = omx_user_region_offset_cache_dma_contig_memcpy_from_pg_callback;
+		cache->dma_memcpy_from_buf = omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback;
+#endif
 
 		/* use the first segment */
 		seg = &region->segments[0];
@@ -835,8 +1006,8 @@ omx_user_region_fill_pages(struct omx_user_region * region,
 	return 0;
 }
 
-/************************************
- * Filling region pages with receive
+/******************************
+ * Shared Copy between Regions
  */
 
 int

@@ -24,6 +24,7 @@
 
 #include "omx_common.h"
 #include "omx_endpoint.h"
+#include "omx_reg.h"
 #include "omx_dma.h"
 
 int
@@ -137,6 +138,109 @@ omx_dma_skb_copy_datagram_to_pages(struct dma_chan *chan, dma_cookie_t *cookiep,
  end:
 	*cookiep = cookie;
 	return len;
+}
+
+static int
+omx__dma_skb_copy_datagram_to_user_region(struct omx_user_region_offset_cache *regcache,
+					  struct dma_chan *chan, dma_cookie_t *cookiep,
+					  struct sk_buff *skb, int skboff,
+					  size_t len)
+{
+	int start = skb_headlen(skb);
+	int i, copy = start - skboff;
+	dma_cookie_t cookie = 0;
+	int err;
+
+	/* Copy header. */
+	if (copy > 0) {
+		if (copy > len)
+			copy = len;
+		err = regcache->dma_memcpy_from_buf(regcache, chan, &cookie, skb->data + skboff, copy);
+		if (err > 0) {
+			len -= (copy - err);
+			goto end;
+		}
+		len -= copy;
+		if (len == 0)
+			goto end;
+		skboff += copy;
+	}
+
+	/* Copy paged appendix. Hmm... why does this look so complicated? */
+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+		int end;
+
+		BUG_ON(start > skboff + len);
+
+		end = start + skb_shinfo(skb)->frags[i].size;
+		copy = end - skboff;
+		if (copy > 0) {
+			skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
+			struct page *page = frag->page;
+
+			if (copy > len)
+				copy = len;
+
+			err = regcache->dma_memcpy_from_pg(regcache, chan, &cookie, page, frag->page_offset + skboff - start, copy);
+			if (err > 0) {
+				len -= (copy - err);
+				goto end;
+			}
+			len -= copy;
+			if (len == 0)
+				goto end;
+			skboff += copy;
+		}
+		start = end;
+	}
+
+	if (skb_shinfo(skb)->frag_list) {
+		struct sk_buff *list = skb_shinfo(skb)->frag_list;
+
+		for (; list; list = list->next) {
+			int end;
+
+			BUG_ON(start > skboff + len);
+
+			end = start + list->len;
+			copy = end - skboff;
+			if (copy > 0) {
+				if (copy > len)
+					copy = len;
+				err = omx__dma_skb_copy_datagram_to_user_region(regcache, chan, &cookie, list, skboff - start, copy);
+				if (err > 0) {
+					len -= (copy - err);
+					goto end;
+				}
+				len -= copy;
+				if (len == 0)
+					goto end;
+				skboff += copy;
+			}
+			start = end;
+		}
+	}
+
+end:
+	*cookiep = cookie;
+	return len;
+}
+
+int
+omx_dma_skb_copy_datagram_to_user_region(struct dma_chan *chan, dma_cookie_t *cookiep,
+					 struct sk_buff *skb,
+					 struct omx_user_region *region, uint32_t regoff,
+					 size_t len)
+{
+	struct omx_user_region_offset_cache regcache;
+	unsigned long skb_offset = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_reply);
+	int err;
+
+	err = omx_user_region_offset_cache_init(region, &regcache, regoff, len);
+	if (err < 0)
+		return err;
+
+	return omx__dma_skb_copy_datagram_to_user_region(&regcache, chan, cookiep, skb, skb_offset, len);
 }
 
 /*
