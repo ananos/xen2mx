@@ -359,8 +359,8 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->msg.lib_piggyack);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
-#ifdef CONFIG_NET_DMA
 	int remaining_copy;
+#ifdef CONFIG_NET_DMA
 	struct dma_chan *dma_chan = NULL;
 	dma_cookie_t dma_cookie;
 #endif
