@@ -40,18 +40,19 @@ installonly:
 install: all installonly
 
 clean:
-	$(CMDECHO) "  LN      DRIVER SOURCES"
 	$(CMDECHO) "  CLEAN   DRIVER"
 	$(CMDPREFIX) +$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) $(KBUILD_VARS) clean
 
 distclean: clean clean-links
 
 links:
+	$(CMDECHO) "  LN      DRIVER SOURCES"
 	$(CMDPREFIX) if test "@srcdir@" != "@builddir@" ; then \
 		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || $(LN_S) $$file ; done ; \
 	fi
 
 clean-links:
+	$(CMDECHO) "  RM      DRIVER SOURCES LINKS"
 	$(CMDPREFIX) if test "@srcdir@" != "@builddir@" ; then \
 		for file in $(wildcard @srcdir@/*.[ch]) ; do $(RM) $$(basename $$file) ; done ; \
 	fi
