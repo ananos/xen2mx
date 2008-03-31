@@ -233,7 +233,7 @@ __omx_user_region_last_release(struct kref * kref)
 		region);
 
 	spin_lock_bh(&omx_regions_cleanup_lock);
-	list_add_tail(&region->list_elt, &omx_regions_cleanup_list);
+	list_add_tail(&region->cleanup_list_elt, &omx_regions_cleanup_list);
 	spin_unlock_bh(&omx_regions_cleanup_lock);
 }
 
@@ -250,8 +250,9 @@ omx_user_regions_cleanup(void)
 	spin_unlock_bh(&omx_regions_cleanup_lock);
 
 	/* and now free all regions without needing any lock */
-	list_for_each_entry_safe(region, next, &private_head, list_elt) {
+	list_for_each_entry_safe(region, next, &private_head, cleanup_list_elt) {
 		omx_user_region_deregister_segments(region);
+		list_del(&region->cleanup_list_elt);
 		kfree(region);
 	}
 }

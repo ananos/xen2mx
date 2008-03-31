@@ -160,7 +160,7 @@ __omx_endpoint_last_release(struct kref *kref)
 	omx_iface_release(iface);
 
 	spin_lock_bh(&omx_endpoints_cleanup_lock);
-	list_add(&endpoint->list_elt, &omx_endpoints_cleanup_list);
+	list_add(&endpoint->cleanup_list_elt, &omx_endpoints_cleanup_list);
 	spin_unlock_bh(&omx_endpoints_cleanup_lock);
 }
 
@@ -177,13 +177,14 @@ omx_endpoints_cleanup(void)
 	spin_unlock_bh(&omx_endpoints_cleanup_lock);
 
 	/* and now free all endpoints without needing any lock */
-	list_for_each_entry_safe(endpoint, next, &private_head, list_elt) {
+	list_for_each_entry_safe(endpoint, next, &private_head, cleanup_list_elt) {
 		/*
 		 * only that were open before end up here,
 		 * the global fd is freed in omx_endpoint_close()
 		 */
 		BUG_ON(endpoint->status != OMX_ENDPOINT_STATUS_CLOSING);
 		omx_endpoint_free_resources(endpoint);
+		list_del(&endpoint->cleanup_list_elt);
 		kfree(endpoint);
 	}
 }

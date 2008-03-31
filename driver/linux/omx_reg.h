@@ -32,7 +32,7 @@ struct omx_user_region {
 	struct kref refcount;
 
 	struct rcu_head rcu_head; /* rcu deferred releasing callback */
-	struct list_head list_elt; /* deferred cleanup thread freeing */
+	struct list_head cleanup_list_elt; /* deferred cleanup thread freeing */
 
 	unsigned nr_segments;
 	unsigned long total_length;

@@ -1,8 +1,13 @@
 * I/O AT
   + disable for medium by default, or use it or shared large/medium too?
 
+* howto setup wire compat with mx
+  + need mx 1.2.5
+  + mx_init_ether_peer 00:11:22:33:44:55 00:00:00:00:00:00 toto:0
+
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
+* switch to vmalloc only above a big threshold of region segment size
 * replace pull handle's BH lock + idr with RCU + array ?
 
 * add flags for all queued state and split throttling/queued queue into per-flag queue

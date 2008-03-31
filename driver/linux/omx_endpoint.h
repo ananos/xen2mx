@@ -55,7 +55,7 @@ struct omx_endpoint {
 	spinlock_t status_lock;
 
 	struct kref refcount;
-	struct list_head list_elt; /* the list entry for the cleanup list */
+	struct list_head cleanup_list_elt; /* the list entry for the cleanup list */
 
 	struct omx_iface * iface;
 
