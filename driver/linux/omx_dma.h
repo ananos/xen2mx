@@ -34,50 +34,9 @@ extern int omx_dma_min;
 static inline int omx_dma_init(void) { return 0; }
 static inline void omx_dma_exit(void) { /* nothing */ }
 
-/* dma channel manipulation, if available */
-static inline void *
-omx_dma_get_handle(struct omx_endpoint *endpoint)
-{
-#ifdef CONFIG_NET_DMA
-	return get_softnet_dma();
-#else
-	return NULL;
-#endif
-}
-
-static inline void
-omx_dma_put_handle(struct omx_endpoint *endpoint, void *handle)
-{
-#ifdef CONFIG_NET_DMA
-	dma_chan_put((struct dma_chan *) handle);
-#endif
-}
-
-/* basic dma descriptor management, if available */
-static inline void
-omx_dma_handle_push(void *handle)
-{
-#ifdef CONFIG_NET_DMA
-	dma_async_memcpy_issue_pending((struct dma_chan *) handle);
-#endif
-}
-
-static inline void
-omx_dma_handle_wait(void *handle, struct sk_buff *skb)
-{
-#ifdef CONFIG_NET_DMA
-	while (dma_async_memcpy_complete((struct dma_chan *) handle,
-					 skb->dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
-#endif
-}
-
 #ifdef CONFIG_NET_DMA
 
 extern int omx_dma_skb_copy_datagram_to_pages(void *handle, struct sk_buff *skb, int offset, struct page **pages, int pgoff, size_t len);
-
-#else
-
-static inline int omx_dma_skb_copy_datagram_to_pages(void *handle, struct sk_buff *skb, int offset, struct page **pages, int pgoff, size_t len) { return -ENOSYS; }
 
 #endif
 

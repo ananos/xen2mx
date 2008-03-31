@@ -359,7 +359,9 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->msg.lib_piggyack);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
-	void *dma_handle = NULL;
+#ifdef CONFIG_NET_DMA
+	struct dma_chan *dma_chan = NULL;
+#endif
 	int err;
 
 	/* check packet length */
@@ -422,23 +424,28 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
+#ifdef CONFIG_NET_DMA
 	/* try to submit the dma copy */
 	if (frag_length >= omx_dma_min) {
-		dma_handle = omx_dma_get_handle(endpoint);
-		if (dma_handle) {
+		dma_chan = get_softnet_dma();
+		if (dma_chan) {
 			struct page * page = endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];
-			err = omx_dma_skb_copy_datagram_to_pages(dma_handle, skb, hdr_len, &page, 0, frag_length);
+			err = omx_dma_skb_copy_datagram_to_pages(dma_chan,
+								 skb, hdr_len,
+								 &page, 0,
+								 frag_length);
 			/* FIXME: what if the copy was partially submitted? */
 			if (err < 0) {
 				/* revert back to regular copy */
-				omx_dma_put_handle(endpoint, dma_handle);
-				dma_handle = NULL;
+				dma_chan_put(dma_chan);
+				dma_chan = NULL;
 			} else {
-				omx_dma_handle_push(dma_handle);
+				dma_async_memcpy_issue_pending(dma_chan);
 				omx_counter_inc(iface, DMARECV_MEDIUM_FRAG);
 			}
 		}
 	}
+#endif
 
 	/* fill event */
 	event.peer_index = peer_index;
@@ -455,10 +462,15 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
 	/* end the copy */
-	if (dma_handle) {
-		omx_dma_handle_wait(dma_handle, skb);
-		omx_dma_put_handle(endpoint, dma_handle);
-	} else {
+#ifdef CONFIG_NET_DMA
+	if (dma_chan) {
+		while (dma_async_memcpy_complete(dma_chan,
+						 skb->dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
+		dma_chan_put(dma_chan);
+
+	} else
+#endif
+	{
 		err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset, frag_length);
 		/* cannot fail since pages are allocated by us */
 		BUG_ON(err < 0);
