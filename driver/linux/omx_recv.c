@@ -426,9 +426,10 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-#ifdef CONFIG_NET_DMA
+	/* need to copy frag_length, either with dma-offload or regular copy or both */
 	remaining_copy = frag_length;
 
+#ifdef CONFIG_NET_DMA
 	/* try to submit the dma copy */
 	if (omx_dmaengine && frag_length >= omx_dma_min) {
 		dma_chan = get_softnet_dma();
