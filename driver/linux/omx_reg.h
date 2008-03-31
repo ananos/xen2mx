@@ -32,6 +32,7 @@ struct omx_user_region {
 	struct kref refcount;
 
 	struct rcu_head rcu_head; /* rcu deferred releasing callback */
+	int nr_vmalloc_segments;
 	struct list_head cleanup_list_elt; /* deferred cleanup thread freeing */
 
 	unsigned nr_segments;
@@ -40,6 +41,7 @@ struct omx_user_region {
 		unsigned first_page_offset;
 		unsigned long length;
 		unsigned long nr_pages;
+		int vmalloced;
 		struct page ** pages;
 	} segments[0];
 };

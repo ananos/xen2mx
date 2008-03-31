@@ -39,6 +39,8 @@
  * Low-level segments and pages registration
  */
 
+#define OMX_REGION_VMALLOC_NR_PAGES_THRESHOLD 4096
+
 static int
 omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 				 struct omx_user_region_segment * segment)
@@ -57,7 +59,13 @@ omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 	aligned_len = PAGE_ALIGN(offset + useglen);
 	nr_pages = aligned_len >> PAGE_SHIFT;
 
-	pages = vmalloc(nr_pages * sizeof(struct page *));
+	if (nr_pages > OMX_REGION_VMALLOC_NR_PAGES_THRESHOLD) {
+		pages = vmalloc(nr_pages * sizeof(struct page *));
+		segment->vmalloced = 1;
+	} else {
+		pages = kmalloc(nr_pages * sizeof(struct page *), GFP_KERNEL);
+		segment->vmalloced = 0;
+	}
 	if (unlikely(!pages)) {
 		printk(KERN_ERR "Open-MX: Failed to allocate user region segment page array\n");
 		ret = -ENOMEM;
@@ -79,7 +87,10 @@ omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 	return 0;
 
  out_with_pages:
-	vfree(pages);
+	if (segment->vmalloced)
+		vfree(pages);
+	else
+		kfree(pages);
  out:
 	return ret;
 }
@@ -89,17 +100,23 @@ omx_user_region_deregister_segment(struct omx_user_region_segment * segment)
 {
 	unsigned long i;
 
-	might_sleep();
-
 	for(i=0; i<segment->nr_pages; i++)
 		put_page(segment->pages[i]);
-	vfree(segment->pages);
+
+	if (segment->vmalloced)
+		vfree(segment->pages);
+	else
+		kfree(segment->pages);
 }
 
 static void
 omx_user_region_deregister_segments(struct omx_user_region * region)
 {
 	int i;
+
+	if (region->nr_vmalloc_segments)
+		might_sleep();
+
 	for(i=0; i<region->nr_segments; i++)
 		omx_user_region_deregister_segment(&region->segments[i]);
 }
@@ -160,6 +177,7 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 
 	kref_init(&region->refcount);
 	region->total_length = 0;
+	region->nr_vmalloc_segments = 0;
 
 	/* keep nr_segments exact so that we may call omx__deregister_user_region safely */
 	region->nr_segments = 0;
@@ -176,6 +194,8 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 			up_write(&current->mm->mmap_sem);
 			goto out_with_region;
 		}
+		if (seg->vmalloced)
+			region->nr_vmalloc_segments++;
 		region->nr_segments++;
 		region->total_length += seg->length;
 		dprintk(REG, "register added new seg #%ld, total %ld length %ld\n",
@@ -232,9 +252,14 @@ __omx_user_region_last_release(struct kref * kref)
 	dprintk(KREF, "releasing the last reference on region %p\n",
 		region);
 
-	spin_lock_bh(&omx_regions_cleanup_lock);
-	list_add_tail(&region->cleanup_list_elt, &omx_regions_cleanup_list);
-	spin_unlock_bh(&omx_regions_cleanup_lock);
+	if (region->nr_vmalloc_segments) {
+		spin_lock_bh(&omx_regions_cleanup_lock);
+		list_add_tail(&region->cleanup_list_elt, &omx_regions_cleanup_list);
+		spin_unlock_bh(&omx_regions_cleanup_lock);
+	} else {
+		omx_user_region_deregister_segments(region);
+		kfree(region);
+	}
 }
 
 void

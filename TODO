@@ -7,7 +7,6 @@
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
-* switch to vmalloc only above a big threshold of region segment size
 * replace pull handle's BH lock + idr with RCU + array ?
 
 * add flags for all queued state and split throttling/queued queue into per-flag queue
