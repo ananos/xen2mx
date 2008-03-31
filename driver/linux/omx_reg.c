@@ -747,8 +747,87 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback(struct omx_user_r
 							       void *buffer,
 							       unsigned long length)
 {
-	BUG();
-	return length;
+	struct omx_user_region *region = cache->region;
+	unsigned long remaining = length;
+	struct omx_user_region_segment *seg = cache->seg;
+	unsigned long segoff = cache->segoff;
+	unsigned long seglen = seg->length;
+	struct page ** page = cache->page;
+	unsigned pageoff = cache->pageoff;
+
+#ifdef OMX_DEBUG
+	BUG_ON(cache->current_offset + length >= cache->max_offset);
+#endif
+
+	while (remaining) {
+		unsigned chunk;
+		dma_cookie_t cookie;
+
+		/* compute the chunk size */
+		chunk = remaining;
+		if (chunk > PAGE_SIZE - pageoff)
+			chunk = PAGE_SIZE - pageoff;
+		if (chunk > seglen - segoff)
+			chunk = seglen - segoff;
+
+		/* append the page */
+		cookie = dma_async_memcpy_buf_to_pg(chan,
+						    *page, pageoff,
+						    buffer,
+						    chunk);
+		if (cookie < 0)
+			goto out;
+		*cookiep = cookie;
+
+		dprintk(REG, "dma copying %d from buffer to region\n", chunk);
+
+		/* update the status */
+		remaining -= chunk;
+		buffer += chunk;
+
+		if (segoff + chunk == seg->length) {
+			/* next segment */
+			seg++;
+			segoff = 0;
+			if (seg-&region->segments[0] > region->nr_segments) {
+				/* we went out of the segment array, we got to be at the end of the request */
+				BUG_ON(remaining != 0);
+			} else {
+				seglen = seg->length;
+				page = &seg->pages[0];
+				pageoff = seg->first_page_offset;
+				dprintk(REG, "switching offset cache to next segment #%ld\n",
+					(unsigned long) (seg - &region->segments[0]));
+			}
+		} else if (pageoff + chunk == PAGE_SIZE) {
+			/* next page in same segment */
+			segoff += chunk;
+			page++;
+			pageoff = 0;
+			dprintk(REG, "switching offset cache to next page #%ld\n",
+				(unsigned long) (page - &seg->pages[0]));
+		} else {
+			/* same page */
+			segoff += chunk;
+			pageoff += chunk;
+		}
+	}
+
+	cache->seg = seg;
+	cache->segoff = segoff;
+	cache->page = page;
+	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length;
+#endif
+
+ out:
+	cache->page = page;
+	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length-remaining;
+#endif
+	return remaining;
 }
 
 static int
@@ -820,11 +899,90 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_pg_callback(struct omx_user_
 static int
 omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback(struct omx_user_region_offset_cache *cache,
 							      struct dma_chan *chan, dma_cookie_t *cookiep,
-							      struct page * page, int pgoff,
+							      struct page * skbpage, int skbpgoff,
 							      unsigned long length)
 {
-	BUG();
-	return length;
+	struct omx_user_region *region = cache->region;
+	unsigned long remaining = length;
+	struct omx_user_region_segment *seg = cache->seg;
+	unsigned long segoff = cache->segoff;
+	unsigned long seglen = seg->length;
+	struct page ** page = cache->page;
+	unsigned pageoff = cache->pageoff;
+
+#ifdef OMX_DEBUG
+	BUG_ON(cache->current_offset + length >= cache->max_offset);
+#endif
+
+	while (remaining) {
+		unsigned chunk;
+		dma_cookie_t cookie;
+
+		/* compute the chunk size */
+		chunk = remaining;
+		if (chunk > PAGE_SIZE - pageoff)
+			chunk = PAGE_SIZE - pageoff;
+		if (chunk > seglen - segoff)
+			chunk = seglen - segoff;
+
+		/* append the page */
+		cookie = dma_async_memcpy_pg_to_pg(chan,
+						   *page, pageoff,
+						   skbpage, skbpgoff,
+						   chunk);
+		if (cookie < 0)
+			goto out;
+		*cookiep = cookie;
+
+		dprintk(REG, "dma copying %d from buffer to region\n", chunk);
+
+		/* update the status */
+		remaining -= chunk;
+		skbpgoff += chunk;
+
+		if (segoff + chunk == seg->length) {
+			/* next segment */
+			seg++;
+			segoff = 0;
+			if (seg-&region->segments[0] > region->nr_segments) {
+				/* we went out of the segment array, we got to be at the end of the request */
+				BUG_ON(remaining != 0);
+			} else {
+				seglen = seg->length;
+				page = &seg->pages[0];
+				pageoff = seg->first_page_offset;
+				dprintk(REG, "switching offset cache to next segment #%ld\n",
+					(unsigned long) (seg - &region->segments[0]));
+			}
+		} else if (pageoff + chunk == PAGE_SIZE) {
+			/* next page in same segment */
+			segoff += chunk;
+			page++;
+			pageoff = 0;
+			dprintk(REG, "switching offset cache to next page #%ld\n",
+				(unsigned long) (page - &seg->pages[0]));
+		} else {
+			/* same page */
+			segoff += chunk;
+			pageoff += chunk;
+		}
+	}
+
+	cache->seg = seg;
+	cache->segoff = segoff;
+	cache->page = page;
+	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length;
+#endif
+
+ out:
+	cache->page = page;
+	cache->pageoff = pageoff;
+#ifdef OMX_DEBUG
+	cache->current_offset += length-remaining;
+#endif
+	return remaining;
 }
 
 #endif /* CONFIG_NET_DMA */
