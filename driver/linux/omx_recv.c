@@ -362,7 +362,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	int remaining_copy;
 #ifdef CONFIG_NET_DMA
 	struct dma_chan *dma_chan = NULL;
-	dma_cookie_t dma_cookie;
+	dma_cookie_t dma_cookie = 0;
 #endif
 	int err;
 
@@ -476,7 +476,8 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* end the offloaded copy */
 #ifdef CONFIG_NET_DMA
 	if (dma_chan) {
-		while (dma_async_memcpy_complete(dma_chan, dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
+		if (dma_cookie > 0)
+			while (dma_async_memcpy_complete(dma_chan, dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
 		dma_chan_put(dma_chan);
 	}
 #endif
