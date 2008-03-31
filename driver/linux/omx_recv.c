@@ -359,7 +359,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->msg.lib_piggyack);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
-	int remaining_copy;
+	int remaining_copy = frag_length;
 #ifdef CONFIG_NET_DMA
 	struct dma_chan *dma_chan = NULL;
 	dma_cookie_t dma_cookie = 0;
@@ -425,9 +425,6 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
-
-	/* need to copy frag_length, either with dma-offload or regular copy or both */
-	remaining_copy = frag_length;
 
 #ifdef CONFIG_NET_DMA
 	/* try to submit the dma copy */

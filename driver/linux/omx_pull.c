@@ -31,6 +31,7 @@
 #include "omx_peer.h"
 #include "omx_endpoint.h"
 #include "omx_reg.h"
+#include "omx_dma.h"
 #ifndef OMX_DISABLE_SHARED
 #include "omx_shared.h"
 #endif
@@ -1350,6 +1351,11 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 	struct omx_pull_handle * handle;
 	omx_frame_bitmask_t bitmap_mask;
+	int remaining_copy = frame_length;
+#ifdef CONFIG_NET_DMA
+	struct dma_chan *dma_chan = NULL;
+	dma_cookie_t dma_cookie = 0;
+#endif
 	int err = 0;
 
 	omx_counter_inc(iface, RECV_PULL_REPLY);
@@ -1457,6 +1463,26 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 	handle->frames_missing_bitmap &= ~bitmap_mask;
 
+#ifdef CONFIG_NET_DMA
+	if (omx_dmaengine && frame_length >= omx_dma_min) {
+		dma_chan = get_softnet_dma();
+		if (dma_chan) {
+			remaining_copy = omx_dma_skb_copy_datagram_to_user_region(dma_chan, &dma_cookie,
+										  skb,
+										  handle->region, msg_offset + handle->puller_rdma_offset,
+										  frame_length);
+			dma_async_memcpy_issue_pending(dma_chan);
+			if (remaining_copy) {
+				printk(KERN_INFO "Open-MX: DMA copy of pull reply partially submitted, %d/%d remaining\n",
+				       remaining_copy, (unsigned) frame_length);
+				omx_counter_inc(iface, DMARECV_PARTIAL_PULL_REPLY);
+			} else {
+				omx_counter_inc(iface, DMARECV_PULL_REPLY);
+			}
+		}
+	}
+#endif
+
 	/* our copy is pending */
 	handle->frames_copying_nr++;
 
@@ -1466,28 +1492,47 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* tell the sparse checker that the lock has been released by omx_progress_pull_on_recv_pull_reply_locked() */
 	__release(&handle->lock);
 
-	/* fill segment pages */
-	dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
-	       (unsigned long) frame_length,
-	       (unsigned long) msg_offset,
-	       (unsigned long) msg_offset + handle->puller_rdma_offset);
-	err = omx_user_region_fill_pages(handle->region,
-					 msg_offset + handle->puller_rdma_offset,
-					 skb,
-					 frame_length);
-	if (unlikely(err < 0)) {
-		omx_counter_inc(iface, PULL_REPLY_FILL_FAILED);
-		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
-		/* the other peer is sending crap, close the handle and report truncated to userspace
-		 * we do not really care about what have been tranfered since it's crap
-		 */
-		spin_lock(&handle->lock);
-		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED);
-		omx_pull_handle_done_release(handle);
-		/* tell the sparse checker that the lock has been released by omx_pull_handle_done_release() */
-		__release(&handle->lock);
-		goto out_with_endpoint;
+	if (remaining_copy) {
+		/* fill segment pages, if something remains to be copied */
+		dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
+		       (unsigned long) frame_length,
+		       (unsigned long) msg_offset,
+		       (unsigned long) msg_offset + handle->puller_rdma_offset);
+		err = omx_user_region_fill_pages(handle->region,
+						 msg_offset + handle->puller_rdma_offset,
+						 skb,
+						 frame_length);
+		if (unlikely(err < 0)) {
+			omx_counter_inc(iface, PULL_REPLY_FILL_FAILED);
+			omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
+
+#ifdef CONFIG_NET_DMA
+			if (dma_chan) {
+				if (dma_cookie > 0)
+					while (dma_async_memcpy_complete(dma_chan, dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
+				dma_chan_put(dma_chan);
+			}
+#endif
+
+			/* the other peer is sending crap, close the handle and report truncated to userspace
+			 * we do not really care about what have been tranfered since it's crap
+			 */
+			spin_lock(&handle->lock);
+			omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED);
+			omx_pull_handle_done_release(handle);
+			/* tell the sparse checker that the lock has been released by omx_pull_handle_done_release() */
+			__release(&handle->lock);
+			goto out_with_endpoint;
+		}
 	}
+
+#ifdef CONFIG_NET_DMA
+	if (dma_chan) {
+		if (dma_cookie > 0)
+			while (dma_async_memcpy_complete(dma_chan, dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
+		dma_chan_put(dma_chan);
+	}
+#endif
 
 	/* take the lock back to prepare to complete */
 	spin_lock(&handle->lock);
