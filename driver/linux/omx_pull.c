@@ -139,8 +139,13 @@ struct omx_pull_handle {
 
 static void omx_pull_handle_timeout_handler(unsigned long data);
 
+#ifdef CONFIG_NET_DMA
 static void omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle);
 static void omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle);
+#else
+#define omx_pull_handle_poll_dma_completions(ph) /* nothing */
+#define omx_pull_handle_wait_dma_completions(ph) /* nothing */
+#endif
 
 /*
  * Notes about locking:
@@ -282,10 +287,8 @@ __omx_pull_handle_last_release(struct kref * kref)
 	dprintk(KREF, "releasing the last reference on pull handle %p\n",
 		handle);
 
-#ifdef CONFIG_NET_DMA
 	/* let the offloaded copy finish */
 	omx_pull_handle_wait_dma_completions(handle);
-#endif
 
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
 	kfree(handle);
@@ -890,10 +893,8 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 		}
 	}
 
-#ifdef CONFIG_NET_DMA
 	/* cleanup a bit of dma-offloaded copies */
 	omx_pull_handle_poll_dma_completions(handle);
-#endif
 
 	/* reschedule another timeout handler */
 	mod_timer(&handle->retransmit_timer,
@@ -1486,10 +1487,8 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 
 	skbs_ready:
 
-#ifdef CONFIG_NET_DMA
 		/* cleanup a bit of dma-offloaded copies */
 		omx_pull_handle_poll_dma_completions(handle);
-#endif
 
 		/* reschedule the timeout handler now that we are ready to send the requests */
 		mod_timer(&handle->retransmit_timer,
@@ -1672,10 +1671,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			omx_counter_inc(iface, PULL_REPLY_FILL_FAILED);
 			omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
 
-#ifdef CONFIG_NET_DMA
 			/* let the offloaded copy finish */
 			omx_pull_handle_wait_dma_completions(handle);
-#endif
 
 			/* the other peer is sending crap, close the handle and report truncated to userspace
 			 * we do not really care about what have been tranfered since it's crap
@@ -1707,10 +1704,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	if (OMX_PULL_HANDLE_ALL_BLOCKS_DONE(handle)
 	    && handle->frames_copying_nr == 0) {
 
-#ifdef CONFIG_NET_DMA
 		/* let the offloaded copy finish */
 		omx_pull_handle_wait_dma_completions(handle);
-#endif
 
 		/* notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
@@ -1839,10 +1834,8 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-#ifdef CONFIG_NET_DMA
 	/* let the offloaded copy finish */
 	omx_pull_handle_wait_dma_completions(handle);
-#endif
 
 	/* complete the handle */
 	omx_pull_handle_done_notify(handle, nack_type);
