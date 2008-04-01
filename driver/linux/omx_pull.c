@@ -1108,8 +1108,8 @@ omx_recv_pull_request(struct omx_iface * iface,
 		} else {
 			void *data;
 
-			/* pages will be released in dev_kfree_skb() */
-			dev_kfree_skb(skb);
+			/* attached pages will be released in kfree_skb() */
+			kfree_skb(skb);
 
  linear:
 			/* failed to append, revert back to copy into a linear skb */

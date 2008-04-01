@@ -203,7 +203,7 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	return ret;
 }
@@ -297,7 +297,7 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	return ret;
 }
@@ -391,7 +391,7 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	return ret;
 }
@@ -557,7 +557,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	return ret;
 }
@@ -651,7 +651,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	return ret;
 }
@@ -725,7 +725,7 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	return ret;
 }
@@ -816,7 +816,7 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	return ret;
 }
@@ -875,7 +875,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	return;
 
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	/* just forget about it, it will be resent anyway */
 	/* return ret; */
@@ -935,7 +935,7 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	return;
 
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	/* just forget about it, it will be resent anyway */
 	/* return ret; */
@@ -1038,8 +1038,9 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
 	goto out;
+
  out_with_skb:
-	dev_kfree_skb(skb);
+	kfree_skb(skb);
  out:
 	return ret;
 }
