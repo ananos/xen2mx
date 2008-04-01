@@ -139,6 +139,9 @@ struct omx_pull_handle {
 
 static void omx_pull_handle_timeout_handler(unsigned long data);
 
+static void omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle);
+static void omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle);
+
 /*
  * Notes about locking:
  *
@@ -278,6 +281,11 @@ __omx_pull_handle_last_release(struct kref * kref)
 
 	dprintk(KREF, "releasing the last reference on pull handle %p\n",
 		handle);
+
+#ifdef CONFIG_NET_DMA
+	/* let the offloaded copy finish */
+	omx_pull_handle_wait_dma_completions(handle);
+#endif
 
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
 	kfree(handle);
@@ -882,6 +890,11 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 		}
 	}
 
+#ifdef CONFIG_NET_DMA
+	/* cleanup a bit of dma-offloaded copies */
+	omx_pull_handle_poll_dma_completions(handle);
+#endif
+
 	/* reschedule another timeout handler */
 	mod_timer(&handle->retransmit_timer,
 		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
@@ -1194,6 +1207,155 @@ omx_recv_pull_request(struct omx_iface * iface,
 	return err;
 }
 
+#ifdef CONFIG_DMA_ENGINE
+
+/****************************
+ * DMA Copy for pull replies
+ */
+
+/*
+ * Submit an DMA-offloaded copy if possible, and return the non-copied length if any.
+ * Acquires a DMA channel first, if needed. And release it if not needed.
+ *
+ * Called with the handle locked
+ */
+static INLINE int
+omx_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_handle *handle, struct sk_buff *skb, uint32_t regoff, uint32_t length)
+{
+	int remaining_copy = length;
+	int acquired_chan = 0;
+
+	struct dma_chan *dma_chan = handle->dma_chan;
+	if (unlikely(!dma_chan)) {
+		dma_chan = handle->dma_chan = get_softnet_dma();
+		acquired_chan = 1;
+	}
+
+	if (likely(dma_chan)) {
+		dma_cookie_t dma_cookie = -1;
+
+		remaining_copy = omx_dma_skb_copy_datagram_to_user_region(dma_chan, &dma_cookie, skb, handle->region, regoff, length);
+
+		if (unlikely(remaining_copy)) {
+			printk(KERN_INFO "Open-MX: DMA copy of pull reply partially submitted, %d/%d remaining\n",
+			       remaining_copy, (unsigned) length);
+			omx_counter_inc(iface, DMARECV_PARTIAL_PULL_REPLY);
+		} else {
+			omx_counter_inc(iface, DMARECV_PULL_REPLY);
+		}
+
+		dprintk(DMA, "skb %p got cookie %d\n", skb, dma_cookie);
+
+		if (likely(dma_cookie > 0)) {
+			handle->dma_last_cookie = dma_cookie;
+			skb->dma_cookie = dma_cookie;
+			__skb_queue_tail(&handle->dma_skb_queue, skb);
+
+		} else if (acquired_chan) {
+			/* release the acquired channel, we didn't use it */
+			dma_chan_put(dma_chan);
+			handle->dma_chan = NULL;
+		}
+	}
+
+	return remaining_copy;
+}
+
+/*
+ * Polls DMA hardware and completes the queued skbs accordingly.
+ * Lets the caller purge the queue if everything is already complete,
+ * or just cleanup the queue a bit.
+ *
+ * Called with the handle locked
+ */
+static INLINE enum dma_status
+omx__pull_handle_poll_dma_completions(struct dma_chan *dma_chan, dma_cookie_t last, struct sk_buff_head *queue)
+{
+	dma_cookie_t done, used;
+	enum dma_status status;
+	struct sk_buff *oldskb;
+
+	dprintk(DMA, "waiting for cookie %d\n", last);
+
+	status = dma_async_memcpy_complete(dma_chan, last, &done, &used);
+	if (status != DMA_IN_PROGRESS) {
+		BUG_ON(status != DMA_SUCCESS);
+		return DMA_SUCCESS;
+	}
+
+	dprintk(DMA, "last cookie still in progress (done %d used %d), cleaning up to %d\n",
+		done, used, done);
+
+	/* do partial cleanup of dma_skb_queue */
+	while ((oldskb = skb_peek(queue)) &&
+	       (dma_async_is_complete(oldskb->dma_cookie, done, used) == DMA_SUCCESS)) {
+		dprintk(DMA, "cleaning skb %p with cookie %d\n", oldskb, oldskb->dma_cookie);
+		__skb_dequeue(queue);
+		kfree_skb(oldskb);
+	}
+
+	return DMA_IN_PROGRESS;
+}
+
+/*
+ * Do a round of polling to release some already offload-copied skbs.
+ * Release resources if everything is already done.
+ *
+ * Called with the handle locked
+ */
+static void
+omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle)
+{
+	struct dma_chan *dma_chan;
+
+	dma_chan = handle->dma_chan;
+	if (unlikely(!dma_chan))
+		return;
+
+	/* Push remaining copies to the DMA hardware */
+	dma_async_memcpy_issue_pending(dma_chan);
+
+	if (omx__pull_handle_poll_dma_completions(dma_chan, handle->dma_last_cookie, &handle->dma_skb_queue)
+	    == DMA_SUCCESS) {
+		/* All copies are already done, it's safe to free early-copied skbs now */
+		dprintk(DMA, "all cookies are ready\n");
+		__skb_queue_purge(&handle->dma_skb_queue);
+		dma_chan_put(dma_chan);
+		handle->dma_chan = NULL;
+		handle->dma_last_cookie = -1;
+	}
+}
+
+/*
+ * Wait until all DMA-offloaded copies for this handle are completed,
+ * and release the resources.
+ *
+ * Called with the handle locked
+ */
+static void
+omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle)
+{
+	struct dma_chan *dma_chan;
+
+	dma_chan = handle->dma_chan;
+	if (unlikely(!dma_chan))
+		return;
+
+	/* Push remaining copies to the DMA hardware */
+	dma_async_memcpy_issue_pending(dma_chan);
+
+	while (omx__pull_handle_poll_dma_completions(dma_chan, handle->dma_last_cookie, &handle->dma_skb_queue) == DMA_IN_PROGRESS);
+
+	/* All copies already done, it's safe to free early-copied skbs now */
+	dprintk(DMA, "all cookies are ready\n");
+	__skb_queue_purge(&handle->dma_skb_queue);
+	dma_chan_put(dma_chan);
+	handle->dma_chan = NULL;
+	handle->dma_last_cookie = -1;
+}
+
+#endif /* ~CONFIG_DMA_ENGINE */
+
 /********************
  * Recv pull replies
  */
@@ -1323,6 +1485,12 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
 	skbs_ready:
+
+#ifdef CONFIG_NET_DMA
+		/* cleanup a bit of dma-offloaded copies */
+		omx_pull_handle_poll_dma_completions(handle);
+#endif
+
 		/* reschedule the timeout handler now that we are ready to send the requests */
 		mod_timer(&handle->retransmit_timer,
 			  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
@@ -1475,32 +1643,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 #ifdef CONFIG_NET_DMA
 	if (omx_dmaengine && frame_length >= omx_dma_min) {
-		struct dma_chan *dma_chan = handle->dma_chan;
-		if (!dma_chan)
-			dma_chan = handle->dma_chan = get_softnet_dma();
-		if (dma_chan) {
-			dma_cookie_t dma_cookie = -1;
-
-			remaining_copy = omx_dma_skb_copy_datagram_to_user_region(dma_chan, &dma_cookie,
-										  skb,
-										  handle->region, msg_offset + handle->puller_rdma_offset,
-										  frame_length);
-			if (remaining_copy) {
-				printk(KERN_INFO "Open-MX: DMA copy of pull reply partially submitted, %d/%d remaining\n",
-				       remaining_copy, (unsigned) frame_length);
-				omx_counter_inc(iface, DMARECV_PARTIAL_PULL_REPLY);
-			} else {
-				omx_counter_inc(iface, DMARECV_PULL_REPLY);
-			}
-
-			dprintk(DMA, "skb %p got cookie %d\n", skb, dma_cookie);
-			if (dma_cookie > 0) {
-				handle->dma_last_cookie = dma_cookie;
-				skb->dma_cookie = dma_cookie;
-				__skb_queue_tail(&handle->dma_skb_queue, skb);
-				free_skb = 0;
-			}
-		}
+		remaining_copy = omx_pull_handle_reply_try_dma_copy(iface, handle, skb, msg_offset + handle->puller_rdma_offset, frame_length);
+		if (likely(remaining_copy != frame_length))
+			free_skb = 0;
 	}
 #endif
 
@@ -1527,8 +1672,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			omx_counter_inc(iface, PULL_REPLY_FILL_FAILED);
 			omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
 
-			/* FIXME: cleanup dma_skb_queue first */
-			BUG();
+#ifdef CONFIG_NET_DMA
+			/* let the offloaded copy finish */
+			omx_pull_handle_wait_dma_completions(handle);
+#endif
 
 			/* the other peer is sending crap, close the handle and report truncated to userspace
 			 * we do not really care about what have been tranfered since it's crap
@@ -1561,34 +1708,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	    && handle->frames_copying_nr == 0) {
 
 #ifdef CONFIG_NET_DMA
-		struct dma_chan *dma_chan = handle->dma_chan;
-		if (dma_chan) {
-			dma_cookie_t done, used, last = handle->dma_last_cookie;
-			struct sk_buff *oldskb;
-
-			dma_async_memcpy_issue_pending(dma_chan);
-
-			dprintk(DMA, "waiting for cookie %d\n", last);
-
-			while (dma_async_memcpy_complete(dma_chan, last, &done, &used) == DMA_IN_PROGRESS) {
-				dprintk(DMA, "last cookie still in progress (done %d used %d), cleaning up to %d\n",
-				       done, used, done);
-				/* do partial cleanup of dma_skb_queue */
-				while ((oldskb = skb_peek(&handle->dma_skb_queue)) &&
-				       (dma_async_is_complete(oldskb->dma_cookie, done, used) == DMA_SUCCESS)) {
-					dprintk(DMA, "cleaning skb %p with cookie %d\n", oldskb, oldskb->dma_cookie);
-					__skb_dequeue(&handle->dma_skb_queue);
-					kfree_skb(oldskb);
-				}
-			}
-
-			dprintk(DMA, "all cookies are ready\n");
-
-			/* Safe to free early-copied skbs now */
-			__skb_queue_purge(&handle->dma_skb_queue);
-			dma_chan_put(dma_chan);
-			handle->dma_chan = NULL;
-		}
+		/* let the offloaded copy finish */
+		omx_pull_handle_wait_dma_completions(handle);
 #endif
 
 		/* notify the completion */
@@ -1717,6 +1838,11 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		err = 0;
 		goto out_with_endpoint;
 	}
+
+#ifdef CONFIG_NET_DMA
+	/* let the offloaded copy finish */
+	omx_pull_handle_wait_dma_completions(handle);
+#endif
 
 	/* complete the handle */
 	omx_pull_handle_done_notify(handle, nack_type);

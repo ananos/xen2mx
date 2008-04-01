@@ -1,10 +1,8 @@
 * I/O AT
-  + poll for completion and cleanup the done skbs
-    - in the timer
-    - when switching to a new block ?
-  + disable for medium by default, or use it or shared large/medium too?
-    - it's better for the cache ?
-  + release the dma chan on pull error
+  + check at startup whether there seem to be some channels available
+  + disable for medium by default? or is it better for the cache ?
+  + use for shared memory, at least for large
+  + medium real offload need kernel matching
 
 * fix corruption in mx_msg_loop in the last frame of the first block
 
@@ -127,29 +125,3 @@
 
 * mapper (open-mxd)
 * /dev/open-mxd ?
-
-* use IOAT
-  + post a req
-    cookie = dma_async_memcpy_pg_to_pg(chan, dst_page, dest_off, src_page, src_off, len)
-  + send a batch of req
-    dma_async_memcpy_issue_pending(chan)
-  + poll completion of one cookie foo:
-    dma_async_memcpy_complete(chan, cookie, NULL, NULL) == DMA_SUCCESS
-  + poll completion up to last_cookie (see tcp_recvmsg() in net/ipv4/tcp.c)
-    while dma_async_memcpy_complete(chan, last_cookie, &done, &used) == DMA_IN_PROGRESS
-      while dma_async_is_complete(next_cookie, done, used) == DMA_SUCCESS
-        free next_cookie's skb
-    free all skb up to last_cookie
-  + get/release a chan
-    chan = get_softnet_dma()
-    ...
-    dma_chan_put(chan)
-  + manage client/chan (see netdev_dma_event() net/core/dev.c)
-    struct dma_client client.event_callback
-    dma_async_client_register(client)
-    dma_async_client_chan_request(client)
-  + for recv large, wait for the last completion before reporting pull 
-    done completion. or send copy the last frag manually without IOAT
-  + for medium, how to report an event and wakeup userspace efficiently
-    if we are not notified of the IOAT completion end?
-  + might be easier medium with kernel matching?
