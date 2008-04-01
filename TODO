@@ -1,11 +1,11 @@
 * I/O AT
-  + conditional ioat usage on omx_dmaengine && length > omx_dma_min
-  + overlap ioat with the rest of the recv pull reply stuff
   + queue skb and poll for completion later
     - in the last frag, with blocking
     - in the timer
     - when switching to a new block
   + disable for medium by default, or use it or shared large/medium too?
+
+* fix corruption in mx_msg_loop in the last frame of the first block
 
 * howto setup wire compat with mx
   + need mx 1.2.5
