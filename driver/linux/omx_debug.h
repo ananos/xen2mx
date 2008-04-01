@@ -36,6 +36,7 @@
 #define OMX_DEBUG_EVENT (1<<6)
 #define OMX_DEBUG_PEER (1<<7)
 #define OMX_DEBUG_KREF (1<<8)
+#define OMX_DEBUG_DMA (1<<9)
 
 extern unsigned long omx_debug;
 #define omx_debug_type_enabled(type) (OMX_DEBUG_##type & omx_debug)

@@ -1,9 +1,10 @@
 * I/O AT
-  + queue skb and poll for completion later
-    - in the last frag, with blocking
+  + poll for completion and cleanup the done skbs
     - in the timer
-    - when switching to a new block
+    - when switching to a new block ?
   + disable for medium by default, or use it or shared large/medium too?
+    - it's better for the cache ?
+  + release the dma chan on pull error
 
 * fix corruption in mx_msg_loop in the last frame of the first block
 
