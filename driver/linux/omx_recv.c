@@ -120,12 +120,13 @@ omx_recv_connect(struct omx_iface * iface,
 
 	omx_counter_inc(iface, RECV_CONNECT);
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
@@ -224,12 +225,13 @@ omx_recv_tiny(struct omx_iface * iface,
 
 	omx_counter_inc(iface, RECV_TINY);
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
@@ -333,12 +335,13 @@ omx_recv_small(struct omx_iface * iface,
 
 	omx_counter_inc(iface, RECV_SMALL);
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
@@ -484,12 +487,13 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	omx_counter_inc(iface, RECV_MEDIUM_FRAG);
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
@@ -588,12 +592,13 @@ omx_recv_rndv(struct omx_iface * iface,
 
 	omx_counter_inc(iface, RECV_RNDV);
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
@@ -667,12 +672,13 @@ omx_recv_notify(struct omx_iface * iface,
 
 	omx_counter_inc(iface, RECV_NOTIFY);
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
@@ -762,12 +768,13 @@ omx_recv_truc(struct omx_iface * iface,
 
 	omx_counter_inc(iface, RECV_TRUC);
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
@@ -840,12 +847,13 @@ omx_recv_nack_lib(struct omx_iface * iface,
 
 	omx_counter_inc(iface, RECV_NACK_LIB);
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
@@ -858,6 +866,7 @@ omx_recv_nosys(struct omx_iface * iface,
 	omx_drop_dprintk(&mh->head.eth, "packet with unsupported type %d",
 			 mh->body.generic.ptype);
 
+	dev_kfree_skb(skb);
 	return 0;
 }
 
@@ -870,6 +879,7 @@ omx_recv_error(struct omx_iface * iface,
 	omx_drop_dprintk(&mh->head.eth, "packet with unrecognized type %d",
 			 mh->body.generic.ptype);
 
+	dev_kfree_skb(skb);
 	return 0;
 }
 
@@ -952,8 +962,6 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	omx_pkt_type_handlers[mh->body.generic.ptype](iface, mh, skb);
 
  out:
-	/* FIXME: send nack */
-	dev_kfree_skb(skb);
 	return 0;
 }
 

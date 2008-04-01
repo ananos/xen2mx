@@ -1168,8 +1168,8 @@ omx_recv_pull_request(struct omx_iface * iface,
 
 	/* release the main reference on the region */
 	omx_user_region_release(region);
-
 	omx_endpoint_release(endpoint);
+	dev_kfree_skb(orig_skb);
 	return 0;
 
  out_with_region:
@@ -1178,6 +1178,7 @@ omx_recv_pull_request(struct omx_iface * iface,
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(orig_skb);
 	return err;
 }
 
@@ -1564,12 +1565,13 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
@@ -1681,12 +1683,13 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	/* tell the sparse checker that the lock has been released by omx_pull_handle_done_release() */
 	__release(&handle->lock);
 	omx_endpoint_release(endpoint);
-
+	dev_kfree_skb(skb);
 	return 0;
 
  out_with_endpoint:
 	omx_endpoint_release(endpoint);
  out:
+	dev_kfree_skb(skb);
 	return err;
 }
 
