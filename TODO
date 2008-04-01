@@ -1,5 +1,4 @@
 * I/O AT
-  + check at startup whether there seem to be some channels available
   + disable for medium by default? or is it better for the cache ?
   + use for shared memory, at least for large
   + medium real offload need kernel matching

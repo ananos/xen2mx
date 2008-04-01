@@ -28,6 +28,26 @@
 #include "omx_dma.h"
 
 int
+omx_dma_init(void)
+{
+	if (__get_cpu_var(softnet_data).net_dma)
+		printk(KERN_INFO "Open-MX: DMA engine support present, with some channels available\n");
+	else
+		printk(KERN_INFO "Open-MX: DMA engine support present, with no channels available so far\n");
+	if (omx_dmaengine)
+		printk(KERN_INFO "Open-MX: DMA engine support enabled for packets >=%d bytes\n", omx_dma_min);
+	else
+		printk(KERN_INFO "Open-MX: DMA engine support disabled at runtime\n");
+
+	return 0;
+}
+
+void
+omx_dma_exit(void)
+{
+}
+
+int
 omx_dma_skb_copy_datagram_to_pages(struct dma_chan *chan, dma_cookie_t *cookiep,
 				   struct sk_buff *skb, int offset,
 				   struct page **pages, int pgoff,
