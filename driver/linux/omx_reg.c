@@ -22,12 +22,18 @@
 #include <linux/skbuff.h>
 #include <linux/spinlock.h>
 #include <linux/rcupdate.h>
+#include <linux/netdevice.h>
+#ifdef CONFIG_NET_DMA
+#include <net/netdma.h>
+#endif
 
 #include "omx_hal.h"
 #include "omx_io.h"
 #include "omx_common.h"
 #include "omx_endpoint.h"
+#include "omx_iface.h"
 #include "omx_reg.h"
+#include "omx_dma.h"
 
 #ifdef OMX_MX_WIRE_COMPAT
 #if OMX_USER_REGION_MAX > 256
@@ -1169,10 +1175,10 @@ omx_user_region_fill_pages(struct omx_user_region * region,
  * Shared Copy between Regions
  */
 
-int
-omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset,
-			      struct omx_user_region * dst_region, unsigned long dst_offset,
-			      unsigned long length)
+static INLINE int
+omx_memcpy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset,
+				struct omx_user_region * dst_region, unsigned long dst_offset,
+				unsigned long length)
 {
 	unsigned long remaining = length;
 	unsigned long tmp;
@@ -1182,13 +1188,6 @@ omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long
 	struct page **spage, **dpage; /* current page */
 	unsigned int spageoff, dpageoff; /* current offset in current page */
 	void *spageaddr, *dpageaddr; /* current page mapping */
-
-	if (unlikely(!length))
-		return 0;
-
-	if (src_offset + length > src_region->total_length
-	    || dst_offset + length > dst_region->total_length)
-		return -EINVAL;
 
 	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",
 		length,
@@ -1297,6 +1296,168 @@ omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long
 	}
 
 	return 0;
+}
+
+#ifdef CONFIG_NET_DMA
+static INLINE int
+omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset,
+				  struct omx_user_region * dst_region, unsigned long dst_offset,
+				  unsigned long length)
+{
+	unsigned long remaining = length;
+	unsigned long tmp;
+	struct omx_user_region_segment *sseg, *dseg; /* current segment */
+	unsigned long sseglen, dseglen; /* length of current segment */
+	unsigned long ssegoff, dsegoff; /* current offset in current segment */
+	struct page **spage, **dpage; /* current page */
+	unsigned int spageoff, dpageoff; /* current offset in current page */
+	struct dma_chan *dma_chan = NULL;
+	dma_cookie_t dma_last_cookie = -1;
+
+	dma_chan = get_softnet_dma();
+	if (!dma_chan)
+		goto out;
+
+	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",
+		length,
+		(unsigned long) src_region->id, src_region->total_length, src_offset,
+		(unsigned long) dst_region->id, dst_region->total_length, dst_offset);
+
+	/* initialize the src state */
+	for(tmp=0,sseg=&src_region->segments[0];; sseg++) {
+		sseglen = sseg->length;
+		if (tmp + sseglen > src_offset)
+			break;
+		tmp += sseglen;
+	}
+	ssegoff = src_offset - tmp;
+	spage = &sseg->pages[(ssegoff + sseg->first_page_offset) >> PAGE_SHIFT];
+	spageoff = (ssegoff + sseg->first_page_offset) & (~PAGE_MASK);
+
+	/* initialize the dst state */
+	for(tmp=0,dseg=&dst_region->segments[0];; dseg++) {
+		dseglen = dseg->length;
+		if (tmp + dseglen > dst_offset)
+			break;
+		tmp += dseglen;
+	}
+	dsegoff = dst_offset - tmp;
+	dpage = &dseg->pages[(dsegoff + dseg->first_page_offset) >> PAGE_SHIFT];
+	dpageoff = (dsegoff + dseg->first_page_offset) & (~PAGE_MASK);
+
+	while (1) {
+		dma_cookie_t cookie;
+		/* compute the chunk size */
+		unsigned chunk = remaining;
+		if (chunk > PAGE_SIZE - spageoff)
+			chunk = PAGE_SIZE - spageoff;
+		if (chunk > sseglen - ssegoff)
+			chunk = sseglen - ssegoff;
+		if (chunk > PAGE_SIZE - dpageoff)
+			chunk = PAGE_SIZE - dpageoff;
+		if (chunk > dseglen - dsegoff)
+			chunk = dseglen - dsegoff;
+
+		/* actual copy */
+		dprintk(REG, "shared region copy of %d bytes from seg=%ld:page=%ld(%p):off=%d to seg=%ld:page=%ld(%p):off=%d\n",
+			chunk,
+			(unsigned long) (sseg-&src_region->segments[0]), (unsigned long) (spage-&sseg->pages[0]), *spage, spageoff,
+			(unsigned long) (dseg-&dst_region->segments[0]), (unsigned long) (dpage-&dseg->pages[0]), *dpage, dpageoff);
+
+		cookie = dma_async_memcpy_pg_to_pg(dma_chan, *dpage, dpageoff, *spage, spageoff, chunk);
+		if (cookie < 0)
+			goto out;
+		dma_last_cookie = cookie;
+
+		remaining -= chunk;
+		if (!remaining)
+			break;
+
+		/* update the source */
+		if (ssegoff + chunk == sseglen) {
+			/* next segment */
+			sseg++;
+			sseglen = sseg->length;
+			dprintk(REG, "shared region copy switching to source seg %ld len %ld, %ld remaining\n",
+				(unsigned long) (sseg-&src_region->segments[0]), sseglen, remaining);
+			ssegoff = 0;
+			spage = &sseg->pages[0];
+			spageoff = sseg->first_page_offset;
+		} else if (spageoff + chunk == PAGE_SIZE) {
+			/* next page */
+			ssegoff += chunk;
+			spage++;
+			spageoff = 0;
+		} else {
+			/* same page */
+			ssegoff += chunk;
+			spageoff += chunk;
+		}
+
+		/* update the destination */
+		if (dsegoff + chunk == dseglen) {
+			/* next segment */
+			dseg++;
+			dseglen = dseg->length;
+			dprintk(REG, "shared region copy switching to dest seg %ld len %ld, %ld remaining\n",
+				(unsigned long) (dseg-&dst_region->segments[0]), dseglen, remaining);
+			dsegoff = 0;
+			dpage = &dseg->pages[0];
+			dpageoff = dseg->first_page_offset;
+		} else if (dpageoff + chunk == PAGE_SIZE) {
+			/* next page */
+			dsegoff += chunk;
+			dpage++;
+			dpageoff = 0;
+		} else {
+			/* same page */
+			dsegoff += chunk;
+			dpageoff += chunk;
+		}
+	}
+
+ out:
+	if (remaining) {
+		omx_memcpy_between_user_regions(src_region, src_offset + (length - remaining),
+						dst_region, dst_offset + (length - remaining),
+						remaining);
+		omx_counter_inc(src_region->endpoint->iface, DMASEND_SHARED_PARTIAL_LARGE);
+		omx_counter_inc(dst_region->endpoint->iface, DMARECV_SHARED_PARTIAL_LARGE);
+	} else {
+		omx_counter_inc(src_region->endpoint->iface, DMASEND_SHARED_LARGE);
+		omx_counter_inc(dst_region->endpoint->iface, DMARECV_SHARED_LARGE);
+	}
+
+	if (dma_chan) {
+		if (dma_last_cookie > 0) {
+			dma_async_memcpy_issue_pending(dma_chan);
+			while (dma_async_memcpy_complete(dma_chan, dma_last_cookie, NULL, NULL) == DMA_IN_PROGRESS);
+		}
+		dma_chan_put(dma_chan);
+	}
+
+	return 0;
+}
+#endif /* CONFIG_NET_DMA */
+
+int
+omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset,
+			      struct omx_user_region * dst_region, unsigned long dst_offset,
+			      unsigned long length)
+{
+	if (unlikely(!length))
+		return 0;
+
+	if (src_offset + length > src_region->total_length
+	    || dst_offset + length > dst_region->total_length)
+		return -EINVAL;
+
+#ifdef CONFIG_NET_DMA
+	if (omx_dmaengine && length > omx_dma_min)
+		return omx_dma_copy_between_user_regions(src_region, src_offset, dst_region, dst_offset, length);
+	else
+#endif /* CONFIG_NET_DMA */
+		return omx_memcpy_between_user_regions(src_region, src_offset, dst_region, dst_offset, length);
 }
 
 /*

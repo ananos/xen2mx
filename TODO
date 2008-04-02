@@ -1,13 +1,15 @@
-* I/O AT
-  + disable for medium by default? or is it better for the cache ?
-  + use for shared memory, at least for large
-  + medium real offload need kernel matching
+* ioat for medium shared
+* add dma_block_min for shared and medium, initialize at 1MB by default
+* reduce large threshold for shared ?
+
+* check performance with 31x 4kB and 8x 8kB frames per pull block
 
 * fix corruption in mx_msg_loop in the last frame of the first block
 
 * howto setup wire compat with mx
   + need mx 1.2.5
   + mx_init_ether_peer 00:11:22:33:44:55 00:00:00:00:00:00 toto:0
+* howto to setup/check ioat
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
@@ -28,6 +30,8 @@
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
   + how to force the #define OMX_32BITS_LENGTH once compiled and installed?
+
+* why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
 
 * endpoint parameters
   + unexp queue length
