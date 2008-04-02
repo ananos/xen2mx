@@ -17,12 +17,15 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/netdevice.h>
+#include <net/netdma.h>
 
 #include "omx_endpoint.h"
 #include "omx_shared.h"
 #include "omx_iface.h"
 #include "omx_misc.h"
 #include "omx_reg.h"
+#include "omx_dma.h"
 #include "omx_common.h"
 #include "omx_io.h"
 
@@ -288,7 +291,14 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	struct omx_evt_recv_msg dst_event;
 	struct omx_evt_send_medium_frag_done src_event;
 	unsigned long recvq_offset;
+#ifdef CONFIG_NET_DMA
+	dma_cookie_t dma_cookie = -1;
+	struct dma_chan *dma_chan = NULL;
+#endif
+	int frag_length = hdr->frag_length;
+	int sendq_page_nr = hdr->sendq_page_offset;
 	int err;
+
 
 	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
 							      hdr->dest_endpoint, hdr->session_id,
@@ -305,21 +315,49 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	}
 
 	/* copy the data */
-	memcpy(dst_endpoint->recvq + recvq_offset,
-	       src_endpoint->sendq + (hdr->sendq_page_offset << PAGE_SHIFT),
-	       hdr->frag_length);
+#ifdef CONFIG_NET_DMA
+	if (omx_dmaengine && frag_length >= omx_dma_min)
+		dma_chan = get_softnet_dma();
+	if (dma_chan) {
+		dma_cookie = dma_async_memcpy_pg_to_pg(dma_chan,
+						       dst_endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT], 0,
+						       src_endpoint->sendq_pages[sendq_page_nr], 0,
+						       frag_length);
+		dma_async_memcpy_issue_pending(dma_chan);
+	}
+	if (dma_cookie < 0)
+#endif
+	{
+		memcpy(dst_endpoint->recvq + recvq_offset,
+		       src_endpoint->sendq + (sendq_page_nr << PAGE_SHIFT),
+		       frag_length);
+	}
 
-	/* fill and notify the dst event */
+	/* fill the dst event */
 	dst_event.peer_index = src_endpoint->iface->peer.index;
 	dst_event.src_endpoint = src_endpoint->endpoint_index;
 	dst_event.match_info = hdr->match_info;
 	dst_event.seqnum = hdr->seqnum;
 	dst_event.piggyack = hdr->piggyack;
 	dst_event.specific.medium.msg_length = hdr->msg_length;
-	dst_event.specific.medium.frag_length = hdr->frag_length;
+	dst_event.specific.medium.frag_length = frag_length;
 	dst_event.specific.medium.frag_seqnum = hdr->frag_seqnum;
 	dst_event.specific.medium.frag_pipeline = hdr->frag_pipeline;
 	dst_event.specific.medium.recvq_offset = recvq_offset;
+
+	/* make sure the copy is done */
+#ifdef CONFIG_NET_DMA
+	if (dma_chan) {
+		if (dma_cookie > 0) {
+			while (dma_async_memcpy_complete(dma_chan, dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
+			omx_counter_inc(src_endpoint->iface, SHARED_DMASEND_MEDIUM_FRAG);
+			omx_counter_inc(dst_endpoint->iface, SHARED_DMARECV_MEDIUM_FRAG);
+		}
+		dma_chan_put(dma_chan);
+	}
+#endif
+
+	/* notify the dst event */
 	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_MEDIUM, &dst_event, sizeof(dst_event));
 
 	/* fill and notify the src event */

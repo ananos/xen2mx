@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x124
+#define OMX_DRIVER_ABI_VERSION		0x125
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -781,10 +781,12 @@ enum omx_counter_index {
 	OMX_COUNTER_SHARED_RECV_TRUC,
 	OMX_COUNTER_SHARED_PULLED,
 
-	OMX_COUNTER_DMASEND_SHARED_LARGE,
-	OMX_COUNTER_DMASEND_SHARED_PARTIAL_LARGE,
-	OMX_COUNTER_DMARECV_SHARED_LARGE,
-	OMX_COUNTER_DMARECV_SHARED_PARTIAL_LARGE,
+	OMX_COUNTER_SHARED_DMASEND_MEDIUM_FRAG,
+	OMX_COUNTER_SHARED_DMASEND_LARGE,
+	OMX_COUNTER_SHARED_DMASEND_PARTIAL_LARGE,
+	OMX_COUNTER_SHARED_DMARECV_MEDIUM_FRAG,
+	OMX_COUNTER_SHARED_DMARECV_LARGE,
+	OMX_COUNTER_SHARED_DMARECV_PARTIAL_LARGE,
 
 	OMX_COUNTER_INDEX_MAX,
 };
@@ -937,13 +939,17 @@ omx_strcounter(enum omx_counter_index index)
 		return "Shared Recv Truc";
 	case OMX_COUNTER_SHARED_PULLED:
 		return "Shared Pulled";
-	case OMX_COUNTER_DMASEND_SHARED_LARGE:
+	case OMX_COUNTER_SHARED_DMASEND_MEDIUM_FRAG:
+		return "DMA Shared Send Medium Frag";
+	case OMX_COUNTER_SHARED_DMASEND_LARGE:
 		return "DMA Shared Send Large";
-	case OMX_COUNTER_DMASEND_SHARED_PARTIAL_LARGE:
+	case OMX_COUNTER_SHARED_DMASEND_PARTIAL_LARGE:
 		return "DMA Shared Send Large only Partial";
-	case OMX_COUNTER_DMARECV_SHARED_LARGE:
+	case OMX_COUNTER_SHARED_DMARECV_MEDIUM_FRAG:
+		return "DMA Shared Recv Medium Frag";
+	case OMX_COUNTER_SHARED_DMARECV_LARGE:
 		return "DMA Shared Recv Large";
-	case OMX_COUNTER_DMARECV_SHARED_PARTIAL_LARGE:
+	case OMX_COUNTER_SHARED_DMARECV_PARTIAL_LARGE:
 		return "DMA Shared Recv Large only Partial";
 	default:
 		return "** Unknown **";

@@ -1421,11 +1421,11 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		omx_memcpy_between_user_regions(src_region, src_offset + (length - remaining),
 						dst_region, dst_offset + (length - remaining),
 						remaining);
-		omx_counter_inc(src_region->endpoint->iface, DMASEND_SHARED_PARTIAL_LARGE);
-		omx_counter_inc(dst_region->endpoint->iface, DMARECV_SHARED_PARTIAL_LARGE);
+		omx_counter_inc(src_region->endpoint->iface, SHARED_DMASEND_PARTIAL_LARGE);
+		omx_counter_inc(dst_region->endpoint->iface, SHARED_DMARECV_PARTIAL_LARGE);
 	} else {
-		omx_counter_inc(src_region->endpoint->iface, DMASEND_SHARED_LARGE);
-		omx_counter_inc(dst_region->endpoint->iface, DMARECV_SHARED_LARGE);
+		omx_counter_inc(src_region->endpoint->iface, SHARED_DMASEND_LARGE);
+		omx_counter_inc(dst_region->endpoint->iface, SHARED_DMARECV_LARGE);
 	}
 
 	if (dma_chan) {
