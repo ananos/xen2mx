@@ -490,7 +490,13 @@ dmaengine=1
 	Default is 0 (disabled).
 dmamin=1024
 	Use DMA engine copy offload only when length is above the threshold.
+	This is used for large message receive.
 	Default is 1024 bytes.
+dmawaitmin=2097152
+	Use DMA engine copy when waiting for its completion soon only when
+	length is above the threshold. This is used for medium message receive,
+	and medium and large shared memory communication.
+	Default is 2 Mbytes.
 skbfrags=16
 	Allow a maximum of 16 frags to be attached to socket buffer on the
 	send side. If the underlying driver does not support frags, 0 should

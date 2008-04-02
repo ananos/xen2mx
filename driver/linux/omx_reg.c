@@ -1453,7 +1453,7 @@ omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long
 		return -EINVAL;
 
 #ifdef CONFIG_NET_DMA
-	if (omx_dmaengine && length > omx_dma_min)
+	if (omx_dmaengine && length > omx_dmawait_min)
 		return omx_dma_copy_between_user_regions(src_region, src_offset, dst_region, dst_offset, length);
 	else
 #endif /* CONFIG_NET_DMA */

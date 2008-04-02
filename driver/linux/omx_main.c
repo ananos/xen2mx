@@ -68,6 +68,10 @@ int omx_dma_min = 1024; /* do not offload small copy */
 module_param_named(dmamin, omx_dma_min, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmamin, "Min length to offload copy on DMA engine");
 
+int omx_dmawait_min = 2*1024*1024; /* do not offload not-large copy when waiting for there completion soon */
+module_param_named(dmawaitmin, omx_dmawait_min, uint, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(dmawaitmin, "Min length to offload copy on DMA engine when waiting for its completion soon");
+
 int omx_copybench = 0;
 module_param_named(copybench, omx_copybench, uint, S_IRUGO);
 MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");

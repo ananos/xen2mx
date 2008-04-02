@@ -316,7 +316,7 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 
 	/* copy the data */
 #ifdef CONFIG_NET_DMA
-	if (omx_dmaengine && frag_length >= omx_dma_min)
+	if (omx_dmaengine && frag_length >= omx_dmawait_min)
 		dma_chan = get_softnet_dma();
 	if (dma_chan) {
 		dma_cookie = dma_async_memcpy_pg_to_pg(dma_chan,

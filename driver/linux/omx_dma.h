@@ -27,8 +27,10 @@
 
 /* enable/disable DMA engine usage at runtime */
 extern int omx_dmaengine;
-/* threshold to offload copy */
+/* threshold to offload copy when no waiting for its completion soon */
 extern int omx_dma_min;
+/* threshold to offload copy when waiting for its completion almost right after */
+extern int omx_dmawait_min;
 
 #ifdef CONFIG_NET_DMA
 
