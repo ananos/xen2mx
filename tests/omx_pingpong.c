@@ -160,7 +160,8 @@ int main(int argc, char *argv[])
   uint64_t dest_addr;
   int sender = 0;
   int verbose = 0;
-  char * buffer;
+  char * recvbuffer;
+  char * sendbuffer;
   int align = 0;
   int wait = 0;
   int pause_ms = PAUSE_MS;
@@ -349,11 +350,14 @@ int main(int argc, char *argv[])
 	length < max;
 	length = next_length(length, multiplier, increment)) {
 
-      if (align)
-	buffer = memalign(BUFFER_ALIGN, length);
-      else
-        buffer = malloc(length);
-      if (!buffer) {
+      if (align) {
+	sendbuffer = memalign(BUFFER_ALIGN, length);
+	recvbuffer = memalign(BUFFER_ALIGN, length);
+      } else {
+        sendbuffer = malloc(length);
+        recvbuffer = malloc(length);
+      }
+      if (!sendbuffer || !recvbuffer) {
 	perror("buffer malloc");
 	goto out_with_ep;
       }
@@ -367,7 +371,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = omx_isend_or_issend(sync,
-				  ep, buffer, length,
+				  ep, sendbuffer, length,
 				  addr, 0x1234567887654321ULL,
 				  NULL, &req);
 	if (ret != OMX_SUCCESS) {
@@ -388,7 +392,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* wait for an incoming message */
-	ret = omx_irecv(ep, buffer, unidir ? 0 : length,
+	ret = omx_irecv(ep, recvbuffer, unidir ? 0 : length,
 			0, 0,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
@@ -420,7 +424,8 @@ int main(int argc, char *argv[])
 	     length, ((float) us)/(2.-unidir)/iter,
 	     (2.-unidir)*iter*length/us, (2.-unidir)*iter*length/us/1.048576);
 
-      free(buffer);
+      free(sendbuffer);
+      free(recvbuffer);
 
       usleep(pause_ms * 1000);
     }
@@ -534,11 +539,14 @@ int main(int argc, char *argv[])
 	length < max;
 	length = next_length(length, multiplier, increment)) {
 
-      if (align)
-	buffer = memalign(BUFFER_ALIGN, length);
-      else
-        buffer = malloc(length);
-      if (!buffer) {
+      if (align) {
+	sendbuffer = memalign(BUFFER_ALIGN, length);
+	recvbuffer = memalign(BUFFER_ALIGN, length);
+      } else {
+        sendbuffer = malloc(length);
+        recvbuffer = malloc(length);
+      }
+      if (!sendbuffer || !recvbuffer) {
 	perror("buffer malloc");
 	goto out_with_ep;
       }
@@ -548,7 +556,7 @@ int main(int argc, char *argv[])
 	  printf("Iteration %d/%d\n", i-warmup, iter);
 
 	/* wait for an incoming message */
-	ret = omx_irecv(ep, buffer, length,
+	ret = omx_irecv(ep, sendbuffer, length,
 			0, 0,
 			NULL, &req);
 	if (ret != OMX_SUCCESS) {
@@ -570,7 +578,7 @@ int main(int argc, char *argv[])
 
 	/* sending a message */
 	ret = omx_isend_or_issend(sync,
-				  ep, buffer, unidir ? 0 : length,
+				  ep, recvbuffer, unidir ? 0 : length,
 				  addr, 0x1234567887654321ULL,
 				  NULL, &req);
 	if (ret != OMX_SUCCESS) {
@@ -593,7 +601,8 @@ int main(int argc, char *argv[])
       if (verbose)
 	printf("Iteration %d/%d\n", i-warmup, iter);
 
-      free(buffer);
+      free(sendbuffer);
+      free(recvbuffer);
     }
 
     if (slave) {
