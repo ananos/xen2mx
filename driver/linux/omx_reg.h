@@ -30,6 +30,7 @@ struct omx_user_region {
 	uint32_t id;
 
 	struct kref refcount;
+	struct omx_endpoint *endpoint;
 
 	struct rcu_head rcu_head; /* rcu deferred releasing callback */
 	int nr_vmalloc_segments;

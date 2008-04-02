@@ -215,6 +215,7 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 		goto out_with_region;
 	}
 
+	region->endpoint = endpoint;
 	region->id = cmd.id;
 	rcu_assign_pointer(endpoint->user_regions[cmd.id], region);
 
