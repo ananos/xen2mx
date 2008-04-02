@@ -320,7 +320,7 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	dst_event.specific.medium.frag_seqnum = hdr->frag_seqnum;
 	dst_event.specific.medium.frag_pipeline = hdr->frag_pipeline;
 	dst_event.specific.medium.recvq_offset = recvq_offset;
-	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_SMALL, &dst_event, sizeof(dst_event));
+	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_MEDIUM, &dst_event, sizeof(dst_event));
 
 	/* fill and notify the src event */
 	src_event.sendq_page_offset = hdr->sendq_page_offset;
