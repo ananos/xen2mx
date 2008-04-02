@@ -34,10 +34,14 @@ omx_dma_init(void)
 		printk(KERN_INFO "Open-MX: DMA engine support present, with some channels available\n");
 	else
 		printk(KERN_INFO "Open-MX: DMA engine support present, with no channels available so far\n");
-	if (omx_dmaengine)
-		printk(KERN_INFO "Open-MX: DMA engine support enabled for packets >=%d bytes\n", omx_dma_min);
-	else
+	if (omx_dmaengine) {
+		printk(KERN_INFO "Open-MX: DMA engine enabled for offloaded copy >=%d bytes (no early completion needed)\n",
+		       omx_dma_min);
+		printk(KERN_INFO "Open-MX: DMA engine enabled for blocking copy >=%d bytes (completion needed early)\n",
+		       omx_dmawait_min);
+	} else {
 		printk(KERN_INFO "Open-MX: DMA engine support disabled at runtime\n");
+	}
 
 	return 0;
 }

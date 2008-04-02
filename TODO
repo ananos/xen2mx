@@ -1,6 +1,8 @@
 * reduce large threshold for shared ?
 
 * check performance with 31x 4kB and 8x 8kB frames per pull block
+* support 32 frames per pull block
+* support 64 frames per pull block if it helps (by splitting the bitmask in 2 pieces)
 
 * fix corruption in mx_msg_loop in the last frame of the first block
 
@@ -121,6 +123,8 @@
   + need to keep partner's recv_seqnum in the kernel
     - and synchronize with user-space which takes care of acking
     - share mapping of peer-index based array of recv seqnums between kernel and user-space?
+  + use ioat to offload the whole recv medium copy and wait in the last frag
+  + move the whole lib in the driver and only keep basic request status in userspace?
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
