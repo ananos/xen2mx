@@ -18,8 +18,6 @@
 
 #include <linux/kernel.h>
 #include <linux/dmaengine.h>
-#include <linux/netdevice.h>
-#include <net/netdma.h>
 #include <linux/rcupdate.h>
 
 #include "omx_common.h"

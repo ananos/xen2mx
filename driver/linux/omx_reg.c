@@ -22,10 +22,6 @@
 #include <linux/skbuff.h>
 #include <linux/spinlock.h>
 #include <linux/rcupdate.h>
-#include <linux/netdevice.h>
-#ifdef CONFIG_NET_DMA
-#include <net/netdma.h>
-#endif
 
 #include "omx_hal.h"
 #include "omx_io.h"

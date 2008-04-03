@@ -17,8 +17,6 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/netdevice.h>
-#include <net/netdma.h>
 
 #include "omx_endpoint.h"
 #include "omx_shared.h"
