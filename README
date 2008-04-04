@@ -365,14 +365,14 @@ On the Open-MX nodes, the peer table should be setup as usual with
 omx_init_peers, with a single entry for each Open-MX peer and each
 MX peer.
 
-On the MX nodes, the Open-MX peers should be added explicitly to the
-driver. If "myhostname:0" is an Open-MX peer name whose mac address
-is 00:11:22:33:44:55, you should run the following command on each MX
-node:
+On the MX nodes, the regular dynamic mapper may first be launched to
+discover all MX peers. Once it is done, it should be stopped with:
+$ /etc/init.d/mx stop-mapper
+Then, each Open-MX peer with name "myhostname:0" and mac address 
+00:11:22:33:44:55 should be added on each MX node with:
 $ mx_init_ether_peer 00:11:22:33:44:55 00:00:00:00:00:00 myhostname:0
 
 Once peers are setup on both MX and Open-MX nodes, the fabric is ready.
-
 
 +--------------------------
 | VII.b. API-compatibility
