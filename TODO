@@ -1,19 +1,25 @@
-* reduce large threshold for shared ?
-
 * check performance with 31x 4kB and 8x 8kB frames per pull block
 * support 32 frames per pull block
 * support 64 frames per pull block if it helps (by splitting the bitmask in 2 pieces)
 
 * fix corruption in mx_msg_loop in the last frame of the first block
 
-* howto setup wire compat with mx
-  + need mx 1.2.5
-  + mx_init_ether_peer 00:11:22:33:44:55 00:00:00:00:00:00 toto:0
 * howto to setup/check ioat
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
 * replace pull handle's BH lock + idr with RCU + array ?
+
+* reduce large threshold for shared ?
+
+* overlap registration with rndv and pull
+  + add a "registered_length" field to windows
+  + add a delayed register field to register req, only alloc struct, do not pin
+  + add a need register field to rndv and pull with a window number
+  + queue skb if touching after the registered_length
+    - dequeue after registering enough
+  + register by blocks (8 or 16 pages per block)
+  + let shared comm poll until the window is large enough
 
 * add flags for all queued state and split throttling/queued queue into per-flag queue
   + let the callee requeue and return need_retry if did not queue to a better queue
@@ -26,6 +32,9 @@
   + need region for recv large
   + need system resources for send large and recv large
     - add a counter of failure to register with ENOMEM and abort if too many?
+
+* feature flags in the driver descriptor to check an extended abi version
+  + enforce shared support?
 
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
@@ -105,11 +114,6 @@
 
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request
-* overlap registration with rndv and pull
-  + mark the window as valid but not ready during registration
-  + drop the pull request if it arrives
-  + make the window status consistent during registration so that first pages
-    may be used while the end is not registered yet
 * export rdma_get and rdma window management functions
 * rdma_put
 * write parameter in ioctl to register a region, check it when reading/writing from/to the region
