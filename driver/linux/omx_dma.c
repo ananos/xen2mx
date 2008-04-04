@@ -25,8 +25,8 @@
 #include "omx_reg.h"
 #include "omx_dma.h"
 
-int
-omx_dma_init(void)
+static INLINE void
+omx_dma_display_support(void)
 {
 	if (__get_cpu_var(softnet_data).net_dma)
 		printk(KERN_INFO "Open-MX: DMA engine support present, with some channels available\n");
@@ -40,7 +40,21 @@ omx_dma_init(void)
 	} else {
 		printk(KERN_INFO "Open-MX: DMA engine support disabled at runtime\n");
 	}
+}
 
+int
+omx_set_dmaengine(const char *val, struct kernel_param *kp)
+{
+  int ret;
+  ret = param_set_uint(val, kp);
+  omx_dma_display_support();
+  return ret;
+}
+
+int
+omx_dma_init(void)
+{
+	omx_dma_display_support();
 	return 0;
 }
 

@@ -21,6 +21,7 @@
 
 #include <linux/netdevice.h>
 #include <linux/skbuff.h>
+#include <linux/moduleparam.h>
 #ifdef CONFIG_NET_DMA
 #include <net/netdma.h>
 #endif
@@ -33,6 +34,8 @@ extern int omx_dma_min;
 extern int omx_dmawait_min;
 
 #ifdef CONFIG_NET_DMA
+
+extern int omx_set_dmaengine(const char *val, struct kernel_param *kp);
 
 extern int omx_dma_init(void);
 extern void omx_dma_exit(void);

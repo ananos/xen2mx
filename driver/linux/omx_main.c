@@ -60,8 +60,9 @@ int omx_skb_copy_max = 0;
 module_param_named(skbcopy, omx_skb_copy_max, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(skbcopy, "Maximum length of data to copy in linear skb instead of attaching pages");
 
+#ifdef CONFIG_NET_DMA
 int omx_dmaengine = 0; /* disabled by default for now */
-module_param_named(dmaengine, omx_dmaengine, uint, S_IRUGO|S_IWUSR);
+module_param_call(dmaengine, omx_set_dmaengine, param_get_uint, &omx_dmaengine, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmaengine, "Enable DMA engine support");
 
 int omx_dma_min = 1024; /* do not offload small copy */
@@ -71,6 +72,7 @@ MODULE_PARM_DESC(dmamin, "Min length to offload copy on DMA engine");
 int omx_dmawait_min = 2*1024*1024; /* do not offload not-large copy when waiting for there completion soon */
 module_param_named(dmawaitmin, omx_dmawait_min, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmawaitmin, "Min length to offload copy on DMA engine when waiting for its completion soon");
+#endif /* CONFIG_NET_DMA */
 
 int omx_copybench = 0;
 module_param_named(copybench, omx_copybench, uint, S_IRUGO);

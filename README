@@ -12,8 +12,9 @@ Contents:
     b. Registration Cache
     c. Interrupt Coalescing
     d. Shared/Self communications
-    e. Avoiding Linearizing on the receive side with old kernels
-    f. Quick benchmarking how-to
+    e. I/O AT memory copy offload
+    f. Avoiding Linearizing on the receive side with old kernels
+    g. Quick benchmarking how-to
  VII. Native MX Compatibility
     a. Wire-compatibility
     b. API-compatibility
@@ -307,8 +308,24 @@ This is especially the case if there is a single process on each node and
 it doesn't talk to itself, or if multiple processes of the same don't talk
 to each other.
 
++----------------------------------
+| VI.e. I/O AT memory copy offload
+
+Some modern platforms such as Intel I/O AT-enabled servers provide hardware
+DMA engine to offload memory copies. Open-MX performance may increase very
+significantly thanks to this feature.
+
+The support for dmaengine is automatically built in Open-MX when supported
+by the kernel and may be configured at runtime through several module
+parameters. See Section VIII.d (Module parameters) for details.
+
+Note that DMA engine hardware may still require the administrator to load
+the corresponding driver, for instance the 'ioatdma' kernel module.
+The kernel logs will display the DMA engine status when loading Open-MX
+or modifying some module parameters.
+
 +-----------------------------------------------------------------
-| VI.e. Avoiding Linearizing on the receive side with old kernels
+| VI.f. Avoiding Linearizing on the receive side with old kernels
 |       and frag-based drivers
 
 Some old kernels (<2.6.18) have problems with some drivers that receive
@@ -326,7 +343,7 @@ not be linearized uselessly. To enable this workardound, you should pass
    circumstances and should be avoided in most of the cases. **
 
 +---------------------------------
-| VI.f. Quick benchmarking how-to
+| VI.g. Quick benchmarking how-to
 
 To get best performance for benchmarking purposes between homogeneous hosts,
 you might want to:
@@ -503,7 +520,9 @@ peers=1024
 	Allow a maximum of 1024 peers to be connected on the network.
 	Default is 1024.
 dmaengine=1
-	Enable DMA engine to offload memory copies.
+	Enable DMA engine to offload memory copies, when supported in hardware
+	and in the kernel. Modifying this value will display the DMA engine
+	status in the kernel logs.
 	Default is 0 (disabled).
 dmamin=1024
 	Use DMA engine copy offload only when length is above the threshold.
