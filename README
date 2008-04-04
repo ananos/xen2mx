@@ -18,10 +18,10 @@ Contents:
     a. Wire-compatibility
     b. API-compatibility
 VIII. Advanced configuration
-    a. Build-time configuration options
-    b. Configurations tricks for middleware
-    c. Runtime configuration options
-    d. Module parameters
+    a. Summary of build-time configuration options
+    b. Summary of runtime configuration options
+    c. Module parameters
+    d. Configuration tricks for middlewares
   IX. Debugging
 
 See REPORTING-BUGS for problems.
