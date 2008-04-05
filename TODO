@@ -43,8 +43,6 @@
 * endpoint parameters
   + unexp queue length
 
-* document cpu/irq binding
-
 * improve retransmission
   + don't free partner since we can't change the session anymore?
     - or randomify the initial session?

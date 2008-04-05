@@ -13,8 +13,9 @@ Contents:
     c. Interrupt Coalescing
     d. Shared/Self communications
     e. I/O AT memory copy offload
-    f. Avoiding Linearizing on the receive side with old kernels
-    g. Quick benchmarking how-to
+    f. Binding processes and IRQs
+    g. Avoiding Linearizing on the receive side with old kernels
+    h. Quick benchmarking how-to
  VII. Native MX Compatibility
     a. Wire-compatibility
     b. API-compatibility
@@ -324,8 +325,49 @@ the corresponding driver, for instance the 'ioatdma' kernel module.
 The kernel logs will display the DMA engine status when loading Open-MX
 or modifying some module parameters.
 
++----------------------------------
+| VI.f. Binding processes and IRQs
+
+The Open-MX receive stack is composed of a kernel routine running in the
+bottom half on any of the machine cores, depending on where the NIC is
+sending its IRQs. Device drivers usually configure IRQs to be sent to all
+cores in a round-robin fashion. This behavior distributes the receive
+workload on all cores, which is good for the vast majority of MPI jobs
+where each core runs exactly one process.
+
+If you plan to have less processes than cores, you might experience some
+performance degradation caused by idle cores going to sleep and thus
+taking more time to process incoming IRQs. A dirty way to work around
+this problem is to prevent core from sleeping by booting the kernel with
+  idle=poll
+Or you may restrict the IRQs coming from the NIC to the subset of cores
+that run the Open-MX processes. For instance, if your processes are bound
+to core #0-1, the IRQ affinity mask should be set
+to 3 using:
+$ echo 3 > /proc/irq/<irq>/smp_affinity
+where <irq> is the IRQ line of the NIC.
+
+Under extreme circumstances, for instance for benchmarking purpose, you
+may want to use a single process per machine and bind it to a different
+core from the one receiving IRQs. This way, they will not fight for CPU
+time. However, since cache line sharing is critical, the binding should
+be done on the very next core so that cache effect cost is very small.
+For instance, binding IRQs on core #1 and the process on core #0:
+$ numactl --physcpubind 0 myprocess
+$ echo 2 > /proc/irq/<irq>/smp_affinity
+
+This configuration may be the best for benchmarking purpose, especially
+on the latency side. However, under a normal load, having IRQs go to all
+cores is probably a good idea since most applications will use one process
+per core.
+
+Note that the core numbering is far from being linear in modern machines.
+It is likely that cores numbered as #0 and #1 by the software are actually
+not close to each other in the actual hardware. The numbering is often a
+round-robin across physical processors to maximize memory bandwidth or so.
+
 +-----------------------------------------------------------------
-| VI.f. Avoiding Linearizing on the receive side with old kernels
+| VI.g. Avoiding Linearizing on the receive side with old kernels
 |       and frag-based drivers
 
 Some old kernels (<2.6.18) have problems with some drivers that receive
@@ -343,7 +385,7 @@ not be linearized uselessly. To enable this workardound, you should pass
    circumstances and should be avoided in most of the cases. **
 
 +---------------------------------
-| VI.g. Quick benchmarking how-to
+| VI.h. Quick benchmarking how-to
 
 To get best performance for benchmarking purposes between homogeneous hosts,
 you might want to:
