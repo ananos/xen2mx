@@ -33,10 +33,10 @@ omx_dma_display_support(void)
 	else
 		printk(KERN_INFO "Open-MX: DMA engine support present, with no channels available so far\n");
 	if (omx_dmaengine) {
-		printk(KERN_INFO "Open-MX: DMA engine enabled for offloaded copy >=%d bytes (no early completion needed)\n",
-		       omx_dma_min);
-		printk(KERN_INFO "Open-MX: DMA engine enabled for blocking copy >=%d bytes (completion needed early)\n",
-		       omx_dmawait_min);
+		printk(KERN_INFO "Open-MX: DMA engine enabled for asynchronous copy of frags >=%d bytes in message >=%d bytes\n",
+		       omx_dma_async_frag_min, omx_dma_async_min);
+		printk(KERN_INFO "Open-MX: DMA engine enabled for synchronous copy of >=%d bytes\n",
+		       omx_dma_sync_min);
 	} else {
 		printk(KERN_INFO "Open-MX: DMA engine support disabled at runtime\n");
 	}

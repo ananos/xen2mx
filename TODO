@@ -1,6 +1,9 @@
-* check performance with 31x 4kB and 8x 8kB frames per pull block
-* support 32 frames per pull block
-* support 64 frames per pull block if it helps (by splitting the bitmask in 2 pieces)
+* move i/o at wait loop into a kernel thread to avoid long busy loops in the BH
+ 
+* split and move the pull handle bitmask into the handle descriptors
+  - add a "valid" bit to easily detect when the second block is done before the first one
+* have more pull block at the same time, at least 4
+  - makes 31 frame per block useless?
 
 * fix corruption in mx_msg_loop in the last frame of the first block
 
@@ -117,6 +120,10 @@
     - no need to check for deadlock if too many sender's rdmawin registered
 
 * move recv lib in the kernel
+  + early ioatcopy expected medium, move the other in the recv ring, drop when no space anymore
+    - keep unexpected data in the ring for ever
+    - when unexpected is posted, notify the kernel that we acquired the ring slots and let it
+      finish receiving in the target buffer
   + limit unexpq size to avoid memory starvation
     - or allocate default unexp buffers upto 32kB
     - use a usual recv queue for unexp?

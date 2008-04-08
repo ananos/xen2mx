@@ -431,7 +431,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 #ifdef CONFIG_NET_DMA
 	/* try to submit the dma copy */
-	if (omx_dmaengine && frag_length >= omx_dmawait_min) {
+	if (omx_dmaengine && frag_length >= omx_dma_sync_min) {
 		dma_chan = get_softnet_dma();
 		if (dma_chan) {
 			struct page * page = endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];

@@ -1641,7 +1641,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->frames_missing_bitmap &= ~bitmap_mask;
 
 #ifdef CONFIG_NET_DMA
-	if (omx_dmaengine && frame_length >= omx_dma_min) {
+	if (omx_dmaengine
+	    && frame_length >= omx_dma_async_frag_min
+	    && handle->total_length >= omx_dma_async_min) {
 		remaining_copy = omx_pull_handle_reply_try_dma_copy(iface, handle, skb, msg_offset + handle->puller_rdma_offset, frame_length);
 		if (likely(remaining_copy != frame_length))
 			free_skb = 0;

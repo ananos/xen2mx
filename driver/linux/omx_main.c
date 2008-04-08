@@ -65,13 +65,17 @@ int omx_dmaengine = 0; /* disabled by default for now */
 module_param_call(dmaengine, omx_set_dmaengine, param_get_uint, &omx_dmaengine, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmaengine, "Enable DMA engine support");
 
-int omx_dma_min = 1024; /* do not offload small copy */
-module_param_named(dmamin, omx_dma_min, uint, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(dmamin, "Min length to offload copy on DMA engine");
+int omx_dma_async_frag_min = 1024;
+module_param_named(dmaasyncfragmin, omx_dma_async_frag_min, uint, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(dmaasyncfragmin, "Minimum fragment length to offload asynchronous copy on DMA engine");
 
-int omx_dmawait_min = 2*1024*1024; /* do not offload not-large copy when waiting for there completion soon */
-module_param_named(dmawaitmin, omx_dmawait_min, uint, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(dmawaitmin, "Min length to offload copy on DMA engine when waiting for its completion soon");
+int omx_dma_async_min = 64*1024;
+module_param_named(dmaasyncmin, omx_dma_async_min, uint, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(dmaasyncmin, "Minimum message length to offload all fragment copies asynchronously on DMA engine");
+
+int omx_dma_sync_min = 2*1024*1024;
+module_param_named(dmasyncmin, omx_dma_sync_min, uint, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(dmasyncmin, "Minimum length to offload synchronous copy on DMA engine");
 #endif /* CONFIG_NET_DMA */
 
 int omx_copybench = 0;
