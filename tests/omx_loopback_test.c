@@ -28,14 +28,15 @@
 #define EID OMX_ANY_ENDPOINT
 #define ITER 10
 #define PREDEFINED_LENGTHS -1
+#define PARALLEL 4
 
 static int verbose = 0;
 
 static omx_return_t
 one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
-	      int length, int seed)
+	      int length, int parallel, int seed)
 {
-  omx_request_t sreq[4], rreq[4], req;
+  omx_request_t sreq[parallel], rreq[parallel], req;
   omx_status_t status;
   char *buffer, *buffer2;
   omx_return_t ret;
@@ -60,8 +61,8 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     buffer2[i] = (seed+i+13)%26+'a';
   }
 
-  /* post 4 sends */
-  for(i=0; i<4; i++) {
+  /* post N sends */
+  for(i=0; i<parallel; i++) {
     ret = omx_isend(ep, buffer, length,
 		    addr, 0x1234567887654321ULL,
 		    NULL, &sreq[i]);
@@ -72,8 +73,8 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     }
   }
 
-  /* recv 4 with wait */
-  for(i=0; i<4; i++) {
+  /* recv N with wait */
+  for(i=0; i<parallel; i++) {
     ret = omx_irecv(ep, buffer2, length,
 		    0, 0,
 		    NULL, &rreq[i]);
@@ -100,7 +101,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   }
 
   /* use peek to wait for the sends to complete */
-  for(i=1; i<4; i++) {
+  for(i=1; i<parallel; i++) {
     ret = omx_peek(ep, &req, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to peek (%s)\n",
@@ -126,7 +127,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   for(i=0; i<length; i++) {
     if (buffer[i] != buffer2[i]) {
       fprintf(stderr, "buffer invalid at offset %d, got '%c' instead of '%c'\n",
-	      i, buffer[i], buffer2[i]);
+	      i, buffer2[i], buffer[i]);
       goto out;
     }
   }
@@ -151,6 +152,7 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
   fprintf(stderr, " -l <n>\tuse length instead of predefined ones\n");
+  fprintf(stderr, " -P <n>\tsend multiple messages in paralle [%d]\n", PARALLEL);
   fprintf(stderr, " -s\tdo not disable shared communications\n");
   fprintf(stderr, " -S\tdo not disable self communications\n");
   fprintf(stderr, " -v\tenable verbose messages\n");
@@ -169,11 +171,12 @@ int main(int argc, char *argv[])
   int length = PREDEFINED_LENGTHS;
   int self = 0;
   int shared = 0;
+  int parallel = PARALLEL;
   int c;
   int i;
   omx_return_t ret;
 
-  while ((c = getopt(argc, argv, "e:b:l:sSvh")) != -1)
+  while ((c = getopt(argc, argv, "e:b:l:P:sSvh")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
@@ -183,6 +186,9 @@ int main(int argc, char *argv[])
       break;
     case 'l':
       length = atoi(optarg);
+      break;
+    case 'P':
+      parallel = atoi(optarg);
       break;
     case 's':
       shared = 1;
@@ -257,7 +263,7 @@ int main(int argc, char *argv[])
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a tiny message */
-      ret = one_iteration(ep, addr, 13, i);
+      ret = one_iteration(ep, addr, 13, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
@@ -268,7 +274,7 @@ int main(int argc, char *argv[])
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a small message */
-      ret = one_iteration(ep, addr, 95, i);
+      ret = one_iteration(ep, addr, 95, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
@@ -279,7 +285,7 @@ int main(int argc, char *argv[])
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a medium message */
-      ret = one_iteration(ep, addr, 13274, i);
+      ret = one_iteration(ep, addr, 13274, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
@@ -290,7 +296,7 @@ int main(int argc, char *argv[])
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a large message */
-      ret = one_iteration(ep, addr, 9327485, i);
+      ret = one_iteration(ep, addr, 9327485, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
@@ -302,7 +308,7 @@ int main(int argc, char *argv[])
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a large message */
-      ret = one_iteration(ep, addr, length, i);
+      ret = one_iteration(ep, addr, length, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
