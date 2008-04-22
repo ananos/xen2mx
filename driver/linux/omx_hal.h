@@ -106,17 +106,20 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 list_entry((ptr)->next, type, member)
 #endif
 
+/* net_device switch from class_device to device in 2.6.21 */
+#ifdef OMX_HAVE_NETDEVICE_CLASS_DEVICE
+#define omx_ifp_to_dev(ifp) (ifp)->class_dev.dev;
+#else
+#define omx_ifp_to_dev(ifp) (ifp)->dev.parent;
+#endif
+
 /* dev_to_node appeared in 2.6.20 */
 #ifdef OMX_HAVE_DEV_TO_NODE
 static inline int
 omx_ifp_node(struct net_device *ifp)
-{
-/* net_device switch from class_device to device in 2.6.21 */
-#ifdef OMX_HAVE_NETDEVICE_CLASS_DEVICE
-  return ifp->class_dev.dev ? dev_to_node(ifp->class_dev.dev) : -1;
-#else
-  return ifp->dev.parent ? dev_to_node(ifp->dev.parent) : -1;
-#endif
+{ 
+  struct device *dev = omx_ifp_to_dev(ifp);
+  return dev ? dev_to_node(dev) : -1;
 }
 #else
 #define omx_ifp_node(ifp) -3
