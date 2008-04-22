@@ -108,9 +108,9 @@ list_entry((ptr)->next, type, member)
 
 /* net_device switch from class_device to device in 2.6.21 */
 #ifdef OMX_HAVE_NETDEVICE_CLASS_DEVICE
-#define omx_ifp_to_dev(ifp) (ifp)->class_dev.dev;
+#define omx_ifp_to_dev(ifp) (ifp)->class_dev.dev
 #else
-#define omx_ifp_to_dev(ifp) (ifp)->dev.parent;
+#define omx_ifp_to_dev(ifp) (ifp)->dev.parent
 #endif
 
 /* dev_to_node appeared in 2.6.20 */
