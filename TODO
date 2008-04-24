@@ -1,17 +1,45 @@
-* move i/o at wait loop into a kernel thread to avoid long busy loops in the BH
- 
-* split and move the pull handle bitmask into the handle descriptors
-  - add a "valid" bit to easily detect when the second block is done before the first one
-* have more pull block at the same time, at least 4
-  - makes 31 frame per block useless?
+* release 0.4.90 with ioat disable for now to get bug fix and new ABI out
+  without fixing everything else
 
-* fix corruption in mx_msg_loop in the last frame of the first block
+* corruption?
+  + omx_loopback_test fails if not root and sending in parallel without self comms
+  + corruption in mx_msg_loop in the last frame of the first block whne multiple instanes in parallel
+
+* fix/improve ioat support
+  + move i/o at wait loop into a kernel thread to avoid long busy loops in the BH ?
+  + sleep a bit before polling on synchronous copies
+    - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param
+    - use the empirical ioat speed to sleep using msleep during large 
+      synchronous copy instead of polling
+    - if copy completed on first poll, increase the speed by 12.5% or so
+    - no need to reduce the speed ever
+
+* improve large messages
+  + replace pull handle's BH lock + idr with RCU + array ?
+  + split and move the pull handle bitmask into the handle descriptors
+    - add a "valid" bit to easily detect when the second block is done before the first one
+  + have more pull block at the same time, at least 4?
+    - makes 31 frame per block useless?
+  + if pulling few packet, using multiple request with small blocks to 
+    parallelize the processing of multiple blocks on the remote side ?
+  + ph_prepare_exit only called when holding the iface mutex, may sleep
+    - but last_release may be called from interrupt context
+
+* shared
+  + reduce large threshold for shared? only if ioat enabled?
+    - user-space doesn't know about it, add a hint in the driver desc?
+  + why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
+
+* website
+  + add a section about performance numbers on the website, with I/O AT numbers
+    and link to the performance tuning section of the README
+
+* affinity
+  + add ioctls GET_BOARD_CPUMASK and GET_IRQ_CPUMASK
+  + add OMX_BIND=irq/board/<mask>
+  + add OMX_ENDPOINT_MSIX_BASE=
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
-
-* replace pull handle's BH lock + idr with RCU + array ?
-
-* reduce large threshold for shared ?
 
 * overlap registration with rndv and pull
   + add a "registered_length" field to windows
@@ -41,7 +69,7 @@
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
   + how to force the #define OMX_32BITS_LENGTH once compiled and installed?
 
-* why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
+* look at vringfd (http://lwn.net/Articles/276364/) to replace event ring
 
 * endpoint parameters
   + unexp queue length
@@ -67,6 +95,9 @@
     ok if lots of slices in parallel ?
   + add a driver-private field in event where the reporter will test_and_set BUSY
     before posting the event and finally posting the type and removing BUSY
+  + per cpu rings? not scalable with number of cups
+  + prefetch non-temporal from the event ring ro prevent cache line bounces?
+  + or write event with non-temporal? hard in the kernel
 
 * group similar fields in structure for cache effects
 
@@ -87,29 +118,21 @@
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 * netif_wake_queue(dev) after xmit?
 
-* prefetch non-temporal from the event ring ro prevent cache line bounces?
-* or write event with non-temporal? hard in the kernel
-
 * --enable-32b/64b
 
 * get info irq affinity
-
-* factorize early and msg seqnum index computing (cache them?)
 
 * wire compat
   + what's in src_generation ? unset/unchecked in OMX
   + no rdmawin_seqnum set/checked
   + lib ack contents
-* wire-compat at runtime
+* wire-compat at runtime?
+  + once reply-per-block is useless thanks to more blocks in parallel
 
 * optimize mediums
   + 2 pages if not mx wire compat
     - double the recv queue size
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
-
-* pull improvements
-  + ph_prepare_exit only called when holding the iface mutex, may sleep
-    - but last_release may be called from interrupt context
 
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request
@@ -137,3 +160,7 @@
 
 * mapper (open-mxd)
 * /dev/open-mxd ?
+
+* per-packet-type irq
+  + can we detect when another packet is right behind? if so, process it
+    and queue the early interrupt if it is not a small one
