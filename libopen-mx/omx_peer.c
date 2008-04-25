@@ -35,7 +35,8 @@ omx__driver_peer_add(uint64_t board_addr, char *hostname)
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_ADD, &peer_info);
   if (err < 0) {
-    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_BUSY,
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_ACCESS_DENIED,
+							  OMX_BUSY,
 							  OMX_NO_SYSTEM_RESOURCES,
 							  OMX_SUCCESS,
 							  "add peer to driver table");
