@@ -135,9 +135,7 @@ if test x$build_driver = xyes ; then
     # Issue a warning if the kernel compiler seems to be different
     if test x$KCC_VERSION != x && test x$LINUX_GCC_VERSION != x ; then
       if test $KCC_VERSION != $LINUX_GCC_VERSION ; then
-        AC_WARN([the kernel seems to be compiled with gcc $LINUX_GCC_VERSION])
-        AC_WARN([while the Open-MX module would be built using $KCC_VERSION])
-        AC_WARN([you might need to change the kernel module compiler with KCC])
+        AC_MSG_NOTICE([kernel built with gcc $LINUX_GCC_VERSION and Open-MX with $KCC_VERSION? KCC might need to be set])
       fi
     else
       if test x$KCC != x ; then
