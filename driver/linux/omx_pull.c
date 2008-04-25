@@ -287,9 +287,6 @@ __omx_pull_handle_last_release(struct kref * kref)
 	dprintk(KREF, "releasing the last reference on pull handle %p\n",
 		handle);
 
-	/* let the offloaded copy finish */
-	omx_pull_handle_wait_dma_completions(handle);
-
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
 	kfree(handle);
 }
@@ -617,79 +614,49 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 /*
  * Takes an acquired and locked pull handle and complete it.
- * Called by the BH after receiving a pull reply or a nack.
- */
-static INLINE void
-omx_pull_handle_done_release(struct omx_pull_handle * handle)
-{
-	struct omx_user_region * region = handle->region;
-	struct omx_endpoint * endpoint = handle->endpoint;
-
-	/* tell the sparse checker that the caller took the lock */
-	__acquire(&handle->lock);
-
-	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
-	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
-
-	/* remove from the idr (and endpoint list) so that no incoming packet can find it anymore */
-	dprintk(PULL, "moving done handle %p to the done_but_timer list and removing from idr\n", handle);
-	write_lock_bh(&endpoint->pull_handles_lock);
-	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
-	list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
-	write_unlock_bh(&endpoint->pull_handles_lock);
-
-	spin_unlock(&handle->lock);
-
-	/* release the region and handle */
-	omx_user_region_release(region);
-	omx_pull_handle_release(handle);
-}
-
-/*
- * Takes an acquired and locked pull handle and complete it.
- * Called by the retransmit timer when expired.
- */
-static INLINE void
-omx_pull_handle_timeout_release(struct omx_pull_handle * handle)
-{
-	struct omx_user_region * region = handle->region;
-	struct omx_endpoint * endpoint = handle->endpoint;
-
-	/* tell the sparse checker that the caller took the lock */
-	__acquire(&handle->lock);
-
-	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
-	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
-
-	/* remove from the idr (and endpoint list) so that no incoming packet can find it anymore */
-	dprintk(PULL, "pull handle %p timer done, removing from idr and endpoint list\n", handle);
-	write_lock_bh(&endpoint->pull_handles_lock);
-	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
-	list_del(&handle->list_elt);
-	write_unlock_bh(&endpoint->pull_handles_lock);
-
-	spin_unlock(&handle->lock);
-
-	/* release the region and handle */
-	omx_user_region_release(region);
-	omx_pull_handle_release(handle);
-}
-
-/*
- * Takes a locked and acquired pull handle
- * and report an event to user-space.
+ * Called by the BH after receiving a pull reply or a nack,
+ * or by the retransmit timer when expired.
  *
- * May be called by the BH after receiving a pull reply or a nack,
- * and by the retransmit timer when expired.
+ * If the timeout expired, status is OMX_EVT_PULL_DONE_TIMEOUT
+ * and the timer will exit right after returning from here.
+ * In the other cases, the timer needs to catch TIMER_MUST_EXIT.
  */
-static void
-omx_pull_handle_done_notify(struct omx_pull_handle * handle,
-			    uint8_t status)
+static INLINE void
+omx_pull_handle_complete(struct omx_pull_handle * handle, uint8_t status)
 {
-	struct omx_endpoint *endpoint = handle->endpoint;
+	struct omx_user_region * region = handle->region;
+	struct omx_endpoint * endpoint = handle->endpoint;
 	struct omx_evt_pull_done event;
 
-	/* notify event */
+	/* tell the sparse checker that the caller took the lock */
+	__acquire(&handle->lock);
+
+	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
+	handle->status = (status == OMX_EVT_PULL_DONE_TIMEOUT)
+			? OMX_PULL_HANDLE_STATUS_TIMER_EXITED
+			: OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
+
+	/* remove from the idr (and endpoint list) so that no incoming packet can find it anymore */
+	write_lock_bh(&endpoint->pull_handles_lock);
+	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
+	if (status == OMX_EVT_PULL_DONE_TIMEOUT) {
+		dprintk(PULL, "pull handle %p timer done, removing from idr and endpoint list\n", handle);		
+		list_del(&handle->list_elt);
+	} else {
+		dprintk(PULL, "moving done handle %p to the done_but_timer list and removing from idr\n", handle);
+		list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
+	}
+	write_unlock_bh(&endpoint->pull_handles_lock);
+
+	spin_unlock(&handle->lock);
+
+	/* now that the handle cannot be used by anybody else, complete it for real */
+
+	/* let the offloaded copy finish */
+	omx_pull_handle_wait_dma_completions(handle);
+	/* FIXME: just poll once and queue a deferred work to block/notify? */
+
+	/* notify event to user-space now that all copies are done */
 	event.status = status;
 	event.lib_cookie = handle->lib_cookie;
 	event.pulled_length = handle->total_length - handle->remaining_length;
@@ -697,6 +664,10 @@ omx_pull_handle_done_notify(struct omx_pull_handle * handle,
 	omx_notify_exp_event(endpoint,
 			     OMX_EVT_PULL_DONE,
 			     &event, sizeof(event));
+
+	/* release the region and handle */
+	omx_user_region_release(region); /* FIXME: some guys may still be copying synchronously in there, release in the last rcu release ? */
+	omx_pull_handle_release(handle);
 }
 
 /************************
@@ -949,9 +920,8 @@ omx_pull_handle_timeout_handler(unsigned long data)
 	if (jiffies > handle->last_retransmit_jiffies) {
 		omx_counter_inc(iface, PULL_TIMEOUT_ABORT);
 		dprintk(PULL, "pull handle %p last retransmit time reached, reporting an error\n", handle);
-		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_TIMEOUT);
-		omx_pull_handle_timeout_release(handle);
-		/* tell the sparse checker that the lock has been released by omx_pull_handle_timeout_release() */
+		omx_pull_handle_complete(handle, OMX_EVT_PULL_DONE_TIMEOUT);
+		/* tell the sparse checker that the lock has been released by omx_pull_handle_complete() */
 		__release(&handle->lock);
 
 		return; /* timer will never be called again (status is TIMER_EXITED) */
@@ -1673,16 +1643,12 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			omx_counter_inc(iface, PULL_REPLY_FILL_FAILED);
 			omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet due to failure to fill pages from skb");
 
-			/* let the offloaded copy finish */
-			omx_pull_handle_wait_dma_completions(handle);
-
 			/* the other peer is sending crap, close the handle and report truncated to userspace
 			 * we do not really care about what have been tranfered since it's crap
 			 */
 			spin_lock(&handle->lock);
-			omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_ABORTED);
-			omx_pull_handle_done_release(handle);
-			/* tell the sparse checker that the lock has been released by omx_pull_handle_done_release() */
+			omx_pull_handle_complete(handle, OMX_EVT_PULL_DONE_ABORTED);
+			/* tell the sparse checker that the lock has been released by omx_pull_handle_complete() */
 			__release(&handle->lock);
 			goto out_with_endpoint;
 		}
@@ -1706,14 +1672,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	if (OMX_PULL_HANDLE_ALL_BLOCKS_DONE(handle)
 	    && handle->frames_copying_nr == 0) {
 
-		/* let the offloaded copy finish */
-		omx_pull_handle_wait_dma_completions(handle);
-
 		/* notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
-		omx_pull_handle_done_notify(handle, OMX_EVT_PULL_DONE_SUCCESS);
-		omx_pull_handle_done_release(handle);
-		/* tell the sparse checker that the lock has been released by omx_pull_handle_done_release() */
+		omx_pull_handle_complete(handle, OMX_EVT_PULL_DONE_SUCCESS);
+		/* tell the sparse checker that the lock has been released by omx_pull_handle_complete() */
 		__release(&handle->lock);
 	} else {
 		/* there's more to receive or copy, just release the handle */
@@ -1836,13 +1798,9 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	/* let the offloaded copy finish */
-	omx_pull_handle_wait_dma_completions(handle);
-
 	/* complete the handle */
-	omx_pull_handle_done_notify(handle, nack_type);
-	omx_pull_handle_done_release(handle);
-	/* tell the sparse checker that the lock has been released by omx_pull_handle_done_release() */
+	omx_pull_handle_complete(handle, nack_type);
+	/* tell the sparse checker that the lock has been released by omx_pull_handle_complete() */
 	__release(&handle->lock);
 	omx_endpoint_release(endpoint);
 	dev_kfree_skb(skb);
