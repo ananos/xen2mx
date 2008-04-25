@@ -437,6 +437,12 @@ omx_ioctl_wakeup(struct omx_endpoint * endpoint, void __user * uparam)
 	return err;
 }
 
+void
+omx_wakeup_endpoint_on_close(struct omx_endpoint * endpoint)
+{
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_WAKEUP);
+}
+
 /*
  * Local variables:
  *  tab-width: 8

@@ -281,6 +281,9 @@ omx_endpoint_close(struct omx_endpoint * endpoint,
 
 	spin_unlock(&endpoint->status_lock);
 
+	/* wakeup waiters */
+	omx_wakeup_endpoint_on_close(endpoint);
+
 	/* detach from the iface now so that nobody can acquire it */
 	omx_iface_detach_endpoint(endpoint, ifacelocked);
 	/* but keep the endpoint->iface valid until everybody releases the endpoint */
