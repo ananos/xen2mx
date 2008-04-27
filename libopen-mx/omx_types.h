@@ -475,6 +475,7 @@ struct omx__globals {
   int verbose;
   int verbdebug;
   int regcache;
+  int parallel_regcache;
   int waitspin;
   int zombie_max;
   int waitintr;

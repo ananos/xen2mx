@@ -255,7 +255,15 @@ omx__init_api(int api)
   /*************************
    * Regcache configuration
    */
-  omx__globals.regcache = 0;
+  omx__globals.parallel_regcache = 0;
+  env = getenv("OMX_PRCACHE");
+  if (env) {
+    omx__globals.regcache = atoi(env);
+    omx__verbose_printf("Forcing parallel regcache to %s\n",
+			omx__globals.regcache ? "enabled" : "disabled");
+  }
+
+  omx__globals.regcache = omx__globals.parallel_regcache;
   env = getenv("OMX_RCACHE");
 #ifdef OMX_MX_API_COMPAT
   if (!env) {

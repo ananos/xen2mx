@@ -267,6 +267,7 @@ omx__get_contigous_region(struct omx_endpoint *ep,
   if (omx__globals.regcache) {
     list_for_each_entry(region, &ep->reg_list, reg_elt) {
       if ((!reserver || !region->reserver)
+	  && (omx__globals.parallel_regcache || !region->use_count)
 	  && region->segs[0].vaddr == vaddr
 	  && region->segs[0].len >= rdma_length
 	  && region->offset == offset) {
