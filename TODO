@@ -2,7 +2,6 @@
   without fixing everything else
 
 * corruption?
-  + omx_loopback_test fails if sending in parallel on network with rcache and wire compat
   + corruption in mx_msg_loop in the last frame of the first block whne multiple instanes in parallel
 
 * fix/improve ioat support
@@ -15,6 +14,7 @@
     - no need to reduce the speed ever
 
 * fix/improve large messages
+  + regcache malloc hook
   + move the region release in the last pull release in case a memcpy is pending while
     another pull reply recv aborts the pul handle
   + replace pull handle's BH lock + idr with RCU + array ?
@@ -51,6 +51,8 @@
     - dequeue after registering enough
   + register by blocks (8 or 16 pages per block)
   + let shared comm poll until the window is large enough
+  + remove the user-space knowledge of window being registered for real
+    - integrate into mmu notifier since there is no need anymore to notify userspace when region is invalidated
 
 * add flags for all queued state and split throttling/queued queue into per-flag queue
   + let the callee requeue and return need_retry if did not queue to a better queue

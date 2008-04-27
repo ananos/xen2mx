@@ -34,23 +34,13 @@ static int verbose = 0;
 
 static omx_return_t
 one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
-	      int length, int parallel, int seed)
+	      char *buffer, char *buffer2, int length, int parallel, int seed)
 {
   omx_request_t sreq[parallel], rreq[parallel], req;
   omx_status_t status;
-  char *buffer, *buffer2;
   omx_return_t ret;
   uint32_t result;
   int i;
-
-  buffer = malloc(length);
-  if (!buffer)
-    return OMX_NO_RESOURCES;
-  buffer2 = malloc(length);
-  if (!buffer2) {
-    free(buffer);
-    return OMX_NO_RESOURCES;
-  }
 
   /* initialize buffers to different values
    * so that it's easy to check bytes correctness
@@ -135,13 +125,9 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   if (verbose)
     fprintf(stderr, "Successfully transferred %d bytes 4 times\n", length);
 
-  free(buffer2);
-  free(buffer);
   return OMX_SUCCESS;
 
  out:
-  free(buffer2);
-  free(buffer);
   return OMX_BAD_ERROR;
 }
 
@@ -157,6 +143,11 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -S\tdo not disable self communications\n");
   fprintf(stderr, " -v\tenable verbose messages\n");
 }
+
+#define LENGTH1 13
+#define LENGTH2 95
+#define LENGTH3 13274
+#define LENGTH4 9327485
 
 int main(int argc, char *argv[])
 {
@@ -175,6 +166,7 @@ int main(int argc, char *argv[])
   int c;
   int i;
   omx_return_t ret;
+  char *buffer, *buffer2;
 
   while ((c = getopt(argc, argv, "e:b:l:P:sSvh")) != -1)
     switch (c) {
@@ -260,10 +252,20 @@ int main(int argc, char *argv[])
   }
 
   if (length == PREDEFINED_LENGTHS) {
+
+    buffer = malloc(LENGTH4);
+    if (!buffer)
+      goto out_with_ep;
+    buffer2 = malloc(LENGTH4);
+    if (!buffer2) {
+      free(buffer);
+      goto out_with_ep;
+    }
+
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a tiny message */
-      ret = one_iteration(ep, addr, 13, parallel, i);
+      ret = one_iteration(ep, addr, buffer, buffer2, LENGTH1, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
@@ -274,7 +276,7 @@ int main(int argc, char *argv[])
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a small message */
-      ret = one_iteration(ep, addr, 95, parallel, i);
+      ret = one_iteration(ep, addr, buffer, buffer2, LENGTH2, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
@@ -285,7 +287,7 @@ int main(int argc, char *argv[])
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a medium message */
-      ret = one_iteration(ep, addr, 13274, parallel, i);
+      ret = one_iteration(ep, addr, buffer, buffer2, LENGTH3, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
@@ -296,7 +298,7 @@ int main(int argc, char *argv[])
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a large message */
-      ret = one_iteration(ep, addr, 9327485, parallel, i);
+      ret = one_iteration(ep, addr, buffer, buffer2, LENGTH4, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
@@ -304,17 +306,34 @@ int main(int argc, char *argv[])
     printf("large (%d bytes) latency %lld us\n", 9327485,
 	   (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
+    free(buffer2);
+    free(buffer);
+
   } else {
+
+    buffer = malloc(length);
+    if (!buffer)
+      goto out_with_ep;
+    buffer2 = malloc(length);
+    if (!buffer2) {
+      free(buffer);
+      goto out_with_ep;
+    }
+
     gettimeofday(&tv1, NULL);
     for(i=0; i<ITER; i++) {
       /* send a large message */
-      ret = one_iteration(ep, addr, length, parallel, i);
+      ret = one_iteration(ep, addr, buffer, buffer2, length, parallel, i);
       if (ret != OMX_SUCCESS)
         goto out_with_ep;
     }
     gettimeofday(&tv2, NULL);
     printf("message (%d bytes) latency %lld us\n", length,
 	   (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+
+    free(buffer2);
+    free(buffer);
+
   }
 
   omx_close_endpoint(ep);
