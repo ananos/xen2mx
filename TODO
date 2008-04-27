@@ -2,7 +2,7 @@
   without fixing everything else
 
 * corruption?
-  + omx_loopback_test fails if not root and sending in parallel without self comms
+  + omx_loopback_test fails if sending in parallel on network with rcache and wire compat
   + corruption in mx_msg_loop in the last frame of the first block whne multiple instanes in parallel
 
 * fix/improve ioat support
@@ -14,7 +14,9 @@
     - if copy completed on first poll, increase the speed by 12.5% or so
     - no need to reduce the speed ever
 
-* improve large messages
+* fix/improve large messages
+  + move the region release in the last pull release in case a memcpy is pending while
+    another pull reply recv aborts the pul handle
   + replace pull handle's BH lock + idr with RCU + array ?
   + split and move the pull handle bitmask into the handle descriptors
     - add a "valid" bit to easily detect when the second block is done before the first one
