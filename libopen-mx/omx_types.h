@@ -48,7 +48,7 @@ struct omx__large_region_map {
       struct list_head reg_unused_elt; /* linked into the endpoint reg_unused_list if contigous, unused and cached */
       int use_count;
       uint8_t id;
-      uint8_t seqnum;
+      uint8_t last_seqnum;
       struct omx_cmd_region_segment *segs;
       uint32_t nseg;
       uint16_t offset;
@@ -412,6 +412,7 @@ union omx_request {
       struct {
 	struct omx_cmd_send_rndv send_rndv_ioctl_param;
 	struct omx__large_region * region;
+	uint8_t region_seqnum;
       } large;
     } specific;
   } send;

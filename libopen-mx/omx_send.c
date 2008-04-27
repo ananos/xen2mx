@@ -536,6 +536,9 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
     return ret;
   }
 
+  req->send.specific.large.region = region;
+  req->send.specific.large.region_seqnum = region->last_seqnum++;
+
   req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_partner_non_acked_request(partner, req);
 
@@ -549,14 +552,12 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
 
   OMX_PKT_FIELD_FROM(data_n->msg_length, length);
   OMX_PKT_FIELD_FROM(data_n->rdma_id, region->id);
-  OMX_PKT_FIELD_FROM(data_n->rdma_seqnum, region->seqnum);
+  OMX_PKT_FIELD_FROM(data_n->rdma_seqnum, req->send.specific.large.region_seqnum);
   OMX_PKT_FIELD_FROM(data_n->rdma_offset, region->offset);
 
   omx__post_isend_rndv(ep, partner, req);
 
   /* no need to wait for a done event, tiny is synchronous */
-
-  req->send.specific.large.region = region;
 
   return OMX_SUCCESS;
 }

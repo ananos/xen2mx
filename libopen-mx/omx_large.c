@@ -44,7 +44,7 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
   for(i=0; i<OMX_USER_REGION_MAX; i++) {
     array[i].next_free = i+1;
     array[i].region.id = i;
-    array[i].region.seqnum = 0; /* FIXME */
+    array[i].region.last_seqnum = 23;
   }
   array[OMX_USER_REGION_MAX-1].next_free = -1;
   ep->large_region_map.first_free = 0;
@@ -138,7 +138,7 @@ omx__register_region(struct omx_endpoint *ep,
 
   reg.nr_segments = region->nseg;
   reg.id = region->id;
-  reg.seqnum = region->seqnum;
+  reg.seqnum = 0; /* FIXME? unused since the driver can reuse a window multiple times */
   reg.memory_context = 0ULL; /* FIXME */
   reg.segments = (uintptr_t) region->segs;
 
@@ -569,11 +569,15 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
 {
   uint32_t xfer_length = msg->specific.notify.length;
   uint8_t region_id = msg->specific.notify.puller_rdma_id;
+  uint8_t region_seqnum = msg->specific.notify.puller_rdma_seqnum;
   struct omx__large_region * region;
 
   /* FIXME: check region id */
   region = &ep->large_region_map.array[region_id].region;
   req = region->reserver;
+
+  if (region_seqnum != req->send.specific.large.region_seqnum)
+    return;
 
   omx__debug_assert(req);
   omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_SEND_LARGE);
