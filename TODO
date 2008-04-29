@@ -13,6 +13,9 @@
     - if copy completed on first poll, increase the speed by 12.5% or so
     - no need to reduce the speed ever
 
+* support non-ethernet networks by providing ways to extract the mac address differently
+  + infiniband ifaces have too small mtu?
+
 * fix/improve large messages
   + regcache malloc hook
   + move the region release in the last pull release in case a memcpy is pending while

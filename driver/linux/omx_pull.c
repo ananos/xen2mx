@@ -109,7 +109,6 @@ struct omx_pull_handle {
 	/* global pull fields */
 	struct omx_endpoint * endpoint;
 	struct omx_user_region * region;
-	uint64_t lib_cookie;
 	uint32_t total_length;
 	uint32_t puller_rdma_offset;
 	uint32_t pulled_rdma_offset;
@@ -132,6 +131,9 @@ struct omx_pull_handle {
 	dma_cookie_t dma_last_cookie;
 	struct sk_buff_head dma_skb_queue;
 #endif
+
+	/* completion event */
+	struct omx_evt_pull_done done_event;
 
 	/* pull packet header */
 	struct omx_hdr pkt_hdr;
@@ -551,7 +553,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	kref_init(&handle->refcount);
 	handle->endpoint = endpoint;
 	handle->region = region;
-	handle->lib_cookie = cmd->lib_cookie;
 	handle->total_length = cmd->length;
 	handle->puller_rdma_offset = cmd->local_offset;
 	handle->pulled_rdma_offset = cmd->remote_offset;
@@ -573,6 +574,10 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->dma_last_cookie = -1;
 	skb_queue_head_init(&handle->dma_skb_queue);
 #endif
+
+	/* initialize the completion event */
+	handle->done_event.local_rdma_id = cmd->local_rdma_id;
+	handle->done_event.lib_cookie = cmd->lib_cookie;
 
 	/* initialize cached header */
 	err = omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
@@ -626,7 +631,6 @@ omx_pull_handle_complete(struct omx_pull_handle * handle, uint8_t status)
 {
 	struct omx_user_region * region = handle->region;
 	struct omx_endpoint * endpoint = handle->endpoint;
-	struct omx_evt_pull_done event;
 
 	/* tell the sparse checker that the caller took the lock */
 	__acquire(&handle->lock);
@@ -640,7 +644,7 @@ omx_pull_handle_complete(struct omx_pull_handle * handle, uint8_t status)
 	write_lock_bh(&endpoint->pull_handles_lock);
 	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
 	if (status == OMX_EVT_PULL_DONE_TIMEOUT) {
-		dprintk(PULL, "pull handle %p timer done, removing from idr and endpoint list\n", handle);		
+		dprintk(PULL, "pull handle %p timer done, removing from idr and endpoint list\n", handle);
 		list_del(&handle->list_elt);
 	} else {
 		dprintk(PULL, "moving done handle %p to the done_but_timer list and removing from idr\n", handle);
@@ -657,13 +661,11 @@ omx_pull_handle_complete(struct omx_pull_handle * handle, uint8_t status)
 	/* FIXME: just poll once and queue a deferred work to block/notify? */
 
 	/* notify event to user-space now that all copies are done */
-	event.status = status;
-	event.lib_cookie = handle->lib_cookie;
-	event.pulled_length = handle->total_length - handle->remaining_length;
-	event.local_rdma_id = handle->region->id;
+	handle->done_event.status = status;
+	handle->done_event.pulled_length = handle->total_length - handle->remaining_length;
 	omx_notify_exp_event(endpoint,
 			     OMX_EVT_PULL_DONE,
-			     &event, sizeof(event));
+			     &handle->done_event, sizeof(handle->done_event));
 
 	/* release the region and handle */
 	omx_user_region_release(region); /* FIXME: some guys may still be copying synchronously in there, release in the last rcu release ? */
