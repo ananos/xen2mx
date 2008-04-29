@@ -22,6 +22,7 @@
 #include <linux/idr.h>
 #include <linux/kref.h>
 #include <linux/timer.h>
+#include <linux/workqueue.h>
 
 #include "omx_misc.h"
 #include "omx_hal.h"
@@ -130,6 +131,7 @@ struct omx_pull_handle {
 	struct dma_chan *dma_chan;
 	dma_cookie_t dma_last_cookie;
 	struct sk_buff_head dma_skb_queue;
+	struct work_struct deferred_dma_wait_work;
 #endif
 
 	/* completion event */
@@ -143,10 +145,10 @@ static void omx_pull_handle_timeout_handler(unsigned long data);
 
 #ifdef CONFIG_NET_DMA
 static void omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle);
-static void omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle);
+static int omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle *handle);
 #else
 #define omx_pull_handle_poll_dma_completions(ph) /* nothing */
-#define omx_pull_handle_wait_dma_completions(ph) /* nothing */
+#define omx_pull_handle_deferred_wait_dma_completions(ph) 0 /* always completed */
 #endif
 
 /*
@@ -617,6 +619,21 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
  * Pull handle completion
  */
 
+static INLINE void
+omx_pull_handle_complete_notify(struct omx_pull_handle * handle)
+{
+	struct omx_user_region * region = handle->region;
+	struct omx_endpoint * endpoint = handle->endpoint;
+
+	omx_notify_exp_event(endpoint,
+			     OMX_EVT_PULL_DONE,
+			     &handle->done_event, sizeof(handle->done_event));
+
+	/* release the region and handle */
+	omx_user_region_release(region); /* FIXME: some guys may still be copying synchronously in there, release in the last rcu release ? */
+	omx_pull_handle_release(handle);
+}
+
 /*
  * Takes an acquired and locked pull handle and complete it.
  * Called by the BH after receiving a pull reply or a nack,
@@ -629,8 +646,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 static INLINE void
 omx_pull_handle_complete(struct omx_pull_handle * handle, uint8_t status)
 {
-	struct omx_user_region * region = handle->region;
 	struct omx_endpoint * endpoint = handle->endpoint;
+	int ret;
 
 	/* tell the sparse checker that the caller took the lock */
 	__acquire(&handle->lock);
@@ -656,20 +673,14 @@ omx_pull_handle_complete(struct omx_pull_handle * handle, uint8_t status)
 
 	/* now that the handle cannot be used by anybody else, complete it for real */
 
-	/* let the offloaded copy finish */
-	omx_pull_handle_wait_dma_completions(handle);
-	/* FIXME: just poll once and queue a deferred work to block/notify? */
-
-	/* notify event to user-space now that all copies are done */
+	/* finish filling the event for user-space */
 	handle->done_event.status = status;
 	handle->done_event.pulled_length = handle->total_length - handle->remaining_length;
-	omx_notify_exp_event(endpoint,
-			     OMX_EVT_PULL_DONE,
-			     &handle->done_event, sizeof(handle->done_event));
 
-	/* release the region and handle */
-	omx_user_region_release(region); /* FIXME: some guys may still be copying synchronously in there, release in the last rcu release ? */
-	omx_pull_handle_release(handle);
+	/* see if the offloaded copies are done */
+	ret = omx_pull_handle_deferred_wait_dma_completions(handle);
+	if (!ret)
+		omx_pull_handle_complete_notify(handle);
 }
 
 /************************
@@ -1325,6 +1336,45 @@ omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle)
 	dma_chan_put(dma_chan);
 	handle->dma_chan = NULL;
 	handle->dma_last_cookie = -1;
+}
+
+/*
+ * Deferred wait for completions work.
+ */
+static void
+omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_data_t data)
+{
+	struct omx_pull_handle *handle = OMX_PULL_HANDLE_OF_WORK_STRUCT_DATA(data);
+
+	/* let the offloaded copy finish */
+	omx_pull_handle_wait_dma_completions(handle);
+
+	/* complete the handle for real now */
+	omx_pull_handle_complete_notify(handle);
+}
+
+/*
+ * Check whether all DMA-offloaded copies for this handle are completed.
+ * If so, return 0;
+ * If not, schedule a work to wait for the completion and return -EAGAIN.
+ */
+static int
+omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle *handle)
+{
+	/* do a round of completion */
+	omx_pull_handle_poll_dma_completions(handle);
+
+	/* if still something to do, schedule a deferred work */
+	if (likely(handle->dma_chan)) {
+		OMX_PULL_HANDLE_INIT_WORK(&handle->deferred_dma_wait_work,
+					  omx_pull_handle_deferred_dma_completions_wait_work,
+					  handle);
+		schedule_work(&handle->deferred_dma_wait_work);
+		omx_counter_inc(handle->endpoint->iface, DMARECV_PULL_REPLY_WAIT_DEFERRED);
+		return -EAGAIN;
+	} else {
+		return 0;
+	}
 }
 
 #endif /* ~CONFIG_DMA_ENGINE */

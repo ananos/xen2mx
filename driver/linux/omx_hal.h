@@ -117,12 +117,23 @@ list_entry((ptr)->next, type, member)
 #ifdef OMX_HAVE_DEV_TO_NODE
 static inline int
 omx_ifp_node(struct net_device *ifp)
-{ 
+{
   struct device *dev = omx_ifp_to_dev(ifp);
   return dev ? dev_to_node(dev) : -1;
 }
 #else
 #define omx_ifp_node(ifp) -3
+#endif
+
+/* work_struct switch to container_of in 2.6.20 */
+#ifdef OMX_HAVE_WORK_STRUCT_DATA
+#define OMX_PULL_HANDLE_INIT_WORK(_work, _func, _data) INIT_WORK(_work, _func, _data)
+#define OMX_PULL_HANDLE_OF_WORK_STRUCT_DATA(_data) (_data)
+typedef void * omx_work_struct_data_t;
+#else
+#define OMX_PULL_HANDLE_INIT_WORK(_work, _func, _data) INIT_WORK(_work, _func)
+#define OMX_PULL_HANDLE_OF_WORK_STRUCT_DATA(_work) container_of(_work, struct omx_pull_handle, deferred_dma_wait_work);
+typedef struct work_struct * omx_work_struct_data_t;
 #endif
 
 #endif /* __omx_hal_h__ */

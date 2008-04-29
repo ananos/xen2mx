@@ -5,7 +5,6 @@
   + corruption in mx_msg_loop in the last frame of the first block whne multiple instanes in parallel
 
 * fix/improve ioat support
-  + move i/o at wait loop into a kernel thread to avoid long busy loops in the BH ?
   + sleep a bit before polling on synchronous copies
     - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param
     - use the empirical ioat speed to sleep using msleep during large 

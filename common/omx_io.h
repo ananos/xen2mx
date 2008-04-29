@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x125
+#define OMX_DRIVER_ABI_VERSION		0x126
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -730,6 +730,7 @@ enum omx_counter_index {
 	OMX_COUNTER_DMARECV_PARTIAL_MEDIUM_FRAG,
 	OMX_COUNTER_DMARECV_PULL_REPLY,
 	OMX_COUNTER_DMARECV_PARTIAL_PULL_REPLY,
+	OMX_COUNTER_DMARECV_PULL_REPLY_WAIT_DEFERRED,
 
 	OMX_COUNTER_EXP_EVENTQ_FULL,
 	OMX_COUNTER_UNEXP_EVENTQ_FULL,
@@ -847,6 +848,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "DMA Recv Pull Reply";
 	case OMX_COUNTER_DMARECV_PARTIAL_PULL_REPLY:
 		return "DMA Recv Pull Reply Only Partial";
+	case OMX_COUNTER_DMARECV_PULL_REPLY_WAIT_DEFERRED:
+		return "DMA Recv Pull Reply with Deferred Wait";
 	case OMX_COUNTER_EXP_EVENTQ_FULL:
 		return "Expected Event Queue Full";
 	case OMX_COUNTER_UNEXP_EVENTQ_FULL:

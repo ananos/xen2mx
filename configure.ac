@@ -290,6 +290,16 @@ if test x$build_driver = xyes ; then
       AC_MSG_RESULT(struct device)
     fi
 
+    # work_struct lost its data field in 2.6.20
+    AC_MSG_CHECKING((in kernel headers) whether workstruct contains a data field)
+    if sed -ne '/^struct work_struct {/,/^};/p' ${LINUX_HDR}/include/linux/workqueue.h \
+      | grep "void \*data;" > /dev/null ; then
+      echo "#define OMX_HAVE_WORK_STRUCT_DATA 1" >> ${TMP_CHECKS_PATH}
+      AC_MSG_RESULT(yes)
+    else
+      AC_MSG_RESULT(no)
+    fi
+
     # add the footer
     echo "" >> ${TMP_CHECKS_PATH}
     echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_PATH}
