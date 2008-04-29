@@ -292,6 +292,10 @@ __omx_pull_handle_last_release(struct kref * kref)
 		handle);
 
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
+
+	/* release the region now that we are sure that nobody else uses it */
+	omx_user_region_release(handle->region);
+
 	kfree(handle);
 }
 
@@ -629,9 +633,13 @@ omx_pull_handle_complete_notify(struct omx_pull_handle * handle)
 			     OMX_EVT_PULL_DONE,
 			     &handle->done_event, sizeof(handle->done_event));
 
-	/* release the region and handle */
-	omx_user_region_release(region); /* FIXME: some guys may still be copying synchronously in there, release in the last rcu release ? */
+	/* release the handle */
 	omx_pull_handle_release(handle);
+
+	/*
+	 * do not release the region here, let the last pull user release it.
+	 * if we are completing the pull with an error, there could be other users in memcpy
+	 */
 }
 
 /*

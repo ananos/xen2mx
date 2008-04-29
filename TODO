@@ -17,8 +17,6 @@
 
 * fix/improve large messages
   + regcache malloc hook
-  + move the region release in the last pull release in case a memcpy is pending while
-    another pull reply recv aborts the pul handle
   + replace pull handle's BH lock + idr with RCU + array ?
   + split and move the pull handle bitmask into the handle descriptors
     - add a "valid" bit to easily detect when the second block is done before the first one
