@@ -511,7 +511,13 @@ OMX_DISABLE_SHARED=1
 
 OMX_RCACHE=1
 	Enable registration cache.
-  The registration is disabled by default.
+  The registration cache is disabled by default.
+
+OMX_PRCACHE=1
+	Enable parallel registration cache, which caches large windows
+	more aggressively than MX can, by supporting multiple large receive
+	and possibly one large send on the same window at the same time.
+  Parallel registration cache is disabled by default.
 
 OMX_RESENDS_MAX=1000
 	Try to resend each send request 1000 times before timeout-ing.
