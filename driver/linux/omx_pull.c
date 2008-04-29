@@ -626,7 +626,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 static INLINE void
 omx_pull_handle_complete_notify(struct omx_pull_handle * handle)
 {
-	struct omx_user_region * region = handle->region;
 	struct omx_endpoint * endpoint = handle->endpoint;
 
 	omx_notify_exp_event(endpoint,
