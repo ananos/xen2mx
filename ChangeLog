@@ -1,42 +1,42 @@
-Open-MX 0.5.0 (March xyth 2008, svn r16xy)
+Open-MX 0.5.0 (April 30th 2008, svn r1608)
 ==========================================
 The I/O AT and Full-MX-API release.
 
-!! The ABI of the library has changed,
+!! The ABI of the Open-MX library has changed,
 !! all existing softwares using Open-MX must be rebuilt.
 
 Major enhancements:
 * The whole MX API is now supported thanks to the addition of
   omx_set_error_handler().
-* Add DMA engine support to offload memory copies on the receive
-  side on I/O AT hardware when available. Disabled by default,
-  to be enabled with the dmaengine module parameter.
+* Add DMA engine support to offload memory copies on the receive side on
+  I/O AT hardware when available. Disabled by default, to be enabled with
+  the dmaengine module parameter. See the README for details.
 
 Other improvements from previous release:
-* Merge status and return codes into a single type and add many new
-  values for more descriptive error codes.
 * Fix completion of medium message send in case of a very short last
   fragment.
 * Fix possible message corruption with very large messages with highly
   out-of-order messages.
 * Fix support for very large messages, up-to 4GB-1 (32bits length).
 * Fix reporting of connection errors to the application.
-* Fix management of queued requests in case of resource shortage.
-* Fix a possible wrongly-early completion of large send in case of
-  duplicate notify message being receive.
-* Rework and uniformize the management of attached interfaces through
-  the module parameter and sysfs file.
-* Cleanup the build system.
-* Many minor fixes, tiny optimizations, and documentation improvements
-  all over the place.
+* Fix a possible wrongly-early completion of large send in case of duplicate
+  notify message being receive.
+* Improve management of queued requests a bit in case of resource shortage.
+* Merge status and return codes into a single type and add many new values
+  for more descriptive error codes (ABI break).
+* Rework and uniformize the management of attached interfaces through the
+  module parameter and sysfs file.
+* Cleanup the build system and its messages.
+* Many minor fixes, tiny optimizations, and documentation improvements all
+  over the place.
 
 Caveats:
-* Queueing of requests in case of resource shortage is not perfect yet,
-  some requests may not be processed in order.
-* No dynamic peer discovery, omx_init_peers should be invoked manually
-  to setup a static peer table.
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
+* Queueing of requests in case of resource shortage is not perfect yet, some
+  requests may not be processed in order.
+* No dynamic peer discovery, omx_init_peers should be invoked manually to
+  setup a static peer table.
+* No background progression or retransmission is done if the application does
+  not invoke an Open-MX routine explicitly.
 
 Open-MX 0.4.0 (February 29th 2008, svn r1408)
 =============================================
