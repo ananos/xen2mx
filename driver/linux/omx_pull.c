@@ -122,6 +122,7 @@ struct omx_pull_handle {
 	uint32_t next_frame_index; /* index of the frame to request */
 	uint32_t nr_requested_frames; /* number of frames requested */
 	uint32_t nr_copying_frames; /* frames received but not copied yet */
+	uint32_t nr_valid_block_descs;
 	uint32_t already_requeued_first_block; /* the first block has been requested again since the last timer */
 	omx_frame_bitmask_t frames_missing_bitmap; /* frames not received at all */
 	struct omx_pull_block_desc block_desc[2];
@@ -232,7 +233,6 @@ static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 
 static INLINE void
 omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
-				     int idesc,
 				     uint32_t block_length,
 				     uint32_t first_frame_offset)
 {
@@ -240,7 +240,7 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 	omx_frame_bitmask_t new_mask;
 	int new_frames;
 
-	desc = &handle->block_desc[idesc];
+	desc = &handle->block_desc[handle->nr_valid_block_descs];
 	desc->frame_index = handle->next_frame_index;
 	desc->block_length = block_length;
 	desc->first_frame_offset = first_frame_offset;
@@ -252,6 +252,7 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 	handle->frames_missing_bitmap |= new_mask;
 	handle->nr_requested_frames += new_frames;
 	handle->next_frame_index += new_frames;
+	handle->nr_valid_block_descs++;
 }
 
 static INLINE void
@@ -265,6 +266,7 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	handle->nr_requested_frames -= first_block_frames;
 	memcpy(&handle->block_desc[0], &handle->block_desc[1],
 	       sizeof(struct omx_pull_block_desc));
+	handle->nr_valid_block_descs--;
 	handle->already_requeued_first_block = 0;
 }
 
@@ -575,6 +577,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->frames_missing_bitmap = 0;
 	handle->nr_requested_frames = 0;
 	handle->nr_copying_frames = 0;
+	handle->nr_valid_block_descs = 0;
 	handle->already_requeued_first_block = 0;
 	handle->last_retransmit_jiffies = cmd->resend_timeout_jiffies + jiffies;
 	handle->magic = omx_generate_pull_magic(endpoint);
@@ -790,7 +793,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		block_length = handle->remaining_length;
 	handle->remaining_length -= block_length;
 
-	omx_pull_handle_append_needed_frames(handle, 0, block_length, handle->pulled_rdma_offset);
+	omx_pull_handle_append_needed_frames(handle, block_length, handle->pulled_rdma_offset);
 	skb = omx_fill_pull_block_request(handle, 0);
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
@@ -808,7 +811,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		block_length = handle->remaining_length;
 	handle->remaining_length -= block_length;
 
-	omx_pull_handle_append_needed_frames(handle, 1, block_length, 0);
+	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 	skb2 = omx_fill_pull_block_request(handle, 1);
 	if (unlikely(IS_ERR(skb2))) {
 		BUG_ON(PTR_ERR(skb2) != -ENOMEM);
@@ -1459,7 +1462,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			block_length = handle->remaining_length;
 		handle->remaining_length -= block_length;
 
-		omx_pull_handle_append_needed_frames(handle, 1, block_length, 0);
+		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 		skb = omx_fill_pull_block_request(handle, 1);
 		if (unlikely(IS_ERR(skb))) {
 			BUG_ON(PTR_ERR(skb) != -ENOMEM);
@@ -1490,7 +1493,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			block_length = handle->remaining_length;
 		handle->remaining_length -= block_length;
 
-		omx_pull_handle_append_needed_frames(handle, 1, block_length, 0);
+		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 		skb2 = omx_fill_pull_block_request(handle, 1);
 		if (unlikely(IS_ERR(skb2))) {
 			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
