@@ -232,16 +232,21 @@ static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 
 static INLINE void
 omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
+				     int idesc,
 				     uint32_t block_length,
 				     uint32_t first_frame_offset)
 {
+	struct omx_pull_block_desc *desc;
 	omx_frame_bitmask_t new_mask;
 	int new_frames;
 
+	desc = &handle->block_desc[idesc];
+	desc->frame_index = handle->next_frame_index;
+	desc->block_length = block_length;
+	desc->first_frame_offset = first_frame_offset;
+
 	new_frames = (first_frame_offset + block_length
 		      + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
-	BUG_ON(new_frames + handle->nr_requested_frames > 64);
-
 	new_mask = ((((omx_frame_bitmask_t)1) << new_frames) - 1) << handle->nr_requested_frames;
 
 	handle->frames_missing_bitmap |= new_mask;
@@ -567,8 +572,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->remaining_length = cmd->length;
 	handle->frame_index = 0;
 	handle->next_frame_index = 0;
-	handle->nr_requested_frames = 0;
 	handle->frames_missing_bitmap = 0;
+	handle->nr_requested_frames = 0;
 	handle->nr_copying_frames = 0;
 	handle->already_requeued_first_block = 0;
 	handle->last_retransmit_jiffies = cmd->resend_timeout_jiffies + jiffies;
@@ -745,7 +750,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	struct omx_pull_handle * handle;
 	struct omx_iface * iface = endpoint->iface;
 	struct sk_buff * skb, * skb2;
-	uint32_t block_length, first_frame_offset;
+	uint32_t block_length;
 	int err = 0;
 
 	err = copy_from_user(&cmd, uparam, sizeof(cmd));
@@ -785,20 +790,13 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		block_length = handle->remaining_length;
 	handle->remaining_length -= block_length;
 
-	first_frame_offset = handle->pulled_rdma_offset;
-
-	handle->block_desc[0].frame_index = handle->next_frame_index;
-	handle->block_desc[0].block_length = block_length;
-	handle->block_desc[0].first_frame_offset = first_frame_offset;
+	omx_pull_handle_append_needed_frames(handle, 0, block_length, handle->pulled_rdma_offset);
 	skb = omx_fill_pull_block_request(handle, 0);
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
 		/* just ignore the memory allocation failure and let retransmission take care of it */
 		skb = NULL;
 	}
-
-	omx_pull_handle_append_needed_frames(handle,
-					     block_length, first_frame_offset);
 
 	/* send a second pull block request if needed */
 	skb2 = NULL;
@@ -810,17 +808,13 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		block_length = handle->remaining_length;
 	handle->remaining_length -= block_length;
 
-	handle->block_desc[1].frame_index = handle->next_frame_index;
-	handle->block_desc[1].block_length = block_length;
-	handle->block_desc[1].first_frame_offset = 0;
+	omx_pull_handle_append_needed_frames(handle, 1, block_length, 0);
 	skb2 = omx_fill_pull_block_request(handle, 1);
 	if (unlikely(IS_ERR(skb2))) {
 		BUG_ON(PTR_ERR(skb2) != -ENOMEM);
 		/* just ignore the memory allocation failure and let retransmission take care of it */
 		skb2 = NULL;
 	}
-
-	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
  skbs_ready:
 	/* schedule the timeout handler now that we are ready to send the requests */
@@ -1465,9 +1459,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			block_length = handle->remaining_length;
 		handle->remaining_length -= block_length;
 
-		handle->block_desc[1].frame_index = handle->next_frame_index;
-		handle->block_desc[1].block_length = block_length;
-		handle->block_desc[1].first_frame_offset = 0;
+		omx_pull_handle_append_needed_frames(handle, 1, block_length, 0);
 		skb = omx_fill_pull_block_request(handle, 1);
 		if (unlikely(IS_ERR(skb))) {
 			BUG_ON(PTR_ERR(skb) != -ENOMEM);
@@ -1475,8 +1467,6 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			skb = NULL;
 			goto skbs_ready;
 		}
-
-		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
 		/* the second current block (now first) request might be done too
 		 * (in case of out-or-order packets)
@@ -1500,9 +1490,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			block_length = handle->remaining_length;
 		handle->remaining_length -= block_length;
 
-		handle->block_desc[1].frame_index = handle->next_frame_index;
-		handle->block_desc[1].block_length = block_length;
-		handle->block_desc[1].first_frame_offset = 0;
+		omx_pull_handle_append_needed_frames(handle, 1, block_length, 0);
 		skb2 = omx_fill_pull_block_request(handle, 1);
 		if (unlikely(IS_ERR(skb2))) {
 			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
@@ -1510,8 +1498,6 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			skb2 = NULL;
 			goto skbs_ready;
 		}
-
-		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 
 	skbs_ready:
 
