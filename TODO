@@ -35,6 +35,9 @@
   + add OMX_BIND=irq/board/<mask>
   + add OMX_ENDPOINT_MSIX_BASE=
 
+* support for architecture with pagesize != 4k
+* huge page pinning support
+
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
 * overlap registration with rndv and pull

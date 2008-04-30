@@ -1638,8 +1638,12 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	/* compute the frame seqnum */
-	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
+	/*
+	 * compute the frame seqnum offset:
+	 * frame_seqnum is already %256, so do the same for h->frame_index, compute the difference
+	 * and make sure %256 returns something>0 by adding another 256
+	 */
+	frame_seqnum_offset = (frame_seqnum - (handle->frame_index % 256) + 256) % 256;
 
 	/* check that the frame seqnum is correct for this msg offset */
         if (unlikely((msg_offset+OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX != handle->frame_index + frame_seqnum_offset)) {
