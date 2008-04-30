@@ -26,10 +26,6 @@
     - user-space doesn't know about it, add a hint in the driver desc?
   + why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
 
-* website
-  + add a section about performance numbers on the website, with I/O AT numbers
-    and link to the performance tuning section of the README
-
 * affinity
   + add ioctls GET_BOARD_CPUMASK and GET_IRQ_CPUMASK
   + add OMX_BIND=irq/board/<mask>

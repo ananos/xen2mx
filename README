@@ -622,10 +622,6 @@ should read the following configuration advices:
   Building Open-MX without --enable-threads may only work if caller uses
   neither any blocking Open-MX functions nor the unexpected handler, and
   obviously serializes Open-MX calls.
-* Self and Shared communications:
-  Most MPI layers implement there own shared memory protocol as well as
-  communication to self. It may then be a good idea to build Open-MX with
-  --disable-shared and --disable-self.
 
 
 ++===============++
