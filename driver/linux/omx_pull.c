@@ -120,12 +120,11 @@ struct omx_pull_handle {
 	uint32_t remaining_length;
 	uint32_t frame_index; /* index of the first requested frame */
 	uint32_t next_frame_index; /* index of the frame to request */
-	uint32_t block_frames; /* number of frames requested */
+	uint32_t nr_requested_frames; /* number of frames requested */
+	uint32_t nr_copying_frames; /* frames received but not copied yet */
+	uint32_t already_requeued_first_block; /* the first block has been requested again since the last timer */
 	omx_frame_bitmask_t frames_missing_bitmap; /* frames not received at all */
-	unsigned int frames_copying_nr; /* frames received but not copied yet */
-	struct omx_pull_block_desc first_desc;
-	struct omx_pull_block_desc second_desc;
-	uint32_t already_requeued_first; /* the first block has been requested again since the last timer */
+	struct omx_pull_block_desc block_desc[2];
 
 #ifdef CONFIG_NET_DMA
 	struct dma_chan *dma_chan;
@@ -241,27 +240,27 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 
 	new_frames = (first_frame_offset + block_length
 		      + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
-	BUG_ON(new_frames + handle->block_frames > 64);
+	BUG_ON(new_frames + handle->nr_requested_frames > 64);
 
-	new_mask = ((((omx_frame_bitmask_t)1) << new_frames) - 1) << handle->block_frames;
+	new_mask = ((((omx_frame_bitmask_t)1) << new_frames) - 1) << handle->nr_requested_frames;
 
 	handle->frames_missing_bitmap |= new_mask;
-	handle->block_frames += new_frames;
+	handle->nr_requested_frames += new_frames;
 	handle->next_frame_index += new_frames;
 }
 
 static INLINE void
 omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 {
-	uint32_t first_block_frames = handle->block_frames > OMX_PULL_REPLY_PER_BLOCK
-	 ? handle->block_frames - OMX_PULL_REPLY_PER_BLOCK : handle->block_frames;
+	uint32_t first_block_frames = handle->nr_requested_frames > OMX_PULL_REPLY_PER_BLOCK
+	 ? handle->nr_requested_frames - OMX_PULL_REPLY_PER_BLOCK : handle->nr_requested_frames;
 
 	handle->frames_missing_bitmap >>= first_block_frames;
 	handle->frame_index += first_block_frames;
-	handle->block_frames -= first_block_frames;
-	memcpy(&handle->first_desc, &handle->second_desc,
+	handle->nr_requested_frames -= first_block_frames;
+	memcpy(&handle->block_desc[0], &handle->block_desc[1],
 	       sizeof(struct omx_pull_block_desc));
-	handle->already_requeued_first = 0;
+	handle->already_requeued_first_block = 0;
 }
 
 /**********************************
@@ -568,10 +567,10 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->remaining_length = cmd->length;
 	handle->frame_index = 0;
 	handle->next_frame_index = 0;
-	handle->block_frames = 0;
+	handle->nr_requested_frames = 0;
 	handle->frames_missing_bitmap = 0;
-	handle->frames_copying_nr = 0;
-	handle->already_requeued_first = 0;
+	handle->nr_copying_frames = 0;
+	handle->already_requeued_first_block = 0;
 	handle->last_retransmit_jiffies = cmd->resend_timeout_jiffies + jiffies;
 	handle->magic = omx_generate_pull_magic(endpoint);
 
@@ -696,9 +695,9 @@ omx_pull_handle_complete(struct omx_pull_handle * handle, uint8_t status)
 
 /* Called with the handle acquired and locked */
 static INLINE struct sk_buff *
-omx_fill_pull_block_request(struct omx_pull_handle * handle,
-			    struct omx_pull_block_desc * desc)
+omx_fill_pull_block_request(struct omx_pull_handle * handle, int desc_nr)
 {
+	struct omx_pull_block_desc * desc = &handle->block_desc[desc_nr];
 	struct omx_iface * iface = handle->endpoint->iface;
 	uint32_t frame_index = desc->frame_index;
 	uint32_t block_length = desc->block_length;
@@ -788,10 +787,10 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 
 	first_frame_offset = handle->pulled_rdma_offset;
 
-	handle->first_desc.frame_index = handle->next_frame_index;
-	handle->first_desc.block_length = block_length;
-	handle->first_desc.first_frame_offset = first_frame_offset;
-	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
+	handle->block_desc[0].frame_index = handle->next_frame_index;
+	handle->block_desc[0].block_length = block_length;
+	handle->block_desc[0].first_frame_offset = first_frame_offset;
+	skb = omx_fill_pull_block_request(handle, 0);
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
 		/* just ignore the memory allocation failure and let retransmission take care of it */
@@ -811,10 +810,10 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		block_length = handle->remaining_length;
 	handle->remaining_length -= block_length;
 
-	handle->second_desc.frame_index = handle->next_frame_index;
-	handle->second_desc.block_length = block_length;
-	handle->second_desc.first_frame_offset = 0;
-	skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
+	handle->block_desc[1].frame_index = handle->next_frame_index;
+	handle->block_desc[1].block_length = block_length;
+	handle->block_desc[1].first_frame_offset = 0;
+	skb2 = omx_fill_pull_block_request(handle, 1);
 	if (unlikely(IS_ERR(skb2))) {
 		BUG_ON(PTR_ERR(skb2) != -ENOMEM);
 		/* just ignore the memory allocation failure and let retransmission take care of it */
@@ -861,12 +860,12 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 	/* request the first block again */
 	omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_FIRST_BLOCK);
 
-	skb = omx_fill_pull_block_request(handle, &handle->first_desc);
+	skb = omx_fill_pull_block_request(handle, 0);
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
 		skb = NULL;
 	} else
-		handle->already_requeued_first = 0;
+		handle->already_requeued_first_block = 0;
 
 	/*
 	 * If the second block isn't done either, request it again
@@ -877,7 +876,7 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 	if (!OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
 		omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_SECOND_BLOCK);
 
-		skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
+		skb2 = omx_fill_pull_block_request(handle, 1);
 		if (unlikely(IS_ERR(skb2))) {
 			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
 			skb2 = NULL;
@@ -1412,7 +1411,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 
 		if (frame_from_second_block
 		    && OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
-		    && !handle->already_requeued_first) {
+		    && !handle->already_requeued_first_block) {
 
 			/* the second block is done without the first one,
 			 * we assume some packet got lost in the first one,
@@ -1424,12 +1423,12 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
 				handle);
 
-			skb = omx_fill_pull_block_request(handle, &handle->first_desc);
+			skb = omx_fill_pull_block_request(handle, 0);
 			if (unlikely(IS_ERR(skb))) {
 				BUG_ON(PTR_ERR(skb) != -ENOMEM);
 				skb = NULL;
 			} else
-				handle->already_requeued_first = 1;
+				handle->already_requeued_first_block = 1;
 		}
 
 		dprintk(PULL, "block not done, just releasing\n");
@@ -1466,10 +1465,10 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			block_length = handle->remaining_length;
 		handle->remaining_length -= block_length;
 
-		handle->second_desc.frame_index = handle->next_frame_index;
-		handle->second_desc.block_length = block_length;
-		handle->second_desc.first_frame_offset = 0;
-		skb = omx_fill_pull_block_request(handle, &handle->second_desc);
+		handle->block_desc[1].frame_index = handle->next_frame_index;
+		handle->block_desc[1].block_length = block_length;
+		handle->block_desc[1].first_frame_offset = 0;
+		skb = omx_fill_pull_block_request(handle, 1);
 		if (unlikely(IS_ERR(skb))) {
 			BUG_ON(PTR_ERR(skb) != -ENOMEM);
 			/* let the timeout expire and resend */
@@ -1501,10 +1500,10 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			block_length = handle->remaining_length;
 		handle->remaining_length -= block_length;
 
-		handle->second_desc.frame_index = handle->next_frame_index;
-		handle->second_desc.block_length = block_length;
-		handle->second_desc.first_frame_offset = 0;
-		skb2 = omx_fill_pull_block_request(handle, &handle->second_desc);
+		handle->block_desc[1].frame_index = handle->next_frame_index;
+		handle->block_desc[1].block_length = block_length;
+		handle->block_desc[1].first_frame_offset = 0;
+		skb2 = omx_fill_pull_block_request(handle, 1);
 		if (unlikely(IS_ERR(skb2))) {
 			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
 			/* let the timeout expire and resend */
@@ -1660,13 +1659,13 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 
 	/* check that the frame is from this block, and handle wrap around 256 */
-	if (unlikely(frame_seqnum_offset >= handle->block_frames)) {
+	if (unlikely(frame_seqnum_offset >= handle->nr_requested_frames)) {
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_SEQNUM);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (offset %ld), should be within %ld-%ld",
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) frame_seqnum_offset,
 				 (unsigned long) handle->frame_index,
-				 (unsigned long) handle->frame_index + handle->block_frames);
+				 (unsigned long) handle->frame_index + handle->nr_requested_frames);
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 		err = 0;
@@ -1681,7 +1680,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) frame_seqnum_offset,
 				 (unsigned long) handle->frame_index,
-				 (unsigned long) handle->frame_index + handle->block_frames);
+				 (unsigned long) handle->frame_index + handle->nr_requested_frames);
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
 		err = 0;
@@ -1700,7 +1699,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 #endif
 
 	/* our copy is pending */
-	handle->frames_copying_nr++;
+	handle->nr_copying_frames++;
 
 	/* request more replies if necessary */
 	omx_progress_pull_on_recv_pull_reply_locked(iface, handle,
@@ -1737,7 +1736,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	spin_lock(&handle->lock);
 
 	/* our copy is done */
-	handle->frames_copying_nr--;
+	handle->nr_copying_frames--;
 
 	/* check the status now that we own the lock */
 	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
@@ -1749,7 +1748,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 
 	if (OMX_PULL_HANDLE_ALL_BLOCKS_DONE(handle)
-	    && handle->frames_copying_nr == 0) {
+	    && handle->nr_copying_frames == 0) {
 
 		/* notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
