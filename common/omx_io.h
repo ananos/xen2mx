@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x126
+#define OMX_DRIVER_ABI_VERSION		0x127
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -756,6 +756,7 @@ enum omx_counter_index {
 	OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC_ENDPOINT,
 	OMX_COUNTER_DROP_PULL_REPLY_BAD_WIRE_HANDLE,
 	OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION,
+	OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM_WRAPAROUND,
 	OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM,
 	OMX_COUNTER_DROP_PULL_REPLY_DUPLICATE,
 	OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC_ENDPOINT,
@@ -896,6 +897,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Drop Pull Reply Bad Wire Handle";
 	case OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION:
 		return "Drop Pull Reply Bad Handle Generation in Magic";
+	case OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM_WRAPAROUND:
+		return "Drop Pull Reply Bad Frame SeqNum WrapAround";
 	case OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM:
 		return "Drop Pull Reply Bad Frame SeqNum";
 	case OMX_COUNTER_DROP_PULL_REPLY_DUPLICATE:

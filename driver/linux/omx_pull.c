@@ -1638,8 +1638,24 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	/* check that the frame is from this block, and handle wrap around 256 */
+	/* compute the frame seqnum */
 	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
+
+	/* check that the frame seqnum is correct for this msg offset */
+        if (unlikely(msg_offset/OMX_PULL_REPLY_LENGTH_MAX != handle->frame_index + frame_seqnum_offset)) {
+		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_SEQNUM_WRAPAROUND);
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (offset %ld), should be %ld (msg offset %ld)",
+				 (unsigned long) frame_seqnum,
+				 (unsigned long) frame_seqnum_offset,
+				 (unsigned long) msg_offset / OMX_PULL_REPLY_LENGTH_MAX,
+				 (unsigned long) msg_offset);
+		spin_unlock(&handle->lock);
+		omx_pull_handle_release(handle);
+		err = 0;
+		goto out_with_endpoint;
+	}
+
+	/* check that the frame is from this block, and handle wrap around 256 */
 	if (unlikely(frame_seqnum_offset >= handle->block_frames)) {
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_SEQNUM);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (offset %ld), should be within %ld-%ld",

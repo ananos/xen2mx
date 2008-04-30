@@ -17,6 +17,8 @@ Other improvements from previous release:
   values for more descriptive error codes.
 * Fix completion of medium message send in case of a very short last
   fragment.
+* Fix possible message corruption with very large messages with highly
+  out-of-order messages.
 * Fix support for very large messages, up-to 4GB-1 (32bits length).
 * Fix reporting of connection errors to the application.
 * Fix management of queued requests in case of resource shortage.
