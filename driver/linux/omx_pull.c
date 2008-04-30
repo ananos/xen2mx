@@ -1215,8 +1215,8 @@ omx_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_hand
 {
 	int remaining_copy = length;
 	int acquired_chan = 0;
-
 	struct dma_chan *dma_chan = handle->dma_chan;
+
 	if (unlikely(!dma_chan)) {
 		dma_chan = handle->dma_chan = get_softnet_dma();
 		acquired_chan = 1;
@@ -1642,12 +1642,12 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	frame_seqnum_offset = (frame_seqnum - handle->frame_index + 256) % 256;
 
 	/* check that the frame seqnum is correct for this msg offset */
-        if (unlikely(msg_offset/OMX_PULL_REPLY_LENGTH_MAX != handle->frame_index + frame_seqnum_offset)) {
+        if (unlikely((msg_offset+OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX != handle->frame_index + frame_seqnum_offset)) {
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_SEQNUM_WRAPAROUND);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with invalid seqnum %ld (offset %ld), should be %ld (msg offset %ld)",
 				 (unsigned long) frame_seqnum,
 				 (unsigned long) frame_seqnum_offset,
-				 (unsigned long) msg_offset / OMX_PULL_REPLY_LENGTH_MAX,
+				 (unsigned long) (msg_offset+OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX,
 				 (unsigned long) msg_offset);
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
