@@ -1396,6 +1396,8 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 					    struct omx_pull_handle * handle,
 					    int frame_from_second_block)
 {
+	struct sk_buff * skb = NULL, * skb2 = NULL;
+
 	/* tell the sparse checker that the lock has been taken by the caller */
 	__acquire(&handle->lock);
 
@@ -1403,8 +1405,6 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 		/*
 		 * current first block not done, we basically just need to release the handle
 		 */
-
-		struct sk_buff *skb = NULL;
 
 		if (frame_from_second_block
 		    && OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
@@ -1424,30 +1424,18 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			if (unlikely(IS_ERR(skb))) {
 				BUG_ON(PTR_ERR(skb) != -ENOMEM);
 				skb = NULL;
-			} else
+			} else {
 				handle->already_requeued_first_block = 1;
+			}
 		}
 
 		dprintk(PULL, "block not done, just releasing\n");
 
-		/* reschedule the timeout handler now that we are ready to send the request */
-		mod_timer(&handle->retransmit_timer,
-			  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
-
-		/* do not keep the lock while sending
-		 * since the loopback device may cause reentrancy
-		 */
-		spin_unlock(&handle->lock);
-
-		if (likely(skb))
-			omx_queue_xmit(iface, skb, PULL_REQ);
-
-	} else if (!OMX_PULL_HANDLE_ALL_BLOCKS_DONE(handle)) {
+	} else {
 		/*
 		 * current first block request is done
 		 */
 
-		struct sk_buff * skb = NULL, * skb2 = NULL;
 		uint32_t block_length;
 
 		omx_pull_handle_first_block_done(handle);
@@ -1506,30 +1494,22 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 
 		/* cleanup a bit of dma-offloaded copies */
 		omx_pull_handle_poll_dma_completions(handle);
-
-		/* reschedule the timeout handler now that we are ready to send the requests */
-		mod_timer(&handle->retransmit_timer,
-			  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
-
-		/*
-		 * do not keep the lock while sending
-		 * since the loopback device may cause reentrancy
-		 */
-		spin_unlock(&handle->lock);
-
-		if (likely(skb))
-			omx_queue_xmit(iface, skb, PULL_REQ);
-		if (likely(skb2))
-			omx_queue_xmit(iface, skb2, PULL_REQ);
-
-	} else {
-		/*
-		 * last block is done
-		 */
-		omx_pull_handle_first_block_done(handle);
-
-		spin_unlock(&handle->lock);
 	}
+
+	/* reschedule the timeout handler now that we are ready to send the requests */
+	mod_timer(&handle->retransmit_timer,
+		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+
+	/*
+	 * do not keep the lock while sending
+	 * since the loopback device may cause reentrancy
+	 */
+	spin_unlock(&handle->lock);
+
+	if (likely(skb))
+		omx_queue_xmit(iface, skb, PULL_REQ);
+	if (likely(skb2))
+		omx_queue_xmit(iface, skb2, PULL_REQ);
 }
 
 int
