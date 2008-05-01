@@ -11,7 +11,6 @@
 
 * fix/improve large messages
   + use nr_valid_block_descs to simplify omx_pull_handle_first_block_done()
-  + change OMX_PULL_HANDLE_FIRST/SECOND_BLOCK_DONE() into OMX_PULL_HANDLE_ONE_BLOCK_DONE(handle, i)
   + regcache malloc hook
   + replace pull handle's BH lock + idr with RCU + array ?
   + split and move the pull handle bitmask into the handle descriptors

@@ -56,6 +56,10 @@
  * Pull-specific Types
  */
 
+#if OMX_PULL_REPLY_PER_BLOCK >= 32
+#error Cannot request more than 32 replies per pull block
+#endif
+
 /* use a bitmask type large enough to store two pull frame blocks */
 #if OMX_PULL_REPLY_PER_BLOCK > 15
 typedef uint64_t omx_frame_bitmask_t;
@@ -211,21 +215,11 @@ static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
  * Pull handle bitmap management
  */
 
-#if OMX_PULL_REPLY_PER_BLOCK >= 32
-#error Cannot request more than 32 replies per pull block
-#endif
-
 #define OMX_PULL_HANDLE_BLOCK_BITMASK ((((omx_frame_bitmask_t)1)<<OMX_PULL_REPLY_PER_BLOCK)-1)
-#define OMX_PULL_HANDLE_SECOND_BLOCK_BITMASK (OMX_PULL_HANDLE_BLOCK_BITMASK<<OMX_PULL_REPLY_PER_BLOCK)
-#define OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK ((((omx_frame_bitmask_t)1)<<(2*OMX_PULL_REPLY_PER_BLOCK))-1)
 
-/* first requested block got all its frames (but some copy may be pending) */
-#define OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle) \
-	(!((handle)->frames_missing_bitmap & OMX_PULL_HANDLE_BLOCK_BITMASK))
-
-/* first requested block got all its frames (but some copy may be pending) */
-#define OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle) \
-	(!((handle)->frames_missing_bitmap & OMX_PULL_HANDLE_SECOND_BLOCK_BITMASK))
+/* this requested block got all its frames (but some copy may be pending) */
+#define OMX_PULL_HANDLE_BLOCK_DONE(handle, index) \
+	(!((handle)->frames_missing_bitmap & (OMX_PULL_HANDLE_BLOCK_BITMASK << (index*OMX_PULL_REPLY_PER_BLOCK))))
 
 static INLINE void
 omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
@@ -868,7 +862,7 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 	 * This shouldn't happen often since it means a packet has been lost
 	 * in both first and second blocks.
 	 */
-	if (!OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)) {
+	if (!OMX_PULL_HANDLE_BLOCK_DONE(handle, 1)) {
 		omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_SECOND_BLOCK);
 
 		skb2 = omx_fill_pull_block_request(handle, 1);
@@ -941,7 +935,7 @@ omx_pull_handle_timeout_handler(unsigned long data)
 		return; /* timer will never be called again (status is TIMER_EXITED) */
 	}
 
-	BUG_ON(OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle));
+	BUG_ON(OMX_PULL_HANDLE_BLOCK_DONE(handle, 0));
 
 	/* request more replies if necessary */
 	omx_progress_pull_on_handle_timeout_handle_locked(iface, handle);
@@ -1399,13 +1393,13 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 	/* tell the sparse checker that the lock has been taken by the caller */
 	__acquire(&handle->lock);
 
-	if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle)) {
+	if (!OMX_PULL_HANDLE_BLOCK_DONE(handle, 0)) {
 		/*
 		 * current first block not done, we basically just need to release the handle
 		 */
 
 		if (frame_from_second_block
-		    && OMX_PULL_HANDLE_SECOND_BLOCK_DONE(handle)
+		    && OMX_PULL_HANDLE_BLOCK_DONE(handle, 1)
 		    && !handle->already_requeued_first_block) {
 
 			/* the second block is done without the first one,
@@ -1460,7 +1454,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 		/* the second current block (now first) request might be done too
 		 * (in case of out-or-order packets)
 		 */
-		if (!OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle))
+		if (!OMX_PULL_HANDLE_BLOCK_DONE(handle, 0))
 			goto skbs_ready;
 
 		/* current second block request is done */
