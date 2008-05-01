@@ -10,7 +10,6 @@
   + infiniband ifaces have too small mtu?
 
 * fix/improve large messages
-  + add nr_missing_frames and use it for OMX_PULL_HANDLE_ALL_BLOCKS_DONE()
   + use nr_valid_block_descs to simplify omx_pull_handle_first_block_done()
   + change OMX_PULL_HANDLE_FIRST/SECOND_BLOCK_DONE() into OMX_PULL_HANDLE_ONE_BLOCK_DONE(handle, i)
   + regcache malloc hook

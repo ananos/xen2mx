@@ -121,7 +121,8 @@ struct omx_pull_handle {
 	uint32_t frame_index; /* index of the first requested frame */
 	uint32_t next_frame_index; /* index of the frame to request */
 	uint32_t nr_requested_frames; /* number of frames requested */
-	uint32_t nr_copying_frames; /* frames received but not copied yet */
+	uint32_t nr_missing_frames; /* frames requested but not received yet */
+	uint32_t nr_copying_frames; /* frames received but not copied yet*/
 	uint32_t nr_valid_block_descs;
 	uint32_t already_requeued_first_block; /* the first block has been requested again since the last timer */
 	omx_frame_bitmask_t frames_missing_bitmap; /* frames not received at all */
@@ -218,11 +219,6 @@ static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 #define OMX_PULL_HANDLE_SECOND_BLOCK_BITMASK (OMX_PULL_HANDLE_BLOCK_BITMASK<<OMX_PULL_REPLY_PER_BLOCK)
 #define OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK ((((omx_frame_bitmask_t)1)<<(2*OMX_PULL_REPLY_PER_BLOCK))-1)
 
-/* both blocks are done and there are no more block to request (but some copy may be pending) */
-#define OMX_PULL_HANDLE_ALL_BLOCKS_DONE(handle) \
-	(!((handle)->remaining_length) \
-	 && !((handle)->frames_missing_bitmap & OMX_PULL_HANDLE_BOTH_BLOCKS_BITMASK))
-
 /* first requested block got all its frames (but some copy may be pending) */
 #define OMX_PULL_HANDLE_FIRST_BLOCK_DONE(handle) \
 	(!((handle)->frames_missing_bitmap & OMX_PULL_HANDLE_BLOCK_BITMASK))
@@ -251,6 +247,7 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 
 	handle->frames_missing_bitmap |= new_mask;
 	handle->nr_requested_frames += new_frames;
+	handle->nr_missing_frames += new_frames;
 	handle->next_frame_index += new_frames;
 	handle->nr_valid_block_descs++;
 }
@@ -576,6 +573,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->next_frame_index = 0;
 	handle->frames_missing_bitmap = 0;
 	handle->nr_requested_frames = 0;
+	handle->nr_missing_frames = 0;
 	handle->nr_copying_frames = 0;
 	handle->nr_valid_block_descs = 0;
 	handle->already_requeued_first_block = 0;
@@ -1656,6 +1654,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 	handle->frames_missing_bitmap &= ~bitmap_mask;
+	handle->nr_missing_frames--;
 
 #ifdef CONFIG_NET_DMA
 	if (omx_dmaengine
@@ -1716,10 +1715,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	if (OMX_PULL_HANDLE_ALL_BLOCKS_DONE(handle)
-	    && handle->nr_copying_frames == 0) {
-
-		/* notify the completion */
+	if (!handle->remaining_length && !handle->nr_missing_frames && !handle->nr_copying_frames) {
+		/* handle is done, notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
 		omx_pull_handle_complete(handle, OMX_EVT_PULL_DONE_SUCCESS);
 		/* tell the sparse checker that the lock has been released by omx_pull_handle_complete() */
