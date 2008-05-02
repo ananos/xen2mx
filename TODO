@@ -1,3 +1,5 @@
+* if failing to remove an iface, reset the iface status, do not keep it CLOSING
+
 * fix/improve ioat support
   + sleep a bit before polling on synchronous copies
     - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param
@@ -10,12 +12,12 @@
   + infiniband ifaces have too small mtu?
 
 * fix/improve large messages
+  + support 32bits in 32bits int
   + use nr_valid_block_descs to simplify omx_pull_handle_first_block_done()
   + regcache malloc hook
   + replace pull handle's BH lock + idr with RCU + array ?
-  + split and move the pull handle bitmask into the handle descriptors
-    - add a "valid" bit to easily detect when the second block is done before the first one
   + have more pull block at the same time, at least 4?
+    - memmove to switch to new blocks? or use offset+round-robin
     - use skb chaining with skb->next since dev_queue_xmit seems to support it?
     - makes 31 frame per block useless?
   + if pulling few packet, using multiple request with small blocks to 
