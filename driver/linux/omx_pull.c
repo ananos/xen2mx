@@ -245,6 +245,10 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 	handle->next_frame_index += new_frames;
 	handle->remaining_length -= block_length;
 	handle->nr_valid_block_descs++;
+
+	dprintk(PULL, "appending block #%d with %d new frames to pull handle %p, now requested %ld-%ld\n",
+		handle->nr_valid_block_descs-1, new_frames, handle,
+		(unsigned long) handle->frame_index, (unsigned long) handle->next_frame_index-1);
 }
 
 static INLINE void
@@ -259,6 +263,10 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	       sizeof(struct omx_pull_block_desc));
 	handle->nr_valid_block_descs--;
 	handle->already_requeued_first_block = 0;
+
+	dprintk(PULL, "first block of pull handle %p done, removing %d requested frames, now requested %ld-%ld\n",
+		handle, first_block_frames,
+		(unsigned long) handle->frame_index, (unsigned long) handle->next_frame_index-1);
 }
 
 /**********************************
