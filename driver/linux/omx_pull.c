@@ -56,7 +56,10 @@
  * Pull-specific Types
  */
 
-#if OMX_PULL_REPLY_PER_BLOCK > 64
+#if OMX_PULL_REPLY_PER_BLOCK & (OMX_PULL_REPLY_PER_BLOCK-1)
+/* we don't want to divide by a non-power-of-two */
+#error Need a power of two as the number of replies per pull block
+#elif OMX_PULL_REPLY_PER_BLOCK > 64
 #error Cannot request more than 64 replies per pull block
 #elif OMX_PULL_REPLY_PER_BLOCK > 32
 typedef uint64_t omx_block_frame_bitmask_t;
@@ -1632,7 +1635,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	/* check that the frame is not a duplicate */
 	idesc = frame_seqnum_offset / OMX_PULL_REPLY_PER_BLOCK;
-	bitmap_mask = ((omx_block_frame_bitmask_t) 1) << (frame_seqnum_offset - idesc*OMX_PULL_REPLY_PER_BLOCK);
+	bitmap_mask = ((omx_block_frame_bitmask_t) 1) << (frame_seqnum_offset % OMX_PULL_REPLY_PER_BLOCK);
 	if (unlikely((handle->block_desc[idesc].frames_missing_bitmap & bitmap_mask) == 0)) {
 		omx_counter_inc(iface, DROP_PULL_REPLY_DUPLICATE);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with duplicate seqnum %ld (offset %ld) in current block %ld-%ld",

@@ -1,5 +1,8 @@
 * if failing to remove an iface, reset the iface status, do not keep it CLOSING
 
+* drop no-progression-during-one-second warning if no requests are pending?
+  what's a pending request? anything but a posted recv?
+
 * fix/improve ioat support
   + sleep a bit before polling on synchronous copies
     - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param
