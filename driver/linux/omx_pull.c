@@ -243,6 +243,7 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 	handle->nr_requested_frames += new_frames;
 	handle->nr_missing_frames += new_frames;
 	handle->next_frame_index += new_frames;
+	handle->remaining_length -= block_length;
 	handle->nr_valid_block_descs++;
 }
 
@@ -782,7 +783,6 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		- handle->pulled_rdma_offset;
 	if (block_length > handle->remaining_length)
 		block_length = handle->remaining_length;
-	handle->remaining_length -= block_length;
 
 	omx_pull_handle_append_needed_frames(handle, block_length, handle->pulled_rdma_offset);
 	skb = omx_fill_pull_block_request(handle, 0);
@@ -800,7 +800,6 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	block_length = OMX_PULL_BLOCK_LENGTH_MAX;
 	if (block_length > handle->remaining_length)
 		block_length = handle->remaining_length;
-	handle->remaining_length -= block_length;
 
 	omx_pull_handle_append_needed_frames(handle, block_length, 0);
 	skb2 = omx_fill_pull_block_request(handle, 1);
@@ -1439,7 +1438,6 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
 		if (block_length > handle->remaining_length)
 			block_length = handle->remaining_length;
-		handle->remaining_length -= block_length;
 
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 		skb = omx_fill_pull_block_request(handle, 1);
@@ -1470,7 +1468,6 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
 		if (block_length > handle->remaining_length)
 			block_length = handle->remaining_length;
-		handle->remaining_length -= block_length;
 
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
 		skb2 = omx_fill_pull_block_request(handle, 1);
