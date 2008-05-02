@@ -1155,7 +1155,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 		OMX_PKT_FIELD_FROM(pull_reply_n->dst_pull_handle, src_pull_handle);
 		OMX_PKT_FIELD_FROM(pull_reply_n->dst_magic, src_magic);
 
-		omx_send_dprintk(reply_eh, "PULL REPLY #%d handle %ld magic %ld frame seqnum %ld length %ld offset %ld", i,
+		omx_send_dprintk(reply_eh, "PULL REPLY #%d handle %lx magic %lx frame seqnum %ld length %ld offset %ld", i,
 				 (unsigned long) src_pull_handle,
 				 (unsigned long) src_magic,
 				 (unsigned long) current_frame_seqnum,
@@ -1526,7 +1526,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 
 	omx_counter_inc(iface, RECV_PULL_REPLY);
 
-	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %ld magic %ld frame seqnum %ld length %ld skb length %ld",
+	omx_recv_dprintk(&mh->head.eth, "PULL REPLY handle %lx magic %lx frame seqnum %ld length %ld skb length %ld",
 			 (unsigned long) dst_pull_handle,
 			 (unsigned long) dst_magic,
 			 (unsigned long) frame_seqnum,
@@ -1560,7 +1560,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	if (unlikely(!handle)) {
 		read_unlock_bh(&endpoint->pull_handles_lock);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
-		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad wire handle %ld",
+		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad wire handle %lx",
 				 (unsigned long) dst_pull_handle);
 		/* no need to nack this */
 		err = -EINVAL;
@@ -1798,7 +1798,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	if (unlikely(!handle)) {
 		read_unlock_bh(&endpoint->pull_handles_lock);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
-		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad wire handle %ld",
+		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad wire handle %lx",
 				 (unsigned long) dst_pull_handle);
 		/* no need to nack this */
 		err = -EINVAL;
@@ -1811,7 +1811,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	if (unlikely(handle->magic != dst_magic)) {
 		read_unlock_bh(&endpoint->pull_handles_lock);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
-		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad handle generation within magic %ld",
+		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad handle generation within magic %lx",
 				 (unsigned long) dst_magic);
 		/* no need to nack this */
 		err = -EINVAL;
