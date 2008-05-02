@@ -27,7 +27,7 @@
 #define OMX_PULL_REPLY_PER_BLOCK 8
 #else
 #define OMX_PULL_REPLY_LENGTH_MAX 8192UL
-#define OMX_PULL_REPLY_PER_BLOCK 31
+#define OMX_PULL_REPLY_PER_BLOCK 32
 #endif
 
 struct omx_iface;

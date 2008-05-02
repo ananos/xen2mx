@@ -56,13 +56,13 @@
  * Pull-specific Types
  */
 
-#if OMX_PULL_REPLY_PER_BLOCK > 63
-#error Cannot request more than 63 replies per pull block
-#elif OMX_PULL_REPLY_PER_BLOCK > 31
+#if OMX_PULL_REPLY_PER_BLOCK > 64
+#error Cannot request more than 64 replies per pull block
+#elif OMX_PULL_REPLY_PER_BLOCK > 32
 typedef uint64_t omx_block_frame_bitmask_t;
-#elif OMX_PULL_REPLY_PER_BLOCK > 15
+#elif OMX_PULL_REPLY_PER_BLOCK > 16
 typedef uint32_t omx_block_frame_bitmask_t;
-#elif OMX_PULL_REPLY_PER_BLOCK > 7
+#elif OMX_PULL_REPLY_PER_BLOCK > 8
 typedef uint16_t omx_block_frame_bitmask_t;
 #else
 typedef uint8_t omx_block_frame_bitmask_t;
@@ -225,7 +225,7 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 
 	new_frames = (first_frame_offset + block_length
 		      + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
-	new_mask = ((((omx_block_frame_bitmask_t) 1) << new_frames) - 1);
+	new_mask = ((omx_block_frame_bitmask_t) -1) >> (OMX_PULL_REPLY_PER_BLOCK-new_frames);
 
 	desc = &handle->block_desc[handle->nr_valid_block_descs];
 	desc->frame_index = handle->next_frame_index;
