@@ -249,8 +249,7 @@ omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
 static INLINE void
 omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 {
-	uint32_t first_block_frames = handle->nr_requested_frames > OMX_PULL_REPLY_PER_BLOCK
-	 ? handle->nr_requested_frames - OMX_PULL_REPLY_PER_BLOCK : handle->nr_requested_frames;
+	uint32_t first_block_frames = min(handle->nr_requested_frames, (uint32_t) OMX_PULL_REPLY_PER_BLOCK);
 
 	handle->frames_missing_bitmap >>= first_block_frames;
 	handle->frame_index += first_block_frames;
