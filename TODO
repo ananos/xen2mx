@@ -11,6 +11,8 @@
 
 * support non-ethernet networks by providing ways to extract the mac address differently
   + infiniband ifaces have too small mtu?
+  + use eth_hdr(), dev->header_ops->create() and ->parse() to clarify the accessing
+    to eth headers of packets and make it less ethernet specific
 
 * fix/improve large messages
   + use nr_valid_block_descs to simplify omx_pull_handle_first_block_done()
