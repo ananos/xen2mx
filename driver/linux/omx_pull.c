@@ -1403,6 +1403,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 					    int idesc)
 {
 	struct sk_buff * skb, * skbs[OMX_PULL_BLOCK_DESCS_NR] = { NULL };
+	int completed_block = !handle->block_desc[idesc].frames_missing_bitmap;
 	int i;
 
 	/* tell the sparse checker that the lock has been taken by the caller */
@@ -1413,9 +1414,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 		 * current first block not done, we basically just need to release the handle
 		 */
 
-		if (idesc > 0
-		    && !handle->block_desc[idesc].frames_missing_bitmap
-		    && handle->already_rerequested_blocks < idesc) {
+		if (completed_block && idesc > 0 && handle->already_rerequested_blocks < idesc) {
 
 			/* a later block is done without the first ones,
 			 * we assume some packet got lost in the first ones,
@@ -1431,6 +1430,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 				skb = omx_fill_pull_block_request(handle, i);
 				if (unlikely(IS_ERR(skb))) {
 					BUG_ON(PTR_ERR(skb) != -ENOMEM);
+					goto skbs_ready; /* don't try to submit more */
 				} else {
 					skbs[i] = skb;
 					handle->already_rerequested_blocks = i+1;
@@ -1500,9 +1500,10 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 				skbs[i] = skb;
 			}
 		}
+	}
 
-	skbs_ready:
-
+ skbs_ready:
+	if (completed_block) {
 		/* cleanup a bit of dma-offloaded copies */
 		omx_pull_handle_poll_dma_completions(handle);
 	}
