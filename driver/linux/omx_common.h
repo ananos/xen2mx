@@ -21,18 +21,12 @@
 
 #include "omx_wire.h"
 
-/* constants */
-#ifdef OMX_MX_WIRE_COMPAT
-#define OMX_PULL_REPLY_LENGTH_MAX 4096UL
-#define OMX_PULL_REPLY_PER_BLOCK 8
-#else
-#define OMX_PULL_REPLY_LENGTH_MAX 8192UL
-#define OMX_PULL_REPLY_PER_BLOCK 32
-#endif
-
 struct omx_iface;
 struct omx_endpoint;
 struct sk_buff;
+
+/* constants */
+#define OMX_PULL_BLOCK_DESCS_NR 4
 
 /* globals */
 extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */

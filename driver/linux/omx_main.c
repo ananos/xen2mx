@@ -26,6 +26,7 @@
 #include <linux/rcupdate.h>
 
 #include "omx_common.h"
+#include "omx_wire.h"
 #include "omx_peer.h"
 #include "omx_iface.h"
 #include "omx_endpoint.h"
@@ -217,9 +218,10 @@ omx_init(void)
 	       (unsigned long) ETH_P_OMX);
 	printk(KERN_INFO "Open-MX: requires MTU >= %ld\n",
 	       (unsigned long) OMX_MTU_MIN);
-	printk(KERN_INFO "Open-MX: using %ld x %ldkB pull replies per request\n",
+	printk(KERN_INFO "Open-MX: using %ld x %ldkB pull replies per request, with %ld requests in parallel\n",
 	       (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
-	       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);
+	       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX,
+	       (unsigned long) OMX_PULL_BLOCK_DESCS_NR);
 
 #ifdef OMX_DRIVER_DEBUG
 	if (omx_TINY_packet_loss)

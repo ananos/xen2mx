@@ -258,6 +258,18 @@ struct omx_pkt_pull_request {
 };
 #endif /* ~OMX_MX_WIRE_COMPAT */
 
+#ifdef OMX_MX_WIRE_COMPAT
+#define OMX_PULL_REPLY_LENGTH_MAX 4096UL
+#define OMX_PULL_REPLY_PER_BLOCK 8
+#else
+#define OMX_PULL_REPLY_LENGTH_MAX 8192UL
+#define OMX_PULL_REPLY_PER_BLOCK 32
+#endif
+#define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
+
+/* OMX_PULL_REPLY_LENGTH_MAX must fit inside pull_request.first_frame_offset */
+/* OMX_PULL_BLOCK_LENGTH_MAX must fit inside pull_request.block_length */
+
 struct omx_pkt_pull_reply {
 	uint8_t ptype;
 	uint8_t frame_seqnum; /* sender's pull index + page number in this frame, %256 */
