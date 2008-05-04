@@ -875,7 +875,7 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 	 */
 	for(i=1; i<OMX_PULL_BLOCK_DESCS_NR; i++) {
 		if (handle->block_desc[i].frames_missing_bitmap) {
-			omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_SECOND_BLOCK);
+			omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_NONFIRST_BLOCK);
 
 			skb = omx_fill_pull_block_request(handle, i);
 			if (unlikely(IS_ERR(skb))) {
@@ -1421,7 +1421,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			 * so we request the first ones again
 			 */
 
-			omx_counter_inc(iface, PULL_SECOND_BLOCK_DONE_EARLY);
+			omx_counter_inc(iface, PULL_NONFIRST_BLOCK_DONE_EARLY);
 
 			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
 				handle);
@@ -1482,7 +1482,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			if (!handle->remaining_length)
 				goto skbs_ready;
 
-			omx_counter_inc(iface, PULL_REQUEST_BOTH_BLOCKS);
+			omx_counter_inc(iface, PULL_REQUEST_NOTONLYFIRST_BLOCKS);
 
 			/* start another next block */
 			dprintk(PULL, "queueing another next pull block request\n");
