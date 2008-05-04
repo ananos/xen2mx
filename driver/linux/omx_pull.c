@@ -799,6 +799,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
 		/* just ignore the memory allocation failure and let retransmission take care of it */
+		goto skbs_ready; /* don't try to submit more */
 	} else {
 		skbs[0] = skb;
 	}
@@ -818,11 +819,13 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		if (unlikely(IS_ERR(skb))) {
 			BUG_ON(PTR_ERR(skb) != -ENOMEM);
 			/* just ignore the memory allocation failure and let retransmission take care of it */
+			goto skbs_ready; /* don't try to submit more */
 		} else {
 			skbs[i] = skb;
 		}
 	}
 
+ skbs_ready:
 	/* schedule the timeout handler now that we are ready to send the requests */
 	__mod_timer(&handle->retransmit_timer,
 		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
@@ -863,9 +866,10 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 	skb = omx_fill_pull_block_request(handle, 0);
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
+		goto skbs_ready; /* don't try to submit more */
 	} else {
-		handle->already_rerequested_blocks = 0;
 		skbs[0] = skb;
+		handle->already_rerequested_blocks = 0;
 	}
 
 	/*
@@ -881,12 +885,14 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 			skb = omx_fill_pull_block_request(handle, i);
 			if (unlikely(IS_ERR(skb))) {
 				BUG_ON(PTR_ERR(skb) != -ENOMEM);
+				goto skbs_ready; /* don't try to submit more */
 			} else {
 				skbs[i] = skb;
 			}
 		}
 	}
 
+ skbs_ready:
 	/* cleanup a bit of dma-offloaded copies */
 	omx_pull_handle_poll_dma_completions(handle);
 
