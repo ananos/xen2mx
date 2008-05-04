@@ -15,15 +15,8 @@
     to eth headers of packets and make it less ethernet specific
 
 * fix/improve large messages
-  + use nr_valid_block_descs to simplify omx_pull_handle_first_block_done()
   + regcache malloc hook
   + replace pull handle's BH lock + idr with RCU + array ?
-  + have more pull block at the same time, at least 4?
-    - memmove to switch to new blocks? or use offset+round-robin
-    - use skb chaining with skb->next since dev_queue_xmit seems to support it?
-    - makes 32 frame per block useless?
-  + if pulling few packet, using multiple request with small blocks to 
-    parallelize the processing of multiple blocks on the remote side ?
   + ph_prepare_exit only called when holding the iface mutex, may sleep
     - but last_release may be called from interrupt context
 
@@ -39,6 +32,8 @@
 
 * support for architecture with pagesize != 4k
 * huge page pinning support
+
+* change --iface into ---iface, and use --iface as a "close when no more endpoint"
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 

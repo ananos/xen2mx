@@ -46,6 +46,8 @@
 #define OMX_PULL_RETRANSMIT_TIMEOUT_MS	1000
 #define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES (OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
 
+#define OMX_PULL_BLOCK_DESCS_NR 2
+
 #ifdef OMX_MX_WIRE_COMPAT
 #if OMX_PULL_REPLY_LENGTH_MAX >= 65536
 #error Cannot store rdma offsets > 65535 in 16bits offsets on the wire
@@ -132,7 +134,7 @@ struct omx_pull_handle {
 	uint32_t nr_copying_frames; /* frames received but not copied yet*/
 	uint32_t nr_valid_block_descs;
 	uint32_t already_requeued_first_block; /* the first block has been requested again since the last timer */
-	struct omx_pull_block_desc block_desc[2];
+	struct omx_pull_block_desc block_desc[OMX_PULL_BLOCK_DESCS_NR];
 
 #ifdef CONFIG_NET_DMA
 	struct dma_chan *dma_chan;
@@ -254,11 +256,11 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 
 	handle->frame_index += first_block_frames;
 	handle->nr_requested_frames -= first_block_frames;
-	memcpy(&handle->block_desc[0], &handle->block_desc[1],
-	       sizeof(struct omx_pull_block_desc));
-	handle->block_desc[1].frames_missing_bitmap = 0; /* make sure the invalid block desc are easy to check */
 	handle->nr_valid_block_descs--;
 	handle->already_requeued_first_block = 0;
+	memmove(&handle->block_desc[0], &handle->block_desc[1],
+		sizeof(struct omx_pull_block_desc) * handle->nr_valid_block_descs);
+	handle->block_desc[OMX_PULL_BLOCK_DESCS_NR-1].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
 
 	dprintk(PULL, "first block of pull handle %p done, removing %d requested frames, now requested %ld-%ld\n",
 		handle, first_block_frames,
@@ -518,6 +520,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 {
 	struct omx_pull_handle * handle;
 	struct omx_user_region * region;
+	int i;
 	int err;
 
 	/* acquire the region */
@@ -573,8 +576,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->nr_missing_frames = 0;
 	handle->nr_copying_frames = 0;
 	handle->nr_valid_block_descs = 0;
-	handle->block_desc[0].frames_missing_bitmap = 0; /* make sure the invalid block desc are easy to check */
-	handle->block_desc[1].frames_missing_bitmap = 0; /* make sure the invalid block desc are easy to check */
+	for(i=0; i<OMX_PULL_BLOCK_DESCS_NR-1; i++)
+		handle->block_desc[i].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
 	handle->already_requeued_first_block = 0;
 	handle->last_retransmit_jiffies = cmd->resend_timeout_jiffies + jiffies;
 	handle->magic = omx_generate_pull_magic(endpoint);
@@ -749,8 +752,9 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	struct omx_cmd_pull cmd;
 	struct omx_pull_handle * handle;
 	struct omx_iface * iface = endpoint->iface;
-	struct sk_buff * skb, * skb2;
+	struct sk_buff * skb, * skbs[OMX_PULL_BLOCK_DESCS_NR] = { NULL };
 	uint32_t block_length;
+	int i;
 	int err = 0;
 
 	err = copy_from_user(&cmd, uparam, sizeof(cmd));
@@ -794,27 +798,30 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
 		/* just ignore the memory allocation failure and let retransmission take care of it */
-		skb = NULL;
+	} else {
+		skbs[0] = skb;
 	}
 
-	/* send a second pull block request if needed */
-	skb2 = NULL;
-	if (!handle->remaining_length)
-		goto skbs_ready;
+	for(i=1; i<OMX_PULL_BLOCK_DESCS_NR; i++) {
+		/* send another pull block request if needed */
 
-	block_length = OMX_PULL_BLOCK_LENGTH_MAX;
-	if (block_length > handle->remaining_length)
-		block_length = handle->remaining_length;
+		if (!handle->remaining_length)
+			break;
 
-	omx_pull_handle_append_needed_frames(handle, block_length, 0);
-	skb2 = omx_fill_pull_block_request(handle, 1);
-	if (unlikely(IS_ERR(skb2))) {
-		BUG_ON(PTR_ERR(skb2) != -ENOMEM);
-		/* just ignore the memory allocation failure and let retransmission take care of it */
-		skb2 = NULL;
+		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
+		if (block_length > handle->remaining_length)
+			block_length = handle->remaining_length;
+
+		omx_pull_handle_append_needed_frames(handle, block_length, 0);
+		skb = omx_fill_pull_block_request(handle, i);
+		if (unlikely(IS_ERR(skb))) {
+			BUG_ON(PTR_ERR(skb) != -ENOMEM);
+			/* just ignore the memory allocation failure and let retransmission take care of it */
+		} else {
+			skbs[i] = skb;
+		}
 	}
 
- skbs_ready:
 	/* schedule the timeout handler now that we are ready to send the requests */
 	__mod_timer(&handle->retransmit_timer,
 		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
@@ -825,10 +832,9 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	 */
 	spin_unlock(&handle->lock);
 
-	if (likely(skb))
-		omx_queue_xmit(iface, skb, PULL_REQ);
-	if (likely(skb2))
-		omx_queue_xmit(iface, skb2, PULL_REQ);
+	for(i=0; i<OMX_PULL_BLOCK_DESCS_NR; i++)
+		if (likely(skbs[i]))
+			omx_queue_xmit(iface, skbs[i], PULL_REQ);
 
 	return 0;
 
@@ -844,7 +850,8 @@ static INLINE void
 omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 						  struct omx_pull_handle * handle)
 {
-	struct sk_buff * skb = NULL, * skb2 = NULL;
+	struct sk_buff *skb, *skbs[OMX_PULL_BLOCK_DESCS_NR] = { NULL };
+	int i;
 
 	/* tell the sparse checker that the lock has been taken by the caller */
 	__acquire(&handle->lock);
@@ -855,23 +862,27 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 	skb = omx_fill_pull_block_request(handle, 0);
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
-		skb = NULL;
-	} else
+	} else {
 		handle->already_requeued_first_block = 0;
+		skbs[0] = skb;
+	}
 
 	/*
-	 * If the second block isn't done either, request it again
-	 * (otherwise the 2-block pipeline would be broken for ever)
+	 * If the other blocks aren't done either, request it again
+	 * (otherwise the N-block pipeline would be broken for ever)
 	 * This shouldn't happen often since it means a packet has been lost
-	 * in both first and second blocks.
+	 * in each block.
 	 */
-	if (handle->block_desc[1].frames_missing_bitmap) {
-		omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_SECOND_BLOCK);
+	for(i=1; i<OMX_PULL_BLOCK_DESCS_NR; i++) {
+		if (handle->block_desc[i].frames_missing_bitmap) {
+			omx_counter_inc(iface, PULL_TIMEOUT_HANDLER_SECOND_BLOCK);
 
-		skb2 = omx_fill_pull_block_request(handle, 1);
-		if (unlikely(IS_ERR(skb2))) {
-			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
-			skb2 = NULL;
+			skb = omx_fill_pull_block_request(handle, i);
+			if (unlikely(IS_ERR(skb))) {
+				BUG_ON(PTR_ERR(skb) != -ENOMEM);
+			} else {
+				skbs[i] = skb;
+			}
 		}
 	}
 
@@ -888,10 +899,9 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 	 */
 	spin_unlock(&handle->lock);
 
-	if (likely(skb))
-		omx_queue_xmit(iface, skb, PULL_REQ);
-	if (likely(skb2))
-		omx_queue_xmit(iface, skb2, PULL_REQ);
+	for(i=0; i<OMX_PULL_BLOCK_DESCS_NR; i++)
+		if (likely(skbs[i]))
+			omx_queue_xmit(iface, skbs[i], PULL_REQ);
 }
 
 /*
@@ -1391,7 +1401,8 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 					    struct omx_pull_handle * handle,
 					    int idesc)
 {
-	struct sk_buff * skb = NULL, * skb2 = NULL;
+	struct sk_buff * skb, * skbs[OMX_PULL_BLOCK_DESCS_NR] = { NULL };
+	int i;
 
 	/* tell the sparse checker that the lock has been taken by the caller */
 	__acquire(&handle->lock);
@@ -1402,12 +1413,12 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 		 */
 
 		if (idesc > 0
-		    && !handle->block_desc[1].frames_missing_bitmap
-		    && !handle->already_requeued_first_block) {
+		    && !handle->block_desc[idesc].frames_missing_bitmap
+		    && handle->already_requeued_first_block < idesc) {
 
-			/* the second block is done without the first one,
-			 * we assume some packet got lost in the first one,
-			 * so we request the first one again
+			/* a later block is done without the first ones,
+			 * we assume some packet got lost in the first ones,
+			 * so we request the first ones again
 			 */
 
 			omx_counter_inc(iface, PULL_SECOND_BLOCK_DONE_EARLY);
@@ -1415,13 +1426,16 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
 				handle);
 
-			skb = omx_fill_pull_block_request(handle, 0);
-			if (unlikely(IS_ERR(skb))) {
-				BUG_ON(PTR_ERR(skb) != -ENOMEM);
-				skb = NULL;
-			} else {
-				handle->already_requeued_first_block = 1;
+			for(i=handle->already_requeued_first_block; i<idesc; i++) {
+				skb = omx_fill_pull_block_request(handle, i);
+				if (unlikely(IS_ERR(skb))) {
+					BUG_ON(PTR_ERR(skb) != -ENOMEM);
+				} else {
+					skbs[i] = skb;
+				}
 			}
+
+			handle->already_requeued_first_block = idesc;
 		}
 
 	} else {
@@ -1443,42 +1457,48 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			block_length = handle->remaining_length;
 
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
-		skb = omx_fill_pull_block_request(handle, 1);
+		skb = omx_fill_pull_block_request(handle, OMX_PULL_BLOCK_DESCS_NR-1);
 		if (unlikely(IS_ERR(skb))) {
 			BUG_ON(PTR_ERR(skb) != -ENOMEM);
 			/* let the timeout expire and resend */
-			skb = NULL;
 			goto skbs_ready;
+		} else {
+			skbs[0] = skb;
 		}
 
-		/* the second current block (now first) request might be done too
-		 * (in case of out-or-order packets)
-		 */
-		if (handle->block_desc[0].frames_missing_bitmap)
-			goto skbs_ready;
+		for(i=1; i<OMX_PULL_BLOCK_DESCS_NR; i++) {
 
-		/* current second block request is done */
-		omx_pull_handle_first_block_done(handle);
+			/* the second current block (now first) request might be done too
+			 * (in case of out-or-order packets)
+			 */
 
-		/* is there more to request? if so, use the now-freed second block */
-		if (!handle->remaining_length)
-			goto skbs_ready;
+			if (handle->block_desc[0].frames_missing_bitmap)
+				goto skbs_ready;
 
-		omx_counter_inc(iface, PULL_REQUEST_BOTH_BLOCKS);
+			/* current second block request is done */
+			omx_pull_handle_first_block_done(handle);
 
-		/* start another next block */
-		dprintk(PULL, "queueing another next pull block request\n");
-		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
-		if (block_length > handle->remaining_length)
-			block_length = handle->remaining_length;
+			/* is there more to request? if so, use the now-freed second block */
+			if (!handle->remaining_length)
+				goto skbs_ready;
 
-		omx_pull_handle_append_needed_frames(handle, block_length, 0);
-		skb2 = omx_fill_pull_block_request(handle, 1);
-		if (unlikely(IS_ERR(skb2))) {
-			BUG_ON(PTR_ERR(skb2) != -ENOMEM);
-			/* let the timeout expire and resend */
-			skb2 = NULL;
-			goto skbs_ready;
+			omx_counter_inc(iface, PULL_REQUEST_BOTH_BLOCKS);
+
+			/* start another next block */
+			dprintk(PULL, "queueing another next pull block request\n");
+			block_length = OMX_PULL_BLOCK_LENGTH_MAX;
+			if (block_length > handle->remaining_length)
+				block_length = handle->remaining_length;
+
+			omx_pull_handle_append_needed_frames(handle, block_length, 0);
+			skb = omx_fill_pull_block_request(handle, OMX_PULL_BLOCK_DESCS_NR-1);
+			if (unlikely(IS_ERR(skb))) {
+				BUG_ON(PTR_ERR(skb) != -ENOMEM);
+				/* let the timeout expire and resend */
+				goto skbs_ready;
+			} else {
+				skbs[i] = skb;
+			}
 		}
 
 	skbs_ready:
@@ -1497,10 +1517,9 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 	 */
 	spin_unlock(&handle->lock);
 
-	if (likely(skb))
-		omx_queue_xmit(iface, skb, PULL_REQ);
-	if (likely(skb2))
-		omx_queue_xmit(iface, skb2, PULL_REQ);
+	for(i=0; i<OMX_PULL_BLOCK_DESCS_NR; i++)
+		if (likely(skbs[i]))
+			omx_queue_xmit(iface, skbs[i], PULL_REQ);
 }
 
 int
