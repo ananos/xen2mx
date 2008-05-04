@@ -133,7 +133,7 @@ struct omx_pull_handle {
 	uint32_t nr_missing_frames; /* frames requested but not received yet */
 	uint32_t nr_copying_frames; /* frames received but not copied yet*/
 	uint32_t nr_valid_block_descs;
-	uint32_t already_requeued_first_block; /* the first block has been requested again since the last timer */
+	uint32_t already_rerequested_blocks; /* amount of first blocks that were requested again since the last timer */
 	struct omx_pull_block_desc block_desc[OMX_PULL_BLOCK_DESCS_NR];
 
 #ifdef CONFIG_NET_DMA
@@ -257,7 +257,8 @@ omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
 	handle->frame_index += first_block_frames;
 	handle->nr_requested_frames -= first_block_frames;
 	handle->nr_valid_block_descs--;
-	handle->already_requeued_first_block = 0;
+	if (handle->already_rerequested_blocks)
+		handle->already_rerequested_blocks--;
 	memmove(&handle->block_desc[0], &handle->block_desc[1],
 		sizeof(struct omx_pull_block_desc) * handle->nr_valid_block_descs);
 	handle->block_desc[OMX_PULL_BLOCK_DESCS_NR-1].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
@@ -578,7 +579,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->nr_valid_block_descs = 0;
 	for(i=0; i<OMX_PULL_BLOCK_DESCS_NR-1; i++)
 		handle->block_desc[i].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
-	handle->already_requeued_first_block = 0;
+	handle->already_rerequested_blocks = 0;
 	handle->last_retransmit_jiffies = cmd->resend_timeout_jiffies + jiffies;
 	handle->magic = omx_generate_pull_magic(endpoint);
 
@@ -863,7 +864,7 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
 	} else {
-		handle->already_requeued_first_block = 0;
+		handle->already_rerequested_blocks = 0;
 		skbs[0] = skb;
 	}
 
@@ -1414,7 +1415,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 
 		if (idesc > 0
 		    && !handle->block_desc[idesc].frames_missing_bitmap
-		    && handle->already_requeued_first_block < idesc) {
+		    && handle->already_rerequested_blocks < idesc) {
 
 			/* a later block is done without the first ones,
 			 * we assume some packet got lost in the first ones,
@@ -1426,16 +1427,15 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
 				handle);
 
-			for(i=handle->already_requeued_first_block; i<idesc; i++) {
+			for(i=handle->already_rerequested_blocks; i<idesc; i++) {
 				skb = omx_fill_pull_block_request(handle, i);
 				if (unlikely(IS_ERR(skb))) {
 					BUG_ON(PTR_ERR(skb) != -ENOMEM);
 				} else {
 					skbs[i] = skb;
+					handle->already_rerequested_blocks = i+1;
 				}
 			}
-
-			handle->already_requeued_first_block = idesc;
 		}
 
 	} else {
