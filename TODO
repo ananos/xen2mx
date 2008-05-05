@@ -29,6 +29,9 @@
   + add ioctls GET_BOARD_CPUMASK and GET_IRQ_CPUMASK
   + add OMX_BIND=irq/board/<mask>
   + add OMX_ENDPOINT_MSIX_BASE=
+  + add OMX_BH_PREWARM_CACHE= to use non-temporal only if not on the process core
+    - store the process core binding when opening the endpoint
+      and assume the binding won't change if the env var was set
 
 * support for architecture with pagesize != 4k
 * huge page pinning support

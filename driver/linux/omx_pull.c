@@ -164,8 +164,8 @@ static int omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle 
  * This lock is always taken *before* the endpoint pull handle lock.
  *
  * The handle does not own a reference on the endpoint. It is always queued in one
- * endpoint lists, and the endpoint closing will enforce its detruction.
- * When the endpoint starts to be closed, it calls prepare_exit which sets all handle
+ * endpoint lists, and the endpoint closing will enforce its destruction.
+ * When the endpoint starts to be closed, it calls prepare_exit which sets all handles
  * to timer_must_exit but cannot wait for them because of the possible interrupt
  * context. Later, the cleanup thread will cleanup the endpoint, including destroying
  * the handle timers that are still running.
@@ -175,7 +175,7 @@ static int omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle 
  * in a bottom half). It is taken for writing when creating a handle (when the
  * application request a pull), finishing a handle (when a pull reply arrives
  * and completes the pull request, likely in a bottom half), and when destroying
- * and remaining handles (when an endpoint is closed).
+ * and remaining handles (when the endpoint is closed).
  * Since a bottom half and the application may both acquire the rwlock for
  * writing, we must always disable bottom halves when taking the rwlock for
  * either read or writing.
@@ -184,20 +184,20 @@ static int omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle 
 /*
  * Notes about retransmission:
  *
- * The puller request 2 blocks of data, and waits for OMX_PULL_REPLY_PER_BLOCK
- * replies for each of them.
+ * The puller requests OMX_PULL_BLOCK_DESCS_NR blocks of data, and waits for
+ * OMX_PULL_REPLY_PER_BLOCK replies for each of them.
  *
  * A timer is set to detect when nothing has been received for a while.  It is
  * updated every time a new reply is received. This timer repost requests to
  * get current blocks (using descriptors that were cached in the pull handle).
  *
- * Additionally, if the second block completes before the first one, there is
- * a good chance that one packet got lost for the first block. In this case,
- * we optimistically re-request the first block.
+ * Additionally, if the second (or more) block completes before the first one,
+ * there is a good chance that one packet got lost for the former blocks.
+ * In this case, we optimistically re-request the former blocks.
  * To avoid re-requesting too often, we do it only once per timeout.
  *
  * In the end, the timer is only called if:
- * + one packet is lost for both the first and the second current block
+ * + one packet is lost in all outstanding blocks
  * + or one packet is missing in the first block after one optimistic re-request.
  * So the timeout doesn't need to be short, 1 second is enough.
  */
