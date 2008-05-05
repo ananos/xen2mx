@@ -510,7 +510,8 @@ omx_user_region_offset_cache_vect_append_callback(struct omx_user_region_offset_
 			/* next segment */
 			seg++;
 			segoff = 0;
-			if (seg-&region->segments[0] > region->nr_segments) {
+			if ((char *)seg - (char *)&region->segments[0]
+			    > region->nr_segments * sizeof(struct omx_user_region_segment)) {
 				/* we went out of the segment array, we got to be at the end of the request */
 				BUG_ON(remaining != 0);
 			} else {
@@ -640,7 +641,8 @@ omx_user_region_offset_cache_vect_copy_callback(struct omx_user_region_offset_ca
 			/* next segment */
 			seg++;
 			segoff = 0;
-			if (seg-&region->segments[0] > region->nr_segments) {
+			if ((char *)seg - (char *)&region->segments[0]
+			    > region->nr_segments * sizeof(struct omx_user_region_segment)) {
 				/* we went out of the segment array, we got to be at the end of the request */
 				BUG_ON(remaining != 0);
 			} else {
