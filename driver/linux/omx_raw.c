@@ -68,7 +68,7 @@ omx_raw_send(struct omx_iface *iface, void __user * uparam)
 	if (!skb)
 		return -ENOMEM;
 
-	ret = copy_from_user(omx_skb_mac_header(skb), (void __user *) raw_send.buffer, raw_send.buffer_length);
+	ret = copy_from_user(omx_skb_mac_header(skb), (void __user *)(unsigned long) raw_send.buffer, raw_send.buffer_length);
 	if (ret) {
 		kfree_skb(skb);
 		return -EFAULT;
@@ -135,7 +135,7 @@ omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
 		dev_kfree_skb(skb);
 
 		/* copy into user-space */
-		err = copy_to_user((void __user *) raw_recv.buffer, buffer, length);
+		err = copy_to_user((void __user *)(unsigned long) raw_recv.buffer, buffer, length);
 		if (err) {
 			err = -EFAULT;
 		} else {
