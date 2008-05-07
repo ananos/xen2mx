@@ -45,6 +45,10 @@ static int omx_peer_next_nr;
 static void
 omx_peer_hostname_query(uint64_t peer_addr, uint16_t peer_index);
 
+/************************
+ * Peer Table Management
+ */
+
 static INLINE uint8_t
 omx_peer_addr_hash(uint64_t board_addr)
 {
@@ -198,6 +202,10 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	return err;
 }
 
+/*************************
+ * Local Iface Management
+ */
+
 void
 omx_peers_notify_iface_attach(struct omx_iface * iface)
 {
@@ -277,40 +285,6 @@ omx_peers_notify_iface_detach(struct omx_iface * iface)
 	mutex_unlock(&omx_peers_mutex);
 }
 
-int
-omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
-{
-	struct omx_peer *peer;
-	int err = -EINVAL;
-
-	if (index >= omx_peer_max)
-		goto out;
-
-	rcu_read_lock();
-
-	peer = rcu_dereference(omx_peer_array[index]);
-	if (!peer)
-		goto out_with_lock;
-
-	if (peer->reverse_index != OMX_UNKNOWN_REVERSE_PEER_INDEX
-	    && reverse_index != peer->reverse_index)
-		dprintk(PEER, "changing remote peer #%d reverse index from %d to %d\n",
-			index, peer->reverse_index, reverse_index);
-	else
-		dprintk(PEER, "setting remote peer #%d reverse index to %d\n",
-			index, reverse_index);
-
-	peer->reverse_index = reverse_index;
-
-	rcu_read_unlock();
-	return 0;
-
- out_with_lock:
-	rcu_read_unlock();
- out:
-	return err;
-}
-
 /*
  * returns an acquired endpoint, or NULL if the peer is not local,
  * ot PTR_ERR(errno) if the peer is local but the endpoint invalid
@@ -344,6 +318,44 @@ omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index)
 	rcu_read_unlock();
  out:
 	return NULL;
+}
+
+/************************
+ * Peer Index Management
+ */
+
+int
+omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
+{
+	struct omx_peer *peer;
+	int err = -EINVAL;
+
+	if (index >= omx_peer_max)
+		goto out;
+
+	rcu_read_lock();
+
+	peer = rcu_dereference(omx_peer_array[index]);
+	if (!peer)
+		goto out_with_lock;
+
+	if (peer->reverse_index != OMX_UNKNOWN_REVERSE_PEER_INDEX
+	    && reverse_index != peer->reverse_index)
+		dprintk(PEER, "changing remote peer #%d reverse index from %d to %d\n",
+			index, peer->reverse_index, reverse_index);
+	else
+		dprintk(PEER, "setting remote peer #%d reverse index to %d\n",
+			index, reverse_index);
+
+	peer->reverse_index = reverse_index;
+
+	rcu_read_unlock();
+	return 0;
+
+ out_with_lock:
+	rcu_read_unlock();
+ out:
+	return err;
 }
 
 int
@@ -383,6 +395,10 @@ omx_check_recv_peer_index(uint16_t index)
 
 	return 0;
 }
+
+/**************
+ * Peer Lookup
+ */
 
 int
 omx_peer_lookup_by_index(uint32_t index,
@@ -640,6 +656,10 @@ omx_process_host_replies(void)
 		kfree_skb(skb);
 	}
 }
+
+/***********************
+ * Peer Table Init/Exit
+ */
 
 int
 omx_peers_init(void)
