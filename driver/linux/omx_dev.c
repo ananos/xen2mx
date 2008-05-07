@@ -573,6 +573,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 	case OMX_CMD_PEER_ADD: {
 		struct omx_cmd_misc_peer_info peer_info;
+		char *hostname;
 
 		ret = -EPERM;
 		if (!capable(CAP_SYS_ADMIN))
@@ -585,9 +586,14 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			goto out;
 		}
 
-		peer_info.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+		if (peer_info.hostname[0] == '\0') {
+			hostname = NULL;
+		} else {
+			peer_info.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+			hostname = peer_info.hostname;
+		}
 
-		ret = omx_peer_add(peer_info.board_addr, peer_info.hostname);
+		ret = omx_peer_add(peer_info.board_addr, hostname);
 		break;
 	}
 

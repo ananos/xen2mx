@@ -31,7 +31,10 @@ omx__driver_peer_add(uint64_t board_addr, char *hostname)
   int err;
 
   peer_info.board_addr = board_addr;
-  strncpy(peer_info.hostname, hostname, OMX_HOSTNAMELEN_MAX);
+  if (hostname)
+    strncpy(peer_info.hostname, hostname, OMX_HOSTNAMELEN_MAX);
+  else
+    peer_info.hostname[0] = '\0';
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_ADD, &peer_info);
   if (err < 0) {
@@ -162,15 +165,18 @@ omx__peers_dump(const char * format)
   int i;
 
   for(i=0; i<omx__driver_desc->peer_max; i++) {
-    char hostname[OMX_HOSTNAMELEN_MAX];
+    char raw_hostname[OMX_HOSTNAMELEN_MAX];
+    char *hostname = raw_hostname;
     uint64_t board_addr = 0;
     char addr_str[OMX_BOARD_ADDR_STRLEN];
 
-    ret = omx__driver_peer_from_index(i, &board_addr, hostname);
+    ret = omx__driver_peer_from_index(i, &board_addr, raw_hostname);
     if (ret != OMX_SUCCESS)
       continue;
 
     omx__board_addr_sprintf(addr_str, board_addr);
+    if (raw_hostname[0] == '\0')
+      hostname = "<unknown>";
     printf(format, i, addr_str, hostname);
   }
 

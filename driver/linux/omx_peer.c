@@ -97,16 +97,16 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 {
 	struct omx_peer * new, * old;
 	struct omx_iface * iface;
-	char * new_hostname;
+	char * new_hostname = NULL;
 	uint8_t hash;
 	int err;
 
-	BUG_ON(!hostname);
-
-	err = -ENOMEM;
-	new_hostname = kstrdup(hostname, GFP_KERNEL);
-	if (!new_hostname)
-		goto out;
+	if (hostname) {
+		err = -ENOMEM;
+		new_hostname = kstrdup(hostname, GFP_KERNEL);
+		if (!new_hostname)
+			goto out;
+	}
 
 	mutex_lock(&omx_peers_mutex);
 
@@ -130,21 +130,24 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 
 	iface = omx_iface_find_by_addr(board_addr);
 	if (iface) {
-		char * old_hostname;
-
 		/* omx_iface_find_by_addr() acquired the iface, keep the reference */
 		new = &iface->peer;
 		new->local_iface = iface;
 
-		/* replace the iface hostname withe one from the peer table */
-		old_hostname = new->hostname;
-		new->hostname = new_hostname;
-		dprintk(PEER, "using iface %s (%s) to add new local peer %s address %012llx\n",
-			iface->eth_ifp->name, old_hostname,
-			new_hostname, (unsigned long long) board_addr);
-		printk(KERN_INFO "Open-MX: Renaming iface %s (%s) into peer name %s\n",
-		       iface->eth_ifp->name, old_hostname, new_hostname);
-		kfree(old_hostname);
+		/* replace the iface hostname with the one from the peer table if non-null */
+		if (new_hostname) {
+			char * old_hostname;
+
+			old_hostname = new->hostname;
+			new->hostname = new_hostname;
+
+			dprintk(PEER, "using iface %s (%s) to add new local peer %s address %012llx\n",
+				iface->eth_ifp->name, old_hostname,
+				new_hostname, (unsigned long long) board_addr);
+			printk(KERN_INFO "Open-MX: Renaming iface %s (%s) into peer name %s\n",
+			       iface->eth_ifp->name, old_hostname, new_hostname);
+			kfree(old_hostname);
+		}
 
 	} else {
 		err = -ENOMEM;
@@ -213,11 +216,14 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 			/* board_addr already set */
 			new->index = index;
 			new->reverse_index = index;
-
-			/* replace the iface hostname with the one from the peer table */
-			kfree(new->hostname);
-			new->hostname = old->hostname;
 			new->local_iface = iface;
+
+			/* replace the iface hostname with the one from the peer table if it exists */
+			if (old->hostname) {
+				char * new_hostname = new->hostname;
+				new->hostname = old->hostname;
+				kfree(new_hostname);
+			}
 
 			rcu_assign_pointer(omx_peer_array[index], new);
 			list_replace_rcu(&old->addr_hash_elt, &new->addr_hash_elt);
@@ -385,8 +391,13 @@ omx_peer_lookup_by_index(uint32_t index,
 
 	if (board_addr)
 		*board_addr = peer->board_addr;
-	if (hostname)
-		strcpy(hostname, peer->hostname);
+
+	if (hostname) {
+		if (peer->hostname)
+			strcpy(hostname, peer->hostname);
+		else
+			hostname[0] = '\0';
+	}
 
 	rcu_read_unlock();
 	return 0;
@@ -409,10 +420,17 @@ omx_peer_lookup_by_addr(uint64_t board_addr,
 	rcu_read_lock();
 	list_for_each_entry_rcu(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
 		if (peer->board_addr == board_addr) {
+
 			if (index)
 				*index = peer->index;
-			if (hostname)
-				strcpy(hostname, peer->hostname);
+
+			if (hostname) {
+				if (peer->hostname)
+					strcpy(hostname, peer->hostname);
+				else
+					hostname[0] = '\0';
+			}
+
 			rcu_read_unlock();
 			return 0;
 		}
@@ -432,7 +450,7 @@ omx_peer_lookup_by_hostname(char *hostname,
 	rcu_read_lock();
 	for(i=0; i<omx_peer_max; i++) {
 		struct omx_peer *peer = rcu_dereference(omx_peer_array[i]);
-		if (!peer)
+		if (!peer || !peer->hostname)
 			continue;
 
 		if (!strcmp(hostname, peer->hostname)) {

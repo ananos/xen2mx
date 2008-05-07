@@ -1,8 +1,6 @@
 * finish mapping
-  + support NULL hostname in the peer table
-    - pass a NULL peer hostname in add_peer in mxoed
-    - if passing a NULL hostname, just keep the original name
-  + support NULL hostname in omx_info
+  + adding an existing peer can replace the hostname
+  + cleanup old/new in omx_peers_notify_iface_attach
   + fix mxoed licence
   + add host query/reply to the driver
   + add nice raw API, similar to the MX one
