@@ -187,7 +187,7 @@ check_for_packet(
   if (raw_recv.status) {
 #if MXOED_DEBUG
     int i;
-    unsigned char *p = (unsigned char *)(&nip->pkt);
+    unsigned char *p = (unsigned char *)(&nip->mxoepkt);
 
     printf("recv len = %d\n", len);
     for (i=0; i<16; ++i) printf(" %02x", p[i]); printf("\n");

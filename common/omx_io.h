@@ -74,9 +74,9 @@
 #define OMX_IF_NAMESIZE		16
 #define OMX_COMMAND_LEN_MAX	32
 
-#define OMX_RAW_PKT_LEN_MAX 64
-#define OMX_RAW_RECVQ_LEN 32
-#define OMX_RAW_ENDPOINT_INDEX 255
+#define OMX_RAW_PKT_LEN_MAX	1024
+#define OMX_RAW_RECVQ_LEN	32
+#define OMX_RAW_ENDPOINT_INDEX	255
 
 #define OMX_USER_REGION_MAX	256
 typedef uint8_t omx_user_region_id_t;
