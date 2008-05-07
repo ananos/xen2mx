@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x128
+#define OMX_DRIVER_ABI_VERSION		0x129
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -73,6 +73,10 @@
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16
 #define OMX_COMMAND_LEN_MAX	32
+
+#define OMX_RAW_PKT_LEN_MAX 64
+#define OMX_RAW_RECVQ_LEN 32
+#define OMX_RAW_ENDPOINT_INDEX 255
 
 #define OMX_USER_REGION_MAX	256
 typedef uint8_t omx_user_region_id_t;
@@ -188,6 +192,25 @@ struct omx_cmd_misc_peer_info {
 	uint32_t index;
 	uint32_t pad;
 	/* 96 */
+};
+
+struct omx_cmd_raw_open_endpoint {
+	uint8_t board_index;
+	uint8_t pad[7];
+};
+
+struct omx_cmd_raw_send {
+	uint64_t buffer;
+	uint32_t buffer_length;
+	uint32_t pad;
+};	
+
+struct omx_cmd_raw_recv {
+	uint64_t buffer;
+	uint32_t buffer_length;
+	uint32_t timeout;
+	uint32_t status;
+	uint32_t pad;
 };
 
 struct omx_cmd_open_endpoint {
@@ -428,6 +451,9 @@ struct omx_cmd_bench {
 #define OMX_CMD_PEER_FROM_INDEX		_IOWR(OMX_CMD_MAGIC, 0x22, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_PEER_FROM_ADDR		_IOWR(OMX_CMD_MAGIC, 0x23, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_PEER_FROM_HOSTNAME	_IOWR(OMX_CMD_MAGIC, 0x24, struct omx_cmd_misc_peer_info)
+#define OMX_CMD_RAW_OPEN_ENDPOINT	_IOR(OMX_CMD_MAGIC, 0x30, struct omx_cmd_raw_open_endpoint)
+#define OMX_CMD_RAW_SEND		_IOR(OMX_CMD_MAGIC, 0x31, struct omx_cmd_raw_send)
+#define OMX_CMD_RAW_RECV		_IOWR(OMX_CMD_MAGIC, 0x32, struct omx_cmd_raw_recv)
 #define OMX_CMD_OPEN_ENDPOINT		_IOR(OMX_CMD_MAGIC, 0x71, struct omx_cmd_open_endpoint)
 /* WARNING: ioctl based cmd numbers must start at OMX_CMD_BENCH and remain consecutive */
 #define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x80, struct omx_cmd_bench)
@@ -713,6 +739,7 @@ enum omx_counter_index {
 	OMX_COUNTER_SEND_NACK_MCP,
 	OMX_COUNTER_SEND_PULL_REQ,
 	OMX_COUNTER_SEND_PULL_REPLY,
+	OMX_COUNTER_SEND_RAW,
 
 	OMX_COUNTER_RECV_TINY,
 	OMX_COUNTER_RECV_SMALL,
@@ -725,6 +752,7 @@ enum omx_counter_index {
 	OMX_COUNTER_RECV_NACK_MCP,
 	OMX_COUNTER_RECV_PULL_REQ,
 	OMX_COUNTER_RECV_PULL_REPLY,
+	OMX_COUNTER_RECV_RAW,
 
 	OMX_COUNTER_DMARECV_MEDIUM_FRAG,
 	OMX_COUNTER_DMARECV_PARTIAL_MEDIUM_FRAG,
@@ -762,6 +790,8 @@ enum omx_counter_index {
 	OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC_ENDPOINT,
 	OMX_COUNTER_DROP_NACK_MCP_BAD_WIRE_HANDLE,
 	OMX_COUNTER_DROP_NACK_MCP_BAD_MAGIC_HANDLE_GENERATION,
+	OMX_COUNTER_DROP_RAW_QUEUE_FULL,
+	OMX_COUNTER_DROP_RAW_TOO_LARGE,
 	OMX_COUNTER_DROP_NOSYS_TYPE,
 	OMX_COUNTER_DROP_UNKNOWN_TYPE,
 
@@ -819,6 +849,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Pull Request";
 	case OMX_COUNTER_SEND_PULL_REPLY:
 		return "Send Pull Reply";
+	case OMX_COUNTER_SEND_RAW:
+		return "Send Raw";
 	case OMX_COUNTER_RECV_TINY:
 		return "Recv Tiny";
 	case OMX_COUNTER_RECV_SMALL:
@@ -841,6 +873,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Recv Pull Request";
 	case OMX_COUNTER_RECV_PULL_REPLY:
 		return "Recv Pull Reply";
+	case OMX_COUNTER_RECV_RAW:
+		return "Recv Raw";
 	case OMX_COUNTER_DMARECV_MEDIUM_FRAG:
 		return "DMA Recv Medium Frag";
 	case OMX_COUNTER_DMARECV_PARTIAL_MEDIUM_FRAG:

@@ -288,6 +288,8 @@ omx_iface_attach(struct net_device * ifp)
 		goto out_with_iface_hostname;
 	}
 
+	omx_iface_raw_init(&iface->raw);
+
 	kref_init(&iface->refcount);
 	mutex_init(&iface->endpoints_mutex);
 
@@ -318,6 +320,7 @@ __omx_iface_last_release(struct kref *kref)
 	dprintk(KREF, "releasing the last reference on %s (interface '%s')\n",
 		iface->peer.hostname, ifp->name);
 
+	omx_iface_raw_exit(&iface->raw);
 	kfree(iface->endpoints);
 	kfree(iface->peer.hostname);
 	kfree(iface);
@@ -717,17 +720,32 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 
 	/* keep the rcu lock */
 
-        if (endpoint_index >= omx_endpoint_max)
-		goto out_with_rcu_lock;
+	if (endpoint_index == OMX_RAW_ENDPOINT_INDEX) {
+		/* raw endpoint */
+		struct omx_iface_raw *raw = &iface->raw;
+		if (raw->in_use) {
+			info->closed = 0;
+			info->pid = raw->opener_pid;
+			strncpy(info->command, raw->opener_comm, OMX_COMMAND_LEN_MAX);
+			info->command[OMX_COMMAND_LEN_MAX-1] = '\0';
+		} else {
+			info->closed = 1;
+		}
 
-	endpoint = rcu_dereference(iface->endpoints[endpoint_index]);
-	if (endpoint) {
-		info->closed = 0;
-		info->pid = endpoint->opener_pid;
-		strncpy(info->command, endpoint->opener_comm, OMX_COMMAND_LEN_MAX);
-		info->command[OMX_COMMAND_LEN_MAX-1] = '\0';
 	} else {
-		info->closed = 1;
+		/* regular endpoint */
+	        if (endpoint_index >= omx_endpoint_max)
+			goto out_with_rcu_lock;
+
+		endpoint = rcu_dereference(iface->endpoints[endpoint_index]);
+		if (endpoint) {
+			info->closed = 0;
+			info->pid = endpoint->opener_pid;
+			strncpy(info->command, endpoint->opener_comm, OMX_COMMAND_LEN_MAX);
+			info->command[OMX_COMMAND_LEN_MAX-1] = '\0';
+		} else {
+			info->closed = 1;
+		}
 	}
 
 	rcu_read_unlock();
@@ -737,6 +755,59 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 	rcu_read_unlock();
  out:
 	return ret;
+}
+
+/****************
+ * Raw Interface
+ */
+
+int
+omx_raw_attach_iface(uint32_t board_index, struct omx_iface **ifacep)
+{
+	struct omx_iface * iface;
+	int err;
+
+	mutex_lock(&omx_ifaces_mutex);
+
+	err = -EINVAL;
+	if (board_index >= omx_iface_max)
+		goto out_with_lock;
+
+	iface = rcu_dereference(omx_ifaces[board_index]);
+	if (!iface)
+		goto out_with_lock;
+
+	err = -EBUSY;
+	if (*ifacep)
+		goto out_with_lock;
+
+	if (iface->raw.in_use)
+		goto out_with_lock;
+
+	kref_get(&iface->refcount);
+	iface->raw.in_use = 1;
+	iface->raw.opener_pid = current->pid;
+	strncpy(iface->raw.opener_comm, current->comm, TASK_COMM_LEN);
+
+	*ifacep = iface;
+
+	mutex_unlock(&omx_ifaces_mutex);
+	return 0;
+
+ out_with_lock:
+	mutex_unlock(&omx_ifaces_mutex);
+	return err;
+}
+
+int
+omx_raw_detach_iface(struct omx_iface *iface)
+{
+	mutex_lock(&omx_ifaces_mutex);
+	BUG_ON(!iface->raw.in_use);
+	iface->raw.in_use = 0;
+	omx_iface_release(iface);
+	mutex_unlock(&omx_ifaces_mutex);	
+	return 0;	
 }
 
 /******************************

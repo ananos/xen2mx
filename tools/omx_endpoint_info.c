@@ -36,6 +36,7 @@ usage(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
   struct omx_board_info board_info;
+  struct omx_cmd_get_endpoint_info get_endpoint_info;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   uint8_t board_index = BID;
   omx_return_t ret;
@@ -77,9 +78,21 @@ int main(int argc, char *argv[])
 	 board_info.hostname, board_index, board_info.ifacename, board_addr_str);
   printf("==============================================\n");
 
-  for(i=0; i<emax; i++) {
-    struct omx_cmd_get_endpoint_info get_endpoint_info;
+  get_endpoint_info.board_index = board_index;
+  get_endpoint_info.endpoint_index = OMX_RAW_ENDPOINT_INDEX;
 
+  err = ioctl(omx__globals.control_fd, OMX_CMD_GET_ENDPOINT_INFO, &get_endpoint_info);
+  if (err < 0)
+    goto out;
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(&get_endpoint_info, sizeof(get_endpoint_info));
+
+  if (get_endpoint_info.info.closed)
+    printf("  raw\tnot open\n");
+  else
+    printf("  raw\topen by pid %ld (%s)\n",
+	   (unsigned long) get_endpoint_info.info.pid, get_endpoint_info.info.command);
+
+  for(i=0; i<emax; i++) {
     get_endpoint_info.board_index = board_index;
     get_endpoint_info.endpoint_index = i;
 

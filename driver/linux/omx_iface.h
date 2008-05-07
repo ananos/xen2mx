@@ -23,6 +23,7 @@
 #include <linux/spinlock.h>
 #include <linux/kref.h>
 #include <linux/moduleparam.h>
+#include <linux/skbuff.h>
 #ifdef OMX_HAVE_MUTEX
 #include <linux/mutex.h>
 #endif
@@ -40,6 +41,15 @@ enum omx_iface_status {
 	OMX_IFACE_STATUS_CLOSING,
 };
 
+struct omx_iface_raw {
+	int in_use;
+       	pid_t opener_pid;
+        char opener_comm[TASK_COMM_LEN];
+	
+	struct sk_buff_head recv_list;
+	wait_queue_head_t recv_wq;
+};
+
 struct omx_iface {
 	int index;
 
@@ -51,6 +61,7 @@ struct omx_iface {
 	struct kref refcount;
 	int endpoint_nr;
 	struct omx_endpoint ** endpoints;
+	struct omx_iface_raw raw;
 
 	uint32_t counters[OMX_COUNTER_INDEX_MAX];
 };
@@ -59,6 +70,9 @@ extern int omx_net_init(void);
 extern void omx_net_exit(void);
 
 extern void omx_iface_release(struct omx_iface * iface);
+
+extern int omx_raw_attach_iface(uint32_t board_index, struct omx_iface **ifacep);
+extern int omx_raw_detach_iface(struct omx_iface *iface);
 
 extern int omx_ifnames_get(char *buf, struct kernel_param *kp);
 extern int omx_ifnames_set(const char *buf, struct kernel_param *kp);

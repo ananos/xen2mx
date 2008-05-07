@@ -12,7 +12,7 @@ ifeq (@OMX_DRIVER_PROFILING@,1)
 endif
 
 obj-m	+=	open-mx.o
-open-mx-objs	:=	omx_main.o omx_dev.o omx_peer.o \
+open-mx-objs	:=	omx_main.o omx_dev.o omx_peer.o omx_raw.o \
 			omx_iface.o omx_send.o omx_recv.o \
 			omx_reg.o omx_pull.o omx_event.o
 

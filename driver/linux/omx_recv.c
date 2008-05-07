@@ -897,7 +897,7 @@ omx_pkt_type_handlers_init(void)
 	for(i=0; i<=OMX_PKT_TYPE_MAX; i++)
 		omx_pkt_type_handlers[i] = omx_recv_error;
 
-	omx_pkt_type_handlers[OMX_PKT_TYPE_RAW] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handlers[OMX_PKT_TYPE_RAW] = omx_recv_raw;
 	omx_pkt_type_handlers[OMX_PKT_TYPE_MFM_NIC_REPLY] = omx_recv_nosys; /* FIXME */
 	omx_pkt_type_handlers[OMX_PKT_TYPE_HOST_QUERY] = omx_recv_nosys; /* FIXME */
 	omx_pkt_type_handlers[OMX_PKT_TYPE_HOST_REPLY] = omx_recv_nosys; /* FIXME */

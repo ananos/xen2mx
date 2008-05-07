@@ -22,6 +22,7 @@
 #include "omx_wire.h"
 
 struct omx_iface;
+struct omx_iface_raw;
 struct omx_endpoint;
 struct sk_buff;
 
@@ -76,6 +77,13 @@ extern void omx_endpoint_pull_handles_force_exit(struct omx_endpoint * endpoint)
 /* device */
 extern int omx_dev_init(void);
 extern void omx_dev_exit(void);
+
+/* raw */
+extern int omx_raw_init(void);
+extern void omx_raw_exit(void);
+extern void omx_iface_raw_init(struct omx_iface_raw *raw);
+extern void omx_iface_raw_exit(struct omx_iface_raw *raw);
+extern int omx_recv_raw(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 
 #endif /* __omx_common_h__ */
 

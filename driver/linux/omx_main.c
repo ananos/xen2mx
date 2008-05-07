@@ -297,13 +297,19 @@ omx_init(void)
 		goto out_with_net;
 	}
 
-	ret = omx_dev_init();
+	ret = omx_raw_init();
 	if (ret < 0)
 		goto out_with_kthread;
+
+	ret = omx_dev_init();
+	if (ret < 0)
+		goto out_with_raw;
 
 	printk(KERN_INFO "Open-MX initialized\n");
 	return 0;
 
+ out_with_raw:
+	omx_raw_exit();
  out_with_kthread:
 	kthread_stop(omx_kthread_task);
  out_with_net:
@@ -326,6 +332,7 @@ omx_exit(void)
 {
 	printk(KERN_INFO "Open-MX terminating...\n");
 	omx_dev_exit();
+	omx_raw_exit();
 	kthread_stop(omx_kthread_task);
 	omx_net_exit();
 	omx_peers_exit();

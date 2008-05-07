@@ -1,3 +1,14 @@
+* finish mapping
+  + support NULL hostname in the peer table
+    - pass a NULL peer hostname in add_peer in mxoed
+    - if passing a NULL hostname, just keep the original name
+  + support NULL hostname in omx_info
+  + fix mxoed licence
+  + add host query/reply to the driver
+  + add nice raw API, similar to the MX one
+  + port fma on top of Open-MX raw API
+  + add #define and configuration stuff pour /dev/open-mx-raw name and mode
+
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?
 
@@ -157,9 +168,6 @@
   + move the whole lib in the driver and only keep basic request status in userspace?
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
-
-* mapper (open-mxd)
-* /dev/open-mxd ?
 
 * per-packet-type irq
   + can we detect when another packet is right behind? if so, process it
