@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x130
+#define OMX_DRIVER_ABI_VERSION		0x131
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -937,6 +937,10 @@ omx_strcounter(enum omx_counter_index index)
 		return "Drop Pull Reply Bad Wire Handle";
 	case OMX_COUNTER_DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION:
 		return "Drop Pull Reply Bad Handle Generation in Magic";
+	case OMX_COUNTER_DROP_RAW_QUEUE_FULL:
+		return "Drop Raw Queue Full";
+	case OMX_COUNTER_DROP_RAW_TOO_LARGE:
+		return "Drop Raw Packet Too Large";
 	case OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM_WRAPAROUND:
 		return "Drop Pull Reply Bad Frame SeqNum WrapAround";
 	case OMX_COUNTER_DROP_PULL_REPLY_BAD_SEQNUM:
