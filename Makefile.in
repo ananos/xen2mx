@@ -22,7 +22,7 @@ ifeq (@OMX_BUILD_LIB@,1)
 	COMPONENTS	+=	other
 endif
 
-.PHONY: all installonly install clean distcleqn
+.PHONY: all installonly install clean distclean
 .PHONY: driver driver-installonly driver-install driver-clean driver-distclean
 .PHONY: lib lib-installonly lib-install lib-clean lib-distclean
 .PHONY: tools tools-installonly tools-install tools-clean tools-distclean
