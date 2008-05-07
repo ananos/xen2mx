@@ -762,6 +762,7 @@ enum omx_counter_index {
 	OMX_COUNTER_DMARECV_PARTIAL_PULL_REPLY,
 	OMX_COUNTER_DMARECV_PULL_REPLY_WAIT_DEFERRED,
 
+	OMX_COUNTER_RECV_NONLINEAR_HEADER,
 	OMX_COUNTER_EXP_EVENTQ_FULL,
 	OMX_COUNTER_UNEXP_EVENTQ_FULL,
 	OMX_COUNTER_SEND_NOMEM_SKB,
@@ -891,6 +892,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "DMA Recv Pull Reply Only Partial";
 	case OMX_COUNTER_DMARECV_PULL_REPLY_WAIT_DEFERRED:
 		return "DMA Recv Pull Reply with Deferred Wait";
+	case OMX_COUNTER_RECV_NONLINEAR_HEADER:
+		return "Recv Open-MX Header as Non-Linear";
 	case OMX_COUNTER_EXP_EVENTQ_FULL:
 		return "Expected Event Queue Full";
 	case OMX_COUNTER_UNEXP_EVENTQ_FULL:

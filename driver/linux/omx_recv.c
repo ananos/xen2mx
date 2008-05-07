@@ -947,9 +947,9 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	/* no need to linearize the whole skb,
 	 * but at least the header to make things simple */
 	if (unlikely(skb_headlen(skb) < sizeof(struct omx_hdr))) {
+		omx_counter_inc(iface, RECV_NONLINEAR_HEADER);
 		skb_copy_bits(skb, 0, &linear_header,
 			      sizeof(struct omx_hdr));
-		/* check for EFAULT */
 		mh = &linear_header;
 	} else {
 		/* no need to linearize the header */
