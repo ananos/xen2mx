@@ -1,11 +1,10 @@
 * finish mapping
   + adding an existing peer can replace the hostname
   + cleanup old/new in omx_peers_notify_iface_attach
-  + fix mxoed licence
   + add host query/reply to the driver
+  + add #define and configuration stuff pour /dev/open-mx-raw name and mode
   + add nice raw API, similar to the MX one
   + port fma on top of Open-MX raw API
-  + add #define and configuration stuff pour /dev/open-mx-raw name and mode
 
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?

@@ -27,6 +27,8 @@ DYNAMIC_LIB_OPT	=	@OPEN_MX_LIB_DYNAMIC_LINK_OPT@
 
 .PHONY: all installonly install clean distclean
 
+omxoed_LIBS	=	-lpthread
+
 all: $(TOOLS)
 
 ###############
@@ -42,11 +44,11 @@ include @top_srcdir@/depend.mk
 ifeq (@OMX_DYNAMIC_TOOLS@,1)
 $(TOOLS): %: %.o
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
-	$(CMDPREFIX) $(LD) $^ -L $(DYNAMIC_LIB_DIR) $(DYNAMIC_LIB_OPT) -o $@
+	$(CMDPREFIX) $(LD) $^ -L $(DYNAMIC_LIB_DIR) $(DYNAMIC_LIB_OPT) $($(@)_LIBS) -o $@
 else
 $(TOOLS): %: %.o $(STATIC_LIB)
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
-	$(CMDPREFIX) $(LD) $^ -o $@
+	$(CMDPREFIX) $(LD) $^ $($(@)_LIBS) -o $@
 endif
 
 # build and create dependency file
