@@ -44,10 +44,10 @@
 enum omx_pkt_type {
 	/* must start with NONE and end with MAX */
 	OMX_PKT_TYPE_NONE=0,
-	OMX_PKT_TYPE_RAW, /* FIXME: todo */
+	OMX_PKT_TYPE_RAW,
 	OMX_PKT_TYPE_MFM_NIC_REPLY, /* FIXME: todo */
-	OMX_PKT_TYPE_HOST_QUERY, /* FIXME: todo */
-	OMX_PKT_TYPE_HOST_REPLY, /* FIXME: todo */
+	OMX_PKT_TYPE_HOST_QUERY,
+	OMX_PKT_TYPE_HOST_REPLY,
 
 	OMX_PKT_TYPE_ETHER_UNICAST = 32, /* FIXME: todo */
 	OMX_PKT_TYPE_ETHER_MULTICAST, /* FIXME: todo */
@@ -157,6 +157,24 @@ struct omx_pkt_head {
 	uint16_t dst_src_peer_index; /* MX's sender_peer_index */
 	/* 16 */
 };
+
+struct omx_pkt_host_query {
+	uint8_t ptype;
+	uint8_t pad;
+	uint16_t return_peer_index;
+	uint32_t pad0;
+	uint32_t magic;
+	uint32_t pad1;
+};
+
+struct omx_pkt_host_reply {
+	uint8_t ptype;
+	uint8_t length;
+	uint16_t return_peer_index;
+	uint32_t pad0;
+	uint32_t magic;
+	uint32_t pad1;
+};	
 
 struct omx_pkt_truc {
 	uint8_t ptype;
@@ -331,6 +349,8 @@ struct omx_hdr {
 	struct omx_pkt_head head;
 	/* 32 */
 	union {
+		struct omx_pkt_host_query host_query;
+		struct omx_pkt_host_reply host_reply;
 		struct omx_pkt_msg generic;
 		struct omx_pkt_msg tiny;
 		struct omx_pkt_msg small;

@@ -35,6 +35,7 @@ extern int omx_check_recv_peer_index(uint16_t peer_index);
 extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *hostname);
 extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t *index);
 extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uint32_t *index);
+extern void omx_process_host_replies(void);
 
 #define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
 

@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x129
+#define OMX_DRIVER_ABI_VERSION		0x130
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -753,6 +753,8 @@ enum omx_counter_index {
 	OMX_COUNTER_RECV_PULL_REQ,
 	OMX_COUNTER_RECV_PULL_REPLY,
 	OMX_COUNTER_RECV_RAW,
+	OMX_COUNTER_RECV_HOST_QUERY,
+	OMX_COUNTER_RECV_HOST_REPLY,
 
 	OMX_COUNTER_DMARECV_MEDIUM_FRAG,
 	OMX_COUNTER_DMARECV_PARTIAL_MEDIUM_FRAG,
@@ -875,6 +877,10 @@ omx_strcounter(enum omx_counter_index index)
 		return "Recv Pull Reply";
 	case OMX_COUNTER_RECV_RAW:
 		return "Recv Raw";
+	case OMX_COUNTER_RECV_HOST_QUERY:
+		return "Recv Host Query";
+	case OMX_COUNTER_RECV_HOST_REPLY:
+		return "Recv Host Reply";
 	case OMX_COUNTER_DMARECV_MEDIUM_FRAG:
 		return "DMA Recv Medium Frag";
 	case OMX_COUNTER_DMARECV_PARTIAL_MEDIUM_FRAG:

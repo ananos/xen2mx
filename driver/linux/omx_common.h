@@ -84,6 +84,8 @@ extern void omx_raw_exit(void);
 extern void omx_iface_raw_init(struct omx_iface_raw *raw);
 extern void omx_iface_raw_exit(struct omx_iface_raw *raw);
 extern int omx_recv_raw(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
+extern int omx_recv_host_query(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
+extern int omx_recv_host_reply(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 
 #endif /* __omx_common_h__ */
 

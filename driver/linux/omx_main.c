@@ -168,6 +168,7 @@ omx_kthread_func(void *dummy)
 
 		omx_endpoints_cleanup();
 		omx_user_regions_cleanup();
+		omx_process_host_replies();
 	}
 
 	/*

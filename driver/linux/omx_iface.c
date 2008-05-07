@@ -810,6 +810,39 @@ omx_raw_detach_iface(struct omx_iface *iface)
 	return 0;	
 }
 
+void
+omx_send_on_all_ifaces(struct sk_buff *skb)
+{
+	int i;
+
+	rcu_read_lock();
+
+	for(i=0; i<omx_iface_max; i++) {
+		struct sk_buff *newskb;
+		struct ethhdr *eh;
+		struct omx_iface *iface;
+		struct net_device * ifp;
+
+		iface = rcu_dereference(omx_ifaces[i]);
+		if (!iface)
+			continue;
+		ifp = iface->eth_ifp;
+
+		newskb = skb_clone(skb, GFP_ATOMIC);
+		if (!newskb)
+			break;
+
+		eh = &omx_skb_mac_header(newskb)->head.eth;
+		memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+		newskb->dev = ifp;
+		dev_queue_xmit(newskb);
+	}
+
+	kfree_skb(skb);
+
+	rcu_read_unlock();
+}
+
 /******************************
  * Netdevice notifier
  */

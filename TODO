@@ -1,7 +1,8 @@
 * finish mapping
   + adding an existing peer can replace the hostname
   + cleanup old/new in omx_peers_notify_iface_attach
-  + add host query/reply to the driver
+  + keep a list of peer missing hostname and resend queries from time to time
+  + check host/query magic number
   + add #define and configuration stuff pour /dev/open-mx-raw name and mode
   + add nice raw API, similar to the MX one
   + port fma on top of Open-MX raw API

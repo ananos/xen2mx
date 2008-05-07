@@ -73,6 +73,7 @@ extern void omx_iface_release(struct omx_iface * iface);
 
 extern int omx_raw_attach_iface(uint32_t board_index, struct omx_iface **ifacep);
 extern int omx_raw_detach_iface(struct omx_iface *iface);
+extern void omx_send_on_all_ifaces(struct sk_buff *skb);
 
 extern int omx_ifnames_get(char *buf, struct kernel_param *kp);
 extern int omx_ifnames_set(const char *buf, struct kernel_param *kp);
