@@ -131,6 +131,10 @@ MODULE_PARM_DESC(nack_lib_packet_loss, "Explicit nack lib packet loss frequency"
 unsigned long omx_NACK_MCP_packet_loss = 0;
 module_param_named(nack_mcp_packet_loss, omx_NACK_MCP_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(nack_mcp_packet_loss, "Explicit nack mcp packet loss frequency");
+
+unsigned long omx_RAW_packet_loss = 0;
+module_param_named(raw_packet_loss, omx_RAW_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(raw_packet_loss, "Explicit raw packet loss frequency");
 #endif /* OMX_DRIVER_DEBUG */
 
 /************************
@@ -257,6 +261,9 @@ omx_init(void)
 		       omx_NACK_LIB_packet_loss);
 	if (omx_NACK_MCP_packet_loss)
 		printk(KERN_INFO "Open-MX: simulating nack mcp packet loss every %ld packets\n",
+		       omx_NACK_MCP_packet_loss);
+	if (omx_RAW_packet_loss)
+		printk(KERN_INFO "Open-MX: simulating raw packet loss every %ld packets\n",
 		       omx_NACK_MCP_packet_loss);
 #endif /* OMX_DRIVER_DEBUG */
 

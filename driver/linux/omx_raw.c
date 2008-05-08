@@ -31,6 +31,13 @@
 #include "omx_endpoint.h"
 #include "omx_peer.h"
 
+#ifdef OMX_DRIVER_DEBUG
+/* defined as module parameters */
+extern unsigned long omx_RAW_packet_loss;
+/* index between 0 and the above limit */
+static unsigned long omx_RAW_packet_loss_index = 0;
+#endif /* OMX_DRIVER_DEBUG */
+
 /**********************************
  * Init/Finish the Raw of an Iface
  */
