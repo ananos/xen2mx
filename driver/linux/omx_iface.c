@@ -19,10 +19,11 @@
 #include <linux/kernel.h>
 #include <linux/utsname.h>
 #include <linux/if_arp.h>
+#include <linux/rcupdate.h>
+#include <linux/ethtool.h>
 #ifdef OMX_HAVE_MUTEX
 #include <linux/mutex.h>
 #endif
-#include <linux/rcupdate.h>
 
 #include "omx_misc.h"
 #include "omx_hal.h"
@@ -264,6 +265,14 @@ omx_iface_attach(struct net_device * ifp)
 	if (mtu < OMX_MTU_MIN)
 		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
 		       ifp->name, OMX_MTU_MIN, mtu);
+
+	if (ifp->ethtool_ops->get_coalesce) {
+		struct ethtool_coalesce coal;
+		ifp->ethtool_ops->get_coalesce(ifp, &coal);
+		if (coal.rx_coalesce_usecs >= OMX_IFACE_RX_USECS_WARN_MIN)
+			printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' interrupt coalescing very high (%ldus)\n",
+			       ifp->name, (unsigned long) coal.rx_coalesce_usecs);
+	}
 
 	hostname = kmalloc(OMX_HOSTNAMELEN_MAX, GFP_KERNEL);
 	if (!hostname) {

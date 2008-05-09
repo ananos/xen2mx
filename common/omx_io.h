@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x131
+#define OMX_DRIVER_ABI_VERSION		0x132
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -127,6 +127,7 @@ struct omx_endpoint_desc {
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN (1ULL << 2)
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU (1ULL << 3)
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED (1ULL << 4)
+#define OMX_ENDPOINT_DESC_STATUS_IFACE_HIGH_INTRCOAL (1ULL << 5)
 
 /************************
  * IOCTL parameter types
