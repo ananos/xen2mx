@@ -14,10 +14,10 @@
 
 # Note that this is replaced by make install, not configure!
 OMX_PREFIX=@omx_install_prefix@
-DEVICE=@omx_device_name@
-GROUP=@omx_device_group@
-MODE=@omx_device_mode@
-PEERS_FILE=@omx_peers_file@
+MAIN_DEVICE_NAME=@omx_main_device_name@
+MAIN_DEVICE_GROUP=@omx_main_device_group@
+MAIN_DEVICE_MODE=@omx_main_device_mode@
+OMX_PEERS_FILE=@omx_peers_file@
 
 OMX_CONFIG=/etc/open-mx/open-mx.conf
 LINUX_RELEASE=$(uname -r)
@@ -42,7 +42,7 @@ unload_omx() {
         echo "Removing Open-MX driver"
         /sbin/rmmod open-mx
     fi
-    rm -f "$DEVICE"
+    rm -f "$MAIN_DEVICE_NAME"
 }
 
 # Load the Open-MX module
@@ -64,32 +64,32 @@ load_omx() {
     # sleep a bit so that udev is done
     sleep 1
 
-    # create the device node if necessary
-    if ! test -e $DEVICE; then
-	echo "Creating '$DEVICE'"
+    # create the main device node if necessary
+    if ! test -e $MAIN_DEVICE_NAME; then
+	echo "Creating '$MAIN_DEVICE_NAME'"
 	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
-	minor=$(sed -nr -e 's/ *([0-9]+) *open-mx/\1/p' /proc/misc)
+	minor=$(sed -nr -e 's/ *([0-9]+) *open-mx$/\1/p' /proc/misc)
 	if test -z "$major" -o -z "$minor"; then
-	    echo "[ERROR] Failed to retrieve device major/minor numbers"
+	    echo "[ERROR] Failed to retrieve main device major/minor numbers"
 	else
-	    mknod "$DEVICE" c "$major" "$minor" \
-		|| echo "[ERROR] Failed to create device node"
+	    mknod "$MAIN_DEVICE_NAME" c "$major" "$minor" \
+		|| echo "[ERROR] Failed to create main device node"
 	fi
     fi
 
-    # set device node mode and group
-    echo "Setting group '$GROUP' and mode '$MODE' on device '$DEVICE'"
-    chgrp "$GROUP" "$DEVICE" \
-	|| echo "[ERROR] Failed to set mode"
-    chmod "$MODE" "$DEVICE" \
-	|| echo "[ERROR] Failed to set group"
+    # set main device node mode and group
+    echo "Setting group '$MAIN_DEVICE_GROUP' and mode '$MAIN_DEVICE_MODE' on main device '$MAIN_DEVICE_NAME'"
+    chgrp "$MAIN_DEVICE_GROUP" "$MAIN_DEVICE_NAME" \
+	|| echo "[ERROR] Failed to set main device mode"
+    chmod "$MAIN_DEVICE_MODE" "$MAIN_DEVICE_NAME" \
+	|| echo "[ERROR] Failed to set main device group"
 
     # initialize peers
-    if test -f ${PEERS_FILE}; then
-	echo "Initializing peers using file '${PEERS_FILE}'"
-	${OMX_PREFIX}/bin/omx_init_peers -c "${PEERS_FILE}"
+    if test -f ${OMX_PEERS_FILE}; then
+	echo "Initializing peers using file '${OMX_PEERS_FILE}'"
+	${OMX_PREFIX}/bin/omx_init_peers -c "${OMX_PEERS_FILE}"
     else
-	echo "Peers file ${PEERS_FILE} does not exist, remember to run omx_peers_init with the correct file"
+	echo "Peers file ${OMX_PEERS_FILE} does not exist, remember to run omx_peers_init with the correct file"
     fi
 }
 

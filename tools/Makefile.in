@@ -75,10 +75,10 @@ installonly:
 
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/omx_init"
 	$(CMDPREFIX) $(SED)	-e 's£@omx_install_prefix@£$(prefix)£' \
-		-e 's£@omx_device_name@£@DEVICE_NAME@£' \
-		-e 's£@omx_device_group@£@DEVICE_GROUP@£' \
-		-e 's£@omx_device_mode@£@DEVICE_MODE@£' \
-		-e 's£@omx_peers_file@£@PEERS_FILE@£' \
+		-e 's£@omx_main_device_name@£@OMX_MAIN_DEVICE_NAME@£' \
+		-e 's£@omx_main_device_group@£@OMX_MAIN_DEVICE_GROUP@£' \
+		-e 's£@omx_main_device_mode@£@OMX_MAIN_DEVICE_MODE@£' \
+		-e 's£@omx_peers_file@£@OMX_PEERS_FILE@£' \
 		< @srcdir@/omx_init.in > omx_init
 	$(CMDPREFIX) $(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/
 

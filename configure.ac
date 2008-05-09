@@ -532,30 +532,33 @@ AC_ARG_WITH(peers-file,
 	[AS_HELP_STRING([--with-peers-file=<path>], [use argument as a static peers file])],
 	with_peers_file=$withval, with_peers_file=/etc/open-mx/peers)
 AC_MSG_NOTICE(using static peers file in $with_peers_file)
-AC_SUBST(PEERS_FILE, $with_peers_file)
+AC_SUBST(OMX_PEERS_FILE, $with_peers_file)
 
 AC_ARG_WITH(device,
 	[AS_HELP_STRING([--with-device=<path>:<group>:<mode>], [change device node name, group and/or mode])],
-	device_attrs=$withval, device_attrs="")
-DEVICE_NAME=/dev/open-mx
-device_name=$(echo $device_attrs | cut -d: -f1)
-if ! test -z "$device_name"; then
-  DEVICE_NAME=$device_name
+	main_device_attrs=$withval, main_device_attrs="")
+
+OMX_MAIN_DEVICE_NAME=/dev/open-mx
+main_device_name=$(echo $main_device_attrs | cut -d: -f1)
+if ! test -z "$main_device_name"; then
+  OMX_MAIN_DEVICE_NAME=$main_device_name
 fi
-AC_DEFINE_UNQUOTED(OMX_MAIN_DEVICE_NAME, "$DEVICE_NAME", [Define to change the device node name])
-AC_SUBST(DEVICE_NAME)
-DEVICE_GROUP=root
-device_group=$(echo $device_attrs | cut -d: -f2)
-if ! test -z "$device_group"; then
-  DEVICE_GROUP=$device_group
+AC_DEFINE_UNQUOTED(OMX_MAIN_DEVICE_NAME, "$OMX_MAIN_DEVICE_NAME", [Define to change the device node name])
+AC_SUBST(OMX_MAIN_DEVICE_NAME)
+
+OMX_MAIN_DEVICE_GROUP=root
+main_device_group=$(echo $main_device_attrs | cut -d: -f2)
+if ! test -z "$main_device_group"; then
+  OMX_MAIN_DEVICE_GROUP=$main_device_group
 fi
-AC_SUBST(DEVICE_GROUP)
-DEVICE_MODE=0666
-device_mode=$(echo $device_attrs | cut -d: -f3)
-if ! test -z "$device_mode"; then
-  DEVICE_MODE=$device_mode
+AC_SUBST(OMX_MAIN_DEVICE_GROUP)
+
+OMX_MAIN_DEVICE_MODE=0666
+main_device_mode=$(echo $main_device_attrs | cut -d: -f3)
+if ! test -z "$main_device_mode"; then
+  OMX_MAIN_DEVICE_MODE=$main_device_mode
 fi
-AC_SUBST(DEVICE_MODE)
+AC_SUBST(OMX_MAIN_DEVICE_MODE)
 
 ##########
 # Globals
