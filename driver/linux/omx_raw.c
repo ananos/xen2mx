@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/miscdevice.h>
 #include <linux/device.h>
+#include <linux/poll.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
 #include <asm/uaccess.h>
@@ -319,12 +320,35 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	return err;
 }
 
+static unsigned int
+omx_raw_miscdev_poll(struct file *file, struct poll_table_struct *wait)
+{
+	struct omx_iface *iface;
+	struct omx_iface_raw *raw;
+	unsigned int mask = 0;
+
+	iface = file->private_data;
+	if (!iface) {
+		mask |= POLLERR;
+		goto out;
+	}
+	raw = &iface->raw;
+
+	poll_wait(file, &raw->event_wq, wait);
+	if (raw->event_list_length)
+		mask |= POLLIN;
+
+ out:
+	return mask;
+}
+
 static struct file_operations
 omx_raw_miscdev_fops = {
 	.owner = THIS_MODULE,
 	.open = omx_raw_miscdev_open,
 	.release = omx_raw_miscdev_release,
 	.unlocked_ioctl = omx_raw_miscdev_ioctl,
+	.poll = omx_raw_miscdev_poll,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = omx_raw_miscdev_ioctl,
 #endif
