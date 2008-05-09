@@ -15,11 +15,11 @@ endif
 ifeq ($(BUILD_O_AND_LO_OBJECTS),1)
 $(DEPS): $(DEPDIR)%.d: $(DEPSRCDIR)%.c
 	$(CMDECHO) "  DEP     $(REL_DEPDIR)$(notdir $@)"
-	$(CMDPREFIX) $(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(patsubst $(DEPDIR)%.d,$(DEPSRCDIR)%.c,$@) -MT $(patsubst $(DEPDIR)%.d,%.o,$@) -MT $(patsubst $(DEPDIR)%.d,.lo,$@)
+	$(CMDPREFIX) $(CC) $(CPPFLAGS) $($(patsubst $(DEPDIR)%.d,%.o,$@)_CPPFLAGS) $(ONLYDEPFLAGS) $(patsubst $(DEPDIR)%.d,$(DEPSRCDIR)%.c,$@) -MT $(patsubst $(DEPDIR)%.d,%.o,$@) -MT $(patsubst $(DEPDIR)%.d,.lo,$@)
 else
 $(DEPS): $(DEPDIR)%.d: $(DEPSRCDIR)%.c
 	$(CMDECHO) "  DEP     $(REL_DEPDIR)$(notdir $@)"
-	$(CMDPREFIX) $(CC) $(CPPFLAGS) $(ONLYDEPFLAGS) $(patsubst $(DEPDIR)%.d,$(DEPSRCDIR)%.c,$@)
+	$(CMDPREFIX) $(CC) $(CPPFLAGS) $($(patsubst $(DEPDIR)%.d,%.o,$@)_CPPFLAGS) $(ONLYDEPFLAGS) $(patsubst $(DEPDIR)%.d,$(DEPSRCDIR)%.c,$@)
 endif
 
 # include dependencies, except when cleaning (so that we don't re-create for nothing)
