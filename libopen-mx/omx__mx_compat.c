@@ -237,9 +237,14 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
     if (ret != OMX_SUCCESS)
       return ret;
 
-    if (out_len < count * MX_MAX_STR_LEN)
-      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Copying counters labels (%ld bytes into %ld)",
-				(unsigned long) out_len, (unsigned long)(count * MX_MAX_STR_LEN));
+    if (out_len < count * MX_MAX_STR_LEN) {
+      if (ep)
+	return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Copying counters labels (%ld bytes into %ld)",
+				  (unsigned long) out_len, (unsigned long)(count * MX_MAX_STR_LEN));
+      else
+	return omx__error(MX_BAD_INFO_LENGTH, "Copying counters labels (%ld bytes into %ld)",
+			  (unsigned long) out_len, (unsigned long)(count * MX_MAX_STR_LEN));
+    }
 
     for(i=0; i<count; i++)
       omx_get_info(ep, OMX_INFO_COUNTER_LABEL, NULL, 0, &((char *) out_val)[i*MX_MAX_STR_LEN], MX_MAX_STR_LEN);
@@ -254,8 +259,8 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
   case MX_PART_NUMBER:
   case MX_SERIAL_NUMBER:
     if (out_len < MX_MAX_STR_LEN)
-      return omx__error_with_ep(ep, MX_BAD_INFO_LENGTH, "Copying info (%ld bytes into %ld)",
-				(unsigned long) out_len, (unsigned long) MX_MAX_STR_LEN);
+      return omx__error(MX_BAD_INFO_LENGTH, "Copying info (%ld bytes into %ld)",
+			  (unsigned long) out_len, (unsigned long) MX_MAX_STR_LEN);
     strcpy((char*)out_val, "N/A (Open-MX)");
     return MX_SUCCESS;
 
@@ -284,8 +289,12 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
 
   }
 
-  return omx__error_with_ep(ep, MX_BAD_INFO_KEY, "Getting info with key %ld",
-			    (unsigned long) key);
+  if (ep)
+    return omx__error_with_ep(ep, MX_BAD_INFO_KEY, "Getting info with key %ld",
+			      (unsigned long) key);
+  else
+    return omx__error(MX_BAD_INFO_KEY, "Getting info with key %ld",
+		      (unsigned long) key);
 }
 
 mx_return_t
