@@ -258,10 +258,8 @@ mx_get_info(mx_endpoint_t ep, mx_get_info_key_t key,
   case MX_PRODUCT_CODE:
   case MX_PART_NUMBER:
   case MX_SERIAL_NUMBER:
-    if (out_len < MX_MAX_STR_LEN)
-      return omx__error(MX_BAD_INFO_LENGTH, "Copying info (%ld bytes into %ld)",
-			  (unsigned long) out_len, (unsigned long) MX_MAX_STR_LEN);
-    strcpy((char*)out_val, "N/A (Open-MX)");
+    strncpy((char*)out_val, "N/A (Open-MX)", out_len-1);
+    ((char*)out_val)[out_len-1] = '\0';
     return MX_SUCCESS;
 
   case MX_PORT_COUNT:
