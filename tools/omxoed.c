@@ -373,7 +373,7 @@ open_all_nics()
   for (i=0; i<MAX_NICS; ++i) {
    struct omx_cmd_raw_open_endpoint raw_open;
 
-    fd = open("/dev/open-mx-raw", O_RDWR);
+    fd = open(OMX_RAW_DEVICE_NAME, O_RDWR);
     if (fd < 0) {
       fprintf(stderr, "Error opening raw device file for NIC %d, %m\n", i);
       exit(-1);

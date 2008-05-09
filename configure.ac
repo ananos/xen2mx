@@ -535,7 +535,8 @@ AC_MSG_NOTICE(using static peers file in $with_peers_file)
 AC_SUBST(OMX_PEERS_FILE, $with_peers_file)
 
 AC_ARG_WITH(device,
-	[AS_HELP_STRING([--with-device=<path>:<group>:<mode>], [change device node name, group and/or mode])],
+	[AS_HELP_STRING([--with-device=<path>:<group>:<mode>],
+	[change main device node name, group and/or mode])],
 	main_device_attrs=$withval, main_device_attrs="")
 
 OMX_MAIN_DEVICE_NAME=/dev/open-mx
@@ -543,7 +544,7 @@ main_device_name=$(echo $main_device_attrs | cut -d: -f1)
 if ! test -z "$main_device_name"; then
   OMX_MAIN_DEVICE_NAME=$main_device_name
 fi
-AC_DEFINE_UNQUOTED(OMX_MAIN_DEVICE_NAME, "$OMX_MAIN_DEVICE_NAME", [Define to change the device node name])
+AC_DEFINE_UNQUOTED(OMX_MAIN_DEVICE_NAME, "$OMX_MAIN_DEVICE_NAME", [Define to change the main device node name])
 AC_SUBST(OMX_MAIN_DEVICE_NAME)
 
 OMX_MAIN_DEVICE_GROUP=root
@@ -559,6 +560,33 @@ if ! test -z "$main_device_mode"; then
   OMX_MAIN_DEVICE_MODE=$main_device_mode
 fi
 AC_SUBST(OMX_MAIN_DEVICE_MODE)
+
+AC_ARG_WITH(raw-device,
+	[AS_HELP_STRING([--with-raw-device=<path>:<group>:<mode>],
+	[change raw device node name, group and/or mode])],
+	raw_device_attrs=$withval, raw_device_attrs="")
+
+OMX_RAW_DEVICE_NAME=/dev/open-mx-raw
+raw_device_name=$(echo $raw_device_attrs | cut -d: -f1)
+if ! test -z "$raw_device_name"; then
+  OMX_RAW_DEVICE_NAME=$raw_device_name
+fi
+AC_DEFINE_UNQUOTED(OMX_RAW_DEVICE_NAME, "$OMX_RAW_DEVICE_NAME", [Define to change the raw device node name])
+AC_SUBST(OMX_RAW_DEVICE_NAME)
+
+OMX_RAW_DEVICE_GROUP=root
+raw_device_group=$(echo $raw_device_attrs | cut -d: -f2)
+if ! test -z "$raw_device_group"; then
+  OMX_RAW_DEVICE_GROUP=$raw_device_group
+fi
+AC_SUBST(OMX_RAW_DEVICE_GROUP)
+
+OMX_RAW_DEVICE_MODE=0660
+raw_device_mode=$(echo $raw_device_attrs | cut -d: -f3)
+if ! test -z "$raw_device_mode"; then
+  OMX_RAW_DEVICE_MODE=$raw_device_mode
+fi
+AC_SUBST(OMX_RAW_DEVICE_MODE)
 
 ##########
 # Globals

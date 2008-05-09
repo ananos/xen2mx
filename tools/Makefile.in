@@ -18,6 +18,7 @@ INSTALL	=	@INSTALL@
 
 CPPFLAGS	+=	-imacros @top_builddir@/common/omx_config.h
 CPPFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libopen-mx
+
 CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2
 
@@ -78,6 +79,9 @@ installonly:
 		-e 's£@omx_main_device_name@£@OMX_MAIN_DEVICE_NAME@£' \
 		-e 's£@omx_main_device_group@£@OMX_MAIN_DEVICE_GROUP@£' \
 		-e 's£@omx_main_device_mode@£@OMX_MAIN_DEVICE_MODE@£' \
+		-e 's£@omx_raw_device_name@£@OMX_RAW_DEVICE_NAME@£' \
+		-e 's£@omx_raw_device_group@£@OMX_RAW_DEVICE_GROUP@£' \
+		-e 's£@omx_raw_device_mode@£@OMX_RAW_DEVICE_MODE@£' \
 		-e 's£@omx_peers_file@£@OMX_PEERS_FILE@£' \
 		< @srcdir@/omx_init.in > omx_init
 	$(CMDPREFIX) $(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/

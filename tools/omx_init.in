@@ -17,6 +17,9 @@ OMX_PREFIX=@omx_install_prefix@
 MAIN_DEVICE_NAME=@omx_main_device_name@
 MAIN_DEVICE_GROUP=@omx_main_device_group@
 MAIN_DEVICE_MODE=@omx_main_device_mode@
+RAW_DEVICE_NAME=@omx_raw_device_name@
+RAW_DEVICE_GROUP=@omx_raw_device_group@
+RAW_DEVICE_MODE=@omx_raw_device_mode@
 OMX_PEERS_FILE=@omx_peers_file@
 
 OMX_CONFIG=/etc/open-mx/open-mx.conf
@@ -83,6 +86,26 @@ load_omx() {
 	|| echo "[ERROR] Failed to set main device mode"
     chmod "$MAIN_DEVICE_MODE" "$MAIN_DEVICE_NAME" \
 	|| echo "[ERROR] Failed to set main device group"
+
+    # create the raw device node if necessary
+    if ! test -e $RAW_DEVICE_NAME; then
+	echo "Creating '$RAW_DEVICE_NAME'"
+	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
+	minor=$(sed -nr -e 's/ *([0-9]+) *open-mx-raw$/\1/p' /proc/misc)
+	if test -z "$major" -o -z "$minor"; then
+	    echo "[ERROR] Failed to retrieve raw device major/minor numbers"
+	else
+	    mknod "$RAW_DEVICE_NAME" c "$major" "$minor" \
+		|| echo "[ERROR] Failed to create raw device node"
+	fi
+    fi
+
+    # set raw device node mode and group
+    echo "Setting group '$RAW_DEVICE_GROUP' and mode '$RAW_DEVICE_MODE' on raw device '$RAW_DEVICE_NAME'"
+    chgrp "$RAW_DEVICE_GROUP" "$RAW_DEVICE_NAME" \
+	|| echo "[ERROR] Failed to set raw device mode"
+    chmod "$RAW_DEVICE_MODE" "$RAW_DEVICE_NAME" \
+	|| echo "[ERROR] Failed to set raw device group"
 
     # initialize peers
     if test -f ${OMX_PEERS_FILE}; then
