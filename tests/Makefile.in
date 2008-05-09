@@ -23,6 +23,8 @@ ifeq (@omx_debug_tests@,1)
 	CFLAGS	+=	@DBGCFLAGS@
 endif
 
+omx_reg.o_CFLAGS	+=	-I@top_srcdir@/libopen-mx/
+
 STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
 DYNAMIC_LIB_DIR	=	$(dir @top_builddir@/@OPEN_MX_LIB_DYNAMIC_PATH@)
 DYNAMIC_LIB_OPT	=	@OPEN_MX_LIB_DYNAMIC_LINK_OPT@
@@ -54,7 +56,7 @@ endif
 # build and create dependency file
 $(OBJS): %.o: @srcdir@/%.c
 	$(CMDECHO) "  CC      $(REL_DIR)$@"
-	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(BUILDDEPFLAGS) $< -o $@
+	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $($(@)_CFLAGS) $(BUILDDEPFLAGS) $< -o $@
 
 ##########
 # install

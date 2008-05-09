@@ -23,7 +23,7 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 
-#include "../libopen-mx/omx_lib.h"
+#include "omx_lib.h"
 
 #define EP 3
 #define ITER 10000
