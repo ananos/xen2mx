@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x132
+#define OMX_DRIVER_ABI_VERSION		0x133
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -204,12 +204,18 @@ struct omx_cmd_raw_send {
 	uint64_t buffer;
 	uint32_t buffer_length;
 	uint32_t pad;
+	uint64_t context;
 };	
 
-struct omx_cmd_raw_recv {
+#define OMX_RAW_NO_EVENT		0
+#define OMX_RAW_EVENT_SEND_COMPLETED	1
+#define OMX_RAW_EVENT_RECV_COMPLETED	2
+
+struct omx_cmd_raw_get_event {
 	uint64_t buffer;
 	uint32_t buffer_length;
 	uint32_t timeout;
+	uint64_t context;
 	uint32_t status;
 	uint32_t pad;
 };
@@ -454,7 +460,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_PEER_FROM_HOSTNAME	_IOWR(OMX_CMD_MAGIC, 0x24, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_RAW_OPEN_ENDPOINT	_IOR(OMX_CMD_MAGIC, 0x30, struct omx_cmd_raw_open_endpoint)
 #define OMX_CMD_RAW_SEND		_IOR(OMX_CMD_MAGIC, 0x31, struct omx_cmd_raw_send)
-#define OMX_CMD_RAW_RECV		_IOWR(OMX_CMD_MAGIC, 0x32, struct omx_cmd_raw_recv)
+#define OMX_CMD_RAW_GET_EVENT		_IOWR(OMX_CMD_MAGIC, 0x32, struct omx_cmd_raw_get_event)
 #define OMX_CMD_OPEN_ENDPOINT		_IOR(OMX_CMD_MAGIC, 0x71, struct omx_cmd_open_endpoint)
 /* WARNING: ioctl based cmd numbers must start at OMX_CMD_BENCH and remain consecutive */
 #define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x80, struct omx_cmd_bench)

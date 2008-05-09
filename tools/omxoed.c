@@ -159,7 +159,7 @@ check_for_packet(
   uint32_t len;
   struct timeval before;
   struct timeval after;
-  struct omx_cmd_raw_recv raw_recv;
+  struct omx_cmd_raw_get_event get_event;
   int timeout;
   int rc;
 
@@ -172,11 +172,11 @@ check_for_packet(
     timeout = 0;
   }
 
-  raw_recv.timeout = timeout;
-  raw_recv.buffer = (uintptr_t) &nip->mxoepkt;
-  raw_recv.buffer_length = sizeof(nip->mxoepkt);
+  get_event.timeout = timeout;
+  get_event.buffer = (uintptr_t) &nip->mxoepkt;
+  get_event.buffer_length = sizeof(nip->mxoepkt);
 
-  rc = ioctl(nip->raw_fd, OMX_CMD_RAW_RECV, &raw_recv);
+  rc = ioctl(nip->raw_fd, OMX_CMD_RAW_GET_EVENT, &get_event);
   if (rc < 0) {
     fprintf(stderr, "Error from mx_raw_next_event: %m\n");
     exit(1);
@@ -184,7 +184,7 @@ check_for_packet(
 
   gettimeofday(&after, NULL);
 
-  if (raw_recv.status) {
+  if (get_event.status == OMX_RAW_EVENT_RECV_COMPLETED) {
 #if MXOED_DEBUG
     int i;
     unsigned char *p = (unsigned char *)(&nip->mxoepkt);

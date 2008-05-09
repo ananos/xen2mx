@@ -38,6 +38,14 @@ extern unsigned long omx_RAW_packet_loss;
 static unsigned long omx_RAW_packet_loss_index = 0;
 #endif /* OMX_DRIVER_DEBUG */
 
+struct omx_raw_event {
+	int status;
+	uint64_t context;
+	struct list_head list_elt;
+	int data_length;
+	char data[0];
+};
+
 /**********************************
  * Init/Finish the Raw of an Iface
  */
@@ -46,14 +54,23 @@ void
 omx_iface_raw_init(struct omx_iface_raw * raw)
 {
 	raw->in_use = 0;
-	skb_queue_head_init(&raw->recv_list);
-	init_waitqueue_head(&raw->recv_wq);
+	spin_lock_init(&raw->event_lock);
+	INIT_LIST_HEAD(&raw->event_list);
+	raw->event_list_length = 0;
+	init_waitqueue_head(&raw->event_wq);
 }
 
 void
 omx_iface_raw_exit(struct omx_iface_raw * raw)
 {
-	skb_queue_purge(&raw->recv_list);
+	struct omx_raw_event *event, *next;
+	spin_lock_bh(&raw->event_lock);
+	list_for_each_entry_safe(event, next, &raw->event_list, list_elt) {
+		list_del(&event->list_elt);
+		kfree(event);
+	}
+	raw->event_list_length = 0;
+	spin_unlock_bh(&raw->event_lock);
 }
 
 /*******************
@@ -63,26 +80,53 @@ omx_iface_raw_exit(struct omx_iface_raw * raw)
 static int
 omx_raw_send(struct omx_iface *iface, void __user * uparam)
 {
+	struct omx_iface_raw *raw = &iface->raw;
 	struct omx_cmd_raw_send raw_send;
+	struct omx_raw_event *event;
 	struct sk_buff *skb;
 	int ret;
 
-	ret = copy_from_user(&raw_send, uparam, sizeof(raw_send));
-	if (ret)
-		return -EFAULT;
+	ret = -ENOMEM;
+	event = kmalloc(sizeof(*event), GFP_KERNEL);
+	if (!event)
+		goto out;
+	event->status = OMX_RAW_EVENT_SEND_COMPLETED;
+	event->context = raw_send.context;
+	event->data_length = 0;
 
+	ret = copy_from_user(&raw_send, uparam, sizeof(raw_send));
+	if (ret) {
+		ret = -EFAULT;
+		goto out_with_event;
+	}
+
+	ret = -ENOMEM;
 	skb = omx_new_skb(raw_send.buffer_length);
 	if (!skb)
-		return -ENOMEM;
+		goto out_with_event;
 
 	ret = copy_from_user(omx_skb_mac_header(skb), (void __user *)(unsigned long) raw_send.buffer, raw_send.buffer_length);
 	if (ret) {
-		kfree_skb(skb);
-		return -EFAULT;
+		ret = -EFAULT;
+		goto out_with_skb;
 	}
 
 	omx_queue_xmit(iface, skb, RAW);
+
+	spin_lock_bh(&raw->event_lock);
+	list_add_tail(&event->list_elt, &raw->event_list);
+	raw->event_list_length++;
+	wake_up_interruptible(&raw->event_wq);
+	spin_unlock_bh(&raw->event_lock);
+
 	return 0;
+
+ out_with_skb:
+	kfree_skb(skb);
+ out_with_event:
+	kfree(event);
+ out:
+	return ret;
 }
 
 /**********************
@@ -96,14 +140,31 @@ omx_recv_raw(struct omx_iface * iface,
 {
 	struct omx_iface_raw *raw = &iface->raw;
 
-	if (skb_queue_len(&raw->recv_list) > OMX_RAW_RECVQ_LEN) {
+	if (raw->event_list_length > OMX_RAW_RECVQ_LEN) {
 		dev_kfree_skb(skb);
 		omx_counter_inc(iface, DROP_RAW_QUEUE_FULL);
 	} else if (skb->len > OMX_RAW_PKT_LEN_MAX) {
 		dev_kfree_skb(skb);
 		omx_counter_inc(iface, DROP_RAW_TOO_LARGE);
 	} else {
-		skb_queue_tail(&raw->recv_list, skb);
+		struct omx_raw_event *event;
+		int length = min((unsigned) skb->len, (unsigned) OMX_RAW_PKT_LEN_MAX);
+
+		event = kmalloc(sizeof(*event) + length, GFP_ATOMIC);
+		if (!event)
+			return -ENOMEM;
+
+		event->status = OMX_RAW_EVENT_RECV_COMPLETED;
+		event->data_length = length;
+		skb_copy_bits(skb, 0, event->data, length);
+		dev_kfree_skb(skb);
+		
+		spin_lock(&raw->event_lock);
+		list_add_tail(&event->list_elt, &raw->event_list);
+		raw->event_list_length++;
+		wake_up_interruptible(&raw->event_wq);
+		spin_unlock(&raw->event_lock);
+
 	        omx_counter_inc(iface, RECV_RAW);
 	}
 
@@ -113,55 +174,77 @@ omx_recv_raw(struct omx_iface * iface,
 static int
 omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
 {
-	struct omx_cmd_raw_recv raw_recv;
-	struct sk_buff *skb;
+	struct omx_cmd_raw_get_event get_event;
+	DEFINE_WAIT(__wait);
 	unsigned long timeout;
 	int err;
 
-	err = copy_from_user(&raw_recv, uparam, sizeof(raw_recv));
+	err = copy_from_user(&get_event, uparam, sizeof(get_event));
 	if (err)
 		return -EFAULT;
 
-	timeout = raw_recv.timeout;
+	timeout = msecs_to_jiffies(get_event.timeout);
+	get_event.status = OMX_RAW_NO_EVENT;
 
- retry:
-	timeout = wait_event_interruptible_timeout(raw->recv_wq,
-						   !skb_queue_empty(&raw->recv_list),
-						   timeout);
-	skb = skb_dequeue(&raw->recv_list);
-	if (!skb && timeout && !signal_pending(current))
-		goto retry;
+	spin_lock_bh(&raw->event_lock);
+	while (timeout > 0) {
+		prepare_to_wait(&raw->event_wq, &__wait, TASK_INTERRUPTIBLE);
 
-	if (skb) {
-		/* we got a skb */
-		char buffer[OMX_RAW_PKT_LEN_MAX];
-		int length = min(skb->len, raw_recv.buffer_length);
+		if (raw->event_list_length)
+			/* got an event */
+			break;
 
-		/* copy in a linear buffer */
-		skb_copy_bits(skb, 0, buffer, length);
-		dev_kfree_skb(skb);
+		if (signal_pending(current))
+			/* got interrupted */
+			break;
 
-		/* copy into user-space */
-		err = copy_to_user((void __user *)(unsigned long) raw_recv.buffer, buffer, length);
-		if (err) {
-			err = -EFAULT;
-		} else {
-			raw_recv.status = 1;
-			raw_recv.buffer_length = length;
-		}
+		spin_unlock_bh(&raw->event_lock);
+		timeout = schedule_timeout(timeout);
+		spin_lock_bh(&raw->event_lock);
+	}
+	finish_wait(&raw->event_wq, &__wait);
+
+	if (!raw->event_list_length) {
+		spin_unlock_bh(&raw->event_lock);
+		/* got a timeout or interrupted */
 
 	} else {
-		/* got a timeout or got interrupted */
-		raw_recv.status  = 0;
+		struct omx_raw_event * event;
+
+		event = list_entry(raw->event_list.next, struct omx_raw_event, list_elt);
+		list_del(&event->list_elt);
+		raw->event_list_length--;
+		spin_unlock_bh(&raw->event_lock);
+
+		/* fill the event */
+		get_event.status = event->status;
+		get_event.context = event->context;
+		get_event.buffer_length = event->data_length;
+
+		/* copy into user-space */
+		err = copy_to_user((void __user *)(unsigned long) get_event.buffer,
+				   event->data, event->data_length);
+		if (err) {
+			err = -EFAULT;
+			kfree(event);
+			goto out;
+		}
+
+		kfree(event);
 	}
 
-	raw_recv.timeout = timeout;
+	get_event.timeout = jiffies_to_msecs(timeout);
 
-	err = copy_to_user(uparam, &raw_recv, sizeof(raw_recv));
-	if (err)
-		return -EFAULT;
+	err = copy_to_user(uparam, &get_event, sizeof(get_event));
+	if (err) {
+		err = -EFAULT;
+		goto out;
+	}
 
 	return 0;
+
+ out:
+	return err;
 }
 
 /****************************
@@ -217,7 +300,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		break;
 	}
 
-	case OMX_CMD_RAW_RECV: {
+	case OMX_CMD_RAW_GET_EVENT: {
 		err = -EBADF;
 		iface = file->private_data;
 		if (!iface)

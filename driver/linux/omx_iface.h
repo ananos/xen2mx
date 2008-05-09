@@ -46,8 +46,10 @@ struct omx_iface_raw {
        	pid_t opener_pid;
         char opener_comm[TASK_COMM_LEN];
 	
-	struct sk_buff_head recv_list;
-	wait_queue_head_t recv_wq;
+	struct list_head event_list;
+	spinlock_t event_lock;
+	wait_queue_head_t event_wq;
+	int event_list_length;
 };
 
 struct omx_iface {
