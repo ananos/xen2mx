@@ -92,7 +92,6 @@ omx_raw_send(struct omx_iface *iface, void __user * uparam)
 	if (!event)
 		goto out;
 	event->status = OMX_RAW_EVENT_SEND_COMPLETED;
-	event->context = raw_send.context;
 	event->data_length = 0;
 
 	ret = copy_from_user(&raw_send, uparam, sizeof(raw_send));
@@ -100,6 +99,7 @@ omx_raw_send(struct omx_iface *iface, void __user * uparam)
 		ret = -EFAULT;
 		goto out_with_event;
 	}
+	event->context = raw_send.context;
 
 	ret = -ENOMEM;
 	skb = omx_new_skb(raw_send.buffer_length);
