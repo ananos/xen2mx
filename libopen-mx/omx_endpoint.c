@@ -287,7 +287,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   omx__lock_init(&ep->lock);
   omx__cond_init(&ep->in_handler_cond);
 
-  err = open(OMX_DEVNAME, O_RDWR);
+  err = open(OMX_MAIN_DEVICE_NAME, O_RDWR);
   if (err < 0) {
     ret = omx__errno_to_return();
     if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)

@@ -23,6 +23,7 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 
+#include "omx_config.h"
 #include "omx_lib.h"
 
 #define EP 3
@@ -66,7 +67,7 @@ int main(void)
   struct timeval tv1, tv2;
   char *buffer1, *buffer2;
 
-  fd = open(OMX_DEVNAME, O_RDWR);
+  fd = open(OMX_MAIN_DEVICE_NAME, O_RDWR);
   if (fd < 0) {
     perror("open");
     goto out;

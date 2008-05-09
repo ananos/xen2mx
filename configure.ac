@@ -541,8 +541,8 @@ DEVICE_NAME=/dev/open-mx
 device_name=$(echo $device_attrs | cut -d: -f1)
 if ! test -z "$device_name"; then
   DEVICE_NAME=$device_name
-  AC_DEFINE_UNQUOTED(OMX_DEVNAME, "$device_name", [Define to change the device node name])
 fi
+AC_DEFINE_UNQUOTED(OMX_MAIN_DEVICE_NAME, "$DEVICE_NAME", [Define to change the device node name])
 AC_SUBST(DEVICE_NAME)
 DEVICE_GROUP=root
 device_group=$(echo $device_attrs | cut -d: -f2)

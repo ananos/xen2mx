@@ -89,11 +89,6 @@
  * Various macros
  */
 
-#define OMX_DEFAULT_DEVNAME "/dev/open-mx"
-#ifndef OMX_DEVNAME
-#define OMX_DEVNAME OMX_DEFAULT_DEVNAME
-#endif
-
 #define OMX_MEDIUM_FRAG_PIPELINE 12 /* always send 4k pages (1<<12) */
 #define OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT OMX_MEDIUM_FRAG_PIPELINE
 #define OMX_MEDIUM_FRAG_LENGTH_MAX (1<<OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT)

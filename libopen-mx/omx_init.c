@@ -45,7 +45,7 @@ omx__init_api(int api)
    * Open, map and check the driver
    */
 
-  err = open(OMX_DEVNAME, O_RDONLY);
+  err = open(OMX_MAIN_DEVICE_NAME, O_RDONLY);
   if (err < 0) {
     ret = omx__errno_to_return();
     if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
