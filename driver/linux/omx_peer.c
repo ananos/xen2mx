@@ -40,10 +40,10 @@ static struct list_head * omx_peer_addr_hash_array;
 static struct mutex omx_peers_mutex; /* big mutex protecting concurrent modification, readers are protected by RCU */
 static int omx_peer_next_nr;
 
-#define OMX_PEER_ADDR_HASH_NR 256
+static struct list_head omx_host_query_peer_list;
+static int omx_host_query_magic = 0x13052008;
 
-static void
-omx_peer_hostname_query(uint64_t peer_addr, uint16_t peer_index);
+#define OMX_PEER_ADDR_HASH_NR 256
 
 /************************
  * Peer Table Management
@@ -108,7 +108,6 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	char * new_hostname = NULL;
 	uint16_t index;
 	uint8_t hash;
-	int need_query;
 	int err;
 
 	if (hostname) {
@@ -186,12 +185,12 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	rcu_assign_pointer(omx_peer_array[omx_peer_next_nr], new);
 	omx_peer_next_nr++;
 
-	need_query = !new->hostname;
-	mutex_unlock(&omx_peers_mutex);
+	if (!new->hostname) {
+		list_add_rcu(&new->host_query_list_elt, &omx_host_query_peer_list);
+		new->host_query_last_resend_jiffies = 0;
+	}
 
-	/* release the lock before querying on all board */
-	if (need_query)
-		omx_peer_hostname_query(board_addr, index);
+	mutex_unlock(&omx_peers_mutex);
 
 	return 0;
 
@@ -499,14 +498,18 @@ omx_peer_lookup_by_hostname(char *hostname,
  */
 
 static void
-omx_peer_hostname_query(uint64_t peer_addr, uint16_t peer_index)
+omx_peer_host_query(struct omx_peer *peer)
 {
+	uint64_t peer_addr = peer->board_addr;
+	uint16_t peer_index = peer->index;
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
 	struct omx_pkt_host_query *query_n;
 	int ret = 0;
+
+	dprintk(QUERY, "sending host query for peer %d\n", peer_index);
 
 	skb = omx_new_skb(ETH_ZLEN);
 	if (unlikely(skb == NULL)) {
@@ -524,7 +527,7 @@ omx_peer_hostname_query(uint64_t peer_addr, uint16_t peer_index)
 	/* fill query */
 	OMX_PKT_FIELD_FROM(query_n->ptype, OMX_PKT_TYPE_HOST_QUERY);
 	OMX_PKT_FIELD_FROM(query_n->return_peer_index, peer_index);
-	OMX_PKT_FIELD_FROM(query_n->magic, 0x23);
+	OMX_PKT_FIELD_FROM(query_n->magic, omx_host_query_magic);
 
 	/* fill ethernet header, except the source for now */
         eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -535,6 +538,29 @@ omx_peer_hostname_query(uint64_t peer_addr, uint16_t peer_index)
 
  out:
 	return;	
+}
+
+#define OMX_HOST_QUERY_RESEND_JIFFIES HZ
+
+void
+omx_process_peers_to_host_query(void)
+{
+	struct omx_peer *peer;
+
+	mutex_lock(&omx_peers_mutex);
+
+	list_for_each_entry_rcu(peer, &omx_host_query_peer_list, host_query_list_elt) {
+		dprintk(QUERY, "need to query peer %d?\n", peer->index);
+		if (peer->host_query_last_resend_jiffies + OMX_HOST_QUERY_RESEND_JIFFIES > jiffies)
+			break;
+
+		omx_peer_host_query(peer);
+		peer->host_query_last_resend_jiffies = jiffies;
+		list_del_rcu(&peer->host_query_list_elt);
+		list_add_tail_rcu(&peer->host_query_list_elt, &omx_host_query_peer_list);
+	}
+
+	mutex_unlock(&omx_peers_mutex);
 }
 
 int
@@ -554,6 +580,7 @@ omx_recv_host_query(struct omx_iface * iface,
 	int hostnamelen;
 	int ret = 0;
 
+	dprintk(QUERY, "got host query\n");
 	omx_counter_inc(iface, RECV_HOST_QUERY);
 
 	/* locate incoming headers */
@@ -586,6 +613,8 @@ omx_recv_host_query(struct omx_iface * iface,
 	reply_n->magic = query_n->magic;
 	memcpy(out_data, hostname, hostnamelen);
 
+	dprintk(QUERY, "sending host reply with hostname %s\n", hostname);
+
 	/* fill ethernet header, except the source for now */
         out_eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
 	memcpy(out_eh->h_source, ifp->dev_addr, sizeof (out_eh->h_source));
@@ -606,6 +635,20 @@ omx_recv_host_reply(struct omx_iface * iface,
 		    struct omx_hdr * mh,
 		    struct sk_buff * skb)
 {
+	struct omx_pkt_head *ph;
+	struct omx_pkt_host_reply *reply_n;
+	uint32_t magic;
+
+	/* locate headers */
+	ph = &mh->head;
+	reply_n = (struct omx_pkt_host_reply *) (ph + 1);
+	magic = OMX_FROM_PKT_FIELD(reply_n->magic);
+
+	if (magic != omx_host_query_magic) {
+		dev_kfree_skb(skb);
+		return -EINVAL;
+	}
+
 	skb_queue_tail(&omx_host_reply_list, skb);
 	omx_counter_inc(iface, RECV_HOST_REPLY);
 	return 0;
@@ -640,14 +683,15 @@ omx_process_host_replies(void)
 			goto done;
 		skb_copy_bits(skb, hdr_len, hostname, hostnamelen);
 		hostname[hostnamelen-1] = '\0';
-
-		// FIXME: check magic ?
+		dprintk(QUERY, "got hostname %s from peer %d\n", hostname, index);
 
 		mutex_lock(&omx_peers_mutex);
 		peer = rcu_dereference(omx_peer_array[index]);
 		if (peer) {
 			char *old_hostname = peer->hostname;
 			peer->hostname = hostname;
+			if (!old_hostname)
+				list_del(&peer->host_query_list_elt);
 			kfree(old_hostname);
 		}		
 		mutex_unlock(&omx_peers_mutex);
@@ -690,6 +734,7 @@ omx_peers_init(void)
 	}
 	for(i=0; i<OMX_PEER_ADDR_HASH_NR; i++)
 		INIT_LIST_HEAD(&omx_peer_addr_hash_array[i]);
+	INIT_LIST_HEAD(&omx_host_query_peer_list);
 
 	return 0;
 

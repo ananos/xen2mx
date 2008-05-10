@@ -36,6 +36,7 @@ extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *
 extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t *index);
 extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uint32_t *index);
 extern void omx_process_host_replies(void);
+extern void omx_process_peers_to_host_query(void);
 
 #define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
 
@@ -46,6 +47,9 @@ struct omx_peer {
 	uint32_t reverse_index; /* our index in this peer table, or OMX_UNKNOWN_REVERSE_PEER_INDEX */
 	struct list_head addr_hash_elt;
 	struct omx_iface * local_iface;
+
+	struct list_head host_query_list_elt;
+	uint64_t host_query_last_resend_jiffies;
 };
 
 #endif /* __omx_peer_h__ */

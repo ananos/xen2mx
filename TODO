@@ -1,9 +1,13 @@
+* check that skb are not smaller than headers
+
 * finish mapping
   + return the buffer length from get_event
   + adding an existing peer can replace the hostname
-  + keep a list of peer missing hostname and resend queries from time to time
-  + check host/query magic number
+  + add omx_hostname -c to clear (and resend all queries) but local ifaces
   + cleanup raw api return codes
+  + enable omxoed by default, unless --with-static-peers is passed
+  + if there's a fma/ subdir or if --with-fma is given, use it instead of omxoed
+  + warn about FMA missing if mxoed and wire-compat?
 
 * warn if wire-compatible and not endian-compatible
 
