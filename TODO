@@ -1,9 +1,9 @@
 * finish mapping
+  + return the buffer length from get_event
   + adding an existing peer can replace the hostname
   + keep a list of peer missing hostname and resend queries from time to time
   + check host/query magic number
-  + add nice raw API, similar to the MX one
-  + port fma on top of Open-MX raw API
+  + cleanup raw api return codes
 
 * warn if wire-compatible and not endian-compatible
 

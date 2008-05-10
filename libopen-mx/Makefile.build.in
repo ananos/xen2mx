@@ -30,7 +30,7 @@ ALL_SRCS	=	$(wildcard @abs_srcdir@/*.c)
 ifeq (@OMX_MX_API_COMPAT@,1)
 	SRCS	=	$(ALL_SRCS)
 else
-	SRCS	=	$(filter-out @abs_srcdir@/omx__mx_compat.c,$(ALL_SRCS))
+	SRCS	=	$(filter-out @abs_srcdir@/omx__mx_%compat.c,$(ALL_SRCS))
 endif
 
 STATIC_OBJS	=	$(patsubst @abs_srcdir@/%.c,%.o,$(SRCS))
