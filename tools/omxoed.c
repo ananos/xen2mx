@@ -29,9 +29,9 @@
 #include <sys/time.h>
 #include <sys/types.h>
 
-#include "open-mx.h"
 #include "omx_lib.h"
-#include "omx_io.h"
+#include "myriexpress.h"
+#include "mx_raw.h"
 
 #define MXOED_DEBUG 0
 
@@ -66,7 +66,7 @@ struct mxoed_pkt {
 };
 
 struct nic_info {
-  int raw_fd;
+  mx_raw_endpoint_t raw_ep;
 
   int nic_index;
   uint64_t my_nic_id;
@@ -135,15 +135,11 @@ void
 broadcast_my_id(
   struct nic_info *nip)
 {
-  struct omx_cmd_raw_send raw_send;
-  int err;
+  mx_return_t ret;
 
-  raw_send.buffer = (uintptr_t) &nip->outpkt;
-  raw_send.buffer_length = sizeof(nip->outpkt);
-
-  err = ioctl(nip->raw_fd, OMX_CMD_RAW_SEND, &raw_send);
-  if (err < 0) {
-    fprintf(stderr, "Error sending raw packet: %m\n");
+  ret = mx_raw_send(nip->raw_ep, 0, NULL, 0, &nip->outpkt, sizeof(nip->outpkt), NULL);
+  if (ret != MX_SUCCESS) {
+    fprintf(stderr, "Error sending raw packet: %s\n", mx_strerror(ret));
     exit(1);
   }
 #if MXOED_DEBUG
@@ -159,8 +155,10 @@ check_for_packet(
   uint32_t len;
   struct timeval before;
   struct timeval after;
-  struct omx_cmd_raw_get_event get_event;
   int timeout;
+  mx_raw_status_t status;
+  mx_return_t ret;
+  uint32_t length;
   int rc;
 
   gettimeofday(&before, NULL);
@@ -172,19 +170,18 @@ check_for_packet(
     timeout = 0;
   }
 
-  get_event.timeout = timeout;
-  get_event.buffer = (uintptr_t) &nip->mxoepkt;
-  get_event.buffer_length = sizeof(nip->mxoepkt);
-
-  rc = ioctl(nip->raw_fd, OMX_CMD_RAW_GET_EVENT, &get_event);
-  if (rc < 0) {
-    fprintf(stderr, "Error from mx_raw_next_event: %m\n");
+  length = sizeof(nip->mxoepkt);
+  ret = mx_raw_next_event(nip->raw_ep, NULL, NULL,
+			  &nip->mxoepkt, &length,
+			  timeout, &status);
+  if (ret != MX_SUCCESS) {
+    fprintf(stderr, "Error from mx_raw_next_event: %s\n", mx_strerror(ret));
     exit(1);
   }
 
   gettimeofday(&after, NULL);
 
-  if (get_event.status == OMX_RAW_EVENT_RECV_COMPLETED) {
+  if (status == MX_RAW_RECV_COMPLETE) {
 #if MXOED_DEBUG
     int i;
     unsigned char *p = (unsigned char *)(&nip->mxoepkt);
@@ -366,27 +363,17 @@ open_all_nics()
   int rc;
   int num_nics;
   struct nic_info *nip, *nip0 = NULL;
-  int fd;
   pthread_t tid;
 
   num_nics = 0;
   for (i=0; i<MAX_NICS; ++i) {
-   struct omx_cmd_raw_open_endpoint raw_open;
+    mx_raw_endpoint_t ep;
+    mx_return_t ret;
 
-    fd = open(OMX_RAW_DEVICE_NAME, O_RDWR);
-    if (fd < 0) {
-      fprintf(stderr, "Error opening raw device file for NIC %d, %m\n", i);
-      exit(-1);
-    }
-
-    raw_open.board_index = i;
-
-    rc = ioctl(fd, OMX_CMD_RAW_OPEN_ENDPOINT, &raw_open);
-    if (rc < 0) {
-      if (errno == EINVAL)
-        continue;
+    ret = mx_raw_open_endpoint(i, NULL, 0, &ep);
+    if (ret != MX_SUCCESS) {
       fprintf(stderr, "Error opening raw endpoint for NIC %d, %m\n", i);
-      exit(1);
+      continue;
     }
 
     /* allocate NIC info struct */
@@ -395,7 +382,7 @@ open_all_nics()
       fprintf(stderr, "Error allocating NIC info struct\n");
       exit(1);
     }
-    nip->raw_fd = fd;
+    nip->raw_ep = ep;
     nip->nic_index = i;
     nip->die = 0;
 

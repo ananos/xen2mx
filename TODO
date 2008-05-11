@@ -1,7 +1,6 @@
 * check that skb are not smaller than headers
 
 * finish mapping
-  + port omxoed back to the raw api
   + adding an existing peer can replace the hostname
   + add omx_hostname -c to clear (and resend all queries) but local ifaces
   + cleanup raw api return codes
