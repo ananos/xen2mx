@@ -1,8 +1,12 @@
 * check that skb are not smaller than headers
 
+* mutex_lock peers when reading the hostnames
+* factorize a peer name changing function to manage the host query list
+* need to remove from the list when attaching local iface and thus giving a name
+
 * finish mapping
+  + check that host_query are actually for us before replying
   + adding an existing peer can replace the hostname
-  + add omx_hostname -c to clear (and resend all queries) but local ifaces
   + cleanup raw api return codes
   + enable omxoed by default, unless --with-static-peers is passed
   + if there's a fma/ subdir or if --with-fma is given, use it instead of omxoed

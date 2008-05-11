@@ -31,13 +31,15 @@ usage(int argc, char *argv[])
 {
   fprintf(stderr, "%s [options] hostname\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange board [%d] hostname\n", BID);
+  fprintf(stderr, "%s [options] -c\n", argv[0]);
+  fprintf(stderr, "\nclear all (non-local) peer names\n");
 }
 
 int main(int argc, char *argv[])
 {
   uint8_t board_index = BID;
-  struct omx_cmd_set_hostname set_hostname;
   omx_return_t ret;
+  int clear;
   int err;
   int c;
 
@@ -48,10 +50,13 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "b:h")) != -1)
+  while ((c = getopt(argc, argv, "b:ch")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
+      break;
+    case 'c':
+      clear = 1;
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
@@ -66,14 +71,25 @@ int main(int argc, char *argv[])
     exit(-1);
   }
 
-  set_hostname.board_index = board_index;
-  strncpy(set_hostname.hostname, argv[1], OMX_HOSTNAMELEN_MAX);
-  set_hostname.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+  if (clear) {
+    err = ioctl(omx__globals.control_fd, OMX_CMD_PEERS_CLEAR_NAMES);
+    if (err < 0) {
+      fprintf(stderr, "Failed to clear peer names (%m)\n");
+      goto out;
+    }
 
-  err = ioctl(omx__globals.control_fd, OMX_CMD_SET_HOSTNAME, &set_hostname);
-  if (err < 0) {
-    fprintf(stderr, "Failed to set hostname (%m)\n");
-    goto out;
+  } else {
+    struct omx_cmd_set_hostname set_hostname;
+
+    set_hostname.board_index = board_index;
+    strncpy(set_hostname.hostname, argv[1], OMX_HOSTNAMELEN_MAX);
+    set_hostname.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+
+    err = ioctl(omx__globals.control_fd, OMX_CMD_SET_HOSTNAME, &set_hostname);
+    if (err < 0) {
+      fprintf(stderr, "Failed to set hostname (%m)\n");
+      goto out;
+    }
   }
 
   return 0;

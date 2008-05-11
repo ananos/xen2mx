@@ -639,6 +639,18 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		break;
 	}
 
+	case OMX_CMD_PEERS_CLEAR_NAMES: {
+
+		ret = -EPERM;
+		if (!capable(CAP_SYS_ADMIN))
+			goto out;
+
+		omx_peers_clear_names();
+
+		ret = 0;
+		break;
+	}
+
 	case OMX_CMD_OPEN_ENDPOINT: {
 		struct omx_endpoint * endpoint = file->private_data;
 		BUG_ON(!endpoint);

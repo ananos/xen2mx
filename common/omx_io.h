@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x133
+#define OMX_DRIVER_ABI_VERSION		0x134
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -458,6 +458,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_PEER_FROM_INDEX		_IOWR(OMX_CMD_MAGIC, 0x22, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_PEER_FROM_ADDR		_IOWR(OMX_CMD_MAGIC, 0x23, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_PEER_FROM_HOSTNAME	_IOWR(OMX_CMD_MAGIC, 0x24, struct omx_cmd_misc_peer_info)
+#define OMX_CMD_PEERS_CLEAR_NAMES	_IO(OMX_CMD_MAGIC, 0x25)
 #define OMX_CMD_RAW_OPEN_ENDPOINT	_IOR(OMX_CMD_MAGIC, 0x30, struct omx_cmd_raw_open_endpoint)
 #define OMX_CMD_RAW_SEND		_IOR(OMX_CMD_MAGIC, 0x31, struct omx_cmd_raw_send)
 #define OMX_CMD_RAW_GET_EVENT		_IOWR(OMX_CMD_MAGIC, 0x32, struct omx_cmd_raw_get_event)

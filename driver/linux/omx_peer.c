@@ -701,6 +701,30 @@ omx_process_host_replies(void)
 	}
 }
 
+void
+omx_peers_clear_names(void)
+{
+	int i;
+
+	mutex_lock(&omx_peers_mutex);
+	for(i=0; i<omx_peer_max; i++) {
+		struct omx_peer *peer;
+		char *hostname;
+
+		peer = rcu_dereference(omx_peer_array[i]);
+		if (!peer || !peer->hostname || peer->local_iface)
+			continue;
+
+		hostname = peer->hostname;
+		rcu_assign_pointer(peer->hostname, NULL);
+		kfree(hostname);
+
+		peer->host_query_last_resend_jiffies = 0;
+		list_add_tail_rcu(&peer->host_query_list_elt, &omx_host_query_peer_list);	
+	}
+	mutex_unlock(&omx_peers_mutex);	
+}
+
 /***********************
  * Peer Table Init/Exit
  */
