@@ -1,6 +1,7 @@
 * check that skb are not smaller than headers
 
 * mutex_lock peers when reading the hostnames
+  * or use rcu to propagate/kfree hostnames
 * factorize a peer name changing function to manage the host query list
 * remove from query list when detaching or clearing all peers
 * need to remove from the list when attaching local iface and thus giving a name
@@ -11,8 +12,6 @@
   + enable omxoed by default, unless --with-static-peers is passed
   + if there's a fma/ subdir or if --with-fma is given, use it instead of omxoed
   + warn about FMA missing if mxoed and wire-compat?
-
-* warn if wire-compatible and not endian-compatible
 
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?

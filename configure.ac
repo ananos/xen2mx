@@ -497,6 +497,9 @@ if test x$enable_endian = xyes; then
   AC_DEFINE(OMX_ENDIAN_COMPAT, 1, [Define to enable endian-independent networking])
 else
   AC_MSG_RESULT(no)
+  if test x$enable_mx_wire = xyes; then
+    AC_MSG_WARN([endian-independent networking is required to talk to native MX peers])
+  fi
 fi
 
 ############################
