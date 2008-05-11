@@ -2,10 +2,10 @@
 
 * mutex_lock peers when reading the hostnames
 * factorize a peer name changing function to manage the host query list
+* remove from query list when detaching or clearing all peers
 * need to remove from the list when attaching local iface and thus giving a name
 
 * finish mapping
-  + check that host_query are actually for us before replying
   + adding an existing peer can replace the hostname
   + cleanup raw api return codes
   + enable omxoed by default, unless --with-static-peers is passed

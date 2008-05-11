@@ -589,6 +589,10 @@ omx_recv_host_query(struct omx_iface * iface,
 	in_eh = &in_ph->eth;
 	query_n = (struct omx_pkt_host_query *) (in_ph + 1);
 
+	if (memcmp(&in_eh->h_dest, ifp->dev_addr, sizeof (in_eh->h_dest)))
+		/* not for us, ignore */
+		goto out;
+
 	hostname = iface->peer.hostname;
 	hostnamelen = strlen(hostname) + 1;
 
