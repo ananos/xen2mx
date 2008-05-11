@@ -136,10 +136,12 @@ mx_raw_next_event(mx_raw_endpoint_t endpoint, uint32_t *incoming_port,
   if (get_event.status == OMX_RAW_EVENT_RECV_COMPLETED) {
     *status = MX_RAW_RECV_COMPLETE;
     *recv_bytes = get_event.buffer_length;
-    *incoming_port = 0;
+    if (incoming_port)
+      *incoming_port = 0;
   } else if (get_event.status == OMX_RAW_EVENT_SEND_COMPLETED) {
     *status = MX_RAW_SEND_COMPLETE;
-    *context = (void *)(uintptr_t) get_event.context;
+    if (context)
+      *context = (void *)(uintptr_t) get_event.context;
   } else {
     *status = MX_RAW_NO_EVENT;
   }
