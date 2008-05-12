@@ -133,12 +133,12 @@ if test x$build_driver = xyes ; then
     AC_SUBST(LINUX_RELEASE)
 
     # Issue a warning if the kernel compiler seems to be different
-    if test x$KCC_VERSION != x && test x$LINUX_GCC_VERSION != x ; then
-      if test $KCC_VERSION != $LINUX_GCC_VERSION ; then
+    if test -n "$KCC_VERSION" && test -n "$LINUX_GCC_VERSION" ; then
+      if test "$KCC_VERSION" != "$LINUX_GCC_VERSION" ; then
         AC_MSG_NOTICE([kernel built with gcc $LINUX_GCC_VERSION and Open-MX with $KCC_VERSION? KCC might need to be set])
       fi
     else
-      if test x$KCC != x ; then
+      if test -n  "$KCC" ; then
         AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is set correctly ($KCC)])
       else
         AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is unset on purpose])
