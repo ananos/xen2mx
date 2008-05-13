@@ -1355,7 +1355,7 @@ omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle)
 static void
 omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_data_t data)
 {
-	struct omx_pull_handle *handle = OMX_PULL_HANDLE_OF_WORK_STRUCT_DATA(data);
+	struct omx_pull_handle *handle = OMX_WORK_STRUCT_DATA(data, struct omx_pull_handle, deferred_dma_wait_work);
 
 	/* let the offloaded copy finish */
 	omx_pull_handle_wait_dma_completions(handle);
@@ -1377,9 +1377,9 @@ omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle *handle)
 
 	/* if still something to do, schedule a deferred work */
 	if (likely(handle->dma_chan)) {
-		OMX_PULL_HANDLE_INIT_WORK(&handle->deferred_dma_wait_work,
-					  omx_pull_handle_deferred_dma_completions_wait_work,
-					  handle);
+		OMX_INIT_WORK(&handle->deferred_dma_wait_work,
+			      omx_pull_handle_deferred_dma_completions_wait_work,
+			      handle);
 		schedule_work(&handle->deferred_dma_wait_work);
 		omx_counter_inc(handle->endpoint->iface, DMARECV_PULL_REPLY_WAIT_DEFERRED);
 		return -EAGAIN;

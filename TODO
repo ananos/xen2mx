@@ -1,4 +1,10 @@
+* check that omx_init stop/restart works (rmmod fails?)
+
+* make sure the configure line is reported in omx_info
+
 * check that skb are not smaller than headers
+
+* move the cleanup thread into schedule_work?
 
 * mutex_lock peers when reading the hostnames
   * or use rcu to propagate/kfree hostnames
@@ -7,6 +13,8 @@
 * need to remove from the list when attaching local iface and thus giving a name
 
 * finish mapping
+  + if the raw api only is only mx-compat specific, omxoed cannot use it
+    - add a omx specific raw api with wrappers?
   + adding an existing peer can replace the hostname
   + cleanup raw api return codes
   + enable omxoed by default, unless --with-static-peers is passed

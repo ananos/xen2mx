@@ -127,12 +127,12 @@ omx_ifp_node(struct net_device *ifp)
 
 /* work_struct switch to container_of in 2.6.20 */
 #ifdef OMX_HAVE_WORK_STRUCT_DATA
-#define OMX_PULL_HANDLE_INIT_WORK(_work, _func, _data) INIT_WORK(_work, _func, _data)
-#define OMX_PULL_HANDLE_OF_WORK_STRUCT_DATA(_data) (_data)
+#define OMX_INIT_WORK(_work, _func, _data) INIT_WORK(_work, _func, _data)
+#define OMX_WORK_STRUCT_DATA(_data, _type, _field) (_data)
 typedef void * omx_work_struct_data_t;
 #else
-#define OMX_PULL_HANDLE_INIT_WORK(_work, _func, _data) INIT_WORK(_work, _func)
-#define OMX_PULL_HANDLE_OF_WORK_STRUCT_DATA(_work) container_of(_work, struct omx_pull_handle, deferred_dma_wait_work);
+#define OMX_INIT_WORK(_work, _func, _data) INIT_WORK(_work, _func)
+#define OMX_WORK_STRUCT_DATA(_data, _type, _field) container_of(_data, _type, _field)
 typedef struct work_struct * omx_work_struct_data_t;
 #endif
 
