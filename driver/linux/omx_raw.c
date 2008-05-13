@@ -83,28 +83,20 @@ omx_raw_send(struct omx_iface *iface, void __user * uparam)
 {
 	struct omx_iface_raw *raw = &iface->raw;
 	struct omx_cmd_raw_send raw_send;
-	struct omx_raw_event *event;
+	struct omx_raw_event *event = NULL;
 	struct sk_buff *skb;
 	int ret;
-
-	ret = -ENOMEM;
-	event = kmalloc(sizeof(*event), GFP_KERNEL);
-	if (!event)
-		goto out;
-	event->status = OMX_RAW_EVENT_SEND_COMPLETED;
-	event->data_length = 0;
 
 	ret = copy_from_user(&raw_send, uparam, sizeof(raw_send));
 	if (ret) {
 		ret = -EFAULT;
-		goto out_with_event;
+		goto out;
 	}
-	event->context = raw_send.context;
 
 	ret = -ENOMEM;
 	skb = omx_new_skb(raw_send.buffer_length);
 	if (!skb)
-		goto out_with_event;
+		goto out;
 
 	ret = copy_from_user(omx_skb_mac_header(skb), (void __user *)(unsigned long) raw_send.buffer, raw_send.buffer_length);
 	if (ret) {
@@ -112,20 +104,29 @@ omx_raw_send(struct omx_iface *iface, void __user * uparam)
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(iface, skb, RAW);
+	if (raw_send.need_event) {
+		ret = -ENOMEM;
+		event = kmalloc(sizeof(*event), GFP_KERNEL);
+		if (!event)
+			goto out_with_skb;
 
-	spin_lock_bh(&raw->event_lock);
-	list_add_tail(&event->list_elt, &raw->event_list);
-	raw->event_list_length++;
-	wake_up_interruptible(&raw->event_wq);
-	spin_unlock_bh(&raw->event_lock);
+		event->status = OMX_CMD_RAW_EVENT_SEND_COMPLETE;
+		event->data_length = 0;
+		event->context = raw_send.context;
+
+		spin_lock_bh(&raw->event_lock);
+		list_add_tail(&event->list_elt, &raw->event_list);
+		raw->event_list_length++;
+		wake_up_interruptible(&raw->event_wq);
+		spin_unlock_bh(&raw->event_lock);
+	}
+
+	omx_queue_xmit(iface, skb, RAW);
 
 	return 0;
 
  out_with_skb:
 	kfree_skb(skb);
- out_with_event:
-	kfree(event);
  out:
 	return ret;
 }
@@ -155,11 +156,11 @@ omx_recv_raw(struct omx_iface * iface,
 		if (!event)
 			return -ENOMEM;
 
-		event->status = OMX_RAW_EVENT_RECV_COMPLETED;
+		event->status = OMX_CMD_RAW_EVENT_RECV_COMPLETE;
 		event->data_length = length;
 		skb_copy_bits(skb, 0, event->data, length);
 		dev_kfree_skb(skb);
-		
+
 		spin_lock(&raw->event_lock);
 		list_add_tail(&event->list_elt, &raw->event_list);
 		raw->event_list_length++;
@@ -185,7 +186,7 @@ omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
 		return -EFAULT;
 
 	timeout = msecs_to_jiffies(get_event.timeout);
-	get_event.status = OMX_RAW_NO_EVENT;
+	get_event.status = OMX_CMD_RAW_NO_EVENT;
 
 	spin_lock_bh(&raw->event_lock);
 	while (timeout > 0) {

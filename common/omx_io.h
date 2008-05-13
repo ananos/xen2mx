@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x134
+#define OMX_DRIVER_ABI_VERSION		0x135
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -203,13 +203,13 @@ struct omx_cmd_raw_open_endpoint {
 struct omx_cmd_raw_send {
 	uint64_t buffer;
 	uint32_t buffer_length;
-	uint32_t pad;
+	uint32_t need_event;
 	uint64_t context;
-};	
+};
 
-#define OMX_RAW_NO_EVENT		0
-#define OMX_RAW_EVENT_SEND_COMPLETED	1
-#define OMX_RAW_EVENT_RECV_COMPLETED	2
+#define OMX_CMD_RAW_NO_EVENT	       	0
+#define OMX_CMD_RAW_EVENT_SEND_COMPLETE	1
+#define OMX_CMD_RAW_EVENT_RECV_COMPLETE	2
 
 struct omx_cmd_raw_get_event {
 	uint64_t buffer;

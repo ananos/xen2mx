@@ -102,6 +102,7 @@ mx_raw_send(mx_raw_endpoint_t endpoint, uint32_t physical_port,
 
   raw_send.buffer = (uintptr_t) send_buffer;
   raw_send.buffer_length = buffer_length;
+  raw_send.need_event = 1;
   raw_send.context = (uintptr_t) context;
 
   err = ioctl(endpoint->fd, OMX_CMD_RAW_SEND, &raw_send);
@@ -133,16 +134,17 @@ mx_raw_next_event(mx_raw_endpoint_t endpoint, uint32_t *incoming_port,
     exit(1);
   }
 
-  if (get_event.status == OMX_RAW_EVENT_RECV_COMPLETED) {
+  if (get_event.status == OMX_CMD_RAW_EVENT_RECV_COMPLETE) {
     *status = MX_RAW_RECV_COMPLETE;
     *recv_bytes = get_event.buffer_length;
     if (incoming_port)
       *incoming_port = 0;
-  } else if (get_event.status == OMX_RAW_EVENT_SEND_COMPLETED) {
+  } else if (get_event.status == OMX_CMD_RAW_EVENT_SEND_COMPLETE) {
     *status = MX_RAW_SEND_COMPLETE;
     if (context)
       *context = (void *)(uintptr_t) get_event.context;
   } else {
+    omx__debug_assert(get_event.status == OMX_CMD_RAW_NO_EVENT);
     *status = MX_RAW_NO_EVENT;
   }
 
