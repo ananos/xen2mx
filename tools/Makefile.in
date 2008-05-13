@@ -68,7 +68,7 @@ installonly:
 
 	$(CMDECHO) "  INSTALL $(patsubst %,$(DESTDIR)$(bindir)/%,$(TOOLS))"
 	$(CMDPREFIX) $(INSTALL) -m 0755 $(TOOLS) $(DESTDIR)$(bindir)/
-	
+
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(sbindir)"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(sbindir); then \
 		$(MKDIR_P) $(DESTDIR)$(sbindir) ; \

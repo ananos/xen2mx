@@ -37,6 +37,10 @@ int main(int argc, char *argv[])
   int found, i;
   int c;
 
+  printf("Open-MX version " PACKAGE_VERSION "\n");
+  printf(" build: " OMX_BUILD_STR "\n");
+  printf("\n");
+
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Failed to initialize (%s)\n",

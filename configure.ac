@@ -38,6 +38,12 @@ if test $AR = false; then
   AC_MSG_ERROR(ar program not found in \$PATH)
 fi
 
+########################
+# save the build config
+
+OMX_BUILD_STR="`id -run 2> /dev/null`@`uname -n`:`cd ${srcdir} && pwd` `date`"
+AC_DEFINE_UNQUOTED(OMX_BUILD_STR, "$OMX_BUILD_STR", [Define to the build version string])
+
 #####################
 # build flags config
 
