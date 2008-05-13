@@ -563,76 +563,40 @@ omx_process_peers_to_host_query(void)
 	mutex_unlock(&omx_peers_mutex);
 }
 
+static struct sk_buff_head omx_host_query_list;
+static struct sk_buff_head omx_host_reply_list;
+
 int
 omx_recv_host_query(struct omx_iface * iface,
 		    struct omx_hdr * mh,
-		    struct sk_buff * in_skb)
+		    struct sk_buff * skb)
 {
 	struct net_device * ifp = iface->eth_ifp;
-	struct sk_buff *out_skb;
-	struct omx_hdr *out_mh, *in_mh;
-	struct omx_pkt_head *out_ph, *in_ph;
-	struct ethhdr *out_eh, *in_eh;
+	struct omx_pkt_head *ph;
+	struct ethhdr *eh;
 	struct omx_pkt_host_query *query_n;
-	struct omx_pkt_host_reply *reply_n;
-	char * out_data;
-	char *hostname;
-	int hostnamelen;
-	int ret = 0;
+	uint32_t magic;
 
-	dprintk(QUERY, "got host query\n");
-	omx_counter_inc(iface, RECV_HOST_QUERY);
+	/* locate headers */
+	ph = &mh->head;
+	eh = &ph->eth;
+	query_n = (struct omx_pkt_host_query *) (ph + 1);
+	magic = OMX_FROM_PKT_FIELD(query_n->magic);
 
-	/* locate incoming headers */
-	in_mh = omx_skb_mac_header(in_skb);
-	in_ph = &in_mh->head;
-	in_eh = &in_ph->eth;
-	query_n = (struct omx_pkt_host_query *) (in_ph + 1);
-
-	if (memcmp(&in_eh->h_dest, ifp->dev_addr, sizeof (in_eh->h_dest)))
-		/* not for us, ignore */
-		goto out;
-
-	hostname = iface->peer.hostname;
-	hostnamelen = strlen(hostname) + 1;
-
-	/* prepare the reply */
-	out_skb = omx_new_skb(ETH_ZLEN + hostnamelen);
-	if (unlikely(out_skb == NULL)) {
-		printk(KERN_INFO "Open-MX: Failed to create host query skb\n");
-		ret = -ENOMEM;
- 		goto out;
+	if (memcmp(&eh->h_dest, ifp->dev_addr, sizeof (eh->h_dest))) {
+		/* not for this iface, ignore */
+		dev_kfree_skb(skb);
+		return -EINVAL;
 	}
 
-	/* locate outgoing headers */
-	out_mh = omx_skb_mac_header(out_skb);
-	out_ph = &out_mh->head;
-	out_eh = &out_ph->eth;
-	reply_n = (struct omx_pkt_host_reply *) (out_ph + 1);
-	out_data = (char *)(reply_n + 1);
+	/* store the iface to avoid having to recompute it later */
+	skb->sk = (void *) iface;
 
-	OMX_PKT_FIELD_FROM(reply_n->ptype, OMX_PKT_TYPE_HOST_REPLY);
-	OMX_PKT_FIELD_FROM(reply_n->length, hostnamelen);
-	reply_n->return_peer_index = query_n->return_peer_index;
-	reply_n->magic = query_n->magic;
-	memcpy(out_data, hostname, hostnamelen);
-
-	dprintk(QUERY, "sending host reply with hostname %s\n", hostname);
-
-	/* fill ethernet header, except the source for now */
-        out_eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
-	memcpy(out_eh->h_source, ifp->dev_addr, sizeof (out_eh->h_source));
-	memcpy(out_eh->h_dest, in_eh->h_source, sizeof(out_eh->h_dest));
-
-	out_skb->dev = ifp;
-	dev_queue_xmit(out_skb);
-
- out:
-	dev_kfree_skb(in_skb);
+	skb_queue_tail(&omx_host_query_list, skb);
+	dprintk(QUERY, "got host query\n");
+	omx_counter_inc(iface, RECV_HOST_QUERY);
 	return 0;
 }
-
-static struct sk_buff_head omx_host_reply_list;
 
 int
 omx_recv_host_reply(struct omx_iface * iface,
@@ -653,17 +617,21 @@ omx_recv_host_reply(struct omx_iface * iface,
 		return -EINVAL;
 	}
 
+	/* store the iface to avoid having to recompute it later */
+	skb->sk = (void *) iface;
+
 	skb_queue_tail(&omx_host_reply_list, skb);
 	omx_counter_inc(iface, RECV_HOST_REPLY);
 	return 0;
 }
 
+/* process host queries and replies in a regular context, outside of interrupt context */
 void
-omx_process_host_replies(void)
+omx_process_host_queries_and_replies(void)
 {
-	struct sk_buff *skb;
+	struct sk_buff *in_skb;
 
-	while ((skb = skb_dequeue(&omx_host_reply_list)) != NULL) {
+	while ((in_skb = skb_dequeue(&omx_host_reply_list)) != NULL) {
 		struct omx_hdr *mh;
 		struct omx_pkt_head *ph;
 		struct ethhdr *eh;
@@ -675,7 +643,7 @@ omx_process_host_replies(void)
 		char *hostname;
 
 		/* locate headers */
-		mh = omx_skb_mac_header(skb);
+		mh = omx_skb_mac_header(in_skb);
 		ph = &mh->head;
 		eh = &ph->eth;
 		reply_n = (struct omx_pkt_host_reply *) (ph + 1);
@@ -685,7 +653,7 @@ omx_process_host_replies(void)
 		hostname = kmalloc(hostnamelen, GFP_KERNEL);
 		if (!hostname)
 			goto done;
-		skb_copy_bits(skb, hdr_len, hostname, hostnamelen);
+		skb_copy_bits(in_skb, hdr_len, hostname, hostnamelen);
 		hostname[hostnamelen-1] = '\0';
 		dprintk(QUERY, "got hostname %s from peer %d\n", hostname, index);
 
@@ -701,7 +669,63 @@ omx_process_host_replies(void)
 		mutex_unlock(&omx_peers_mutex);
 
  done:
-		kfree_skb(skb);
+		kfree_skb(in_skb);
+	}
+
+	while ((in_skb = skb_dequeue(&omx_host_query_list)) != NULL) {
+		struct omx_iface *iface = (void *) in_skb->sk;
+		struct net_device * ifp = iface->eth_ifp;
+		struct sk_buff *out_skb;
+		struct omx_hdr *out_mh, *in_mh;
+		struct omx_pkt_head *out_ph, *in_ph;
+		struct ethhdr *out_eh, *in_eh;
+		struct omx_pkt_host_query *query_n;
+		struct omx_pkt_host_reply *reply_n;
+		char * out_data;
+		char *hostname;
+		int hostnamelen;
+
+		/* locate incoming headers */
+		in_mh = omx_skb_mac_header(in_skb);
+		in_ph = &in_mh->head;
+		in_eh = &in_ph->eth;
+		query_n = (struct omx_pkt_host_query *) (in_ph + 1);
+
+		hostname = iface->peer.hostname;
+		hostnamelen = strlen(hostname) + 1;
+
+		/* prepare the reply */
+		out_skb = omx_new_skb(ETH_ZLEN + hostnamelen);
+		if (unlikely(out_skb == NULL)) {
+			printk(KERN_INFO "Open-MX: Failed to create host reply skb\n");
+	 		goto failed;
+		}
+
+		/* locate outgoing headers */
+		out_mh = omx_skb_mac_header(out_skb);
+		out_ph = &out_mh->head;
+		out_eh = &out_ph->eth;
+		reply_n = (struct omx_pkt_host_reply *) (out_ph + 1);
+		out_data = (char *)(reply_n + 1);
+
+		OMX_PKT_FIELD_FROM(reply_n->ptype, OMX_PKT_TYPE_HOST_REPLY);
+		OMX_PKT_FIELD_FROM(reply_n->length, hostnamelen);
+		reply_n->return_peer_index = query_n->return_peer_index;
+		reply_n->magic = query_n->magic;
+		memcpy(out_data, hostname, hostnamelen);
+
+		dprintk(QUERY, "sending host reply with hostname %s\n", hostname);
+
+		/* fill ethernet header, except the source for now */
+        	out_eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+		memcpy(out_eh->h_source, ifp->dev_addr, sizeof (out_eh->h_source));
+		memcpy(out_eh->h_dest, in_eh->h_source, sizeof(out_eh->h_dest));
+
+		out_skb->dev = ifp;
+		dev_queue_xmit(out_skb);
+
+	 failed:
+		dev_kfree_skb(in_skb);
 	}
 }
 
@@ -739,6 +763,7 @@ omx_peers_init(void)
 	int err;
 	int i;
 
+	skb_queue_head_init(&omx_host_query_list);
 	skb_queue_head_init(&omx_host_reply_list);
 
 	mutex_init(&omx_peers_mutex);
@@ -778,6 +803,7 @@ omx_peers_exit(void)
 	omx_peers_clear();
 	kfree(omx_peer_addr_hash_array);
 	vfree(omx_peer_array);
+	skb_queue_purge(&omx_host_query_list);
 	skb_queue_purge(&omx_host_reply_list);
 }
 

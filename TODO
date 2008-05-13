@@ -1,11 +1,9 @@
-* check that omx_init stop/restart works (rmmod fails?)
-
 * check that skb are not smaller than headers
 
 * move the cleanup thread into schedule_work?
 
-* mutex_lock peers when reading the hostnames
-  * or use rcu to propagate/kfree hostnames
+* use the peer mutex to protect all access to the hostnames
+  now that they are only accessed from safe contexts
 * factorize a peer name changing function to manage the host query list
 * remove from query list when detaching or clearing all peers
 * need to remove from the list when attaching local iface and thus giving a name
