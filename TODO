@@ -13,10 +13,8 @@
 * need to remove from the list when attaching local iface and thus giving a name
 
 * finish mapping
-  + if the raw api only is only mx-compat specific, omxoed cannot use it
-    - add a omx specific raw api with wrappers?
   + adding an existing peer can replace the hostname
-  + cleanup raw api return codes
+  + cleanup OMX and MX raw api return codes
   + enable omxoed by default, unless --with-static-peers is passed
   + if there's a fma/ subdir or if --with-fma is given, use it instead of omxoed
   + warn about FMA missing if mxoed and wire-compat?

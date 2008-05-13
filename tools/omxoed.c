@@ -30,8 +30,7 @@
 #include <sys/types.h>
 
 #include "omx_lib.h"
-#include "myriexpress.h"
-#include "mx_raw.h"
+#include "omx_raw.h"
 
 #define MXOED_DEBUG 0
 
@@ -66,7 +65,7 @@ struct mxoed_pkt {
 };
 
 struct nic_info {
-  mx_raw_endpoint_t raw_ep;
+  omx_raw_endpoint_t raw_ep;
 
   int nic_index;
   uint64_t my_nic_id;
@@ -135,11 +134,11 @@ void
 broadcast_my_id(
   struct nic_info *nip)
 {
-  mx_return_t ret;
+  omx_return_t ret;
 
-  ret = mx_raw_send(nip->raw_ep, 0, NULL, 0, &nip->outpkt, sizeof(nip->outpkt), NULL);
-  if (ret != MX_SUCCESS) {
-    fprintf(stderr, "Error sending raw packet: %s\n", mx_strerror(ret));
+  ret = omx_raw_send(nip->raw_ep, &nip->outpkt, sizeof(nip->outpkt));
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Error sending raw packet: %s\n", omx_strerror(ret));
     exit(1);
   }
 #if MXOED_DEBUG
@@ -156,8 +155,8 @@ check_for_packet(
   struct timeval before;
   struct timeval after;
   int timeout;
-  mx_raw_status_t status;
-  mx_return_t ret;
+  omx_raw_status_t status;
+  omx_return_t ret;
   uint32_t length;
   int rc;
 
@@ -171,17 +170,17 @@ check_for_packet(
   }
 
   length = sizeof(nip->mxoepkt);
-  ret = mx_raw_next_event(nip->raw_ep, NULL, NULL,
-			  &nip->mxoepkt, &length,
-			  timeout, &status);
-  if (ret != MX_SUCCESS) {
-    fprintf(stderr, "Error from mx_raw_next_event: %s\n", mx_strerror(ret));
+  ret = omx_raw_next_event(nip->raw_ep,
+			   &nip->mxoepkt, &length,
+			   timeout, &status);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Error from omx_raw_next_event: %s\n", omx_strerror(ret));
     exit(1);
   }
 
   gettimeofday(&after, NULL);
 
-  if (status == MX_RAW_RECV_COMPLETE) {
+  if (status == OMX_RAW_RECV_COMPLETE) {
 #if MXOED_DEBUG
     int i;
     unsigned char *p = (unsigned char *)(&nip->mxoepkt);
@@ -293,7 +292,7 @@ fill_nic_info(
   nip->outpkt.src_mac_high16 = htons((nip->my_nic_id >> 32) & 0xFFFF);
   nip->outpkt.src_mac_low32 = htonl(nip->my_nic_id & 0xFFFFFFFF);
   nip->outpkt.proto = htons(0x86DF);
-  nip->outpkt.pkt_type = 1;		
+  nip->outpkt.pkt_type = 1;
 
   add_peer(nip, nip->my_nic_id, 0, 0);
 
@@ -367,11 +366,11 @@ open_all_nics()
 
   num_nics = 0;
   for (i=0; i<MAX_NICS; ++i) {
-    mx_raw_endpoint_t ep;
-    mx_return_t ret;
+    omx_raw_endpoint_t ep;
+    omx_return_t ret;
 
-    ret = mx_raw_open_endpoint(i, NULL, 0, &ep);
-    if (ret != MX_SUCCESS) {
+    ret = omx_raw_open_endpoint(i, NULL, 0, &ep);
+    if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Error opening raw endpoint for NIC %d, %m\n", i);
       continue;
     }
