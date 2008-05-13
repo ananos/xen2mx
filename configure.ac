@@ -102,6 +102,8 @@ fi
 ########################
 # Kernel related config
 
+AC_ARG_VAR(KCC, [Compiler for building the Open-MX kernel module (default is CC)])
+
 if test x$build_driver = xyes ; then
 
     if test -n "$KCC" ; then
