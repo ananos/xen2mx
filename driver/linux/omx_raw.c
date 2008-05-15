@@ -88,7 +88,7 @@ omx_raw_send(struct omx_iface *iface, void __user * uparam)
 	int ret;
 
 	ret = copy_from_user(&raw_send, uparam, sizeof(raw_send));
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		ret = -EFAULT;
 		goto out;
 	}
@@ -99,7 +99,7 @@ omx_raw_send(struct omx_iface *iface, void __user * uparam)
 		goto out;
 
 	ret = copy_from_user(omx_skb_mac_header(skb), (void __user *)(unsigned long) raw_send.buffer, raw_send.buffer_length);
-	if (ret) {
+	if (unlikely(ret != 0)) {
 		ret = -EFAULT;
 		goto out_with_skb;
 	}
@@ -182,7 +182,7 @@ omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
 	int err;
 
 	err = copy_from_user(&get_event, uparam, sizeof(get_event));
-	if (err)
+	if (unlikely(err != 0))
 		return -EFAULT;
 
 	timeout = msecs_to_jiffies(get_event.timeout);
@@ -226,7 +226,7 @@ omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
 		/* copy into user-space */
 		err = copy_to_user((void __user *)(unsigned long) get_event.buffer,
 				   event->data, event->data_length);
-		if (err) {
+		if (unlikely(err != 0)) {
 			err = -EFAULT;
 			kfree(event);
 			goto out;
@@ -238,7 +238,7 @@ omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
 	get_event.timeout = jiffies_to_msecs(timeout);
 
 	err = copy_to_user(uparam, &get_event, sizeof(get_event));
-	if (err) {
+	if (unlikely(err != 0)) {
 		err = -EFAULT;
 		goto out;
 	}
@@ -283,7 +283,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		struct omx_cmd_raw_open_endpoint raw_open;
 
 		err = copy_from_user(&raw_open, (void __user *) arg, sizeof(raw_open));
-		if (err) {
+		if (unlikely(err != 0)) {
 			err = -EFAULT;
 			goto out;
 		}

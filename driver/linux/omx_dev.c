@@ -202,7 +202,8 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 	int ret;
 
 	ret = copy_from_user(&param, uparam, sizeof(param));
-	if (ret < 0) {
+	if (unlikely(ret != 0)) {
+		ret = -EFAULT;
 		printk(KERN_ERR "Open-MX: Failed to read open endpoint command argument, error %d\n", ret);
 		goto out;
 	}
@@ -456,9 +457,10 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		ret = copy_to_user((void __user *) arg, &count,
 				   sizeof(count));
-		if (ret < 0)
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to write get_board_count command result, error %d\n", ret);
-
+		}
 		break;
 	}
 
@@ -475,7 +477,8 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			/* the endpoint is not open, get the command parameter and use its board_index */
 			ret = copy_from_user(&get_board_info, (void __user *) arg,
 					     sizeof(get_board_info));
-			if (ret < 0) {
+			if (unlikely(ret != 0)) {
+				ret = -EFAULT;
 				printk(KERN_ERR "Open-MX: Failed to read get_board_info command argument, error %d\n", ret);
 				goto out;
 			}
@@ -490,9 +493,10 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		ret = copy_to_user((void __user *) arg, &get_board_info,
 				   sizeof(get_board_info));
-		if (ret < 0)
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to write get_board_info command result, error %d\n", ret);
-
+		}
 		break;
 	}
 
@@ -501,7 +505,8 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		ret = copy_from_user(&get_endpoint_info, (void __user *) arg,
 				     sizeof(get_endpoint_info));
-		if (ret < 0) {
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to read get_endpoint_info command argument, error %d\n", ret);
 			goto out;
 		}
@@ -510,9 +515,10 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 					    &get_endpoint_info.info);
 		ret = copy_to_user((void __user *) arg, &get_endpoint_info,
 				   sizeof(get_endpoint_info));
-		if (ret < 0)
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to write get_endpoint_info command result, error %d\n", ret);
-
+		}
 		break;
 	}
 
@@ -521,7 +527,8 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		ret = copy_from_user(&get_counters, (void __user *) arg,
 				     sizeof(get_counters));
-		if (ret < 0) {
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to read get_counters command argument, error %d\n", ret);
 			goto out;
 		}
@@ -538,9 +545,10 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		ret = copy_to_user((void __user *) arg, &get_counters,
 				   sizeof(get_counters));
-		if (ret < 0)
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to write get_counters command result, error %d\n", ret);
-
+		}
 		break;
 	}
 
@@ -549,7 +557,8 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		ret = copy_from_user(&set_hostname, (void __user *) arg,
 				     sizeof(set_hostname));
-		if (ret < 0) {
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to read set_hostname command argument, error %d\n", ret);
 			goto out;
 		}
@@ -588,7 +597,8 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		ret = copy_from_user(&peer_info, (void __user *) arg,
 				     sizeof(peer_info));
-		if (ret < 0) {
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to read add_peer command argument, error %d\n", ret);
 			goto out;
 		}
@@ -611,7 +621,8 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		ret = copy_from_user(&peer_info, (void __user *) arg,
 				     sizeof(peer_info));
-		if (ret < 0) {
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to read '%s' command argument, error %d\n",
 			       omx_strcmd(cmd), ret);
 			goto out;
@@ -632,10 +643,11 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		ret = copy_to_user((void __user *) arg, &peer_info,
 				   sizeof(peer_info));
-		if (ret < 0)
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
 			printk(KERN_ERR "Open-MX: Failed to write '%s' command result, error %d\n",
 			       omx_strcmd(cmd), ret);
-
+		}
 		break;
 	}
 

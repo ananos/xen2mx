@@ -405,8 +405,10 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
  race:
 	err = copy_to_user(uparam, &cmd, sizeof(cmd));
-	if (unlikely(err != 0))
+	if (unlikely(err != 0)) {
+		err = -EFAULT;
 		printk(KERN_ERR "Open-MX: Failed to write wait event cmd result\n");
+	}
 
 	return 0;
 

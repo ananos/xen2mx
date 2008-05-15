@@ -162,8 +162,11 @@ omx_iface_get_counters(uint8_t board_index, int clear,
 
 	if (buffer_length < sizeof(iface->counters))
 		buffer_length = sizeof(iface->counters);
+
 	ret = copy_to_user((void __user *) (unsigned long) buffer_addr, iface->counters,
 			   buffer_length);
+	if (unlikely(ret != 0))
+		ret = -EFAULT;
 
 	if (clear)
 		memset(iface->counters, 0, sizeof(iface->counters));
