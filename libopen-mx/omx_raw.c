@@ -41,25 +41,29 @@ omx_raw_open_endpoint(uint32_t board_number,
   int fd, err;
 
   fd = open(OMX_RAW_DEVICE_NAME, O_RDWR);
-  if (fd < 0) {
-    fprintf(stderr, "Error opening raw device file, %m\n");
-    exit(1);
-  }
+  if (fd < 0)
+    return omx__errno_to_return();
 
   raw_open.board_index = board_number;
   err = ioctl(fd, OMX_CMD_RAW_OPEN_ENDPOINT, &raw_open);
   if (err < 0) {
-    if (errno == EINVAL)
-      return OMX_BAD_ERROR;
-    fprintf(stderr, "Error opening raw endpoint, %m\n");
-    exit(1);
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+							  OMX_BUSY,
+							  OMX_INTERNAL_MISC_EINVAL,
+							  OMX_INTERNAL_MISC_ENODEV,
+							  OMX_SUCCESS,
+							  "open board #%d raw endpoint",
+							  board_number);
+    if (ret == OMX_INTERNAL_MISC_EINVAL)
+      ret = OMX_BOARD_NOT_FOUND;
+    else if (ret == OMX_INTERNAL_MISC_ENODEV)
+      ret = OMX_NO_DRIVER;
+    return ret;
   }
 
   ep = malloc(sizeof(*ep));
-  if (!ep) {
-    fprintf(stderr, "Error allocating raw endpoint, %m\n");
-    exit(1);
-  }
+  if (!ep)
+    return OMX_NO_RESOURCES;
 
   ep->board_index = board_number;
   ep->fd = fd;
@@ -87,10 +91,11 @@ omx_raw_send(struct omx_raw_endpoint * endpoint,
   raw_send.need_event = 0;
 
   err = ioctl(endpoint->fd, OMX_CMD_RAW_SEND, &raw_send);
-  if (err < 0) {
-    fprintf(stderr, "Error sending raw packet: %m\n");
-    exit(1);
-  }
+  if (err < 0)
+    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				       OMX_SUCCESS,
+				       "send raw message");
+    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
 
   return OMX_SUCCESS;
 }
@@ -109,10 +114,9 @@ omx_raw_next_event(struct omx_raw_endpoint * endpoint,
   get_event.buffer_length = *recv_bytes;
 
   err = ioctl(endpoint->fd, OMX_CMD_RAW_GET_EVENT, &get_event);
-  if (err < 0) {
-    fprintf(stderr, "Error from omx_raw_next_event: %m\n");
-    exit(1);
-  }
+  if (err < 0)
+    return omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
+					      "get raw event");
 
   if (get_event.status == OMX_CMD_RAW_EVENT_RECV_COMPLETE) {
     *status = OMX_RAW_RECV_COMPLETE;
