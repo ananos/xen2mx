@@ -265,8 +265,8 @@ omx_raw_miscdev_release(struct inode * inode, struct file * file)
 {
 	struct omx_iface *iface;
 
-	iface = rcu_dereference(file->private_data);
-	if (!iface)
+	iface = file->private_data;
+	if (unlikely(!iface))
 		return -EINVAL;
 
 	return omx_raw_detach_iface(iface);
@@ -295,7 +295,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_RAW_SEND: {
 		err = -EBADF;
 		iface = file->private_data;
-		if (!iface)
+		if (unlikely(!iface))
 			goto out;
 
 		err = omx_raw_send(iface, (void __user *) arg);
@@ -305,7 +305,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_RAW_GET_EVENT: {
 		err = -EBADF;
 		iface = file->private_data;
-		if (!iface)
+		if (unlikely(!iface))
 			goto out;
 
 		err = omx_raw_get_event(&iface->raw, (void __user *) arg);
@@ -329,7 +329,7 @@ omx_raw_miscdev_poll(struct file *file, struct poll_table_struct *wait)
 	unsigned int mask = 0;
 
 	iface = file->private_data;
-	if (!iface) {
+	if (unlikely(!iface)) {
 		mask |= POLLERR;
 		goto out;
 	}
