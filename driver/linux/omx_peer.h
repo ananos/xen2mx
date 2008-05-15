@@ -19,6 +19,8 @@
 #ifndef __omx_peer_h__
 #define __omx_peer_h__
 
+#include <linux/rcupdate.h>
+
 struct omx_iface;
 struct omx_pkt_head;
 
@@ -51,6 +53,8 @@ struct omx_peer {
 
 	struct list_head host_query_list_elt;
 	uint64_t host_query_last_resend_jiffies;
+
+	struct rcu_head rcu_head; /* rcu deferred free callback */
 };
 
 #endif /* __omx_peer_h__ */

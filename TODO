@@ -44,8 +44,6 @@
     - store the process core binding when opening the endpoint
       and assume the binding won't change if the env var was set
 
-* use call_rcu to defer peer deletion in omx_peers_clear() instead of synchronize_rcu() for each peer
-
 * support for architecture with pagesize != 4k
 * huge page pinning support
 

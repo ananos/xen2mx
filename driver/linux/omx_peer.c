@@ -73,6 +73,14 @@ omx_peer_addr_hash(uint64_t board_addr)
 	return tmp8;
 }
 
+static void
+__omx_peer_rcu_free_callback(struct rcu_head *rcu_head)
+{
+        struct omx_peer * peer = container_of(rcu_head, struct omx_peer, rcu_head);
+	kfree(peer->hostname);
+	kfree(peer);
+}
+
 void
 omx_peers_clear(void)
 {
@@ -91,8 +99,6 @@ omx_peers_clear(void)
 
 		list_del_rcu(&peer->addr_hash_elt);
 		rcu_assign_pointer(omx_peer_array[i], NULL);
-		/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
-		synchronize_rcu();
 
 		iface = peer->local_iface;
 		if (iface) {
@@ -112,8 +118,8 @@ omx_peers_clear(void)
 				dprintk(PEER, "peer does not need host query anymore\n");
 			}
 
-			kfree(peer->hostname);
-			kfree(peer);
+			/* we don't want to call synchronize_rcu() for every peer or so */
+			call_rcu(&peer->rcu_head, __omx_peer_rcu_free_callback);
 		}
 	}
 	omx_peer_next_nr = 0;
@@ -287,9 +293,12 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 
 			/* replace the iface hostname with the one from the peer table if it exists */
 			if (peer->hostname) {
-				char * new_hostname = ifacepeer->hostname;
+				char * ifacename = ifacepeer->hostname;
 				ifacepeer->hostname = peer->hostname;
-				kfree(new_hostname);
+				kfree(ifacename);
+
+				/* make sure call_rcu won't free the new hostname */
+				peer->hostname = NULL;
 			} else {
 				list_del(&peer->host_query_list_elt);
 				dprintk(PEER, "peer does not need host query anymore\n");
@@ -297,9 +306,7 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 
 			rcu_assign_pointer(omx_peer_array[index], ifacepeer);
 			list_replace_rcu(&peer->addr_hash_elt, &ifacepeer->addr_hash_elt);
-			/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
-			synchronize_rcu();
-			kfree(peer);
+			call_rcu(&peer->rcu_head, __omx_peer_rcu_free_callback);
 			break;
 		}
 	}
