@@ -29,17 +29,18 @@
 static void
 usage(int argc, char *argv[])
 {
-  fprintf(stderr, "%s [options] hostname\n", argv[0]);
-  fprintf(stderr, " -b <n>\tchange board [%d] hostname\n", BID);
-  fprintf(stderr, "%s [options] -c\n", argv[0]);
-  fprintf(stderr, "\nclear all (non-local) peer names\n");
+  fprintf(stderr, "%s [options]\n", argv[0]);
+  fprintf(stderr, " -b <n>\t\toperate on board [%d]\n", BID);
+  fprintf(stderr, " -n <hostname>\tset the board hostname\n");
+  fprintf(stderr, " -c\t\tclear all (non-local) peer names\n");
 }
 
 int main(int argc, char *argv[])
 {
   uint8_t board_index = BID;
   omx_return_t ret;
-  int clear;
+  char *hostname = NULL;
+  int clear = 0;
   int c;
 
   ret = omx_init();
@@ -49,10 +50,13 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "b:ch")) != -1)
+  while ((c = getopt(argc, argv, "b:n:ch")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
+      break;
+    case 'n':
+      hostname = optarg;
       break;
     case 'c':
       clear = 1;
@@ -65,15 +69,16 @@ int main(int argc, char *argv[])
       break;
     }
 
-  if (argc < 2) {
-    usage(argc, argv);
-    exit(-1);
+  if (hostname) {
+    ret = omx__driver_set_hostname(board_index, hostname);
+    if (ret != OMX_SUCCESS)
+      fprintf(stderr, "Failed to change hostname, %s\n", omx_strerror(ret));
   }
 
   if (clear) {
-    omx__driver_clear_peer_names();
-  } else {
-    omx__driver_set_hostname(board_index, argv[1]);
+    ret = omx__driver_clear_peer_names();
+    if (ret != OMX_SUCCESS)
+      fprintf(stderr, "Failed to clear peer names, %s\n", omx_strerror(ret));
   }
 
   return 0;
