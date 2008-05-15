@@ -819,6 +819,10 @@ omx_peers_clear_names(void)
 		list_add_tail(&peer->host_query_list_elt, &omx_host_query_peer_list);
 		dprintk(PEER, "peer needs host query\n");
 	}
+	
+	/* increase the magic to avoid obsolete host_reply packets */
+	omx_host_query_magic++;
+
 	mutex_unlock(&omx_peers_mutex);
 }
 
