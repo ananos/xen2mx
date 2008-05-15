@@ -39,7 +39,9 @@ if test -f ${OMX_CONFIG}; then
 fi
 
 usage () {
-	echo "Usage: $0 [options] {start|stop|status|restart} [module load params]"
+	echo "Usage: $0 [options] <command> [module load params]"
+	echo " Commands:	start stop status restart"
+	echo " Options:"
 	echo "  --dynamic-peers		Force dynamic peer discovery"
 	echo "  --static-peers		Force static peers from $OMX_PEERS_FILE"
 	echo "  --static-peers=<file>		Force static peers from <file>"
@@ -68,8 +70,6 @@ OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${IFACES}"
 # Remove the Open-MX module if loaded
 unload_omx() {
     if grep open[-_]mx /proc/modules > /dev/null; then
-	echo "Killing the dynamic peer mapper"
-	killall -9 omxoed || /bin/true
         echo "Removing Open-MX driver"
         /sbin/rmmod open-mx
     fi
@@ -134,7 +134,10 @@ load_omx() {
 	|| echo "[ERROR] Failed to set raw device mode"
     chmod "$RAW_DEVICE_MODE" "$RAW_DEVICE_NAME" \
 	|| echo "[ERROR] Failed to set raw device group"
+}
 
+# Start the mapper
+start_mapper() {
     if test ${OMX_STATIC_MAPPING} -eq 1 ; then
 	# initialize peers
 	if test -f ${OMX_PEERS_FILE}; then
@@ -150,15 +153,41 @@ load_omx() {
     fi
 }
 
+# Stop the mapper
+stop_mapper() {
+    if grep open[-_]mx /proc/modules > /dev/null; then
+	echo "Killing the dynamic peer mapper"
+	killall -9 omxoed || /bin/true
+    fi
+}
+
 cmd="$1"
 shift
 
 case "$cmd" in
     start)
 	load_omx "$@"
+	start_mapper
 	;;
     stop)
+	stop_mapper
 	unload_omx
+	;;
+    restart)
+	stop_mapper
+	unload_omx
+	load_omx "$@"
+	start_mapper
+        ;;
+    start-mapper)
+	start_mapper
+	;;
+    stop-mapper)
+	stop_mapper
+	;;
+    restart-mapper)
+	stop_mapper
+	start_mapper
 	;;
     status)
 	if grep open[-_]mx /proc/modules > /dev/null; then
@@ -167,10 +196,6 @@ case "$cmd" in
 	    echo "Open-MX driver is not loaded"
 	fi
 	;;
-    restart)
-	unload_omx
-	load_omx "$@"
-        ;;
     *)
 	usage
 esac

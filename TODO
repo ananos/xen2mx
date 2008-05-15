@@ -3,7 +3,6 @@
 * move the cleanup thread into schedule_work?
 
 * finish mapping
-  + start-mapper stop-mapper
   + if there's a fma/ subdir or if --with-fma is given, use it instead of omxoed
   + warn about FMA missing if mxoed and wire-compat?
 
