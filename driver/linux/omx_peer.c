@@ -99,13 +99,19 @@ omx_peers_clear(void)
 			dprintk(PEER, "detaching iface %s (%s) peer #%d\n",
 				iface->eth_ifp->name, peer->hostname, peer->index);
 
+			BUG_ON(!peer->hostname);
+			/* local iface peer hostname cannot be NULL, no need to update the host_query_list or so */
+
 			peer->index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 
 			/* release the iface reference now it is not linked in the peer table anymore */
 			omx_iface_release(iface);
 		} else {
-			BUG_ON(!peer->hostname);
-			/* local iface peer hostname cannot be NULL, no need to update the host_query_list or so */
+			if (!peer->hostname) {
+				list_del(&peer->host_query_list_elt);
+				dprintk(PEER, "peer does not need host query anymore\n");
+			}
+
 			kfree(peer->hostname);
 			kfree(peer);
 		}
