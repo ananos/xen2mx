@@ -3,7 +3,7 @@
 * move the cleanup thread into schedule_work?
 
 * finish mapping
-  + cleanup OMX and MX raw api return codes
+  + cleanup MX raw api return codes
   + enable omxoed by default, unless --with-static-peers is passed
   + if there's a fma/ subdir or if --with-fma is given, use it instead of omxoed
   + warn about FMA missing if mxoed and wire-compat?

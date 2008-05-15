@@ -371,8 +371,10 @@ open_all_nics()
 
     ret = omx_raw_open_endpoint(i, NULL, 0, &ep);
     if (ret != OMX_SUCCESS) {
+      if (ret == OMX_BOARD_NOT_FOUND)
+	continue;
       fprintf(stderr, "Error opening raw endpoint for NIC %d, %m\n", i);
-      continue;
+      exit(1);
     }
 
     /* allocate NIC info struct */
@@ -403,6 +405,7 @@ open_all_nics()
     fprintf(stderr, "No NICs found\n");
     exit(1);
   } else {
+    fprintf(stderr, "Now managing %d NICs...\n", num_nics);
     nic_thread(nip0);
   }
 }
