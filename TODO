@@ -2,14 +2,8 @@
 
 * move the cleanup thread into schedule_work?
 
-* use the peer mutex to protect all access to the hostnames
-  now that they are only accessed from safe contexts
-* factorize a peer name changing function to manage the host query list
-* remove from query list when detaching or clearing all peers
-* need to remove from the list when attaching local iface and thus giving a name
-
 * finish mapping
-  + adding an existing peer can replace the hostname
+  + increase the magic when clearing peer names
   + cleanup OMX and MX raw api return codes
   + enable omxoed by default, unless --with-static-peers is passed
   + if there's a fma/ subdir or if --with-fma is given, use it instead of omxoed
@@ -49,6 +43,8 @@
   + add OMX_BH_PREWARM_CACHE= to use non-temporal only if not on the process core
     - store the process core binding when opening the endpoint
       and assume the binding won't change if the env var was set
+
+* use call_rcu to defer peer deletion in omx_peers_clear() instead of synchronize_rcu() for each peer
 
 * support for architecture with pagesize != 4k
 * huge page pinning support
