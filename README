@@ -6,7 +6,9 @@ Contents:
     c. Caveats
  III. Kernel Module and /dev/open-mx Device Node
   IV. Attaching interfaces
-   V. Peer Table File
+   V. Peer Discovery
+    a. Dynamic peer discovery
+    b. Static peer table
   VI. Performance tuning
     a. Wire-compatibility
     b. Registration Cache
@@ -46,33 +48,24 @@ a. Build and install Open-MX in /opt/open-mx
    $ autoconf
    $ autoheader
 
-b. Load the open-mx kernel module and tell it which interface to use
+b. Make sure both interfaces are up with a large MTU
+     $ ifconfig eth2 up mtu 9000
+
+c. Load the open-mx kernel module and tell it which interface to use
      $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
    See sections II (Building and Installing)
    and III (Kernel Module and /dev/open-mx Device Node) for details.
 
-c. Look for eth2 MAC addresses in /sbin/ifconfig -a on each node.
-   and insert them in a file such as this one:
-     $ cat /path/to/the/peers/file
-     01:02:03:04:05:06 node1:0
-     a0:b0:c0:d0:e0:f0 node2:0
-
-d. Make Open-MX use this file:
-     $ /path/to/open-mx/bin/omx_init_peers /path/to/the/peers/file
-   See section IV (Attaching interfaces) for details.
-
-e. Make sure both interfaces are up with a large MTU
-     $ ifconfig eth2 up mtu 9000
-
-f. Run omx_info to see which interfaces are attached and which
-   peers are accessible:
+d. Wait a couple seconds and run /path/to/open-mx/bin/omx_info to
+   check that all peers are seeing each other.
+   See section V (Peer Discovery) for details.
      $ omx_info
      node1:0 (board #0 name eth2 addr 01:02:03:04:05:06)
      ==============================================
      1) 01:02:03:04:05:06 node1:0
      2) a0:b0:c0:d0:e0:f0 node2:0
 
-g. Use omx_pingpong to test actual communications, on the first node:
+e. Use omx_pingpong to test actual communications, on the first node:
      node1 $ omx_pingpong
      Successfully attached endpoint #0 on board #0 (hostname 'node1:0', name 'eth2', addr 01:02:03:04:05:06)
      Starting receiver...
@@ -221,23 +214,56 @@ size, which may depend on the configuration.
 $ ifconfig eth2 mtu 9000
 
 
-++====================++
-|| V. Peer Table File ||
-++====================++
+++===================++
+|| V. Peer Discovery ||
+++===================++
+
+Each Open-MX node has to be aware of the hostnames and MAC addresses
+of all other peers. By default, a dynamic peer discovery is performed
+but it is also possible to enter a static list of peers manually.
+
+The --enable-static-peers option may be used on the configure command
+line to switch from dynamic to static peer table. It is also possible
+to switch later by passing --dynamic-peers or --static-peers to the
+omx_init startup script.
+
++-----------------------------
+| V.a. Dynamic peer discovery
+
+By default, Open-MX uses the omxoed program to dynamically discover
+all peers connected to the fabric, including the ones added later.
+The only requirement is that the omxoed program runs on each peer.
+
+The omxoed program is started automatically by the omx_init startup
+script. If Open-MX has been configured to use a static peer table
+by default, it is still possible to switch to dynamic discovery
+by passing --dynamic-peers to omx_init.
+
++-------------------------
+| V.b. Static peer table
+
+Dynamic discovery may sometimes take several seconds before all nodes
+become aware of each others. If the fabric is always the same, it is
+possible to setup a static peer table using a file. To do so, Open-MX
+should be configured with --enable-static-peers.
 
 A file listing peers must be provided to store the list of hostnames
-and mac addresses in the driver. The omx_init_peers tool may be used to
-setup this list.
-
-The omx_init startup script takes care of running omx_init_peers
-automatically using /etc/open-mx/peers when it exists.
-The --with-peers-file=<path> configure option may be used to change
-the location of this default peers file to load in omx_init.
+and mac addresses in the driver. The omx_init_peers tool may be used
+to setup this list. The omx_init startup script takes care of running
+omx_init_peers automatically using /etc/open-mx/peers when it exists.
 
 The contents of the file is one line per peer, each containing
-2 fields (seperated by spaces or tabs):
+2 fields (separated by spaces or tabs):
 * a mac address (6 colon-separated numbers)
 * a board hostname (<hostname>:<ifacenumber>)
+
+To change the location of the peers file, it is possible to use the
+--with-peers-file=<path> configure option, or the --static-peers=<path>
+omx_init option.
+
+If Open-MX has been configured for dynamic peer discovery by default,
+the --static-peers omx_init option may also be used to switch to static
+peer table.
 
 
 ++========================++
@@ -424,9 +450,13 @@ Once Open-MX is configured in wire compatible mode, you need to make
 sure that the nodes running in native MX mode are using MX >= 1.2.5
 configured in Ethernet mode.
 
-On the Open-MX nodes, the peer table should be setup as usual with
-omx_init_peers, with a single entry for each Open-MX peer and each
-MX peer.
+If using dynamic peer discovery, you have to make sure that the same
+mapper process is used on both sides. by default, MX uses the FMA but
+it may rely on mxoed, which is compatible with Open-MX' omxoed.
+
+If using a static peer table the peer table should be setup on the
+Open-MX nodes as usual with omx_init_peers, with a single entry for
+each Open-MX peer and each MX peer.
 
 On the MX nodes, the regular dynamic mapper may first be launched to
 discover all MX peers. Once it is done, it should be stopped with:
@@ -498,6 +528,12 @@ building:
 --disable-mx-wire
 	Optimize the wire-protocol by not being compatible with MXoE.
   The wire protocol is compatible with MXoE by default.
+
+--enable-static-peers
+	Use a static peer table instead of dynamic peer discovery
+--with-peers-file=<file>
+	Use <file> as a static peer table instead of the default
+  /etc/open-mx/peers.
 
 +--------------------------------------------------
 | VIII.b. Summary of runtime configuration options

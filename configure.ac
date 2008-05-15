@@ -536,14 +536,29 @@ else
   AC_SUBST(OMX_DYNAMIC_TOOLS, 0)
 fi
 
-######################
-# installation config
+#################
+# peer discovery
+
+AC_ARG_ENABLE(static-peers,
+	[AS_HELP_STRING([--enable-static-peers], [use static peer instead of dynamic discovery])],
+	static_peers=$enableval, static_peers=no)
+AC_MSG_CHECKING(how peer mapping is performed)
+if test "$static_peers" = yes; then
+  AC_MSG_RESULT(static)
+  AC_SUBST(OMX_STATIC_PEERS, 1)
+else
+  AC_MSG_RESULT(dynamic)
+  AC_SUBST(OMX_STATIC_PEERS, 0)
+fi
 
 AC_ARG_WITH(peers-file,
 	[AS_HELP_STRING([--with-peers-file=<path>], [use argument as a static peers file])],
 	with_peers_file=$withval, with_peers_file=/etc/open-mx/peers)
 AC_MSG_NOTICE(using static peers file in $with_peers_file)
 AC_SUBST(OMX_PEERS_FILE, $with_peers_file)
+
+######################
+# installation config
 
 AC_ARG_WITH(device,
 	[AS_HELP_STRING([--with-device=<path>:<group>:<mode>],

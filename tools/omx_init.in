@@ -20,7 +20,7 @@ MAIN_DEVICE_MODE=@omx_main_device_mode@
 RAW_DEVICE_NAME=@omx_raw_device_name@
 RAW_DEVICE_GROUP=@omx_raw_device_group@
 RAW_DEVICE_MODE=@omx_raw_device_mode@
-OMX_STATIC_MAPPING=1
+OMX_STATIC_MAPPING=@omx_static_peers@
 OMX_PEERS_FILE=@omx_peers_file@
 
 OMX_CONFIG=/etc/open-mx/open-mx.conf
