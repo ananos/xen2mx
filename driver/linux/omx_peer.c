@@ -22,10 +22,10 @@
 #include <linux/spinlock.h>
 #include <linux/skbuff.h>
 #include <linux/list.h>
+#include <linux/rcupdate.h>
 #ifdef OMX_HAVE_MUTEX
 #include <linux/mutex.h>
 #endif
-#include <linux/rcupdate.h>
 
 #include "omx_common.h"
 #include "omx_peer.h"
@@ -463,7 +463,7 @@ omx_peer_lookup_by_index(uint32_t index,
 
 	mutex_lock(&omx_peers_mutex);
 
-	peer = rcu_dereference(omx_peer_array[index]);
+	peer = omx_peer_array[index];
 	if (!peer)
 		goto out_with_lock;
 
@@ -530,7 +530,7 @@ omx_peer_lookup_by_hostname(char *hostname,
 	mutex_lock(&omx_peers_mutex);
 
 	for(i=0; i<omx_peer_max; i++) {
-		struct omx_peer *peer = rcu_dereference(omx_peer_array[i]);
+		struct omx_peer *peer = omx_peer_array[i];
 		if (!peer || !peer->hostname)
 			continue;
 
@@ -805,7 +805,7 @@ omx_peers_clear_names(void)
 			continue;
 
 		hostname = peer->hostname;
-		rcu_assign_pointer(peer->hostname, NULL);
+		peer->hostname = NULL;
 		kfree(hostname);
 
 		peer->host_query_last_resend_jiffies = 0;
