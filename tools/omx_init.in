@@ -42,6 +42,7 @@ usage () {
 	echo "Usage: $0 [options] {start|stop|status|restart} [module load params]"
 	echo "  --dynamic-peers		Force dynamic peer discovery"
 	echo "  --static-peers		Force static peers from $OMX_PEERS_FILE"
+	echo "  --static-peers=<file>		Force static peers from <file>"
 	exit 1
 }
 
@@ -52,9 +53,12 @@ while [ ${1##--} != $1 ] ; do
 	OMX_STATIC_MAPPING=0
     else if [ $1 = "--static-peers" ] ; then
 	OMX_STATIC_MAPPING=1
+    else if [ ${1##--static-peers=} != $1 ] ; then
+	OMX_STATIC_MAPPING=1
+	OMX_PEERS_FILE=${1##--static-peers=}
     else
 	usage
-    fi fi
+    fi fi fi
     shift
     [ $# -eq 0 ] && usage
 done
@@ -63,9 +67,9 @@ OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${IFACES}"
 
 # Remove the Open-MX module if loaded
 unload_omx() {
-    echo "Killing the dynamic peer mapper"
-    killall -9 omxoed || /bin/true
     if grep open[-_]mx /proc/modules > /dev/null; then
+	echo "Killing the dynamic peer mapper"
+	killall -9 omxoed || /bin/true
         echo "Removing Open-MX driver"
         /sbin/rmmod open-mx
     fi
