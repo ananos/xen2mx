@@ -55,14 +55,10 @@ omx__driver_clear_peer_names(void)
   int err;
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_PEERS_CLEAR_NAMES);
-  if (err < 0) {
-    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_ACCESS_DENIED,
-							  OMX_SUCCESS,
-							  "clear peer names");
-    if (ret == OMX_INTERNAL_MISC_EINVAL)
-      ret = OMX_BOARD_NOT_FOUND;
-    return ret;
-  }
+  if (err < 0)
+    return omx__ioctl_errno_to_return_checked(OMX_ACCESS_DENIED,
+					      OMX_SUCCESS,
+					      "clear peer names");
 
   return OMX_SUCCESS;
 }
