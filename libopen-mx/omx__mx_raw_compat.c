@@ -235,26 +235,7 @@ mx_raw_line_speed(mx_raw_endpoint_t endpoint, mx_line_speed_t *speed)
 mx_return_t
 mx_raw_set_hostname(mx_raw_endpoint_t endpoint, char *hostname)
 {
-  struct omx_cmd_set_hostname set_hostname;
-  int err;
-
-  set_hostname.board_index = endpoint->board_index;
-  strncpy(set_hostname.hostname, hostname, OMX_HOSTNAMELEN_MAX);
-  set_hostname.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
-
-  err = ioctl(omx__globals.control_fd, OMX_CMD_SET_HOSTNAME, &set_hostname);
-  if (err < 0) {
-    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
-							  OMX_INTERNAL_MISC_EINVAL,
-							  OMX_ACCESS_DENIED,
-							  OMX_SUCCESS,
-							  "raw set hostname");
-    if (ret == OMX_INTERNAL_MISC_EINVAL)
-      ret = OMX_BOARD_NOT_FOUND;
-    return ret;
-  }
-
-  return MX_SUCCESS;
+  return omx__driver_set_hostname(endpoint->board_index, hostname);
 }
 
 mx_return_t

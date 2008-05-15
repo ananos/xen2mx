@@ -20,6 +20,53 @@
 
 #include "omx_lib.h"
 
+/**********************
+ * Hostname Management
+ */
+
+omx_return_t
+omx__driver_set_hostname(uint32_t board_index, char *hostname)
+{
+  struct omx_cmd_set_hostname set_hostname;
+  int err;
+
+  set_hostname.board_index = board_index;
+  strncpy(set_hostname.hostname, hostname, OMX_HOSTNAMELEN_MAX);
+  set_hostname.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+
+  err = ioctl(omx__globals.control_fd, OMX_CMD_SET_HOSTNAME, &set_hostname);
+  if (err < 0) {
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+							  OMX_INTERNAL_MISC_EINVAL,
+							  OMX_ACCESS_DENIED,
+							  OMX_SUCCESS,
+							  "set hostname");
+    if (ret == OMX_INTERNAL_MISC_EINVAL)
+      ret = OMX_BOARD_NOT_FOUND;
+    return ret;
+  }
+
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx__driver_clear_peer_names(void)
+{
+  int err;
+
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEERS_CLEAR_NAMES);
+  if (err < 0) {
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_ACCESS_DENIED,
+							  OMX_SUCCESS,
+							  "clear peer names");
+    if (ret == OMX_INTERNAL_MISC_EINVAL)
+      ret = OMX_BOARD_NOT_FOUND;
+    return ret;
+  }
+
+  return OMX_SUCCESS;
+}
+
 /************************
  * Peer Table Management
  */

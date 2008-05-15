@@ -40,7 +40,6 @@ int main(int argc, char *argv[])
   uint8_t board_index = BID;
   omx_return_t ret;
   int clear;
-  int err;
   int c;
 
   ret = omx_init();
@@ -72,24 +71,9 @@ int main(int argc, char *argv[])
   }
 
   if (clear) {
-    err = ioctl(omx__globals.control_fd, OMX_CMD_PEERS_CLEAR_NAMES);
-    if (err < 0) {
-      fprintf(stderr, "Failed to clear peer names (%m)\n");
-      goto out;
-    }
-
+    omx__driver_clear_peer_names();
   } else {
-    struct omx_cmd_set_hostname set_hostname;
-
-    set_hostname.board_index = board_index;
-    strncpy(set_hostname.hostname, argv[1], OMX_HOSTNAMELEN_MAX);
-    set_hostname.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
-
-    err = ioctl(omx__globals.control_fd, OMX_CMD_SET_HOSTNAME, &set_hostname);
-    if (err < 0) {
-      fprintf(stderr, "Failed to set hostname (%m)\n");
-      goto out;
-    }
+    omx__driver_set_hostname(board_index, argv[1]);
   }
 
   return 0;

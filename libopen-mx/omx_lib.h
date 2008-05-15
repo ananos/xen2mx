@@ -547,6 +547,14 @@ omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_in
 extern omx_return_t
 omx__get_board_index_by_name(const char * name, uint8_t * index);
 
+/* hostname management */
+
+omx_return_t
+omx__driver_set_hostname(uint32_t board_index, char *hostname);
+
+omx_return_t
+omx__driver_clear_peer_names(void);
+
 /* peer management */
 
 extern omx_return_t
