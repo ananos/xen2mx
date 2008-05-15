@@ -57,25 +57,29 @@ mx_raw_open_endpoint(uint32_t board_number,
   int fd, err;
 
   fd = open(OMX_RAW_DEVICE_NAME, O_RDWR);
-  if (fd < 0) {
-    fprintf(stderr, "Error opening raw device file, %m\n");
-    exit(1);
-  }
+  if (fd < 0)
+    return omx__errno_to_return();
 
   raw_open.board_index = board_number;
   err = ioctl(fd, OMX_CMD_RAW_OPEN_ENDPOINT, &raw_open);
   if (err < 0) {
-    if (errno == EINVAL)
-      return MX_FAILURE;
-    fprintf(stderr, "Error opening raw endpoint, %m\n");
-    exit(1);
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+							  OMX_BUSY,
+							  OMX_INTERNAL_MISC_EINVAL,
+							  OMX_INTERNAL_MISC_ENODEV,
+							  OMX_SUCCESS,
+							  "open board #%d raw endpoint",
+							  board_number);
+    if (ret == OMX_INTERNAL_MISC_EINVAL)
+      ret = OMX_BOARD_NOT_FOUND;
+    else if (ret == OMX_INTERNAL_MISC_ENODEV)
+      ret = OMX_NO_DRIVER;
+    return ret;
   }
 
   ep = malloc(sizeof(*ep));
-  if (!ep) {
-    fprintf(stderr, "Error allocating raw endpoint, %m\n");
-    exit(1);
-  }
+  if (!ep)
+    return OMX_NO_RESOURCES;
 
   ep->board_index = board_number;
   ep->fd = fd;
@@ -106,10 +110,11 @@ mx_raw_send(mx_raw_endpoint_t endpoint, uint32_t physical_port,
   raw_send.context = (uintptr_t) context;
 
   err = ioctl(endpoint->fd, OMX_CMD_RAW_SEND, &raw_send);
-  if (err < 0) {
-    fprintf(stderr, "Error sending raw packet: %m\n");
-    exit(1);
-  }
+  if (err < 0)
+    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				       OMX_SUCCESS,
+				       "send raw message");
+    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
 
   return MX_SUCCESS;
 }
@@ -129,10 +134,9 @@ mx_raw_next_event(mx_raw_endpoint_t endpoint, uint32_t *incoming_port,
   get_event.buffer_length = *recv_bytes;
 
   err = ioctl(endpoint->fd, OMX_CMD_RAW_GET_EVENT, &get_event);
-  if (err < 0) {
-    fprintf(stderr, "Error from mx_raw_next_event: %m\n");
-    exit(1);
-  }
+  if (err < 0)
+    return omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
+					      "get raw event");
 
   if (get_event.status == OMX_CMD_RAW_EVENT_RECV_COMPLETE) {
     *status = MX_RAW_RECV_COMPLETE;
@@ -240,8 +244,14 @@ mx_raw_set_hostname(mx_raw_endpoint_t endpoint, char *hostname)
 
   err = ioctl(omx__globals.control_fd, OMX_CMD_SET_HOSTNAME, &set_hostname);
   if (err < 0) {
-    fprintf(stderr, "Failed to set hostname (%m)\n");
-    exit(-1);
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+							  OMX_INTERNAL_MISC_EINVAL,
+							  OMX_ACCESS_DENIED,
+							  OMX_SUCCESS,
+							  "raw set hostname");
+    if (ret == OMX_INTERNAL_MISC_EINVAL)
+      ret = OMX_BOARD_NOT_FOUND;
+    return ret;
   }
 
   return MX_SUCCESS;
