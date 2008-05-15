@@ -20,6 +20,7 @@ MAIN_DEVICE_MODE=@omx_main_device_mode@
 RAW_DEVICE_NAME=@omx_raw_device_name@
 RAW_DEVICE_GROUP=@omx_raw_device_group@
 RAW_DEVICE_MODE=@omx_raw_device_mode@
+OMX_STATIC_MAPPING=1
 OMX_PEERS_FILE=@omx_peers_file@
 
 OMX_CONFIG=/etc/open-mx/open-mx.conf
@@ -37,10 +38,33 @@ if test -f ${OMX_CONFIG}; then
     . ${OMX_CONFIG}
 fi
 
+usage () {
+	echo "Usage: $0 [options] {start|stop|status|restart} [module load params]"
+	echo "  --dynamic-peers		Force dynamic peer discovery"
+	echo "  --static-peers		Force static peers from $OMX_PEERS_FILE"
+	exit 1
+}
+
+[ $# -eq 0 ] && usage
+
+while [ ${1##--} != $1 ] ; do
+    if [ $1 = "--dynamic-peers" ] ; then
+	OMX_STATIC_MAPPING=0
+    else if [ $1 = "--static-peers" ] ; then
+	OMX_STATIC_MAPPING=1
+    else
+	usage
+    fi fi
+    shift
+    [ $# -eq 0 ] && usage
+done
+
 OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${IFACES}"
 
 # Remove the Open-MX module if loaded
 unload_omx() {
+    echo "Killing the dynamic peer mapper"
+    killall -9 omxoed || /bin/true
     if grep open[-_]mx /proc/modules > /dev/null; then
         echo "Removing Open-MX driver"
         /sbin/rmmod open-mx
@@ -107,21 +131,20 @@ load_omx() {
     chmod "$RAW_DEVICE_MODE" "$RAW_DEVICE_NAME" \
 	|| echo "[ERROR] Failed to set raw device group"
 
-    # initialize peers
-    if test -f ${OMX_PEERS_FILE}; then
-	echo "Initializing peers using file '${OMX_PEERS_FILE}'"
-	${OMX_PREFIX}/bin/omx_init_peers -c "${OMX_PEERS_FILE}"
+    if test ${OMX_STATIC_MAPPING} -eq 1 ; then
+	# initialize peers
+	if test -f ${OMX_PEERS_FILE}; then
+	    echo "Initializing peers using file '${OMX_PEERS_FILE}'"
+	    ${OMX_PREFIX}/bin/omx_init_peers -c "${OMX_PEERS_FILE}"
+	else
+	    echo "Peers file ${OMX_PEERS_FILE} does not exist, remember to run omx_peers_init with the correct file"
+	fi
     else
-	echo "Peers file ${OMX_PEERS_FILE} does not exist, remember to run omx_peers_init with the correct file"
+	echo "Starting the dynamic peer mapper"
+	${OMX_PREFIX}/bin/omxoed &
+	sleep 2
     fi
 }
-
-usage () {
-	echo $"Usage: $0 {start|stop|status|restart} [module load params]"
-	exit 1
-}
-
-[ $# -eq 0 ] && usage
 
 cmd="$1"
 shift
