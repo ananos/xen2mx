@@ -3,10 +3,8 @@
 * move the cleanup thread into schedule_work?
 
 * finish mapping
-  + omx_init --dynamic-peers=moxoed
   + warn about FMA missing if mxoed and wire-compat?
   + warn if FMA without api compat
-  + allow to force omxoed at runtime
 
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?

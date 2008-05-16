@@ -252,6 +252,9 @@ script. If Open-MX has been configured to use a static peer table
 by default, it is still possible to switch to dynamic discovery
 by passing --dynamic-peers to omx_init.
 
+It is also possible to switch from fma to omxoed by passing the option
+--dynamic-peers=omxoed to omx_init.
+
 +-------------------------
 | V.b. Static peer table
 

@@ -45,6 +45,7 @@ usage () {
 	echo " Commands:	start stop status restart kill"
 	echo " Options:"
 	echo "  --dynamic-peers		Force dynamic peer discovery"
+	echo "  --dynamic-peers=<prog>	Force <prog> as the peer discovery tool instead of $OMX_MAPPER"
 	echo "  --static-peers		Force static peers from $OMX_PEERS_FILE"
 	echo "  --static-peers=<file>		Force static peers from <file>"
 	exit 1
@@ -55,6 +56,9 @@ usage () {
 while [ ${1##--} != $1 ] ; do
     if [ $1 = "--dynamic-peers" ] ; then
 	OMX_STATIC_MAPPING=0
+    else if [ ${1##--dynamic-peers=} != $1 ] ; then
+	OMX_STATIC_MAPPING=0
+	OMX_MAPPER=${1##--dynamic-peers=}
     else if [ $1 = "--static-peers" ] ; then
 	OMX_STATIC_MAPPING=1
     else if [ ${1##--static-peers=} != $1 ] ; then
@@ -62,7 +66,7 @@ while [ ${1##--} != $1 ] ; do
 	OMX_PEERS_FILE=${1##--static-peers=}
     else
 	usage
-    fi fi fi
+    fi fi fi fi
     shift
     [ $# -eq 0 ] && usage
 done
