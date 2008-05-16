@@ -42,7 +42,7 @@ fi
 
 usage () {
 	echo "Usage: $0 [options] <command> [module load params]"
-	echo " Commands:	start stop status restart"
+	echo " Commands:	start stop status restart kill"
 	echo " Options:"
 	echo "  --dynamic-peers		Force dynamic peer discovery"
 	echo "  --static-peers		Force static peers from $OMX_PEERS_FILE"
@@ -184,6 +184,13 @@ stop_mapper() {
     fi
 }
 
+# Kill all possible mapper processes on the system
+kill_mapper() {
+    echo "Killing all omxoed and fma processes"
+    killall -v -9 omxoed || true
+    killall -v -9 fma || true
+}
+
 cmd="$1"
 shift
 
@@ -193,6 +200,11 @@ case "$cmd" in
 	start_mapper
 	;;
     stop)
+	stop_mapper
+	unload_omx
+	;;
+    kill)
+	kill_mapper
 	stop_mapper
 	unload_omx
 	;;
