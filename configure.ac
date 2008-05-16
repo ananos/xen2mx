@@ -539,6 +539,18 @@ fi
 #################
 # peer discovery
 
+AC_MSG_CHECKING([whether the FMA source is available])
+if test -d "$srcdir/fma/" ; then
+  AC_MSG_RESULT([yes])
+  AC_MSG_NOTICE([using FMA for dynamic peer discovery])
+  AC_SUBST(OMX_MAPPER, fma)
+  AC_CONFIG_SUBDIRS(fma)
+else
+  AC_MSG_RESULT([no])
+  AC_MSG_NOTICE([using omxoed for dynamic peer discovery])
+  AC_SUBST(OMX_MAPPER, omxoed)
+fi
+
 AC_ARG_ENABLE(static-peers,
 	[AS_HELP_STRING([--enable-static-peers], [use static peer instead of dynamic discovery])],
 	static_peers=$enableval, static_peers=no)
@@ -619,6 +631,7 @@ AC_SUBST(OMX_RAW_DEVICE_MODE)
 
 AC_SUBST(OPEN_MX_LIB_STATIC, ${libopen_mx_name}.a)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC, ${libopen_mx_name}.so)
+AC_SUBST(OPEN_MX_LIB_DIR, ${libopen_mx_builddir})
 AC_SUBST(OPEN_MX_LIB_STATIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.a)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.so)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_LINK_OPT, ${libopen_mx_name/lib/-l})

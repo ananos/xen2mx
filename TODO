@@ -3,8 +3,11 @@
 * move the cleanup thread into schedule_work?
 
 * finish mapping
-  + if there's a fma/ subdir or if --with-fma is given, use it instead of omxoed
+  + save the mapper pid and kill with the pid so that we can kill omxoed when configured with FMA
+  + omx_init --dynamic-peers=moxoed
   + warn about FMA missing if mxoed and wire-compat?
+  + warn if FMA without api compat
+  + allow to force omxoed at runtime
 
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?

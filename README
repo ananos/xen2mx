@@ -241,7 +241,13 @@ By default, Open-MX uses the omxoed program to dynamically discover
 all peers connected to the fabric, including the ones added later.
 The only requirement is that the omxoed program runs on each peer.
 
-The omxoed program is started automatically by the omx_init startup
+If Myricom's FMA source directory is unpacked within the Open-MX
+source (as the "fma" subdirectory), Open-MX will automatically switch
+(at configure time) to using FMA instead of omxoed as a peer discovery
+program. Using FMA is especially important when talking to native MX
+hosts since they will use FMA by default as well.
+
+The discovery program is started automatically by the omx_init startup
 script. If Open-MX has been configured to use a static peer table
 by default, it is still possible to switch to dynamic discovery
 by passing --dynamic-peers to omx_init.
@@ -459,8 +465,13 @@ configured in Ethernet mode.
 
 If using dynamic peer discovery:
   You have to make sure that the same mapper program is used on both
-  sides. by default, MX uses the FMA. Under some circumstances, it
-  may also rely on mxoed, which is compatible with Open-MX' omxoed.
+  sides. by default, MX uses the FMA by default. So the FMA source
+  should be unpacked as a "fma" subdirectory of the Open-MX source
+  so that the configure script will enable FMA by default instead of
+  omxoed for dynamic peer discovery.
+
+  Under some circumstances, MX may also rely on mxoed, which is
+  compatible with Open-MX' omxoed.
 
 If using a static peer table:
   The peer table should be setup on the Open-MX nodes as usual with

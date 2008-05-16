@@ -83,6 +83,7 @@ installonly:
 		-e 's£@omx_raw_device_group@£@OMX_RAW_DEVICE_GROUP@£' \
 		-e 's£@omx_raw_device_mode@£@OMX_RAW_DEVICE_MODE@£' \
 		-e 's£@omx_static_peers@£@OMX_STATIC_PEERS@£' \
+		-e 's£@omx_mapper@£@OMX_MAPPER@£' \
 		-e 's£@omx_peers_file@£@OMX_PEERS_FILE@£' \
 		< @srcdir@/omx_init.in > omx_init
 	$(CMDPREFIX) $(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/

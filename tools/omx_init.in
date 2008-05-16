@@ -21,6 +21,7 @@ RAW_DEVICE_NAME=@omx_raw_device_name@
 RAW_DEVICE_GROUP=@omx_raw_device_group@
 RAW_DEVICE_MODE=@omx_raw_device_mode@
 OMX_STATIC_MAPPING=@omx_static_peers@
+OMX_MAPPER=@omx_mapper@
 OMX_PEERS_FILE=@omx_peers_file@
 
 OMX_CONFIG=/etc/open-mx/open-mx.conf
@@ -147,8 +148,8 @@ start_mapper() {
 	    echo "Peers file ${OMX_PEERS_FILE} does not exist, remember to run omx_peers_init with the correct file"
 	fi
     else
-	echo "Starting the dynamic peer mapper"
-	${OMX_PREFIX}/bin/omxoed &
+	echo "Starting the dynamic peer discovery (${OMX_MAPPER})"
+	${OMX_PREFIX}/bin/${OMX_MAPPER} &
 	sleep 2
     fi
 }
@@ -156,8 +157,8 @@ start_mapper() {
 # Stop the mapper
 stop_mapper() {
     if grep open[-_]mx /proc/modules > /dev/null; then
-	echo "Killing the dynamic peer mapper"
-	killall -9 omxoed || /bin/true
+	echo "Killing the dynamic peer discovery (${OMX_MAPPER})"
+	killall -9 ${OMX_MAPPER} || /bin/true
     fi
 }
 

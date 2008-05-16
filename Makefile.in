@@ -21,6 +21,9 @@ ifeq (@OMX_BUILD_LIB@,1)
 	endif
 	COMPONENTS	+=	other
 endif
+ifeq (@OMX_MAPPER@,fma)
+	COMPONENTS	+=	fma
+endif
 
 .PHONY: all installonly install clean distclean
 .PHONY: driver driver-installonly driver-install driver-clean driver-distclean
@@ -29,6 +32,7 @@ endif
 .PHONY: tests tests-installonly tests-install tests-clean tests-distclean
 .PHONY: mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean
 .PHONY: other other-installonly other-install other-clean other-distclean
+.PHONY: fma fma-installonly fma-install fma-clean fma-distclean
 
 all: $(COMPONENTS)
 
@@ -66,6 +70,12 @@ tests tests-installonly tests-install tests-clean tests-distclean:
 
 mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean:
 	$(CMDPREFIX) $(MAKE) -C tests/mx bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
+
+#################
+# fma targets
+
+fma fma-installonly fma-install fma-clean fma-distclean:
+	$(CMDPREFIX) $(MAKE) -C fma $(shell echo $@ | cut -s -d- -f2) "CC=$(CC)" MYRI_INC=-I@abs_top_srcdir@/common MYRI_LIB=@abs_top_builddir@/@OPEN_MX_LIB_DIR@
 
 ################
 # other targets
