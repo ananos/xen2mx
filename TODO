@@ -3,7 +3,7 @@
 * move the cleanup thread into schedule_work?
 
 * finish mapping
-  + save the mapper pid and kill with the pid so that we can kill omxoed when configured with FMA
+  + omx_init kill to killall omxoed and fma
   + omx_init --dynamic-peers=moxoed
   + warn about FMA missing if mxoed and wire-compat?
   + warn if FMA without api compat

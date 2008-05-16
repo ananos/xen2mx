@@ -24,6 +24,7 @@ OMX_STATIC_MAPPING=@omx_static_peers@
 OMX_MAPPER=@omx_mapper@
 OMX_PEERS_FILE=@omx_peers_file@
 
+OMX_PID_FILE=/var/run/open-mx.mapper.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
 LINUX_RELEASE=$(uname -r)
 
@@ -150,15 +151,36 @@ start_mapper() {
     else
 	echo "Starting the dynamic peer discovery (${OMX_MAPPER})"
 	${OMX_PREFIX}/bin/${OMX_MAPPER} &
+	pid=$!
+
+	# wait a bit for the process to start (and maybe fail)
 	sleep 2
+
+	cmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
+	if [ -z "$cmdname" ] ; then
+	    echo "Discovery exited early"
+	else
+	    echo "$pid $cmdname" > ${OMX_PID_FILE}
+	    echo "Started as pid=$pid"
+	fi
     fi
 }
 
 # Stop the mapper
 stop_mapper() {
-    if grep open[-_]mx /proc/modules > /dev/null; then
-	echo "Killing the dynamic peer discovery (${OMX_MAPPER})"
-	killall -9 ${OMX_MAPPER} || /bin/true
+    if [ -e ${OMX_PID_FILE} ] ; then
+	cat ${OMX_PID_FILE} | while read pid cmdname ; do
+	realcmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
+	if [ "$cmdname" != "$realcmdname" ] ; then
+	    echo "Cannot find dynamic peer discovery to kill ($cmdname, pid=$pid)"
+	else
+	    echo "Killing the dynamic peer discovery ($cmdname, pid=$pid)"
+	    kill -9 $pid || true
+	fi
+	done
+	rm ${OMX_PID_FILE}
+    else
+	echo "Cannot find dynamic peer discovery to kill"
     fi
 }
 
