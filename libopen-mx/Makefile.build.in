@@ -65,10 +65,20 @@ include @abs_top_srcdir@/depend.mk
 $(STATIC_LIB): $(STATIC_LIB_OBJS)
 	$(CMDECHO) "  AR      $(REL_DIR)$@"
 	$(CMDPREFIX) $(AR) cr $@ $^
+	$(CMDPREFIX) if test @OMX_MX_API_COMPAT@ -eq 1; then \
+		$(CMDECHOAFTERPREFIX) "  LN      $(REL_DIR)libmyriexpress.a" ; \
+		$(RM) libmyriexpress.a ; \
+		$(LN_S) $(STATIC_LIB) libmyriexpress.a ; \
+	fi
 
 $(DYNAMIC_LIB): $(DYNAMIC_LIB_OBJS)
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
 	$(CMDPREFIX) $(SHARED_LD) --shared -o $@ $^
+	$(CMDPREFIX) if test @OMX_MX_API_COMPAT@ -eq 1; then \
+		$(CMDECHOAFTERPREFIX) "  LN      $(REL_DIR)libmyriexpress.so" ; \
+		$(RM) libmyriexpress.so ; \
+		$(LN_S) $(DYNAMIC_LIB) libmyriexpress.so ; \
+	fi
 
 assertions: $(ASSERTIONS_STATIC_OBJ)
 
