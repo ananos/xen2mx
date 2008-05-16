@@ -2,10 +2,6 @@
 
 * move the cleanup thread into schedule_work?
 
-* finish mapping
-  + warn about FMA missing if mxoed and wire-compat?
-  + warn if FMA without api compat
-
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?
 
