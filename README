@@ -98,10 +98,17 @@ By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
 the configure line to change this (or set prefix on the 'make install'
 command line).
 
-To simplify Open-MX startup, you might want to install the initialization
+Open-MX brings the omx_init initialization scripts which takes care of
+loading/unloading the driver and managing the peer table.
+    $ sbin/omx_init start
+To choose which interfaces have to be attached, some module parameters
+may be given on the command line:
+    $ sbin/omx_init start ifnames=eth1
+
+To simplify Open-MX startup, you might want to install the omx_init
 script on each node:
     $ sbin/omx_local_install
-Then Open-MX may be started with:
+Then Open-MX may then be started with:
     $ /etc/init.d/open-mx start
 You might want to configure your system to auto-load this script at
 startup.
@@ -450,20 +457,24 @@ Once Open-MX is configured in wire compatible mode, you need to make
 sure that the nodes running in native MX mode are using MX >= 1.2.5
 configured in Ethernet mode.
 
-If using dynamic peer discovery, you have to make sure that the same
-mapper process is used on both sides. by default, MX uses the FMA but
-it may rely on mxoed, which is compatible with Open-MX' omxoed.
+If using dynamic peer discovery:
+  You have to make sure that the same mapper program is used on both
+  sides. by default, MX uses the FMA. Under some circumstances, it
+  may also rely on mxoed, which is compatible with Open-MX' omxoed.
 
-If using a static peer table the peer table should be setup on the
-Open-MX nodes as usual with omx_init_peers, with a single entry for
-each Open-MX peer and each MX peer.
+If using a static peer table:
+  The peer table should be setup on the Open-MX nodes as usual with
+  omx_init_peers, with a single entry for each Open-MX peer and each
+  MX peer.
 
-On the MX nodes, the regular dynamic mapper may first be launched to
-discover all MX peers. Once it is done, it should be stopped with:
-$ /etc/init.d/mx stop-mapper
-Then, each Open-MX peer with name "myhostname:0" and mac address 
-00:11:22:33:44:55 should be added on each MX node with:
-$ mx_init_ether_peer 00:11:22:33:44:55 00:00:00:00:00:00 myhostname:0
+  On the MX nodes, each Open-MX peer with name "myhostname:0" and mac
+  address 00:11:22:33:44:55 should be added with:
+  $ mx_init_ether_peer 00:11:22:33:44:55 00:00:00:00:00:00 myhostname:0
+
+  Note that it is possible to let the regular MX dynamic discovery
+  map the MX-only fabric and then manually add the Open-MX peers.
+  To do so, the regular discovery should first be stopped with:
+  $ /etc/init.d/mx stop-mapper
 
 Once peers are setup on both MX and Open-MX nodes, the fabric is ready.
 
