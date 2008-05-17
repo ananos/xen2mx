@@ -35,9 +35,12 @@ extern int omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index);
 extern struct omx_endpoint * omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index);
 extern int omx_set_target_peer(struct omx_pkt_head *ph, uint16_t index);
 extern int omx_check_recv_peer_index(uint16_t peer_index);
+
 extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *hostname);
 extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t *index);
 extern int omx_peer_lookup_by_hostname(char *hostname, uint64_t *board_addr, uint32_t *index);
+extern int omx_peer_lookup_by_addr_fast(uint64_t board_addr, uint32_t *index);
+
 extern void omx_process_host_queries_and_replies(void);
 extern void omx_process_peers_to_host_query(void);
 

@@ -71,7 +71,7 @@ omx_recv_connect(struct omx_iface * iface,
 	}
 
 	/* the connect doesn't know its peer index tet, we need to lookup */
-	err = omx_peer_lookup_by_addr(src_addr, NULL, &peer_index);
+	err = omx_peer_lookup_by_addr_fast(src_addr, &peer_index);
 	if (err < 0) {
 		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(eh, "CONNECT packet with unknown peer index %d",
@@ -808,7 +808,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 		}
 
 		src_addr = omx_board_addr_from_ethhdr_src(eh);
-		err = omx_peer_lookup_by_addr(src_addr, NULL, &src_addr_peer_index);
+		err = omx_peer_lookup_by_addr_fast(src_addr, &src_addr_peer_index);
 		if (err < 0) {
 			omx_drop_dprintk(eh, "NACK LIB with unknown peer index and unknown address");
 			goto out;

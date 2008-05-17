@@ -458,12 +458,21 @@ omx_check_recv_peer_index(uint16_t index)
  * Peer Lookup
  */
 
+/*
+ * Lookup board_addr and/or hostname by index.
+ *
+ * board_addr and hostname may be NULL.
+ *
+ * Cannot be called by BH.
+ */
 int
 omx_peer_lookup_by_index(uint32_t index,
 			 uint64_t *board_addr, char *hostname)
 {
 	struct omx_peer *peer;
 	int err = -EINVAL;
+
+	might_sleep();
 
 	if (index >= omx_peer_max)
 		goto out;
@@ -493,12 +502,21 @@ omx_peer_lookup_by_index(uint32_t index,
 	return err;
 }
 
+/*
+ * Lookup index and/or hostname by board_addr.
+ *
+ * hostname and index may be NULL.
+ *
+ * Cannot be called by BH.
+ */
 int
 omx_peer_lookup_by_addr(uint64_t board_addr,
 			char *hostname, uint32_t *index)
 {
 	uint8_t hash;
 	struct omx_peer * peer;
+
+	might_sleep();
 
 	hash = omx_peer_addr_hash(board_addr);
 
@@ -525,14 +543,22 @@ omx_peer_lookup_by_addr(uint64_t board_addr,
 	mutex_unlock(&omx_peers_mutex);
 
 	return -EINVAL;
-
 }
 
+/*
+ * Lookup board_addr and/or index by hostname.
+ *
+ * board_addr and index may be NULL.
+ *
+ * Cannot be called by BH.
+ */
 int
 omx_peer_lookup_by_hostname(char *hostname,
 			    uint64_t *board_addr, uint32_t *index)
 {
 	int i;
+
+	might_sleep();
 
 	mutex_lock(&omx_peers_mutex);
 
@@ -552,6 +578,34 @@ omx_peer_lookup_by_hostname(char *hostname,
 	}
 
 	mutex_unlock(&omx_peers_mutex);
+
+	return -EINVAL;
+}
+
+/*
+ * Fast version of omx_peer_lookup_by_addr where we don't care about
+ * the peer hostname and thus may use RCU locking, and thus may be
+ * called from the BH (namely for connect recv).
+ *
+ * index cannot be NULL, it will always be set.
+ */
+int
+omx_peer_lookup_by_addr_fast(uint64_t board_addr, uint32_t *index)
+{
+	uint8_t hash;
+	struct omx_peer * peer;
+
+	hash = omx_peer_addr_hash(board_addr);
+
+	rcu_read_lock();
+	list_for_each_entry_rcu(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
+		if (peer->board_addr == board_addr) {
+			*index = peer->index;
+			rcu_read_unlock();
+			return 0;
+		}
+	}
+	rcu_read_unlock();
 
 	return -EINVAL;
 }

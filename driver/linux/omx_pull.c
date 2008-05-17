@@ -1794,7 +1794,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		}
 
 		src_addr = omx_board_addr_from_ethhdr_src(eh);
-		err = omx_peer_lookup_by_addr(src_addr, NULL, &src_addr_peer_index);
+		err = omx_peer_lookup_by_addr_fast(src_addr, &src_addr_peer_index);
 		if (err < 0) {
 			omx_drop_dprintk(eh, "NACK MCP with unknown peer index and unknown address");
 			goto out;
