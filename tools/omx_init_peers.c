@@ -26,6 +26,7 @@
 
 static int clear = 0;
 static int verbose = 0;
+static int done = 0;
 
 omx_return_t
 omx__peer_add(uint64_t board_addr, char *hostname)
@@ -124,7 +125,8 @@ usage(int argc, char *argv[])
   fprintf(stderr, "Options\n");
   fprintf(stderr, " -c <n>\treplace existing peers with the new ones\n");
   fprintf(stderr, " -a <n>\tappend new peers to existing ones (default)\n");
-  fprintf(stderr, " -v <n>\tverbose messages\n");
+  fprintf(stderr, " -d\tmark the peer table configuration as done\n");
+  fprintf(stderr, " -v\tverbose messages\n");
 }
 
 int
@@ -140,13 +142,16 @@ main(int argc, char *argv[])
     exit(-1);
   }
 
-  while ((c = getopt(argc, argv, "cavh")) != -1)
+  while ((c = getopt(argc, argv, "cadvh")) != -1)
     switch (c) {
     case 'c':
       clear = 1;
       break;
     case 'a':
       clear = 0;
+      break;
+    case 'd':
+      done = 1;
       break;
     case 'v':
       verbose = 1;
@@ -164,6 +169,16 @@ main(int argc, char *argv[])
     ret = omx__driver_peers_clear();
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to clear peers (%s)\n",
+	      omx_strerror(ret));
+      exit(-1);
+    }
+  }
+
+  if (done) {
+    printf("Marking the peer table configured as done...\n");
+    ret = omx__driver_set_peer_table_state(1, 0, 0, -1);
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Failed to set peer table state (%s)\n",
 	      omx_strerror(ret));
       exit(-1);
     }
