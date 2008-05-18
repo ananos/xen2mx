@@ -54,7 +54,7 @@ omx__driver_clear_peer_names(void)
 {
   int err;
 
-  err = ioctl(omx__globals.control_fd, OMX_CMD_PEERS_CLEAR_NAMES);
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_TABLE_CLEAR_NAMES);
   if (err < 0)
     return omx__ioctl_errno_to_return_checked(OMX_ACCESS_DENIED,
 					      OMX_SUCCESS,
@@ -100,7 +100,7 @@ omx__driver_peers_clear()
 {
   int err;
 
-  err = ioctl(omx__globals.control_fd, OMX_CMD_PEERS_CLEAR);
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_TABLE_CLEAR);
   if (err < 0) {
     omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_ACCESS_DENIED,
 							  OMX_SUCCESS,
@@ -139,7 +139,7 @@ omx__driver_set_peer_table_state(uint32_t configured, uint32_t version,
   state.size = size;
   state.mapper_id = mapper_id;
 
-  err = ioctl(omx__globals.control_fd, OMX_CMD_SET_PEER_TABLE_STATE, &state);
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_TABLE_SET_STATE, &state);
   if (err < 0) {
     omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_ACCESS_DENIED,
 							  OMX_SUCCESS,

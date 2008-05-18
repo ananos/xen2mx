@@ -5,10 +5,6 @@
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?
 
-* improve mapping
-  + merge the raw endpoint into a regular endpoint?
-  + peer_add and peers_clear should be raw ioctl? so that mapper running prevents them from working
-
 * fix/improve ioat support
   + sleep a bit before polling on synchronous copies
     - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param
@@ -47,6 +43,8 @@
 * change --iface into ---iface, and use --iface as a "close when no more endpoint"
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
+
+* merge the raw endpoint into a regular endpoint?
 
 * overlap registration with rndv and pull
   + add a "registered_length" field to windows
