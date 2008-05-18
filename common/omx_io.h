@@ -490,6 +490,8 @@ omx_strcmd(unsigned cmd)
 		return "Get Endpoint Info";
 	case OMX_CMD_GET_COUNTERS:
 		return "Get Counters";
+	case OMX_CMD_SET_HOSTNAME:
+		return "Set Hostname";
 	case OMX_CMD_PEERS_CLEAR:
 		return "Clear Peers";
 	case OMX_CMD_PEER_ADD:
@@ -500,6 +502,14 @@ omx_strcmd(unsigned cmd)
 		return "Peer from Addr";
 	case OMX_CMD_PEER_FROM_HOSTNAME:
 		return "Peer from Hostname";
+	case OMX_CMD_PEERS_CLEAR_NAMES:
+		return "Peers Clear Names";
+	case OMX_CMD_RAW_OPEN_ENDPOINT:
+		return "Open Raw Endpoint";
+	case OMX_CMD_RAW_SEND:
+		return "Raw Send";
+	case OMX_CMD_RAW_GET_EVENT:
+		return "Raw Get Event";
 	case OMX_CMD_OPEN_ENDPOINT:
 		return "Open Endpoint";
 	case OMX_CMD_BENCH:
