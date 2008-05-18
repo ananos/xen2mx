@@ -282,6 +282,10 @@ omx_init(void)
 	omx_driver_userdesc->peer_max = omx_peer_max;
 	omx_driver_userdesc->hz = HZ;
 	omx_driver_userdesc->jiffies = jiffies;
+	omx_driver_userdesc->peer_table_configured = 0;
+	omx_driver_userdesc->peer_table_version = 0;
+	omx_driver_userdesc->peer_table_size = 0;
+	omx_driver_userdesc->peer_table_mapper_id = -1;
 
 	/* setup a timer to update jiffies in the driver user descriptor */
 	setup_timer(&omx_driver_userdesc_update_timer, omx_driver_userdesc_update_handler, 0);

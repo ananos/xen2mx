@@ -134,8 +134,7 @@ mx_raw_set_map_version(struct omx_raw_endpoint * endpoint, uint32_t physical_por
 		       uint64_t mapper_id, uint32_t map_version,
 		       uint32_t num_nodes, uint32_t mapping_complete)
 {
-  /* FIXME: nothing to do? */
-  return OMX_SUCCESS;
+  return omx__driver_set_peer_table_state(mapping_complete, map_version, num_nodes, mapper_id);
 }
 
 mx_return_t

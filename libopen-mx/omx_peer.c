@@ -112,6 +112,45 @@ omx__driver_peers_clear()
   return 0;
 }
 
+omx_return_t
+omx__driver_get_peer_table_state(uint32_t *configured, uint32_t *version,
+				 uint32_t *size, uint64_t *mapper_id)
+{
+  if (configured)
+    *configured = omx__driver_desc->peer_table_configured;
+  if (version)
+    *version = omx__driver_desc->peer_table_version;
+  if (size)
+    *size = omx__driver_desc->peer_table_size;
+  if (mapper_id)
+    *mapper_id = omx__driver_desc->peer_table_mapper_id;
+  return OMX_SUCCESS;
+}
+
+omx_return_t
+omx__driver_set_peer_table_state(uint32_t configured, uint32_t version,
+				 uint32_t size, uint64_t mapper_id)
+{
+  struct omx_cmd_peer_table_state state;
+  int err;
+
+  state.configured = configured;
+  state.version = version;
+  state.size = size;
+  state.mapper_id = mapper_id;
+
+  err = ioctl(omx__globals.control_fd, OMX_CMD_SET_PEER_TABLE_STATE, &state);
+  if (err < 0) {
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_ACCESS_DENIED,
+							  OMX_SUCCESS,
+							  "set peer table state");
+    /* let the caller handle errors */
+    return ret;
+  }
+
+  return OMX_SUCCESS;
+}
+
 /************************
  * Low-Level Peer Lookup
  */

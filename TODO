@@ -6,8 +6,6 @@
   what's a pending request? anything but a posted recv?
 
 * improve mapping
-  + add set_peer_table_state() for mx_raw_set_map_version
-  + add get_peer_table_state() for "configured" state in omx_info
   + merge the raw endpoint into a regular endpoint?
   + peer_add and peers_clear should be raw ioctl? so that mapper running prevents them from working
 

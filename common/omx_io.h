@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x135
+#define OMX_DRIVER_ABI_VERSION		0x137
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -99,8 +99,13 @@ struct omx_driver_desc {
 	uint32_t endpoint_max;
 	/* 24 */
 	uint32_t peer_max;
-	uint32_t pad;
+	uint32_t peer_table_size;
 	/* 32 */
+	uint32_t peer_table_configured;
+	uint32_t peer_table_version;
+	/* 30 */
+	uint64_t peer_table_mapper_id;
+	/* 48 */
 };
 
 #define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
@@ -193,6 +198,17 @@ struct omx_cmd_misc_peer_info {
 	uint32_t index;
 	uint32_t pad;
 	/* 96 */
+};
+
+struct omx_cmd_peer_table_state {
+	uint32_t configured;
+	uint32_t version;
+	/* 8 */
+	uint32_t size;
+	uint32_t pad;
+	/* 16 */
+	uint64_t mapper_id;
+	/* 24 */
 };
 
 struct omx_cmd_raw_open_endpoint {
@@ -459,6 +475,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_PEER_FROM_ADDR		_IOWR(OMX_CMD_MAGIC, 0x23, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_PEER_FROM_HOSTNAME	_IOWR(OMX_CMD_MAGIC, 0x24, struct omx_cmd_misc_peer_info)
 #define OMX_CMD_PEERS_CLEAR_NAMES	_IO(OMX_CMD_MAGIC, 0x25)
+#define OMX_CMD_SET_PEER_TABLE_STATE	_IOW(OMX_CMD_MAGIC, 0x26, struct omx_cmd_peer_table_state)
 #define OMX_CMD_RAW_OPEN_ENDPOINT	_IOR(OMX_CMD_MAGIC, 0x30, struct omx_cmd_raw_open_endpoint)
 #define OMX_CMD_RAW_SEND		_IOR(OMX_CMD_MAGIC, 0x31, struct omx_cmd_raw_send)
 #define OMX_CMD_RAW_GET_EVENT		_IOWR(OMX_CMD_MAGIC, 0x32, struct omx_cmd_raw_get_event)
@@ -504,6 +521,8 @@ omx_strcmd(unsigned cmd)
 		return "Peer from Hostname";
 	case OMX_CMD_PEERS_CLEAR_NAMES:
 		return "Peers Clear Names";
+	case OMX_CMD_SET_PEER_TABLE_STATE:
+		return "Set Peers State";
 	case OMX_CMD_RAW_OPEN_ENDPOINT:
 		return "Open Raw Endpoint";
 	case OMX_CMD_RAW_SEND:

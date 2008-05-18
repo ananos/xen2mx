@@ -113,6 +113,7 @@ add_peer(
   ++nip->num_peers;
 
   omx__driver_peer_add(peer_mac, NULL);
+  omx__driver_set_peer_table_state(1, 1, nip->num_peers+1, nip->my_nic_id);
 }
 
 int

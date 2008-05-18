@@ -32,8 +32,11 @@ usage(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
+  char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   omx_return_t ret;
   uint32_t max, emax, count;
+  uint32_t configured;
+  uint64_t mapper_id;
   int found, i;
   int c;
 
@@ -70,11 +73,22 @@ int main(int argc, char *argv[])
   }
   printf("Found %ld boards (%ld max) supporting %ld endpoints each\n",
 	 (unsigned long) count, (unsigned long) max, (unsigned long) emax);
+  /* get peer table state */
+  ret = omx__driver_get_peer_table_state(&configured, NULL, NULL, &mapper_id);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to get peer table status, %s\n", omx_strerror(ret));
+    goto out;
+  }
+  if (configured) {
+    omx__board_addr_sprintf(board_addr_str, mapper_id);
+    printf("Peer table is ready, mapper is %s.\n", board_addr_str);
+  } else {
+    printf("Peer table is not configured yet.\n");  
+  }
 
   for(i=0, found=0; i<max && found<count; i++) {
     uint8_t board_index = i;
     struct omx_board_info board_info;
-    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 
     ret = omx__get_board_info(NULL, board_index, &board_info);
     if (ret == OMX_BOARD_NOT_FOUND)

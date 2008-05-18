@@ -663,6 +663,28 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		break;
 	}
 
+	case OMX_CMD_SET_PEER_TABLE_STATE: {
+		struct omx_cmd_peer_table_state state;
+
+		ret = -EPERM;
+		if (!capable(CAP_SYS_ADMIN))
+			goto out;
+
+		ret = copy_from_user(&state, (void __user *) arg,
+				     sizeof(state));
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
+			printk(KERN_ERR "Open-MX: Failed to read set peer table state command argument, error %d\n", ret);
+			goto out;
+		}
+
+		omx_driver_userdesc->peer_table_configured = state.configured;
+		omx_driver_userdesc->peer_table_version = state.version;
+		omx_driver_userdesc->peer_table_size = state.size;
+		omx_driver_userdesc->peer_table_mapper_id = state.mapper_id;
+		break;
+	}
+
 	case OMX_CMD_OPEN_ENDPOINT: {
 		struct omx_endpoint * endpoint = file->private_data;
 		BUG_ON(!endpoint);

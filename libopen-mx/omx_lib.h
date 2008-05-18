@@ -555,6 +555,14 @@ omx__driver_set_hostname(uint32_t board_index, char *hostname);
 omx_return_t
 omx__driver_clear_peer_names(void);
 
+omx_return_t
+omx__driver_get_peer_table_state(uint32_t *configured, uint32_t *version,
+				 uint32_t *size, uint64_t *mapper_id);
+
+omx_return_t
+omx__driver_set_peer_table_state(uint32_t configured, uint32_t version,
+				 uint32_t size, uint64_t mapper_id);
+
 /* peer management */
 
 extern omx_return_t
