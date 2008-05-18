@@ -80,15 +80,17 @@ omx_raw_close_endpoint(struct omx_raw_endpoint * endpoint)
 }
 
 omx_return_t
-omx_raw_send(struct omx_raw_endpoint * endpoint,
-	     void *send_buffer, uint32_t buffer_length)
+omx__raw_send(struct omx_raw_endpoint * endpoint,
+	      void *send_buffer, uint32_t buffer_length,
+	      int need_event, void *event_context)
 {
   struct omx_cmd_raw_send raw_send;
   int err;
 
   raw_send.buffer = (uintptr_t) send_buffer;
   raw_send.buffer_length = buffer_length;
-  raw_send.need_event = 0;
+  raw_send.need_event = need_event;
+  raw_send.context = (uintptr_t) event_context;
 
   err = ioctl(endpoint->fd, OMX_CMD_RAW_SEND, &raw_send);
   if (err < 0)
@@ -101,10 +103,10 @@ omx_raw_send(struct omx_raw_endpoint * endpoint,
 }
 
 omx_return_t
-omx_raw_next_event(struct omx_raw_endpoint * endpoint,
-		   void *recv_buffer, uint32_t *recv_bytes,
-		   uint32_t timeout_ms,
-		   omx_raw_status_t *status)
+omx__raw_next_event(struct omx_raw_endpoint * endpoint, uint32_t *incoming_port,
+		    void **context, void *recv_buffer, uint32_t *recv_bytes,
+		    uint32_t timeout_ms, omx_raw_status_t *status,
+		    int maybe_send)
 {
   struct omx_cmd_raw_get_event get_event;
   int err;
@@ -121,6 +123,14 @@ omx_raw_next_event(struct omx_raw_endpoint * endpoint,
   if (get_event.status == OMX_CMD_RAW_EVENT_RECV_COMPLETE) {
     *status = OMX_RAW_RECV_COMPLETE;
     *recv_bytes = get_event.buffer_length;
+    if (incoming_port)
+      *incoming_port = 0;
+  } else if (get_event.status == OMX_CMD_RAW_EVENT_SEND_COMPLETE) {
+    if (!maybe_send)
+      omx__abort("Got unexpected raw send complete event");
+    *status = OMX_RAW_SEND_COMPLETE;
+    if (context)
+      *context = (void *)(uintptr_t) get_event.context;
   } else {
     omx__debug_assert(get_event.status == OMX_CMD_RAW_NO_EVENT);
     *status = OMX_RAW_NO_EVENT;

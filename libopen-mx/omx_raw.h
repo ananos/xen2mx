@@ -34,6 +34,7 @@ struct omx_raw_endpoint {
 typedef struct omx_raw_endpoint * omx_raw_endpoint_t;
 
 #define OMX_RAW_NO_EVENT      0
+#define OMX_RAW_SEND_COMPLETE 1
 #define OMX_RAW_RECV_COMPLETE 2
 
 typedef int omx_raw_status_t;
@@ -47,13 +48,29 @@ omx_return_t
 omx_raw_close_endpoint(omx_raw_endpoint_t endpoint);
 
 omx_return_t
+omx__raw_send(omx_raw_endpoint_t endpoint,
+	      void *send_buffer, uint32_t buffer_length,
+	      int need_event, void *event_context);
+
+static inline omx_return_t
 omx_raw_send(omx_raw_endpoint_t endpoint,
-	     void *send_buffer, uint32_t buffer_length);
+	     void *send_buffer, uint32_t buffer_length)
+{
+  return omx__raw_send(endpoint, send_buffer, buffer_length, 0, NULL);
+}
 
 omx_return_t
-omx_raw_next_event(omx_raw_endpoint_t endpoint,
+omx__raw_next_event(struct omx_raw_endpoint * endpoint, uint32_t *incoming_port,
+		    void **context, void *recv_buffer, uint32_t *recv_bytes,
+		    uint32_t timeout_ms, omx_raw_status_t *status,
+		    int maybe_send);
+
+static inline omx_return_t
+omx_raw_next_event(struct omx_raw_endpoint * endpoint,
 		   void *recv_buffer, uint32_t *recv_bytes,
-		   uint32_t timeout_ms,
-		   omx_raw_status_t *status);
+		   uint32_t timeout_ms, omx_raw_status_t *status)
+{
+  return omx__raw_next_event(endpoint, NULL, NULL, recv_buffer, recv_bytes, timeout_ms, status, 0);
+}
 
 #endif /* __omx_raw_h__ */

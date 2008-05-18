@@ -20,6 +20,7 @@
 
 #include "omx_io.h"
 #include "omx_lib.h"
+#include "omx_raw.h"
 
 /*
  * This file runs build-time assertions without ever being linked to anybody
@@ -50,6 +51,7 @@ assertions(void)
 
 #include "myriexpress.h"
 #include "mx_extensions.h"
+#include "mx_raw.h"
 
 void
 compat_assertions(void)
@@ -79,6 +81,11 @@ compat_assertions(void)
   /* check the size of enums */
   CHECK(sizeof(mx_return_t) == sizeof(omx_return_t));
   CHECK(sizeof(mx_status_code_t) == sizeof(omx_return_t));
+
+  /* check raw api status codes */
+  CHECK(MX_RAW_NO_EVENT == OMX_RAW_NO_EVENT);
+  CHECK(MX_RAW_SEND_COMPLETE == OMX_RAW_SEND_COMPLETE);
+  CHECK(MX_RAW_RECV_COMPLETE == OMX_RAW_RECV_COMPLETE);
 }
 
 #endif

@@ -6,7 +6,6 @@
   what's a pending request? anything but a posted recv?
 
 * improve mapping
-  + port some raw MX API wrappers on top the Open-MX raw API
   + add set_peer_table_state() for mx_raw_set_map_version
   + add get_peer_table_state() for "configured" state in omx_info
   + merge the raw endpoint into a regular endpoint?

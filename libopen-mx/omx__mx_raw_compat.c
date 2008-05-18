@@ -48,47 +48,13 @@ mx_raw_open_endpoint(uint32_t board_number,
 		     mx_param_t *params_array, uint32_t params_count,
 		     struct omx_raw_endpoint **endpoint)
 {
-  struct omx_cmd_raw_open_endpoint raw_open;
-  struct omx_raw_endpoint *ep;
-  int fd, err;
-
-  fd = open(OMX_RAW_DEVICE_NAME, O_RDWR);
-  if (fd < 0)
-    return omx__errno_to_return();
-
-  raw_open.board_index = board_number;
-  err = ioctl(fd, OMX_CMD_RAW_OPEN_ENDPOINT, &raw_open);
-  if (err < 0) {
-    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
-							  OMX_BUSY,
-							  OMX_INTERNAL_MISC_EINVAL,
-							  OMX_INTERNAL_MISC_ENODEV,
-							  OMX_SUCCESS,
-							  "open board #%d raw endpoint",
-							  board_number);
-    if (ret == OMX_INTERNAL_MISC_EINVAL)
-      ret = OMX_BOARD_NOT_FOUND;
-    else if (ret == OMX_INTERNAL_MISC_ENODEV)
-      ret = OMX_NO_DRIVER;
-    return ret;
-  }
-
-  ep = malloc(sizeof(*ep));
-  if (!ep)
-    return OMX_NO_RESOURCES;
-
-  ep->board_index = board_number;
-  ep->fd = fd;
-
-  *endpoint = ep;
-  return MX_SUCCESS;
+  return omx_raw_open_endpoint(board_number, params_array, params_count, endpoint);
 }
 
 mx_return_t
 mx_raw_close_endpoint(struct omx_raw_endpoint * endpoint)
 {
-  close(endpoint->fd);
-  return MX_SUCCESS;
+  return omx_raw_close_endpoint(endpoint);
 }
 
 mx_return_t
@@ -97,22 +63,7 @@ mx_raw_send(struct omx_raw_endpoint * endpoint, uint32_t physical_port,
 	    void *send_buffer, uint32_t buffer_length,
 	    void *context)
 {
-  struct omx_cmd_raw_send raw_send;
-  int err;
-
-  raw_send.buffer = (uintptr_t) send_buffer;
-  raw_send.buffer_length = buffer_length;
-  raw_send.need_event = 1;
-  raw_send.context = (uintptr_t) context;
-
-  err = ioctl(endpoint->fd, OMX_CMD_RAW_SEND, &raw_send);
-  if (err < 0)
-    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
-				       OMX_SUCCESS,
-				       "send raw message");
-    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
-
-  return MX_SUCCESS;
+  return omx__raw_send(endpoint, send_buffer, buffer_length, 1, context);
 }
 
 mx_return_t
@@ -122,33 +73,7 @@ mx_raw_next_event(struct omx_raw_endpoint * endpoint, uint32_t *incoming_port,
 		  uint32_t timeout_ms,
 		  mx_raw_status_t *status)
 {
-  struct omx_cmd_raw_get_event get_event;
-  int err;
-
-  get_event.timeout = timeout_ms;
-  get_event.buffer = (uintptr_t) recv_buffer;
-  get_event.buffer_length = *recv_bytes;
-
-  err = ioctl(endpoint->fd, OMX_CMD_RAW_GET_EVENT, &get_event);
-  if (err < 0)
-    return omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
-					      "get raw event");
-
-  if (get_event.status == OMX_CMD_RAW_EVENT_RECV_COMPLETE) {
-    *status = MX_RAW_RECV_COMPLETE;
-    *recv_bytes = get_event.buffer_length;
-    if (incoming_port)
-      *incoming_port = 0;
-  } else if (get_event.status == OMX_CMD_RAW_EVENT_SEND_COMPLETE) {
-    *status = MX_RAW_SEND_COMPLETE;
-    if (context)
-      *context = (void *)(uintptr_t) get_event.context;
-  } else {
-    omx__debug_assert(get_event.status == OMX_CMD_RAW_NO_EVENT);
-    *status = MX_RAW_NO_EVENT;
-  }
-
-  return MX_SUCCESS;
+  return omx__raw_next_event(endpoint, incoming_port, context, recv_buffer, recv_bytes, timeout_ms, status, 1);
 }
 
 mx_return_t
