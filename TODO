@@ -5,6 +5,13 @@
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?
 
+* improve mapping
+  + port some raw MX API wrappers on top the Open-MX raw API
+  + add set_peer_table_state() for mx_raw_set_map_version
+  + add get_peer_table_state() for "configured" state in omx_info
+  + merge the raw endpoint into a regular endpoint?
+  + peer_add and peers_clear should be raw ioctl? so that mapper running prevents them from working
+
 * fix/improve ioat support
   + sleep a bit before polling on synchronous copies
     - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param

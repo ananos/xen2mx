@@ -39,7 +39,7 @@
 #define MX_DEAD_PCI_PARITY_ERROR		16
 #define MX_DEAD_PCI_MASTER_ABORT		17
 
-typedef struct mx_raw_endpoint * mx_raw_endpoint_t;
+typedef struct omx_raw_endpoint * mx_raw_endpoint_t;
 typedef int mx_raw_status_t;
 typedef int mx_endpt_handle_t;
 
