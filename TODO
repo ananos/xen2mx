@@ -1,8 +1,5 @@
 * move the cleanup thread into schedule_work?
 
-* drop no-progression-during-one-second warning if no requests are pending?
-  what's a pending request? anything but a posted recv?
-
 * fix/improve ioat support
   + sleep a bit before polling on synchronous copies
     - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param
@@ -43,6 +40,9 @@
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
 * merge the raw endpoint into a regular endpoint?
+
+* drop no-progression-during-one-second warning if no requests are pending?
+  what's a pending request? anything but a posted recv?
 
 * overlap registration with rndv and pull
   + add a "registered_length" field to windows

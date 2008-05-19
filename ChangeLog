@@ -1,27 +1,29 @@
-Open-MX 0.6.0 (May xxx 2008, svn r1705)
-=======================================
-The Mapper release.
+Open-MX 0.6.0 (May 19th 2008, svn r1725)
+========================================
+The Dynamic Peer Discovery release.
 
 Major Enhancements:
-* Add dynamic peer discovery with the omxoed tool automatically started by
-  omx_init when loading the module. Include support for Myricom's FMA peer
-  discovery (MX-wire-compatible) when its source is unpacked within the
-  Open-MX source. Static peer table setup is still possible on demand.
+* Add dynamic peer discovery with the omxoed tool. It is automatically
+  started by omx_init when loading the module. Also add support for
+  Myricom's FMA peer discovery (MX-wire-compatible) when its source is
+  unpacked within the Open-MX source. Static peer table setup is still
+  possible on demand.
 * Improve large message performance in MX-wire-compatible mode, almost
-  achieving the same performance than non-wire-compatible mode.
+  achieving the same performance than in non-wire-compatible mode.
 
 Other improvements from previous release:
 * Restore the iface status to valid when failing to detach because some
   endpoints were still open.
 * Fix useless resending of the last frames of large messages.
+* Fix support for abusively fragmented or small packets.
 * Cleanup omx_hostname features.
 * A couple miscellaneous minor fixes and improvements everywhere.
 
 Caveats:
-* Queueing of requests in case of resource shortage is not perfect yet, some
-  requests may not be processed in order.
-* No background progression or retransmission is done if the application does
-  not invoke an Open-MX routine explicitly.
+* Queueing of requests in case of resource shortage is not perfect yet,
+  some requests may not be processed in order.
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
 
 Open-MX 0.5.0 (April 30th 2008, svn r1609)
 ==========================================
