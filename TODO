@@ -1,4 +1,6 @@
-* check that skb are not smaller than headers
+* check that skb are not smaller than headers (60 min packet is enough?)
+
+* check 8B alignment for pull replies
 
 * move the cleanup thread into schedule_work?
 

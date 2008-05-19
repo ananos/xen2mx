@@ -163,8 +163,10 @@ struct omx_pkt_host_query {
 	uint8_t pad;
 	uint16_t return_peer_index;
 	uint32_t pad0;
+	/* 8 */
 	uint32_t magic;
 	uint32_t pad1;
+	/* 16 */
 };
 
 struct omx_pkt_host_reply {
@@ -172,8 +174,10 @@ struct omx_pkt_host_reply {
 	uint8_t length;
 	uint16_t return_peer_index;
 	uint32_t pad0;
+	/* 8 */
 	uint32_t magic;
 	uint32_t pad1;
+	/* 16 */
 };	
 
 struct omx_pkt_truc {
@@ -347,7 +351,7 @@ struct omx_pkt_nack_mcp {
 
 struct omx_hdr {
 	struct omx_pkt_head head;
-	/* 32 */
+	/* 16 */
 	union {
 		struct omx_pkt_host_query host_query;
 		struct omx_pkt_host_reply host_reply;
