@@ -80,7 +80,7 @@ unload_omx() {
         echo "Removing Open-MX driver"
         /sbin/rmmod open-mx
     fi
-    rm -f "$MAIN_DEVICE_NAME"
+    rm -f "$MAIN_DEVICE_NAME" || true
 }
 
 # Load the Open-MX module
@@ -183,7 +183,7 @@ stop_peer_discovery() {
 	    kill -9 $pid || true
 	fi
 	done
-	rm ${OMX_PID_FILE}
+	rm ${OMX_PID_FILE} || true
     else
 	echo "Cannot find dynamic peer discovery to kill"
     fi
