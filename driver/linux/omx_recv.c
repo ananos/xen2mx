@@ -887,34 +887,52 @@ omx_recv_error(struct omx_iface * iface,
  * Packet type handlers
  */
 
-static int (*omx_pkt_type_handlers[OMX_PKT_TYPE_MAX+1])(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
+static int (*omx_pkt_type_handler[OMX_PKT_TYPE_MAX+1])(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
+static size_t omx_pkt_type_hdr_len[OMX_PKT_TYPE_MAX+1];
 
 void
-omx_pkt_type_handlers_init(void)
+omx_pkt_types_init(void)
 {
 	int i;
 
-	for(i=0; i<=OMX_PKT_TYPE_MAX; i++)
-		omx_pkt_type_handlers[i] = omx_recv_error;
+	for(i=0; i<=OMX_PKT_TYPE_MAX; i++) {
+		omx_pkt_type_handler[i] = omx_recv_error;
+		omx_pkt_type_hdr_len[i] = sizeof(struct omx_pkt_head);
+	}
 
-	omx_pkt_type_handlers[OMX_PKT_TYPE_RAW] = omx_recv_raw;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_MFM_NIC_REPLY] = omx_recv_nosys; /* FIXME */
-	omx_pkt_type_handlers[OMX_PKT_TYPE_HOST_QUERY] = omx_recv_host_query;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_HOST_REPLY] = omx_recv_host_reply;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_ETHER_UNICAST] = omx_recv_nosys; /* FIXME */
-	omx_pkt_type_handlers[OMX_PKT_TYPE_ETHER_MULTICAST] = omx_recv_nosys; /* FIXME */
-	omx_pkt_type_handlers[OMX_PKT_TYPE_ETHER_NATIVE] = omx_recv_nosys; /* FIXME */
-	omx_pkt_type_handlers[OMX_PKT_TYPE_TRUC] = omx_recv_truc;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_CONNECT] = omx_recv_connect;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_TINY] = omx_recv_tiny;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_SMALL] = omx_recv_small;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_MEDIUM] = omx_recv_medium_frag;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_RNDV] = omx_recv_rndv;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL] = omx_recv_pull_request;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_PULL_REPLY] = omx_recv_pull_reply;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_NOTIFY] = omx_recv_notify;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_LIB] = omx_recv_nack_lib;
-	omx_pkt_type_handlers[OMX_PKT_TYPE_NACK_MCP] = omx_recv_nack_mcp;
+	omx_pkt_type_handler[OMX_PKT_TYPE_RAW] = omx_recv_raw;
+	omx_pkt_type_handler[OMX_PKT_TYPE_MFM_NIC_REPLY] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handler[OMX_PKT_TYPE_HOST_QUERY] = omx_recv_host_query;
+	omx_pkt_type_handler[OMX_PKT_TYPE_HOST_REPLY] = omx_recv_host_reply;
+	omx_pkt_type_handler[OMX_PKT_TYPE_ETHER_UNICAST] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handler[OMX_PKT_TYPE_ETHER_MULTICAST] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handler[OMX_PKT_TYPE_ETHER_NATIVE] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handler[OMX_PKT_TYPE_TRUC] = omx_recv_truc;
+	omx_pkt_type_handler[OMX_PKT_TYPE_CONNECT] = omx_recv_connect;
+	omx_pkt_type_handler[OMX_PKT_TYPE_TINY] = omx_recv_tiny;
+	omx_pkt_type_handler[OMX_PKT_TYPE_SMALL] = omx_recv_small;
+	omx_pkt_type_handler[OMX_PKT_TYPE_MEDIUM] = omx_recv_medium_frag;
+	omx_pkt_type_handler[OMX_PKT_TYPE_RNDV] = omx_recv_rndv;
+	omx_pkt_type_handler[OMX_PKT_TYPE_PULL] = omx_recv_pull_request;
+	omx_pkt_type_handler[OMX_PKT_TYPE_PULL_REPLY] = omx_recv_pull_reply;
+	omx_pkt_type_handler[OMX_PKT_TYPE_NOTIFY] = omx_recv_notify;
+	omx_pkt_type_handler[OMX_PKT_TYPE_NACK_LIB] = omx_recv_nack_lib;
+	omx_pkt_type_handler[OMX_PKT_TYPE_NACK_MCP] = omx_recv_nack_mcp;
+
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_RAW] += 0; /* only user-space will dereference more than omx_pkt_head */
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_HOST_QUERY] += sizeof(struct omx_pkt_host_query);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_HOST_REPLY] += sizeof(struct omx_pkt_host_reply);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_TRUC] += sizeof(struct omx_pkt_truc);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_CONNECT] += sizeof(struct omx_pkt_connect);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_TINY] += sizeof(struct omx_pkt_msg);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_SMALL] += sizeof(struct omx_pkt_msg);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_MEDIUM] += sizeof(struct omx_pkt_medium_frag);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_RNDV] += sizeof(struct omx_pkt_msg);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_PULL] += sizeof(struct omx_pkt_pull_request);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_PULL_REPLY] += sizeof(struct omx_pkt_pull_reply);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_NOTIFY] += sizeof(struct omx_pkt_notify);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_NACK_LIB] += sizeof(struct omx_pkt_nack_lib);
+	omx_pkt_type_hdr_len[OMX_PKT_TYPE_NACK_MCP] += sizeof(struct omx_pkt_nack_mcp);
 }
 
 /***********************
@@ -959,7 +977,7 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	/* no need to check ptype since there is a default error handler
 	 * for all erroneous values
 	 */
-	omx_pkt_type_handlers[mh->body.generic.ptype](iface, mh, skb);
+	omx_pkt_type_handler[mh->body.generic.ptype](iface, mh, skb);
 
  out:
 	return 0;

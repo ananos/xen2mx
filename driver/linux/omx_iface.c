@@ -963,7 +963,7 @@ omx_net_init(void)
 	if (omx_copybench)
 		omx_net_copy_bench();
 
-	omx_pkt_type_handlers_init();
+	omx_pkt_types_init();
 
 	dev_add_pack(&omx_pt);
 
