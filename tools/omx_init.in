@@ -76,7 +76,7 @@ OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${IFACES}"
 
 # Remove the Open-MX module if loaded
 unload_omx() {
-    if grep open[-_]mx /proc/modules > /dev/null; then
+    if grep -E 'open(-|_)mx' /proc/modules > /dev/null; then
         echo "Removing Open-MX driver"
         /sbin/rmmod open-mx
     fi
