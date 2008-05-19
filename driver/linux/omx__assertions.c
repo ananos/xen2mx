@@ -53,4 +53,8 @@ assertions(void)
   CHECK(OMX_EVT_PULL_DONE_ENDPT_CLOSED == OMX_NACK_TYPE_ENDPT_CLOSED);
   CHECK(OMX_EVT_PULL_DONE_BAD_SESSION == OMX_NACK_TYPE_BAD_SESSION);
   CHECK(OMX_EVT_PULL_DONE_BAD_RDMAWIN == OMX_NACK_TYPE_BAD_RDMAWIN);
+
+  /* make sure we can always dereference omx_pkt_head and ptype in incoming skb */
+  CHECK(ETH_ZLEN >= sizeof(struct omx_pkt_head));
+  CHECK(ETH_ZLEN >= OMX_HDR_PTYPE_OFFSET + sizeof(omx_packet_type_t));
 }
