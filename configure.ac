@@ -546,7 +546,7 @@ if test -d "$srcdir/fma/" ; then
   if test "$enable_mx" != yes ; then
     AC_MSG_ERROR([Building FMA requires the MX API compatibility])
   fi
-  AC_SUBST(OMX_MAPPER, fma)
+  AC_SUBST(OMX_PEER_DISCOVERY, fma)
   AC_CONFIG_SUBDIRS(fma)
 else
   AC_MSG_RESULT([no])
@@ -554,7 +554,7 @@ else
   if test "$enable_mx_wire" = yes ; then
     AC_MSG_WARN([FMA is recommended for dynamic discovery of native MX peers])
   fi
-  AC_SUBST(OMX_MAPPER, omxoed)
+  AC_SUBST(OMX_PEER_DISCOVERY, omxoed)
 fi
 
 AC_ARG_ENABLE(static-peers,
