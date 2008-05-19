@@ -220,6 +220,11 @@ Also, the MTU should be large enough for Open-MX packets to transit.
 size, which may depend on the configuration.
 $ ifconfig eth2 mtu 9000
 
+Finally, it has to be noted that the dynamic peer discovery cannot
+discover newly attached or detached local interfaces. As soon as the
+list of local interfaces changes, the discovery process should be
+restarted (see Section V. Peer Discovery).
+
 
 ++===================++
 || V. Peer Discovery ||
@@ -233,6 +238,14 @@ The --enable-static-peers option may be used on the configure command
 line to switch from dynamic to static peer table. It is also possible
 to switch later by passing --dynamic-peers or --static-peers to the
 omx_init startup script.
+
+It is possible to restart the peer table management process without
+restarting the whole Open-MX driver with:
+$ omx_init restart-mapper
+This is especially important when attaching or detaching interfaces at
+runtime while using dynamic peer discovery. But it may also for instance
+be used to switch between static and dynamic peer table.
+
 
 +-----------------------------
 | V.a. Dynamic peer discovery
@@ -255,7 +268,7 @@ by passing --dynamic-peers to omx_init.
 It is also possible to switch from fma to omxoed by passing the option
 --dynamic-peers=omxoed to omx_init.
 
-+-------------------------
++------------------------
 | V.b. Static peer table
 
 Dynamic discovery may sometimes take several seconds before all nodes
