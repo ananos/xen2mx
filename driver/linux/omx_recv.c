@@ -857,6 +857,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	return err;
 }
 
+#if 0
 static int
 omx_recv_nosys(struct omx_iface * iface,
 		struct omx_hdr * mh,
@@ -864,6 +865,20 @@ omx_recv_nosys(struct omx_iface * iface,
 {
 	omx_counter_inc(iface, DROP_NOSYS_TYPE);
 	omx_drop_dprintk(&mh->head.eth, "packet with unsupported type %d",
+			 mh->body.generic.ptype);
+
+	dev_kfree_skb(skb);
+	return 0;
+}
+#endif
+
+static int
+omx_recv_invalid(struct omx_iface * iface,
+		 struct omx_hdr * mh,
+		 struct sk_buff * skb)
+{
+	omx_counter_inc(iface, DROP_INVALID_TYPE);
+	omx_drop_dprintk(&mh->head.eth, "packet with invalid type %d",
 			 mh->body.generic.ptype);
 
 	dev_kfree_skb(skb);
@@ -901,12 +916,12 @@ omx_pkt_types_init(void)
 	}
 
 	omx_pkt_type_handler[OMX_PKT_TYPE_RAW] = omx_recv_raw;
-	omx_pkt_type_handler[OMX_PKT_TYPE_MFM_NIC_REPLY] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handler[OMX_PKT_TYPE_MFM_NIC_REPLY] = omx_recv_invalid;
 	omx_pkt_type_handler[OMX_PKT_TYPE_HOST_QUERY] = omx_recv_host_query;
 	omx_pkt_type_handler[OMX_PKT_TYPE_HOST_REPLY] = omx_recv_host_reply;
-	omx_pkt_type_handler[OMX_PKT_TYPE_ETHER_UNICAST] = omx_recv_nosys; /* FIXME */
-	omx_pkt_type_handler[OMX_PKT_TYPE_ETHER_MULTICAST] = omx_recv_nosys; /* FIXME */
-	omx_pkt_type_handler[OMX_PKT_TYPE_ETHER_NATIVE] = omx_recv_nosys; /* FIXME */
+	omx_pkt_type_handler[OMX_PKT_TYPE_ETHER_UNICAST] = omx_recv_invalid;
+	omx_pkt_type_handler[OMX_PKT_TYPE_ETHER_MULTICAST] = omx_recv_invalid;
+	omx_pkt_type_handler[OMX_PKT_TYPE_ETHER_NATIVE] = omx_recv_invalid;
 	omx_pkt_type_handler[OMX_PKT_TYPE_TRUC] = omx_recv_truc;
 	omx_pkt_type_handler[OMX_PKT_TYPE_CONNECT] = omx_recv_connect;
 	omx_pkt_type_handler[OMX_PKT_TYPE_TINY] = omx_recv_tiny;

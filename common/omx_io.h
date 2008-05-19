@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x139
+#define OMX_DRIVER_ABI_VERSION		0x140
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -834,6 +834,7 @@ enum omx_counter_index {
 	OMX_COUNTER_DROP_RAW_QUEUE_FULL,
 	OMX_COUNTER_DROP_RAW_TOO_LARGE,
 	OMX_COUNTER_DROP_NOSYS_TYPE,
+	OMX_COUNTER_DROP_INVALID_TYPE,
 	OMX_COUNTER_DROP_UNKNOWN_TYPE,
 
 	OMX_COUNTER_SHARED_SEND_TINY,
@@ -998,6 +999,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Drop Nack MCP Bad Handle Generation in Magic";
 	case OMX_COUNTER_DROP_NOSYS_TYPE:
 		return "Drop Not Implemented Packet Type";
+	case OMX_COUNTER_DROP_INVALID_TYPE:
+		return "Drop Invalid Packet Type";
 	case OMX_COUNTER_DROP_UNKNOWN_TYPE:
 		return "Drop Unknown Packet Type";
 	case OMX_COUNTER_SHARED_SEND_TINY:
