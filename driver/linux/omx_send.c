@@ -668,6 +668,7 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_notify cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_notify);
 	int ret;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
@@ -683,7 +684,7 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 #endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
-			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
+			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create notify skb\n");
 		ret = -ENOMEM;
@@ -831,10 +832,11 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	struct ethhdr *eh;
 	struct omx_pkt_nack_lib *nack_lib_n;
 	struct net_device * ifp = iface->eth_ifp;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_nack_lib);
 	int ret;
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
-			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
+			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create nack lib skb\n");
@@ -892,10 +894,11 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	struct ethhdr *eh;
 	struct omx_pkt_nack_mcp *nack_mcp_n;
 	struct net_device * ifp = iface->eth_ifp;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_nack_mcp);
 	int ret;
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
-			  max_t(unsigned long, sizeof(struct omx_hdr), ETH_ZLEN));
+			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create nack mcp skb\n");
