@@ -946,6 +946,9 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	struct omx_iface *iface;
 	struct omx_hdr linear_header;
 	struct omx_hdr *mh;
+	omx_packet_type_t ptype;
+	size_t hdr_len;
+	int err;
 
 	skb = skb_share_check(skb, GFP_ATOMIC);
 	if (unlikely(skb == NULL))
@@ -962,22 +965,51 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 		goto out;
 	}
 
-	/* no need to linearize the whole skb,
-	 * but at least the header to make things simple */
-	if (unlikely(skb_headlen(skb) < sizeof(struct omx_hdr))) {
+	/* pointer to the data, assuming it is linear */
+	mh = omx_skb_mac_header(skb);
+
+#ifdef OMX_DEBUG
+	if (skb->len < ETH_ZLEN) {
+		omx_counter_inc(iface, DROP_BAD_HEADER_DATALEN);
+		omx_drop_dprintk(&mh->head.eth, "packet smaller than ETH_ZLEN (%d)", ETH_ZLEN);
+		goto out;		
+	}
+#endif
+
+	/* get the actual packet type, either from linear data or not */
+	if (likely(skb_headlen(skb) >= OMX_HDR_PTYPE_OFFSET + sizeof(ptype))) {
+		ptype = mh->body.generic.ptype;
+	} else {
+		err = skb_copy_bits(skb, OMX_HDR_PTYPE_OFFSET, &ptype, sizeof(ptype));
+		if (unlikely(err < 0)) {
+			omx_counter_inc(iface, DROP_BAD_HEADER_DATALEN);
+			omx_drop_dprintk(&mh->head.eth, "couldn't get packet type");
+			goto out;
+		}
+	}
+
+	/* get the header length */
+	hdr_len = omx_pkt_type_hdr_len[ptype];
+
+	/* we need a linear header */
+	if (unlikely(skb_headlen(skb) < hdr_len)) {
+		/* copy the header in the a linear buffer */
 		omx_counter_inc(iface, RECV_NONLINEAR_HEADER);
-		skb_copy_bits(skb, 0, &linear_header,
-			      sizeof(struct omx_hdr));
+		err = skb_copy_bits(skb, 0, &linear_header, hdr_len);
+		if (unlikely(err < 0)) {
+			omx_counter_inc(iface, DROP_BAD_HEADER_DATALEN);
+			omx_drop_dprintk(&mh->head.eth, "couldn't get packet header");
+			goto out;
+		}
 		mh = &linear_header;
 	} else {
-		/* no need to linearize the header */
-		mh = omx_skb_mac_header(skb);
+		/* the header inside the skb (mh) is already linear */
 	}
 
 	/* no need to check ptype since there is a default error handler
 	 * for all erroneous values
 	 */
-	omx_pkt_type_handler[mh->body.generic.ptype](iface, mh, skb);
+	omx_pkt_type_handler[ptype](iface, mh, skb);
 
  out:
 	return 0;

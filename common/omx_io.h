@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x138
+#define OMX_DRIVER_ABI_VERSION		0x139
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -813,6 +813,7 @@ enum omx_counter_index {
 	OMX_COUNTER_PULL_REPLY_SEND_LINEAR,
 	OMX_COUNTER_PULL_REPLY_FILL_FAILED,
 
+	OMX_COUNTER_DROP_BAD_HEADER_DATALEN,
 	OMX_COUNTER_DROP_BAD_DATALEN,
 	OMX_COUNTER_DROP_BAD_SKBLEN,
 	OMX_COUNTER_DROP_BAD_PEER_INDEX,
@@ -955,6 +956,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Pull Reply Sent as Linear";
 	case OMX_COUNTER_PULL_REPLY_FILL_FAILED:
 		return "Pull Reply Recv Fill Pages Failed";
+	case OMX_COUNTER_DROP_BAD_HEADER_DATALEN:
+	       	return "Drop Bad Data Length for Headers";
 	case OMX_COUNTER_DROP_BAD_DATALEN:
 		return "Drop Bad Data Length";
 	case OMX_COUNTER_DROP_BAD_SKBLEN:

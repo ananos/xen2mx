@@ -1,6 +1,5 @@
-* check that skb are not smaller than headers (60 min packet is enough?)
-
-* check 8B alignment for pull replies
+* need to restart mapper when adding/detaching iface
+* document mapper restating commands
 
 * move the cleanup thread into schedule_work?
 
