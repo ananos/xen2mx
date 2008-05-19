@@ -67,6 +67,8 @@ enum omx_pkt_type {
 	OMX_PKT_TYPE_MAX=255,
 };
 
+typedef uint8_t omx_packet_type_t; /* don't use enum since it may end-up being stored on 32bits unless -fshort-enums is passed */
+
 static inline const char*
 omx_strpkttype(enum omx_pkt_type ptype)
 {
@@ -158,8 +160,10 @@ struct omx_pkt_head {
 	/* 16 */
 };
 
+#define OMX_HDR_PTYPE_OFFSET sizeof(struct omx_pkt_head)
+
 struct omx_pkt_host_query {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t pad;
 	uint16_t return_peer_index;
 	uint32_t pad0;
@@ -170,7 +174,7 @@ struct omx_pkt_host_query {
 };
 
 struct omx_pkt_host_reply {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t length;
 	uint16_t return_peer_index;
 	uint32_t pad0;
@@ -181,7 +185,7 @@ struct omx_pkt_host_reply {
 };	
 
 struct omx_pkt_truc {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
@@ -193,7 +197,7 @@ struct omx_pkt_truc {
 };
 
 struct omx_pkt_connect {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
@@ -207,7 +211,7 @@ struct omx_pkt_connect {
 };
 
 struct omx_pkt_msg {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
@@ -235,7 +239,7 @@ struct omx_pkt_medium_frag { /* similar to MX's pkt_msg_t + pkt_frame_t */
 
 #ifdef OMX_MX_WIRE_COMPAT
 struct omx_pkt_pull_request {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
@@ -256,7 +260,7 @@ struct omx_pkt_pull_request {
 };
 #else /* ~OMX_MX_WIRE_COMPAT */
 struct omx_pkt_pull_request {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
@@ -293,7 +297,7 @@ struct omx_pkt_pull_request {
 /* OMX_PULL_BLOCK_LENGTH_MAX must fit inside pull_request.block_length */
 
 struct omx_pkt_pull_reply {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t frame_seqnum; /* sender's pull index + page number in this frame, %256 */
 	uint16_t frame_length; /* pagesize - frame_offset */
 	uint32_t msg_offset; /* index * pagesize - target_offset + sender_offset */
@@ -304,7 +308,7 @@ struct omx_pkt_pull_reply {
 };
 
 struct omx_pkt_notify {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
@@ -323,7 +327,7 @@ struct omx_pkt_notify {
 };
 
 struct omx_pkt_nack_lib {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint8_t nack_type;
@@ -338,7 +342,7 @@ struct omx_pkt_nack_lib {
 };
 
 struct omx_pkt_nack_mcp {
-	uint8_t ptype;
+	omx_packet_type_t ptype;
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint8_t nack_type;
