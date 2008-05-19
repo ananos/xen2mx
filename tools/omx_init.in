@@ -43,6 +43,7 @@ fi
 usage () {
 	echo "Usage: $0 [options] <command> [module load params]"
 	echo " Commands:	start stop status restart kill"
+	echo "          	start-discovery stop-discovery restart-discovery kill-discovery"
 	echo " Options:"
 	echo "  --dynamic-peers		Force dynamic peer discovery"
 	echo "  --dynamic-peers=<prog>	Force <prog> as the peer discovery tool instead of $OMX_PEER_DISCOVERY"
@@ -142,8 +143,8 @@ load_omx() {
 	|| echo "[ERROR] Failed to set raw device group"
 }
 
-# Start the mapper
-start_mapper() {
+# Start the peer discovery
+start_peer_discovery() {
     if test ${OMX_STATIC_MAPPING} -eq 1 ; then
 	# initialize peers
 	if test -f ${OMX_PEERS_FILE}; then
@@ -170,8 +171,8 @@ start_mapper() {
     fi
 }
 
-# Stop the mapper
-stop_mapper() {
+# Stop the peer discovery
+stop_peer_discovery() {
     if [ -e ${OMX_PID_FILE} ] ; then
 	cat ${OMX_PID_FILE} | while read pid cmdname ; do
 	realcmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
@@ -188,8 +189,8 @@ stop_mapper() {
     fi
 }
 
-# Kill all possible mapper processes on the system
-kill_mapper() {
+# Kill all possible peer discovery processes on the system
+kill_peer_discovery() {
     echo "Killing all omxoed and fma processes"
     killall -v -9 omxoed || true
     killall -v -9 fma || true
@@ -201,32 +202,36 @@ shift
 case "$cmd" in
     start)
 	load_omx "$@"
-	start_mapper
+	start_peer_discovery
 	;;
     stop)
-	stop_mapper
+	stop_peer_discovery
 	unload_omx
 	;;
     kill)
-	kill_mapper
-	stop_mapper
+	kill_peer_discovery
+	stop_peer_discovery
 	unload_omx
 	;;
     restart)
-	stop_mapper
+	stop_peer_discovery
 	unload_omx
 	load_omx "$@"
-	start_mapper
+	start_peer_discovery
         ;;
-    start-mapper)
-	start_mapper
+    start-discovery)
+	start_peer_discovery
 	;;
-    stop-mapper)
-	stop_mapper
+    stop-discovery)
+	stop_peer_discovery
 	;;
-    restart-mapper)
-	stop_mapper
-	start_mapper
+    kill-discovery)
+	kill_peer_discovery
+	stop_peer_discovery
+	;;
+    restart-discovery)
+	stop_peer_discovery
+	start_peer_discovery
 	;;
     status)
 	if grep open[-_]mx /proc/modules > /dev/null; then

@@ -178,8 +178,8 @@ this device file, its group or mode. Write access to this file is
 required when using Open-MX.
 
 There is actually also another /dev/open-mx-raw device file that may
-be used by the mapper process to send/recv raw packets. It may be
-configured similarly with --with-raw-device.
+be used by the peer discovery process to send/recv raw packets. It may
+be configured similarly with --with-raw-device.
 
 Kernels older than 2.6.15 are unlikely to be supported due to various
 important functions being unavailable (especially vm_insert_page).
@@ -222,8 +222,9 @@ $ ifconfig eth2 mtu 9000
 
 Finally, it has to be noted that the dynamic peer discovery cannot
 discover newly attached or detached local interfaces. As soon as the
-list of local interfaces changes, the discovery process should be
-restarted (see Section V. Peer Discovery).
+list of local interfaces changes, the local discovery process should
+be restarted (see Section V. Peer Discovery):
+$ omx_init restart-discovery
 
 
 ++===================++
@@ -241,7 +242,7 @@ omx_init startup script.
 
 It is possible to restart the peer table management process without
 restarting the whole Open-MX driver with:
-$ omx_init restart-mapper
+$ omx_init restart-discovery
 This is especially important when attaching or detaching interfaces at
 runtime while using dynamic peer discovery. But it may also for instance
 be used to switch between static and dynamic peer table.
@@ -480,11 +481,11 @@ sure that the nodes running in native MX mode are using MX >= 1.2.5
 configured in Ethernet mode.
 
 If using dynamic peer discovery:
-  You have to make sure that the same mapper program is used on both
-  sides. by default, MX uses the FMA by default. So the FMA source
-  should be unpacked as a "fma" subdirectory of the Open-MX source
-  so that the configure script will enable FMA by default instead of
-  omxoed for dynamic peer discovery.
+  You have to make sure that the same peer discovery program (or "mapper")
+  is used on both sides. by default, MX uses the FMA by default. So the
+  FMA source should be unpacked as a "fma" subdirectory of the Open-MX
+  source so that the configure script will enable FMA by default instead
+  of omxoed for dynamic peer discovery.
 
   Under some circumstances, MX may also rely on mxoed, which is
   compatible with Open-MX' omxoed.
