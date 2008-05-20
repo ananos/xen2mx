@@ -113,13 +113,14 @@ other-install: other-installonly
 
 ifeq ($(SUFFIX),date)
 TARBALL	=	@PACKAGE_TARNAME@-@PACKAGE_VERSION@+svn.$$(date +%Y%m%d.%H%M%S)
-else ifneq ($(SUFFIX),"")
+else
 TARBALL	=	@PACKAGE_TARNAME@-@PACKAGE_VERSION@$(SUFFIX)
 endif
 SVN_URL	=	svn://scm.gforge.inria.fr/svn/open-mx/
 SVN_BRANCH	=	trunk
 
 svndist:
+	@if [ -z "$(TARBALL)" ] ; then echo "Cannot create tarball with empty TARBALL name" ; /bin/false ; fi
 	@newdir=$(TARBALL) \
 	 && echo "Exporting current SVN branch $(SVN_BRANCH)..." \
 	 && svn export $(SVN_URL)/$(SVN_BRANCH) $$newdir \
@@ -130,6 +131,7 @@ svndist:
 	 && echo "Created $${newdir}.tar.gz" && ls -l $${newdir}.tar.gz
 
 curdist:
+	@if [ -z "$(TARBALL)" ] ; then echo "Cannot create tarball with empty TARBALL name" ; /bin/false ; fi
 	@newdir=$(TARBALL) \
 	 && echo "Copying current tree with SVN versioning info..." \
 	 && cp -a . ../$$newdir && mv ../$$newdir . && find $$newdir -type d | grep '\.svn$$' | xargs rm -rf \; \
