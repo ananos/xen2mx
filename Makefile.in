@@ -4,7 +4,11 @@ bindir	=	@bindir@
 includedir	=	@includedir@
 srcdir	=	@srcdir@
 
-include @abs_top_srcdir@/common.mk
+OMX_CONFIGURED	=	@OMX_CONFIGURED@
+
+ifeq ($(OMX_CONFIGURED),1)
+	include @abs_top_srcdir@/common.mk
+endif
 
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
@@ -106,16 +110,19 @@ other-installonly:
 
 other-install: other-installonly
 
-#######
-# misc
+##################
+# create tarballs
 
 .PHONY: svndist curdist
 
+ifeq ($(OMX_CONFIGURED),1)
 ifeq ($(SUFFIX),date)
 TARBALL	=	@PACKAGE_TARNAME@-@PACKAGE_VERSION@+svn.$$(date +%Y%m%d.%H%M%S)
 else
 TARBALL	=	@PACKAGE_TARNAME@-@PACKAGE_VERSION@$(SUFFIX)
 endif
+endif
+
 SVN_URL	=	svn://scm.gforge.inria.fr/svn/open-mx/
 SVN_BRANCH	=	trunk
 

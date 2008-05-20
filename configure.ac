@@ -23,6 +23,11 @@ AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/open-mx)
 AC_PRESERVE_HELP_ORDER
 
+################################################################
+# help the makefile guess whether it has been configured or not
+
+AC_SUBST(OMX_CONFIGURED, 1)
+
 ########################
 # external tools config
 
