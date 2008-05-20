@@ -140,8 +140,8 @@ svndist:
 curdist:
 	@if [ -z "$(TARBALL)" ] ; then echo "Cannot create tarball with empty TARBALL name" ; /bin/false ; fi
 	@newdir=$(TARBALL) \
-	 && echo "Copying current tree with SVN versioning info..." \
-	 && cp -a . ../$$newdir && mv ../$$newdir . && find $$newdir -type d | grep '\.svn$$' | xargs rm -rf \; \
+	 && echo "Copying current tree without SVN versioning info..." \
+	 && cp -a @top_srcdir@ ../$$newdir && mv ../$$newdir . && find $$newdir -type d | grep '\.svn$$' | xargs rm -rf \; \
 	 && echo "Preparing the tree..." \
 	 && cd $$newdir && autoreconf -f && rm -rf autom4te.cache/ && cd .. \
 	 && echo "Creating the tarball..." \
