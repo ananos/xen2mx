@@ -19,8 +19,8 @@ CPPFLAGS	+=	@CPPFLAGS@
 CFLAGS	+=	-Wall -fstrict-aliasing -Wstrict-aliasing=2
 CFLAGS	+=	@CFLAGS@
 ifeq ($(omx_build_lib_debug),1)
-	CPPFLAGS	+=	-DOMX_LIB_DEBUG=1
-	CFLAGS	+=	@DBGCFLAGS@
+  CPPFLAGS	+=	-DOMX_LIB_DEBUG=1
+  CFLAGS	+=	@DBGCFLAGS@
 endif
 
 STATIC_CFLAGS	+=	
@@ -28,9 +28,9 @@ DYNAMIC_CFLAGS	+=	-fpic
 
 ALL_SRCS	=	$(wildcard @abs_srcdir@/*.c)
 ifeq (@OMX_MX_API_COMPAT@,1)
-	SRCS	=	$(ALL_SRCS)
+  SRCS	=	$(ALL_SRCS)
 else
-	SRCS	=	$(filter-out @abs_srcdir@/omx__mx_%compat.c,$(ALL_SRCS))
+  SRCS	=	$(filter-out @abs_srcdir@/omx__mx_%compat.c,$(ALL_SRCS))
 endif
 
 STATIC_OBJS	=	$(patsubst @abs_srcdir@/%.c,%.o,$(SRCS))

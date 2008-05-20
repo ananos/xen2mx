@@ -22,7 +22,7 @@ omx_reg.o_CPPFLAGS	+=	-I@top_srcdir@/libopen-mx/ -I@top_builddir@/common/
 CFLAGS	+=	-Wall
 CFLAGS	+=	@CFLAGS@
 ifeq (@omx_debug_tests@,1)
-	CFLAGS	+=	@DBGCFLAGS@
+  CFLAGS	+=	@DBGCFLAGS@
 endif
 
 STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@

@@ -10,7 +10,7 @@ LN_S	=	@LN_S@
 INSTALL	=	@INSTALL@
 
 ifneq ($(KCC),)
-	KBUILD_VARS	+=	CC="$(KCC)"
+  KBUILD_VARS	+=	CC="$(KCC)"
 endif
 
 LINUX_DIR	=	@LINUX_BUILD@

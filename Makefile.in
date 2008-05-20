@@ -7,7 +7,7 @@ srcdir	=	@srcdir@
 OMX_CONFIGURED	=	@OMX_CONFIGURED@
 
 ifeq ($(OMX_CONFIGURED),1)
-	include @abs_top_srcdir@/common.mk
+  include @abs_top_srcdir@/common.mk
 endif
 
 MKDIR_P	=	@MKDIR_P@
@@ -16,17 +16,17 @@ SED	=	@SED@
 
 COMPONENTS	=	
 ifeq (@OMX_BUILD_DRIVER@,1)
-	COMPONENTS	+=	driver
+  COMPONENTS	+=	driver
 endif
 ifeq (@OMX_BUILD_LIB@,1)
-	COMPONENTS	+=	lib tools tests
-	ifeq (@OMX_MX_API_COMPAT@,1)
-		COMPONENTS	+=	mxtests
-	endif
-	COMPONENTS	+=	other
+  COMPONENTS	+=	lib tools tests
+  ifeq (@OMX_MX_API_COMPAT@,1)
+    COMPONENTS	+=	mxtests
+  endif
+  COMPONENTS	+=	other
 endif
 ifeq (@OMX_MAPPER@,fma)
-	COMPONENTS	+=	fma
+  COMPONENTS	+=	fma
 endif
 
 .PHONY: all installonly install clean distclean
@@ -116,11 +116,11 @@ other-install: other-installonly
 .PHONY: svndist curdist
 
 ifeq ($(OMX_CONFIGURED),1)
-ifeq ($(SUFFIX),date)
-TARBALL	=	@PACKAGE_TARNAME@-@PACKAGE_VERSION@+svn.$$(date +%Y%m%d.%H%M%S)
-else
-TARBALL	=	@PACKAGE_TARNAME@-@PACKAGE_VERSION@$(SUFFIX)
-endif
+  ifeq ($(SUFFIX),date)
+    TARBALL	=	@PACKAGE_TARNAME@-@PACKAGE_VERSION@+svn.$$(date +%Y%m%d.%H%M%S)
+  else
+    TARBALL	=	@PACKAGE_TARNAME@-@PACKAGE_VERSION@$(SUFFIX)
+  endif
 endif
 
 SVN_URL	=	svn://scm.gforge.inria.fr/svn/open-mx/
