@@ -1,4 +1,4 @@
-Open-MX 0.6.0 (May 19th 2008, svn r1725)
+Open-MX 0.6.0 (May 19th 2008, svn r1726)
 ========================================
 The Dynamic Peer Discovery release.
 
@@ -16,6 +16,7 @@ Other improvements from previous release:
   endpoints were still open.
 * Fix useless resending of the last frames of large messages.
 * Fix support for abusively fragmented or small packets.
+* Fix querying of driver status when unloading.
 * Cleanup omx_hostname features.
 * A couple miscellaneous minor fixes and improvements everywhere.
 

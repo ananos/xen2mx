@@ -234,7 +234,7 @@ case "$cmd" in
 	start_peer_discovery
 	;;
     status)
-	if grep open[-_]mx /proc/modules > /dev/null; then
+	if grep -E 'open(-|_)mx' /proc/modules > /dev/null; then
 	    echo "Open-MX driver is loaded"
 	else
 	    echo "Open-MX driver is not loaded"
