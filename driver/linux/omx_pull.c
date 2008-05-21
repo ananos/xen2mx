@@ -127,15 +127,18 @@ struct omx_pull_handle {
 	uint32_t next_frame_index; /* index of the frame to request */
 	uint32_t nr_requested_frames; /* number of frames requested */
 	uint32_t nr_missing_frames; /* frames requested but not received yet */
-	uint32_t nr_copying_frames; /* frames received but not copied yet*/
 	uint32_t nr_valid_block_descs;
 	uint32_t already_rerequested_blocks; /* amount of first blocks that were requested again since the last timer */
 	struct omx_pull_block_desc block_desc[OMX_PULL_BLOCK_DESCS_NR];
 
+	/* synchronous host copies */
+	uint32_t nr_sync_copying_frames; /* frames received but not copied yet*/
+
+	/* asynchronous DMA engine copies */
 #ifdef CONFIG_NET_DMA
-	struct dma_chan *dma_chan;
-	dma_cookie_t dma_last_cookie;
-	struct sk_buff_head dma_skb_queue;
+	struct dma_chan *dma_chan; /* NULL when no pending copy */
+	dma_cookie_t dma_last_cookie; /* -1 when no pending copy */
+	struct sk_buff_head dma_skb_queue; /* used without its internal lock */
 	struct work_struct deferred_dma_wait_work;
 #endif
 
@@ -571,7 +574,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->next_frame_index = 0;
 	handle->nr_requested_frames = 0;
 	handle->nr_missing_frames = 0;
-	handle->nr_copying_frames = 0;
+	handle->nr_sync_copying_frames = 0;
 	handle->nr_valid_block_descs = 0;
 	for(i=0; i<OMX_PULL_BLOCK_DESCS_NR-1; i++)
 		handle->block_desc[i].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
@@ -1684,7 +1687,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 #endif
 
 	/* our copy is pending */
-	handle->nr_copying_frames++;
+	handle->nr_sync_copying_frames++;
 
 	/* request more replies if necessary */
 	omx_progress_pull_on_recv_pull_reply_locked(iface, handle, idesc);
@@ -1720,7 +1723,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	spin_lock(&handle->lock);
 
 	/* our copy is done */
-	handle->nr_copying_frames--;
+	handle->nr_sync_copying_frames--;
 
 	/* check the status now that we own the lock */
 	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
@@ -1731,7 +1734,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	if (!handle->remaining_length && !handle->nr_missing_frames && !handle->nr_copying_frames) {
+	if (!handle->remaining_length && !handle->nr_missing_frames && !handle->nr_sync_copying_frames) {
 		/* handle is done, notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
 		omx_pull_handle_complete(handle, OMX_EVT_PULL_DONE_SUCCESS);
