@@ -132,14 +132,14 @@ struct omx_pull_handle {
 	struct omx_pull_block_desc block_desc[OMX_PULL_BLOCK_DESCS_NR];
 
 	/* synchronous host copies */
-	uint32_t nr_sync_copying_frames; /* frames received but not copied yet*/
+	uint32_t host_copy_nr_frames; /* frames received but not copied yet*/
 
 	/* asynchronous DMA engine copies */
 #ifdef CONFIG_NET_DMA
-	struct dma_chan *dma_chan; /* NULL when no pending copy */
-	dma_cookie_t dma_last_cookie; /* -1 when no pending copy */
-	struct sk_buff_head dma_skb_queue; /* used without its internal lock */
-	struct work_struct deferred_dma_wait_work;
+	struct dma_chan *dma_copy_chan; /* NULL when no pending copy */
+	dma_cookie_t dma_copy_last_cookie; /* -1 when no pending copy */
+	struct sk_buff_head dma_copy_skb_queue; /* used without its internal lock */
+	struct work_struct dma_copy_deferred_wait_work;
 #endif
 
 	/* completion event */
@@ -154,6 +154,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data);
 #ifdef CONFIG_NET_DMA
 static void omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle);
 static int omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle *handle);
+static void omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_data_t data);
 #else
 #define omx_pull_handle_poll_dma_completions(ph) /* nothing */
 #define omx_pull_handle_deferred_wait_dma_completions(ph) 0 /* always completed */
@@ -574,7 +575,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->next_frame_index = 0;
 	handle->nr_requested_frames = 0;
 	handle->nr_missing_frames = 0;
-	handle->nr_sync_copying_frames = 0;
 	handle->nr_valid_block_descs = 0;
 	for(i=0; i<OMX_PULL_BLOCK_DESCS_NR-1; i++)
 		handle->block_desc[i].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
@@ -582,10 +582,15 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->last_retransmit_jiffies = cmd->resend_timeout_jiffies + jiffies;
 	handle->magic = omx_generate_pull_magic(endpoint);
 
+	handle->host_copy_nr_frames = 0;
+
 #ifdef CONFIG_NET_DMA
-	handle->dma_chan = NULL;
-	handle->dma_last_cookie = -1;
-	skb_queue_head_init(&handle->dma_skb_queue);
+	handle->dma_copy_chan = NULL;
+	handle->dma_copy_last_cookie = -1;
+	skb_queue_head_init(&handle->dma_copy_skb_queue);
+	OMX_INIT_WORK(&handle->dma_copy_deferred_wait_work,
+		      omx_pull_handle_deferred_dma_completions_wait_work,
+		      handle);
 #endif
 
 	/* initialize the completion event */
@@ -1218,14 +1223,15 @@ omx_recv_pull_request(struct omx_iface * iface,
  * Called with the handle locked
  */
 static INLINE int
-omx_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_handle *handle, struct sk_buff *skb, uint32_t regoff, uint32_t length)
+omx_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_handle *handle,
+				   struct sk_buff *skb, uint32_t regoff, uint32_t length)
 {
 	int remaining_copy = length;
 	int acquired_chan = 0;
-	struct dma_chan *dma_chan = handle->dma_chan;
+	struct dma_chan *dma_chan = handle->dma_copy_chan;
 
 	if (unlikely(!dma_chan)) {
-		dma_chan = handle->dma_chan = get_softnet_dma();
+		dma_chan = handle->dma_copy_chan = get_softnet_dma();
 		acquired_chan = 1;
 	}
 
@@ -1245,14 +1251,14 @@ omx_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_hand
 		dprintk(DMA, "skb %p got cookie %d\n", skb, dma_cookie);
 
 		if (likely(dma_cookie > 0)) {
-			handle->dma_last_cookie = dma_cookie;
+			handle->dma_copy_last_cookie = dma_cookie;
 			skb->dma_cookie = dma_cookie;
-			__skb_queue_tail(&handle->dma_skb_queue, skb);
+			__skb_queue_tail(&handle->dma_copy_skb_queue, skb);
 
 		} else if (acquired_chan) {
 			/* release the acquired channel, we didn't use it */
 			dma_chan_put(dma_chan);
-			handle->dma_chan = NULL;
+			handle->dma_copy_chan = NULL;
 		}
 	}
 
@@ -1306,21 +1312,21 @@ omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle)
 {
 	struct dma_chan *dma_chan;
 
-	dma_chan = handle->dma_chan;
+	dma_chan = handle->dma_copy_chan;
 	if (unlikely(!dma_chan))
 		return;
 
 	/* Push remaining copies to the DMA hardware */
 	dma_async_memcpy_issue_pending(dma_chan);
 
-	if (omx__pull_handle_poll_dma_completions(dma_chan, handle->dma_last_cookie, &handle->dma_skb_queue)
+	if (omx__pull_handle_poll_dma_completions(dma_chan, handle->dma_copy_last_cookie, &handle->dma_copy_skb_queue)
 	    == DMA_SUCCESS) {
 		/* All copies are already done, it's safe to free early-copied skbs now */
 		dprintk(DMA, "all cookies are ready\n");
-		__skb_queue_purge(&handle->dma_skb_queue);
+		__skb_queue_purge(&handle->dma_copy_skb_queue);
 		dma_chan_put(dma_chan);
-		handle->dma_chan = NULL;
-		handle->dma_last_cookie = -1;
+		handle->dma_copy_chan = NULL;
+		handle->dma_copy_last_cookie = -1;
 	}
 }
 
@@ -1335,21 +1341,21 @@ omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle)
 {
 	struct dma_chan *dma_chan;
 
-	dma_chan = handle->dma_chan;
+	dma_chan = handle->dma_copy_chan;
 	if (unlikely(!dma_chan))
 		return;
 
 	/* Push remaining copies to the DMA hardware */
 	dma_async_memcpy_issue_pending(dma_chan);
 
-	while (omx__pull_handle_poll_dma_completions(dma_chan, handle->dma_last_cookie, &handle->dma_skb_queue) == DMA_IN_PROGRESS);
+	while (omx__pull_handle_poll_dma_completions(dma_chan, handle->dma_copy_last_cookie, &handle->dma_copy_skb_queue) == DMA_IN_PROGRESS);
 
 	/* All copies already done, it's safe to free early-copied skbs now */
 	dprintk(DMA, "all cookies are ready\n");
-	__skb_queue_purge(&handle->dma_skb_queue);
+	__skb_queue_purge(&handle->dma_copy_skb_queue);
 	dma_chan_put(dma_chan);
-	handle->dma_chan = NULL;
-	handle->dma_last_cookie = -1;
+	handle->dma_copy_chan = NULL;
+	handle->dma_copy_last_cookie = -1;
 }
 
 /*
@@ -1358,7 +1364,7 @@ omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle)
 static void
 omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_data_t data)
 {
-	struct omx_pull_handle *handle = OMX_WORK_STRUCT_DATA(data, struct omx_pull_handle, deferred_dma_wait_work);
+	struct omx_pull_handle *handle = OMX_WORK_STRUCT_DATA(data, struct omx_pull_handle, dma_copy_deferred_wait_work);
 
 	/* let the offloaded copy finish */
 	omx_pull_handle_wait_dma_completions(handle);
@@ -1379,11 +1385,8 @@ omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle *handle)
 	omx_pull_handle_poll_dma_completions(handle);
 
 	/* if still something to do, schedule a deferred work */
-	if (likely(handle->dma_chan)) {
-		OMX_INIT_WORK(&handle->deferred_dma_wait_work,
-			      omx_pull_handle_deferred_dma_completions_wait_work,
-			      handle);
-		schedule_work(&handle->deferred_dma_wait_work);
+	if (likely(handle->dma_copy_chan)) {
+		schedule_work(&handle->dma_copy_deferred_wait_work);
 		omx_counter_inc(handle->endpoint->iface, DMARECV_PULL_REPLY_WAIT_DEFERRED);
 		return -EAGAIN;
 	} else {
@@ -1687,7 +1690,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 #endif
 
 	/* our copy is pending */
-	handle->nr_sync_copying_frames++;
+	handle->host_copy_nr_frames++;
 
 	/* request more replies if necessary */
 	omx_progress_pull_on_recv_pull_reply_locked(iface, handle, idesc);
@@ -1723,7 +1726,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	spin_lock(&handle->lock);
 
 	/* our copy is done */
-	handle->nr_sync_copying_frames--;
+	handle->host_copy_nr_frames--;
 
 	/* check the status now that we own the lock */
 	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
@@ -1734,7 +1737,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	if (!handle->remaining_length && !handle->nr_missing_frames && !handle->nr_sync_copying_frames) {
+	if (!handle->remaining_length && !handle->nr_missing_frames && !handle->host_copy_nr_frames) {
 		/* handle is done, notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
 		omx_pull_handle_complete(handle, OMX_EVT_PULL_DONE_SUCCESS);
