@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x140
+#define OMX_DRIVER_ABI_VERSION		0x141
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -644,11 +644,11 @@ union omx_evt {
 	struct omx_evt_pull_done {
 		uint64_t lib_cookie;
 		/* 8 */
-		uint32_t pulled_length;
 		uint32_t local_rdma_id;
-		/* 16 */
 		uint8_t status;
-		uint8_t pad2[46];
+		uint8_t pad1[3];
+		/* 16 */
+		uint8_t pad2[47];
 		uint8_t type;
 		/* 64 */
 	} pull_done;

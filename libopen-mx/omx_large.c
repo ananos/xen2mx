@@ -503,7 +503,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
 {
   union omx_request * req;
   uintptr_t reqptr = event->lib_cookie;
-  uint32_t xfer_length = event->pulled_length;
   uint32_t region_id = event->local_rdma_id;
   struct omx__large_region * region;
   omx_return_t status;
@@ -549,10 +548,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
 						   "Completing large receive request");
     req->generic.status.xfer_length = 0;
 
-  } else if (unlikely(req->generic.status.xfer_length != xfer_length)) {
-    omx__abort("pull success returns length %ld instead of %ld\n",
-	       (unsigned long) xfer_length,
-	       (unsigned long) req->generic.status.xfer_length);
   }
 
   omx__put_region(ep, req->recv.specific.large.local_region, NULL);

@@ -671,7 +671,6 @@ omx_pull_handle_mark_completed(struct omx_pull_handle * handle, uint8_t status)
 
 	/* finish filling the event for user-space */
 	handle->done_event.status = status;
-	handle->done_event.pulled_length = handle->total_length - handle->remaining_length;
 
 	/* tell the sparse checker that the caller took the lock */
 	__release(&handle->lock);

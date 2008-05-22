@@ -472,7 +472,6 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 
 	/* fill and notify the event */
 	event.lib_cookie = hdr->lib_cookie;
-	event.pulled_length = hdr->length;
 	event.local_rdma_id = hdr->local_rdma_id;
 	omx_notify_exp_event(src_endpoint, OMX_EVT_PULL_DONE, &event, sizeof(event));
 
@@ -487,7 +486,6 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 	omx_user_region_release(src_region);
 
 	event.lib_cookie = hdr->lib_cookie;
-	event.pulled_length = hdr->length;
 	event.local_rdma_id = hdr->local_rdma_id;
 	omx_notify_exp_event(src_endpoint, OMX_EVT_PULL_DONE, &event, sizeof(event));
 	return 0;
