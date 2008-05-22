@@ -635,26 +635,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
  * Pull handle completion
  */
 
-static INLINE void
-omx_pull_handle_complete_notify(struct omx_pull_handle * handle)
-{
-	struct omx_endpoint * endpoint = handle->endpoint;
-
-	omx_notify_exp_event(endpoint,
-			     OMX_EVT_PULL_DONE,
-			     &handle->done_event, sizeof(handle->done_event));
-
-	/* release the handle */
-	omx_pull_handle_release(handle);
-
-	/*
-	 * do not release the region here, let the last pull user release it.
-	 * if we are completing the pull with an error, there could be other users in memcpy
-	 */
-}
-
 /*
- * Takes an acquired and locked pull handle and complete it.
+ * Takes an acquired and locked pull handle, unhash it and set its status.
  * Called by the BH after receiving a pull reply or a nack,
  * or by the retransmit timer when expired.
  *
@@ -663,10 +645,9 @@ omx_pull_handle_complete_notify(struct omx_pull_handle * handle)
  * In the other cases, the timer needs to catch TIMER_MUST_EXIT.
  */
 static INLINE void
-omx_pull_handle_complete(struct omx_pull_handle * handle, uint8_t status)
+omx_pull_handle_mark_completed(struct omx_pull_handle * handle, uint8_t status)
 {
 	struct omx_endpoint * endpoint = handle->endpoint;
-	int ret;
 
 	/* tell the sparse checker that the caller took the lock */
 	__acquire(&handle->lock);
@@ -688,18 +669,52 @@ omx_pull_handle_complete(struct omx_pull_handle * handle, uint8_t status)
 	}
 	write_unlock_bh(&endpoint->pull_handles_lock);
 
-	spin_unlock(&handle->lock);
-
-	/* now that the handle cannot be used by anybody else, complete it for real */
-
 	/* finish filling the event for user-space */
 	handle->done_event.status = status;
 	handle->done_event.pulled_length = handle->total_length - handle->remaining_length;
 
+	/* tell the sparse checker that the caller took the lock */
+	__release(&handle->lock);
+}
+
+/*
+ * Notify handle completion to user-space now that all pending stuff are done.
+ *
+ * The handle lock must not be held, but the handle must still be acquired.
+ */
+static INLINE void
+omx_pull_handle_notify(struct omx_pull_handle * handle)
+{
+	struct omx_endpoint * endpoint = handle->endpoint;
+
+	omx_notify_exp_event(endpoint,
+			     OMX_EVT_PULL_DONE,
+			     &handle->done_event, sizeof(handle->done_event));
+
+	/* release the handle */
+	omx_pull_handle_release(handle);
+
+	/*
+	 * do not release the region here, let the last pull user release it.
+	 * if we are completing the pull with an error, there could be other users in memcpy
+	 */
+}
+
+/*
+ * Notify handle completion to user-space, using a deferred work to wait
+ * for all pending stuff to be done first.
+ *
+ * The handle lock must not be held, but the handle must still be acquired.
+ */
+static INLINE void
+omx_pull_handle_bh_notify(struct omx_pull_handle * handle)
+{
+	int ret;
+
 	/* see if the offloaded copies are done */
 	ret = omx_pull_handle_deferred_wait_dma_completions(handle);
 	if (!ret)
-		omx_pull_handle_complete_notify(handle);
+		omx_pull_handle_notify(handle);
 }
 
 /************************
@@ -952,9 +967,11 @@ omx_pull_handle_timeout_handler(unsigned long data)
 	if (jiffies > handle->last_retransmit_jiffies) {
 		omx_counter_inc(iface, PULL_TIMEOUT_ABORT);
 		dprintk(PULL, "pull handle %p last retransmit time reached, reporting an error\n", handle);
-		omx_pull_handle_complete(handle, OMX_EVT_PULL_DONE_TIMEOUT);
-		/* tell the sparse checker that the lock has been released by omx_pull_handle_complete() */
-		__release(&handle->lock);
+
+		omx_pull_handle_mark_completed(handle, OMX_EVT_PULL_DONE_TIMEOUT);
+		/* nobody is going to use this handle, no need to lock anymore */
+		spin_unlock(&handle->lock);
+		omx_pull_handle_bh_notify(handle);
 
 		return; /* timer will never be called again (status is TIMER_EXITED) */
 	}
@@ -1370,7 +1387,7 @@ omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_data_t data)
 	omx_pull_handle_wait_dma_completions(handle);
 
 	/* complete the handle for real now */
-	omx_pull_handle_complete_notify(handle);
+	omx_pull_handle_notify(handle);
 }
 
 /*
@@ -1715,9 +1732,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			 * we do not really care about what have been tranfered since it's crap
 			 */
 			spin_lock(&handle->lock);
-			omx_pull_handle_complete(handle, OMX_EVT_PULL_DONE_ABORTED);
-			/* tell the sparse checker that the lock has been released by omx_pull_handle_complete() */
-			__release(&handle->lock);
+			omx_pull_handle_mark_completed(handle, OMX_EVT_PULL_DONE_ABORTED);
+			/* nobody is going to use this handle, no need to lock anymore */
+			spin_unlock(&handle->lock);
+			omx_pull_handle_bh_notify(handle);
 			goto out_with_endpoint;
 		}
 	}
@@ -1740,9 +1758,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	if (!handle->remaining_length && !handle->nr_missing_frames && !handle->host_copy_nr_frames) {
 		/* handle is done, notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
-		omx_pull_handle_complete(handle, OMX_EVT_PULL_DONE_SUCCESS);
-		/* tell the sparse checker that the lock has been released by omx_pull_handle_complete() */
-		__release(&handle->lock);
+		omx_pull_handle_mark_completed(handle, OMX_EVT_PULL_DONE_SUCCESS);
+		/* nobody is going to use this handle, no need to lock anymore */
+		spin_unlock(&handle->lock);
+		omx_pull_handle_bh_notify(handle);
 	} else {
 		/* there's more to receive or copy, just release the handle */
 		spin_unlock(&handle->lock);
@@ -1865,9 +1884,11 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	}
 
 	/* complete the handle */
-	omx_pull_handle_complete(handle, nack_type);
-	/* tell the sparse checker that the lock has been released by omx_pull_handle_complete() */
-	__release(&handle->lock);
+	omx_pull_handle_mark_completed(handle, nack_type);
+	/* nobody is going to use this handle, no need to lock anymore */
+	spin_unlock(&handle->lock);
+	omx_pull_handle_bh_notify(handle);
+
 	omx_endpoint_release(endpoint);
 	dev_kfree_skb(skb);
 	return 0;
