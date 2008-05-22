@@ -1,3 +1,5 @@
+* can endpoint_close really be called from interrupt context???
+
 * move the cleanup thread into schedule_work?
 
 * fix/improve ioat support
@@ -69,6 +71,9 @@
 
 * feature flags in the driver descriptor to check an extended abi version
   + enforce shared support?
+
+ * if failing to deregister region
+  *** glibc detected *** tests/omx_pingpong: malloc(): memory corruption: 0x000000000064edd0 ***
 
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined

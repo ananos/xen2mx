@@ -167,12 +167,12 @@ static void omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_d
  * It also protects its handle status and its queueing in the endpoint lists and idr.
  * This lock is always taken *before* the endpoint pull handle lock.
  *
- * The handle does not own a reference on the endpoint. It is always queued in one
- * endpoint lists, and the endpoint closing will enforce its destruction.
- * When the endpoint starts to be closed, it calls prepare_exit which sets all handles
- * to timer_must_exit but cannot wait for them because of the possible interrupt
- * context. Later, the cleanup thread will cleanup the endpoint, including destroying
- * the handle timers that are still running.
+ * The handle is always queued in one endpoint lists, and the endpoint closing will
+ * enforce its destruction. When the endpoint starts to be closed (either ioctl, or
+ * last closing of the file descriptor, or interface being removed), it calls
+ * prepare_exit which sets all handles to timer_must_exit but cannot wait for them
+ * because of the possible interrupt context. Later, the cleanup thread will cleanup
+ * the endpoint, including destroying the handle timers that are still running.
  *
  * The pile of handles for an endpoint is protected by a rwlock. It is taken for
  * reading when acquiring an handle (when a pull reply or nack mcp arrives, likely
@@ -413,6 +413,7 @@ omx_endpoint_pull_handles_force_exit(struct omx_endpoint * endpoint)
 			spin_unlock_bh(&handle->lock);
 			/* release the timer reference */
 			omx_pull_handle_release(handle);
+			omx_endpoint_release(endpoint);
 
 		} else {
 			dprintk(PULL, "del_timer_sync was useless pull handle %p timer, already exited\n", handle);
@@ -605,6 +606,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* init timer */
 	setup_timer(&handle->retransmit_timer, omx_pull_handle_timeout_handler,
 		    (unsigned long) handle);
+	omx_endpoint_reacquire(endpoint); /* keep a reference for the timer */
 
 	/* queue in the endpoint list */
 	list_add_tail(&handle->list_elt,
@@ -692,6 +694,7 @@ omx_pull_handle_notify(struct omx_pull_handle * handle)
 
 	/* release the handle */
 	omx_pull_handle_release(handle);
+	omx_endpoint_release(endpoint);
 
 	/*
 	 * do not release the region here, let the last pull user release it.
@@ -960,6 +963,8 @@ omx_pull_handle_timeout_handler(unsigned long data)
 
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
+		omx_endpoint_release(endpoint);
+
 		return; /* timer will never be called again (status is TIMER_EXITED) */
 	}
 
@@ -1735,7 +1740,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			/* nobody is going to use this handle, no need to lock anymore */
 			spin_unlock(&handle->lock);
 			omx_pull_handle_bh_notify(handle);
-			goto out_with_endpoint;
+			goto out;
 		}
 	}
 
@@ -1765,9 +1770,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		/* there's more to receive or copy, just release the handle */
 		spin_unlock(&handle->lock);
 		omx_pull_handle_release(handle);
+		omx_endpoint_release(endpoint);
 	}
 
-	omx_endpoint_release(endpoint);
 	if (free_skb)
 		dev_kfree_skb(skb);
 	return 0;
@@ -1888,7 +1893,6 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	spin_unlock(&handle->lock);
 	omx_pull_handle_bh_notify(handle);
 
-	omx_endpoint_release(endpoint);
 	dev_kfree_skb(skb);
 	return 0;
 
