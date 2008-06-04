@@ -259,6 +259,11 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 
 /* Detach the endpoint and release the reference on it.
  * If already closing, return an error.
+ *
+ * Always called in a sleepable context:
+ * - from the release method of the fd when the process closes it
+ * - from the netdevice notifier
+ * - from the ifnames sysfs store methode
  */
 int
 omx_endpoint_close(struct omx_endpoint * endpoint,
@@ -298,6 +303,14 @@ omx_endpoint_close(struct omx_endpoint * endpoint,
 
 	/* schedule the releasing of pending pull handles */
 	omx_endpoint_pull_handles_prepare_exit(endpoint);
+	// FIXME: no need to prepare, we can sleep here
+
+	/*
+	 * current users may be:
+	 * - bottom halves receiving a packet (synchronize_rcu would catch them)
+	 * - send completion waiting before releasing sendq pages
+	 * - pull handle timeouts (scheduled for destruction above)
+	 */
 
 	/* release our refcount now that other users cannot use again */
 	kref_put(&endpoint->refcount, __omx_endpoint_last_release);

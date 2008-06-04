@@ -1,4 +1,7 @@
-* can endpoint_close really be called from interrupt context???
+* endpoint_close cannot be called from interrupt context
+  - we can sleep when calling prepare_exit
+    . it's NOT called when the last reference is released, it's called when closing first
+  - we can destroy region at first closing too?
 
 * fix/improve ioat support
   + sleep a bit before polling on synchronous copies
