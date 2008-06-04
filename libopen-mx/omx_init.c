@@ -162,19 +162,23 @@ omx__init_api(int api)
 
   /* shared comm configuration */
 #ifndef OMX_DISABLE_SHARED
-  omx__globals.sharedcomms = 1;
-  env = getenv("OMX_DISABLE_SHARED");
+  omx__globals.sharedcomms = (omx__driver_desc->features & OMX_DRIVER_FEATURE_SHARED);
+  if (!omx__globals.sharedcomms) {
+    omx__verbose_printf("Shared comms support disabled in the driver\n");
+  } else {
+    env = getenv("OMX_DISABLE_SHARED");
 #ifdef OMX_MX_API_COMPAT
-  if (!env) {
-    env = getenv("MX_DISABLE_SHMEM");
-    if (env)
-      omx__verbose_printf("Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
-  }
+    if (!env) {
+      env = getenv("MX_DISABLE_SHMEM");
+      if (env)
+	omx__verbose_printf("Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
+    }
 #endif
-  if (env) {
-    omx__globals.sharedcomms = !atoi(env);
-    omx__verbose_printf("Forcing shared comms to %s\n",
-			omx__globals.sharedcomms ? "enabled" : "disabled");
+    if (env) {
+      omx__globals.sharedcomms = !atoi(env);
+      omx__verbose_printf("Forcing shared comms to %s\n",
+			  omx__globals.sharedcomms ? "enabled" : "disabled");
+    }
   }
 #endif
 

@@ -1,6 +1,3 @@
-* use driver feature flag to disable shared in the lib at startup?
-* make shared comms runtime-configurable in the driver
-
 * can endpoint_close really be called from interrupt context???
 
 * fix/improve ioat support
@@ -131,6 +128,8 @@
   + what's in src_generation ? unset/unchecked in OMX
   + fix lib ack contents?
 * wire-compat at runtime
+
+* make shared comms runtime-configurable in the driver
 
 * optimize mediums
   + 2 pages if not mx wire compat
