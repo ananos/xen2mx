@@ -215,57 +215,39 @@ static unsigned long omx_PULL_REQ_packet_loss_index = 0;
 static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 #endif /* OMX_DRIVER_DEBUG */
 
-/********************************
- * Pull handle bitmap management
+/******************************
+ * Endpoint pull-magic management
  */
 
-static INLINE void
-omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
-				     uint32_t block_length,
-				     uint32_t first_frame_offset)
+/* the magic is an incremented 24bits generation followed by 8bits for the endpoint index */
+#define OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS 8
+#if OMX_ENDPOINT_INDEX_MAX > (1<<OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS)
+#error Endpoint index may not fit in the pull handle magic
+#endif
+
+#define OMX_PULL_HANDLE_MAGIC_XOR 0x21071980
+
+static uint32_t omx_endpoint_magic_generation = 0;
+
+static INLINE uint32_t
+omx_generate_pull_magic(struct omx_endpoint * endpoint)
 {
-	struct omx_pull_block_desc *desc;
-	omx_block_frame_bitmask_t new_mask;
-	int new_frames;
-
-	new_frames = (first_frame_offset + block_length
-		      + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
-	new_mask = ((omx_block_frame_bitmask_t) -1) >> (OMX_PULL_REPLY_PER_BLOCK-new_frames);
-
-	desc = &handle->block_desc[handle->nr_valid_block_descs];
-	desc->frame_index = handle->next_frame_index;
-	desc->block_length = block_length;
-	desc->first_frame_offset = first_frame_offset;
-	desc->frames_missing_bitmap = new_mask;
-
-	handle->nr_requested_frames += new_frames;
-	handle->nr_missing_frames += new_frames;
-	handle->next_frame_index += new_frames;
-	handle->remaining_length -= block_length;
-	handle->nr_valid_block_descs++;
-
-	dprintk(PULL, "appending block #%d with %d new frames to pull handle %p, now requested %ld-%ld\n",
-		handle->nr_valid_block_descs-1, new_frames, handle,
-		(unsigned long) handle->frame_index, (unsigned long) handle->next_frame_index-1);
+	omx_endpoint_magic_generation++;
+	return ((omx_endpoint_magic_generation << OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS)
+		| endpoint->endpoint_index)
+	       ^ OMX_PULL_HANDLE_MAGIC_XOR;
 }
 
-static INLINE void
-omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
+/*
+ * Acquire an endpoint using a pull handle magic given on the wire.
+ *
+ * Returns an endpoint acquired, on ERR_PTR(-errno) on error
+ */
+static INLINE struct omx_endpoint *
+omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
 {
-	uint32_t first_block_frames = min(handle->nr_requested_frames, (uint32_t) OMX_PULL_REPLY_PER_BLOCK);
-
-	handle->frame_index += first_block_frames;
-	handle->nr_requested_frames -= first_block_frames;
-	handle->nr_valid_block_descs--;
-	if (handle->already_rerequested_blocks)
-		handle->already_rerequested_blocks--;
-	memmove(&handle->block_desc[0], &handle->block_desc[1],
-		sizeof(struct omx_pull_block_desc) * handle->nr_valid_block_descs);
-	handle->block_desc[OMX_PULL_BLOCK_DESCS_NR-1].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
-
-	dprintk(PULL, "first block of pull handle %p done, removing %d requested frames, now requested %ld-%ld\n",
-		handle, first_block_frames,
-		(unsigned long) handle->frame_index, (unsigned long) handle->next_frame_index-1);
+	uint8_t index = (magic ^ OMX_PULL_HANDLE_MAGIC_XOR) & ((1UL << OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS) - 1);
+	return omx_endpoint_acquire_by_iface_index(iface, index);
 }
 
 /**********************************
@@ -428,41 +410,6 @@ omx_endpoint_pull_handles_force_exit(struct omx_endpoint * endpoint)
 		write_lock_bh(&endpoint->pull_handles_lock);
 	}
 	write_unlock_bh(&endpoint->pull_handles_lock);
-}
-
-/******************************
- * Endpoint pull-magic management
- */
-
-/* the magic is an incremented 24bits generation followed by 8bits for the endpoint index */
-#define OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS 8
-#if OMX_ENDPOINT_INDEX_MAX > (1<<OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS)
-#error Endpoint index may not fit in the pull handle magic
-#endif
-
-#define OMX_PULL_HANDLE_MAGIC_XOR 0x21071980
-
-static uint32_t omx_endpoint_magic_generation = 0;
-
-static INLINE uint32_t
-omx_generate_pull_magic(struct omx_endpoint * endpoint)
-{
-	omx_endpoint_magic_generation++;
-	return ((omx_endpoint_magic_generation << OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS)
-		| endpoint->endpoint_index)
-	       ^ OMX_PULL_HANDLE_MAGIC_XOR;
-}
-
-/*
- * Acquire an endpoint using a pull handle magic given on the wire.
- *
- * Returns an endpoint acquired, on ERR_PTR(-errno) on error
- */
-static INLINE struct omx_endpoint *
-omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
-{
-	uint8_t index = (magic ^ OMX_PULL_HANDLE_MAGIC_XOR) & ((1UL << OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS) - 1);
-	return omx_endpoint_acquire_by_iface_index(iface, index);
 }
 
 /************************
@@ -717,6 +664,59 @@ omx_pull_handle_bh_notify(struct omx_pull_handle * handle)
 	ret = omx_pull_handle_deferred_wait_dma_completions(handle);
 	if (!ret)
 		omx_pull_handle_notify(handle);
+}
+
+/**************************************
+ * Pull handle frame bitmap management
+ */
+
+static INLINE void
+omx_pull_handle_append_needed_frames(struct omx_pull_handle * handle,
+				     uint32_t block_length,
+				     uint32_t first_frame_offset)
+{
+	struct omx_pull_block_desc *desc;
+	omx_block_frame_bitmask_t new_mask;
+	int new_frames;
+
+	new_frames = (first_frame_offset + block_length
+		      + OMX_PULL_REPLY_LENGTH_MAX-1) / OMX_PULL_REPLY_LENGTH_MAX;
+	new_mask = ((omx_block_frame_bitmask_t) -1) >> (OMX_PULL_REPLY_PER_BLOCK-new_frames);
+
+	desc = &handle->block_desc[handle->nr_valid_block_descs];
+	desc->frame_index = handle->next_frame_index;
+	desc->block_length = block_length;
+	desc->first_frame_offset = first_frame_offset;
+	desc->frames_missing_bitmap = new_mask;
+
+	handle->nr_requested_frames += new_frames;
+	handle->nr_missing_frames += new_frames;
+	handle->next_frame_index += new_frames;
+	handle->remaining_length -= block_length;
+	handle->nr_valid_block_descs++;
+
+	dprintk(PULL, "appending block #%d with %d new frames to pull handle %p, now requested %ld-%ld\n",
+		handle->nr_valid_block_descs-1, new_frames, handle,
+		(unsigned long) handle->frame_index, (unsigned long) handle->next_frame_index-1);
+}
+
+static INLINE void
+omx_pull_handle_first_block_done(struct omx_pull_handle * handle)
+{
+	uint32_t first_block_frames = min(handle->nr_requested_frames, (uint32_t) OMX_PULL_REPLY_PER_BLOCK);
+
+	handle->frame_index += first_block_frames;
+	handle->nr_requested_frames -= first_block_frames;
+	handle->nr_valid_block_descs--;
+	if (handle->already_rerequested_blocks)
+		handle->already_rerequested_blocks--;
+	memmove(&handle->block_desc[0], &handle->block_desc[1],
+		sizeof(struct omx_pull_block_desc) * handle->nr_valid_block_descs);
+	handle->block_desc[OMX_PULL_BLOCK_DESCS_NR-1].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
+
+	dprintk(PULL, "first block of pull handle %p done, removing %d requested frames, now requested %ld-%ld\n",
+		handle, first_block_frames,
+		(unsigned long) handle->frame_index, (unsigned long) handle->next_frame_index-1);
 }
 
 /************************

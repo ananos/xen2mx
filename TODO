@@ -3,6 +3,11 @@
     . it's NOT called when the last reference is released, it's called when closing first
   - we can destroy region at first closing too?
 
+* run the kernel headers check from the driver dir so that we can rebuild
+  onyl the driver for a different kernel easily
+  - add a sub-configure script there ?
+  - or just add make driver-checks KERSRC=/path/to/src ?
+
 * fix/improve ioat support
   + sleep a bit before polling on synchronous copies
     - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param
