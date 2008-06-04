@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x141
+#define OMX_DRIVER_ABI_VERSION		0x142
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -91,25 +91,31 @@ struct omx_cmd_region_segment {
 /* driver desc */
 struct omx_driver_desc {
 	uint32_t abi_version;
-	uint32_t hz;
+	uint32_t features;
 	/* 8 */
 	uint64_t jiffies;
 	/* 16 */
+	uint32_t hz;
+	uint32_t pad;
+	/* 24 */
 	uint32_t board_max;
 	uint32_t endpoint_max;
-	/* 24 */
+	/* 32 */
 	uint32_t peer_max;
 	uint32_t peer_table_size;
-	/* 32 */
+	/* 40 */
 	uint32_t peer_table_configured;
 	uint32_t peer_table_version;
-	/* 30 */
-	uint64_t peer_table_mapper_id;
 	/* 48 */
+	uint64_t peer_table_mapper_id;
+	/* 56 */
 };
 
 #define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
 #define OMX_DRIVER_DESC_FILE_OFFSET	(4096*4096)
+
+#define OMX_DRIVER_FEATURE_WIRECOMPAT	(1<<0)
+#define OMX_DRIVER_FEATURE_SHARED	(1<<1)
 
 /* endpoint desc */
 struct omx_endpoint_desc {

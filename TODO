@@ -1,3 +1,7 @@
+* use driver feature flag to disable immediate notify ack
+* use driver feature flag to disable shared in the lib at startup?
+* make shared comms runtime-configurable in the driver
+
 * can endpoint_close really be called from interrupt context???
 
 * fix/improve ioat support
@@ -67,9 +71,6 @@
   + need system resources for send large and recv large
     - add a counter of failure to register with ENOMEM and abort if too many?
 
-* feature flags in the driver descriptor to check an extended abi version
-  + enforce shared support?
-
  * if failing to deregister region
   *** glibc detected *** tests/omx_pingpong: malloc(): memory corruption: 0x000000000064edd0 ***
 
@@ -131,8 +132,6 @@
   + what's in src_generation ? unset/unchecked in OMX
   + fix lib ack contents?
 * wire-compat at runtime
-  + what about user-space stuff such as immediate notify ack?
-    - export flags in the driver abi to change user-space behavior?
 
 * optimize mediums
   + 2 pages if not mx wire compat

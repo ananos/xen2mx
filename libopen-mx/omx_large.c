@@ -547,7 +547,6 @@ omx__process_pull_done(struct omx_endpoint * ep,
     req->generic.status.code = omx__error_with_req(ep, req, status,
 						   "Completing large receive request");
     req->generic.status.xfer_length = 0;
-
   }
 
   omx__put_region(ep, req->recv.specific.large.local_region, NULL);

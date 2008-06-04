@@ -277,6 +277,14 @@ omx_init(void)
 
 	/* fill the driver descriptor */
 	omx_driver_userdesc->abi_version = OMX_DRIVER_ABI_VERSION;
+	omx_driver_userdesc->features = 0;
+#ifdef OMX_MX_WIRE_COMPAT
+	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_WIRECOMPAT;
+#endif
+#ifndef OMX_DISABLE_SHARED
+	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
+#endif
+
 	omx_driver_userdesc->board_max = omx_iface_max;
 	omx_driver_userdesc->endpoint_max = omx_endpoint_max;
 	omx_driver_userdesc->peer_max = omx_peer_max;
