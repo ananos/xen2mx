@@ -76,7 +76,7 @@ struct omx_endpoint {
 	struct list_head pull_handles_done_but_timer_list;
 	struct list_head pull_handle_slots_free_list;
 	void * pull_handle_slots_array;
-	rwlock_t pull_handles_lock;
+	spinlock_t pull_handles_lock;
 
 	/* descriptor exported to user-space, modified by user-space and the driver,
 	 * so we can export some info to user-space by writing into it, but we

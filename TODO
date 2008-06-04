@@ -1,5 +1,4 @@
 * cleanup the idr+BHlock for handles
-  + use RCU locks and a spinlock
   + sleep if not enough slot available
   + allocate the handle generation within the slot array routines
 
