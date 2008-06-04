@@ -74,7 +74,8 @@ struct omx_endpoint {
 
 	struct list_head pull_handles_running_list;
 	struct list_head pull_handles_done_but_timer_list;
-	struct idr pull_handles_idr;
+	struct list_head pull_handle_slots_free_list;
+	void * pull_handle_slots_array;
 	rwlock_t pull_handles_lock;
 
 	/* descriptor exported to user-space, modified by user-space and the driver,

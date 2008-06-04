@@ -19,7 +19,6 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
-#include <linux/idr.h>
 #include <linux/kref.h>
 #include <linux/timer.h>
 #include <linux/workqueue.h>
@@ -77,7 +76,7 @@ enum omx_pull_handle_status {
 	OMX_PULL_HANDLE_STATUS_OK,
 
 	/*
-	 * The handle has been removed from the idr, but the timeout handler is still running.
+	 * The handle has been removed from the slot array, but the timeout handler is still running.
 	 * It is queued on the endpoint done_but_timer_list.
 	 * Either the pull has completed (or aborted on error), or the endpoint is being closed and
 	 * all handles have been scheduled for removal.
@@ -87,7 +86,7 @@ enum omx_pull_handle_status {
 	OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT,
 
 	/*
-	 * The handle has been removed from the idr and the endpoint lists, and its timeout handler has exited
+	 * The handle has been removed from the slot array and the endpoint lists, and its timeout handler has exited
 	 * and released its reference.
 	 * Either the pull has completed (or aborted on error) and the handler caught the MUST_EXIT status,
 	 * or the timeout was reached and its handler aborted the handle directly.
@@ -105,7 +104,8 @@ struct omx_pull_block_desc {
 struct omx_pull_handle {
 	struct kref refcount;
 	struct list_head list_elt; /* always queued on one of the endpoint lists */
-	int idr_index; /* that's what idr_get_new wants */
+
+	uint32_t slot_index;
 	uint32_t magic; /* 8bits endpoint index + 24bits handle generation number */
 
 	/* timer for retransmission */
@@ -164,7 +164,7 @@ static void omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_d
  * Notes about locking:
  *
  * Each handle owns a spin_lock that protects the actual pull status (frame index, ...).
- * It also protects its handle status and its queueing in the endpoint lists and idr.
+ * It also protects its handle status and its queueing in the endpoint lists and slot array.
  * This lock is always taken *before* the endpoint pull handle lock.
  *
  * The handle is always queued in one endpoint lists, and the endpoint closing will
@@ -294,6 +294,101 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
 	kref_put(&handle->refcount, __omx_pull_handle_last_release);
 }
 
+/**************************
+ * Pull Handle Index Table
+ */
+
+#define OMX_PULL_HANDLE_SLOTS_MAX 1024
+
+struct omx_pull_handle_slot {
+	struct omx_pull_handle *handle;
+	uint32_t index;
+	struct list_head list_elt;
+};
+
+static int
+omx_pull_handle_slots_init(struct omx_endpoint *endpoint)
+{
+	struct omx_pull_handle_slot *slots;
+	int i;
+
+	slots = kmalloc(OMX_PULL_HANDLE_SLOTS_MAX*sizeof(*slots),
+			GFP_KERNEL);
+	if (!slots)
+		return -ENOMEM;
+	endpoint->pull_handle_slots_array = slots;
+
+	INIT_LIST_HEAD(&endpoint->pull_handle_slots_free_list);
+	for(i=0; i<OMX_PULL_HANDLE_SLOTS_MAX; i++) {
+		struct omx_pull_handle_slot *slot = &slots[i];
+		slot->handle = NULL;
+		slot->index = i;
+		list_add_tail(&slot->list_elt, &endpoint->pull_handle_slots_free_list);
+	}
+
+	return 0;
+}
+
+static void
+omx_pull_handle_slots_exit(struct omx_endpoint *endpoint)
+{
+	kfree(endpoint->pull_handle_slots_array);
+}
+
+/* called with the endpoint pull lock held */
+static int
+omx_pull_handle_alloc_slot(struct omx_endpoint *endpoint,
+			   struct omx_pull_handle *handle)
+{
+	struct omx_pull_handle_slot *slot;
+
+	if (list_empty(&endpoint->pull_handle_slots_free_list))
+		/* FIXME: sleep */
+		return -ENOMEM;
+
+	slot = list_first_entry(&endpoint->pull_handle_slots_free_list,
+				struct omx_pull_handle_slot, list_elt);
+	list_del(&slot->list_elt);
+	slot->handle = handle;
+	handle->slot_index = slot->index;
+	return 0;
+}
+
+/* called with the endpoint pull lock held */
+static void
+omx_pull_handle_free_slot(struct omx_endpoint *endpoint,
+			  struct omx_pull_handle *handle)
+{
+	struct omx_pull_handle_slot *array = endpoint->pull_handle_slots_array;
+	struct omx_pull_handle_slot *slot;
+
+
+	slot = &array[handle->slot_index];
+	slot->handle = NULL;
+	list_add_tail(&slot->list_elt, &endpoint->pull_handle_slots_free_list);
+	/* FIXME: wakeup one sleeper */
+}
+
+/* called with the endpoint pull lock held */
+static struct omx_pull_handle *
+omx_pull_handle_acquire_from_slot(struct omx_endpoint *endpoint,
+				  uint32_t index)
+{
+	struct omx_pull_handle_slot *array = endpoint->pull_handle_slots_array;
+	struct omx_pull_handle_slot *slot;
+	struct omx_pull_handle *handle;
+
+	if (unlikely(index >= OMX_PULL_HANDLE_SLOTS_MAX))
+		return NULL;
+
+	slot = &array[index];
+	handle = slot->handle;
+	if (!handle)
+		return NULL;
+
+	omx_pull_handle_acquire(handle);
+	return slot->handle;
+}
 
 /***************************************
  * Per-endpoint pull handles management
@@ -304,7 +399,7 @@ omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
 {
 	INIT_LIST_HEAD(&endpoint->pull_handles_running_list);
 	INIT_LIST_HEAD(&endpoint->pull_handles_done_but_timer_list);
-	idr_init(&endpoint->pull_handles_idr);
+	omx_pull_handle_slots_init(endpoint);
 	rwlock_init(&endpoint->pull_handles_lock);
 	return 0;
 }
@@ -338,12 +433,12 @@ omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 			handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
 
 			/*
-			 * remove from the idr so that no incoming packet can find it anymore,
+			 * remove from the slot array so that no incoming packet can find it anymore,
 			 * and move to the done_but_timer list
 			 */
-			dprintk(PULL, "moving handle %p to the done_but_timer list and removing from idr\n", handle);
+			dprintk(PULL, "moving handle %p to the done_but_timer list and removing from slot array\n", handle);
 			write_lock(&endpoint->pull_handles_lock);
-			idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
+			omx_pull_handle_free_slot(endpoint, handle);
 			list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
 			write_unlock(&endpoint->pull_handles_lock);
 		} else {
@@ -356,7 +451,7 @@ omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 	}
 	write_unlock_bh(&endpoint->pull_handles_lock);
 
-	idr_destroy(&endpoint->pull_handles_idr);
+	omx_pull_handle_slots_exit(endpoint);
 }
 
 /*
@@ -449,7 +544,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_id, cmd->remote_rdma_id);
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_seqnum, cmd->remote_rdma_seqnum);
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_offset, handle->pulled_rdma_offset);
-	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->idr_index);
+	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->slot_index);
 	OMX_PKT_FIELD_FROM(pull_n->src_magic, handle->magic);
 
 	/* block_length, frame_index, and first_frame_offset filled at actual send */
@@ -487,25 +582,17 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	}
 	/* initialize the lock, we will acquire it soon */
 	spin_lock_init(&handle->lock);
-
-	/* while failed, realloc and retry */
- idr_try_alloc:
-	err = idr_pre_get(&endpoint->pull_handles_idr, GFP_KERNEL);
-	if (unlikely(!err)) {
-		printk(KERN_ERR "Open-MX: Failed to allocate idr space for pull handles\n");
-		err = -ENOMEM;
-		goto out_with_handle;
-	}
-
 	/* lock the handle lock first we'll need it later and can't take it after the endpoint lock */
 	spin_lock(&handle->lock);
 
 	write_lock_bh(&endpoint->pull_handles_lock);
-	err = idr_get_new(&endpoint->pull_handles_idr, handle, &handle->idr_index);
-	if (unlikely(err == -EAGAIN)) {
+
+	err = omx_pull_handle_alloc_slot(endpoint, handle);
+	if (unlikely(err < 0)) {
+		printk(KERN_ERR "Open-MX: Failed to find a slot for pull handle\n");
 		write_unlock_bh(&endpoint->pull_handles_lock);
 		spin_unlock(&handle->lock);
-		goto idr_try_alloc;
+		goto out_with_handle;
 	}
 
 	/* we are good now, finish filling the handle */
@@ -548,7 +635,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* initialize cached header */
 	err = omx_pull_handle_pkt_hdr_fill(endpoint, handle, cmd);
 	if (err < 0)
-		goto out_with_idr;
+		goto out_with_slot;
 
 	/* init timer */
 	setup_timer(&handle->retransmit_timer, omx_pull_handle_timeout_handler,
@@ -568,8 +655,8 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 	return handle;
 
- out_with_idr:
-	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
+ out_with_slot:
+	omx_pull_handle_free_slot(endpoint, handle);
 	write_unlock_bh(&endpoint->pull_handles_lock);
 	spin_unlock(&handle->lock);
  out_with_handle:
@@ -606,14 +693,14 @@ omx_pull_handle_mark_completed(struct omx_pull_handle * handle, uint8_t status)
 			? OMX_PULL_HANDLE_STATUS_TIMER_EXITED
 			: OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
 
-	/* remove from the idr (and endpoint list) so that no incoming packet can find it anymore */
+	/* remove from the slot array (and endpoint list) so that no incoming packet can find it anymore */
 	write_lock_bh(&endpoint->pull_handles_lock);
-	idr_remove(&endpoint->pull_handles_idr, handle->idr_index);
+	omx_pull_handle_free_slot(endpoint, handle);
 	if (status == OMX_EVT_PULL_DONE_TIMEOUT) {
-		dprintk(PULL, "pull handle %p timer done, removing from idr and endpoint list\n", handle);
+		dprintk(PULL, "pull handle %p timer done, removing from slot array and endpoint list\n", handle);
 		list_del(&handle->list_elt);
 	} else {
-		dprintk(PULL, "moving done handle %p to the done_but_timer list and removing from idr\n", handle);
+		dprintk(PULL, "moving done handle %p to the done_but_timer list and removing from slot array\n", handle);
 		list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
 	}
 	write_unlock_bh(&endpoint->pull_handles_lock);
@@ -955,7 +1042,7 @@ omx_pull_handle_timeout_handler(unsigned long data)
 
 		/*
 		 * the handle has been moved to the done_but_timer_list,
-		 * it's already outside of the idr, no need to lock bh
+		 * it's already outside of the slot array, no need to lock bh
 		 */
 		write_lock(&endpoint->pull_handles_lock);
 		list_del(&handle->list_elt);
@@ -1604,8 +1691,8 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 	read_lock_bh(&endpoint->pull_handles_lock);
 
-	/* acquire the handle within the endpoint idr */
-	handle = idr_find(&endpoint->pull_handles_idr, dst_pull_handle);
+	/* acquire the handle within the endpoint slot array */
+	handle = omx_pull_handle_acquire_from_slot(endpoint, dst_pull_handle);
 	if (unlikely(!handle)) {
 		read_unlock_bh(&endpoint->pull_handles_lock);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
@@ -1617,9 +1704,10 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 
 	/* check the full magic, if it's not fully equal, it could be
-	 * the same idr from another generation of pull handle.
+	 * the same array slot from another generation of pull handle.
 	 */
 	if (unlikely(handle->magic != dst_magic)) {
+		omx_pull_handle_release(handle);
 		read_unlock_bh(&endpoint->pull_handles_lock);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad handle generation within magic %ld",
@@ -1629,8 +1717,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	/* take a reference on the handle */
-	omx_pull_handle_acquire(handle);
+	/* release the endpoint since the acquired handle owns it */
 	read_unlock_bh(&endpoint->pull_handles_lock);
 
 	/* no session to check */
@@ -1844,8 +1931,9 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	}
 	read_lock_bh(&endpoint->pull_handles_lock);
 
-	/* acquire the handle within the endpoint idr */
-	handle = idr_find(&endpoint->pull_handles_idr, dst_pull_handle);
+	/* acquire the handle within the endpoint slot array */
+	/* acquire the handle within the endpoint slot array */
+	handle = omx_pull_handle_acquire_from_slot(endpoint, dst_pull_handle);
 	if (unlikely(!handle)) {
 		read_unlock_bh(&endpoint->pull_handles_lock);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
@@ -1857,9 +1945,10 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	}
 
 	/* check the full magic, if it's not fully equal, it could be
-	 * the same idr from another generation of pull handle.
+	 * the same slot from another generation of pull handle.
 	 */
 	if (unlikely(handle->magic != dst_magic)) {
+		omx_pull_handle_release(handle);
 		read_unlock_bh(&endpoint->pull_handles_lock);
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
 		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad handle generation within magic %lx",
@@ -1869,8 +1958,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	/* take a reference on the handle and release the endpoint since the handle owns it */
-	omx_pull_handle_acquire(handle);
+	/* release the endpoint since the acquired handle owns it */
 	read_unlock_bh(&endpoint->pull_handles_lock);
 
 	/* no session to check */
