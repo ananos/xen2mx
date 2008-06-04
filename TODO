@@ -1,4 +1,3 @@
-* use driver feature flag to disable immediate notify ack
 * use driver feature flag to disable shared in the lib at startup?
 * make shared comms runtime-configurable in the driver
 
