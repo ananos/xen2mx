@@ -322,6 +322,8 @@ struct omx_pull_handle_slot {
 
 #define OMX_PULL_HANDLE_SLOT_INDEX_FROM_ID(id) \
 	((id) >> OMX_PULL_HANDLE_SLOT_GENERATION_BITS)
+#define OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(id) \
+	((id) & OMX_PULL_HANDLE_SLOT_GENERATION_MASK)
 
 static int
 omx_pull_handle_slots_init(struct omx_endpoint *endpoint)
@@ -368,6 +370,12 @@ omx_pull_handle_alloc_slot(struct omx_endpoint *endpoint,
 	list_del(&slot->list_elt);
 	rcu_assign_pointer(slot->handle, handle);
 	handle->slot_id = slot->id;
+
+	dprintk(PULL, "allocating slot index %d generation %d for pull handle %p\n",
+		(unsigned) OMX_PULL_HANDLE_SLOT_INDEX_FROM_ID(slot->id),
+		(unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot->id),
+		handle);
+
 	return 0;
 }
 
@@ -379,6 +387,11 @@ omx_pull_handle_free_slot(struct omx_endpoint *endpoint,
 	struct omx_pull_handle_slot *array = endpoint->pull_handle_slots_array;
 	uint32_t index = OMX_PULL_HANDLE_SLOT_INDEX_FROM_ID(handle->slot_id);
 	struct omx_pull_handle_slot *slot = &array[index];
+
+	dprintk(PULL, "freeing slot index %d generation %d from pull handle %p\n",
+		(unsigned) OMX_PULL_HANDLE_SLOT_INDEX_FROM_ID(slot->id),
+		(unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot->id),
+		handle);
 
 	rcu_assign_pointer(slot->handle, NULL);
 	list_add_tail(&slot->list_elt, &endpoint->pull_handle_slots_free_list);
@@ -404,11 +417,20 @@ omx_pull_handle_acquire_from_slot(struct omx_endpoint *endpoint,
 
 	rcu_read_lock();
 
+	dprintk(PULL, "looking for slot index %d generation %d\n",
+		(unsigned) index, (unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot_id));
+
 	handle = rcu_dereference(slot->handle);
-	if (!handle)
+	if (!handle) {
+		dprintk(PULL, "slot index %d not used by any pull handle\n", index);
 		goto out;
+	}
 
 	if (slot_id != slot->id) {
+		dprintk(PULL, "slot index %d has generation %d instead of %d\n",
+			(unsigned) index,
+			(unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot->id),
+			(unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot_id));
 		handle = NULL;
 		goto out;
 	}
