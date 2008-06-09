@@ -1,6 +1,5 @@
 * cleanup the idr+BHlock for handles
   + sleep if not enough slot available
-  + allocate the handle generation within the slot array routines
 
 * endpoint_close cannot be called from interrupt context
   - we can sleep when calling prepare_exit

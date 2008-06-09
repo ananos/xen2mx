@@ -49,6 +49,8 @@
 #endif
 #endif
 
+#define OMX_ENDPOINT_PULL_MAGIC_XOR 0x21071980
+
 /**********************
  * Pull-specific Types
  */
@@ -106,7 +108,6 @@ struct omx_pull_handle {
 	struct list_head list_elt; /* always queued on one of the endpoint lists */
 
 	uint32_t slot_id; /* 32bits slot identifier */
-	uint32_t magic; /* 8bits endpoint index + 24bits handle generation number */
 
 	/* timer for retransmission */
 	struct timer_list retransmit_timer;
@@ -214,41 +215,6 @@ extern unsigned long omx_PULL_REPLY_packet_loss;
 static unsigned long omx_PULL_REQ_packet_loss_index = 0;
 static unsigned long omx_PULL_REPLY_packet_loss_index = 0;
 #endif /* OMX_DRIVER_DEBUG */
-
-/******************************
- * Endpoint pull-magic management
- */
-
-/* the magic is an incremented 24bits generation followed by 8bits for the endpoint index */
-#define OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS 8
-#if OMX_ENDPOINT_INDEX_MAX > (1<<OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS)
-#error Endpoint index may not fit in the pull handle magic
-#endif
-
-#define OMX_PULL_HANDLE_MAGIC_XOR 0x21071980
-
-static uint32_t omx_endpoint_magic_generation = 0;
-
-static INLINE uint32_t
-omx_generate_pull_magic(struct omx_endpoint * endpoint)
-{
-	omx_endpoint_magic_generation++;
-	return ((omx_endpoint_magic_generation << OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS)
-		| endpoint->endpoint_index)
-	       ^ OMX_PULL_HANDLE_MAGIC_XOR;
-}
-
-/*
- * Acquire an endpoint using a pull handle magic given on the wire.
- *
- * Returns an endpoint acquired, on ERR_PTR(-errno) on error
- */
-static INLINE struct omx_endpoint *
-omx_endpoint_acquire_by_pull_magic(struct omx_iface * iface, uint32_t magic)
-{
-	uint8_t index = (magic ^ OMX_PULL_HANDLE_MAGIC_XOR) & ((1UL << OMX_PULL_HANDLE_MAGIC_ENDPOINT_INDEX_BITS) - 1);
-	return omx_endpoint_acquire_by_iface_index(iface, index);
-}
 
 /**********************************
  * Pull handle acquiring/releasing
@@ -597,7 +563,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_seqnum, cmd->remote_rdma_seqnum);
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_offset, handle->pulled_rdma_offset);
 	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->slot_id);
-	OMX_PKT_FIELD_FROM(pull_n->src_magic, handle->magic);
+	OMX_PKT_FIELD_FROM(pull_n->src_magic, endpoint->endpoint_index ^ OMX_ENDPOINT_PULL_MAGIC_XOR);
 
 	/* block_length, frame_index, and first_frame_offset filled at actual send */
 
@@ -667,7 +633,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		handle->block_desc[i].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
 	handle->already_rerequested_blocks = 0;
 	handle->last_retransmit_jiffies = cmd->resend_timeout_jiffies + jiffies;
-	handle->magic = omx_generate_pull_magic(endpoint);
 
 	handle->host_copy_nr_frames = 0;
 
@@ -1732,7 +1697,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	}
 
 	/* acquire the endpoint */
-	endpoint = omx_endpoint_acquire_by_pull_magic(iface, dst_magic);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_magic ^ OMX_ENDPOINT_PULL_MAGIC_XOR);
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_ENDPOINT);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad endpoint index within magic %ld",
@@ -1747,19 +1712,6 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
 		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad wire handle %lx",
 				 (unsigned long) dst_pull_handle);
-		/* no need to nack this */
-		err = -EINVAL;
-		goto out_with_endpoint;
-	}
-
-	/* check the full magic, if it's not fully equal, it could be
-	 * the same array slot from another generation of pull handle.
-	 */
-	if (unlikely(handle->magic != dst_magic)) {
-		omx_pull_handle_release(handle);
-		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
-		omx_drop_dprintk(&mh->head.eth, "PULL REPLY packet with bad handle generation within magic %ld",
-				 (unsigned long) dst_magic);
 		/* no need to nack this */
 		err = -EINVAL;
 		goto out_with_endpoint;
@@ -1965,7 +1917,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	}
 
 	/* acquire the endpoint */
-	endpoint = omx_endpoint_acquire_by_pull_magic(iface, dst_magic);
+	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_magic ^ OMX_ENDPOINT_PULL_MAGIC_XOR);
 	if (unlikely(IS_ERR(endpoint))) {
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_ENDPOINT);
 		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad endpoint index within magic %ld",
@@ -1982,19 +1934,6 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_WIRE_HANDLE);
 		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad wire handle %lx",
 				 (unsigned long) dst_pull_handle);
-		/* no need to nack this */
-		err = -EINVAL;
-		goto out_with_endpoint;
-	}
-
-	/* check the full magic, if it's not fully equal, it could be
-	 * the same slot from another generation of pull handle.
-	 */
-	if (unlikely(handle->magic != dst_magic)) {
-		omx_pull_handle_release(handle);
-		omx_counter_inc(iface, DROP_PULL_REPLY_BAD_MAGIC_HANDLE_GENERATION);
-		omx_drop_dprintk(&mh->head.eth, "NACK MCP packet with bad handle generation within magic %lx",
-				 (unsigned long) dst_magic);
 		/* no need to nack this */
 		err = -EINVAL;
 		goto out_with_endpoint;
