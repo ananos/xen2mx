@@ -175,15 +175,15 @@ static void omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_d
  * because of the possible interrupt context. Later, the cleanup thread will cleanup
  * the endpoint, including destroying the handle timers that are still running.
  *
- * The pile of handles for an endpoint is protected by a rwlock. It is taken for
- * reading when acquiring an handle (when a pull reply or nack mcp arrives, likely
- * in a bottom half). It is taken for writing when creating a handle (when the
- * application request a pull), finishing a handle (when a pull reply arrives
- * and completes the pull request, likely in a bottom half), and when destroying
- * and remaining handles (when the endpoint is closed).
- * Since a bottom half and the application may both acquire the rwlock for
- * writing, we must always disable bottom halves when taking the rwlock for
- * either read or writing.
+ * The pile of handles for an endpoint is protected by a spinlock. It is not taken
+ * when acquiring an handle (when a pull reply or nack mcp arrives, likely in a
+ * bottom half) because this is RCU protected. It is only taken for modification
+ * when creating a handle (when the application request a pull), finishing a handle
+ * (when a pull reply completes the pull request, likely in a bottom half), when
+ * completing a handle on tiemout (from the timer softirq), and when destroying
+ * remaining handles (when the endpoint is closed).
+ * Since a bottom half and the application may both acquire the spinlock, we must
+ * always disable bottom halves when taking the spinlock.
  */
 
 /*
