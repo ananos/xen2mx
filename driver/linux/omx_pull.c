@@ -105,7 +105,7 @@ struct omx_pull_handle {
 	struct kref refcount;
 	struct list_head list_elt; /* always queued on one of the endpoint lists */
 
-	uint32_t slot_index;
+	uint32_t slot_id; /* 32bits slot identifier */
 	uint32_t magic; /* 8bits endpoint index + 24bits handle generation number */
 
 	/* timer for retransmission */
@@ -298,13 +298,30 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
  * Pull Handle Index Table
  */
 
-#define OMX_PULL_HANDLE_SLOTS_MAX 1024
-
 struct omx_pull_handle_slot {
 	struct omx_pull_handle *handle;
-	uint32_t index;
+	uint32_t id; /* index in SLOTS_BITS + a generation number in GENERATION_BITS */
 	struct list_head list_elt;
 };
+
+#define OMX_PULL_HANDLE_SLOT_INDEX_BITS 10
+#define OMX_PULL_HANDLE_SLOT_GENERATION_BITS (32-OMX_PULL_HANDLE_SLOT_INDEX_BITS)
+#define OMX_PULL_HANDLE_SLOT_INDEX_MAX (1<<(OMX_PULL_HANDLE_SLOT_INDEX_BITS))
+#define OMX_PULL_HANDLE_SLOT_INDEX_MASK ((OMX_PULL_HANDLE_SLOT_INDEX_MAX-1) << OMX_PULL_HANDLE_SLOT_GENERATION_BITS)
+#define OMX_PULL_HANDLE_SLOT_GENERATION_MASK ((1<<(OMX_PULL_HANDLE_SLOT_GENERATION_BITS)) - 1)
+#define OMX_PULL_HANDLE_SLOT_GENERATION_FIRST 0x23
+
+#define OMX_PULL_HANDLE_SLOT_ID_FIRST(index) \
+	((OMX_PULL_HANDLE_SLOT_GENERATION_FIRST & OMX_PULL_HANDLE_SLOT_GENERATION_MASK) \
+	 + (index << OMX_PULL_HANDLE_SLOT_GENERATION_BITS))
+
+#define OMX_PULL_HANDLE_SLOT_ID_INC(slot) do { \
+	slot->id = (slot->id & OMX_PULL_HANDLE_SLOT_INDEX_MASK) \
+		| ((slot->id+1) & OMX_PULL_HANDLE_SLOT_GENERATION_MASK); \
+	} while (0)
+
+#define OMX_PULL_HANDLE_SLOT_INDEX_FROM_ID(id) \
+	((id) >> OMX_PULL_HANDLE_SLOT_GENERATION_BITS)
 
 static int
 omx_pull_handle_slots_init(struct omx_endpoint *endpoint)
@@ -312,17 +329,17 @@ omx_pull_handle_slots_init(struct omx_endpoint *endpoint)
 	struct omx_pull_handle_slot *slots;
 	int i;
 
-	slots = kmalloc(OMX_PULL_HANDLE_SLOTS_MAX*sizeof(*slots),
+	slots = kmalloc(OMX_PULL_HANDLE_SLOT_INDEX_MAX*sizeof(*slots),
 			GFP_KERNEL);
 	if (!slots)
 		return -ENOMEM;
 	endpoint->pull_handle_slots_array = slots;
 
 	INIT_LIST_HEAD(&endpoint->pull_handle_slots_free_list);
-	for(i=0; i<OMX_PULL_HANDLE_SLOTS_MAX; i++) {
+	for(i=0; i<OMX_PULL_HANDLE_SLOT_INDEX_MAX; i++) {
 		struct omx_pull_handle_slot *slot = &slots[i];
 		slot->handle = NULL;
-		slot->index = i;
+		slot->id = OMX_PULL_HANDLE_SLOT_ID_FIRST(i);
 		list_add_tail(&slot->list_elt, &endpoint->pull_handle_slots_free_list);
 	}
 
@@ -350,7 +367,7 @@ omx_pull_handle_alloc_slot(struct omx_endpoint *endpoint,
 				struct omx_pull_handle_slot, list_elt);
 	list_del(&slot->list_elt);
 	rcu_assign_pointer(slot->handle, handle);
-	handle->slot_index = slot->index;
+	handle->slot_id = slot->id;
 	return 0;
 }
 
@@ -360,25 +377,27 @@ omx_pull_handle_free_slot(struct omx_endpoint *endpoint,
 			  struct omx_pull_handle *handle)
 {
 	struct omx_pull_handle_slot *array = endpoint->pull_handle_slots_array;
-	struct omx_pull_handle_slot *slot;
+	uint32_t index = OMX_PULL_HANDLE_SLOT_INDEX_FROM_ID(handle->slot_id);
+	struct omx_pull_handle_slot *slot = &array[index];
 
-
-	slot = &array[handle->slot_index];
 	rcu_assign_pointer(slot->handle, NULL);
 	list_add_tail(&slot->list_elt, &endpoint->pull_handle_slots_free_list);
 	/* FIXME: wakeup one sleeper */
+
+	OMX_PULL_HANDLE_SLOT_ID_INC(slot);
 }
 
 /* called withOUT the endpoint pull lock held, uses RCU */
 static struct omx_pull_handle *
 omx_pull_handle_acquire_from_slot(struct omx_endpoint *endpoint,
-				  uint32_t index)
+				  uint32_t slot_id)
 {
 	struct omx_pull_handle_slot *array = endpoint->pull_handle_slots_array;
 	struct omx_pull_handle_slot *slot;
 	struct omx_pull_handle *handle;
+	uint32_t index = OMX_PULL_HANDLE_SLOT_INDEX_FROM_ID(slot_id);
 
-	if (unlikely(index >= OMX_PULL_HANDLE_SLOTS_MAX))
+	if (unlikely(index >= OMX_PULL_HANDLE_SLOT_INDEX_MAX))
 		return NULL;
 
 	slot = &array[index];
@@ -388,6 +407,11 @@ omx_pull_handle_acquire_from_slot(struct omx_endpoint *endpoint,
 	handle = rcu_dereference(slot->handle);
 	if (!handle)
 		goto out;
+
+	if (slot_id != slot->id) {
+		handle = NULL;
+		goto out;
+	}
 
 	omx_pull_handle_acquire(handle);
 
@@ -550,7 +574,7 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_id, cmd->remote_rdma_id);
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_seqnum, cmd->remote_rdma_seqnum);
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_offset, handle->pulled_rdma_offset);
-	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->slot_index);
+	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->slot_id);
 	OMX_PKT_FIELD_FROM(pull_n->src_magic, handle->magic);
 
 	/* block_length, frame_index, and first_frame_offset filled at actual send */
