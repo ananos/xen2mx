@@ -320,7 +320,12 @@ omx_pull_handle_slots_exit(struct omx_endpoint *endpoint)
 	kfree(endpoint->pull_handle_slots_array);
 }
 
-/* called with the endpoint pull lock held */
+/*
+ * Allocate the pull handle slot and associate the handle to it.
+ * Returns the handle as locked.
+ *
+ * Called with the endpoint pull lock held
+ */
 static int
 omx_pull_handle_alloc_slot(struct omx_endpoint *endpoint,
 			   struct omx_pull_handle *handle)
@@ -334,6 +339,13 @@ omx_pull_handle_alloc_slot(struct omx_endpoint *endpoint,
 	slot = list_first_entry(&endpoint->pull_handle_slots_free_list,
 				struct omx_pull_handle_slot, list_elt);
 	list_del(&slot->list_elt);
+
+	/*
+	 * lock the handle lock now since it may be acquired
+	 * right after we assign it to this slot
+	 */
+	spin_lock(&handle->lock);
+
 	rcu_assign_pointer(slot->handle, handle);
 	handle->slot_id = slot->id;
 
@@ -345,7 +357,11 @@ omx_pull_handle_alloc_slot(struct omx_endpoint *endpoint,
 	return 0;
 }
 
-/* called with the endpoint pull lock held */
+/*
+ * Free a pull handle slot.
+ *
+ * Called with the endpoint pull lock held
+ */
 static void
 omx_pull_handle_free_slot(struct omx_endpoint *endpoint,
 			  struct omx_pull_handle *handle)
@@ -366,7 +382,11 @@ omx_pull_handle_free_slot(struct omx_endpoint *endpoint,
 	OMX_PULL_HANDLE_SLOT_ID_INC(slot);
 }
 
-/* called withOUT the endpoint pull lock held, uses RCU */
+/*
+ * Find a pull handle slot using an id coming from the wire.
+ *
+ * Called withOUT the endpoint pull lock held, uses RCU
+ */
 static struct omx_pull_handle *
 omx_pull_handle_acquire_from_slot(struct omx_endpoint *endpoint,
 				  uint32_t slot_id)
@@ -600,8 +620,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	}
 	/* initialize the lock, we will acquire it soon */
 	spin_lock_init(&handle->lock);
-	/* lock the handle lock first we'll need it later and can't take it after the endpoint lock */
-	spin_lock(&handle->lock);
 
 	spin_lock_bh(&endpoint->pull_handles_lock);
 
@@ -609,9 +627,11 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	if (unlikely(err < 0)) {
 		printk(KERN_ERR "Open-MX: Failed to find a slot for pull handle\n");
 		spin_unlock_bh(&endpoint->pull_handles_lock);
-		spin_unlock(&handle->lock);
 		goto out_with_handle;
 	}
+
+	/* tell the sparse checker that the handle returned as locked */
+	__acquire(&handle->lock);
 
 	/* we are good now, finish filling the handle */
 	kref_init(&handle->refcount);
