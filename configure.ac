@@ -267,7 +267,7 @@ if test x$build_driver = xyes ; then
     fi
 
     # uts namespace arrived in 2.6.19
-    AC_MSG_CHECKING((in kernel headers) UTS namespace availabilty)
+    AC_MSG_CHECKING((in kernel headers) UTS namespace availability)
     if grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null ; then
       echo "#define OMX_HAVE_UTS_NAMESPACE 1" >> ${TMP_CHECKS_PATH}
       AC_MSG_RESULT(yes)
