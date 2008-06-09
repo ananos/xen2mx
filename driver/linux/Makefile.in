@@ -13,20 +13,28 @@ ifneq ($(KCC),)
   KBUILD_VARS	+=	CC="$(KCC)"
 endif
 
-LINUX_DIR	=	@LINUX_BUILD@
+HDRCHECKFILE	=	omx_checks.h
+
+LINUX_BUILD	=	@LINUX_BUILD@
+LINUX_HDR	=	@LINUX_HDR@
+LINUX_RELEASE	=	@LINUX_RELEASE@
 OPEN_MX_DIR	=	@abs_builddir@
-INSTALL_MOD_PATH	=	$(libdir)/modules/@LINUX_RELEASE@
+INSTALL_MOD_PATH	=	$(libdir)/modules/$(LINUX_RELEASE)
 MODULE_OBJS	=	open-mx.ko
 
-.PHONY: all installonly install clean distclean wc
+.PHONY: all $(HDRCHECKFILE) installonly install clean distclean wc
 
 # Cannot avoid symlinking source files here and using O=builddir M=srcdir
 # since configure would have to generate Kbuild and omx_checks.h in srcdir
 # instead of builddir
 
-all: links
+all: $(HDRCHECKFILE) links
 	$(CMDECHO) "  MAKE    DRIVER"
-	$(CMDPREFIX) +$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) $(KBUILD_VARS)
+	$(CMDPREFIX) +$(MAKE) -C $(LINUX_BUILD) M=$(OPEN_MX_DIR) $(KBUILD_VARS)
+
+$(HDRCHECKFILE):
+	$(CMDECHO) "  CHECK   KERNEL HEADERS"
+	$(CMDPREFIX) @srcdir@/check_kernel_headers.sh $(HDRCHECKFILE) "$(LINUX_BUILD)" "$(LINUX_HDR)" "$(LINUX_RELEASE)"
 
 installonly:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(INSTALL_MOD_PATH)"
@@ -41,7 +49,8 @@ install: all installonly
 
 clean:
 	$(CMDECHO) "  CLEAN   DRIVER"
-	$(CMDPREFIX) +$(MAKE) -C $(LINUX_DIR) M=$(OPEN_MX_DIR) $(KBUILD_VARS) clean
+	$(CMDPREFIX) +$(MAKE) -C $(LINUX_BUILD) M=$(OPEN_MX_DIR) $(KBUILD_VARS) clean
+	$(CMDPREFIX) $(RM) $(HDRCHECKFILE)
 
 distclean: clean clean-links
 
