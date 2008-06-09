@@ -1706,6 +1706,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		err = -EINVAL;
 		goto out;
 	}
+
 	/* acquire the handle within the endpoint slot array */
 	handle = omx_pull_handle_acquire_from_slot(endpoint, dst_pull_handle);
 	if (unlikely(!handle)) {
@@ -1927,7 +1928,6 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		goto out;
 	}
 
-	/* acquire the handle within the endpoint slot array */
 	/* acquire the handle within the endpoint slot array */
 	handle = omx_pull_handle_acquire_from_slot(endpoint, dst_pull_handle);
 	if (unlikely(!handle)) {
