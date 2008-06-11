@@ -61,6 +61,37 @@ echo " * It checked kernel headers in ${LINUX_HDR}/include/" >> ${TMP_CHECKS_NAM
 echo " */" >> ${TMP_CHECKS_NAME}
 echo "" >> ${TMP_CHECKS_NAME}
 
+# SANITY CHECKS
+
+# vm_insert_page appeared in 2.6.15
+echo -n "  checking (in kernel headers) vm_insert_page availability ... "
+if grep vm_insert_page ${LINUX_HDR}/include/linux/mm.h > /dev/null ; then
+  echo yes
+else
+  echo "no, this kernel isn't supported"
+  exit -1
+fi
+
+# setup_timer appeared in 2.6.15
+echo -n "  checking (in kernel headers) setup_timer availability ... "
+if grep setup_timer ${LINUX_HDR}/include/linux/timer.h > /dev/null ; then
+  echo yes
+else
+  echo "no, this kernel isn't supported"
+  exit -1
+fi
+
+# kzalloc appeared in 2.6.14
+echo -n "  checking (in kernel headers) kzalloc availability ... "
+if grep kzalloc ${LINUX_HDR}/include/linux/slab*.h > /dev/null ; then
+  echo yes
+else
+  echo "no, this kernel isn't supported"
+  exit -1
+fi
+
+# API WORKAROUNDS
+
 # remap_vmalloc_range and vmalloc_user appeared in 2.6.18
 echo -n "  checking (in kernel headers) remap_vmalloc_range availability ... "
 if grep "remap_vmalloc_range *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null ; then
