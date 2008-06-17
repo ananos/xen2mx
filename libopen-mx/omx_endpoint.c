@@ -269,6 +269,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
       }
       ctxid_bits = param_array[i].val.context_id.bits;
       ctxid_shift = param_array[i].val.context_id.shift;
+      omx__verbose_printf("using %d bits of context id at offset %d in matching\n", ctxid_bits, ctxid_shift);
       break;
     }
     default: {
@@ -399,6 +400,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint ctxids array");
     goto out_with_myself;
   }
+
+  INIT_LIST_HEAD(&ep->anyctxid.done_req_q);
+
   for(i=0; i<ep->ctxid_max; i++) {
     INIT_LIST_HEAD(&ep->ctxid[i].unexp_req_q);
     INIT_LIST_HEAD(&ep->ctxid[i].recv_req_q);

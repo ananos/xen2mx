@@ -254,13 +254,25 @@ omx__test_any_common(struct omx_endpoint *ep,
 		     uint64_t match_info, uint64_t match_mask,
 		     omx_status_t *status)
 {
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
 
-  omx__foreach_done_request(ep, ctxid, req) {
-    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
-      omx__test_success(ep, req, status);
-      return 1;
+  if (likely(!HAS_CTXIDS(ep) || MATCHING_CROSS_CTXIDS(ep, match_mask))) {
+    /* no ctxids, or matching across multiple ctxids, so use the anyctxid queue */
+    omx__foreach_done_anyctxid_request(ep, req) {
+      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
+	omx__test_success(ep, req, status);
+	return 1;
+      }
+    }
+
+  } else {
+    /* use one of the ctxid queues */
+    uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
+    omx__foreach_done_ctxid_request(ep, ctxid, req) {
+      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
+	omx__test_success(ep, req, status);
+	return 1;
+      }
     }
   }
 
@@ -280,14 +292,6 @@ omx_test_any(struct omx_endpoint *ep,
     ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
 			     "test_any with match info %llx mask %llx",
 			     (unsigned long long) match_info, (unsigned long long) match_mask);
-    goto out;
-  }
-
-  /* check that there's no wildcard in the context id range */
-  if (unlikely(ep->ctxid_mask & ~match_mask)) {
-    ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
-			     "test_any with match mask %llx and ctxid mask %llx",
-			     (unsigned long long) match_mask, ep->ctxid_mask);
     goto out;
   }
 
@@ -323,14 +327,6 @@ omx_wait_any(struct omx_endpoint *ep,
     ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
 			     "wait_any with match info %llx mask %llx",
 			     (unsigned long long) match_info, (unsigned long long) match_mask);
-    goto out;
-  }
-
-  /* check that there's no wildcard in the context id range */
-  if (unlikely(ep->ctxid_mask & ~match_mask)) {
-    ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
-			     "wait_any with match mask %llx and ctxid mask %llx",
-			     (unsigned long long) match_mask, ep->ctxid_mask);
     goto out;
   }
 
@@ -393,10 +389,10 @@ omx_wait_any(struct omx_endpoint *ep,
 static INLINE uint32_t
 omx__ipeek_common(struct omx_endpoint *ep, union omx_request **requestp)
 {
-  if (unlikely(omx__empty_done_queue(ep, 0))) {
+  if (unlikely(omx__empty_done_anyctxid_queue(ep))) {
     return 0;
   } else {
-    *requestp = omx__first_done_request(ep, 0);
+    *requestp = omx__first_done_anyctxid_request(ep);
     return 1;
   }
 }
@@ -409,13 +405,6 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
   omx_return_t ret = OMX_SUCCESS;
   uint32_t result = 0;
 
-  if (unlikely(ep->ctxid_bits)) {
-    ret = omx__error_with_ep(ep, OMX_NOT_SUPPORTED_WITH_CONTEXT_ID,
-			     "ipeek with ctxid bits %d\n",
-			     (unsigned) ep->ctxid_bits);
-    goto out;
-  }
-
   OMX__ENDPOINT_LOCK(ep);
 
   ret = omx__progress(ep);
@@ -426,7 +415,6 @@ omx_ipeek(struct omx_endpoint *ep, union omx_request **requestp,
 
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
- out:
   *resultp = result;
   return ret;
 }
@@ -441,13 +429,6 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
   uint64_t jiffies_expire = omx__timeout_ms_to_absolute_jiffies(ms_timeout);
   omx_return_t ret = OMX_SUCCESS;
   uint32_t result = 0;
-
-  if (unlikely(ep->ctxid_bits)) {
-    ret = omx__error_with_ep(ep, OMX_NOT_SUPPORTED_WITH_CONTEXT_ID,
-			     "peek with ctxid bits %d\n",
-			     (unsigned) ep->ctxid_bits);
-    goto out;
-  }
 
   OMX__ENDPOINT_LOCK(ep);
   sleeper.need_wakeup = 0;
@@ -496,7 +477,6 @@ omx_peek(struct omx_endpoint *ep, union omx_request **requestp,
  out_with_lock:
   list_del(&sleeper.list_elt);
   OMX__ENDPOINT_UNLOCK(ep);
- out:
   *resultp = result;
   return ret;
 }

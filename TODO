@@ -1,3 +1,5 @@
+* allow to probe across ctxids by adding a anyctxid unexpq
+
 * cleanup the idr+BHlock for handles
   + sleep if not enough slot available
 

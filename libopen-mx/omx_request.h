@@ -128,7 +128,9 @@ omx__notify_request_done_early(struct omx_endpoint *ep, uint32_t ctxid,
   omx__debug_assert(req->generic.state);
 
   req->generic.state |= OMX_REQUEST_STATE_DONE;
-  list_add_tail(&req->generic.done_elt, &ep->ctxid[ctxid].done_req_q);
+  list_add_tail(&req->generic.done_anyctxid_elt, &ep->anyctxid.done_req_q);
+  if (unlikely(HAS_CTXIDS(ep)))
+    list_add_tail(&req->generic.done_ctxid_elt, &ep->ctxid[ctxid].done_req_q);
 
   /*
    * need to wakeup some possible send-done waiters (or recv-done for notify)
@@ -155,7 +157,9 @@ omx__notify_request_done(struct omx_endpoint *ep, uint32_t ctxid,
   } else if (unlikely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
     /* queue the request to the done queue if not already done */
     req->generic.state |= OMX_REQUEST_STATE_DONE;
-    list_add_tail(&req->generic.done_elt, &ep->ctxid[ctxid].done_req_q);
+    list_add_tail(&req->generic.done_anyctxid_elt, &ep->anyctxid.done_req_q);
+    if (unlikely(HAS_CTXIDS(ep)))
+      list_add_tail(&req->generic.done_ctxid_elt, &ep->ctxid[ctxid].done_req_q);
   }
 }
 
@@ -166,33 +170,44 @@ omx__dequeue_done_request(struct omx_endpoint *ep,
 #ifdef OMX_LIB_DEBUG
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
   struct list_head *e;
-  list_for_each(e, &ep->ctxid[ctxid].done_req_q)
-    if (req == list_entry(e, union omx_request, generic.done_elt))
-      goto found;
 
-  omx__abort("Failed to find request in queue for dequeueing\n");
+  list_for_each(e, &ep->anyctxid.done_req_q)
+    if (req == list_entry(e, union omx_request, generic.done_anyctxid_elt))
+      goto found2;
+  omx__abort("Failed to find request in anyctxid queue for dequeueing\n");
+ found2:
 
+  if (unlikely(HAS_CTXIDS(ep))) {
+    list_for_each(e, &ep->ctxid[ctxid].done_req_q)
+      if (req == list_entry(e, union omx_request, generic.done_ctxid_elt))
+	goto found;
+    omx__abort("Failed to find request in ctxid queue for dequeueing\n");
+  }
  found:
+
 #endif /* OMX_LIB_DEBUG */
-  list_del(&req->generic.done_elt);
+  list_del(&req->generic.done_anyctxid_elt);
+  if (unlikely(HAS_CTXIDS(ep)))
+    list_del(&req->generic.done_ctxid_elt);
 }
 
+#define omx__foreach_done_ctxid_request(ep, _ctxid, req)		\
+list_for_each_entry(req, &ep->ctxid[_ctxid].done_req_q, generic.done_ctxid_elt)
+
+#define omx__foreach_done_anyctxid_request(ep, req)		\
+list_for_each_entry(req, &ep->anyctxid.done_req_q, generic.done_anyctxid_elt)
+
 static inline union omx_request *
-omx__first_done_request(struct omx_endpoint *ep,
-			      uint32_t ctxid)
+omx__first_done_anyctxid_request(struct omx_endpoint *ep)
 {
-  return list_first_entry(&ep->ctxid[ctxid].done_req_q, union omx_request, generic.done_elt);
+  return list_first_entry(&ep->anyctxid.done_req_q, union omx_request, generic.done_anyctxid_elt);
 }
 
 static inline int
-omx__empty_done_queue(struct omx_endpoint *ep,
-		      uint32_t ctxid)
+omx__empty_done_anyctxid_queue(struct omx_endpoint *ep)
 {
-  return list_empty(&ep->ctxid[ctxid].done_req_q);
+  return list_empty(&ep->anyctxid.done_req_q);
 }
-
-#define omx__foreach_done_request(ep, _ctxid, req)		\
-list_for_each_entry(req, &ep->ctxid[_ctxid].done_req_q, generic.done_elt)
 
 /*********************************************
  * Partner non-acked request queue management

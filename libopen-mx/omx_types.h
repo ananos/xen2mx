@@ -190,6 +190,8 @@ struct omx__endpoint_addr {
   /* pad to the exact API size to avoid aliasing problems */
 } __attribute__((aligned (8))) __attribute__((may_alias));
 
+#define HAS_CTXIDS(ep) ((ep)->ctxid_bits > 0)
+#define MATCHING_CROSS_CTXIDS(ep, match) (((match) & (ep)->ctxid_mask) != 0)
 #define CTXID_FROM_MATCHING(ep, match) ((uint32_t)(((match) >> (ep)->ctxid_shift) & ((ep)->ctxid_max-1)))
 
 #define OMX_PROGRESSION_DISABLED_IN_HANDLER (1<<0)
@@ -220,6 +222,12 @@ struct omx_endpoint {
   uint8_t ctxid_shift;
   uint64_t ctxid_mask;
 
+  /* global queues that contain all ctxid queues */
+  struct {
+    /* done requests (queued by their done_anyctxid_elt) */
+    struct list_head done_req_q;
+  } anyctxid;
+
   /* context id array for multiplexed queues */
   struct {
     /* unexpected receive, may be partial (queued by their queue_elt) */
@@ -227,7 +235,7 @@ struct omx_endpoint {
     /* posted non-matched receive (queued by their queue_elt) */
     struct list_head recv_req_q;
 
-    /* done requests (queued by their done_elt) */
+    /* done requests (queued by their done_ctxid_elt), only if there are multiple ctxids */
     struct list_head done_req_q;
   } * ctxid;
 
@@ -361,8 +369,10 @@ enum omx__request_state {
 struct omx__generic_request {
   /* main queue elt, linked to one of the endpoint queues */
   struct list_head queue_elt;
-  /* done queue elt, queued to the endpoint doneq when ready to be completed */
-  struct list_head done_elt;
+  /* done queue for any ctxid elt, queued to the endpoint doneq when ready to be completed */
+  struct list_head done_anyctxid_elt;
+  /* done queue for specific ctxid elt, queued to the endpoint doneq when ready to be completed */
+  struct list_head done_ctxid_elt;
   /* partner specific queue elt, either for partial receive, or for non-acked request (cannot be both) */
   struct list_head partner_elt;
 
