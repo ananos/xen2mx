@@ -28,7 +28,7 @@ Caveats:
 
 Open-MX 0.5.0 (April 30th 2008, svn r1609)
 ==========================================
-The I/O AT and Full-MX-API release.
+The I/OAT and Full-MX-API release.
 
 !! The ABI of the Open-MX library has changed,
 !! all existing softwares using Open-MX must be rebuilt.
@@ -37,7 +37,7 @@ Major enhancements:
 * The whole MX API is now supported thanks to the addition of
   omx_set_error_handler().
 * Add DMA engine support to offload memory copies on the receive side on
-  I/O AT hardware when available. Disabled by default, to be enabled with
+  I/OAT hardware when available. Disabled by default, to be enabled with
   the dmaengine module parameter. See the README for details.
 
 Other improvements from previous release:

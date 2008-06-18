@@ -14,7 +14,7 @@ Contents:
     b. Registration Cache
     c. Interrupt Coalescing
     d. Shared/Self communications
-    e. I/O AT memory copy offload
+    e. I/OAT memory copy offload
     f. Binding processes and IRQs
     g. Avoiding Linearizing on the receive side with old kernels
     h. Quick benchmarking how-to
@@ -379,9 +379,9 @@ it doesn't talk to itself, or if multiple processes of the same don't talk
 to each other.
 
 +----------------------------------
-| VI.e. I/O AT memory copy offload
+| VI.e. I/OAT memory copy offload
 
-Some modern platforms such as Intel I/O AT-enabled servers provide hardware
+Some modern platforms such as Intel I/OAT-enabled servers provide hardware
 DMA engine to offload memory copies. Open-MX performance may increase very
 significantly thanks to this feature.
 
