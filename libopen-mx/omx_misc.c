@@ -173,8 +173,6 @@ omx_strerror(omx_return_t ret)
     return "Library ABI too old, did you relink your program with the new library?";
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return "Matching info does not respect context id mask";
-  case OMX_NOT_SUPPORTED_WITH_CONTEXT_ID:
-    return "Operation not supported when context id are enabled";
   case OMX_REMOTE_RDMA_WINDOW_BAD_ID:
     return "Remote Window Id is Invalid";
   case OMX_REMOTE_ENDPOINT_UNREACHABLE:
