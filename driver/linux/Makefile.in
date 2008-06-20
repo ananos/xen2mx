@@ -6,7 +6,6 @@ include @abs_top_srcdir@/common.mk
 
 KCC	=	@KCC@
 MKDIR_P	=	@MKDIR_P@
-LN_S	=	@LN_S@
 INSTALL	=	@INSTALL@
 
 ifneq ($(KCC),)
@@ -28,7 +27,7 @@ MODULE_OBJS	=	open-mx.ko
 # since configure would have to generate Kbuild and omx_checks.h in srcdir
 # instead of builddir
 
-all: $(HDRCHECKFILE) links
+all: $(HDRCHECKFILE)
 	$(CMDECHO) "  MAKE    DRIVER"
 	$(CMDPREFIX) +$(MAKE) -C $(LINUX_BUILD) M=$(OPEN_MX_DIR) $(KBUILD_VARS)
 
@@ -52,19 +51,7 @@ clean:
 	$(CMDPREFIX) +$(MAKE) -C $(LINUX_BUILD) M=$(OPEN_MX_DIR) $(KBUILD_VARS) clean
 	$(CMDPREFIX) $(RM) $(HDRCHECKFILE)
 
-distclean: clean clean-links
-
-links:
-	$(CMDECHO) "  PREPARE DRIVER SOURCES"
-	$(CMDPREFIX) if test "@srcdir@" != "@builddir@" ; then \
-		for file in $(wildcard @srcdir@/*.[ch]) ; do test -e $$(basename $$file) || $(LN_S) $$file ; done ; \
-	fi
-
-clean-links:
-	$(CMDECHO) "  CLEAN   DRIVER SOURCES"
-	$(CMDPREFIX) if test "@srcdir@" != "@builddir@" ; then \
-		for file in $(wildcard @srcdir@/*.[ch]) ; do $(RM) $$(basename $$file) ; done ; \
-	fi
+distclean: clean
 
 wc:
 	wc -cl *.[ch]
