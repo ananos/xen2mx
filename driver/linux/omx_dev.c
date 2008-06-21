@@ -240,7 +240,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN;
 	if (ifp->mtu < OMX_MTU_MIN)
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU;
-	if (ifp->ethtool_ops->get_coalesce) {
+	if (ifp->ethtool_ops && ifp->ethtool_ops->get_coalesce) {
 		struct ethtool_coalesce coal;
 		ifp->ethtool_ops->get_coalesce(ifp, &coal);
 		if (coal.rx_coalesce_usecs >= OMX_IFACE_RX_USECS_WARN_MIN)

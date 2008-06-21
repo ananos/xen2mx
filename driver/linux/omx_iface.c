@@ -269,7 +269,7 @@ omx_iface_attach(struct net_device * ifp)
 		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
 		       ifp->name, OMX_MTU_MIN, mtu);
 
-	if (ifp->ethtool_ops->get_coalesce) {
+	if (ifp->ethtool_ops && ifp->ethtool_ops->get_coalesce) {
 		struct ethtool_coalesce coal;
 		ifp->ethtool_ops->get_coalesce(ifp, &coal);
 		if (coal.rx_coalesce_usecs >= OMX_IFACE_RX_USECS_WARN_MIN)
