@@ -263,23 +263,23 @@ omx_iface_attach(struct net_device * ifp)
 	printk(KERN_INFO "Open-MX: Attaching %sEthernet interface '%s' as #%i, MTU=%d\n",
 	       (ifp->type == ARPHRD_ETHER ? "" : "non-"), ifp->name, i, mtu);
 	if (!(dev_get_flags(ifp) & IFF_UP))
-		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' is not up\n",
+		printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' is not up\n",
 		       ifp->name);
 	if (mtu < OMX_MTU_MIN)
-		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
+		printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
 		       ifp->name, OMX_MTU_MIN, mtu);
 
 	if (ifp->ethtool_ops && ifp->ethtool_ops->get_coalesce) {
 		struct ethtool_coalesce coal;
 		ifp->ethtool_ops->get_coalesce(ifp, &coal);
 		if (coal.rx_coalesce_usecs >= OMX_IFACE_RX_USECS_WARN_MIN)
-			printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' interrupt coalescing very high (%ldus)\n",
+			printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' interrupt coalescing very high (%ldus)\n",
 			       ifp->name, (unsigned long) coal.rx_coalesce_usecs);
 	}
 
 	hostname = kmalloc(OMX_HOSTNAMELEN_MAX, GFP_KERNEL);
 	if (!hostname) {
-		printk(KERN_ERR "Open-MX: Failed to allocate interface hostname\n");
+		printk(KERN_ERR "Open-MX:   Failed to allocate interface hostname\n");
 		ret = -ENOMEM;
 		goto out_with_iface;
 	}
@@ -295,7 +295,7 @@ omx_iface_attach(struct net_device * ifp)
 	iface->endpoint_nr = 0;
 	iface->endpoints = kzalloc(omx_endpoint_max * sizeof(struct omx_endpoint *), GFP_KERNEL);
 	if (!iface->endpoints) {
-		printk(KERN_ERR "Open-MX: Failed to allocate interface endpoint pointers\n");
+		printk(KERN_ERR "Open-MX:   Failed to allocate interface endpoint pointers\n");
 		ret = -ENOMEM;
 		goto out_with_iface_hostname;
 	}
