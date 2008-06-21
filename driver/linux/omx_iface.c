@@ -21,6 +21,8 @@
 #include <linux/if_arp.h>
 #include <linux/rcupdate.h>
 #include <linux/ethtool.h>
+#include <linux/device.h>
+#include <linux/pci.h>
 #ifdef OMX_HAVE_MUTEX
 #include <linux/mutex.h>
 #endif
@@ -232,6 +234,7 @@ static int
 omx_iface_attach(struct net_device * ifp)
 {
 	struct omx_iface * iface;
+	struct device *dev;
 	char *hostname;
 	unsigned mtu = ifp->mtu;
 	int ret;
@@ -262,6 +265,15 @@ omx_iface_attach(struct net_device * ifp)
 
 	printk(KERN_INFO "Open-MX: Attaching %sEthernet interface '%s' as #%i, MTU=%d\n",
 	       (ifp->type == ARPHRD_ETHER ? "" : "non-"), ifp->name, i, mtu);
+
+	dev = omx_ifp_to_dev(ifp);
+	if (dev && dev->bus == &pci_bus_type) {
+		struct pci_dev *pdev = to_pci_dev(dev);
+		BUG_ON(!pdev->driver);
+		printk(KERN_INFO "Open-MX:   Interface '%s' is PCI device '%s' managed by driver '%s'\n",
+		       ifp->name, dev->bus_id, pdev->driver->name);
+	}
+
 	if (!(dev_get_flags(ifp) & IFF_UP))
 		printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' is not up\n",
 		       ifp->name);
