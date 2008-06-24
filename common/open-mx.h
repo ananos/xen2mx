@@ -73,7 +73,7 @@ enum omx_return {
   OMX_MESSAGE_TRUNCATED = 95,
   OMX_NOT_SUPPORTED_IN_HANDLER = 96,
   OMX_NO_SYSTEM_RESOURCES = 97,
-  
+
   OMX_NOT_IMPLEMENTED = 99,
   OMX_RETURN_CODE_MAX = 100,
 };
@@ -96,7 +96,7 @@ struct omx_status {
 };
 typedef struct omx_status omx_status_t;
 
-#define OMX_API 0x0
+#define OMX_API 0x301
 
 omx_return_t
 omx__init_api(int api);
