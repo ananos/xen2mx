@@ -49,9 +49,7 @@ assertions(void)
 
 #ifdef OMX_MX_API_COMPAT
 
-#include "myriexpress.h"
-#include "mx_extensions.h"
-#include "mx_raw.h"
+#include "omx__mx_compat.h"
 
 void
 compat_assertions(void)
@@ -86,6 +84,20 @@ compat_assertions(void)
   CHECK(MX_RAW_NO_EVENT == OMX_RAW_NO_EVENT);
   CHECK(MX_RAW_SEND_COMPLETE == OMX_RAW_SEND_COMPLETE);
   CHECK(MX_RAW_RECV_COMPLETE == OMX_RAW_RECV_COMPLETE);
+
+  /* check endpoint parameter keys */
+  CHECK(MX_PARAM_ERROR_HANDLER == OMX_ENDPOINT_PARAM_ERROR_HANDLER);
+  CHECK(MX_PARAM_UNEXP_QUEUE_MAX == OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX);
+  CHECK(MX_PARAM_CONTEXT_ID == OMX_ENDPOINT_PARAM_CONTEXT_ID);
+
+  /* check unexp handler return values */
+  CHECK(MX_RECV_CONTINUE == OMX_UNEXP_HANDLER_RECV_CONTINUE);
+  CHECK(MX_RECV_FINISHED == OMX_UNEXP_HANDLER_RECV_FINISHED);
+
+  /* check various constants */
+  CHECK(MX_ANY_NIC == OMX_ANY_NIC);
+  CHECK(MX_ANY_ENDPOINT == OMX_ANY_ENDPOINT);
+  CHECK(MX_SIZEOF_ADDR == OMX_SIZEOF_ADDR);
 }
 
 #endif
