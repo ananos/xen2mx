@@ -525,14 +525,13 @@ AC_SUBST(OPEN_MX_LIB_STATIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.a)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.so)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_LINK_OPT, ${libopen_mx_name/lib/-l})
 
-AC_CONFIG_HEADER(common/omx_config.h)
-AC_OUTPUT(Makefile $driver_ac_output $lib_ac_output)
-
 if test x$build_driver = xyes && test "$srcdir" != "." ; then
     # Symlink kernel sources into the build tree if needed
     AC_MSG_NOTICE([creating symlinks to kernel sources in driver/linux/ ...])
-    cd driver/linux
+    mkdir -p driver/linux/ ; cd driver/linux
     for file in ../../$srcdir/driver/linux/*.[[ch]] ; do rm -f $(basename $file) ; ln -s $file ; done
     cd - > /dev/null
 fi
 
+AC_CONFIG_HEADER(common/omx_config.h)
+AC_OUTPUT(Makefile $driver_ac_output $lib_ac_output)
