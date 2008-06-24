@@ -1,12 +1,13 @@
 exec_prefix	=	@exec_prefix@
 libdir	=	@libdir@
 prefix	=	@prefix@
+abs_srcdir	=	@abs_srcdir@
 
 include @abs_top_srcdir@/common.mk
 REL_DIR	=	$(omx_build_lib_dir)/
 
 CC	=	@CC@
-SHARED_LD	=	@CC@ #FIXME?
+SHARED_LD	=	@CC@ --shared #FIXME?
 AR	=	@AR@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
@@ -29,6 +30,7 @@ DYNAMIC_CFLAGS	+=	-fpic
 ALL_SRCS	=	$(wildcard @abs_srcdir@/*.c)
 ifeq (@OMX_MX_API_COMPAT@,1)
   SRCS	=	$(ALL_SRCS)
+  DYNAMIC_LDFLAGS += -Wl,--version-script,$(abs_srcdir)/omx__mx_lib.version
 else
   SRCS	=	$(filter-out @abs_srcdir@/omx__mx_%compat.c,$(ALL_SRCS))
 endif
@@ -73,7 +75,7 @@ $(STATIC_LIB): $(STATIC_LIB_OBJS)
 
 $(DYNAMIC_LIB): $(DYNAMIC_LIB_OBJS)
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
-	$(CMDPREFIX) $(SHARED_LD) --shared -o $@ $^
+	$(CMDPREFIX) $(SHARED_LD) $(DYNAMIC_LDFLAGS) -o $@ $^
 	$(CMDPREFIX) if test @OMX_MX_API_COMPAT@ -eq 1; then \
 		$(CMDECHOAFTERPREFIX) "  LN      $(REL_DIR)libmyriexpress.so" ; \
 		$(RM) libmyriexpress.so ; \

@@ -1,3 +1,6 @@
+* finish the ABI conversion routines
+* add a way to build using the MX API and ABI, enabled by default?
+
 * allow to probe across ctxids by adding a anyctxid unexpq
 
 * cleanup the idr+BHlock for handles
