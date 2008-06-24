@@ -28,13 +28,24 @@
 struct omx__globals omx__globals = { 0 };
 volatile struct omx_driver_desc * omx__driver_desc = NULL;
 
+static int omx__lib_api = OMX_API;
+
 /* API omx__init_api */
 omx_return_t
-omx__init_api(int api)
+omx__init_api(int app_api)
 {
   omx_return_t ret;
   char *env;
   int err;
+
+  if (app_api >> 8 != omx__lib_api >> 8
+      /* support app_abi 0x0 for now, will drop in 1.0 */
+      || app_api == 0) {
+    ret = omx__error(OMX_BAD_LIB_ABI,
+		     "Comparing library used at build-time (ABI 0x%x) with currently used library (ABI 0x%x)",
+		     omx__lib_api >> 8, app_api >> 8);
+    goto out;
+  }
 
   if (omx__globals.initialized) {
     ret = OMX_ALREADY_INITIALIZED;
