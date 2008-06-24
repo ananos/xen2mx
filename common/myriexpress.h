@@ -272,13 +272,6 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
  * MX API wrappers (needed for API compat)
  */
 
-#ifndef OMX_NO_FUNC_WRAPPERS
-/*
- * only include the following replacements when NOT
- * building the ABI compat stuff in the lib (and
- * NOT using it in an external code)
- */
-
 #define mx__init_api(api) omx__init_api(api)
 #define mx_init() mx__init_api(MX_API)
 #define mx_finalize() omx_finalize()
@@ -338,7 +331,5 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
 
 #define mx_strerror(ret) omx_strerror(ret)
 #define mx_strstatus(code) omx_strerror(code)
-
-#endif /* !OMX_NO_FUNC_WRAPPERS */
 
 #endif /* MYRIEXPRESS_H */

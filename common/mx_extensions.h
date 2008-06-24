@@ -67,13 +67,6 @@ extern mx_return_t mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
  * MX API wrappers (needed for API compat)
  */
 
-#ifndef OMX_NO_FUNC_WRAPPERS
-/*
- * only include the following replacements when NOT
- * building the ABI compat stuff in the lib (and
- * NOT using it in an external code)
- */
-
 #define mx_iconnect(ep,nic_id,eid,key,mi,ctx,req) omx_iconnect(ep,nic_id,eid,key,mi,ctx,req)
 #define mx_disconnect(ep,addr) omx_disconnect(ep,addr)
 
@@ -89,7 +82,5 @@ extern mx_return_t mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
 #define mx_get_endpoint_addr_context(addr,ctx) omx_get_endpoint_addr_context(addr,ctx)
 
 #define mx_decompose_endpoint_addr2(addr,nid,eid,sid) omx_decompose_endpoint_addr_with_session(addr,nid,eid,sid)
-
-#endif /* !OMX_NO_FUNC_WRAPPERS */
 
 #endif /* MX_EXTENSIONS_H */

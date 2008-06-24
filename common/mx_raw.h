@@ -56,7 +56,7 @@ mx_raw_handle(mx_raw_endpoint_t ep);
 mx_return_t
 mx_raw_open_endpoint(uint32_t board_number,
 		     mx_param_t *params_array, uint32_t params_count,
-		     mx_raw_endpoint_t *endpoint);  
+		     mx_raw_endpoint_t *endpoint);
 
 mx_return_t
 mx_raw_close_endpoint(mx_raw_endpoint_t endpoint);
@@ -128,6 +128,6 @@ mx_raw_set_peer_name(mx_raw_endpoint_t endpoint, uint64_t nic_id, char *hostname
 #define MX_HAS_RAW_SET_NIC_REPLY_INFO 1
 
 mx_return_t
-mx_raw_set_nic_reply_info(mx_raw_endpoint_t ep, void *blob, uint32_t size); 
+mx_raw_set_nic_reply_info(mx_raw_endpoint_t ep, void *blob, uint32_t size);
 
 #endif /* MX_RAW_H */
