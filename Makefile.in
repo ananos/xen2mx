@@ -25,7 +25,7 @@ ifeq (@OMX_BUILD_LIB@,1)
   endif
   COMPONENTS	+=	other
 endif
-ifeq (@OMX_MAPPER@,fma)
+ifeq (@OMX_PEER_DISCOVERY@,fma)
   COMPONENTS	+=	fma
 endif
 
