@@ -319,48 +319,52 @@ typedef enum {
 #include "open-mx.h"
 #include "omx_lib.h"
 
+extern mx_return_t
+omx_unlikely_return_to_mx(omx_return_t omxret);
+
 static inline mx_return_t
 omx_return_to_mx(omx_return_t omxret)
 {
-  if (likely(omxret == OMX_SUCCESS)) {
+  if (likely(omxret == OMX_SUCCESS))
     return MX_SUCCESS;
-  } else {
-    /* FIXME */
-    return (mx_return_t) omxret;
-  }
+  else
+    return omx_unlikely_return_to_mx(omxret);
 }
+
+extern omx_return_t
+omx_unlikely_return_from_mx(mx_return_t mxret);
 
 static inline omx_return_t
 omx_return_from_mx(mx_return_t mxret)
 {
-  if (likely(mxret == MX_SUCCESS)) {
+  if (likely(mxret == MX_SUCCESS))
     return OMX_SUCCESS;
-  } else {
-    /* FIXME */
-    return (omx_return_t) mxret;
-  }
+  else
+    return omx_unlikely_return_from_mx(mxret);
 }
+
+extern mx_status_code_t
+omx_unlikely_status_code_to_mx(omx_return_t omxret);
 
 static inline mx_status_code_t
 omx_status_code_to_mx(omx_return_t omxret)
 {
-  if (likely(omxret == OMX_SUCCESS)) {
+  if (likely(omxret == OMX_SUCCESS))
     return MX_STATUS_SUCCESS;
-  } else {
-    /* FIXME */
-    return (mx_status_code_t) omxret;
-  }
+  else
+    return omx_unlikely_status_code_to_mx(omxret);
 }
+
+extern omx_return_t
+omx_unlikely_status_code_from_mx(mx_status_code_t mxcode);
 
 static inline omx_return_t
 omx_status_code_from_mx(mx_status_code_t mxcode)
 {
-  if (likely(mxcode == MX_STATUS_SUCCESS)) {
+  if (likely(mxcode == MX_STATUS_SUCCESS))
     return OMX_SUCCESS;
-  } else {
-    /* FIXME */
-    return (omx_return_t) mxcode;
-  }
+  else
+    return omx_unlikely_status_code_from_mx(mxcode);
 }
 
 #define omx_endpoint_ptr_from_mx(epp) ((omx_endpoint_t *) (void *) (epp))

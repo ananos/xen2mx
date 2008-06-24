@@ -23,6 +23,211 @@
 #include "open-mx.h"
 #include "omx_lib.h"
 
+/**************************************
+ * Non-inlined ABI conversion routines
+ */
+
+/*
+ * These functions convert non-success return values and status codes.
+ * The whole functions supporting success are inlined in the header.
+ */
+
+mx_return_t
+omx_unlikely_return_to_mx(omx_return_t omxret)
+{
+  switch (omxret) {
+  case OMX_BAD_ERROR:
+    return MX_BAD_BAD_BAD;
+  case OMX_ALREADY_INITIALIZED:
+    return MX_ALREADY_INITIALIZED;
+  case OMX_NOT_INITIALIZED:
+    return MX_NOT_INITIALIZED;
+  case OMX_NO_DEVICE_FILE:
+    return MX_NO_DEV;
+  case OMX_NO_DRIVER:
+    return MX_NO_DRIVER;
+  case OMX_ACCESS_DENIED:
+    return MX_NO_PERM;
+  case OMX_BOARD_NOT_FOUND:
+    return MX_BOARD_UNKNOWN;
+  case OMX_BAD_ENDPOINT:
+    return MX_BAD_ENDPOINT;
+  case OMX_SEGMENTS_BAD_COUNT:
+    return MX_BAD_SEG_CNT;
+  case OMX_BAD_REQUEST:
+    return MX_BAD_REQUEST; /* can be MX_CANCEL_NOT_SUPPORTED as well */
+  case OMX_BAD_MATCH_MASK:
+    return MX_BAD_MATCH_MASK;
+  case OMX_NO_RESOURCES:
+    return MX_NO_RESOURCES;
+  case OMX_BUSY:
+    return MX_BUSY;
+  case OMX_BAD_INFO_KEY:
+    return MX_BAD_INFO_KEY;
+  case OMX_BAD_INFO_ADDRESS:
+    return MX_BAD_INFO_VAL;
+  case OMX_ENDPOINT_PARAMS_BAD_LIST:
+    return MX_BAD_PARAM_LIST;
+  case OMX_ENDPOINT_PARAM_BAD_KEY:
+    return MX_BAD_PARAM_NAME;
+  case OMX_ENDPOINT_PARAM_BAD_VALUE:
+    return MX_BAD_PARAM_VAL;
+  case OMX_PEER_NOT_FOUND:
+    return MX_HOST_NOT_FOUND;
+  case OMX_TIMEOUT:
+    return MX_TIMEOUT;
+  case OMX_REMOTE_ENDPOINT_BAD_ID:
+    return MX_BAD_ENDPOINT_ID;
+  case OMX_REMOTE_ENDPOINT_CLOSED:
+    return MX_CONNECTION_FAILED;
+  case OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY:
+    return MX_BAD_CONNECTION_KEY;
+  case OMX_BAD_INFO_LENGTH:
+    return MX_BAD_INFO_LENGTH;
+  case OMX_NIC_ID_NOT_FOUND:
+    return MX_NIC_NOT_FOUND;
+  case OMX_BAD_KERNEL_ABI:
+    return MX_BAD_KERNEL_VERSION;
+  case OMX_BAD_LIB_ABI:
+    return MX_BAD_LIB_VERSION;
+  case OMX_NOT_SUPPORTED_IN_HANDLER:
+    return MX_CLOSE_IN_HANDLER;
+  case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
+    return MX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
+  default:
+    omx__abort("Unexpected Open-MX return code %d to translate into MX\n", omxret);
+  }
+}
+
+omx_return_t
+omx_unlikely_return_from_mx(mx_return_t mxret)
+{
+  switch (mxret) {
+  case MX_BAD_BAD_BAD:
+    return OMX_BAD_ERROR;
+  case MX_ALREADY_INITIALIZED:
+    return OMX_ALREADY_INITIALIZED;
+  case MX_NOT_INITIALIZED:
+    return OMX_NOT_INITIALIZED;
+  case MX_NO_DEV:
+    return OMX_NO_DEVICE_FILE;
+  case MX_NO_DRIVER:
+    return OMX_NO_DRIVER;
+  case MX_NO_PERM:
+    return OMX_ACCESS_DENIED;
+  case MX_BOARD_UNKNOWN:
+    return OMX_BOARD_NOT_FOUND;
+  case MX_BAD_ENDPOINT:
+    return OMX_BAD_ENDPOINT;
+  case MX_BAD_SEG_CNT:
+    return OMX_SEGMENTS_BAD_COUNT;
+  case MX_BAD_REQUEST:
+    return OMX_BAD_REQUEST;
+  case MX_BAD_MATCH_MASK:
+    return OMX_BAD_MATCH_MASK;
+  case MX_NO_RESOURCES:
+    return OMX_NO_RESOURCES;
+  case MX_BUSY:
+    return OMX_BUSY;
+  case MX_BAD_INFO_KEY:
+    return OMX_BAD_INFO_KEY;
+  case MX_BAD_INFO_VAL:
+    return OMX_BAD_INFO_ADDRESS;
+  case MX_BAD_PARAM_LIST:
+    return OMX_ENDPOINT_PARAMS_BAD_LIST;
+  case MX_BAD_PARAM_NAME:
+    return OMX_ENDPOINT_PARAM_BAD_KEY;
+  case MX_BAD_PARAM_VAL:
+    return OMX_ENDPOINT_PARAM_BAD_VALUE;
+  case MX_HOST_NOT_FOUND:
+    return OMX_PEER_NOT_FOUND;
+  case MX_TIMEOUT:
+    return OMX_TIMEOUT;
+  case MX_BAD_ENDPOINT_ID:
+    return OMX_REMOTE_ENDPOINT_BAD_ID;
+  case MX_CONNECTION_FAILED:
+    return OMX_REMOTE_ENDPOINT_CLOSED;
+  case MX_BAD_CONNECTION_KEY:
+    return OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY;
+  case MX_BAD_INFO_LENGTH:
+    return OMX_BAD_INFO_LENGTH;
+  case MX_NIC_NOT_FOUND:
+    return OMX_NIC_ID_NOT_FOUND;
+  case MX_BAD_KERNEL_VERSION:
+    return OMX_BAD_KERNEL_ABI;
+  case MX_BAD_LIB_VERSION:
+    return OMX_BAD_LIB_ABI;
+  case MX_CANCEL_NOT_SUPPORTED:
+    return OMX_BAD_REQUEST;
+  case MX_CLOSE_IN_HANDLER:
+    return OMX_NOT_SUPPORTED_IN_HANDLER;
+  case MX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
+    return OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
+  default:
+    omx__abort("Unexpected MX return code %d to translate into Open-MX\n", mxret);
+  }
+}
+
+mx_status_code_t
+omx_unlikely_status_code_to_mx(omx_return_t omxret)
+{
+  switch (omxret) {
+  case OMX_TIMEOUT:
+    return MX_STATUS_TIMEOUT;
+  case OMX_MESSAGE_TRUNCATED:
+    return MX_STATUS_TRUNCATED;
+  case OMX_REMOTE_ENDPOINT_CLOSED:
+    return MX_STATUS_ENDPOINT_CLOSED;
+  case OMX_REMOTE_ENDPOINT_UNREACHABLE:
+    return MX_STATUS_ENDPOINT_UNREACHABLE;
+  case OMX_REMOTE_ENDPOINT_BAD_SESSION:
+    return MX_STATUS_BAD_SESSION;
+  case OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY:
+    return MX_STATUS_BAD_KEY;
+  case OMX_REMOTE_ENDPOINT_BAD_ID:
+    return MX_STATUS_BAD_ENDPOINT;
+  case OMX_REMOTE_RDMA_WINDOW_BAD_ID:
+    return MX_STATUS_BAD_RDMAWIN;
+  case OMX_MESSAGE_ABORTED:
+    return MX_STATUS_ABORTED;
+  case OMX_NO_RESOURCES:
+    return MX_STATUS_NO_RESOURCES;
+  default:
+    omx__abort("Unexpected Open-MX return code %d to translate into MX status code\n", omxret);
+  }
+}
+
+omx_return_t
+omx_unlikely_status_code_from_mx(mx_status_code_t mxcode)
+{
+  switch (mxcode) {
+  case MX_STATUS_TIMEOUT:
+    return OMX_TIMEOUT;
+  case MX_STATUS_TRUNCATED:
+    return OMX_MESSAGE_TRUNCATED;
+  case MX_STATUS_ENDPOINT_CLOSED:
+    return OMX_REMOTE_ENDPOINT_CLOSED;
+  case MX_STATUS_ENDPOINT_UNREACHABLE:
+    return OMX_REMOTE_ENDPOINT_UNREACHABLE;
+  case MX_STATUS_BAD_SESSION:
+    return OMX_REMOTE_ENDPOINT_BAD_SESSION;
+  case MX_STATUS_BAD_KEY:
+    return OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY;
+  case MX_STATUS_BAD_ENDPOINT:
+    return OMX_REMOTE_ENDPOINT_BAD_ID;
+  case MX_STATUS_BAD_RDMAWIN:
+    return OMX_REMOTE_RDMA_WINDOW_BAD_ID;
+  case MX_STATUS_ABORTED:
+    return OMX_MESSAGE_ABORTED;
+  case MX_STATUS_NO_RESOURCES:
+    return OMX_NO_RESOURCES;
+  default:
+    omx__abort("Unexpected MX status code %d to translate into Open-MX\n", mxcode);
+  }
+}
+
+
+
 /*************
  * MX symbols
  */
