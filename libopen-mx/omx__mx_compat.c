@@ -772,7 +772,6 @@ mx_strstatus(mx_status_code_t mxcode)
   return omx_strerror(omx_status_code_from_mx(mxcode));
 }
 
-#ifdef OMX_MX_API_UNSUPPORTED_COMPAT
 /*
  * Not implemented yet
  */
@@ -808,5 +807,3 @@ mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uin
   omx__abort("mx_buffered not implemented since it is not in MX either\n");
   return MX_BAD_BAD_BAD;
 }
-
-#endif /* OMX_MX_API_UNSUPPORTED_COMPAT */

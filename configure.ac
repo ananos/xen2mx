@@ -335,23 +335,11 @@ fi
 AC_ARG_ENABLE(mx,
 	[AS_HELP_STRING([--disable-mx], [disable MX API compatibility wrappers])],
 	enable_mx=$enableval, enable_mx=yes)
-AC_ARG_ENABLE(unsupported-mx,
-	[AS_HELP_STRING([--enable-unsupported-mx], [build unsupported MX API compatibility wrappers])],
-	enable_unsupported_mx=$enableval, enable_unsupported_mx=no)
 AC_MSG_CHECKING(if MX API compatibility wrappers are enabled)
 if test x$enable_mx = xyes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(OMX_MX_API_COMPAT, 1, [Define to enable MX API compatibility wrappers])
   AC_SUBST(OMX_MX_API_COMPAT, 1)
-  AC_MSG_CHECKING(if unsupported MX API compatibility wrappers are built)
-  if test x$enable_unsupported_mx = xyes; then
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(OMX_MX_API_UNSUPPORTED_COMPAT, 1, [Define to enable building of unsupported MX API compatibility wrappers])
-    AC_SUBST(OMX_MX_API_UNSUPPORTED_COMPAT, 1)
-  else
-    AC_MSG_RESULT(no)
-    AC_SUBST(OMX_MX_API_UNSUPPORTED_COMPAT, 0)
-  fi
 else
   AC_MSG_RESULT(no)
   AC_SUBST(OMX_MX_API_COMPAT, 0)

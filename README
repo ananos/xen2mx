@@ -568,11 +568,6 @@ building:
 
 --disable-mx
 	Do not build/export any MX compatibility wrapper.
---enable-unsupported-mx
-	Build the unsupported routines in the MX compatibility wrappers.
-  Only the supported MX routines have their compatiblity wrappers
-  enabled by default.
-
 --disable-mx-wire
 	Optimize the wire-protocol by not being compatible with MXoE.
   The wire protocol is compatible with MXoE by default.

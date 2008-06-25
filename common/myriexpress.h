@@ -254,7 +254,6 @@ extern mx_return_t mx_get_endpoint_addr(mx_endpoint_t endpoint, mx_endpoint_addr
 extern const char * mx_strerror(mx_return_t return_code);
 extern const char * mx_strstatus(mx_status_code_t status);
 
-#ifdef OMX_MX_API_UNSUPPORTED_COMPAT
 /*
  * Not implemented yet
  */
@@ -266,7 +265,6 @@ extern mx_return_t mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t le
 			   mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
 			   mx_request_t *request);
 extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uint32_t *result);
-#endif
 
 /******************************************
  * MX API wrappers (needed for API compat)
