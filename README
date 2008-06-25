@@ -20,7 +20,7 @@ Contents:
     h. Quick benchmarking how-to
  VII. Native MX Compatibility
     a. Wire-compatibility
-    b. API-compatibility
+    b. ABI and API-compatibility
 VIII. Advanced configuration
     a. Summary of build-time configuration options
     b. Summary of runtime configuration options
@@ -515,17 +515,30 @@ If using a static peer table:
 
 Once peers are setup on both MX and Open-MX nodes, the fabric is ready.
 
-+--------------------------
-| VII.b. API-compatibility
++----------------------------------
+| VII.b. ABI and API compatibility
 
-While the Open-MX API is slightly different from the MX one, it provides
-a compatibility layer which enables building of any MX application on
-top of Open-MX. This layer is enabled by default and should not cause
-any problem, it just installs more files. To disable it, you should pass
---disable-mx to the configure command line.
+The Open-MX API is slightly different from that of MX, but Open-MX provides
+a compatibility layer which enables:
+ + Linking of applications that were compiled against MX
+ + Building of applications that were written for the MX API 
+This compatibility is enabled by default and has a very low overhead since
+it only involves going across basic conversion routines.
 
-Binary compatibility is not supported yet, which means you will always
-have to rebuild against Open-MX headers.
+If you do not plan to use any applications that has been written for MX, it
+is possible to disable the API and ABI compatibility alltogether by passing
+--disable-mx-abi to the configure script.
+
+If you only use Open-MX and never link your application with MX, you may
+want to hardwire the translation from the MX API into Open-MX calls at
+compile time to avoid going across these conversion routines at runtime.
+To do so, you may pass --enable-mx-translate to the configure script.
+
+Note that enabling this automatically API translation does not disable the 
+MX ABI support in Open-MX since it may be required by the some sanity checks
+when building external applications. It is thus still possible to link MX
+applications with Open-MX. But any application built against Open-MX will
+not be MX ABI compatible.
 
 
 ++==============================++
@@ -566,8 +579,19 @@ building:
 	Disable Valgrind hooks in the debugging library.
   By default, Valgrind is only enabled in the debugging library.
 
---disable-mx
-	Do not build/export any MX compatibility wrapper.
+--disable-mx-abi
+	Do not support binary (and API) compatibility with MX.
+  Do not build MX symbols inside the Open-MX library and do not export
+  MX API headers in the installation directory.
+
+--enable-mx-translate
+	Translate MX calls into the MX API at compile time.
+  Export MX headers that will translate MX calls into the Open-MX API.
+  When an application is built against Open-MX, the overhead will be
+  slightly reduced at compile time. But it will prevent the application
+  from linking with MX. However, any application that was compiled
+  against MX will still link fine with Open-MX.
+
 --disable-mx-wire
 	Optimize the wire-protocol by not being compatible with MXoE.
   The wire protocol is compatible with MXoE by default.
@@ -694,10 +718,10 @@ copybench=1
 
 If you plan to use Open-MX within a middleware such as a MPI layer, you
 should read the following configuration advices:
-* MX API compatibility:
+* MX ABI/API compatibility:
   Passing --disable-mx to the Open-MX configure line is only possible if all
   middlewares involved use the native Open-MX API. In most cases, keeping the
-  MX API compatibility enabled should cause no harm and is thus recommended.
+  MX ABI/API compatibility enabled should cause no harm and is thus recommended.
   Once Open-MX is installed, passing its installation path to the middleware
   configuration system as the MX installation path should do the trick.
 * Thread-safety:

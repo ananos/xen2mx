@@ -17,8 +17,10 @@
  */
 
 /*
- * This file provides API compatibility wrappers for building
- * native MX applications over Open-MX.
+ * This file is used to translate the MX API into Open-MX at compile time
+ * to avoid going across compatibility wrappers at runtime.
+ * Applications will thus use the ABI of Open-MX and thus won't be linkable
+ * with MX.
  */
 
 #ifndef MX_EXTENSIONS_H

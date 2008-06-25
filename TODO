@@ -1,4 +1,4 @@
-* add a way to build using the MX API and ABI, enabled by default?
+* ignore FMA with a warning if not binary compat
 
 * allow to probe across ctxids by adding a anyctxid unexpq
 

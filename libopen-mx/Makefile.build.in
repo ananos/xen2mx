@@ -28,7 +28,7 @@ STATIC_CFLAGS	+=
 DYNAMIC_CFLAGS	+=	-fpic
 
 ALL_SRCS	=	$(wildcard @abs_srcdir@/*.c)
-ifeq (@OMX_MX_API_COMPAT@,1)
+ifeq (@OMX_MX_ABI_COMPAT@,1)
   SRCS	=	$(ALL_SRCS)
   DYNAMIC_LDFLAGS += -Wl,--version-script,$(abs_srcdir)/omx__mx_lib.version
 else
@@ -67,7 +67,7 @@ include @abs_top_srcdir@/depend.mk
 $(STATIC_LIB): $(STATIC_LIB_OBJS)
 	$(CMDECHO) "  AR      $(REL_DIR)$@"
 	$(CMDPREFIX) $(AR) cr $@ $^
-	$(CMDPREFIX) if test @OMX_MX_API_COMPAT@ -eq 1; then \
+	$(CMDPREFIX) if test @OMX_MX_ABI_COMPAT@ -eq 1; then \
 		$(CMDECHOAFTERPREFIX) "  LN      $(REL_DIR)libmyriexpress.a" ; \
 		$(RM) libmyriexpress.a ; \
 		$(LN_S) $(STATIC_LIB) libmyriexpress.a ; \
@@ -76,7 +76,7 @@ $(STATIC_LIB): $(STATIC_LIB_OBJS)
 $(DYNAMIC_LIB): $(DYNAMIC_LIB_OBJS)
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
 	$(CMDPREFIX) $(SHARED_LD) $(DYNAMIC_LDFLAGS) -o $@ $^
-	$(CMDPREFIX) if test @OMX_MX_API_COMPAT@ -eq 1; then \
+	$(CMDPREFIX) if test @OMX_MX_ABI_COMPAT@ -eq 1; then \
 		$(CMDECHOAFTERPREFIX) "  LN      $(REL_DIR)libmyriexpress.so" ; \
 		$(RM) libmyriexpress.so ; \
 		$(LN_S) $(DYNAMIC_LIB) libmyriexpress.so ; \
@@ -106,7 +106,7 @@ installonly:
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(libdir)$(libdirsuffix)/$(STATIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/$(DYNAMIC_LIB)"
 	$(CMDPREFIX) $(INSTALL) -m 0644 $(STATIC_LIB) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/
 
-	$(CMDPREFIX) if test @OMX_MX_API_COMPAT@ -eq 1; then \
+	$(CMDPREFIX) if test @OMX_MX_ABI_COMPAT@ -eq 1; then \
 		$(CMDECHOAFTERPREFIX) "  LN      $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.a" ; \
 		$(CMDECHOAFTERPREFIX) "  LN      $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.so" ; \
 		$(RM) $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.a $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.so ; \

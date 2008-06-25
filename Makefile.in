@@ -20,7 +20,7 @@ ifeq (@OMX_BUILD_DRIVER@,1)
 endif
 ifeq (@OMX_BUILD_LIB@,1)
   COMPONENTS	+=	lib tools tests
-  ifeq (@OMX_MX_API_COMPAT@,1)
+  ifeq (@OMX_MX_ABI_COMPAT@,1)
     COMPONENTS	+=	mxtests
   endif
   COMPONENTS	+=	other
@@ -79,7 +79,7 @@ mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean:
 # fma targets
 
 fma fma-installonly fma-install fma-clean fma-distclean:
-	$(CMDPREFIX) $(MAKE) -C fma $(shell echo $@ | cut -s -d- -f2) "CC=$(CC)" MYRI_INC=-I@abs_top_srcdir@/common MYRI_LIB=@abs_top_builddir@/@OPEN_MX_LIB_DIR@
+	$(CMDPREFIX) $(MAKE) -C fma $(shell echo $@ | cut -s -d- -f2) "CC=$(CC)" MYRI_INC=-I@abs_top_srcdir@/common/mx MYRI_LIB=@abs_top_builddir@/@OPEN_MX_LIB_DIR@
 
 ################
 # other targets
@@ -95,13 +95,20 @@ other-installonly:
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(includedir)/open-mx.h"
 	$(CMDPREFIX) $(INSTALL) -m 0644 $(srcdir)/common/open-mx.h $(DESTDIR)$(includedir)
 
-	$(CMDPREFIX) if test @OMX_MX_API_COMPAT@ -eq 1; then \
-		$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/myriexpress.h" ; \
-		$(INSTALL) -m 0644 $(srcdir)/common/myriexpress.h $(DESTDIR)$(includedir) ; \
-		$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_extensions.h" ; \
-		$(INSTALL) -m 0644 $(srcdir)/common/mx_extensions.h $(DESTDIR)$(includedir) ; \
+	$(CMDPREFIX) if test @OMX_MX_ABI_COMPAT@ -eq 1; then \
+		if test @OMX_MX_API_TRANSLATE@ -eq 1; then \
+			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/myriexpress.h" ; \
+			$(INSTALL) -m 0644 $(srcdir)/common/mx/translate/myriexpress.h $(DESTDIR)$(includedir) ; \
+			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_extensions.h" ; \
+			$(INSTALL) -m 0644 $(srcdir)/common/mx/translate/mx_extensions.h $(DESTDIR)$(includedir) ; \
+		else \
+			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/myriexpress.h" ; \
+			$(INSTALL) -m 0644 $(srcdir)/common/mx/myriexpress.h $(DESTDIR)$(includedir) ; \
+			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_extensions.h" ; \
+			$(INSTALL) -m 0644 $(srcdir)/common/mx/mx_extensions.h $(DESTDIR)$(includedir) ; \
+		fi ; \
 		$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_raw.h" ; \
-		$(INSTALL) -m 0644 $(srcdir)/common/mx_raw.h $(DESTDIR)$(includedir) ; \
+		$(INSTALL) -m 0644 $(srcdir)/common/mx/mx_raw.h $(DESTDIR)$(includedir) ; \
 	fi
 
 other-install: other-installonly

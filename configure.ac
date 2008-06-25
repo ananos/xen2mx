@@ -332,17 +332,28 @@ fi
 ############################
 # MX compat and wire config
 
-AC_ARG_ENABLE(mx,
-	[AS_HELP_STRING([--disable-mx], [disable MX API compatibility wrappers])],
-	enable_mx=$enableval, enable_mx=yes)
-AC_MSG_CHECKING(if MX API compatibility wrappers are enabled)
-if test x$enable_mx = xyes; then
+AC_ARG_ENABLE(mx-abi,
+	[AS_HELP_STRING([--disable-mx-abi], [disable MX binary compatibility])],
+	enable_mx_abi=$enableval, enable_mx_abi=yes)
+AC_ARG_ENABLE(mx-translate,
+	[AS_HELP_STRING([--enable-mx-translate], [export MX headers translating into the Open-MX API])],
+	enable_mx_translate=$enableval, enable_mx_translate=no)
+AC_MSG_CHECKING(if MX ABI compatibility is enabled)
+if test x$enable_mx_abi = xyes; then
   AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_MX_API_COMPAT, 1, [Define to enable MX API compatibility wrappers])
-  AC_SUBST(OMX_MX_API_COMPAT, 1)
+  AC_DEFINE(OMX_MX_ABI_COMPAT, 1, [Define to enable MX ABI compatibility])
+  AC_SUBST(OMX_MX_ABI_COMPAT, 1)
+  AC_MSG_CHECKING(if the MX API is translated into Open-MX at compile time)
+  if test x$enable_mx_translate = xyes; then
+    AC_MSG_RESULT(yes)
+    AC_SUBST(OMX_MX_API_TRANSLATE, 1)
+  else
+    AC_MSG_RESULT(no)
+    AC_SUBST(OMX_MX_API_TRANSLATE, 0)
+  fi
 else
   AC_MSG_RESULT(no)
-  AC_SUBST(OMX_MX_API_COMPAT, 0)
+  AC_SUBST(OMX_MX_ABI_COMPAT, 0)
 fi
 
 AC_ARG_ENABLE(mx-wire,
@@ -414,7 +425,7 @@ AC_MSG_CHECKING([whether the FMA source is available])
 if test -d "$srcdir/fma/" ; then
   AC_MSG_RESULT([yes])
   AC_MSG_NOTICE([using FMA for dynamic peer discovery])
-  if test "$enable_mx" != yes ; then
+  if test "$enable_mx_abi" != yes ; then
     AC_MSG_ERROR([Building FMA requires the MX API compatibility])
   fi
   AC_SUBST(OMX_PEER_DISCOVERY, fma)

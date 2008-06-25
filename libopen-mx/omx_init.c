@@ -104,7 +104,7 @@ omx__init_api(int app_api)
   omx__globals.verbose = 1;
 #endif
   env = getenv("OMX_VERBOSE");
-#ifdef OMX_MX_API_COMPAT
+#ifdef OMX_MX_ABI_COMPAT
   if (!env) {
     env = getenv("MX_VERBOSE");
     if (env) {
@@ -112,7 +112,7 @@ omx__init_api(int app_api)
       env = "";
     }
   }
-#endif
+#endif /* OMX_MX_ABI_COMPAT */
   if (env)
     omx__globals.verbose = atoi(env);
 
@@ -157,19 +157,19 @@ omx__init_api(int app_api)
 #ifndef OMX_DISABLE_SELF
   omx__globals.selfcomms = 1;
   env = getenv("OMX_DISABLE_SELF");
-#ifdef OMX_MX_API_COMPAT
+#ifdef OMX_MX_ABI_COMPAT
   if (!env) {
     env = getenv("MX_DISABLE_SELF");
     if (env)
       omx__verbose_printf("Emulating MX_DISABLE_SELF as OMX_DISABLE_SELF\n");
   }
-#endif
+#endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.selfcomms = !atoi(env);
     omx__verbose_printf("Forcing self comms to %s\n",
 			omx__globals.selfcomms ? "enabled" : "disabled");
   }
-#endif
+#endif /* OMX_DISABLE_SELF */
 
   /* shared comm configuration */
 #ifndef OMX_DISABLE_SHARED
@@ -178,20 +178,20 @@ omx__init_api(int app_api)
     omx__verbose_printf("Shared comms support disabled in the driver\n");
   } else {
     env = getenv("OMX_DISABLE_SHARED");
-#ifdef OMX_MX_API_COMPAT
+#ifdef OMX_MX_ABI_COMPAT
     if (!env) {
       env = getenv("MX_DISABLE_SHMEM");
       if (env)
 	omx__verbose_printf("Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
     }
-#endif
+#endif /* OMX_MX_ABI_COMPAT */
     if (env) {
       omx__globals.sharedcomms = !atoi(env);
       omx__verbose_printf("Forcing shared comms to %s\n",
 			  omx__globals.sharedcomms ? "enabled" : "disabled");
     }
   }
-#endif
+#endif /* OMX_DISABLE_SHARED */
 
   /*******************************
    * Retransmission configuration
@@ -200,13 +200,13 @@ omx__init_api(int app_api)
   /* resend configuration */
   omx__globals.req_resends_max = 1000;
   env = getenv("OMX_RESENDS_MAX");
-#ifdef OMX_MX_API_COMPAT
+#ifdef OMX_MX_ABI_COMPAT
   if (!env) {
     env = getenv("MX_MAX_RETRIES");
     if (env)
       omx__verbose_printf("Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
   }
-#endif
+#endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.req_resends_max = atoi(env);
     omx__verbose_printf("Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
@@ -215,13 +215,13 @@ omx__init_api(int app_api)
   /* zombie send configuration */
   omx__globals.zombie_max = OMX_ZOMBIE_MAX_DEFAULT;
   env = getenv("OMX_ZOMBIE_SEND");
-#ifdef OMX_MX_API_COMPAT
+#ifdef OMX_MX_ABI_COMPAT
   if (!env) {
     env = getenv("MX_ZOMBIE_SEND");
     if (env)
       omx__verbose_printf("Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
   }
-#endif
+#endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.zombie_max = atoi(env);
     omx__verbose_printf("Forcing zombie max to %d\n",
@@ -231,13 +231,13 @@ omx__init_api(int app_api)
   /* immediate acking threshold */
   omx__globals.not_acked_max = 4;
   env = getenv("OMX_NOTACKED_MAX");
-#ifdef OMX_MX_API_COMPAT
+#ifdef OMX_MX_ABI_COMPAT
   if (!env) {
     env = getenv("MX_IMM_ACK");
     if (env)
       omx__verbose_printf("Emulating MX_IMM_ACK as OMX_NOTACKED_MAX\n");
   }
-#endif
+#endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.not_acked_max = atoi(env);
     omx__verbose_printf("Forcing immediate acking threshold to %d\n",
@@ -280,13 +280,13 @@ omx__init_api(int app_api)
 
   omx__globals.regcache = omx__globals.parallel_regcache;
   env = getenv("OMX_RCACHE");
-#ifdef OMX_MX_API_COMPAT
+#ifdef OMX_MX_ABI_COMPAT
   if (!env) {
     env = getenv("MX_RCACHE");
     if (env)
       omx__verbose_printf("Emulating MX_RCACHE as OMX_RCACHE\n");
   }
-#endif
+#endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.regcache = atoi(env);
     omx__verbose_printf("Forcing regcache to %s\n",

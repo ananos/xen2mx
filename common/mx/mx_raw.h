@@ -17,8 +17,8 @@
  */
 
 /*
- * This file provides API compatibility wrappers for building
- * native MX applications using the raw interface over Open-MX.
+ * This file mimics mx_raw.h from Myricom's MX distribution.
+ * It is used to build applications on top of Open-MX using the MX ABI.
  */
 
 #ifndef MX_RAW_H

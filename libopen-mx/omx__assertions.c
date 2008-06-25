@@ -47,7 +47,7 @@ assertions(void)
 }
 
 
-#ifdef OMX_MX_API_COMPAT
+#ifdef OMX_MX_ABI_COMPAT
 
 #include "omx__mx_compat.h"
 
@@ -100,4 +100,4 @@ compat_assertions(void)
   CHECK(MX_SIZEOF_ADDR == OMX_SIZEOF_ADDR);
 }
 
-#endif
+#endif /* OMX_MX_ABI_COMPAT */

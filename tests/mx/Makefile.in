@@ -14,7 +14,12 @@ LD	=	@CC@ #FIXME
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 
-CPPFLAGS	+=	-I@top_srcdir@/common
+ifeq (@OMX_MX_API_TRANSLATE@,1)
+	CPPFLAGS	+=	-I@top_srcdir@/common/mx/translate # for translation wrappers
+	CPPFLAGS	+=	-I@top_srcdir@/common # for open-mx.h used after translation
+else
+	CPPFLAGS	+=	-I@top_srcdir@/common/mx # for the official MX API headers
+endif
 CPPFLAGS	+=	-I@top_builddir@/common # for omx_config.h for test_common.h
 CPPFLAGS	+=	@CPPFLAGS@
 
