@@ -4,6 +4,8 @@ The binary Compatibility release.
 
 Major Enhancements:
 * Add binary compatibility with MX (from MX version 0.9).
+  + The 32bits ABI has changed, applications will have to
+    be rebuilt on these architectures.
 
 Other improvements from previous release:
 * Fix enabling of FMA build/install.

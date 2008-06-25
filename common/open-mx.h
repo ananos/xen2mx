@@ -82,8 +82,8 @@ typedef enum omx_return omx_return_t;
 #define OMX_SIZEOF_ADDR 16
 
 struct omx_endpoint_addr {
-  char data[OMX_SIZEOF_ADDR];
-} __attribute__ ((aligned (8)));
+  uint64_t data[OMX_SIZEOF_ADDR/sizeof(uint64_t)];
+};
 typedef struct omx_endpoint_addr omx_endpoint_addr_t;
 
 struct omx_status {
