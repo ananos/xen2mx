@@ -1,5 +1,3 @@
-* ignore FMA with a warning if not binary compat
-
 * allow to probe across ctxids by adding a anyctxid unexpq
 
 * cleanup the idr+BHlock for handles

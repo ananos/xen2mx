@@ -421,22 +421,30 @@ fi
 #################
 # peer discovery
 
+OMX_PEER_DISCOVERY=omxoed
+
 AC_MSG_CHECKING([whether the FMA source is available])
 if test -d "$srcdir/fma/" ; then
   AC_MSG_RESULT([yes])
   AC_MSG_NOTICE([using FMA for dynamic peer discovery])
-  if test "$enable_mx_abi" != yes ; then
-    AC_MSG_ERROR([Building FMA requires the MX API compatibility])
+  if test "$enable_mx_abi" = yes ; then
+    OMX_PEER_DISCOVERY=fma
+  else
+    AC_MSG_WARN([Building FMA requires the MX API compatibility])
   fi
+else
+  AC_MSG_RESULT([no])
+fi
+
+if test $OMX_PEER_DISCOVERY = fma ; then
   AC_SUBST(OMX_PEER_DISCOVERY, fma)
   AC_CONFIG_SUBDIRS(fma)
 else
-  AC_MSG_RESULT([no])
+  AC_SUBST(OMX_PEER_DISCOVERY, omxoed)
   AC_MSG_NOTICE([using omxoed for dynamic peer discovery])
   if test "$enable_mx_wire" = yes ; then
     AC_MSG_WARN([FMA is recommended for dynamic discovery of native MX peers])
   fi
-  AC_SUBST(OMX_PEER_DISCOVERY, omxoed)
 fi
 
 AC_ARG_ENABLE(static-peers,
