@@ -240,10 +240,12 @@ mx__init_api(int api)
   return omx_return_to_mx(omxret);
 }
 
-void
+mx_return_t
 mx_finalize(void)
 {
-  omx_finalize();
+  omx_return_t omxret;
+  omxret = omx_finalize();
+  return omx_return_to_mx(omxret);
 }
 
 static mx_error_handler_t omx__mx_error_handler = NULL;
