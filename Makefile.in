@@ -106,7 +106,7 @@ other-installonly:
 			$(INSTALL) -m 0644 $(srcdir)/common/mx/myriexpress.h $(DESTDIR)$(includedir) ; \
 			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_extensions.h" ; \
 			$(INSTALL) -m 0644 $(srcdir)/common/mx/mx_extensions.h $(DESTDIR)$(includedir) ; \
-		fi ; \
+		fi ; \
 		$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_raw.h" ; \
 		$(INSTALL) -m 0644 $(srcdir)/common/mx/mx_raw.h $(DESTDIR)$(includedir) ; \
 	fi
