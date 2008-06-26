@@ -31,7 +31,7 @@ endif
 
 STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
 DYNAMIC_LIB_DIR	=	$(dir @top_builddir@/@OPEN_MX_LIB_DYNAMIC_PATH@)
-DYNAMIC_LIB_OPT	=	@OPEN_MX_LIB_DYNAMIC_LINK_OPT@
+DYNAMIC_LIB_OPT	=	@MX_LIB_DYNAMIC_LINK_OPT@
 
 .PHONY: all installonly install clean distclean
 

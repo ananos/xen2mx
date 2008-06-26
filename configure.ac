@@ -531,6 +531,7 @@ AC_SUBST(OPEN_MX_LIB_DIR, ${libopen_mx_builddir})
 AC_SUBST(OPEN_MX_LIB_STATIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.a)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.so)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_LINK_OPT, ${libopen_mx_name/lib/-l})
+AC_SUBST(MX_LIB_DYNAMIC_LINK_OPT, -lmyriexpress)
 
 if test x$build_driver = xyes && test "$srcdir" != "." ; then
     # Symlink kernel sources into the build tree if needed
