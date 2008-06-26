@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x145
+#define OMX_DRIVER_ABI_VERSION		0x146
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -783,6 +783,8 @@ enum omx_counter_index {
 	OMX_COUNTER_SEND_PULL_REQ,
 	OMX_COUNTER_SEND_PULL_REPLY,
 	OMX_COUNTER_SEND_RAW,
+	OMX_COUNTER_SEND_HOST_QUERY,
+	OMX_COUNTER_SEND_HOST_REPLY,
 
 	OMX_COUNTER_RECV_TINY,
 	OMX_COUNTER_RECV_SMALL,
@@ -899,6 +901,10 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Pull Reply";
 	case OMX_COUNTER_SEND_RAW:
 		return "Send Raw";
+	case OMX_COUNTER_SEND_HOST_QUERY:
+		return "Send Host Query";
+	case OMX_COUNTER_SEND_HOST_REPLY:
+		return "Send Host Reply";
 	case OMX_COUNTER_RECV_TINY:
 		return "Recv Tiny";
 	case OMX_COUNTER_RECV_SMALL:
