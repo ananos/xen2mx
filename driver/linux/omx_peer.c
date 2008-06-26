@@ -690,17 +690,20 @@ omx_recv_host_reply(struct omx_iface * iface,
 		    struct sk_buff * skb)
 {
 	struct omx_pkt_head *ph;
+	struct ethhdr *eh;
 	struct omx_pkt_host_reply *reply_n;
 	uint32_t magic;
 
 	/* locate headers */
 	ph = &mh->head;
+	eh = &ph->eth;
 	reply_n = (struct omx_pkt_host_reply *) (ph + 1);
 	magic = OMX_FROM_PKT_FIELD(reply_n->magic);
 
 	if (magic != omx_host_query_magic) {
-		/* FIXME: counter+drop_printk		omx_counter_inc(iface, DROP_BAD_HOST_REPLY_MAGIC); */
-		printk("bad host reply magic %lx instead of %lx\n", (unsigned long) magic, (unsigned long) omx_host_query_magic);
+		omx_counter_inc(iface, DROP_HOST_REPLY_BAD_MAGIC);
+		omx_drop_dprintk(eh, "HOST REPLY bad magic %lx instead of %lx\n",
+				 (unsigned long) magic, (unsigned long) omx_host_query_magic);
 		dev_kfree_skb(skb);
 		return -EINVAL;
 	}
@@ -720,6 +723,7 @@ omx_process_host_queries_and_replies(void)
 	struct sk_buff *in_skb;
 
 	while ((in_skb = skb_dequeue(&omx_host_reply_list)) != NULL) {
+		struct omx_iface *iface = (void *) in_skb->sk;
 		struct omx_hdr *mh;
 		struct omx_pkt_head *ph;
 		struct ethhdr *eh;
@@ -767,8 +771,8 @@ omx_process_host_queries_and_replies(void)
 			omx_peer_set_reverse_index_locked(peer, reverse_peer_index);
 
 		} else {
-			/* FIXME: counter+drop_printk */
-			dprintk(QUERY, "got hostname from unknown peer\n");
+			omx_counter_inc(iface, DROP_HOST_REPLY_BAD_PEER_ADDR);
+			omx_drop_dprintk(eh, "HOST REPLY from unknown peer\n");
 		}
 
 	out:
@@ -809,7 +813,8 @@ omx_process_host_queries_and_replies(void)
 		peer = omx_peer_lookup_by_addr_locked(src_addr);
 		if (!peer) {
 			mutex_unlock(&omx_peers_mutex);
-			/* FIXME: drop_printk + counter */
+			omx_counter_inc(iface, DROP_HOST_QUERY_BAD_PEER_ADDR);
+			omx_drop_dprintk(in_eh, "HOST QUERY from unknown peer\n");
 			goto failed;
 		}
 
