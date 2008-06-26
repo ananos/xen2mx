@@ -45,7 +45,7 @@ struct omx_iface_raw {
 	int in_use;
        	pid_t opener_pid;
         char opener_comm[TASK_COMM_LEN];
-	
+
 	struct list_head event_list;
 	spinlock_t event_lock;
 	wait_queue_head_t event_wq;
@@ -75,7 +75,8 @@ extern void omx_iface_release(struct omx_iface * iface);
 
 extern int omx_raw_attach_iface(uint32_t board_index, struct omx_iface **ifacep);
 extern int omx_raw_detach_iface(struct omx_iface *iface);
-extern void omx_send_on_all_ifaces(struct sk_buff *skb);
+
+extern void omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *data);
 
 extern int omx_ifnames_get(char *buf, struct kernel_param *kp);
 extern int omx_ifnames_set(const char *buf, struct kernel_param *kp);

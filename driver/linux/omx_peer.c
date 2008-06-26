@@ -583,6 +583,30 @@ omx_peer_lookup_by_hostname(char *hostname,
  * Host Query/Reply Management
  */
 
+static int
+omx_peer_host_query_send_iface_handler(struct omx_iface * iface, void * data)
+{
+	struct sk_buff *skb = data;
+	struct net_device *ifp = iface->eth_ifp;
+	struct sk_buff *newskb;
+	struct ethhdr *eh;
+
+	newskb = skb_copy(skb, GFP_ATOMIC);
+	if (!newskb)
+		return -ENOMEM;
+
+	eh = &omx_skb_mac_header(newskb)->head.eth;
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+	newskb->dev = ifp;
+
+	/* don't use omx_queue_xmit since we don't debug packet loss here */
+	omx_counter_inc(iface, SEND_HOST_QUERY);
+	newskb->dev = ifp;
+	dev_queue_xmit(newskb);
+
+	return 0;
+}
+
 static void
 omx_peer_host_query(struct omx_peer *peer)
 {
@@ -620,7 +644,9 @@ omx_peer_host_query(struct omx_peer *peer)
 	omx_board_addr_to_ethhdr_dst(&ph->eth, peer_addr);
 
 	/* send on all attached interfaces */
-	omx_send_on_all_ifaces(skb);
+	omx_for_each_iface(omx_peer_host_query_send_iface_handler, skb);
+
+	kfree_skb(skb);
 
  out:
 	return;
@@ -850,6 +876,8 @@ omx_process_host_queries_and_replies(void)
 		memcpy(out_eh->h_source, ifp->dev_addr, sizeof (out_eh->h_source));
 		memcpy(out_eh->h_dest, in_eh->h_source, sizeof(out_eh->h_dest));
 
+		/* don't use omx_queue_xmit since we don't debug packet loss here */
+		omx_counter_inc(iface, SEND_HOST_REPLY);
 		out_skb->dev = ifp;
 		dev_queue_xmit(out_skb);
 

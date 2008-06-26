@@ -1,3 +1,5 @@
+* check we can remove underlying drivers
+
 * allow to probe across ctxids by adding a anyctxid unexpq
 
 * cleanup the idr+BHlock for handles

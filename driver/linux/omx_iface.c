@@ -830,40 +830,23 @@ omx_raw_detach_iface(struct omx_iface *iface)
 	BUG_ON(!iface->raw.in_use);
 	iface->raw.in_use = 0;
 	omx_iface_release(iface);
-	mutex_unlock(&omx_ifaces_mutex);	
-	return 0;	
+	mutex_unlock(&omx_ifaces_mutex);
+	return 0;
 }
 
 void
-omx_send_on_all_ifaces(struct sk_buff *skb)
+omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *data)
 {
 	int i;
 
 	rcu_read_lock();
-
 	for(i=0; i<omx_iface_max; i++) {
-		struct sk_buff *newskb;
-		struct ethhdr *eh;
-		struct omx_iface *iface;
-		struct net_device * ifp;
-
-		iface = rcu_dereference(omx_ifaces[i]);
+		struct omx_iface *iface = rcu_dereference(omx_ifaces[i]);
 		if (!iface)
 			continue;
-		ifp = iface->eth_ifp;
-
-		newskb = skb_copy(skb, GFP_ATOMIC);
-		if (!newskb)
+		if (handler(iface, data) < 0)
 			break;
-
-		eh = &omx_skb_mac_header(newskb)->head.eth;
-		memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
-		newskb->dev = ifp;
-		dev_queue_xmit(newskb);
 	}
-
-	kfree_skb(skb);
-
 	rcu_read_unlock();
 }
 
