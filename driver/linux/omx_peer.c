@@ -382,38 +382,19 @@ omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index)
  * Peer Index Management
  */
 
-int
-omx_peer_set_reverse_index(uint16_t index, uint16_t reverse_index)
+/* Must be called from mutex or RCU-read locked context */
+void
+omx_peer_set_reverse_index_locked(struct omx_peer *peer, uint16_t reverse_index)
 {
-	struct omx_peer *peer;
-	int err = -EINVAL;
-
-	if (index >= omx_peer_max)
-		goto out;
-
-	rcu_read_lock();
-
-	peer = rcu_dereference(omx_peer_array[index]);
-	if (!peer)
-		goto out_with_lock;
-
 	if (peer->reverse_index != OMX_UNKNOWN_REVERSE_PEER_INDEX
 	    && reverse_index != peer->reverse_index)
 		dprintk(PEER, "changing remote peer #%d reverse index from %d to %d\n",
-			index, peer->reverse_index, reverse_index);
+			peer->index, peer->reverse_index, reverse_index);
 	else
 		dprintk(PEER, "setting remote peer #%d reverse index to %d\n",
-			index, reverse_index);
+			peer->index, reverse_index);
 
 	peer->reverse_index = reverse_index;
-
-	rcu_read_unlock();
-	return 0;
-
- out_with_lock:
-	rcu_read_unlock();
- out:
-	return err;
 }
 
 int
@@ -587,27 +568,21 @@ omx_peer_lookup_by_hostname(char *hostname,
  * the peer hostname and thus may use RCU locking, and thus may be
  * called from the BH (namely for connect recv).
  *
- * index cannot be NULL, it will always be set.
+ * Must be called from mutex or RCU-read locked context.
  */
-int
-omx_peer_lookup_by_addr_fast(uint64_t board_addr, uint32_t *index)
+struct omx_peer *
+omx_peer_lookup_by_addr_locked(uint64_t board_addr)
 {
 	uint8_t hash;
 	struct omx_peer * peer;
 
 	hash = omx_peer_addr_hash(board_addr);
 
-	rcu_read_lock();
-	list_for_each_entry_rcu(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
-		if (peer->board_addr == board_addr) {
-			*index = peer->index;
-			rcu_read_unlock();
-			return 0;
-		}
-	}
-	rcu_read_unlock();
+	list_for_each_entry_rcu(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt)
+		if (peer->board_addr == board_addr)
+			return peer;
 
-	return -EINVAL;
+	return NULL;
 }
 
 /******************************

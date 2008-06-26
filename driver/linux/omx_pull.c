@@ -1918,7 +1918,7 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
 		/* FIXME: impossible? in non MX-wire compatible only? */
-		uint32_t src_addr_peer_index;
+		struct omx_peer *peer;
 		uint64_t src_addr;
 
 		if (peer_index != (uint16_t)-1) {
@@ -1928,13 +1928,21 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		}
 
 		src_addr = omx_board_addr_from_ethhdr_src(eh);
-		err = omx_peer_lookup_by_addr_fast(src_addr, &src_addr_peer_index);
-		if (err < 0) {
+
+		/* RCU section while manipulating peers */
+		rcu_read_lock();
+
+		peer = omx_peer_lookup_by_addr_locked(src_addr);
+		if (!peer) {
+			rcu_read_unlock();
 			omx_drop_dprintk(eh, "NACK MCP with unknown peer index and unknown address");
 			goto out;
 		}
 
-		peer_index = src_addr_peer_index;
+		peer_index = peer->index;
+
+		/* end of RCU section while manipulating peers */
+		rcu_read_unlock();
 	}
 
 	/* acquire the endpoint */

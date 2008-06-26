@@ -40,6 +40,7 @@ omx_recv_connect(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
 	uint64_t src_addr = omx_board_addr_from_ethhdr_src(eh);
+	struct omx_peer *peer;
 	uint32_t peer_index;
 	struct omx_pkt_connect *connect_n = &mh->body.connect;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_connect);
@@ -70,9 +71,13 @@ omx_recv_connect(struct omx_iface * iface,
 		goto out;
 	}
 
-	/* the connect doesn't know its peer index tet, we need to lookup */
-	err = omx_peer_lookup_by_addr_fast(src_addr, &peer_index);
-	if (err < 0) {
+	/* RCU section while manipulating peers */
+	rcu_read_lock();
+
+	/* the connect doesn't know its peer index yet, we need to lookup the peer */
+	peer = omx_peer_lookup_by_addr_locked(src_addr);
+	if (!peer) {
+		rcu_read_unlock();
 		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
 		omx_drop_dprintk(eh, "CONNECT packet with unknown peer index %d",
 				 (unsigned) peer_index);
@@ -80,8 +85,13 @@ omx_recv_connect(struct omx_iface * iface,
 	}
 
 	/* store our peer_index in the remote table */
-	err = omx_peer_set_reverse_index(peer_index, reverse_peer_index);
+	omx_peer_set_reverse_index_locked(peer, reverse_peer_index);
 	BUG_ON(err < 0);
+
+	peer_index = peer->index;
+
+	/* end of RCU section while manipulating peers */
+	rcu_read_unlock();
 
 	/* get the destination endpoint */
 	endpoint = omx_endpoint_acquire_by_iface_index(iface, dst_endpoint);
@@ -798,7 +808,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	err = omx_check_recv_peer_index(peer_index);
 	if (unlikely(err < 0)) {
 		/* FIXME: impossible? in non MX-wire compatible only? */
-		uint32_t src_addr_peer_index;
+		struct omx_peer *peer;
 		uint64_t src_addr;
 
 		if (peer_index != (uint16_t)-1) {
@@ -808,13 +818,21 @@ omx_recv_nack_lib(struct omx_iface * iface,
 		}
 
 		src_addr = omx_board_addr_from_ethhdr_src(eh);
-		err = omx_peer_lookup_by_addr_fast(src_addr, &src_addr_peer_index);
-		if (err < 0) {
+
+		/* RCU section while manipulating peers */
+		rcu_read_lock();
+
+		peer = omx_peer_lookup_by_addr_locked(src_addr);
+		if (!peer) {
+			rcu_read_unlock();
 			omx_drop_dprintk(eh, "NACK LIB with unknown peer index and unknown address");
 			goto out;
 		}
 
-		peer_index = src_addr_peer_index;
+		peer_index = peer->index;
+
+		/* end of RCU section while manipulating peers */
+		rcu_read_unlock();
 	}
 
 	/* get the destination endpoint */
