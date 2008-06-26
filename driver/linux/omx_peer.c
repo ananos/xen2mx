@@ -484,6 +484,28 @@ omx_peer_lookup_by_index(uint32_t index,
 }
 
 /*
+ * Fast version of omx_peer_lookup_by_addr where we don't care about
+ * the peer hostname and thus may use RCU locking, and thus may be
+ * called from the BH (namely for connect recv).
+ *
+ * Must be called from mutex or RCU-read locked context.
+ */
+struct omx_peer *
+omx_peer_lookup_by_addr_locked(uint64_t board_addr)
+{
+	uint8_t hash;
+	struct omx_peer * peer;
+
+	hash = omx_peer_addr_hash(board_addr);
+
+	list_for_each_entry_rcu(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt)
+		if (peer->board_addr == board_addr)
+			return peer;
+
+	return NULL;
+}
+
+/*
  * Lookup index and/or hostname by board_addr.
  *
  * hostname and index may be NULL.
@@ -494,36 +516,30 @@ int
 omx_peer_lookup_by_addr(uint64_t board_addr,
 			char *hostname, uint32_t *index)
 {
-	uint8_t hash;
 	struct omx_peer * peer;
+	int err = 0;
 
 	might_sleep();
 
-	hash = omx_peer_addr_hash(board_addr);
-
 	mutex_lock(&omx_peers_mutex);
 
-	list_for_each_entry(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
-		if (peer->board_addr == board_addr) {
-
-			if (index)
-				*index = peer->index;
-
-			if (hostname) {
-				if (peer->hostname)
-					strcpy(hostname, peer->hostname);
-				else
-					hostname[0] = '\0';
-			}
-
-			mutex_unlock(&omx_peers_mutex);
-			return 0;
+	peer = omx_peer_lookup_by_addr_locked(board_addr);
+	if (peer) {
+		if (index)
+			*index = peer->index;
+		if (hostname) {
+			if (peer->hostname)
+				strcpy(hostname, peer->hostname);
+			else
+				hostname[0] = '\0';
 		}
+	} else {
+		err = -EINVAL;
 	}
 
 	mutex_unlock(&omx_peers_mutex);
 
-	return -EINVAL;
+	return err;
 }
 
 /*
@@ -561,28 +577,6 @@ omx_peer_lookup_by_hostname(char *hostname,
 	mutex_unlock(&omx_peers_mutex);
 
 	return -EINVAL;
-}
-
-/*
- * Fast version of omx_peer_lookup_by_addr where we don't care about
- * the peer hostname and thus may use RCU locking, and thus may be
- * called from the BH (namely for connect recv).
- *
- * Must be called from mutex or RCU-read locked context.
- */
-struct omx_peer *
-omx_peer_lookup_by_addr_locked(uint64_t board_addr)
-{
-	uint8_t hash;
-	struct omx_peer * peer;
-
-	hash = omx_peer_addr_hash(board_addr);
-
-	list_for_each_entry_rcu(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt)
-		if (peer->board_addr == board_addr)
-			return peer;
-
-	return NULL;
 }
 
 /******************************
