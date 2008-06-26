@@ -737,7 +737,7 @@ omx_process_host_queries_and_replies(void)
 
 		mutex_lock(&omx_peers_mutex);
 
-		peer = omx__peer_lookup_by_addr_locked(src_addr);
+		peer = omx_peer_lookup_by_addr_locked(src_addr);
 		if (peer) {
 			char *old_hostname = peer->hostname;
 			uint8_t new_hostnamelen;
