@@ -1935,7 +1935,8 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		peer = omx_peer_lookup_by_addr_locked(src_addr);
 		if (!peer) {
 			rcu_read_unlock();
-			omx_drop_dprintk(eh, "NACK MCP with unknown peer index and unknown address");
+			omx_counter_inc(iface, DROP_BAD_PEER_ADDR);
+			omx_drop_dprintk(eh, "NACK MCP packet from unknown peer\n");
 			goto out;
 		}
 
