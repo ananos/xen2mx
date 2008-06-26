@@ -165,7 +165,7 @@ struct omx_pkt_head {
 struct omx_pkt_host_query {
 	omx_packet_type_t ptype;
 	uint8_t pad;
-	uint16_t return_peer_index;
+	uint16_t src_dst_peer_index;
 	uint32_t pad0;
 	/* 8 */
 	uint32_t magic;
@@ -176,7 +176,7 @@ struct omx_pkt_host_query {
 struct omx_pkt_host_reply {
 	omx_packet_type_t ptype;
 	uint8_t length;
-	uint16_t return_peer_index;
+	uint16_t src_dst_peer_index;
 	uint32_t pad0;
 	/* 8 */
 	uint32_t magic;

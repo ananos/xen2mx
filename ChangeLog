@@ -8,6 +8,7 @@ Major Enhancements:
     be rebuilt on these architectures.
 
 Other improvements from previous release:
+* Fix hostname resolution wire compatibility with MX.
 * Fix enabling of FMA build/install.
 * Fix driver oops when trying to use interfaces that do not
   provide ethtool ops.
