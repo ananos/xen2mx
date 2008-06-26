@@ -9,6 +9,7 @@ Major Enhancements:
 
 Other improvements from previous release:
 * Fix hostname resolution wire compatibility with MX.
+* Fix hostname resolution problems on multi-NICs machines.
 * Fix enabling of FMA build/install.
 * Fix driver oops when trying to use interfaces that do not
   provide ethtool ops.

@@ -852,7 +852,7 @@ omx_send_on_all_ifaces(struct sk_buff *skb)
 			continue;
 		ifp = iface->eth_ifp;
 
-		newskb = skb_clone(skb, GFP_ATOMIC);
+		newskb = skb_copy(skb, GFP_ATOMIC);
 		if (!newskb)
 			break;
 
