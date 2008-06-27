@@ -95,6 +95,7 @@ omx__raw_send(struct omx_raw_endpoint * endpoint,
   err = ioctl(endpoint->fd, OMX_CMD_RAW_SEND, &raw_send);
   if (err < 0)
     omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+				       OMX_BAD_ENDPOINT,
 				       OMX_SUCCESS,
 				       "send raw message");
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
@@ -117,7 +118,8 @@ omx__raw_next_event(struct omx_raw_endpoint * endpoint, uint32_t *incoming_port,
 
   err = ioctl(endpoint->fd, OMX_CMD_RAW_GET_EVENT, &get_event);
   if (err < 0)
-    return omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
+    return omx__ioctl_errno_to_return_checked(OMX_BAD_ENDPOINT,
+					      OMX_SUCCESS,
 					      "get raw event");
 
   if (get_event.status == OMX_CMD_RAW_EVENT_RECV_COMPLETE) {

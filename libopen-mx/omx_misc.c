@@ -42,6 +42,8 @@ omx__errno_to_return(void)
     return OMX_NO_SYSTEM_RESOURCES;
   case ENODEV:
     return OMX_INTERNAL_MISC_ENODEV;
+  case EBADF:
+    return OMX_BAD_ENDPOINT;
   case ENOENT:
     return OMX_NO_DEVICE_FILE;
   case EBUSY:
