@@ -32,6 +32,17 @@
 #include "omx_endpoint.h"
 #include "omx_peer.h"
 
+/*
+ * The raw interface exists when the file descriptor gets the OMX_CMD_RAW_OPEN_ENDPOINT
+ * ioctl. It links the file private_data onto the iface and the iface raw.opener_file onto
+ * the file. Starting from then, the fil owns a reference onto the iface.
+ * The reference is released when the raw iface is closed, either by closing the file
+ * descriptor, or by the underlying interface being removed by force.
+ * Each regular raw ioctl gets a reference onto the iface first so that it can finish
+ * proceedings while a closing is pending. Closing thus waits for RCU grace to end before
+ * destroying the link between the file and the iface.
+ */
+
 #ifdef OMX_DRIVER_DEBUG
 /* defined as module parameters */
 extern unsigned long omx_RAW_packet_loss;
@@ -306,7 +317,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			goto out;
 		}
 		kref_get(&iface->refcount);
- 
+
 		rcu_read_unlock();
 
 		err = omx_raw_send(iface, (void __user *) arg);
@@ -325,7 +336,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			goto out;
 		}
 		kref_get(&iface->refcount);
- 
+
 		rcu_read_unlock();
 
 		err = omx_raw_get_event(&iface->raw, (void __user *) arg);

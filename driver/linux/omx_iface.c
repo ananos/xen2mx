@@ -419,6 +419,9 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	printk(KERN_INFO "Open-MX: Detaching interface '%s' (#%d)\n",
 	       iface->eth_ifp->name, iface->index);
 
+	/* detach the raw */
+	omx__raw_detach_iface_locked(iface);
+
 	/* remove from the peer table */
 	omx_peers_notify_iface_detach(iface);
 

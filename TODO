@@ -1,4 +1,4 @@
-* check we can remove underlying drivers
+* take a ref onto the endpoint during ioctl since the file doesn't keep it after close ioctl
 
 * allow to probe across ctxids by adding a anyctxid unexpq
 
