@@ -33,6 +33,9 @@
 #include "omx_iface.h"
 #include "omx_endpoint.h"
 
+/* forward declaration */
+static void __omx_iface_last_release(struct kref *kref);
+
 /******************************
  * Managing interfaces
  */
@@ -219,6 +222,28 @@ omx_iface_set_hostname(uint8_t board_index, char * hostname)
 	kfree(new_hostname);
  out:
 	return ret;
+}
+
+void
+omx_iface_release(struct omx_iface * iface)
+{
+	kref_put(&iface->refcount, __omx_iface_last_release);
+}
+
+void
+omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *data)
+{
+	int i;
+
+	rcu_read_lock();
+	for(i=0; i<omx_iface_max; i++) {
+		struct omx_iface *iface = rcu_dereference(omx_ifaces[i]);
+		if (!iface)
+			continue;
+		if (handler(iface, data) < 0)
+			break;
+	}
+	rcu_read_unlock();
 }
 
 /******************************
@@ -432,7 +457,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	synchronize_rcu();
 
 	/* let the last reference release the iface's internals */
-	kref_put(&iface->refcount, __omx_iface_last_release);
+	omx_iface_release(iface);
 
 	return 0;
 
@@ -440,7 +465,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	return ret;
 }
 
-/******************************
+/****************************************************
  * Attribute-based attaching/detaching of interfaces
  */
 
@@ -717,15 +742,6 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 }
 
 /*
- * Release the endpoint's iface once the endpoint is really done
- */
-void
-omx_iface_release(struct omx_iface * iface)
-{
-	kref_put(&iface->refcount, __omx_iface_last_release);
-}
-
-/*
  * Return some info about an endpoint.
  */
 int
@@ -865,22 +881,6 @@ omx_raw_detach_iface(struct file *filp)
  out_with_lock:
 	mutex_unlock(&omx_ifaces_mutex);
 	return err;
-}
-
-void
-omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *data)
-{
-	int i;
-
-	rcu_read_lock();
-	for(i=0; i<omx_iface_max; i++) {
-		struct omx_iface *iface = rcu_dereference(omx_ifaces[i]);
-		if (!iface)
-			continue;
-		if (handler(iface, data) < 0)
-			break;
-	}
-	rcu_read_unlock();
 }
 
 /******************************
