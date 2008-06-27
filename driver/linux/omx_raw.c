@@ -342,6 +342,8 @@ omx_raw_miscdev_poll(struct file *file, struct poll_table_struct *wait)
 	poll_wait(file, &raw->event_wq, wait);
 	if (raw->event_list_length)
 		mask |= POLLIN;
+	if (!raw->opener_file)
+		mask |= POLLERR;
 
  out:
 	return mask;
