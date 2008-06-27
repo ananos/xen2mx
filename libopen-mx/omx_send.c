@@ -305,13 +305,13 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
-      if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED)))
+      if (likely(!req->generic.resends))
 	memcpy(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT), data + offset, chunk);
 
       err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
       if (unlikely(err < 0)) {
 	/* finish copying frags if not done already */
-	if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED))) {
+	if (likely(!req->generic.resends)) {
 	  int j;
 	  for(j=i+1; j<frags_nr; i++) {
 	    unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
@@ -343,7 +343,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
-      if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED)))
+      if (likely(!req->generic.resends))
 	omx_continue_partial_copy_from_segments(ep->sendq + (sendq_index[i] << OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT),
 						&req->send.segs, chunk,
 						&state);
@@ -351,7 +351,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
       err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
       if (unlikely(err < 0)) {
 	/* finish copying frags if not done already */
-	if (likely(!(req->generic.state & OMX_REQUEST_STATE_REQUEUED))) {
+	if (likely(!req->generic.resends)) {
 	  int j;
 	  for(j=i+1; j<frags_nr; i++) {
 	    unsigned chunk = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX
