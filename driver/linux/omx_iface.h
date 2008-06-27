@@ -24,6 +24,7 @@
 #include <linux/kref.h>
 #include <linux/moduleparam.h>
 #include <linux/skbuff.h>
+#include <linux/fs.h>
 #ifdef OMX_HAVE_MUTEX
 #include <linux/mutex.h>
 #endif
@@ -42,9 +43,9 @@ enum omx_iface_status {
 };
 
 struct omx_iface_raw {
-	int in_use;
-       	pid_t opener_pid;
-        char opener_comm[TASK_COMM_LEN];
+	struct file *opener_file;
+	pid_t opener_pid;
+	char opener_comm[TASK_COMM_LEN];
 
 	struct list_head event_list;
 	spinlock_t event_lock;
@@ -73,7 +74,7 @@ extern void omx_net_exit(void);
 
 extern void omx_iface_release(struct omx_iface * iface);
 
-extern int omx_raw_attach_iface(uint32_t board_index, struct omx_iface **ifacep);
+extern int omx_raw_attach_iface(uint32_t board_index, struct file *filp);
 extern int omx_raw_detach_iface(struct omx_iface *iface);
 
 extern void omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *data);

@@ -54,7 +54,7 @@ struct omx_raw_event {
 void
 omx_iface_raw_init(struct omx_iface_raw * raw)
 {
-	raw->in_use = 0;
+	raw->opener_file = NULL;
 	spin_lock_init(&raw->event_lock);
 	INIT_LIST_HEAD(&raw->event_list);
 	raw->event_list_length = 0;
@@ -288,7 +288,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			goto out;
 		}
 
-		err = omx_raw_attach_iface(raw_open.board_index, (struct omx_iface **) &file->private_data);
+		err = omx_raw_attach_iface(raw_open.board_index, file);
 		break;
 	}
 

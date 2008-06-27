@@ -747,7 +747,7 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 	if (endpoint_index == OMX_RAW_ENDPOINT_INDEX) {
 		/* raw endpoint */
 		struct omx_iface_raw *raw = &iface->raw;
-		if (raw->in_use) {
+		if (raw->opener_file) {
 			info->closed = 0;
 			info->pid = raw->opener_pid;
 			strncpy(info->command, raw->opener_comm, OMX_COMMAND_LEN_MAX);
@@ -786,7 +786,7 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
  */
 
 int
-omx_raw_attach_iface(uint32_t board_index, struct omx_iface **ifacep)
+omx_raw_attach_iface(uint32_t board_index, struct file * filp)
 {
 	struct omx_iface * iface;
 	int err;
@@ -802,18 +802,17 @@ omx_raw_attach_iface(uint32_t board_index, struct omx_iface **ifacep)
 		goto out_with_lock;
 
 	err = -EBUSY;
-	if (*ifacep)
+	if (filp->private_data)
 		goto out_with_lock;
 
-	if (iface->raw.in_use)
+	if (iface->raw.opener_file)
 		goto out_with_lock;
 
 	kref_get(&iface->refcount);
-	iface->raw.in_use = 1;
+	iface->raw.opener_file = filp;
+	filp->private_data = iface;
 	iface->raw.opener_pid = current->pid;
 	strncpy(iface->raw.opener_comm, current->comm, TASK_COMM_LEN);
-
-	*ifacep = iface;
 
 	mutex_unlock(&omx_ifaces_mutex);
 	return 0;
@@ -827,8 +826,8 @@ int
 omx_raw_detach_iface(struct omx_iface *iface)
 {
 	mutex_lock(&omx_ifaces_mutex);
-	BUG_ON(!iface->raw.in_use);
-	iface->raw.in_use = 0;
+	BUG_ON(!iface->raw.opener_file);
+	iface->raw.opener_file = NULL;
 	omx_iface_release(iface);
 	mutex_unlock(&omx_ifaces_mutex);
 	return 0;
