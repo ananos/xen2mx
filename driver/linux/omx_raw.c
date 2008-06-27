@@ -198,7 +198,7 @@ omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
 	while (timeout > 0) {
 		prepare_to_wait(&raw->event_wq, &__wait, TASK_INTERRUPTIBLE);
 
-		if (!raw->opener_file)
+		if (!rcu_dereference(raw->opener_file))
 			/* getting closed */
 			break;
 
@@ -297,22 +297,40 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	}
 
 	case OMX_CMD_RAW_SEND: {
+		rcu_read_lock();
+
 		err = -EBADF;
-		iface = file->private_data;
-		if (unlikely(!iface))
+		iface = rcu_dereference(file->private_data);
+		if (unlikely(!iface)) {
+			rcu_read_unlock();
 			goto out;
+		}
+		kref_get(&iface->refcount);
+ 
+		rcu_read_unlock();
 
 		err = omx_raw_send(iface, (void __user *) arg);
+
+		omx_iface_release(iface);
 		break;
 	}
 
 	case OMX_CMD_RAW_GET_EVENT: {
+		rcu_read_lock();
+
 		err = -EBADF;
-		iface = file->private_data;
-		if (unlikely(!iface))
+		iface = rcu_dereference(file->private_data);
+		if (unlikely(!iface)) {
+			rcu_read_unlock();
 			goto out;
+		}
+		kref_get(&iface->refcount);
+ 
+		rcu_read_unlock();
 
 		err = omx_raw_get_event(&iface->raw, (void __user *) arg);
+
+		omx_iface_release(iface);
 		break;
 	}
 
@@ -332,18 +350,27 @@ omx_raw_miscdev_poll(struct file *file, struct poll_table_struct *wait)
 	struct omx_iface_raw *raw;
 	unsigned int mask = 0;
 
-	iface = file->private_data;
+	rcu_read_lock();
+
+	iface = rcu_dereference(file->private_data);
 	if (unlikely(!iface)) {
+		rcu_read_unlock();
 		mask |= POLLERR;
 		goto out;
 	}
+	kref_get(&iface->refcount);
+
+	rcu_read_unlock();
+
 	raw = &iface->raw;
 
 	poll_wait(file, &raw->event_wq, wait);
 	if (raw->event_list_length)
 		mask |= POLLIN;
-	if (!raw->opener_file)
+	if (!rcu_dereference(raw->opener_file))
 		mask |= POLLERR;
+
+	omx_iface_release(iface);
 
  out:
 	return mask;

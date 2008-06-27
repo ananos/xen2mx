@@ -809,8 +809,8 @@ omx_raw_attach_iface(uint32_t board_index, struct file * filp)
 		goto out_with_lock;
 
 	kref_get(&iface->refcount);
-	iface->raw.opener_file = filp;
-	filp->private_data = iface;
+	rcu_assign_pointer(iface->raw.opener_file, filp);
+	rcu_assign_pointer(filp->private_data, iface);
 	iface->raw.opener_pid = current->pid;
 	strncpy(iface->raw.opener_comm, current->comm, TASK_COMM_LEN);
 
@@ -832,6 +832,10 @@ omx__raw_detach_iface_locked(struct omx_iface *iface)
 		filp->private_data = NULL;
 		iface->raw.opener_file = NULL;
 		omx_raw_wakeup(iface);
+
+		/* wait for other people that dereferenced the raw iface to have acquired it before we release it */
+		synchronize_rcu();
+
 		omx_iface_release(iface);
 	}
 }
