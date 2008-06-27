@@ -822,15 +822,42 @@ omx_raw_attach_iface(uint32_t board_index, struct file * filp)
 	return err;
 }
 
-int
-omx_raw_detach_iface(struct omx_iface *iface)
+/* Called with the iface array locked */
+void
+omx__raw_detach_iface_locked(struct omx_iface *iface)
 {
+	struct file *filp = iface->raw.opener_file;
+
+	if (filp) {
+		filp->private_data = NULL;
+		iface->raw.opener_file = NULL;
+		omx_raw_wakeup(iface);
+		omx_iface_release(iface);
+	}
+}
+
+int
+omx_raw_detach_iface(struct file *filp)
+{
+	struct omx_iface * iface;
+	int err;
+
 	mutex_lock(&omx_ifaces_mutex);
+
+	err = -EINVAL;
+	iface = filp->private_data;
+	if (!iface)
+		goto out_with_lock;
+
 	BUG_ON(!iface->raw.opener_file);
-	iface->raw.opener_file = NULL;
-	omx_iface_release(iface);
+	omx__raw_detach_iface_locked(iface);
+
 	mutex_unlock(&omx_ifaces_mutex);
 	return 0;
+
+ out_with_lock:
+	mutex_unlock(&omx_ifaces_mutex);
+	return err;
 }
 
 void

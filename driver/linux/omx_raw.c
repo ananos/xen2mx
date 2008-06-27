@@ -273,13 +273,7 @@ omx_raw_miscdev_open(struct inode * inode, struct file * file)
 static int
 omx_raw_miscdev_release(struct inode * inode, struct file * file)
 {
-	struct omx_iface *iface;
-
-	iface = file->private_data;
-	if (unlikely(!iface))
-		return -EINVAL;
-
-	return omx_raw_detach_iface(iface);
+	return omx_raw_detach_iface(file);
 }
 
 static long

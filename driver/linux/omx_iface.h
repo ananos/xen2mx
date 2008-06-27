@@ -75,7 +75,7 @@ extern void omx_net_exit(void);
 extern void omx_iface_release(struct omx_iface * iface);
 
 extern int omx_raw_attach_iface(uint32_t board_index, struct file *filp);
-extern int omx_raw_detach_iface(struct omx_iface *iface);
+extern int omx_raw_detach_iface(struct file *filp);
 extern void omx_raw_wakeup(struct omx_iface *iface);
 
 extern void omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *data);
