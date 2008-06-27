@@ -181,6 +181,7 @@ stop_peer_discovery() {
 	else
 	    echo "Killing the dynamic peer discovery ($cmdname, pid=$pid)"
 	    kill -9 $pid || true
+	    sleep 1
 	fi
 	done
 	rm ${OMX_PID_FILE} || true
@@ -194,6 +195,7 @@ kill_peer_discovery() {
     echo "Killing all omxoed and fma processes"
     killall -v -9 omxoed || true
     killall -v -9 fma || true
+    sleep 1
 }
 
 cmd="$1"
