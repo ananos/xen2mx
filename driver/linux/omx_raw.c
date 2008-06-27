@@ -78,6 +78,12 @@ omx_iface_raw_exit(struct omx_iface_raw * raw)
  * Send Raw Packets
  */
 
+void
+omx_raw_wakeup(struct omx_iface *iface)
+{
+	wake_up_interruptible(&iface->raw.event_wq);
+}
+
 static int
 omx_raw_send(struct omx_iface *iface, void __user * uparam)
 {
@@ -117,7 +123,7 @@ omx_raw_send(struct omx_iface *iface, void __user * uparam)
 		spin_lock_bh(&raw->event_lock);
 		list_add_tail(&event->list_elt, &raw->event_list);
 		raw->event_list_length++;
-		wake_up_interruptible(&raw->event_wq);
+		omx_raw_wakeup(iface);
 		spin_unlock_bh(&raw->event_lock);
 	}
 
@@ -164,7 +170,7 @@ omx_recv_raw(struct omx_iface * iface,
 		spin_lock(&raw->event_lock);
 		list_add_tail(&event->list_elt, &raw->event_list);
 		raw->event_list_length++;
-		wake_up_interruptible(&raw->event_wq);
+		omx_raw_wakeup(iface);
 		spin_unlock(&raw->event_lock);
 
 	        omx_counter_inc(iface, RECV_RAW);
@@ -191,6 +197,10 @@ omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
 	spin_lock_bh(&raw->event_lock);
 	while (timeout > 0) {
 		prepare_to_wait(&raw->event_wq, &__wait, TASK_INTERRUPTIBLE);
+
+		if (!raw->opener_file)
+			/* getting closed */
+			break;
 
 		if (raw->event_list_length)
 			/* got an event */
