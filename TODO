@@ -1,3 +1,9 @@
+* cleanup endpoint acquiring/locking/closing again
+  + synchronize_rcu before freeing after unlinking?
+  + rcu_deference+acquire+check status during ioctl and network
+  + stop allocating during the whole fd life?
+  + drop free/init status?
+
 * take a ref onto the endpoint during ioctl since the file doesn't keep it after close ioctl
 
 * allow to probe across ctxids by adding a anyctxid unexpq

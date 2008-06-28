@@ -191,8 +191,9 @@ omx_recv_raw(struct omx_iface * iface,
 }
 
 static int
-omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
+omx_raw_get_event(struct omx_iface * iface, void __user * uparam)
 {
+	struct omx_iface_raw * raw = &iface->raw;
 	struct omx_cmd_raw_get_event get_event;
 	DEFINE_WAIT(__wait);
 	unsigned long timeout;
@@ -209,7 +210,7 @@ omx_raw_get_event(struct omx_iface_raw * raw, void __user * uparam)
 	while (timeout > 0) {
 		prepare_to_wait(&raw->event_wq, &__wait, TASK_INTERRUPTIBLE);
 
-		if (!rcu_dereference(raw->opener_file))
+		if (unlikely(iface->status != OMX_IFACE_STATUS_OK))
 			/* getting closed */
 			break;
 
@@ -312,7 +313,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		err = -EBADF;
 		iface = rcu_dereference(file->private_data);
-		if (unlikely(!iface)) {
+		if (unlikely(!iface || iface->status != OMX_IFACE_STATUS_OK)) {
 			rcu_read_unlock();
 			goto out;
 		}
@@ -331,7 +332,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		err = -EBADF;
 		iface = rcu_dereference(file->private_data);
-		if (unlikely(!iface)) {
+		if (unlikely(!iface || iface->status != OMX_IFACE_STATUS_OK)) {
 			rcu_read_unlock();
 			goto out;
 		}
@@ -339,7 +340,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 
 		rcu_read_unlock();
 
-		err = omx_raw_get_event(&iface->raw, (void __user *) arg);
+		err = omx_raw_get_event(iface, (void __user *) arg);
 
 		omx_iface_release(iface);
 		break;
@@ -364,7 +365,7 @@ omx_raw_miscdev_poll(struct file *file, struct poll_table_struct *wait)
 	rcu_read_lock();
 
 	iface = rcu_dereference(file->private_data);
-	if (unlikely(!iface)) {
+	if (unlikely(!iface || iface->status != OMX_IFACE_STATUS_OK)) {
 		rcu_read_unlock();
 		mask |= POLLERR;
 		goto out;
@@ -378,7 +379,7 @@ omx_raw_miscdev_poll(struct file *file, struct poll_table_struct *wait)
 	poll_wait(file, &raw->event_wq, wait);
 	if (raw->event_list_length)
 		mask |= POLLIN;
-	if (!rcu_dereference(raw->opener_file))
+	if (unlikely(iface->status != OMX_IFACE_STATUS_OK))
 		mask |= POLLERR;
 
 	omx_iface_release(iface);
