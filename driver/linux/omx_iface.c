@@ -389,7 +389,6 @@ __omx_iface_last_release(struct kref *kref)
 static int
 omx_iface_detach(struct omx_iface * iface, int force)
 {
-	enum omx_iface_status old_status;
 	int ret;
 	int i;
 
@@ -398,24 +397,23 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	/* take the lock before changing/restoring the status to support concurrent tries */
 	mutex_lock(&iface->endpoints_mutex);
 
-	/* mark as closing so that nobody opens a new endpoint,
-	 * protected by the ifaces lock
-	 */
-	old_status = iface->status;
-	iface->status = OMX_IFACE_STATUS_CLOSING;
-
 	/* if force, close all endpoints.
 	 * if not force, error if some endpoints are open.
 	 */
-
 	ret = -EBUSY;
 	if (!force && iface->endpoint_nr) {
 		printk(KERN_INFO "Open-MX: cannot detach interface '%s' (#%d), still %d endpoints open\n",
 		       iface->eth_ifp->name, iface->index, iface->endpoint_nr);
-		iface->status = old_status;
 		mutex_unlock(&iface->endpoints_mutex);
 		goto out;
 	}
+
+	/*
+	 * Detach is guaranteed to succeed now, we can mark the iface as closing.
+	 * The ifaces lock is protecting us from concurrent accesses.
+	 * Nobody will be able to open a new endpoint.
+	 */
+	iface->status = OMX_IFACE_STATUS_CLOSING;
 
 	for(i=0; i<omx_endpoint_max; i++) {
 		struct omx_endpoint * endpoint = iface->endpoints[i];
