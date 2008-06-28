@@ -74,6 +74,18 @@ extern void omx_net_exit(void);
 
 extern void omx_iface_release(struct omx_iface * iface);
 
+/*
+ * Take another reference on an iface.
+ * Must be called either when holding the ifaces array lock,
+ * from a RCU read section, or when holding another reference
+ * on the same iface
+ */
+static inline void
+omx_iface_reacquire(struct omx_iface * iface)
+{
+	kref_get(&iface->refcount);
+}
+
 extern int omx_raw_attach_iface(uint32_t board_index, struct file *filp);
 extern int omx_raw_detach_iface(struct file *filp);
 extern void omx__raw_detach_iface_locked(struct omx_iface *iface);

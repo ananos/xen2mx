@@ -317,7 +317,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			rcu_read_unlock();
 			goto out;
 		}
-		kref_get(&iface->refcount);
+		omx_iface_reacquire(iface);
 
 		rcu_read_unlock();
 
@@ -336,7 +336,7 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			rcu_read_unlock();
 			goto out;
 		}
-		kref_get(&iface->refcount);
+		omx_iface_reacquire(iface);
 
 		rcu_read_unlock();
 
@@ -370,7 +370,7 @@ omx_raw_miscdev_poll(struct file *file, struct poll_table_struct *wait)
 		mask |= POLLERR;
 		goto out;
 	}
-	kref_get(&iface->refcount);
+	omx_iface_reacquire(iface);
 
 	rcu_read_unlock();
 

@@ -48,6 +48,43 @@ static unsigned omx_iface_nr = 0;
 static struct mutex omx_ifaces_mutex;
 
 /*
+ * Lock/Unlock the ifaces array
+ */
+void
+omx_ifaces_lock(void)
+{
+	mutex_lock(&omx_ifaces_mutex);
+}
+
+void
+omx_ifaces_unlock(void)
+{
+	mutex_unlock(&omx_ifaces_mutex);
+}
+
+/*
+ * Return an iface and keep the ifaces lock on success
+ */
+struct omx_iface *
+omx_iface_find_by_index_lock(int board_index)
+{
+	struct omx_iface * iface;
+
+	mutex_lock(&omx_ifaces_mutex);
+
+	if (board_index >= omx_iface_max) {
+		mutex_unlock(&omx_ifaces_mutex);
+		return NULL;
+	}
+
+	iface = omx_ifaces[board_index];
+	if (!iface)
+		mutex_unlock(&omx_ifaces_mutex);
+
+	return iface;
+}
+
+/*
  * Returns the iface associated to a physical interface.
  * Should be used when an incoming packets has been received by ifp.
  */
@@ -82,7 +119,7 @@ omx_iface_find_by_addr(uint64_t addr)
 	for (i=0; i<omx_iface_max; i++) {
 		struct omx_iface * iface = rcu_dereference(omx_ifaces[i]);
 		if (unlikely(iface && iface->peer.board_addr == addr)) {
-			kref_get(&iface->refcount);
+			omx_iface_reacquire(iface);
 			rcu_read_unlock();
 			return iface;
 		}
@@ -668,7 +705,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 	}
 
 	/* take a reference on the iface and release the lock */
-	kref_get(&iface->refcount);
+	omx_iface_reacquire(iface);
 	rcu_read_unlock();
 
 	/* lock the list of endpoints in the iface */
@@ -825,7 +862,7 @@ omx_raw_attach_iface(uint32_t board_index, struct file * filp)
 	if (iface->raw.opener_file)
 		goto out_with_lock;
 
-	kref_get(&iface->refcount);
+	omx_iface_reacquire(iface);
 	rcu_assign_pointer(iface->raw.opener_file, filp);
 	rcu_assign_pointer(filp->private_data, iface);
 	iface->raw.opener_pid = current->pid;

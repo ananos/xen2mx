@@ -284,7 +284,7 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 			       iface->eth_ifp->name, ifacepeer->hostname, peer->hostname);
 
 			/* take a reference on the iface */
-			kref_get(&iface->refcount);
+			omx_iface_reacquire(iface);
 
 			/* board_addr already set */
 			ifacepeer->index = index;
