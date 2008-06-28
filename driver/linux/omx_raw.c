@@ -35,12 +35,18 @@
 /*
  * The raw interface exists when the file descriptor gets the OMX_CMD_RAW_OPEN_ENDPOINT
  * ioctl. It links the file private_data onto the iface and the iface raw.opener_file onto
- * the file. Starting from then, the fil owns a reference onto the iface.
+ * the file. Starting from then, the file owns a reference onto the iface.
  * The reference is released when the raw iface is closed, either by closing the file
  * descriptor, or by the underlying interface being removed by force.
- * Each regular raw ioctl gets a reference onto the iface first so that it can finish
- * proceedings while a closing is pending. Closing thus waits for RCU grace to end before
- * destroying the link between the file and the iface.
+ *
+ * Attaching or detaching a raw iface is done while holding the main ifaces_mutex which
+ * protects against multiple thread trying to attach to the same file.
+ *
+ * Other accesses to the raw iface (regular ioctls and the poll file operation) are
+ * protected by RCU locking. They get a reference onto the iface first so that they
+ * can finish proceedings while a closing is pending.
+ * Closing waits for RCU grace to end before releasing the main reference onto the iface
+ * so that RCU acquires have no chance of acquiring when the refcount is already 0.
  */
 
 #ifdef OMX_DRIVER_DEBUG
@@ -268,6 +274,85 @@ omx_raw_get_event(struct omx_iface * iface, void __user * uparam)
 	return 0;
 
  out:
+	return err;
+}
+
+/****************
+ * Raw Interface
+ */
+
+static int
+omx_raw_attach_iface(uint32_t board_index, struct file * filp)
+{
+	struct omx_iface * iface;
+	int err;
+
+	iface = omx_iface_find_by_index_lock(board_index);
+	err = -EINVAL;
+	if (!iface)
+		goto out;
+
+	err = -EBUSY;
+	if (filp->private_data)
+		goto out_with_lock;
+
+	if (iface->raw.opener_file)
+		goto out_with_lock;
+
+	omx_iface_reacquire(iface);
+	rcu_assign_pointer(iface->raw.opener_file, filp);
+	rcu_assign_pointer(filp->private_data, iface);
+	iface->raw.opener_pid = current->pid;
+	strncpy(iface->raw.opener_comm, current->comm, TASK_COMM_LEN);
+
+	omx_ifaces_unlock();
+	return 0;
+
+ out_with_lock:
+	omx_ifaces_unlock();
+ out:
+	return err;
+}
+
+/* Called with the iface array locked */
+void
+omx__raw_detach_iface_locked(struct omx_iface *iface)
+{
+	struct file *filp = iface->raw.opener_file;
+
+	if (filp) {
+		filp->private_data = NULL;
+		iface->raw.opener_file = NULL;
+		omx_raw_wakeup(iface);
+
+		/* wait for other people that dereferenced the raw iface to have acquired it before we release it */
+		synchronize_rcu();
+
+		omx_iface_release(iface);
+	}
+}
+
+static int
+omx_raw_detach_iface(struct file *filp)
+{
+	struct omx_iface * iface;
+	int err;
+
+	omx_ifaces_lock();
+
+	err = -EINVAL;
+	iface = filp->private_data;
+	if (!iface)
+		goto out_with_lock;
+
+	BUG_ON(!iface->raw.opener_file);
+	omx__raw_detach_iface_locked(iface);
+
+	omx_ifaces_unlock();
+	return 0;
+
+ out_with_lock:
+	omx_ifaces_unlock();
 	return err;
 }
 

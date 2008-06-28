@@ -86,10 +86,9 @@ omx_iface_reacquire(struct omx_iface * iface)
 	kref_get(&iface->refcount);
 }
 
-extern int omx_raw_attach_iface(uint32_t board_index, struct file *filp);
-extern int omx_raw_detach_iface(struct file *filp);
-extern void omx__raw_detach_iface_locked(struct omx_iface *iface);
-extern void omx_raw_wakeup(struct omx_iface *iface);
+extern void omx_ifaces_lock(void);
+extern void omx_ifaces_unlock(void);
+extern struct omx_iface * omx_iface_find_by_index_lock(int board_index);
 
 extern void omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *data);
 
@@ -102,6 +101,8 @@ extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);
 extern struct omx_iface * omx_iface_find_by_addr(uint64_t addr);
 extern int omx_iface_get_counters(uint8_t board_index, int clear, uint64_t buffer_addr, uint32_t buffer_length);
 extern int omx_iface_set_hostname(uint8_t board_index, char * hostname);
+
+extern void omx__raw_detach_iface_locked(struct omx_iface *iface);
 
 /* counters */
 #define omx_counter_inc(iface, index)		\

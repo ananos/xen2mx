@@ -4,6 +4,9 @@
   + stop allocating during the whole fd life?
   + drop free/init status?
 
+* drop the iface endpoint array mutex and use the big ifaces mutex?
+* drop the peer mutex as well since we have rcu everywhere?
+
 * take a ref onto the endpoint during ioctl since the file doesn't keep it after close ioctl
 
 * allow to probe across ctxids by adding a anyctxid unexpq
