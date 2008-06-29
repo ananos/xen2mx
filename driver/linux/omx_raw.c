@@ -360,6 +360,25 @@ omx_raw_detach_iface(struct file *filp)
  * Raw MiscDevice operations
  */
 
+static struct omx_iface *
+omx_acquire_iface_from_raw_file(struct file * file)
+{
+	struct omx_iface * iface;
+
+	rcu_read_lock();
+
+	iface = rcu_dereference(file->private_data);
+	if (unlikely(!iface || iface->status != OMX_IFACE_STATUS_OK)) {
+		rcu_read_unlock();
+		return NULL;
+	}
+	omx_iface_reacquire(iface);
+
+	rcu_read_unlock();
+
+	return iface;
+}
+
 static int
 omx_raw_miscdev_open(struct inode * inode, struct file * file)
 {
@@ -394,17 +413,10 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	}
 
 	case OMX_CMD_RAW_SEND: {
-		rcu_read_lock();
-
+		iface = omx_acquire_iface_from_raw_file(file);
 		err = -EBADF;
-		iface = rcu_dereference(file->private_data);
-		if (unlikely(!iface || iface->status != OMX_IFACE_STATUS_OK)) {
-			rcu_read_unlock();
+		if (!iface)
 			goto out;
-		}
-		omx_iface_reacquire(iface);
-
-		rcu_read_unlock();
 
 		err = omx_raw_send(iface, (void __user *) arg);
 
@@ -413,17 +425,10 @@ omx_raw_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	}
 
 	case OMX_CMD_RAW_GET_EVENT: {
-		rcu_read_lock();
-
+		iface = omx_acquire_iface_from_raw_file(file);
 		err = -EBADF;
-		iface = rcu_dereference(file->private_data);
-		if (unlikely(!iface || iface->status != OMX_IFACE_STATUS_OK)) {
-			rcu_read_unlock();
+		if (!iface)
 			goto out;
-		}
-		omx_iface_reacquire(iface);
-
-		rcu_read_unlock();
 
 		err = omx_raw_get_event(iface, (void __user *) arg);
 
@@ -447,17 +452,11 @@ omx_raw_miscdev_poll(struct file *file, struct poll_table_struct *wait)
 	struct omx_iface_raw *raw;
 	unsigned int mask = 0;
 
-	rcu_read_lock();
-
-	iface = rcu_dereference(file->private_data);
-	if (unlikely(!iface || iface->status != OMX_IFACE_STATUS_OK)) {
-		rcu_read_unlock();
+	iface = omx_acquire_iface_from_raw_file(file);
+	if (!iface) {
 		mask |= POLLERR;
 		goto out;
 	}
-	omx_iface_reacquire(iface);
-
-	rcu_read_unlock();
 
 	raw = &iface->raw;
 
