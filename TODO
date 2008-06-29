@@ -1,8 +1,11 @@
+* move most of the README into a http://open-mx.org/FAQ ?
+
 * cleanup endpoint acquiring/locking/closing again
   + synchronize_rcu before freeing after unlinking?
   + rcu_deference+acquire+check status during ioctl and network
   + stop allocating during the whole fd life?
   + drop free/init status?
+  + drop the status_lock
 
 * drop the iface endpoint array mutex and use the big ifaces mutex?
 * drop the peer mutex as well since we have rcu everywhere?

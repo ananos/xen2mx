@@ -9,6 +9,7 @@ Contents:
    V. Peer Discovery
     a. Dynamic peer discovery
     b. Static peer table
+    c. Deciding between omxoed, FMA and static peer table
   VI. Performance tuning
     a. Wire-compatibility
     b. Registration Cache
@@ -303,6 +304,24 @@ omx_init option.
 If Open-MX has been configured for dynamic peer discovery by default,
 the --static-peers omx_init option may also be used to switch to static
 peer table.
+
++---------------------------------------------------------
+| V.c. Deciding between omxoed, FMA and static peer table
+
+When mixing Open-MX an native MX hosts on the same fabric, it is required
+that the peer discovery processes are compatible. MX uses FMA by default,
+so Open-MX should be configured to use FMA in this case.
+If MX was specifically configured to use mxoed, then Open-MX may keep
+using its default discovery tool, omxoed, which is compatible with mxoed.
+
+FMA may also be much slower than omxoed on small networks. Since this
+is Open-MX' main use case, it is recommended to keep using the default
+configuration (i.e. use omxoed) unless the fabric contains some native
+MX hosts.
+
+Setting up a static peer table is faster than both FMA and omxoed but
+it obviously only works for statix fabric. Note that  it is possible to
+manually add some peers later using the omx_init_peers tool.
 
 
 ++========================++
