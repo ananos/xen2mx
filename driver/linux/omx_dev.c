@@ -616,7 +616,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		if (!capable(CAP_SYS_ADMIN))
 			goto out;
 
-		omx_peers_clear();
+		omx_peers_clear(0); /* clear all peers except the local ifaces */
 
 		ret = 0;
 		break;

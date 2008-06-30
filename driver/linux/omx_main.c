@@ -303,7 +303,6 @@ omx_init(void)
 	if (ret < 0)
 		goto out_with_driver_userdesc;
 
-
 	ret = omx_peers_init();
 	if (ret < 0)
 		goto out_with_dma;

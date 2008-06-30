@@ -27,7 +27,7 @@ struct omx_peer;
 
 extern int omx_peers_init(void);
 extern void omx_peers_exit(void);
-extern void omx_peers_clear(void);
+extern void omx_peers_clear(int local);
 extern void omx_peers_clear_names(void);
 extern void omx_peers_notify_iface_attach(struct omx_iface * iface);
 extern void omx_peers_notify_iface_detach(struct omx_iface * iface);

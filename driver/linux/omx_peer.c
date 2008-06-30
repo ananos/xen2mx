@@ -82,7 +82,7 @@ __omx_peer_rcu_free_callback(struct rcu_head *rcu_head)
 }
 
 void
-omx_peers_clear(void)
+omx_peers_clear(int local)
 {
 	int i;
 
@@ -97,10 +97,16 @@ omx_peers_clear(void)
 		if (!peer)
 			continue;
 
+		iface = peer->local_iface;
+		if (iface && !local) {
+			dprintk(PEER, "not clearing peer #%d of local iface %s (%s)\n",
+				peer->index, iface->eth_ifp->name, peer->hostname);
+			continue;
+		}
+
 		list_del_rcu(&peer->addr_hash_elt);
 		rcu_assign_pointer(omx_peer_array[i], NULL);
 
-		iface = peer->local_iface;
 		if (iface) {
 			dprintk(PEER, "detaching iface %s (%s) peer #%d\n",
 				iface->eth_ifp->name, peer->hostname, peer->index);
@@ -962,7 +968,7 @@ omx_peers_init(void)
 void
 omx_peers_exit(void)
 {
-	omx_peers_clear();
+	omx_peers_clear(1); /* clear all peers, including the local ifaces so that kref are released */
 	kfree(omx_peer_addr_hash_array);
 	vfree(omx_peer_array);
 	skb_queue_purge(&omx_host_query_list);
