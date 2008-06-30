@@ -1,3 +1,14 @@
+
+Major Enhancements:
+
+Other improvements from previous release:
+
+Caveats:
+* Queueing of requests in case of resource shortage is not perfect yet,
+  some requests may not be processed in order.
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 0.7.0 (June 27th 2008, svn r1806)
 =========================================
 The Binary Compatibility release.
@@ -18,12 +29,6 @@ Other improvements from previous release:
   provide ethtool ops.
 * Fix the init script to be called in all runlevels.
 * Add the ability to test/wait_any across multiple context ids.
-
-Caveats:
-* Queueing of requests in case of resource shortage is not perfect yet,
-  some requests may not be processed in order.
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 0.6.0 (May 20th 2008, svn r1727)
 ========================================
