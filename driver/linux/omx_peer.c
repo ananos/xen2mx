@@ -266,12 +266,14 @@ omx_peer_add(uint64_t board_addr, char *hostname)
  * Local Iface Management
  */
 
-void
+int
 omx_peers_notify_iface_attach(struct omx_iface * iface)
 {
 	struct omx_peer * oldpeer, * ifacepeer;
 	uint64_t board_addr;
+	uint32_t index;
 	uint8_t hash;
+	int err;
 
 	ifacepeer = &iface->peer;
 	board_addr = ifacepeer->board_addr;
@@ -281,7 +283,10 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 
 	list_for_each_entry(oldpeer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
 		if (oldpeer->board_addr == board_addr) {
-			uint32_t index = oldpeer->index;
+
+			/* the peer is already in the table, replace it */
+
+			index = oldpeer->index;
 
 			dprintk(PEER, "attaching local iface %s (%s) with address %012llx as peer #%d %s\n",
 				iface->eth_ifp->name, ifacepeer->hostname, (unsigned long long) board_addr,
@@ -313,11 +318,45 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 			rcu_assign_pointer(omx_peer_array[index], ifacepeer);
 			list_replace_rcu(&oldpeer->addr_hash_elt, &ifacepeer->addr_hash_elt);
 			call_rcu(&oldpeer->rcu_head, __omx_peer_rcu_free_callback);
-			break;
+
+			mutex_unlock(&omx_peers_mutex);
+			return 0;
 		}
 	}
 
+	/* the iface is not in the peer table yet, add it */
+
+	err = -ENOMEM;
+	if (omx_peer_next_nr == omx_peer_max)
+		goto out_with_mutex;
+
+	/* this is a new peer, allocate an index and hash it */
+	index = omx_peer_next_nr;
+	list_add_tail_rcu(&ifacepeer->addr_hash_elt, &omx_peer_addr_hash_array[hash]);
+	rcu_assign_pointer(omx_peer_array[omx_peer_next_nr], ifacepeer);
+	omx_peer_next_nr++;
+
+	/* board_addr already set */
+	ifacepeer->local_iface = iface;
+	ifacepeer->index = index;
+	ifacepeer->reverse_index = index;
+
+	dprintk(PEER, "attaching local iface %s (%s) with address %012llx as new peer #%d\n",
+		iface->eth_ifp->name, ifacepeer->hostname, (unsigned long long) board_addr, index);
+
+	/* take a reference on the iface */
+	omx_iface_reacquire(iface);
+
+	/* no need to host query */
+
+	rcu_assign_pointer(omx_peer_array[index], ifacepeer);
+
 	mutex_unlock(&omx_peers_mutex);
+	return 0;
+
+ out_with_mutex:
+	mutex_unlock(&omx_peers_mutex);
+	return err;
 }
 
 void

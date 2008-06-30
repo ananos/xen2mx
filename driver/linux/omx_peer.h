@@ -29,7 +29,7 @@ extern int omx_peers_init(void);
 extern void omx_peers_exit(void);
 extern void omx_peers_clear(int local);
 extern void omx_peers_clear_names(void);
-extern void omx_peers_notify_iface_attach(struct omx_iface * iface);
+extern int omx_peers_notify_iface_attach(struct omx_iface * iface);
 extern void omx_peers_notify_iface_detach(struct omx_iface * iface);
 extern int omx_peer_add(uint64_t board_addr, char *hostname);
 extern void omx_peer_set_reverse_index_locked(struct omx_peer *peer, uint16_t reverse_index);
