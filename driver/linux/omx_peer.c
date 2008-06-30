@@ -263,7 +263,7 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 void
 omx_peers_notify_iface_attach(struct omx_iface * iface)
 {
-	struct omx_peer * peer, * ifacepeer;
+	struct omx_peer * oldpeer, * ifacepeer;
 	uint64_t board_addr;
 	uint8_t hash;
 
@@ -273,15 +273,15 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 
 	mutex_lock(&omx_peers_mutex);
 
-	list_for_each_entry(peer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
-		if (peer->board_addr == board_addr) {
-			uint32_t index = peer->index;
+	list_for_each_entry(oldpeer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
+		if (oldpeer->board_addr == board_addr) {
+			uint32_t index = oldpeer->index;
 
 			dprintk(PEER, "attaching local iface %s (%s) with address %012llx as peer #%d %s\n",
 				iface->eth_ifp->name, ifacepeer->hostname, (unsigned long long) board_addr,
-				index, peer->hostname);
+				index, oldpeer->hostname);
 			printk(KERN_INFO "Open-MX: Renaming new iface %s (%s) into peer name %s\n",
-			       iface->eth_ifp->name, ifacepeer->hostname, peer->hostname);
+			       iface->eth_ifp->name, ifacepeer->hostname, oldpeer->hostname);
 
 			/* take a reference on the iface */
 			omx_iface_reacquire(iface);
@@ -292,21 +292,21 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 			ifacepeer->local_iface = iface;
 
 			/* replace the iface hostname with the one from the peer table if it exists */
-			if (peer->hostname) {
+			if (oldpeer->hostname) {
 				char * ifacename = ifacepeer->hostname;
-				ifacepeer->hostname = peer->hostname;
+				ifacepeer->hostname = oldpeer->hostname;
 				kfree(ifacename);
 
 				/* make sure call_rcu won't free the new hostname */
-				peer->hostname = NULL;
+				oldpeer->hostname = NULL;
 			} else {
-				list_del(&peer->host_query_list_elt);
+				list_del(&oldpeer->host_query_list_elt);
 				dprintk(PEER, "peer does not need host query anymore\n");
 			}
 
 			rcu_assign_pointer(omx_peer_array[index], ifacepeer);
-			list_replace_rcu(&peer->addr_hash_elt, &ifacepeer->addr_hash_elt);
-			call_rcu(&peer->rcu_head, __omx_peer_rcu_free_callback);
+			list_replace_rcu(&oldpeer->addr_hash_elt, &ifacepeer->addr_hash_elt);
+			call_rcu(&oldpeer->rcu_head, __omx_peer_rcu_free_callback);
 			break;
 		}
 	}
