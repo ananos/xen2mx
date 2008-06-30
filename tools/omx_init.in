@@ -36,7 +36,7 @@ if test ! -d ${OMX_PREFIX}; then
     exit 1
 fi
 
-if test -f ${OMX_CONFIG}; then
+if test -r ${OMX_CONFIG}; then
     . ${OMX_CONFIG}
 fi
 
@@ -147,7 +147,7 @@ load_omx() {
 start_peer_discovery() {
     if test ${OMX_STATIC_MAPPING} -eq 1 ; then
 	# initialize peers
-	if test -f ${OMX_PEERS_FILE}; then
+	if test -r ${OMX_PEERS_FILE}; then
 	    echo "Initializing peers using file '${OMX_PEERS_FILE}'"
 	    ${OMX_PREFIX}/bin/omx_init_peers -c "${OMX_PEERS_FILE}"
 	else

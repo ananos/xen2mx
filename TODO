@@ -1,3 +1,5 @@
+* auto add local ifaces to the peer at startup and when clearing?
+
 * move most of the README into a http://open-mx.org/FAQ ?
 
 * cleanup endpoint acquiring/locking/closing again
