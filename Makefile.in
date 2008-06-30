@@ -10,6 +10,7 @@ ifeq ($(OMX_CONFIGURED),1)
   include @abs_top_srcdir@/common.mk
 endif
 
+CC	=	@CC@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 SED	=	@SED@

@@ -2,6 +2,8 @@
 Major Enhancements:
 
 Other improvements from previous release:
+* Fix cross-compilation when the cross-compiler is given at
+  build and not at configure time.
 
 Caveats:
 * Queueing of requests in case of resource shortage is not perfect yet,

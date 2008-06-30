@@ -11,7 +11,7 @@ OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 TOOLS	=	$(subst .o,,$(OBJS))
 
 CC	=	@CC@
-LD	=	@CC@ #FIXME
+LD	=	$(CC) #FIXME
 MKDIR_P	=	@MKDIR_P@
 SED	=	@SED@
 INSTALL	=	@INSTALL@

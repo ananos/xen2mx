@@ -7,7 +7,7 @@ include @abs_top_srcdir@/common.mk
 REL_DIR	=	$(omx_build_lib_dir)/
 
 CC	=	@CC@
-SHARED_LD	=	@CC@ --shared #FIXME?
+SHARED_LD	=	$(CC) --shared #FIXME?
 AR	=	@AR@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
