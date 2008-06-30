@@ -141,8 +141,8 @@ MODULE_PARM_DESC(raw_packet_loss, "Explicit raw packet loss frequency");
  * Main Module Init/Exit
  */
 
-#ifdef SVN_VERSION
-#define VERSION PACKAGE_VERSION " (svn" SVN_VERSION ")"
+#ifdef SRC_VERSION
+#define VERSION PACKAGE_VERSION " (" SRC_VERSION ")"
 #else
 #define VERSION PACKAGE_VERSION
 #endif

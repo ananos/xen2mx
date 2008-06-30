@@ -1,11 +1,17 @@
-SVN_VERSION	=	$(shell test -d @abs_srcdir@/.svn/ && which svn >/dev/null && svn info @abs_srcdir@ | sed -n -e 's/^Revision: //p' 2>/dev/null)
+ifneq ($(shell test -d @abs_srcdir@/.svn/ && which svn),)
+	SRC_VERSION	=	svn r$(shell svn info @abs_srcdir@ | sed -n -e 's/^Revision: //p' 2>/dev/null)
+else
+ifneq ($(shell test -d @abs_top_srcdir@/.git/ && which git),)
+	SRC_VERSION	=	git-svn r$(shell GIT_DIR=@abs_top_srcdir@/.git/ git log | grep git-svn-id: | head -1 | sed -r -e 's/.*@(.+) .*/\1/')
+endif
+endif
 
 EXTRA_CFLAGS	+=	-include @abs_top_builddir@/common/omx_config.h
 EXTRA_CFLAGS	+=	-include @abs_top_builddir@/driver/linux/omx_checks.h
 EXTRA_CFLAGS	+=	-include @abs_top_builddir@/driver/linux/omx_debug.h
 EXTRA_CFLAGS	+=	-I@abs_top_srcdir@/common/
-ifneq ($(SVN_VERSION),)
-  EXTRA_CFLAGS	+=	-DSVN_VERSION=\"$(SVN_VERSION)\"
+ifneq ($(SRC_VERSION),)
+  EXTRA_CFLAGS	+=	-DSRC_VERSION="\"$(SRC_VERSION)\""
 endif
 ifeq (@OMX_DRIVER_PROFILING@,1)
   EXTRA_CFLAGS	+=	-g
