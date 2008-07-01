@@ -153,7 +153,7 @@ fi
 ########################
 # Kernel related config
 
-AC_ARG_VAR(KCC, [Compiler for building the Open-MX kernel module (default is CC)])
+AC_ARG_VAR(KCC, [Compiler for building the Open-MX kernel module])
 
 if test x$build_driver = xyes ; then
 
