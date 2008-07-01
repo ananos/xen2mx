@@ -1,5 +1,3 @@
-* move most of the README into a http://open-mx.org/FAQ ?
-
 * cleanup endpoint acquiring/locking/closing again
   + synchronize_rcu before freeing after unlinking
   + rcu_deference+acquire+check status during ioctl and network
