@@ -183,6 +183,7 @@ omx__partner_check_localization(struct omx__partner * partner, int shared)
 
   if (partner->localization == OMX__PARTNER_LOCALIZATION_UNKNOWN) {
     partner->localization = localization;
+    partner->rndv_threshold = shared ? omx__globals.shared_rndv_threshold : omx__globals.rndv_threshold;
     if (shared)
       omx__debug_printf(CONNECT, "Using shared communication for partner index %d\n", (unsigned) partner->peer_index);
   } else {
@@ -285,6 +286,7 @@ omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
   maybe_shared = omx__globals.sharedcomms;
 #endif
   ep->myself->localization = (maybe_self || maybe_shared) ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
+  ep->myself->rndv_threshold = (maybe_self || maybe_shared) ? omx__globals.shared_rndv_threshold : omx__globals.rndv_threshold;
 
   return OMX_SUCCESS;
 }

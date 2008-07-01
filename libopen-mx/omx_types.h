@@ -109,6 +109,7 @@ struct omx__partner {
   uint16_t peer_index;
   uint8_t endpoint_index;
   uint8_t localization;
+  uint16_t rndv_threshold;
 
   /* the main session id, obtained from the our actual connect */
   uint32_t true_session_id;
@@ -495,6 +496,8 @@ struct omx__globals {
 #ifndef OMX_DISABLE_SHARED
   int sharedcomms;
 #endif
+  unsigned rndv_threshold;
+  unsigned shared_rndv_threshold;
   unsigned ack_delay_jiffies;
   unsigned resend_delay_jiffies;
   unsigned req_resends_max;

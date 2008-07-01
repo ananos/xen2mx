@@ -704,7 +704,7 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
     omx__submit_or_queue_isend_tiny(ep, req, partner);
   } else if (length <= OMX_SMALL_MAX) {
     omx__submit_or_queue_isend_small(ep, req, partner);
-  } else if (length <= OMX_MEDIUM_MAX) {
+  } else if (length <= partner->rndv_threshold) {
     omx__submit_or_queue_isend_medium(ep, req, partner);
   } else {
     omx__submit_or_queue_isend_large(ep, req, partner);
@@ -1000,7 +1000,7 @@ omx__send_throttling_requests(struct omx_endpoint *ep, struct omx__partner *part
       omx__submit_or_queue_isend_tiny(ep, req, partner);
     } else if (length <= OMX_SMALL_MAX) {
       omx__submit_or_queue_isend_small(ep, req, partner);
-    } else if (length <= OMX_MEDIUM_MAX) {
+    } else if (length <= partner->rndv_threshold) {
       omx__submit_or_queue_isend_medium(ep, req, partner);
     } else {
       omx__submit_or_queue_isend_large(ep, req, partner);

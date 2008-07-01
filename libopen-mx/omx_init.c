@@ -193,6 +193,36 @@ omx__init_api(int app_api)
   }
 #endif /* OMX_DISABLE_SHARED */
 
+  /******************
+   * Rndv thresholds
+   */
+
+  omx__globals.rndv_threshold = OMX_MEDIUM_MAX;
+
+#ifndef OMX_DISABLE_SHARED
+  /* must be AFTER sharedcomms init */
+  if (omx__globals.sharedcomms) {
+    omx__globals.shared_rndv_threshold = 4096;
+    env = getenv("OMX_SHARED_RNDV_THRESHOLD");
+    if (env) {
+      int val = atoi(env);
+      if (val < OMX_SMALL_MAX) {
+	omx__verbose_printf("Cannot set a rndv threshold to less than %d\n",
+			    OMX_SMALL_MAX);
+	val = OMX_SMALL_MAX;
+      }
+      if (val > OMX_MEDIUM_MAX) {
+	omx__verbose_printf("Cannot set a rndv threshold to more than %d\n",
+			    OMX_MEDIUM_MAX);
+	val = OMX_MEDIUM_MAX;
+      }
+      omx__globals.shared_rndv_threshold = val;
+      omx__verbose_printf("Forcing shared rndv threshold to %d\n",
+			  omx__globals.shared_rndv_threshold);
+    }
+  }
+#endif /* OMX_DISABLE_SHARED */
+
   /*******************************
    * Retransmission configuration
    */

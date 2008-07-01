@@ -635,6 +635,11 @@ OMX_DISABLE_SHARED=1
 	Disable software loopback between endpoints of the same node.
   Shared software loopback is enabled by default.
 
+OMX_SHARED_RNDV_THRESHOLD=4096
+	Set the rendezvous threshold for shared communication.
+  Native networking switches from eager to rendezvous at 32kB while
+  shared communication switches at 4kB by default.
+
 OMX_RCACHE=1
 	Enable registration cache.
   The registration cache is disabled by default.
