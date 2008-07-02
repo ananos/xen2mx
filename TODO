@@ -1,3 +1,6 @@
+* defer pinning for shared rndv and add a routine to poll until enough is pinned in source of shared pull
+* combine pinning of ioat destination and ioat submit
+
 * cleanup endpoint acquiring/locking/closing again
   + synchronize_rcu before freeing after unlinking
   + rcu_deference+acquire+check status during ioctl and network
