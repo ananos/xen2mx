@@ -61,6 +61,10 @@ int omx_skb_copy_max = 0;
 module_param_named(skbcopy, omx_skb_copy_max, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(skbcopy, "Maximum length of data to copy in linear skb instead of attaching pages");
 
+int omx_deferred_region_pin = 0;
+module_param_named(deferredpin, omx_deferred_region_pin, uint, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(deferredpin, "Defer user region pinning");
+
 #ifdef CONFIG_NET_DMA
 int omx_dmaengine = 0; /* disabled by default for now */
 module_param_call(dmaengine, omx_set_dmaengine, param_get_uint, &omx_dmaengine, S_IRUGO|S_IWUSR);

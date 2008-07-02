@@ -612,6 +612,13 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+	/* make sure the region is pinned */
+	err = omx_user_region_pin(region, 1 /* FIXME: no overlap yet */, cmd->local_offset + cmd->length);
+	if (err < 0) {
+		dprintk(REG, "failed to pin user region\n");
+		goto out_with_region;
+	}
+
 	/* alloc the pull handle */
 	handle = kmalloc(sizeof(struct omx_pull_handle), GFP_KERNEL);
 	if (unlikely(!handle)) {

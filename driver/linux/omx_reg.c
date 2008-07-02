@@ -267,11 +267,13 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 	region->status = OMX_USER_REGION_STATUS_NOT_PINNED;
 	region->total_registered_length = 0;
 
-	/* pin the region */
-	ret = omx_user_region_pin(region, 1, region->total_length);
-	if (ret < 0) {
-		dprintk(REG, "failed to pin user region\n");
-		goto out_with_region;
+	if (!omx_deferred_region_pin) {
+		/* pin the region */
+		ret = omx_user_region_pin(region, 1, region->total_length);
+		if (ret < 0) {
+			dprintk(REG, "failed to pin user region\n");
+			goto out_with_region;
+		}
 	}
 
 	spin_lock(&endpoint->user_regions_lock);

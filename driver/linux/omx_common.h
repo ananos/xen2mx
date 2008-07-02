@@ -40,6 +40,7 @@ extern int omx_peer_max;
 extern int omx_skb_frags;
 extern int omx_skb_copy_max;
 extern int omx_copybench;
+extern int omx_deferred_region_pin;
 
 /* events */
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);

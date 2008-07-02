@@ -432,10 +432,19 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 	enum omx_nack_type nack_type = OMX_NACK_TYPE_NONE;
 	int err;
 
+	/* get our region */
 	src_region = omx_user_region_acquire(src_endpoint, hdr->local_rdma_id);
 	if (!src_region) {
 		/* source region is invalid, return an immediate error */
 		err = -EINVAL;
+		goto out;
+	}
+
+	/* make sure our region is pinned */
+	err = omx_user_region_pin(src_region, 1 /* FIXME: no overlap yet */, hdr->local_offset + hdr->length);
+	if (err < 0) {
+		dprintk(REG, "failed to pin user region\n");
+		omx_user_region_release(src_region);
 		goto out;
 	}
 

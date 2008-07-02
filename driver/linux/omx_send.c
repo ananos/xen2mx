@@ -26,6 +26,7 @@
 #include "omx_common.h"
 #include "omx_iface.h"
 #include "omx_peer.h"
+#include "omx_reg.h"
 #include "omx_endpoint.h"
 #ifndef OMX_DISABLE_SHARED
 #include "omx_shared.h"
@@ -574,6 +575,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_rndv_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
+	struct omx_user_region * region;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
 	char * data;
 	int ret;
@@ -593,6 +595,20 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		ret = -EINVAL;
 		goto out;
 	}
+
+	/* make sure the region is pinned */
+	region = omx_user_region_acquire(endpoint, cmd.user_region_id_needed);
+	if (unlikely(!region)) {
+		ret = -EINVAL;
+		goto out;
+	}
+	ret = omx_user_region_pin(region, 1 /* FIXME: no overlap yet */, region->total_length /* FIXME: could be shortened */);
+	if (ret < 0) {
+		dprintk(REG, "failed to pin user region\n");
+		omx_user_region_release(region);
+		goto out;
+	}
+	omx_user_region_release(region);
 
 #ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))

@@ -91,6 +91,8 @@ extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
 extern int omx_ioctl_user_region_create(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint, void __user * uparam);
 
+extern int omx_user_region_pin(struct omx_user_region * region, int wait, unsigned long needed);
+
 extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
 extern void __omx_user_region_last_release(struct kref * kref);
 

@@ -549,6 +549,7 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   rndv_param->hdr.length = sizeof(struct omx__rndv_data);
   rndv_param->hdr.seqnum = req->generic.send_seqnum;
   rndv_param->hdr.session_id = partner->true_session_id;
+  rndv_param->hdr.user_region_id_needed = region->id;
 
   OMX_PKT_FIELD_FROM(data_n->msg_length, length);
   OMX_PKT_FIELD_FROM(data_n->rdma_id, region->id);
