@@ -38,14 +38,14 @@
 #endif
 
 /********************************************
- * Low-level segments and pages registration
+ * Low-level segments and pages manipulation
  */
 
 #define OMX_REGION_VMALLOC_NR_PAGES_THRESHOLD 4096
 
 static int
-omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
-				 struct omx_user_region_segment * segment)
+omx_user_region_add_segment(struct omx_cmd_user_region_segment * useg,
+			    struct omx_user_region_segment * segment)
 {
 	unsigned long usegvaddr = useg->vaddr;
 	unsigned long useglen = useg->len;
@@ -98,7 +98,7 @@ omx_user_region_register_segment(struct omx_cmd_region_segment * useg,
 }
 
 static void
-omx_user_region_deregister_segment(struct omx_user_region_segment * segment)
+omx_user_region_destroy_segment(struct omx_user_region_segment * segment)
 {
 	unsigned long i;
 
@@ -112,7 +112,7 @@ omx_user_region_deregister_segment(struct omx_user_region_segment * segment)
 }
 
 static void
-omx_user_region_deregister_segments(struct omx_user_region * region)
+omx_user_region_destroy_segments(struct omx_user_region * region)
 {
 	int i;
 
@@ -120,38 +120,38 @@ omx_user_region_deregister_segments(struct omx_user_region * region)
 		might_sleep();
 
 	for(i=0; i<region->nr_segments; i++)
-		omx_user_region_deregister_segment(&region->segments[i]);
+		omx_user_region_destroy_segment(&region->segments[i]);
 }
 
-/**********************
- * Region registration
+/******************
+ * Region creation
  */
 
 int
-omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
-			       void __user * uparam)
+omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
+			     void __user * uparam)
 {
-	struct omx_cmd_register_region cmd;
+	struct omx_cmd_create_user_region cmd;
 	struct omx_user_region * region;
 	struct omx_user_region_segment *seg;
-	struct omx_cmd_region_segment * usegs;
+	struct omx_cmd_user_region_segment * usegs;
 	int ret, i;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read register region cmd\n");
+		printk(KERN_ERR "Open-MX: Failed to read create region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	if (unlikely(cmd.id >= OMX_USER_REGION_MAX)) {
-		printk(KERN_ERR "Open-MX: Cannot register invalid region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot create invalid region %d\n", cmd.id);
 		ret = -EINVAL;
 		goto out;
 	}
 
 	/* get the list of segments */
-	usegs = kmalloc(sizeof(struct omx_cmd_region_segment) * cmd.nr_segments,
+	usegs = kmalloc(sizeof(struct omx_cmd_user_region_segment) * cmd.nr_segments,
 			GFP_KERNEL);
 	if (unlikely(!usegs)) {
 		printk(KERN_ERR "Open-MX: Failed to allocate segments for user region\n");
@@ -160,9 +160,9 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 	}
 
 	ret = copy_from_user(usegs, (void __user *)(unsigned long) cmd.segments,
-			     sizeof(struct omx_cmd_region_segment) * cmd.nr_segments);
+			     sizeof(struct omx_cmd_user_region_segment) * cmd.nr_segments);
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read register region cmd\n");
+		printk(KERN_ERR "Open-MX: Failed to read create region cmd\n");
 		ret = -EFAULT;
 		goto out_with_usegs;
 	}
@@ -181,17 +181,17 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 	region->total_length = 0;
 	region->nr_vmalloc_segments = 0;
 
-	/* keep nr_segments exact so that we may call omx__deregister_user_region safely */
+	/* keep nr_segments exact so that we may call omx_user_region_destroy_segments safely */
 	region->nr_segments = 0;
 
 	down_write(&current->mm->mmap_sem);
 
 	for(i=0, seg = &region->segments[0]; i<cmd.nr_segments; i++) {
-		dprintk(REG, "register looking at useg %d len %lld\n",
+		dprintk(REG, "create region looking at useg %d len %lld\n",
 			i, (unsigned long long) usegs[i].len);
 		if (!usegs[i].len)
 			continue;
-		ret = omx_user_region_register_segment(&usegs[i], seg);
+		ret = omx_user_region_add_segment(&usegs[i], seg);
 		if (unlikely(ret < 0)) {
 			up_write(&current->mm->mmap_sem);
 			goto out_with_region;
@@ -200,7 +200,7 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 			region->nr_vmalloc_segments++;
 		region->nr_segments++;
 		region->total_length += seg->length;
-		dprintk(REG, "register added new seg #%ld, total %ld length %ld\n",
+		dprintk(REG, "create region added new seg #%ld, total %ld length %ld\n",
 			(unsigned long) (seg-&region->segments[0]),
 			(unsigned long) region->nr_segments, region->total_length);
 		seg++;
@@ -211,7 +211,7 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 	spin_lock(&endpoint->user_regions_lock);
 
 	if (unlikely(endpoint->user_regions[cmd.id] != NULL)) {
-		printk(KERN_ERR "Open-MX: Cannot register busy region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot create busy region %d\n", cmd.id);
 		ret = -EBUSY;
 		spin_unlock(&endpoint->user_regions_lock);
 		goto out_with_region;
@@ -227,7 +227,7 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 	return 0;
 
  out_with_region:
-	omx_user_region_deregister_segments(region);
+	omx_user_region_destroy_segments(region);
 	kfree(region);
  out_with_usegs:
 	kfree(usegs);
@@ -235,8 +235,8 @@ omx_ioctl_user_region_register(struct omx_endpoint * endpoint,
 	return ret;
 }
 
-/************************
- * Region deregistration
+/********************
+ * Region destroying
  */
 
 /* vfree cannot be called from BH, so we just
@@ -260,7 +260,7 @@ __omx_user_region_last_release(struct kref * kref)
 		list_add_tail(&region->cleanup_list_elt, &omx_regions_cleanup_list);
 		spin_unlock_bh(&omx_regions_cleanup_lock);
 	} else {
-		omx_user_region_deregister_segments(region);
+		omx_user_region_destroy_segments(region);
 		kfree(region);
 	}
 }
@@ -279,7 +279,7 @@ omx_user_regions_cleanup(void)
 
 	/* and now free all regions without needing any lock */
 	list_for_each_entry_safe(region, next, &private_head, cleanup_list_elt) {
-		omx_user_region_deregister_segments(region);
+		omx_user_region_destroy_segments(region);
 		list_del(&region->cleanup_list_elt);
 		kfree(region);
 	}
@@ -293,23 +293,23 @@ __omx_user_region_rcu_release_callback(struct rcu_head *rcu_head)
 }
 
 int
-omx_ioctl_user_region_deregister(struct omx_endpoint * endpoint,
-			         void __user * uparam)
+omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint,
+			      void __user * uparam)
 {
-	struct omx_cmd_deregister_region cmd;
+	struct omx_cmd_destroy_user_region cmd;
 	struct omx_user_region * region;
 	int ret;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read deregister region cmd\n");
+		printk(KERN_ERR "Open-MX: Failed to read destroy region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	ret = -EINVAL;
 	if (unlikely(cmd.id >= OMX_USER_REGION_MAX)) {
-		printk(KERN_ERR "Open-MX: Cannot deregister invalid region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot destroy invalid region %d\n", cmd.id);
 		goto out;
 	}
 
@@ -317,7 +317,7 @@ omx_ioctl_user_region_deregister(struct omx_endpoint * endpoint,
 
 	region = endpoint->user_regions[cmd.id];
 	if (unlikely(!region)) {
-		printk(KERN_ERR "Open-MX: Cannot deregister unexisting region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot destroy unexisting region %d\n", cmd.id);
 		goto out_with_endpoint_lock;
 	}
 
@@ -392,7 +392,7 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 		if (!region)
 			continue;
 
-		dprintk(REG, "forcing deregister of window %d on endpoint %d board %d\n",
+		dprintk(REG, "forcing destroy of window %d on endpoint %d board %d\n",
 			i, endpoint->endpoint_index, endpoint->board_index);
 
 		rcu_assign_pointer(endpoint->user_regions[i], NULL);

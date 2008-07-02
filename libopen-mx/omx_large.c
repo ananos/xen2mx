@@ -132,7 +132,7 @@ static INLINE omx_return_t
 omx__register_region(struct omx_endpoint *ep,
 		     struct omx__large_region *region)
 {
-  struct omx_cmd_register_region reg;
+  struct omx_cmd_create_user_region reg;
   omx_return_t ret = OMX_SUCCESS;
   int err;
 
@@ -142,11 +142,11 @@ omx__register_region(struct omx_endpoint *ep,
   reg.memory_context = 0ULL; /* FIXME */
   reg.segments = (uintptr_t) region->segs;
 
-  err = ioctl(ep->fd, OMX_CMD_REGISTER_REGION, &reg);
+  err = ioctl(ep->fd, OMX_CMD_CREATE_USER_REGION, &reg);
   if (unlikely(err < 0)) {
     omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
 				       OMX_SUCCESS,
-				       "register region %d", region->id);
+				       "create user region %d", region->id);
     ret = OMX_INTERNAL_NEED_RETRY;
   }
 
@@ -158,14 +158,14 @@ static INLINE void
 omx__deregister_region(struct omx_endpoint *ep,
 		       struct omx__large_region *region)
 {
-  struct omx_cmd_deregister_region dereg;
+  struct omx_cmd_destroy_user_region dereg;
   int err;
 
   dereg.id = region->id;
 
-  err = ioctl(ep->fd, OMX_CMD_DEREGISTER_REGION, &dereg);
+  err = ioctl(ep->fd, OMX_CMD_DESTROY_USER_REGION, &dereg);
   if (unlikely(err < 0))
-    omx__ioctl_errno_to_return_checked(OMX_SUCCESS, "deregister region %d", region->id);
+    omx__ioctl_errno_to_return_checked(OMX_SUCCESS, "destroy user region %d", region->id);
 }
 
 /***************************
@@ -211,7 +211,7 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
 
 static omx_return_t
 omx__create_region(struct omx_endpoint *ep,
-		   struct omx_cmd_region_segment *segs, uint32_t nseg,
+		   struct omx_cmd_user_region_segment *segs, uint32_t nseg,
 		   uint16_t offset,
 		   struct omx__large_region **regionp)
 {
@@ -249,7 +249,7 @@ omx__get_contigous_region(struct omx_endpoint *ep,
 			  void *reserver)
 {
   struct omx__large_region *region = NULL;
-  struct omx_cmd_region_segment *rsegs;
+  struct omx_cmd_user_region_segment *rsegs;
   omx_return_t ret;
   uint64_t vaddr;
   uint64_t rdma_length;
@@ -321,7 +321,7 @@ omx__get_vect_region(struct omx_endpoint *ep,
 		     void *reserver)
 {
   struct omx__large_region *region = NULL;
-  struct omx_cmd_region_segment *segs;
+  struct omx_cmd_user_region_segment *segs;
   uint32_t nseg = reqsegs->nseg;
   omx_return_t ret;
   int i;

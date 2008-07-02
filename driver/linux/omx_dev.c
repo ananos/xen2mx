@@ -425,8 +425,8 @@ static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_NOTIFY)]		= omx_ioctl_send_notify,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_CONNECT)]	       	= omx_ioctl_send_connect,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_TRUC)]		= omx_ioctl_send_truc,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_REGISTER_REGION)]	= omx_ioctl_user_region_register,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_DEREGISTER_REGION)]	= omx_ioctl_user_region_deregister,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_CREATE_USER_REGION)]   	= omx_ioctl_user_region_create,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_DESTROY_USER_REGION)]	= omx_ioctl_user_region_destroy,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAKEUP)]		= omx_ioctl_wakeup,
 };
@@ -716,8 +716,8 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_SEND_NOTIFY:
 	case OMX_CMD_SEND_CONNECT:
 	case OMX_CMD_SEND_TRUC:
-	case OMX_CMD_REGISTER_REGION:
-	case OMX_CMD_DEREGISTER_REGION:
+	case OMX_CMD_CREATE_USER_REGION:
+	case OMX_CMD_DESTROY_USER_REGION:
 	case OMX_CMD_WAIT_EVENT:
 	case OMX_CMD_WAKEUP:
 	{

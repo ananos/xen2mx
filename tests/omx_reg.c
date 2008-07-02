@@ -35,8 +35,8 @@ do_register(int fd, int id,
 	   void * buffer1, unsigned long len1,
 	   void * buffer2, unsigned long len2)
 {
-  struct omx_cmd_region_segment seg[2];
-  struct omx_cmd_register_region reg;
+  struct omx_cmd_user_region_segment seg[2];
+  struct omx_cmd_create_user_region reg;
 
   seg[0].vaddr = (uintptr_t) buffer1;
   seg[0].len = len1;
@@ -48,15 +48,15 @@ do_register(int fd, int id,
   reg.memory_context = 0ULL; /* unused for now */
   reg.segments = (uintptr_t) seg;
 
-  return ioctl(fd, OMX_CMD_REGISTER_REGION, &reg);
+  return ioctl(fd, OMX_CMD_CREATE_USER_REGION, &reg);
 }
 
 static inline int
 do_deregister(int fd, int id)
 {
-  struct omx_cmd_deregister_region dereg;
+  struct omx_cmd_destroy_user_region dereg;
   dereg.id = id;
-  return ioctl(fd, OMX_CMD_DEREGISTER_REGION, &dereg);
+  return ioctl(fd, OMX_CMD_DESTROY_USER_REGION, &dereg);
 }
 
 int main(void)

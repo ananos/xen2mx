@@ -49,7 +49,7 @@ struct omx__large_region_map {
       int use_count;
       uint8_t id;
       uint8_t last_seqnum;
-      struct omx_cmd_region_segment *segs;
+      struct omx_cmd_user_region_segment *segs;
       uint32_t nseg;
       uint16_t offset;
       void * reserver; /* single object that can be assigned (used for rndv/notify), while multiple pull may be pending */

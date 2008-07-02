@@ -81,7 +81,7 @@
 #define OMX_USER_REGION_MAX	256
 typedef uint8_t omx_user_region_id_t;
 
-struct omx_cmd_region_segment {
+struct omx_cmd_user_region_segment {
 	uint64_t vaddr;
 	/* 8 */
 	uint64_t len;
@@ -395,7 +395,7 @@ struct omx_cmd_send_truc {
 	/* 48 */
 };
 
-struct omx_cmd_register_region {
+struct omx_cmd_create_user_region {
 	uint32_t nr_segments;
 	uint32_t id;
 	/* 8 */
@@ -408,7 +408,7 @@ struct omx_cmd_register_region {
 	/* 32 */
 };
 
-struct omx_cmd_deregister_region {
+struct omx_cmd_destroy_user_region {
 	uint32_t id;
 	uint32_t pad;
 	/* 8 */
@@ -496,8 +496,8 @@ struct omx_cmd_bench {
 #define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x86, struct omx_cmd_send_notify)
 #define OMX_CMD_SEND_CONNECT		_IOR(OMX_CMD_MAGIC, 0x87, struct omx_cmd_send_connect)
 #define OMX_CMD_SEND_TRUC		_IOR(OMX_CMD_MAGIC, 0x88, struct omx_cmd_send_truc)
-#define OMX_CMD_REGISTER_REGION		_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_register_region)
-#define OMX_CMD_DEREGISTER_REGION	_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_deregister_region)
+#define OMX_CMD_CREATE_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_create_user_region)
+#define OMX_CMD_DESTROY_USER_REGION		_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_destroy_user_region)
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8b, struct omx_cmd_wait_event)
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_wakeup)
 
@@ -555,10 +555,10 @@ omx_strcmd(unsigned cmd)
 		return "Send Connect";
 	case OMX_CMD_SEND_TRUC:
 		return "Send Truc";
-	case OMX_CMD_REGISTER_REGION:
-		return "Register Region";
-	case OMX_CMD_DEREGISTER_REGION:
-		return "Deregister Region";
+	case OMX_CMD_CREATE_USER_REGION:
+		return "Create User Region";
+	case OMX_CMD_DESTROY_USER_REGION:
+		return "Destroy User Region";
 	case OMX_CMD_WAIT_EVENT:
 		return "Wait Event";
 	case OMX_CMD_WAKEUP:

@@ -38,6 +38,7 @@ struct omx_user_region {
 
 	unsigned nr_segments;
 	unsigned long total_length;
+
 	struct omx_user_region_segment {
 		unsigned first_page_offset;
 		unsigned long length;
@@ -75,10 +76,13 @@ struct omx_user_region_offset_cache {
 
 extern void omx_endpoint_user_regions_init(struct omx_endpoint * endpoint);
 extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
-extern int omx_ioctl_user_region_register(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_ioctl_user_region_deregister(struct omx_endpoint * endpoint, void __user * uparam);
+
+extern int omx_ioctl_user_region_create(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint, void __user * uparam);
+
 extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
 extern void __omx_user_region_last_release(struct kref * kref);
+
 extern void omx_user_regions_cleanup(void);
 
 static inline void
