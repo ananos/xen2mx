@@ -1380,6 +1380,13 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 	if (!dma_chan)
 		goto out;
 
+	/* make sure the receive region is pinned */
+	ret = omx_user_region_pin(dst_region, 1 /* no overlap yet */, dst_offset + length);
+	if (ret < 0) {
+		dprintk(REG, "failed to pin user region\n");
+		goto err;
+	}
+
 	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",
 		length,
 		(unsigned long) src_region->id, src_region->total_length, src_offset,
@@ -1498,6 +1505,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		dma_chan_put(dma_chan);
 	}
 
+ err:
 	return ret;
 }
 #endif /* CONFIG_NET_DMA */

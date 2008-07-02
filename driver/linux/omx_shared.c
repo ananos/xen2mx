@@ -440,14 +440,6 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 		goto out;
 	}
 
-	/* make sure our region is pinned */
-	err = omx_user_region_pin(src_region, 1 /* FIXME: no overlap yet */, hdr->local_offset + hdr->length);
-	if (err < 0) {
-		dprintk(REG, "failed to pin user region\n");
-		omx_user_region_release(src_region);
-		goto out;
-	}
-
 	dst_endpoint = omx_shared_get_endpoint_or_nack_type(hdr->peer_index,hdr->dest_endpoint,
 							    hdr->session_id, &nack_type);
 	if (unlikely(dst_endpoint == NULL)) {
