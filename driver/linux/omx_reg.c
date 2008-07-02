@@ -74,27 +74,37 @@ omx_user_region_add_segment(struct omx_cmd_user_region_segment * useg,
 		goto out;
 	}
 
-	ret = get_user_pages(current, current->mm, aligned_vaddr, nr_pages, 1, 0, pages, NULL);
-	if (unlikely(ret < 0)) {
-		printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
-		goto out_with_pages;
-	}
-	BUG_ON(ret != nr_pages);
-
+	segment->aligned_vaddr = aligned_vaddr;
 	segment->first_page_offset = offset;
 	segment->length = useglen;
 	segment->nr_pages = nr_pages;
 	segment->pages = pages;
+	segment->pinned = 0;
 
 	return 0;
 
- out_with_pages:
-	if (segment->vmalloced)
-		vfree(pages);
-	else
-		kfree(pages);
  out:
 	return ret;
+}
+
+static int
+omx_user_region_pin_segment(struct omx_user_region_segment * segment)
+{
+	unsigned long aligned_vaddr = segment->aligned_vaddr;
+	unsigned long nr_pages = segment->nr_pages;
+	struct page ** pages = segment->pages;
+	int ret;
+
+	ret = get_user_pages(current, current->mm, aligned_vaddr, nr_pages, 1, 0, pages, NULL);
+	if (unlikely(ret < 0)) {
+		printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
+		return ret;
+	}
+	BUG_ON(ret != nr_pages);
+
+	segment->pinned = 1;
+
+	return 0;
 }
 
 static void
@@ -102,8 +112,9 @@ omx_user_region_destroy_segment(struct omx_user_region_segment * segment)
 {
 	unsigned long i;
 
-	for(i=0; i<segment->nr_pages; i++)
-		put_page(segment->pages[i]);
+	if (segment->pinned)
+		for(i=0; i<segment->nr_pages; i++)
+			put_page(segment->pages[i]);
 
 	if (segment->vmalloced)
 		vfree(segment->pages);
@@ -184,18 +195,16 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 	/* keep nr_segments exact so that we may call omx_user_region_destroy_segments safely */
 	region->nr_segments = 0;
 
-	down_write(&current->mm->mmap_sem);
-
+	/* allocate all segments */
 	for(i=0, seg = &region->segments[0]; i<cmd.nr_segments; i++) {
 		dprintk(REG, "create region looking at useg %d len %lld\n",
 			i, (unsigned long long) usegs[i].len);
 		if (!usegs[i].len)
 			continue;
 		ret = omx_user_region_add_segment(&usegs[i], seg);
-		if (unlikely(ret < 0)) {
-			up_write(&current->mm->mmap_sem);
+		if (unlikely(ret < 0))
 			goto out_with_region;
-		}
+
 		if (seg->vmalloced)
 			region->nr_vmalloc_segments++;
 		region->nr_segments++;
@@ -206,6 +215,17 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 		seg++;
 	}
 
+	/* pin all segments */
+	down_write(&current->mm->mmap_sem);
+	for(i=0, seg = &region->segments[0]; i<region->nr_segments; i++, seg++) {
+		ret = omx_user_region_pin_segment(seg);
+		if (unlikely(ret < 0)) {
+			up_write(&current->mm->mmap_sem);
+			goto out_with_region;
+		}
+		dprintk(REG, "create region pinned seg #%ld\n",
+			(unsigned long) (seg-&region->segments[0]));
+	}
 	up_write(&current->mm->mmap_sem);
 
 	spin_lock(&endpoint->user_regions_lock);

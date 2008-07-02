@@ -40,10 +40,12 @@ struct omx_user_region {
 	unsigned long total_length;
 
 	struct omx_user_region_segment {
+		unsigned long aligned_vaddr;
 		unsigned first_page_offset;
 		unsigned long length;
 		unsigned long nr_pages;
 		int vmalloced;
+		int pinned;
 		struct page ** pages;
 	} segments[0];
 };
