@@ -26,6 +26,12 @@
 struct omx_endpoint;
 struct sk_buff;
 
+enum omx_user_region_status {
+	OMX_USER_REGION_STATUS_NOT_PINNED,
+	OMX_USER_REGION_STATUS_PINNED, /* or being pinned */
+	OMX_USER_REGION_STATUS_FAILED,
+};
+
 struct omx_user_region {
 	uint32_t id;
 
@@ -38,6 +44,9 @@ struct omx_user_region {
 
 	unsigned nr_segments;
 	unsigned long total_length;
+
+	enum omx_user_region_status status;
+	unsigned long total_registered_length;
 
 	struct omx_user_region_segment {
 		unsigned long aligned_vaddr;

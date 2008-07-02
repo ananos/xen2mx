@@ -138,6 +138,54 @@ omx_user_region_destroy_segments(struct omx_user_region * region)
  * Region creation
  */
 
+/*
+ * Try to pin an acquired region.
+ * If somebody already doing it, wait for the needed length if needed.
+ */
+int
+omx_user_region_pin(struct omx_user_region * region,
+		    int wait, unsigned long needed)
+{
+	struct omx_user_region_segment *seg;
+	int ret = 0;
+	int i;
+
+	if (cmpxchg(&region->status,
+		    OMX_USER_REGION_STATUS_NOT_PINNED,
+		    OMX_USER_REGION_STATUS_PINNED)) {
+		/* somebody already registered this region */
+		if (!wait)
+			return 0;
+		while (needed > region->total_registered_length
+		       && region->status == OMX_USER_REGION_STATUS_PINNED);
+		return region->status == OMX_USER_REGION_STATUS_PINNED ? 0 : -EFAULT;
+
+	} else if (region->status == OMX_USER_REGION_STATUS_FAILED) {
+		/* somebody failed to register this region */
+		return -EFAULT;
+	}
+
+	/* pin all segments */
+	down_write(&current->mm->mmap_sem);
+	for(i=0, seg = &region->segments[0]; i<region->nr_segments; i++, seg++) {
+		ret = omx_user_region_pin_segment(seg);
+		if (unlikely(ret < 0))
+			goto out;
+
+		dprintk(REG, "create region pinned seg #%ld\n",
+			(unsigned long) (seg-&region->segments[0]));
+		region->total_registered_length += seg->length;
+	}
+	up_write(&current->mm->mmap_sem);
+	region->status = OMX_USER_REGION_STATUS_PINNED;
+	return 0;
+
+ out:
+	up_write(&current->mm->mmap_sem);
+	region->status = OMX_USER_REGION_STATUS_FAILED;
+	return ret;
+}
+
 int
 omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 			     void __user * uparam)
@@ -215,18 +263,16 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 		seg++;
 	}
 
-	/* pin all segments */
-	down_write(&current->mm->mmap_sem);
-	for(i=0, seg = &region->segments[0]; i<region->nr_segments; i++, seg++) {
-		ret = omx_user_region_pin_segment(seg);
-		if (unlikely(ret < 0)) {
-			up_write(&current->mm->mmap_sem);
-			goto out_with_region;
-		}
-		dprintk(REG, "create region pinned seg #%ld\n",
-			(unsigned long) (seg-&region->segments[0]));
+	/* mark the region as non-registered yet */
+	region->status = OMX_USER_REGION_STATUS_NOT_PINNED;
+	region->total_registered_length = 0;
+
+	/* pin the region */
+	ret = omx_user_region_pin(region, 1, region->total_length);
+	if (ret < 0) {
+		dprintk(REG, "failed to pin user region\n");
+		goto out_with_region;
 	}
-	up_write(&current->mm->mmap_sem);
 
 	spin_lock(&endpoint->user_regions_lock);
 
