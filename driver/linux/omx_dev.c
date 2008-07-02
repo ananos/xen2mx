@@ -444,7 +444,7 @@ omx_handle_ioctl_with_endpoint(struct file *file, unsigned handler_offset, void 
 	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
 		return -EINVAL;
 
-	return omx_ioctl_with_endpoint_handlers[handler_offset](endpoint, uparam);
+	return omx_ioctl_with_endpoint_handlers[(unsigned char) handler_offset](endpoint, uparam);
 }
 
 /*
@@ -722,7 +722,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_WAKEUP:
 	{
 		BUG_ON(handler_offset >= ARRAY_SIZE(omx_ioctl_with_endpoint_handlers));
-		BUG_ON(omx_ioctl_with_endpoint_handlers[handler_offset] == NULL);
+		BUG_ON(omx_ioctl_with_endpoint_handlers[(unsigned char) handler_offset] == NULL);
 
 		ret = omx_handle_ioctl_with_endpoint(file, handler_offset, (void __user *) arg);
 		break;
