@@ -1519,6 +1519,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		omx_counter_inc(dst_region->endpoint->iface, SHARED_DMARECV_LARGE);
 	}
 
+ err_with_chan:
 	if (dma_chan) {
 		if (dma_last_cookie > 0) {
 			dma_async_memcpy_issue_pending(dma_chan);
@@ -1527,7 +1528,6 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		dma_chan_put(dma_chan);
 	}
 
- err:
 	return ret;
 }
 #endif /* CONFIG_NET_DMA */
