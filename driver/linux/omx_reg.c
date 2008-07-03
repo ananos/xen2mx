@@ -22,6 +22,7 @@
 #include <linux/skbuff.h>
 #include <linux/spinlock.h>
 #include <linux/rcupdate.h>
+#include <asm/processor.h>
 
 #include "omx_hal.h"
 #include "omx_io.h"
@@ -156,8 +157,11 @@ omx_user_region_pin(struct omx_user_region * region,
 		/* somebody already registered this region */
 		if (!wait)
 			return 0;
+
 		while (needed > region->total_registered_length
-		       && region->status == OMX_USER_REGION_STATUS_PINNED);
+		       && region->status == OMX_USER_REGION_STATUS_PINNED)
+			cpu_relax();
+
 		return region->status == OMX_USER_REGION_STATUS_PINNED ? 0 : -EFAULT;
 
 	} else if (region->status == OMX_USER_REGION_STATUS_FAILED) {
