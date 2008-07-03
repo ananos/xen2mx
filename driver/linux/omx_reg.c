@@ -1280,7 +1280,6 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 	ssegoff = src_offset - tmp;
 	spage = &sseg->pages[(ssegoff + sseg->first_page_offset) >> PAGE_SHIFT];
 	spageoff = (ssegoff + sseg->first_page_offset) & (~PAGE_MASK);
-	spageaddr = kmap_atomic(*spage, KM_USER0);
 
 	/* initialize the dst state */
 	for(tmp=0,dseg=&dst_region->segments[0];; dseg++) {
@@ -1307,22 +1306,20 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 			chunk,
 			(unsigned long) (sseg-&src_region->segments[0]), (unsigned long) (spage-&sseg->pages[0]), *spage, spageoff,
 			(unsigned long) (dseg-&dst_region->segments[0]), dsegoff);
+
+		spageaddr = kmap_atomic(*spage, KM_USER0);
 		ret = copy_to_user(dvaddr, spageaddr + spageoff, chunk);
-		if (ret) {
-			kunmap_atomic(spageaddr, KM_USER0);
+		kunmap_atomic(spageaddr, KM_USER0);
+		if (ret)
 			return -EFAULT;
-		}
 
 		remaining -= chunk;
-		if (!remaining) {
-			kunmap_atomic(spageaddr, KM_USER0);
+		if (!remaining)
 			break;
-		}
 
 		/* update the source */
 		if (ssegoff + chunk == sseglen) {
 			/* next segment */
-			kunmap_atomic(spageaddr, KM_USER0);
 			sseg++;
 			sseglen = sseg->length;
 			dprintk(REG, "shared region copy switching to source seg %ld len %ld, %ld remaining\n",
@@ -1330,14 +1327,11 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 			ssegoff = 0;
 			spage = &sseg->pages[0];
 			spageoff = sseg->first_page_offset;
-			spageaddr = kmap_atomic(*spage, KM_USER0);
 		} else if (spageoff + chunk == PAGE_SIZE) {
 			/* next page */
-			kunmap_atomic(spageaddr, KM_USER0);
 			ssegoff += chunk;
 			spage++;
 			spageoff = 0;
-			spageaddr = kmap_atomic(*spage, KM_USER0);
 		} else {
 			/* same page */
 			ssegoff += chunk;
