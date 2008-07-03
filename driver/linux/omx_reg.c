@@ -120,6 +120,7 @@ omx_user_region_pin_segment(struct omx_user_region * region,
 		aligned_vaddr += chunk_offset + chunk_length;
 		remaining -= chunk_length;
 		chunk_offset = 0;
+		barrier(); /* needed for busy-waiter on total_registered_length */
 	}
 	BUG_ON(segment->pinned_pages != segment->nr_pages);
 
