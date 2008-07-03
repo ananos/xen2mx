@@ -596,19 +596,21 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	/* make sure the region is pinned */
-	region = omx_user_region_acquire(endpoint, cmd.user_region_id_needed);
-	if (unlikely(!region)) {
-		ret = -EINVAL;
-		goto out;
-	}
-	ret = omx_user_region_pin(region, 1 /* FIXME: no overlap yet */, region->total_length /* FIXME: could be shortened */);
-	if (ret < 0) {
-		dprintk(REG, "failed to pin user region\n");
+	if (omx_deferred_region_pin) {
+		/* make sure the region is pinned */
+		region = omx_user_region_acquire(endpoint, cmd.user_region_id_needed);
+		if (unlikely(!region)) {
+			ret = -EINVAL;
+			goto out;
+		}
+		ret = omx_user_region_pin(region, 1 /* FIXME: no overlap yet */, region->total_length /* FIXME: could be shortened */);
+		if (ret < 0) {
+			dprintk(REG, "failed to pin user region\n");
+			omx_user_region_release(region);
+			goto out;
+		}
 		omx_user_region_release(region);
-		goto out;
 	}
-	omx_user_region_release(region);
 
 #ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))

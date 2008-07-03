@@ -66,7 +66,7 @@ module_param_named(deferredpin, omx_deferred_region_pin, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(deferredpin, "Defer user region pinning");
 
 int omx_pin_chunk_pages = 64;
-module_param_named(pinchunk, omx_pin_chunk_pages, uint, S_IRUGO|S_IWUSR);
+module_param_named(pinchunk, omx_pin_chunk_pages, uint, S_IRUGO); /* not writable to simplify things */
 MODULE_PARM_DESC(pinchunk, "Number of pages to pin at once");
 
 #ifdef CONFIG_NET_DMA
