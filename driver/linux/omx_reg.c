@@ -1257,12 +1257,14 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 	unsigned long remaining = length;
 	unsigned long tmp;
 	struct omx_user_region_segment *sseg, *dseg; /* current segment */
+	unsigned long soff; /* current offset in region */
 	unsigned long sseglen, dseglen; /* length of current segment */
 	unsigned long ssegoff, dsegoff; /* current offset in current segment */
 	struct page **spage; /* current page */
 	unsigned int spageoff; /* current offset in current page */
 	void *spageaddr; /* current page mapping */
 	void __user *dvaddr; /* current user-space virtual address */
+	unsigned long spinlen; /* currently pinned length in region */
 	int ret;
 
 	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",
@@ -1277,9 +1279,11 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 			break;
 		tmp += sseglen;
 	}
+	soff = src_offset;
 	ssegoff = src_offset - tmp;
 	spage = &sseg->pages[(ssegoff + sseg->first_page_offset) >> PAGE_SHIFT];
 	spageoff = (ssegoff + sseg->first_page_offset) & (~PAGE_MASK);
+	spinlen = 0;
 
 	/* initialize the dst state */
 	for(tmp=0,dseg=&dst_region->segments[0];; dseg++) {
@@ -1307,12 +1311,20 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 			(unsigned long) (sseg-&src_region->segments[0]), (unsigned long) (spage-&sseg->pages[0]), *spage, spageoff,
 			(unsigned long) (dseg-&dst_region->segments[0]), dsegoff);
 
+		if (omx_deferred_region_pin && spinlen < soff + chunk) {
+			spinlen = soff + chunk;
+			ret = omx_user_region_pending_pin_wait(src_region, &spinlen);
+			if (ret < 0)
+				return ret;
+		}
+
 		spageaddr = kmap_atomic(*spage, KM_USER0);
 		ret = copy_to_user(dvaddr, spageaddr + spageoff, chunk);
 		kunmap_atomic(spageaddr, KM_USER0);
 		if (ret)
 			return -EFAULT;
 
+		soff += chunk;
 		remaining -= chunk;
 		if (!remaining)
 			break;
@@ -1379,6 +1391,8 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		goto out;
 
 	if (omx_deferred_region_pin) {
+		unsigned long needed;
+
 		/* make sure the receive region is pinned */
 		ret = omx_user_region_deferred_pin(dst_region,
 						   1 /* no overlap yet */,
@@ -1387,6 +1401,12 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 			dprintk(REG, "failed to pin user region\n");
 			goto err;
 		}
+
+		/* make sure the send region is pinned */
+		needed = src_offset + length;
+		ret = omx_user_region_pending_pin_wait(src_region, &needed); /* no overlap yet */
+		if (ret < 0)
+			goto err;
 	}
 
 	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",

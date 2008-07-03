@@ -596,6 +596,11 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+#ifndef OMX_DISABLE_SHARED
+	if (unlikely(cmd.shared))
+		return omx_shared_send_rndv(endpoint, &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
+#endif
+
 	if (omx_deferred_region_pin) {
 		/* make sure the region is pinned */
 		region = omx_user_region_acquire(endpoint, cmd.user_region_id_needed);
@@ -613,11 +618,6 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		}
 		omx_user_region_release(region);
 	}
-
-#ifndef OMX_DISABLE_SHARED
-	if (unlikely(cmd.shared))
-		return omx_shared_send_rndv(endpoint, &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
-#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));

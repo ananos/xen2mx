@@ -147,6 +147,46 @@ omx_user_region_deferred_pin(struct omx_user_region * region, int wait, unsigned
 	return omx__user_region_pin(region);
 }
 
+static inline int
+omx_user_region_overlapped_pin_init(struct omx_user_region * region)
+{
+	if (cmpxchg(&region->status,
+		    OMX_USER_REGION_STATUS_NOT_PINNED,
+		    OMX_USER_REGION_STATUS_PINNED)) {
+		/* somebody already registered this region */
+		return -1;
+	}
+	/* let the status be checked by the actual user later */
+
+	return 0;
+}
+
+static inline void
+omx_user_region_overlapped_pin_do(struct omx_user_region * region)
+{
+	BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
+
+	omx__user_region_pin(region);
+	/* let the status be checked by the actual user later */
+}
+
+static inline int
+omx_user_region_pending_pin_wait(struct omx_user_region * region, unsigned long *length)
+{
+	unsigned long needed = *length;
+
+	while (needed > region->total_registered_length
+	       && region->status == OMX_USER_REGION_STATUS_PINNED)
+		cpu_relax();
+
+	if (region->status == OMX_USER_REGION_STATUS_FAILED) {
+		return -EFAULT;
+	} else {
+		*length = region->total_registered_length;
+		return 0;
+	}
+}
+
 #endif /* __omx_region_h__ */
 
 /*

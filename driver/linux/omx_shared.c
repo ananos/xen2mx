@@ -379,6 +379,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
+	struct omx_user_region * src_region = NULL;
 	int err;
 
 	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
@@ -403,20 +404,47 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 		goto out_with_endpoint;
 	}
 
+	/* make sure the region is marked as pinned before reporting the event */
+	if (omx_deferred_region_pin) {
+		src_region = omx_user_region_acquire(src_endpoint, hdr->user_region_id_needed);
+		if (unlikely(!src_region)) {
+			err = -EINVAL;
+			goto out_with_endpoint;
+		}
+		err = omx_user_region_overlapped_pin_init(src_region);
+		if (err < 0) {
+			/* already pinned, no need to overlap */
+			omx_user_region_release(src_region);
+			src_region = NULL;
+		}
+	}
+
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		err = 0;
-		goto out_with_endpoint;
+		goto out_with_region;
 	}
 	omx_endpoint_release(dst_endpoint);
 
 	omx_counter_inc(src_endpoint->iface, SHARED_SEND_RNDV);
 	omx_counter_inc(dst_endpoint->iface, SHARED_RECV_RNDV);
 
+	if (src_region) {
+		/* start the actual overlapped pinning now, if needed */
+		omx_user_region_overlapped_pin_do(src_region);
+		omx_user_region_release(src_region);
+	}
+
 	return 0;
 
+ out_with_region:
+	if (src_region) {
+		/* start the actual overlapped pinning anyway, if needed */
+		omx_user_region_overlapped_pin_do(src_region);
+		omx_user_region_release(src_region);
+	}
  out_with_endpoint:
 	omx_endpoint_release(dst_endpoint);
 	return err;
