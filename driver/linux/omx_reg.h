@@ -119,7 +119,7 @@ static inline int
 omx_user_region_immediate_pin(struct omx_user_region * region)
 {
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_NOT_PINNED);
-
+	region->status = OMX_USER_REGION_STATUS_PINNED;
 	return omx__user_region_pin(region);
 }
 
@@ -165,7 +165,7 @@ static inline void
 omx_user_region_overlapped_pin_do(struct omx_user_region * region)
 {
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
-
+	region->status = OMX_USER_REGION_STATUS_PINNED;
 	omx__user_region_pin(region);
 	/* let the status be checked by the actual user later */
 }

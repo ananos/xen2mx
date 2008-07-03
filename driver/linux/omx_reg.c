@@ -160,10 +160,6 @@ omx_user_region_destroy_segments(struct omx_user_region * region)
  * Region creation
  */
 
-/*
- * Try to pin an acquired region.
- * If somebody already doing it, wait for the needed length if needed.
- */
 int
 omx__user_region_pin(struct omx_user_region * region)
 {
@@ -171,7 +167,8 @@ omx__user_region_pin(struct omx_user_region * region)
 	int ret = 0;
 	int i;
 
-	/* pin all segments */
+	BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
+
 	down_write(&current->mm->mmap_sem);
 	for(i=0, seg = &region->segments[0]; i<region->nr_segments; i++, seg++) {
 		ret = omx_user_region_pin_segment(region, seg);
@@ -182,7 +179,6 @@ omx__user_region_pin(struct omx_user_region * region)
 			(unsigned long) (seg-&region->segments[0]));
 	}
 	up_write(&current->mm->mmap_sem);
-	region->status = OMX_USER_REGION_STATUS_PINNED;
 	return 0;
 
  out:
