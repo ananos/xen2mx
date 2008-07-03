@@ -79,8 +79,8 @@ omx_user_region_add_segment(struct omx_cmd_user_region_segment * useg,
 	segment->first_page_offset = offset;
 	segment->length = useglen;
 	segment->nr_pages = nr_pages;
+	segment->pinned_pages = 0;
 	segment->pages = pages;
-	segment->pinned = 0;
 
 	return 0;
 
@@ -89,23 +89,45 @@ omx_user_region_add_segment(struct omx_cmd_user_region_segment * useg,
 }
 
 static int
-omx_user_region_pin_segment(struct omx_user_region_segment * segment)
+omx_user_region_pin_segment(struct omx_user_region * region,
+			    struct omx_user_region_segment * segment)
 {
 	unsigned long aligned_vaddr = segment->aligned_vaddr;
-	unsigned long nr_pages = segment->nr_pages;
 	struct page ** pages = segment->pages;
+	unsigned long remaining = segment->length;
+	int chunk_offset = segment->first_page_offset;
+	int chunk_length;
+	int chunk_pages;
 	int ret;
 
-	ret = get_user_pages(current, current->mm, aligned_vaddr, nr_pages, 1, 0, pages, NULL);
-	if (unlikely(ret < 0)) {
-		printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
-		return ret;
-	}
-	BUG_ON(ret != nr_pages);
+	while (remaining) {
+		if (chunk_offset + remaining <= omx_pin_chunk_pages<<PAGE_SHIFT)
+			chunk_length = remaining;
+		else
+			chunk_length = (omx_pin_chunk_pages<<PAGE_SHIFT) - chunk_offset;
+		chunk_pages = (chunk_offset + chunk_length + PAGE_SIZE-1) >> PAGE_SHIFT;
 
-	segment->pinned = 1;
+		ret = get_user_pages(current, current->mm, aligned_vaddr, chunk_pages, 1, 0, pages, NULL);
+		if (unlikely(ret < 0)) {
+			printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
+			goto out;
+		}
+		BUG_ON(ret != chunk_pages);
+
+		segment->pinned_pages += chunk_pages;
+		pages += chunk_pages;
+
+		region->total_registered_length += chunk_length;
+		aligned_vaddr += chunk_offset + chunk_length;
+		remaining -= chunk_length;
+		chunk_offset = 0;
+	}
+	BUG_ON(segment->pinned_pages != segment->nr_pages);
 
 	return 0;
+
+ out:
+	return ret;
 }
 
 static void
@@ -113,9 +135,8 @@ omx_user_region_destroy_segment(struct omx_user_region_segment * segment)
 {
 	unsigned long i;
 
-	if (segment->pinned)
-		for(i=0; i<segment->nr_pages; i++)
-			put_page(segment->pages[i]);
+	for(i=0; i<segment->pinned_pages; i++)
+		put_page(segment->pages[i]);
 
 	if (segment->vmalloced)
 		vfree(segment->pages);
@@ -172,13 +193,12 @@ omx_user_region_pin(struct omx_user_region * region,
 	/* pin all segments */
 	down_write(&current->mm->mmap_sem);
 	for(i=0, seg = &region->segments[0]; i<region->nr_segments; i++, seg++) {
-		ret = omx_user_region_pin_segment(seg);
+		ret = omx_user_region_pin_segment(region, seg);
 		if (unlikely(ret < 0))
 			goto out;
 
 		dprintk(REG, "create region pinned seg #%ld\n",
 			(unsigned long) (seg-&region->segments[0]));
-		region->total_registered_length += seg->length;
 	}
 	up_write(&current->mm->mmap_sem);
 	region->status = OMX_USER_REGION_STATUS_PINNED;

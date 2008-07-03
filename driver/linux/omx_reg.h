@@ -53,8 +53,8 @@ struct omx_user_region {
 		unsigned first_page_offset;
 		unsigned long length;
 		unsigned long nr_pages;
+		unsigned long pinned_pages;
 		int vmalloced;
-		int pinned;
 		struct page ** pages;
 	} segments[0];
 };
