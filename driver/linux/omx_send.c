@@ -605,7 +605,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		}
 		ret = omx_user_region_deferred_pin(region,
 						   1 /* FIXME: no overlap yet */,
-						   region->total_length /* FIXME: could be shortened */);
+						   cmd.user_region_length_needed);
 		if (ret < 0) {
 			dprintk(REG, "failed to pin user region\n");
 			omx_user_region_release(region);

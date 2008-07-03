@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x147
+#define OMX_DRIVER_ABI_VERSION		0x148
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -316,15 +316,18 @@ struct omx_cmd_send_rndv {
 		uint16_t seqnum;
 		uint16_t piggyack;
 		uint8_t length;
-		uint8_t pad1[2];
-		uint8_t user_region_id_needed;
+		uint8_t pad1[3];
 		/* 16 */
-		uint64_t match_info;
+		uint8_t user_region_id_needed;
+		uint8_t pad2[3];
+		uint32_t user_region_length_needed;
 		/* 24 */
+		uint64_t match_info;
+		/* 32 */
 	} hdr;
-	/* 24 */
-	char data[OMX_RNDV_DATA_MAX];
 	/* 32 */
+	char data[OMX_RNDV_DATA_MAX];
+	/* 40 */
 };
 
 struct omx_cmd_send_connect {
