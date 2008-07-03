@@ -1399,14 +1399,14 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 						   dst_offset + length);
 		if (ret < 0) {
 			dprintk(REG, "failed to pin user region\n");
-			goto err;
+			goto err_with_chan;
 		}
 
 		/* make sure the send region is pinned */
 		needed = src_offset + length;
 		ret = omx_user_region_pending_pin_wait(src_region, &needed); /* no overlap yet */
 		if (ret < 0)
-			goto err;
+			goto err_with_chan;
 	}
 
 	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",
