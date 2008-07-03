@@ -22,6 +22,7 @@
 #include <linux/spinlock.h>
 #include <linux/kref.h>
 #include <linux/rcupdate.h>
+#include <asm/processor.h>
 
 struct omx_endpoint;
 struct sk_buff;
@@ -91,8 +92,6 @@ extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
 extern int omx_ioctl_user_region_create(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint, void __user * uparam);
 
-extern int omx_user_region_pin(struct omx_user_region * region, int wait, unsigned long needed);
-
 extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
 extern void __omx_user_region_last_release(struct kref * kref);
 
@@ -113,6 +112,40 @@ omx_user_region_release(struct omx_user_region * region)
 extern int omx_user_region_offset_cache_init(struct omx_user_region *region, struct omx_user_region_offset_cache *cache, unsigned long offset, unsigned long length);
 extern int omx_user_region_fill_pages(struct omx_user_region * region, unsigned long region_offset, struct sk_buff * skb, unsigned long length);
 extern int omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset, struct omx_user_region * dst_region, unsigned long dst_offset, unsigned long length);
+
+extern int omx__user_region_pin(struct omx_user_region * region);
+
+static inline int
+omx_user_region_immediate_pin(struct omx_user_region * region)
+{
+	BUG_ON(region->status != OMX_USER_REGION_STATUS_NOT_PINNED);
+
+	return omx__user_region_pin(region);
+}
+
+static inline int
+omx_user_region_deferred_pin(struct omx_user_region * region, int wait, unsigned long needed)
+{
+	if (cmpxchg(&region->status,
+		    OMX_USER_REGION_STATUS_NOT_PINNED,
+		    OMX_USER_REGION_STATUS_PINNED)) {
+		/* somebody already registered this region */
+		if (!wait)
+			return 0;
+
+		while (needed > region->total_registered_length
+		       && region->status == OMX_USER_REGION_STATUS_PINNED)
+			cpu_relax();
+
+		return region->status == OMX_USER_REGION_STATUS_PINNED ? 0 : -EFAULT;
+
+	} else if (region->status == OMX_USER_REGION_STATUS_FAILED) {
+		/* somebody failed to register this region */
+		return -EFAULT;
+	}
+
+	return omx__user_region_pin(region);
+}
 
 #endif /* __omx_region_h__ */
 

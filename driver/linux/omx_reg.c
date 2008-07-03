@@ -22,7 +22,6 @@
 #include <linux/skbuff.h>
 #include <linux/spinlock.h>
 #include <linux/rcupdate.h>
-#include <asm/processor.h>
 
 #include "omx_hal.h"
 #include "omx_io.h"
@@ -165,30 +164,11 @@ omx_user_region_destroy_segments(struct omx_user_region * region)
  * If somebody already doing it, wait for the needed length if needed.
  */
 int
-omx_user_region_pin(struct omx_user_region * region,
-		    int wait, unsigned long needed)
+omx__user_region_pin(struct omx_user_region * region)
 {
 	struct omx_user_region_segment *seg;
 	int ret = 0;
 	int i;
-
-	if (cmpxchg(&region->status,
-		    OMX_USER_REGION_STATUS_NOT_PINNED,
-		    OMX_USER_REGION_STATUS_PINNED)) {
-		/* somebody already registered this region */
-		if (!wait)
-			return 0;
-
-		while (needed > region->total_registered_length
-		       && region->status == OMX_USER_REGION_STATUS_PINNED)
-			cpu_relax();
-
-		return region->status == OMX_USER_REGION_STATUS_PINNED ? 0 : -EFAULT;
-
-	} else if (region->status == OMX_USER_REGION_STATUS_FAILED) {
-		/* somebody failed to register this region */
-		return -EFAULT;
-	}
 
 	/* pin all segments */
 	down_write(&current->mm->mmap_sem);
@@ -293,7 +273,7 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 
 	if (!omx_deferred_region_pin) {
 		/* pin the region */
-		ret = omx_user_region_pin(region, 1, region->total_length);
+		ret = omx_user_region_immediate_pin(region);
 		if (ret < 0) {
 			dprintk(REG, "failed to pin user region\n");
 			goto out_with_region;
@@ -1406,7 +1386,9 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 
 	if (omx_deferred_region_pin) {
 		/* make sure the receive region is pinned */
-		ret = omx_user_region_pin(dst_region, 1 /* no overlap yet */, dst_offset + length);
+		ret = omx_user_region_deferred_pin(dst_region,
+						   1 /* no overlap yet */,
+						   dst_offset + length);
 		if (ret < 0) {
 			dprintk(REG, "failed to pin user region\n");
 			goto err;
