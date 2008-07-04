@@ -170,7 +170,9 @@ omx__user_region_pin_add_chunk(struct omx_user_region_pin_state *pinstate)
 		printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
 		goto out;
 	}
+#ifdef OMX_DEBUG
 	BUG_ON(ret != chunk_pages);
+#endif
 
 	seg->pinned_pages += chunk_pages;
 	region->total_registered_length += chunk_length;
@@ -185,7 +187,9 @@ omx__user_region_pin_add_chunk(struct omx_user_region_pin_state *pinstate)
 
 	} else {
 		/* jump to next segment */
+#ifdef OMX_DEBUG
 		BUG_ON(seg->pinned_pages != seg->nr_pages);
+#endif
 		pinstate->pages = NULL;
 		pinstate->segment = seg + 1;
 	}
@@ -204,7 +208,9 @@ omx__user_region_pin_continue(struct omx_user_region_pin_state *pinstate,
 	unsigned long needed = *length;
 	int ret;
 
+#ifdef OMX_DEBUG
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
+#endif
 
 	down_write(&current->mm->mmap_sem);
 	while (region->total_registered_length < needed) {

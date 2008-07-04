@@ -133,7 +133,9 @@ omx_user_region_immediate_pin(struct omx_user_region * region)
 	struct omx_user_region_pin_state pinstate;
 	unsigned long needed = region->total_length;
 
+#ifdef OMX_DEBUG
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_NOT_PINNED);
+#endif
 	region->status = OMX_USER_REGION_STATUS_PINNED;
 
 	omx__user_region_pin_init(&pinstate, region);
@@ -191,8 +193,9 @@ static inline int
 omx_user_region_deferred_pin_continue(struct omx_user_region_pin_state *pinstate,
 				      unsigned long *length)
 {
+#ifdef OMX_DEBUG
 	BUG_ON(pinstate->region->status != OMX_USER_REGION_STATUS_PINNED);
-
+#endif
 	return omx__user_region_pin_continue(pinstate, length);
 }
 
@@ -202,8 +205,9 @@ omx_user_region_deferred_pin_finish(struct omx_user_region_pin_state *pinstate)
 	struct omx_user_region *region = pinstate->region;
 	unsigned long needed = region->total_length;
 
+#ifdef OMX_DEBUG
 	BUG_ON(pinstate->region->status != OMX_USER_REGION_STATUS_PINNED);
-
+#endif
 	omx__user_region_pin_continue(pinstate, &needed);
 	/* let the status be checked by the actual user later */
 }
