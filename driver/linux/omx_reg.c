@@ -123,7 +123,7 @@ omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate,
 {
 	pinstate->region = region;
 	pinstate->segment = &region->segments[0];
-	pinstate->pages = NULL; /* means that pin_new_segment() do the init soon */
+	pinstate->pages = NULL; /* means that pin_new_segment() will do the init soon */
 	pinstate->aligned_vaddr = 0;
 	pinstate->remaining = 0;
 	pinstate->chunk_offset = 0;
@@ -132,6 +132,12 @@ omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate,
 static inline void
 omx__user_region_pin_new_segment(struct omx_user_region_pin_state *pinstate)
 {
+	/*
+	 * Called when pages is NULL, meaning that we finished the previous segment.
+	 * The caller that set pages to NULL and increased the segment did not do this
+	 * because it didn't know whether the next segment was valid. Now that we are
+	 * here, we know it is valid since we are pinning more memory.
+	 */
 	struct omx_user_region_segment *segment = pinstate->segment;
 	pinstate->aligned_vaddr = segment->aligned_vaddr;
 	pinstate->pages = segment->pages;

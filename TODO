@@ -1,3 +1,5 @@
+* if killed while registering, needed to mark the region as failed
+
 * cleanup endpoint acquiring/locking/closing again
   + synchronize_rcu before freeing after unlinking
   + rcu_deference+acquire+check status during ioctl and network
