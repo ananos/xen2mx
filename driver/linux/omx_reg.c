@@ -313,7 +313,7 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 	region->status = OMX_USER_REGION_STATUS_NOT_PINNED;
 	region->total_registered_length = 0;
 
-	if (!omx_deferred_region_pin) {
+	if (!omx_ondemand_region_pin) {
 		/* pin the region */
 		ret = omx_user_region_immediate_pin(region);
 		if (ret < 0) {
@@ -1353,7 +1353,7 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 			(unsigned long) (sseg-&src_region->segments[0]), (unsigned long) (spage-&sseg->pages[0]), *spage, spageoff,
 			(unsigned long) (dseg-&dst_region->segments[0]), dsegoff);
 
-		if (omx_deferred_region_pin && spinlen < soff + chunk) {
+		if (omx_ondemand_region_pin && spinlen < soff + chunk) {
 			spinlen = soff + chunk;
 			ret = omx_user_region_pending_pin_wait(src_region, &spinlen);
 			if (ret < 0)
@@ -1436,8 +1436,8 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 	if (!dma_chan)
 		goto out;
 
-	if (omx_deferred_region_pin) {
-		ret = omx_user_region_deferred_pin_init(&dpinstate, dst_region);
+	if (omx_ondemand_region_pin) {
+		ret = omx_user_region_ondemand_pin_init(&dpinstate, dst_region);
 		if (!ret)
 			dpinning = 1;
 	}
@@ -1486,7 +1486,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		if (chunk > dseglen - dsegoff)
 			chunk = dseglen - dsegoff;
 
-		if (omx_deferred_region_pin) {
+		if (omx_ondemand_region_pin) {
 			if (spinlen < soff + chunk) {
 				spinlen = soff + chunk;
 				ret = omx_user_region_pending_pin_wait(src_region, &spinlen);
@@ -1497,7 +1497,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 			if (dpinlen < doff + chunk) {
 				dpinlen = doff + chunk;
 				if (dpinning) {
-					ret = omx_user_region_deferred_pin_continue(&dpinstate, &dpinlen);
+					ret = omx_user_region_ondemand_pin_continue(&dpinstate, &dpinlen);
 					if (ret < 0)
 						goto err_with_chan;
 				} else {
@@ -1590,7 +1590,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 	}
 
 	if (dpinning) {
-		omx_user_region_deferred_pin_finish(&dpinstate);
+		omx_user_region_ondemand_pin_finish(&dpinstate);
 	}
 
 	return ret;

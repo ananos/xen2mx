@@ -601,14 +601,14 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		return omx_shared_send_rndv(endpoint, &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
 #endif
 
-	if (omx_deferred_region_pin) {
+	if (omx_ondemand_region_pin) {
 		/* make sure the region is pinned */
 		region = omx_user_region_acquire(endpoint, cmd.user_region_id_needed);
 		if (unlikely(!region)) {
 			ret = -EINVAL;
 			goto out;
 		}
-		ret = omx_user_region_deferred_pin(region,
+		ret = omx_user_region_ondemand_pin(region,
 						   1 /* FIXME: no overlap yet */,
 						   cmd.user_region_length_needed);
 		if (ret < 0) {

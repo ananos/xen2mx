@@ -61,9 +61,9 @@ int omx_skb_copy_max = 0;
 module_param_named(skbcopy, omx_skb_copy_max, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(skbcopy, "Maximum length of data to copy in linear skb instead of attaching pages");
 
-int omx_deferred_region_pin = 0;
-module_param_named(deferredpin, omx_deferred_region_pin, uint, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(deferredpin, "Defer user region pinning");
+int omx_ondemand_region_pin = 0;
+module_param_named(ondemandpin, omx_ondemand_region_pin, uint, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(ondemandpin, "Defer user region pinning until really needed");
 
 int omx_pin_chunk_pages = 64;
 module_param_named(pinchunk, omx_pin_chunk_pages, uint, S_IRUGO); /* not writable to simplify things */
