@@ -323,6 +323,11 @@ omx__init_api(int app_api)
 			omx__globals.regcache ? "enabled" : "disabled");
   }
 
+  /******************
+   * Process binding
+   */
+  omx__globals.process_binding = getenv("OMX_PROCESS_BINDING");
+
   /***************************
    * Terminate initialization
    */

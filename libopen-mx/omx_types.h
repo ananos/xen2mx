@@ -502,7 +502,9 @@ struct omx__globals {
   unsigned resend_delay_jiffies;
   unsigned req_resends_max;
   unsigned not_acked_max;
+  char *process_binding;
 };
+
 enum omx__internal_return_code {
   OMX_INTERNAL_RETURN_CODE_MIN = 101,
   OMX_INTERNAL_NEED_RETRY,

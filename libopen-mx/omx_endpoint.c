@@ -16,11 +16,13 @@
  * See the GNU Lesser General Public License in COPYING.LGPL for more details.
  */
 
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <sched.h>
 
 #include "omx_lib.h"
 
@@ -306,6 +308,26 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   if (ret != OMX_SUCCESS) {
     ret = omx__error(ret, "Attaching endpoint to driver device");
     goto out_with_fd;
+  }
+
+  /* bind the process if needed */
+  if (omx__globals.process_binding) {
+    int i;
+    char *c = omx__globals.process_binding;
+    for(i=0; i<endpoint_index; i++) {
+      c = strchr(c, ',');
+      if (!c)
+        break;
+      c++;
+    }
+    if (c) {
+      int i = atoi(c);
+      cpu_set_t cs;
+      CPU_ZERO(&cs);
+      CPU_SET(i, &cs);
+      omx__verbose_printf("Binding process with endpoint %d on cpu %d\n", endpoint_index, i);
+      sched_setaffinity(0, sizeof(cpu_set_t), &cs);
+    }
   }
 
   /* prepare the sendq */
