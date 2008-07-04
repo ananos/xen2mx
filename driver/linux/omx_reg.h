@@ -113,19 +113,39 @@ extern int omx_user_region_offset_cache_init(struct omx_user_region *region, str
 extern int omx_user_region_fill_pages(struct omx_user_region * region, unsigned long region_offset, struct sk_buff * skb, unsigned long length);
 extern int omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset, struct omx_user_region * dst_region, unsigned long dst_offset, unsigned long length);
 
-extern int omx__user_region_pin(struct omx_user_region * region);
+struct omx_user_region_pin_state {
+	struct omx_user_region *region;
+	struct omx_user_region_segment *segment; /* current segment */
+	unsigned long aligned_vaddr; /* current aligned virtual address */
+	unsigned long remaining; /* remaining length to pin in current segment */
+	int chunk_offset; /* offset in current first page to pin */
+
+	struct page **pages; /* current pages to setup */
+	/* set to NULL when a new segment is being used */
+};
+
+extern void omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate, struct omx_user_region *region);
+extern int omx__user_region_pin_continue(struct omx_user_region_pin_state *pinstate, unsigned long *length);
 
 static inline int
 omx_user_region_immediate_pin(struct omx_user_region * region)
 {
+	struct omx_user_region_pin_state pinstate;
+	unsigned long needed = region->total_length;
+
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_NOT_PINNED);
 	region->status = OMX_USER_REGION_STATUS_PINNED;
-	return omx__user_region_pin(region);
+
+	omx__user_region_pin_init(&pinstate, region);
+
+	return omx__user_region_pin_continue(&pinstate, &needed);
 }
 
 static inline int
 omx_user_region_deferred_pin(struct omx_user_region * region, int wait, unsigned long needed)
 {
+	struct omx_user_region_pin_state pinstate;
+
 	if (cmpxchg(&region->status,
 		    OMX_USER_REGION_STATUS_NOT_PINNED,
 		    OMX_USER_REGION_STATUS_PINNED)) {
@@ -144,29 +164,38 @@ omx_user_region_deferred_pin(struct omx_user_region * region, int wait, unsigned
 		return -EFAULT;
 	}
 
-	return omx__user_region_pin(region);
+	omx__user_region_pin_init(&pinstate, region);
+
+	needed = region->total_length;
+	return omx__user_region_pin_continue(&pinstate, &needed);
 }
 
 static inline int
-omx_user_region_overlapped_pin_init(struct omx_user_region * region)
+omx_user_region_deferred_pin_init(struct omx_user_region_pin_state *pinstate,
+				  struct omx_user_region * region)
 {
 	if (cmpxchg(&region->status,
 		    OMX_USER_REGION_STATUS_NOT_PINNED,
 		    OMX_USER_REGION_STATUS_PINNED)) {
 		/* somebody already registered this region */
-		return -1;
+		return 1;
 	}
 	/* let the status be checked by the actual user later */
+
+	omx__user_region_pin_init(pinstate, region);
 
 	return 0;
 }
 
 static inline void
-omx_user_region_overlapped_pin_do(struct omx_user_region * region)
+omx_user_region_deferred_pin_finish(struct omx_user_region_pin_state *pinstate)
 {
-	BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
-	region->status = OMX_USER_REGION_STATUS_PINNED;
-	omx__user_region_pin(region);
+	struct omx_user_region *region = pinstate->region;
+	unsigned long needed = region->total_length;
+
+	BUG_ON(pinstate->region->status != OMX_USER_REGION_STATUS_PINNED);
+
+	omx__user_region_pin_continue(pinstate, &needed);
 	/* let the status be checked by the actual user later */
 }
 

@@ -117,55 +117,103 @@ omx_user_region_destroy_segments(struct omx_user_region * region)
  * Region pinning
  */
 
-int
-omx__user_region_pin(struct omx_user_region * region)
+void
+omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate,
+			  struct omx_user_region *region)
 {
-	struct omx_user_region_segment *seg;
-	int ret = 0;
-	int i;
+	pinstate->region = region;
+	pinstate->segment = &region->segments[0];
+	pinstate->pages = NULL; /* means that pin_new_segment() do the init soon */
+	pinstate->aligned_vaddr = 0;
+	pinstate->remaining = 0;
+	pinstate->chunk_offset = 0;
+}
+
+static inline void
+omx__user_region_pin_new_segment(struct omx_user_region_pin_state *pinstate)
+{
+	struct omx_user_region_segment *segment = pinstate->segment;
+	pinstate->aligned_vaddr = segment->aligned_vaddr;
+	pinstate->pages = segment->pages;
+	pinstate->remaining = segment->length;
+	pinstate->chunk_offset = segment->first_page_offset;
+}
+
+static int
+omx__user_region_pin_add_chunk(struct omx_user_region_pin_state *pinstate)
+{
+	struct omx_user_region *region = pinstate->region;
+	struct omx_user_region_segment *seg = pinstate->segment;
+	unsigned long aligned_vaddr;
+	struct page ** pages;
+	unsigned long remaining;
+	int chunk_offset;
+	int chunk_length;
+	int chunk_pages;
+	int ret;
+
+	if (!pinstate->pages)
+		omx__user_region_pin_new_segment(pinstate);
+	aligned_vaddr = pinstate->aligned_vaddr;
+	pages = pinstate->pages;
+	remaining = pinstate->remaining;
+	chunk_offset = pinstate->chunk_offset;
+
+	if (chunk_offset + remaining <= omx_pin_chunk_pages<<PAGE_SHIFT)
+		chunk_length = remaining;
+	else
+		chunk_length = (omx_pin_chunk_pages<<PAGE_SHIFT) - chunk_offset;
+	chunk_pages = (chunk_offset + chunk_length + PAGE_SIZE-1) >> PAGE_SHIFT;
+
+	ret = get_user_pages(current, current->mm, aligned_vaddr, chunk_pages, 1, 0, pages, NULL);
+	if (unlikely(ret < 0)) {
+		printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
+		goto out;
+	}
+	BUG_ON(ret != chunk_pages);
+
+	seg->pinned_pages += chunk_pages;
+	region->total_registered_length += chunk_length;
+	barrier(); /* needed for busy-waiter on total_registered_length */
+
+	if (chunk_length < remaining) {
+		/* keep the same segment */
+		pinstate->aligned_vaddr = aligned_vaddr + chunk_offset + chunk_length;
+		pinstate->pages = pages + chunk_pages;
+		pinstate->remaining = remaining - chunk_length;
+		pinstate->chunk_offset = 0;
+
+	} else {
+		/* jump to next segment */
+		BUG_ON(seg->pinned_pages != seg->nr_pages);
+		pinstate->pages = NULL;
+		pinstate->segment = seg + 1;
+	}
+
+	return 0;
+
+ out:
+	return ret;
+}
+
+int
+omx__user_region_pin_continue(struct omx_user_region_pin_state *pinstate,
+			      unsigned long *length)
+{
+	struct omx_user_region *region = pinstate->region;
+	unsigned long needed = *length;
+	int ret;
 
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
 
 	down_write(&current->mm->mmap_sem);
-
-	for(i=0, seg = &region->segments[0]; i<region->nr_segments; i++, seg++) {
-		unsigned long aligned_vaddr = seg->aligned_vaddr;
-		struct page ** pages = seg->pages;
-		unsigned long remaining = seg->length;
-		int chunk_offset = seg->first_page_offset;
-		int chunk_length;
-		int chunk_pages;
-
-		while (remaining) {
-			if (chunk_offset + remaining <= omx_pin_chunk_pages<<PAGE_SHIFT)
-				chunk_length = remaining;
-			else
-				chunk_length = (omx_pin_chunk_pages<<PAGE_SHIFT) - chunk_offset;
-			chunk_pages = (chunk_offset + chunk_length + PAGE_SIZE-1) >> PAGE_SHIFT;
-
-			ret = get_user_pages(current, current->mm, aligned_vaddr, chunk_pages, 1, 0, pages, NULL);
-			if (unlikely(ret < 0)) {
-				printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
-				goto out;
-			}
-			BUG_ON(ret != chunk_pages);
-
-			seg->pinned_pages += chunk_pages;
-			pages += chunk_pages;
-
-			region->total_registered_length += chunk_length;
-			aligned_vaddr += chunk_offset + chunk_length;
-			remaining -= chunk_length;
-			chunk_offset = 0;
-			barrier(); /* needed for busy-waiter on total_registered_length */
-		}
-		BUG_ON(seg->pinned_pages != seg->nr_pages);
-
-		dprintk(REG, "create region pinned seg #%ld\n",
-			(unsigned long) (seg-&region->segments[0]));
+	while (region->total_registered_length < needed) {
+		ret = omx__user_region_pin_add_chunk(pinstate);
+		if (ret < 0)
+			goto out;
 	}
-
 	up_write(&current->mm->mmap_sem);
+	*length = region->total_registered_length;
 	return 0;
 
  out:
