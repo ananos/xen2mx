@@ -1414,12 +1414,14 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 	unsigned long remaining = length;
 	unsigned long tmp;
 	struct omx_user_region_segment *sseg, *dseg; /* current segment */
-	unsigned long soff; /* current offset in region */
+	unsigned long soff, doff; /* current offset in region */
 	unsigned long sseglen, dseglen; /* length of current segment */
 	unsigned long ssegoff, dsegoff; /* current offset in current segment */
 	struct page **spage, **dpage; /* current page */
 	unsigned int spageoff, dpageoff; /* current offset in current page */
-	unsigned long spinlen; /* currently pinned length in region */
+	unsigned long spinlen, dpinlen; /* currently pinned length in region */
+	int dpinning = 0; /* are we taking care of pinning this region */
+	struct omx_user_region_pin_state dpinstate;
 	struct dma_chan *dma_chan = NULL;
 	dma_cookie_t dma_last_cookie = -1;
 	int ret = 0;
@@ -1429,14 +1431,9 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		goto out;
 
 	if (omx_deferred_region_pin) {
-		/* make sure the receive region is pinned */
-		ret = omx_user_region_deferred_pin(dst_region,
-						   1 /* no overlap yet */,
-						   dst_offset + length);
-		if (ret < 0) {
-			dprintk(REG, "failed to pin user region\n");
-			goto err_with_chan;
-		}
+		ret = omx_user_region_deferred_pin_init(&dpinstate, dst_region);
+		if (!ret)
+			dpinning = 1;
 	}
 
 	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",
@@ -1464,9 +1461,11 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 			break;
 		tmp += dseglen;
 	}
+	doff = dst_offset;
 	dsegoff = dst_offset - tmp;
 	dpage = &dseg->pages[(dsegoff + dseg->first_page_offset) >> PAGE_SHIFT];
 	dpageoff = (dsegoff + dseg->first_page_offset) & (~PAGE_MASK);
+	dpinlen = 0;
 
 	while (1) {
 		dma_cookie_t cookie;
@@ -1481,18 +1480,33 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		if (chunk > dseglen - dsegoff)
 			chunk = dseglen - dsegoff;
 
+		if (omx_deferred_region_pin) {
+			if (spinlen < soff + chunk) {
+				spinlen = soff + chunk;
+				ret = omx_user_region_pending_pin_wait(src_region, &spinlen);
+				if (ret < 0)
+					goto err_with_chan;
+			}
+
+			if (dpinlen < doff + chunk) {
+				dpinlen = doff + chunk;
+				if (dpinning) {
+					ret = omx_user_region_deferred_pin_continue(&dpinstate, &dpinlen);
+					if (ret < 0)
+						goto err_with_chan;
+				} else {
+					ret = omx_user_region_pending_pin_wait(dst_region, &dpinlen);
+					if (ret < 0)
+						goto err_with_chan;
+				}
+			}
+		}
+
 		/* actual copy */
 		dprintk(REG, "shared region copy of %d bytes from seg=%ld:page=%ld(%p):off=%d to seg=%ld:page=%ld(%p):off=%d\n",
 			chunk,
 			(unsigned long) (sseg-&src_region->segments[0]), (unsigned long) (spage-&sseg->pages[0]), *spage, spageoff,
 			(unsigned long) (dseg-&dst_region->segments[0]), (unsigned long) (dpage-&dseg->pages[0]), *dpage, dpageoff);
-
-		if (omx_deferred_region_pin && spinlen < soff + chunk) {
-			spinlen = soff + chunk;
-			ret = omx_user_region_pending_pin_wait(src_region, &spinlen);
-			if (ret < 0)
-				goto err_with_chan;
-		}
 
 		cookie = dma_async_memcpy_pg_to_pg(dma_chan, *dpage, dpageoff, *spage, spageoff, chunk);
 		if (cookie < 0)
@@ -1500,6 +1514,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		dma_last_cookie = cookie;
 
 		soff += chunk;
+		doff += chunk;
 		remaining -= chunk;
 		if (!remaining)
 			break;
@@ -1566,6 +1581,10 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 			while (dma_async_memcpy_complete(dma_chan, dma_last_cookie, NULL, NULL) == DMA_IN_PROGRESS);
 		}
 		dma_chan_put(dma_chan);
+	}
+
+	if (dpinning) {
+		omx_user_region_deferred_pin_finish(&dpinstate);
 	}
 
 	return ret;

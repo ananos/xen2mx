@@ -1,5 +1,4 @@
 * make most pinning BUG_ON debug only
-* combine pinning of ioat destination and ioat submit
 
 * cleanup endpoint acquiring/locking/closing again
   + synchronize_rcu before freeing after unlinking

@@ -187,6 +187,15 @@ omx_user_region_deferred_pin_init(struct omx_user_region_pin_state *pinstate,
 	return 0;
 }
 
+static inline int
+omx_user_region_deferred_pin_continue(struct omx_user_region_pin_state *pinstate,
+				      unsigned long *length)
+{
+	BUG_ON(pinstate->region->status != OMX_USER_REGION_STATUS_PINNED);
+
+	return omx__user_region_pin_continue(pinstate, length);
+}
+
 static inline void
 omx_user_region_deferred_pin_finish(struct omx_user_region_pin_state *pinstate)
 {
