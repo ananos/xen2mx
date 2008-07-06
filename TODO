@@ -1,3 +1,6 @@
+* if shared-copying into a pinned region, use kmap-atomic instead of kmap?
+  rework the whole loop for the general copy_not_to_current case?
+
 * if killed while registering, needed to mark the region as failed
 
 * cleanup endpoint acquiring/locking/closing again

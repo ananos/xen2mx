@@ -159,7 +159,8 @@ start_peer_discovery() {
 	pid=$!
 
 	# wait a bit for the process to start (and maybe fail)
-	sleep 2
+	# FMA can take up to 5 seconds
+	sleep 5
 
 	cmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
 	if [ -z "$cmdname" ] ; then
