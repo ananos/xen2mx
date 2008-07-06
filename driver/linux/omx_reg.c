@@ -1366,9 +1366,9 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 				return ret;
 		}
 
-		spageaddr = kmap_atomic(*spage, KM_USER0);
+		spageaddr = kmap(*spage);
 		ret = copy_to_user(dvaddr, spageaddr + spageoff, chunk);
-		kunmap_atomic(spageaddr, KM_USER0);
+		kunmap(*spage);
 		if (ret)
 			return -EFAULT;
 
