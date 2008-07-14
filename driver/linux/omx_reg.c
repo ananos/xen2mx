@@ -131,6 +131,7 @@ omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate,
 	pinstate->aligned_vaddr = 0;
 	pinstate->remaining = 0;
 	pinstate->chunk_offset = 0;
+	pinstate->next_chunk_pages = omx_pin_chunk_pages_min;
 }
 
 static inline void
@@ -169,10 +170,23 @@ omx__user_region_pin_add_chunk(struct omx_user_region_pin_state *pinstate)
 	remaining = pinstate->remaining;
 	chunk_offset = pinstate->chunk_offset;
 
-	if (chunk_offset + remaining <= omx_pin_chunk_pages<<PAGE_SHIFT)
+	/* compute an estimated number of pages to pin */
+	chunk_pages = pinstate->next_chunk_pages;
+	/* increase the next number of pages to pin if below the max */
+	if (chunk_pages < omx_pin_chunk_pages_max) {
+		chunk_pages <<= 1;
+		if (chunk_pages > omx_pin_chunk_pages_max)
+			chunk_pages = omx_pin_chunk_pages_max;
+		pinstate->next_chunk_pages = chunk_pages;
+	}
+
+	/* compute the corresponding length */
+	if (chunk_offset + remaining <= chunk_pages<<PAGE_SHIFT)
 		chunk_length = remaining;
 	else
-		chunk_length = (omx_pin_chunk_pages<<PAGE_SHIFT) - chunk_offset;
+		chunk_length = (chunk_pages<<PAGE_SHIFT) - chunk_offset;
+
+	/* compute the actual corresponding number of pages to pin */
 	chunk_pages = (chunk_offset + chunk_length + PAGE_SIZE-1) >> PAGE_SHIFT;
 
 	ret = get_user_pages(current, current->mm, aligned_vaddr, chunk_pages, 1, 0, pages, NULL);

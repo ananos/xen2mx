@@ -612,6 +612,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		}
 
 		omx_user_region_demand_pin_init(&pinstate, region);
+		pinstate.next_chunk_pages = omx_pin_chunk_pages_max;
 		ret = omx_user_region_demand_pin_finish(&pinstate); /* will be _or_parallel once we overlap here too */
 		omx_user_region_release(region);
 		if (ret < 0) {

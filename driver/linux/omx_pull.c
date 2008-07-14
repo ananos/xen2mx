@@ -620,6 +620,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		struct omx_user_region_pin_state pinstate;
 
 		omx_user_region_demand_pin_init(&pinstate, region);
+		pinstate.next_chunk_pages = omx_pin_chunk_pages_max;
 		err = omx_user_region_demand_pin_finish(&pinstate); /* will be _or_parallel once we overlap here */
 		if (err < 0) {
 			dprintk(REG, "failed to pin user region\n");

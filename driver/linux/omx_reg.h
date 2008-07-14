@@ -120,6 +120,7 @@ struct omx_user_region_pin_state {
 	unsigned long remaining; /* remaining length to pin in current segment */
 	int chunk_offset; /* offset in current first page to pin */
 	int watching; /* are we watching another guy doing the pinning? */
+	int next_chunk_pages; /* number of pages to pin during next chunk */
 
 	struct page **pages; /* current pages to setup */
 	/* set to NULL when a new segment is being used */
