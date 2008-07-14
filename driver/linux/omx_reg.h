@@ -124,11 +124,13 @@ struct omx_user_region_pin_state {
 	/* set to NULL when a new segment is being used */
 };
 
+/* internal routines */
 extern void omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate, struct omx_user_region *region);
 extern int omx__user_region_pin_continue(struct omx_user_region_pin_state *pinstate, unsigned long *length);
 
+/* when demand-pinning is disabled, do a regular full pinning early */
 static inline int
-omx_user_region_immediate_pin(struct omx_user_region * region)
+omx_user_region_immediate_full_pin(struct omx_user_region * region)
 {
 	struct omx_user_region_pin_state pinstate;
 	unsigned long needed = region->total_length;
@@ -143,6 +145,7 @@ omx_user_region_immediate_pin(struct omx_user_region * region)
 	return omx__user_region_pin_continue(&pinstate, &needed);
 }
 
+/* when demand pinning is enabled, do a pinning until some length, or wait until somebody did */
 static inline int
 omx_user_region_demand_pin(struct omx_user_region * region, int wait, unsigned long needed)
 {
@@ -172,6 +175,7 @@ omx_user_region_demand_pin(struct omx_user_region * region, int wait, unsigned l
 	return omx__user_region_pin_continue(&pinstate, &needed);
 }
 
+/* when demand pinning is enabled, start an actually pinning */
 static inline int
 omx_user_region_demand_pin_init(struct omx_user_region_pin_state *pinstate,
 				struct omx_user_region * region)
@@ -189,6 +193,7 @@ omx_user_region_demand_pin_init(struct omx_user_region_pin_state *pinstate,
 	return 0;
 }
 
+/* when demand pinning is enabled, continue an actually pinning */
 static inline int
 omx_user_region_demand_pin_continue(struct omx_user_region_pin_state *pinstate,
 				    unsigned long *length)
@@ -199,6 +204,7 @@ omx_user_region_demand_pin_continue(struct omx_user_region_pin_state *pinstate,
 	return omx__user_region_pin_continue(pinstate, length);
 }
 
+/* when demand pinning is enabled, finish an actually pinning */
 static inline void
 omx_user_region_demand_pin_finish(struct omx_user_region_pin_state *pinstate)
 {
@@ -212,8 +218,9 @@ omx_user_region_demand_pin_finish(struct omx_user_region_pin_state *pinstate)
 	/* let the status be checked by the actual user later */
 }
 
+/* when demand pinning is enabled, wait for another guy to do enough pinning */
 static inline int
-omx_user_region_pending_pin_wait(struct omx_user_region * region, unsigned long *length)
+omx_user_region_parallel_pin_wait(struct omx_user_region * region, unsigned long *length)
 {
 	unsigned long needed = *length;
 

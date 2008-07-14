@@ -325,7 +325,7 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 
 	if (!omx_region_demand_pin) {
 		/* pin the region */
-		ret = omx_user_region_immediate_pin(region);
+		ret = omx_user_region_immediate_full_pin(region);
 		if (ret < 0) {
 			dprintk(REG, "failed to pin user region\n");
 			goto out_with_region;
@@ -1361,7 +1361,7 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 
 		if (omx_region_demand_pin && spinlen < soff + chunk) {
 			spinlen = soff + chunk;
-			ret = omx_user_region_pending_pin_wait(src_region, &spinlen);
+			ret = omx_user_region_parallel_pin_wait(src_region, &spinlen);
 			if (ret < 0)
 				return ret;
 		}
@@ -1501,7 +1501,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		if (omx_region_demand_pin) {
 			if (spinlen < soff + chunk) {
 				spinlen = soff + chunk;
-				ret = omx_user_region_pending_pin_wait(src_region, &spinlen);
+				ret = omx_user_region_parallel_pin_wait(src_region, &spinlen);
 				if (ret < 0)
 					goto err_with_chan;
 			}
@@ -1513,7 +1513,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 					if (ret < 0)
 						goto err_with_chan;
 				} else {
-					ret = omx_user_region_pending_pin_wait(dst_region, &dpinlen);
+					ret = omx_user_region_parallel_pin_wait(dst_region, &dpinlen);
 					if (ret < 0)
 						goto err_with_chan;
 				}
