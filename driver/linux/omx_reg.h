@@ -144,7 +144,7 @@ omx_user_region_immediate_pin(struct omx_user_region * region)
 }
 
 static inline int
-omx_user_region_ondemand_pin(struct omx_user_region * region, int wait, unsigned long needed)
+omx_user_region_demand_pin(struct omx_user_region * region, int wait, unsigned long needed)
 {
 	struct omx_user_region_pin_state pinstate;
 
@@ -173,8 +173,8 @@ omx_user_region_ondemand_pin(struct omx_user_region * region, int wait, unsigned
 }
 
 static inline int
-omx_user_region_ondemand_pin_init(struct omx_user_region_pin_state *pinstate,
-				  struct omx_user_region * region)
+omx_user_region_demand_pin_init(struct omx_user_region_pin_state *pinstate,
+				struct omx_user_region * region)
 {
 	if (cmpxchg(&region->status,
 		    OMX_USER_REGION_STATUS_NOT_PINNED,
@@ -190,8 +190,8 @@ omx_user_region_ondemand_pin_init(struct omx_user_region_pin_state *pinstate,
 }
 
 static inline int
-omx_user_region_ondemand_pin_continue(struct omx_user_region_pin_state *pinstate,
-				      unsigned long *length)
+omx_user_region_demand_pin_continue(struct omx_user_region_pin_state *pinstate,
+				    unsigned long *length)
 {
 #ifdef OMX_DEBUG
 	BUG_ON(pinstate->region->status != OMX_USER_REGION_STATUS_PINNED);
@@ -200,7 +200,7 @@ omx_user_region_ondemand_pin_continue(struct omx_user_region_pin_state *pinstate
 }
 
 static inline void
-omx_user_region_ondemand_pin_finish(struct omx_user_region_pin_state *pinstate)
+omx_user_region_demand_pin_finish(struct omx_user_region_pin_state *pinstate)
 {
 	struct omx_user_region *region = pinstate->region;
 	unsigned long needed = region->total_length;

@@ -601,16 +601,16 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		return omx_shared_send_rndv(endpoint, &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
 #endif
 
-	if (omx_ondemand_region_pin) {
+	if (omx_region_demand_pin) {
 		/* make sure the region is pinned */
 		region = omx_user_region_acquire(endpoint, cmd.user_region_id_needed);
 		if (unlikely(!region)) {
 			ret = -EINVAL;
 			goto out;
 		}
-		ret = omx_user_region_ondemand_pin(region,
-						   1 /* FIXME: no overlap yet */,
-						   cmd.user_region_length_needed /* toffset + length given by the lib */);
+		ret = omx_user_region_demand_pin(region,
+						 1 /* FIXME: no overlap yet */,
+						 cmd.user_region_length_needed /* toffset + length given by the lib */);
 		if (ret < 0) {
 			dprintk(REG, "failed to pin user region\n");
 			omx_user_region_release(region);

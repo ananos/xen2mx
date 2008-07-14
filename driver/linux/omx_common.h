@@ -40,7 +40,7 @@ extern int omx_peer_max;
 extern int omx_skb_frags;
 extern int omx_skb_copy_max;
 extern int omx_copybench;
-extern int omx_ondemand_region_pin;
+extern int omx_region_demand_pin;
 extern int omx_pin_chunk_pages;
 
 /* events */
