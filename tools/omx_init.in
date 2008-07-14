@@ -90,10 +90,10 @@ load_omx() {
     module="${OMX_PREFIX}/lib/modules/${LINUX_RELEASE}/open-mx.ko"
 
     # modprobe the dependencies
-    depends=$(modinfo $module | grep ^depends | awk '{print $2}' | sed 's/,/ /')
+    depends=$(/sbin/modinfo $module | grep ^depends | awk '{print $2}' | sed 's/,/ /')
     for depend in $depends ; do
 	echo "Loading dependency module: $depend"
-	modprobe $depend
+	/sbin/modprobe $depend
     done
 
     # load the driver
