@@ -405,19 +405,14 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 		goto out_with_endpoint;
 	}
 
-	/* make sure the region is marked as pinned before reporting the event */
+	/* make sure the region is marked as pinning before reporting the event */
 	if (omx_region_demand_pin) {
 		src_region = omx_user_region_acquire(src_endpoint, hdr->user_region_id_needed);
 		if (unlikely(!src_region)) {
 			err = -EINVAL;
 			goto out_with_endpoint;
 		}
-		err = omx_user_region_demand_pin_init(&pinstate, src_region);
-		if (err > 0) {
-			/* already pinned, no need to overlap */
-			omx_user_region_release(src_region);
-			src_region = NULL;
-		}
+		omx_user_region_demand_pin_init(&pinstate, src_region);
 	}
 
 	/* notify the event */
@@ -433,7 +428,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	omx_counter_inc(dst_endpoint->iface, SHARED_RECV_RNDV);
 
 	if (src_region) {
-		/* start the actual overlapped pinning now, if needed */
+		/* make sure the region is getting pinned now */
 		omx_user_region_demand_pin_finish(&pinstate);
 		omx_user_region_release(src_region);
 	}
@@ -442,7 +437,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 
  out_with_region:
 	if (src_region) {
-		/* start the actual overlapped pinning anyway, if needed */
+		/* make sure the region is getting pinned anyway */
 		omx_user_region_demand_pin_finish(&pinstate);
 		omx_user_region_release(src_region);
 	}

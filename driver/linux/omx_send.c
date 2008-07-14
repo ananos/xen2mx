@@ -575,7 +575,6 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_rndv_hdr cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
-	struct omx_user_region * region;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
 	char * data;
 	int ret;
@@ -603,20 +602,22 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 
 	if (omx_region_demand_pin) {
 		/* make sure the region is pinned */
+		struct omx_user_region * region;
+		struct omx_user_region_pin_state pinstate;
+
 		region = omx_user_region_acquire(endpoint, cmd.user_region_id_needed);
 		if (unlikely(!region)) {
 			ret = -EINVAL;
 			goto out;
 		}
-		ret = omx_user_region_demand_pin(region,
-						 1 /* FIXME: no overlap yet */,
-						 cmd.user_region_length_needed /* toffset + length given by the lib */);
+
+		omx_user_region_demand_pin_init(&pinstate, region);
+		ret = omx_user_region_demand_pin_finish(&pinstate); /* will be _or_parallel once we overlap here too */
+		omx_user_region_release(region);
 		if (ret < 0) {
 			dprintk(REG, "failed to pin user region\n");
-			omx_user_region_release(region);
 			goto out;
 		}
-		omx_user_region_release(region);
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */

@@ -617,9 +617,10 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 	if (omx_region_demand_pin) {
 		/* make sure the region is pinned */
-		err = omx_user_region_demand_pin(region,
-						 1 /* FIXME: no overlap yet */,
-						 cmd->local_offset + cmd->length);
+		struct omx_user_region_pin_state pinstate;
+
+		omx_user_region_demand_pin_init(&pinstate, region);
+		err = omx_user_region_demand_pin_finish(&pinstate); /* will be _or_parallel once we overlap here */
 		if (err < 0) {
 			dprintk(REG, "failed to pin user region\n");
 			goto out_with_region;

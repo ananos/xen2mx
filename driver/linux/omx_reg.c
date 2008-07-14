@@ -1438,7 +1438,6 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 	struct page **spage, **dpage; /* current page */
 	unsigned int spageoff, dpageoff; /* current offset in current page */
 	unsigned long spinlen, dpinlen; /* currently pinned length in region */
-	int dpinning = 0; /* are we taking care of pinning this region */
 	struct omx_user_region_pin_state dpinstate;
 	struct dma_chan *dma_chan = NULL;
 	dma_cookie_t dma_last_cookie = -1;
@@ -1448,11 +1447,8 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 	if (!dma_chan)
 		goto out;
 
-	if (omx_region_demand_pin) {
-		ret = omx_user_region_demand_pin_init(&dpinstate, dst_region);
-		if (!ret)
-			dpinning = 1;
-	}
+	if (omx_region_demand_pin)
+		omx_user_region_demand_pin_init(&dpinstate, dst_region);
 
 	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",
 		length,
@@ -1508,15 +1504,9 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 
 			if (dpinlen < doff + chunk) {
 				dpinlen = doff + chunk;
-				if (dpinning) {
-					ret = omx_user_region_demand_pin_continue(&dpinstate, &dpinlen);
-					if (ret < 0)
-						goto err_with_chan;
-				} else {
-					ret = omx_user_region_parallel_pin_wait(dst_region, &dpinlen);
-					if (ret < 0)
-						goto err_with_chan;
-				}
+				ret = omx_user_region_demand_pin_continue(&dpinstate, &dpinlen);
+				if (ret < 0)
+					goto err_with_chan;
 			}
 		}
 		/* *spage and *dpage are valid now */
@@ -1601,8 +1591,9 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		dma_chan_put(dma_chan);
 	}
 
-	if (dpinning) {
+	if (omx_region_demand_pin) {
 		omx_user_region_demand_pin_finish(&dpinstate);
+		/* ignore the return value, our copy succeeded */
 	}
 
 	return ret;
