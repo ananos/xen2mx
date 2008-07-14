@@ -74,6 +74,10 @@ omx_user_region_add_segment(struct omx_cmd_user_region_segment * useg,
 		goto out;
 	}
 
+#ifdef OMX_DEBUG
+	memset(pages, 0, nr_pages * sizeof(struct page *));
+#endif
+
 	segment->aligned_vaddr = aligned_vaddr;
 	segment->first_page_offset = offset;
 	segment->length = useglen;
@@ -1355,18 +1359,18 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 		if (chunk > dseglen - dsegoff)
 			chunk = dseglen - dsegoff;
 
-		/* actual copy */
-		dprintk(REG, "shared region copy of %d bytes from seg=%ld:page=%ld(%p):off=%d to seg=%ld:off=%ld\n",
-			chunk,
-			(unsigned long) (sseg-&src_region->segments[0]), (unsigned long) (spage-&sseg->pages[0]), *spage, spageoff,
-			(unsigned long) (dseg-&dst_region->segments[0]), dsegoff);
-
 		if (omx_ondemand_region_pin && spinlen < soff + chunk) {
 			spinlen = soff + chunk;
 			ret = omx_user_region_pending_pin_wait(src_region, &spinlen);
 			if (ret < 0)
 				return ret;
 		}
+		/* *spage is valid now */
+
+		dprintk(REG, "shared region copy of %d bytes from seg=%ld:page=%ld(%p):off=%d to seg=%ld:off=%ld\n",
+			chunk,
+			(unsigned long) (sseg-&src_region->segments[0]), (unsigned long) (spage-&sseg->pages[0]), *spage, spageoff,
+			(unsigned long) (dseg-&dst_region->segments[0]), dsegoff);
 
 		spageaddr = kmap(*spage);
 		ret = copy_to_user(dvaddr, spageaddr + spageoff, chunk);
@@ -1515,8 +1519,8 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 				}
 			}
 		}
+		/* *spage and *dpage are valid now */
 
-		/* actual copy */
 		dprintk(REG, "shared region copy of %d bytes from seg=%ld:page=%ld(%p):off=%d to seg=%ld:page=%ld(%p):off=%d\n",
 			chunk,
 			(unsigned long) (sseg-&src_region->segments[0]), (unsigned long) (spage-&sseg->pages[0]), *spage, spageoff,

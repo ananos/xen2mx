@@ -469,7 +469,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 		goto out;
 	}
 
-	dst_endpoint = omx_shared_get_endpoint_or_nack_type(hdr->peer_index,hdr->dest_endpoint,
+	dst_endpoint = omx_shared_get_endpoint_or_nack_type(hdr->peer_index, hdr->dest_endpoint,
 							    hdr->session_id, &nack_type);
 	if (unlikely(dst_endpoint == NULL)) {
 		if (nack_type == OMX_NACK_TYPE_NONE) {
