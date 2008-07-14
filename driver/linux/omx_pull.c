@@ -354,6 +354,9 @@ omx_pull_handle_alloc_slot(struct omx_endpoint *endpoint,
 		(unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot->id),
 		handle);
 
+	/* tell the sparse checker that the handle returned as locked */
+	__release(&handle->lock);
+
 	return 0;
 }
 
@@ -409,7 +412,7 @@ omx_pull_handle_acquire_from_slot(struct omx_endpoint *endpoint,
 	handle = rcu_dereference(slot->handle);
 	if (!handle) {
 		dprintk(PULL, "slot index %d not used by any pull handle\n", index);
-		goto out;
+		goto out_with_rcu;
 	}
 
 	if (slot_id != slot->id) {
@@ -418,13 +421,13 @@ omx_pull_handle_acquire_from_slot(struct omx_endpoint *endpoint,
 			(unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot->id),
 			(unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot_id));
 		handle = NULL;
-		goto out;
+		goto out_with_rcu;
 	}
 
 	omx_pull_handle_acquire(handle);
 
+ out_with_rcu:
 	rcu_read_unlock();
- out:
 	return handle;
 }
 
