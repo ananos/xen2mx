@@ -1459,7 +1459,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 
 	dma_chan = get_softnet_dma();
 	if (!dma_chan)
-		goto out;
+		goto fallback;
 
 	if (omx_region_demand_pin)
 		omx_user_region_demand_pin_init(&dpinstate, dst_region);
@@ -1512,15 +1512,22 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 			if (spinlen < soff + chunk) {
 				spinlen = soff + chunk;
 				ret = omx_user_region_parallel_pin_wait(src_region, &spinlen);
-				if (ret < 0)
-					goto err_with_chan;
+				if (ret < 0) {
+					/* failed to pin, no need to fallback to memcpy */
+					remaining = 0;
+					break;
+				}
 			}
 
 			if (dpinlen < doff + chunk) {
 				dpinlen = doff + chunk;
 				ret = omx_user_region_demand_pin_continue(&dpinstate, &dpinlen);
 				if (ret < 0)
-					goto err_with_chan;
+				if (ret < 0) {
+					/* failed to pin, no need to fallback to memcpy */
+					remaining = 0;
+					break;
+				}
 			}
 		}
 		/* *spage and *dpage are valid now */
@@ -1532,7 +1539,8 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 
 		cookie = dma_async_memcpy_pg_to_pg(dma_chan, *dpage, dpageoff, *spage, spageoff, chunk);
 		if (cookie < 0)
-			goto out;
+			/* fallback to memcpy */
+			break;
 		dma_last_cookie = cookie;
 
 		soff += chunk;
@@ -1584,7 +1592,14 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		}
 	}
 
- out:
+	if (omx_region_demand_pin) {
+		omx_user_region_demand_pin_finish(&dpinstate);
+		/* ignore the return value, only the copy success matters */
+	}
+	/* either the region is entirely pinned, or not at all,
+	 * it's safe to fallback to memcpy if needed */
+
+ fallback:
 	if (remaining) {
 		ret = omx_memcpy_between_user_regions_to_current(src_region, src_offset + (length - remaining),
 							   dst_region, dst_offset + (length - remaining),
@@ -1596,18 +1611,13 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		omx_counter_inc(dst_region->endpoint->iface, SHARED_DMARECV_LARGE);
 	}
 
- err_with_chan:
+	/* wait for dma completion at the end, to overlap a bit with everything else */
 	if (dma_chan) {
 		if (dma_last_cookie > 0) {
 			dma_async_memcpy_issue_pending(dma_chan);
 			while (dma_async_memcpy_complete(dma_chan, dma_last_cookie, NULL, NULL) == DMA_IN_PROGRESS);
 		}
 		dma_chan_put(dma_chan);
-	}
-
-	if (omx_region_demand_pin) {
-		omx_user_region_demand_pin_finish(&dpinstate);
-		/* ignore the return value, our copy succeeded */
 	}
 
 	return ret;
