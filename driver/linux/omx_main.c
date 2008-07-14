@@ -62,11 +62,11 @@ module_param_named(skbcopy, omx_skb_copy_max, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(skbcopy, "Maximum length of data to copy in linear skb instead of attaching pages");
 
 int omx_region_demand_pin = 0;
-module_param_named(demandpin, omx_region_demand_pin, uint, S_IRUGO|S_IWUSR);
+module_param_named(demandpin, omx_region_demand_pin, uint, S_IRUGO); /* not writable to simplify things */
 MODULE_PARM_DESC(demandpin, "Defer region pinning until really needed and use demand-pinning");
 
 int omx_pin_chunk_pages = 64;
-module_param_named(pinchunk, omx_pin_chunk_pages, uint, S_IRUGO); /* not writable to simplify things */
+module_param_named(pinchunk, omx_pin_chunk_pages, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(pinchunk, "Number of pages to pin at once");
 
 #ifdef CONFIG_NET_DMA
