@@ -95,7 +95,7 @@ omx_iface_raw_exit(struct omx_iface_raw * raw)
  * Send Raw Packets
  */
 
-void
+static void
 omx_raw_wakeup(struct omx_iface *iface)
 {
 	wake_up_interruptible(&iface->raw.event_wq);

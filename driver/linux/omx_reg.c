@@ -914,7 +914,8 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback(struct omx_user_r
 			/* next segment */
 			seg++;
 			segoff = 0;
-			if (seg-&region->segments[0] > region->nr_segments) {
+			if ((char *)seg - (char *)&region->segments[0]
+			    > region->nr_segments * sizeof(struct omx_user_region_segment)) {
 				/* we went out of the segment array, we got to be at the end of the request */
 				BUG_ON(remaining != 0);
 			} else {
@@ -1069,7 +1070,8 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback(struct omx_user_re
 			/* next segment */
 			seg++;
 			segoff = 0;
-			if (seg-&region->segments[0] > region->nr_segments) {
+			if ((char *)seg - (char *)&region->segments[0]
+			    > region->nr_segments * sizeof(struct omx_user_region_segment)) {
 				/* we went out of the segment array, we got to be at the end of the request */
 				BUG_ON(remaining != 0);
 			} else {
