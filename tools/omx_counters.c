@@ -33,7 +33,8 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -b <n>\tchange board id [%d]\n", BID);
   fprintf(stderr, " -s\treport shared communication counters\n");
   fprintf(stderr, " -c\tclear counters\n");
-  fprintf(stderr, " -q\tonly display non-null counters\n");
+  fprintf(stderr, " -q\tonly display non-null counters [default]\n");
+  fprintf(stderr, " -v\talso display null counters\n");
 }
 
 int main(int argc, char *argv[])
@@ -44,7 +45,7 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   uint32_t counters[OMX_COUNTER_INDEX_MAX];
   int clear = 0;
-  int non_null = 0;
+  int verbose = 0;
   struct omx_cmd_get_counters get_counters;
   int i, err;
   int c;
@@ -56,7 +57,7 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "b:scqh")) != -1)
+  while ((c = getopt(argc, argv, "b:scqvh")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
@@ -68,7 +69,10 @@ int main(int argc, char *argv[])
       clear = 1;
       break;
     case 'q':
-      non_null = 1;
+      verbose = 0;
+      break;
+    case 'v':
+      verbose = 1;
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
@@ -106,7 +110,7 @@ int main(int argc, char *argv[])
   printf("=======================================================\n");
 
   for(i=0; i<OMX_COUNTER_INDEX_MAX; i++)
-    if (counters[i] || !non_null)
+    if (counters[i] || verbose)
       printf("%03d: % 9ld %s\n", i, (unsigned long) counters[i], omx_strcounter(i));
 
   return 0;

@@ -1,6 +1,3 @@
-* add a fake iface for shared counters
-  - merge recv and send counters
-  - add a fake iface number to retrieve
 * make omx_counters -q the default
 
 * if shared-copying into a pinned region, use kmap-atomic instead of kmap?
