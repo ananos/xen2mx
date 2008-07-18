@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x148
+#define OMX_DRIVER_ABI_VERSION		0x149
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -140,13 +140,16 @@ struct omx_endpoint_desc {
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED (1ULL << 4)
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_HIGH_INTRCOAL (1ULL << 5)
 
+/* only valid for get_info and get_counters */
+#define OMX_SHARED_FAKE_IFACE_INDEX 0xfffffffe
+
 /************************
  * IOCTL parameter types
  */
 
 struct omx_cmd_get_board_info {
-	uint8_t board_index;
-	uint8_t pad[7];
+	uint32_t board_index;
+	uint32_t pad;
 	/* 8 */
 	struct omx_board_info {
 		uint64_t addr;
@@ -849,30 +852,18 @@ enum omx_counter_index {
 	OMX_COUNTER_DROP_INVALID_TYPE,
 	OMX_COUNTER_DROP_UNKNOWN_TYPE,
 
-	OMX_COUNTER_SHARED_SEND_TINY,
-	OMX_COUNTER_SHARED_SEND_SMALL,
-	OMX_COUNTER_SHARED_SEND_MEDIUM_FRAG,
-	OMX_COUNTER_SHARED_SEND_RNDV,
-	OMX_COUNTER_SHARED_SEND_NOTIFY,
-	OMX_COUNTER_SHARED_SEND_CONNECT,
-	OMX_COUNTER_SHARED_SEND_TRUC,
+	OMX_COUNTER_SHARED_TINY,
+	OMX_COUNTER_SHARED_SMALL,
+	OMX_COUNTER_SHARED_MEDIUM_FRAG,
+	OMX_COUNTER_SHARED_RNDV,
+	OMX_COUNTER_SHARED_NOTIFY,
+	OMX_COUNTER_SHARED_CONNECT,
+	OMX_COUNTER_SHARED_TRUC,
 	OMX_COUNTER_SHARED_PULL,
 
-	OMX_COUNTER_SHARED_RECV_TINY,
-	OMX_COUNTER_SHARED_RECV_SMALL,
-	OMX_COUNTER_SHARED_RECV_MEDIUM_FRAG,
-	OMX_COUNTER_SHARED_RECV_RNDV,
-	OMX_COUNTER_SHARED_RECV_NOTIFY,
-	OMX_COUNTER_SHARED_RECV_CONNECT,
-	OMX_COUNTER_SHARED_RECV_TRUC,
-	OMX_COUNTER_SHARED_PULLED,
-
-	OMX_COUNTER_SHARED_DMASEND_MEDIUM_FRAG,
-	OMX_COUNTER_SHARED_DMASEND_LARGE,
-	OMX_COUNTER_SHARED_DMASEND_PARTIAL_LARGE,
-	OMX_COUNTER_SHARED_DMARECV_MEDIUM_FRAG,
-	OMX_COUNTER_SHARED_DMARECV_LARGE,
-	OMX_COUNTER_SHARED_DMARECV_PARTIAL_LARGE,
+	OMX_COUNTER_SHARED_DMA_MEDIUM_FRAG,
+	OMX_COUNTER_SHARED_DMA_LARGE,
+	OMX_COUNTER_SHARED_DMA_PARTIAL_LARGE,
 
 	OMX_COUNTER_INDEX_MAX,
 };
@@ -1019,50 +1010,28 @@ omx_strcounter(enum omx_counter_index index)
 		return "Drop Invalid Packet Type";
 	case OMX_COUNTER_DROP_UNKNOWN_TYPE:
 		return "Drop Unknown Packet Type";
-	case OMX_COUNTER_SHARED_SEND_TINY:
-		return "Shared Send Tiny";
-	case OMX_COUNTER_SHARED_SEND_SMALL:
-		return "Shared Send Small";
-	case OMX_COUNTER_SHARED_SEND_MEDIUM_FRAG:
-		return "Shared Send Medium Frag";
-	case OMX_COUNTER_SHARED_SEND_RNDV:
-		return "Shared Send Rndv";
-	case OMX_COUNTER_SHARED_SEND_NOTIFY:
-		return "Shared Send Notify";
-	case OMX_COUNTER_SHARED_SEND_CONNECT:
-		return "Shared Send Connect";
-	case OMX_COUNTER_SHARED_SEND_TRUC:
-		return "Shared Send Truc";
+	case OMX_COUNTER_SHARED_TINY:
+		return "Shared Tiny";
+	case OMX_COUNTER_SHARED_SMALL:
+		return "Shared Small";
+	case OMX_COUNTER_SHARED_MEDIUM_FRAG:
+		return "Shared Medium Frag";
+	case OMX_COUNTER_SHARED_RNDV:
+		return "Shared Rndv";
+	case OMX_COUNTER_SHARED_NOTIFY:
+		return "Shared Notify";
+	case OMX_COUNTER_SHARED_CONNECT:
+		return "Shared Connect";
+	case OMX_COUNTER_SHARED_TRUC:
+		return "Shared Truc";
 	case OMX_COUNTER_SHARED_PULL:
 		return "Shared Pull";
-	case OMX_COUNTER_SHARED_RECV_TINY:
-		return "Shared Recv Tiny";
-	case OMX_COUNTER_SHARED_RECV_SMALL:
-		return "Shared Recv Small";
-	case OMX_COUNTER_SHARED_RECV_MEDIUM_FRAG:
-		return "Shared Recv Medium Frag";
-	case OMX_COUNTER_SHARED_RECV_RNDV:
-		return "Shared Recv Rndv";
-	case OMX_COUNTER_SHARED_RECV_NOTIFY:
-		return "Shared Recv Notify";
-	case OMX_COUNTER_SHARED_RECV_CONNECT:
-		return "Shared Recv Connect";
-	case OMX_COUNTER_SHARED_RECV_TRUC:
-		return "Shared Recv Truc";
-	case OMX_COUNTER_SHARED_PULLED:
-		return "Shared Pulled";
-	case OMX_COUNTER_SHARED_DMASEND_MEDIUM_FRAG:
-		return "DMA Shared Send Medium Frag";
-	case OMX_COUNTER_SHARED_DMASEND_LARGE:
-		return "DMA Shared Send Large";
-	case OMX_COUNTER_SHARED_DMASEND_PARTIAL_LARGE:
-		return "DMA Shared Send Large only Partial";
-	case OMX_COUNTER_SHARED_DMARECV_MEDIUM_FRAG:
-		return "DMA Shared Recv Medium Frag";
-	case OMX_COUNTER_SHARED_DMARECV_LARGE:
-		return "DMA Shared Recv Large";
-	case OMX_COUNTER_SHARED_DMARECV_PARTIAL_LARGE:
-		return "DMA Shared Recv Large only Partial";
+	case OMX_COUNTER_SHARED_DMA_MEDIUM_FRAG:
+		return "DMA Shared Medium Frag";
+	case OMX_COUNTER_SHARED_DMA_LARGE:
+		return "DMA Shared Large";
+	case OMX_COUNTER_SHARED_DMA_PARTIAL_LARGE:
+		return "DMA Shared Large only Partial";
 	default:
 		return "** Unknown **";
 	}

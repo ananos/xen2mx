@@ -96,13 +96,15 @@ extern int omx_ifnames_get(char *buf, struct kernel_param *kp);
 extern int omx_ifnames_set(const char *buf, struct kernel_param *kp);
 
 extern int omx_ifaces_get_count(void);
-extern int omx_iface_get_info(uint8_t board_index, struct omx_board_info *info);
+extern int omx_iface_get_info(uint32_t board_index, struct omx_board_info *info);
 extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);
 extern struct omx_iface * omx_iface_find_by_addr(uint64_t addr);
-extern int omx_iface_get_counters(uint8_t board_index, int clear, uint64_t buffer_addr, uint32_t buffer_length);
-extern int omx_iface_set_hostname(uint8_t board_index, char * hostname);
+extern int omx_iface_get_counters(uint32_t board_index, int clear, uint64_t buffer_addr, uint32_t buffer_length);
+extern int omx_iface_set_hostname(uint32_t board_index, char * hostname);
 
 extern void omx__raw_detach_iface_locked(struct omx_iface *iface);
+
+extern struct omx_iface * omx_shared_fake_iface;
 
 /* counters */
 #define omx_counter_inc(iface, index)		\

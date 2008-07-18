@@ -1604,11 +1604,9 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		ret = omx_memcpy_between_user_regions_to_current(src_region, src_offset + (length - remaining),
 							   dst_region, dst_offset + (length - remaining),
 							   remaining);
-		omx_counter_inc(src_region->endpoint->iface, SHARED_DMASEND_PARTIAL_LARGE);
-		omx_counter_inc(dst_region->endpoint->iface, SHARED_DMARECV_PARTIAL_LARGE);
+		omx_counter_inc(omx_shared_fake_iface, SHARED_DMA_PARTIAL_LARGE);
 	} else {
-		omx_counter_inc(src_region->endpoint->iface, SHARED_DMASEND_LARGE);
-		omx_counter_inc(dst_region->endpoint->iface, SHARED_DMARECV_LARGE);
+		omx_counter_inc(omx_shared_fake_iface, SHARED_DMA_LARGE);
 	}
 
 	/* wait for dma completion at the end, to overlap a bit with everything else */

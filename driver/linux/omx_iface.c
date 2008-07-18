@@ -46,6 +46,7 @@ static void __omx_iface_last_release(struct kref *kref);
 static struct omx_iface ** omx_ifaces = NULL; /* must be NULL during init so that module param are delayed */
 static unsigned omx_iface_nr = 0;
 static struct mutex omx_ifaces_mutex;
+struct omx_iface * omx_shared_fake_iface = NULL; /* only used for shared communication counters */
 
 /*
  * Lock/Unlock the ifaces array
@@ -152,7 +153,7 @@ omx_ifaces_get_count(void)
  * Return the address and name of an iface.
  */
 int
-omx_iface_get_info(uint8_t board_index, struct omx_board_info *info)
+omx_iface_get_info(uint32_t board_index, struct omx_board_info *info)
 {
 	struct omx_iface * iface;
 	struct net_device * ifp;
@@ -160,22 +161,32 @@ omx_iface_get_info(uint8_t board_index, struct omx_board_info *info)
 
 	rcu_read_lock();
 
-	ret = -EINVAL;
-	if (board_index >= omx_iface_max)
-		goto out_with_lock;
+	if (board_index == OMX_SHARED_FAKE_IFACE_INDEX) {
+		info->addr = 0;
+		info->numa_node = -1;
+		strncpy(info->ifacename, "fake", OMX_IF_NAMESIZE);
+		info->ifacename[OMX_IF_NAMESIZE-1] = '\0';
+		strncpy(info->hostname, "Shared Communication", OMX_HOSTNAMELEN_MAX);
+		info->hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 
-	iface = rcu_dereference(omx_ifaces[board_index]);
-	if (!iface)
-		goto out_with_lock;
+	} else {
+		ret = -EINVAL;
+		if (board_index >= omx_iface_max)
+			goto out_with_lock;
 
-	ifp = iface->eth_ifp;
+		iface = rcu_dereference(omx_ifaces[board_index]);
+		if (!iface)
+			goto out_with_lock;
 
-	info->addr = iface->peer.board_addr;
-	info->numa_node = omx_ifp_node(iface->eth_ifp);
-	strncpy(info->ifacename, ifp->name, OMX_IF_NAMESIZE);
-	info->ifacename[OMX_IF_NAMESIZE-1] = '\0';
-	strncpy(info->hostname, iface->peer.hostname, OMX_HOSTNAMELEN_MAX);
-	info->hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+		ifp = iface->eth_ifp;
+
+		info->addr = iface->peer.board_addr;
+		info->numa_node = omx_ifp_node(iface->eth_ifp);
+		strncpy(info->ifacename, ifp->name, OMX_IF_NAMESIZE);
+		info->ifacename[OMX_IF_NAMESIZE-1] = '\0';
+		strncpy(info->hostname, iface->peer.hostname, OMX_HOSTNAMELEN_MAX);
+		info->hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+	}
 
 	rcu_read_unlock();
 	return 0;
@@ -186,7 +197,7 @@ omx_iface_get_info(uint8_t board_index, struct omx_board_info *info)
 }
 
 int
-omx_iface_get_counters(uint8_t board_index, int clear,
+omx_iface_get_counters(uint32_t board_index, int clear,
 		       uint64_t buffer_addr, uint32_t buffer_length)
 {
 	struct omx_iface * iface;
@@ -194,13 +205,18 @@ omx_iface_get_counters(uint8_t board_index, int clear,
 
 	rcu_read_lock();
 
-	ret = -EINVAL;
-	if (board_index >= omx_iface_max)
-		goto out_with_lock;
+	if (board_index == OMX_SHARED_FAKE_IFACE_INDEX) {
+		iface = omx_shared_fake_iface;
 
-	iface = rcu_dereference(omx_ifaces[board_index]);
-	if (!iface)
-		goto out_with_lock;
+	} else {
+		ret = -EINVAL;
+		if (board_index >= omx_iface_max)
+			goto out_with_lock;
+
+		iface = rcu_dereference(omx_ifaces[board_index]);
+		if (!iface)	
+			goto out_with_lock;
+	}
 
 	if (buffer_length < sizeof(iface->counters))
 		buffer_length = sizeof(iface->counters);
@@ -219,7 +235,7 @@ omx_iface_get_counters(uint8_t board_index, int clear,
 }
 
 int
-omx_iface_set_hostname(uint8_t board_index, char * hostname)
+omx_iface_set_hostname(uint32_t board_index, char * hostname)
 {
 	struct omx_iface * iface;
 	char * new_hostname, * old_hostname;
@@ -953,11 +969,19 @@ omx_net_init(void)
 		goto out_with_pack;
 	}
 
+
+	omx_shared_fake_iface = kzalloc(sizeof(struct omx_iface), GFP_KERNEL);
+	if (!omx_shared_fake_iface) {
+                printk(KERN_ERR "Open-MX: Failed to the fake iface for shared communication counters\n");
+                ret = -ENOMEM;
+                goto out_with_notifier;
+        }
+
 	omx_ifaces = kzalloc(omx_iface_max * sizeof(struct omx_iface *), GFP_KERNEL);
 	if (!omx_ifaces) {
 		printk(KERN_ERR "Open-MX: failed to allocate interface array\n");
 		ret = -ENOMEM;
-		goto out_with_notifier;
+		goto out_with_shared_fake_iface;
 	}
 
 	if (omx_delayed_ifnames) {
@@ -999,6 +1023,8 @@ omx_net_init(void)
 	printk(KERN_INFO "Open-MX: attached %d interfaces\n", omx_iface_nr);
 	return 0;
 
+ out_with_shared_fake_iface:
+	kfree(omx_shared_fake_iface);
  out_with_notifier:
 	unregister_netdevice_notifier(&omx_netdevice_notifier);
  out_with_pack:
@@ -1053,6 +1079,7 @@ omx_net_exit(void)
 
 	/* free structures now that the notifier is gone */
 	kfree(omx_ifaces);
+	kfree(omx_shared_fake_iface);
 
 	/* FIXME: some pull handle timers may still be active */
 }
