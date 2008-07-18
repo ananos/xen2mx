@@ -542,10 +542,10 @@ extern omx_return_t
 omx__get_board_count(uint32_t * count);
 
 extern omx_return_t
-omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_info * info);
+omx__get_board_info(struct omx_endpoint * ep, uint32_t index, struct omx_board_info * info);
 
 extern omx_return_t
-omx__get_board_index_by_name(const char * name, uint8_t * index);
+omx__get_board_index_by_name(const char * name, uint32_t * index);
 
 /* hostname management */
 

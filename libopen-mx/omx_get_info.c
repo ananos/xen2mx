@@ -54,7 +54,7 @@ omx__get_board_count(uint32_t * count)
  * index, addr, hostname and ifacename pointers may be NULL is unused.
  */
 omx_return_t
-omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_info * info)
+omx__get_board_info(struct omx_endpoint * ep, uint32_t index, struct omx_board_info * info)
 {
   struct omx_cmd_get_board_info get_info;
   omx_return_t ret = OMX_SUCCESS;
@@ -104,7 +104,7 @@ omx__get_board_info(struct omx_endpoint * ep, uint8_t index, struct omx_board_in
  * Returns the current index of a board given by its name
  */
 omx_return_t
-omx__get_board_index_by_name(const char * name, uint8_t * index)
+omx__get_board_index_by_name(const char * name, uint32_t * index)
 {
   omx_return_t ret = OMX_SUCCESS;
   uint32_t max = omx__driver_desc->board_max;
@@ -144,7 +144,7 @@ omx__get_board_index_by_name(const char * name, uint8_t * index)
  * Returns the current index of a board given by its addr
  */
 omx_return_t
-omx__get_board_index_by_addr(uint64_t addr, uint8_t * index)
+omx__get_board_index_by_addr(uint64_t addr, uint32_t * index)
 {
   omx_return_t ret = OMX_SUCCESS;
   uint32_t max = omx__driver_desc->board_max;
@@ -279,7 +279,7 @@ omx_get_info(struct omx_endpoint * ep, enum omx_info_key key,
 
     } else {
       /* if no endpoint given, ask the driver about the index given in in_val */
-      uint8_t index;
+      uint32_t index;
       omx_return_t ret;
 
       if (!in_val)
@@ -387,7 +387,7 @@ omx_board_number_to_nic_id(uint32_t board_number,
 			   uint64_t *nic_id)
 {
   struct omx_board_info info;
-  uint8_t index = board_number;
+  uint32_t index = board_number;
   omx_return_t ret;
 
   ret = omx__get_board_info(NULL, index, &info);
@@ -404,7 +404,7 @@ omx_nic_id_to_board_number(uint64_t nic_id,
 			   uint32_t *board_number)
 {
   omx_return_t ret;
-  uint8_t index = -1; /* shut-up the compiler */
+  uint32_t index = -1; /* shut-up the compiler */
 
   ret = omx__get_board_index_by_addr(nic_id, &index);
   if (ret == OMX_SUCCESS)
