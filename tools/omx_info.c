@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
   }
 
   for(i=0, found=0; i<max && found<count; i++) {
-    uint8_t board_index = i;
+    uint32_t board_index = i;
     struct omx_board_info board_info;
 
     ret = omx__get_board_info(NULL, board_index, &board_info);

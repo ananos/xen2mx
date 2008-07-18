@@ -31,6 +31,7 @@ usage(int argc, char *argv[])
 {
   fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange board id [%d]\n", BID);
+  fprintf(stderr, " -s\treport shared communication counters\n");
   fprintf(stderr, " -c\tclear counters\n");
   fprintf(stderr, " -q\tonly display non-null counters\n");
 }
@@ -39,7 +40,7 @@ int main(int argc, char *argv[])
 {
   struct omx_board_info board_info;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-  uint8_t board_index = BID;
+  uint32_t board_index = BID;
   omx_return_t ret;
   uint32_t counters[OMX_COUNTER_INDEX_MAX];
   int clear = 0;
@@ -55,10 +56,13 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  while ((c = getopt(argc, argv, "b:cqh")) != -1)
+  while ((c = getopt(argc, argv, "b:scqh")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
+      break;
+    case 's':
+      board_index = OMX_SHARED_FAKE_IFACE_INDEX;
       break;
     case 'c':
       clear = 1;
@@ -93,8 +97,12 @@ int main(int argc, char *argv[])
   }
   OMX_VALGRIND_MEMORY_MAKE_READABLE(counters, sizeof(counters));
 
-  printf("%s (board #%d name %s addr %s)\n",
-	 board_info.hostname, board_index, board_info.ifacename, board_addr_str);
+  if (board_index == OMX_SHARED_FAKE_IFACE_INDEX)
+    printf("%s (addr %s)\n",
+	   board_info.hostname, board_addr_str);
+  else
+    printf("%s (board #%u name %s addr %s)\n",
+	   board_info.hostname, board_index, board_info.ifacename, board_addr_str);
   printf("=======================================================\n");
 
   for(i=0; i<OMX_COUNTER_INDEX_MAX; i++)

@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
   struct omx_board_info board_info;
   struct omx_cmd_get_endpoint_info get_endpoint_info;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-  uint8_t board_index = BID;
+  uint32_t board_index = BID;
   omx_return_t ret;
   uint32_t emax;
   int i, err;
