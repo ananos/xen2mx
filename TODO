@@ -1,9 +1,4 @@
-* make omx_counters -q the default
-
-* if shared-copying into a pinned region, use kmap-atomic instead of kmap?
-  rework the whole loop for the general copy_not_to_current case?
-
-* if killed while registering, needed to mark the region as failed
+* if killed while registering, needed to mark the region as failed?
 
 * cleanup endpoint acquiring/locking/closing again
   + synchronize_rcu before freeing after unlinking
@@ -44,8 +39,6 @@
     - but last_release may be called from interrupt context
 
 * shared
-  + reduce large threshold for shared? only if ioat enabled?
-    - user-space doesn't know about it, add a hint in the driver desc?
   + why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
 
 * affinity
@@ -68,14 +61,10 @@
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?
 
-* overlap registration with rndv and pull
-  + add a "registered_length" field to windows
-  + add a delayed register field to register req, only alloc struct, do not pin
-  + add a need register field to rndv and pull with a window number
+* overlap registration with rndv and pull on the network
   + queue skb if touching after the registered_length
     - dequeue after registering enough
-  + register by blocks (8 or 16 pages per block)
-  + let shared comm poll until the window is large enough
+    - or just drop and let retransmission happen?
   + remove the user-space knowledge of window being registered for real
     - integrate into mmu notifier since there is no need anymore to notify userspace when region is invalidated
 
