@@ -192,6 +192,7 @@ omx_user_region_demand_pin_init(struct omx_user_region_pin_state *pinstate,
 		    OMX_USER_REGION_STATUS_NOT_PINNED,
 		    OMX_USER_REGION_STATUS_PINNED)) {
 		/* somebody already registered this region */
+		pinstate->region = region;
 		pinstate->watching = 1;
 	} else {
 		/* start the pinning ourself */
