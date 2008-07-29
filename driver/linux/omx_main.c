@@ -296,6 +296,9 @@ omx_init(void)
 #ifndef OMX_DISABLE_SHARED
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
 #endif
+#ifdef CONFIG_MMU_NOTIFIER
+	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PINCACHE_INVALIDATE;
+#endif
 
 	omx_driver_userdesc->board_max = omx_iface_max;
 	omx_driver_userdesc->endpoint_max = omx_endpoint_max;

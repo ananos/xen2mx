@@ -114,8 +114,9 @@ struct omx_driver_desc {
 #define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
 #define OMX_DRIVER_DESC_FILE_OFFSET	(4096*4096)
 
-#define OMX_DRIVER_FEATURE_WIRECOMPAT	(1<<0)
-#define OMX_DRIVER_FEATURE_SHARED	(1<<1)
+#define OMX_DRIVER_FEATURE_WIRECOMPAT		(1<<0)
+#define OMX_DRIVER_FEATURE_SHARED		(1<<1)
+#define OMX_DRIVER_FEATURE_PINCACHE_INVALIDATE	(1<<2)
 
 /* endpoint desc */
 struct omx_endpoint_desc {
