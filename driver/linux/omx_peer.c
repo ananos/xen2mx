@@ -115,6 +115,7 @@ omx_peers_clear(int local)
 			/* local iface peer hostname cannot be NULL, no need to update the host_query_list or so */
 
 			peer->index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
+			peer->local_iface = NULL;
 
 			/* release the iface reference now it is not linked in the peer table anymore */
 			omx_iface_release(iface);
@@ -174,9 +175,16 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 	if (iface) {
 		/* add local iface to peer table and update the iface name if possible */
 
-		/* omx_iface_find_by_addr() acquired the iface, keep the reference */
 		peer = &iface->peer;
-		peer->local_iface = iface;
+
+		if (peer->index != OMX_UNKNOWN_REVERSE_PEER_INDEX) {
+			/* the iface was already in the table, no need to keep the reference that omx_iface_find_by_addr() acquired */
+			omx_iface_release(iface);
+			BUG_ON(peer->local_iface != iface);
+		} else {
+			BUG_ON(peer->local_iface != NULL);
+			peer->local_iface = iface;
+		}
 
 		/* replace the iface hostname with the one from the peer table if non-null */
 		if (new_hostname) {
@@ -379,7 +387,10 @@ omx_peers_notify_iface_detach(struct omx_iface * iface)
 		rcu_assign_pointer(omx_peer_array[index], NULL);
 		/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
 		synchronize_rcu();
+
+		/* mark the iface as not in the table */
 		peer->index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
+		peer->local_iface = NULL;
 
 		/* release the iface reference now it is not linked in the peer table anymore */
 		omx_iface_release(iface);
