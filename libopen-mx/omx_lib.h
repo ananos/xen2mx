@@ -497,7 +497,7 @@ extern void
 omx__process_resend_requests(struct omx_endpoint *ep);
 
 extern void
-omx__process_queued_requests(struct omx_endpoint *ep);
+omx__process_delayed_requests(struct omx_endpoint *ep);
 
 extern void
 omx__send_throttling_requests(struct omx_endpoint *ep,

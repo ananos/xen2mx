@@ -253,8 +253,8 @@ omx__progress(struct omx_endpoint * ep)
   /* resend requests that didn't get acked/replied */
   omx__process_resend_requests(ep);
 
-  /* post queued requests */
-  omx__process_queued_requests(ep);
+  /* post delayed requests */
+  omx__process_delayed_requests(ep);
 
   /* ack partners that didn't get acked recently */
   omx__process_partners_to_ack(ep);

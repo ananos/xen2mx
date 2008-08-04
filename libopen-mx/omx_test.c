@@ -509,7 +509,7 @@ omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
      * small and medium are buffered once they pass the throttling check
      * and if there are enough resources to avoid queueing
      */
-    if (!(req->generic.state & (OMX_REQUEST_STATE_SEND_NEED_SEQNUM|OMX_REQUEST_STATE_QUEUED)))
+    if (!(req->generic.state & (OMX_REQUEST_STATE_SEND_NEED_SEQNUM|OMX_REQUEST_STATE_DELAYED)))
       result = 1;
 
   } else if (req->generic.type == OMX_REQUEST_TYPE_SEND_SELF) {

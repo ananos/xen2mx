@@ -241,8 +241,8 @@ struct omx_endpoint {
   } * ctxid;
 
   /* non multiplexed queues */
-  /* SEND req with state = QUEUED (queued by their queue_elt) */
-  struct list_head queued_send_req_q;
+  /* SEND req with state = DELAYED (queued by their queue_elt) */
+  struct list_head delayed_send_req_q;
   /* SEND req with state = IN_DRIVER (queued by their queue_elt) */
   struct list_head driver_posted_req_q;
   /* RECV MEDIUM req with state = PARTIAL (queued by their queue_elt) */
@@ -328,7 +328,7 @@ enum omx__request_type {
  *   NEED_REPLY: connect_req_q
  *
  * if RESENDING added, resend_req_q instead of non_acked_req_q
- * if QUEUED, send_req_q
+ * if DELAYED, delayed_send_req_q
  *
  * The DONE qnd ZOMBIE states of the request determines whether the done_elt
  * is queued in the endpoint done_req_q:
@@ -339,8 +339,8 @@ enum omx__request_type {
  */
 
 enum omx__request_state {
-  /* placed on a queue for sending through the driver soon */
-  OMX_REQUEST_STATE_QUEUED = (1<<0),
+  /* placed on a queue for delayed posting due to resource shortage */
+  OMX_REQUEST_STATE_DELAYED = (1<<0),
   /* posted to the driver, not done sending yet */
   OMX_REQUEST_STATE_IN_DRIVER = (1<<1),
   /* posted receive that didn't get match yet */

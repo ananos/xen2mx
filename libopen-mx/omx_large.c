@@ -481,8 +481,8 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
     if (unlikely(ret != OMX_SUCCESS)) {
       omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
       omx__debug_printf(SEND, "queueing large request %p\n", req);
-      req->generic.state |= OMX_REQUEST_STATE_QUEUED;
-      omx__enqueue_request(&ep->queued_send_req_q, req);
+      req->generic.state |= OMX_REQUEST_STATE_DELAYED;
+      omx__enqueue_request(&ep->delayed_send_req_q, req);
     }
 
   } else {

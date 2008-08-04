@@ -260,9 +260,9 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   ret = omx__submit_isend_small(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
-    omx__debug_printf(SEND, "queueing send request %p\n", req);
-    req->generic.state |= OMX_REQUEST_STATE_QUEUED;
-    omx__enqueue_request(&ep->queued_send_req_q, req);
+    omx__debug_printf(SEND, "delaying send small request %p\n", req);
+    req->generic.state |= OMX_REQUEST_STATE_DELAYED;
+    omx__enqueue_request(&ep->delayed_send_req_q, req);
   }
 }
 
@@ -471,9 +471,9 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   ret = omx__submit_isend_medium(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
-    omx__debug_printf(SEND, "queueing medium request %p\n", req);
-    req->generic.state |= OMX_REQUEST_STATE_QUEUED;
-    omx__enqueue_request(&ep->queued_send_req_q, req);
+    omx__debug_printf(SEND, "delaying send medium request %p\n", req);
+    req->generic.state |= OMX_REQUEST_STATE_DELAYED;
+    omx__enqueue_request(&ep->delayed_send_req_q, req);
   }
 }
 
@@ -587,9 +587,9 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   ret = omx__submit_isend_rndv(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
-    omx__debug_printf(SEND, "queueing large send request %p\n", req);
-    req->generic.state |= OMX_REQUEST_STATE_QUEUED;
-    omx__enqueue_request(&ep->queued_send_req_q, req);
+    omx__debug_printf(SEND, "delaying large send request %p\n", req);
+    req->generic.state |= OMX_REQUEST_STATE_DELAYED;
+    omx__enqueue_request(&ep->delayed_send_req_q, req);
   }
 }
 
@@ -671,8 +671,8 @@ void
 omx__queue_notify(struct omx_endpoint *ep,
 		  union omx_request *req)
 {
-  req->generic.state |= OMX_REQUEST_STATE_QUEUED;
-  omx__enqueue_request(&ep->queued_send_req_q, req);
+  req->generic.state |= OMX_REQUEST_STATE_DELAYED;
+  omx__enqueue_request(&ep->delayed_send_req_q, req);
 }
 
 /****************************
@@ -915,36 +915,36 @@ omx_issendv(omx_endpoint_t ep,
   return ret;
 }
 
-/***********************
- * Send Queued Requests
+/************************
+ * Send Delayed Requests
  */
 
 void
-omx__process_queued_requests(struct omx_endpoint *ep)
+omx__process_delayed_requests(struct omx_endpoint *ep)
 {
   union omx_request *req, *next;
 
-  omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
+  omx__foreach_request_safe(&ep->delayed_send_req_q, req, next) {
     omx_return_t ret;
 
-    req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
+    req->generic.state &= ~OMX_REQUEST_STATE_DELAYED;
     omx___dequeue_request(req);
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_SMALL:
-      omx__debug_printf(SEND, "trying to resubmit queued send small request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, "trying to resubmit delayed send small request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       ret = omx__submit_isend_small(ep, req);
       break;
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf(SEND, "trying to resubmit queued send medium request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, "trying to resubmit delayed send medium request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       ret = omx__submit_isend_medium(ep, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf(SEND, "trying to resubmit queued send large request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, "trying to resubmit delayed send large request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       ret = omx__submit_isend_rndv(ep, req);
@@ -952,13 +952,13 @@ omx__process_queued_requests(struct omx_endpoint *ep)
     case OMX_REQUEST_TYPE_RECV_LARGE:
       if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
 	/* if partial, we need to post the pull request to the driver */
-	omx__debug_printf(SEND, "trying to resubmit queued recv large request %p seqnum %d (#%d)\n", req,
+	omx__debug_printf(SEND, "trying to resubmit delayed recv large request %p seqnum %d (#%d)\n", req,
 			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
 	ret = omx__submit_pull(ep, req);
       } else {
 	/* if not partial, the pull is already done, we need to send the notify */
-	omx__debug_printf(SEND, "trying to resubmit queued recv large request notify message %p seqnum %d (#%d)\n", req,
+	omx__debug_printf(SEND, "trying to resubmit delayed recv large request notify message %p seqnum %d (#%d)\n", req,
 			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
 	omx__submit_notify(ep, req);
@@ -966,16 +966,16 @@ omx__process_queued_requests(struct omx_endpoint *ep)
       }
       break;
     default:
-      omx__abort("Failed to handle queued request with type %d\n",
+      omx__abort("Failed to handle delayed request with type %d\n",
 		 req->generic.type);
     }
 
     if (unlikely(ret != OMX_SUCCESS)) {
       omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
       /* put back at the head of the queue */
-      omx__debug_printf(SEND, "requeueing back queued request %p\n", req);
-      req->generic.state |= OMX_REQUEST_STATE_QUEUED;
-      omx__requeue_request(&ep->queued_send_req_q, req);
+      omx__debug_printf(SEND, "requeueing back delayed request %p\n", req);
+      req->generic.state |= OMX_REQUEST_STATE_DELAYED;
+      omx__requeue_request(&ep->delayed_send_req_q, req);
       break;
     }
   }

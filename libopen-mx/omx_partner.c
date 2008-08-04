@@ -810,16 +810,16 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    */
 
   /*
-   * Drop queued send requests.
+   * Drop delayed send requests.
    */
   count = 0;
-  omx__foreach_request_safe(&ep->queued_send_req_q, req, next) {
+  omx__foreach_request_safe(&ep->delayed_send_req_q, req, next) {
     if (req->generic.partner != partner)
       continue;
 
     omx___dequeue_request(req);
-    req->generic.state &= ~OMX_REQUEST_STATE_QUEUED;
-    omx__debug_printf(CONNECT, "Dropping queued send %p\n", req);
+    req->generic.state &= ~OMX_REQUEST_STATE_DELAYED;
+    omx__debug_printf(CONNECT, "Dropping delayed send %p\n", req);
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
@@ -841,14 +841,14 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       omx__recv_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
       break;
     default:
-      omx__abort("Failed to handle queued request with type %d\n",
+      omx__abort("Failed to handle delayed request with type %d\n",
                  req->generic.type);
     }
 
     count++;
   }
   if (count)
-    printf("Dropped %d queued sends to partner\n", count);
+    printf("Dropped %d delayed sends to partner\n", count);
 
   /*
    * Drop throttling send request to this partner.
