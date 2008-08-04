@@ -772,7 +772,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   /*
    * Complete pending send/recv with an error status (they should get nacked earlier most of the times).
    * Take them from the partner non-acked queue, it will remove them from either
-   * the endpoint requeued_send_req_q or non_acked_req_q.
+   * the endpoint resend_req_q or non_acked_req_q.
    * And mediums that are currently in the driver will get their status marked as wrong
    * and they will be completed with this status when leaving driver_posted_req_q.
    */

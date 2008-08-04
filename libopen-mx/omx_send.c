@@ -1023,19 +1023,19 @@ omx__process_resend_requests(struct omx_endpoint *ep)
   union omx_request *req, *next;
   uint64_t now = omx__driver_desc->jiffies;
 
-  /* move non acked requests to the requeued_send_req_q */
+  /* move non acked requests to the resend_req_q */
   omx__foreach_request_safe(&ep->non_acked_req_q, req, next) {
     if (now - req->generic.last_send_jiffies < omx__globals.resend_delay_jiffies)
       /* the remaining ones are more recent, no need to resend them yet */
       break;
 
     omx___dequeue_request(req);
-    req->generic.state |= OMX_REQUEST_STATE_REQUEUED;
-    omx__enqueue_request(&ep->requeued_send_req_q, req);
+    req->generic.state |= OMX_REQUEST_STATE_RESENDING;
+    omx__enqueue_request(&ep->resend_req_q, req);
   }
 
-  /* resend requests from the requeued_send_req_q */
-  omx__foreach_request_safe(&ep->requeued_send_req_q, req, next) {
+  /* resend requests from the resend_req_q */
+  omx__foreach_request_safe(&ep->resend_req_q, req, next) {
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
@@ -1047,42 +1047,42 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       continue;
     }
 
-    req->generic.state &= ~OMX_REQUEST_STATE_REQUEUED;
+    req->generic.state &= ~OMX_REQUEST_STATE_RESENDING;
     omx___dequeue_request(req);
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:
-      omx__debug_printf(SEND, "reposting requeued send tiny request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, "reposting resend tiny request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_tiny(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_SMALL:
-      omx__debug_printf(SEND, "reposting requeued send small request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, "reposting resend small request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_small(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf(SEND, "reposting requeued medium small request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, "reposting resend medium request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_medium(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf(SEND, "reposting requeued send rndv request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, "reposting resend rndv request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_rndv(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
-      omx__debug_printf(SEND, "reposting requeued send notify request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, "reposting resend notify request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_notify(ep, req->generic.partner, req);
       break;
     default:
-      omx__abort("Failed to handle requeued request with type %d\n",
+      omx__abort("Failed to handle resend request with type %d\n",
 		 req->generic.type);
     }
   }

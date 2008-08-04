@@ -34,13 +34,13 @@ omx__mark_request_acked(struct omx_endpoint *ep,
 {
   struct list_head *queue;
 
-  if (req->generic.state & OMX_REQUEST_STATE_REQUEUED)
-    queue = &ep->requeued_send_req_q;
+  if (req->generic.state & OMX_REQUEST_STATE_RESENDING)
+    queue = &ep->resend_req_q;
   else
     queue = &ep->non_acked_req_q;
 
   omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_ACK);
-  req->generic.state &= ~(OMX_REQUEST_STATE_NEED_ACK|OMX_REQUEST_STATE_REQUEUED);
+  req->generic.state &= ~(OMX_REQUEST_STATE_NEED_ACK|OMX_REQUEST_STATE_RESENDING);
 
   switch (req->generic.type) {
 
