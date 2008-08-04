@@ -117,7 +117,7 @@ other-install: other-installonly
 ##################
 # create tarballs
 
-.PHONY: svndist curdist
+.PHONY: dist
 
 ifeq ($(OMX_CONFIGURED),1)
   ifeq ($(SUFFIX),date)
@@ -133,7 +133,7 @@ SVN_FAQ_NAME	=	site/FAQ/index.html
 TARBALL_FAQ_NAME	=	FAQ.html
 PATCHES	=
 
-svndist:
+dist:
 	@if [ -z "$(TARBALL)" ] ; then echo "Cannot create tarball with empty TARBALL name" ; /bin/false ; fi
 	@newdir=$(TARBALL) \
 	 && echo "Exporting current SVN branch $(SVN_BRANCH)..." \
@@ -142,17 +142,6 @@ svndist:
 	 && (if [ -n "$$PATCHES" ] && [ -r "$$PATCHES/series" ] ; then echo "Patching the tree with quilt..." ; \
 		cd $$newdir && QUILT_PATCHES=$$PATCHES quilt -av push && rm -rf .pc/ ; \
 		fi) \
-	 && echo "Preparing the tree..." \
-	 && cd $$newdir && autoreconf -f && rm -rf autom4te.cache/ && cd .. \
-	 && echo "Creating the tarball..." \
-	 && tar cfz $${newdir}.tar.gz $$newdir && rm -rf $$newdir \
-	 && echo "Created $${newdir}.tar.gz" && ls -l $${newdir}.tar.gz
-
-curdist:
-	@if [ -z "$(TARBALL)" ] ; then echo "Cannot create tarball with empty TARBALL name" ; /bin/false ; fi
-	@newdir=$(TARBALL) \
-	 && echo "Copying current tree without SVN versioning info..." \
-	 && cp -a @top_srcdir@ ../$$newdir && mv ../$$newdir . && find $$newdir -type d | grep '\.svn$$' | xargs rm -rf \; \
 	 && echo "Preparing the tree..." \
 	 && cd $$newdir && autoreconf -f && rm -rf autom4te.cache/ && cd .. \
 	 && echo "Creating the tarball..." \
