@@ -195,7 +195,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 
   copy = malloc(length);
   if (unlikely(!copy))
-    return OMX_INTERNAL_NEED_RETRY;
+    return OMX_INTERNAL_MISSING_RESOURCES;
 
   small_param = &req->send.specific.small.send_small_ioctl_param;
   small_param->peer_index = partner->peer_index;
@@ -259,7 +259,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
 
   ret = omx__submit_isend_small(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
-    omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
+    omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
     omx__debug_printf(SEND, "delaying send small request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_DELAYED;
     omx__enqueue_request(&ep->delayed_send_req_q, req);
@@ -423,7 +423,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   if (unlikely(ep->avail_exp_events < frags_nr
 	       || omx__endpoint_sendq_map_get(ep, frags_nr, req, sendq_index) < 0))
     /* let the caller handle the error */
-    return OMX_INTERNAL_NEED_RETRY;
+    return OMX_INTERNAL_MISSING_RESOURCES;
 
   req->generic.resends = 0;
   req->generic.resends_max = ep->req_resends_max;
@@ -470,7 +470,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
 
   ret = omx__submit_isend_medium(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
-    omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
+    omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
     omx__debug_printf(SEND, "delaying send medium request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_DELAYED;
     omx__enqueue_request(&ep->delayed_send_req_q, req);
@@ -525,12 +525,12 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   omx_return_t ret;
 
   if (unlikely(!ep->large_sends_avail_nr))
-    return OMX_INTERNAL_NEED_RETRY;
+    return OMX_INTERNAL_MISSING_RESOURCES;
   ep->large_sends_avail_nr--;
 
   ret = omx__get_region(ep, &req->send.segs, &region, req);
   if (unlikely(ret != OMX_SUCCESS)) {
-    omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
+    omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
     ep->large_sends_avail_nr++;
     /* let the caller handle the error */
     return ret;
@@ -586,7 +586,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
 
   ret = omx__submit_isend_rndv(ep, req);
   if (unlikely(ret != OMX_SUCCESS)) {
-    omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
+    omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
     omx__debug_printf(SEND, "delaying large send request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_DELAYED;
     omx__enqueue_request(&ep->delayed_send_req_q, req);
@@ -971,7 +971,7 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
     }
 
     if (unlikely(ret != OMX_SUCCESS)) {
-      omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
+      omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
       /* put back at the head of the queue */
       omx__debug_printf(SEND, "requeueing back delayed request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_DELAYED;

@@ -71,7 +71,7 @@ omx__endpoint_large_region_try_alloc(struct omx_endpoint * ep,
   index = ep->large_region_map.first_free;
   if (unlikely(index == -1))
     /* let the caller handle the error */
-    return OMX_INTERNAL_NEED_RETRY;
+    return OMX_INTERNAL_MISSING_RESOURCES;
 
   array = ep->large_region_map.array;
   next_free = array[index].next_free;
@@ -147,7 +147,7 @@ omx__register_region(struct omx_endpoint *ep,
     omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
 				       OMX_SUCCESS,
 				       "create user region %d", region->id);
-    ret = OMX_INTERNAL_NEED_RETRY;
+    ret = OMX_INTERNAL_MISSING_RESOURCES;
   }
 
   /* let the caller handle errors */
@@ -190,7 +190,7 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
   /* try once */
   ret = omx__endpoint_large_region_try_alloc(ep, regionp);
 
-  if (unlikely(ret == OMX_INTERNAL_NEED_RETRY && omx__globals.regcache)) {
+  if (unlikely(ret == OMX_INTERNAL_MISSING_RESOURCES && omx__globals.regcache)) {
     /* try to free some unused region in the cache */
     if (!list_empty(&ep->reg_unused_list)) {
       struct omx__large_region *region;
@@ -427,12 +427,12 @@ omx__submit_pull(struct omx_endpoint * ep,
 
   if (unlikely(ep->avail_exp_events < 1))
     /* let the caller handle the error */
-    return OMX_INTERNAL_NEED_RETRY;
+    return OMX_INTERNAL_MISSING_RESOURCES;
 
   /* FIXME: could register xfer_length instead of the whole segments */
   ret = omx__get_region(ep, &req->recv.segs, &region, NULL);
   if (unlikely(ret != OMX_SUCCESS)) {
-    omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
+    omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
     /* let the caller handle the error */
     return ret;
   }
@@ -458,7 +458,7 @@ omx__submit_pull(struct omx_endpoint * ep,
     omx__put_region(ep, region, NULL);
     /* let the caller handle the error */
     /* change no system resources into a regular retry, FIXME? */
-    return OMX_INTERNAL_NEED_RETRY;
+    return OMX_INTERNAL_MISSING_RESOURCES;
   }
   ep->avail_exp_events--;
 
@@ -479,7 +479,7 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
     /* we need to pull some data */
     ret = omx__submit_pull(ep, req);
     if (unlikely(ret != OMX_SUCCESS)) {
-      omx__debug_assert(ret == OMX_INTERNAL_NEED_RETRY);
+      omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
       omx__debug_printf(SEND, "queueing large request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_DELAYED;
       omx__enqueue_request(&ep->delayed_send_req_q, req);
