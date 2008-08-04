@@ -1,9 +1,17 @@
 
 Major Enhancements:
+* Add a FAQ (also available online at http://open-mx.gforge.inria.fr/FAQ/)
+  containing most of the old README and much more.
 
 Other improvements from previous release:
+* Optimize intra-node communication by overlapping memory-pinning,
+  to be enabled with the demandpin kernel module parameter.
+* Fix omx_init start/stop timeout to deal with peer discovery start/stop
+  delay better.
 * Fix cross-compilation when the cross-compiler is given at
   build and not at configure time.
+* Fix modinfo and modprobe usage in the startup script, they are supposed
+  to be in /sbin.
 
 Caveats:
 * Queueing of requests in case of resource shortage is not perfect yet,
