@@ -72,7 +72,7 @@ union omx__truc_data {
     uint32_t session_id;
     uint32_t acknum;
     uint16_t send_seq;
-    uint8_t requeued;
+    uint8_t resent;
     uint8_t pad1;
   } ack;
 };
