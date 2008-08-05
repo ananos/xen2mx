@@ -12,6 +12,7 @@ Other improvements from previous release:
   build and not at configure time.
 * Fix modinfo and modprobe usage in the startup script, they are supposed
   to be in /sbin.
+* Fix invalid memory free in case of early-received large message notify.
 
 Caveats:
 * Queueing of requests in case of resource shortage is not perfect yet,

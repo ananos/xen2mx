@@ -160,12 +160,14 @@ omx__postpone_early_packet(struct omx__partner * partner,
   memcpy(&early->msg, msg, sizeof(*msg));
   early->recv_func = recv_func;
 
+  /* no data allocated by default */
+  early->data = NULL;
+
   switch (msg->type) {
   case OMX_EVT_RECV_TINY:
     /* no need to set early->data, omx__process_recv_tiny
      * always takes the data from inside the event
      */
-    early->data = NULL;
     early->msg_length = msg->specific.tiny.length;
     break;
 
@@ -200,7 +202,6 @@ omx__postpone_early_packet(struct omx__partner * partner,
   case OMX_EVT_RECV_RNDV: {
     struct omx__rndv_data * data_n = (void *) msg->specific.rndv.data;
     uint32_t msg_length = OMX_FROM_PKT_FIELD(data_n->msg_length);
-    early->data = NULL;
     early->msg_length = msg_length;
     break;
   }
