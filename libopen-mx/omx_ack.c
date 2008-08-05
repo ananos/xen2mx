@@ -119,9 +119,16 @@ omx__handle_ack(struct omx_endpoint *ep,
       omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->next_acked_send_seq);
 
       /* ack req_index from 0 to new_acks-1 */
-      if (req_index >= new_acks)
+      if (req_index >= new_acks) {
+	omx__debug_printf(ACK, "stopping marking reqs as acked at seqnum %x (#%d)\n",
+			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
 	break;
+      }
 
+      omx__debug_printf(ACK, "marking req with seqnum %x (#%d) as acked\n",
+			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx___dequeue_partner_non_acked_request(req);
       omx__mark_request_acked(ep, req, OMX_SUCCESS);
     }
