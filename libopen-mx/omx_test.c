@@ -500,24 +500,33 @@ omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
   if (unlikely(ret != OMX_SUCCESS))
     goto out_with_lock;
 
-  if (req->generic.type == OMX_REQUEST_TYPE_SEND_TINY
-      || req->generic.type == OMX_REQUEST_TYPE_SEND_SMALL
-      || req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM) {
-    /*
-     * tiny are buffered as soon as they pass the throttling check
-     *
-     * small and medium are buffered once they pass the throttling check
-     * and if there are enough resources to avoid queueing
+  switch (req->generic.type) {
+  case OMX_REQUEST_TYPE_SEND_TINY:
+    /* Tiny are buffered as soon as they pass the throttling check */
+  case OMX_REQUEST_TYPE_SEND_SMALL:
+    /* Small are buffered when they pass the throttling check
+     * and get a copy buffer.
      */
+  case OMX_REQUEST_TYPE_SEND_MEDIUM:
+    /* Medium are buffered once they pass the throttling check
+     * and if there are enough resources to avoid queueing.
+     */
+
     if (!(req->generic.state & (OMX_REQUEST_STATE_SEND_NEED_SEQNUM|OMX_REQUEST_STATE_DELAYED)))
       result = 1;
+    break;
 
-  } else if (req->generic.type == OMX_REQUEST_TYPE_SEND_SELF) {
+  case OMX_REQUEST_TYPE_SEND_SELF:
     /* communications to self are immediately copied to the receive side */
     result = 1;
+    break;
 
-  } else if (req->generic.type != OMX_REQUEST_TYPE_SEND_LARGE) {
-    /* all non-send requests cannot be buffered */
+  case OMX_REQUEST_TYPE_SEND_LARGE:
+    /* Large send is never buffered */
+    break;
+
+  default:
+    /* All non-send requests cannot be buffered */
     ret = OMX_BAD_REQUEST;
   }
 
