@@ -106,8 +106,8 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
 
 static INLINE void
 omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
-				union omx_request * req,
-				struct omx__partner * partner)
+				struct omx__partner * partner,
+				union omx_request * req)
 {
   struct omx_cmd_send_tiny * tiny_param;
   uint64_t match_info = req->generic.status.match_info;
@@ -241,8 +241,8 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 
 static INLINE void
 omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
-				 union omx_request *req,
-				 struct omx__partner * partner)
+				 struct omx__partner * partner,
+				 union omx_request *req)
 {
   uint32_t length = req->send.segs.total_length;
   omx__seqnum_t seqnum;
@@ -449,8 +449,8 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 
 static INLINE void
 omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
-				  union omx_request *req,
-				  struct omx__partner * partner)
+				  struct omx__partner * partner,
+				  union omx_request *req)
 {
   uint32_t length = req->send.segs.total_length;
   omx__seqnum_t seqnum;
@@ -566,8 +566,8 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
 
 static INLINE void
 omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
-				 union omx_request *req,
-				 struct omx__partner * partner)
+				 struct omx__partner * partner,
+				 union omx_request *req)
 {
   uint32_t length = req->send.segs.total_length;
   omx__seqnum_t seqnum;
@@ -703,13 +703,13 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
     omx__mark_partner_throttling(ep, partner);
 
   } else if (likely(length <= OMX_TINY_MAX)) {
-    omx__submit_or_queue_isend_tiny(ep, req, partner);
+    omx__submit_or_queue_isend_tiny(ep, partner, req);
   } else if (length <= OMX_SMALL_MAX) {
-    omx__submit_or_queue_isend_small(ep, req, partner);
+    omx__submit_or_queue_isend_small(ep, partner, req);
   } else if (length <= partner->rndv_threshold) {
-    omx__submit_or_queue_isend_medium(ep, req, partner);
+    omx__submit_or_queue_isend_medium(ep, partner, req);
   } else {
-    omx__submit_or_queue_isend_large(ep, req, partner);
+    omx__submit_or_queue_isend_large(ep, partner, req);
   }
 
   if (requestp) {
@@ -825,7 +825,7 @@ omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
     omx__mark_partner_throttling(ep, partner);
 
   } else {
-    omx__submit_or_queue_isend_large(ep, req, partner);
+    omx__submit_or_queue_isend_large(ep, partner, req);
   }
 
   if (requestp) {
@@ -997,15 +997,15 @@ omx__send_throttling_requests(struct omx_endpoint *ep, struct omx__partner *part
     req->generic.state = 0;
 
     if (req->throttling.ssend) {
-      omx__submit_or_queue_isend_large(ep, req, partner);
+      omx__submit_or_queue_isend_large(ep, partner, req);
     } else if (likely(length <= OMX_TINY_MAX)) {
-      omx__submit_or_queue_isend_tiny(ep, req, partner);
+      omx__submit_or_queue_isend_tiny(ep, partner, req);
     } else if (length <= OMX_SMALL_MAX) {
-      omx__submit_or_queue_isend_small(ep, req, partner);
+      omx__submit_or_queue_isend_small(ep, partner, req);
     } else if (length <= partner->rndv_threshold) {
-      omx__submit_or_queue_isend_medium(ep, req, partner);
+      omx__submit_or_queue_isend_medium(ep, partner, req);
     } else {
-      omx__submit_or_queue_isend_large(ep, req, partner);
+      omx__submit_or_queue_isend_large(ep, partner, req);
     }
 
     omx__mark_partner_not_throttling(ep, partner);
