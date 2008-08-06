@@ -403,7 +403,7 @@ struct omx_segscan_state {
 union omx_request {
   struct omx__generic_request generic;
 
-  struct {
+  struct omx__send_request {
     struct omx__generic_request generic;
     struct omx__req_seg segs;
     union {
@@ -428,7 +428,7 @@ union omx_request {
     } specific;
   } send;
 
-  struct {
+  struct omx__recv_request {
     struct omx__generic_request generic;
     struct omx__req_seg segs;
     uint64_t match_info;
@@ -454,7 +454,7 @@ union omx_request {
     } specific;
   } recv;
 
-  struct {
+  struct omx__connect_request {
     struct omx__generic_request generic;
     struct omx_cmd_send_connect send_connect_ioctl_param;
     uint32_t session_id;
