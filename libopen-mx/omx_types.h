@@ -198,6 +198,27 @@ struct omx__endpoint_addr {
 #define OMX_PROGRESSION_DISABLED_IN_HANDLER (1<<0)
 #define OMX_PROGRESSION_DISABLED_BY_API (1<<1)
 
+/* the order must follow allocation order in submit/post routines */
+enum omx__request_resource {
+  /* medium send and pull requests need expected event slots */
+  OMX_REQUEST_RESOURCE_EXP_EVENT = (1<<0),
+  /* large send requests need a send-specific region slot */
+  OMX_REQUEST_RESOURCE_SEND_LARGE_REGION = (1<<1),
+  /* large requests need a large region */
+  OMX_REQUEST_RESOURCE_LARGE_REGION = (1<<2),
+  /* pull requests need kernel handle */
+  OMX_REQUEST_RESOURCE_PULL_HANDLE = (1<<3),
+  /* medium send requests need sendq slots */
+  OMX_REQUEST_RESOURCE_SENDQ_SLOT = (1<<4),
+  /* small send requests need a copy buffer */
+  OMX_REQUEST_RESOURCE_SMALL_BUFFER = (1<<5),
+};
+
+#define OMX_REQUEST_SEND_SMALL_RESOURCES OMX_REQUEST_RESOURCE_SMALL_BUFFER
+#define OMX_REQUEST_SEND_MEDIUM_RESOURCES (OMX_REQUEST_RESOURCE_EXP_EVENT | OMX_REQUEST_RESOURCE_SENDQ_SLOT)
+#define OMX_REQUEST_SEND_LARGE_RESOURCES (OMX_REQUEST_RESOURCE_SEND_LARGE_REGION | OMX_REQUEST_RESOURCE_LARGE_REGION)
+#define OMX_REQUEST_PULL_RESOURCES (OMX_REQUEST_RESOURCE_EXP_EVENT | OMX_REQUEST_RESOURCE_LARGE_REGION | OMX_REQUEST_RESOURCE_PULL_HANDLE)
+
 struct omx_endpoint {
   int fd;
   int endpoint_index, board_index;
@@ -375,11 +396,14 @@ struct omx__generic_request {
 
   struct omx__partner * partner;
   enum omx__request_type type;
+  uint16_t state;
+  uint16_t missing_resources;
+
   omx__seqnum_t send_seqnum; /* seqnum of the sent message associated with the request, either for a usual send request, or the notify message for recv large */
   uint64_t last_send_jiffies;
   uint32_t resends_max;
   uint32_t resends;
-  uint32_t state;
+
   struct omx_status status;
 };
 

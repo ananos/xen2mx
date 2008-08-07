@@ -191,11 +191,20 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   uint32_t length = req->generic.status.msg_length;
+  int res = req->generic.missing_resources;
   void *copy;
 
+  if (likely(res & OMX_REQUEST_RESOURCE_SMALL_BUFFER))
+    goto need_small_buffer;
+  omx__abort("unexpected missing resources %x for small send request\n", res);
+
+ need_small_buffer:
   copy = malloc(length);
   if (unlikely(!copy))
     return OMX_INTERNAL_MISSING_RESOURCES;
+  req->send.specific.small.copy = copy;
+  req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_SMALL_BUFFER;
+  omx__debug_assert(!req->generic.missing_resources);
 
   small_param = &req->send.specific.small.send_small_ioctl_param;
   small_param->peer_index = partner->peer_index;
@@ -226,7 +235,6 @@ omx__submit_isend_small(struct omx_endpoint *ep,
     omx_copy_from_segments(copy, &req->send.segs, length);
     small_param->vaddr = (uintptr_t) copy;
   }
-  req->send.specific.small.copy = copy;
 
   req->generic.resends = 0;
   req->generic.resends_max = ep->req_resends_max;
@@ -249,6 +257,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   omx_return_t ret;
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_SMALL;
+  req->generic.missing_resources = OMX_REQUEST_SEND_SMALL_RESOURCES;
 
   seqnum = partner->next_send_seq;
   OMX__SEQNUM_INCREASE(partner->next_send_seq);
@@ -414,16 +423,28 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   uint32_t length = req->generic.status.msg_length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
+  int res = req->generic.missing_resources;
   int frags_nr;
 
+  if (likely(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
+    goto need_exp_events;
+  if (likely(res & OMX_REQUEST_RESOURCE_SENDQ_SLOT))
+    goto need_sendq_map_slot;
+  omx__abort("unexpected missing resources %x for medium send request\n", res);
+
+ need_exp_events:
   frags_nr = OMX_MEDIUM_FRAGS_NR(length);
   omx__debug_assert(frags_nr <= 8); /* for the sendq_index array above */
   req->send.specific.medium.frags_nr = frags_nr;
-
-  if (unlikely(ep->avail_exp_events < frags_nr
-	       || omx__endpoint_sendq_map_get(ep, frags_nr, req, sendq_index) < 0))
-    /* let the caller handle the error */
+  if (unlikely(ep->avail_exp_events < frags_nr))
     return OMX_INTERNAL_MISSING_RESOURCES;
+  req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_EXP_EVENT;
+
+ need_sendq_map_slot:
+  if (unlikely(omx__endpoint_sendq_map_get(ep, req->send.specific.medium.frags_nr, req, sendq_index) < 0))
+    return OMX_INTERNAL_MISSING_RESOURCES;
+  req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_SENDQ_SLOT;
+  omx__debug_assert(!req->generic.missing_resources);
 
   req->generic.resends = 0;
   req->generic.resends_max = ep->req_resends_max;
@@ -457,6 +478,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   omx_return_t ret;
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
+  req->generic.missing_resources = OMX_REQUEST_SEND_MEDIUM_RESOURCES;
 
   seqnum = partner->next_send_seq;
   OMX__SEQNUM_INCREASE(partner->next_send_seq);
@@ -522,19 +544,29 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   struct omx__partner * partner = req->generic.partner;
   uint64_t match_info = req->generic.status.match_info;
   uint32_t length = req->generic.status.msg_length;
+  int res = req->generic.missing_resources;
   omx_return_t ret;
 
+  if (likely(res & OMX_REQUEST_RESOURCE_SEND_LARGE_REGION))
+    goto need_send_large_region;
+  if (likely(res & OMX_REQUEST_RESOURCE_LARGE_REGION))
+    goto need_large_region;
+  omx__abort("unexpected missing resources %x for large send request\n", res);
+
+ need_send_large_region:
   if (unlikely(!ep->large_sends_avail_nr))
     return OMX_INTERNAL_MISSING_RESOURCES;
+  req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_SEND_LARGE_REGION;
   ep->large_sends_avail_nr--;
 
+ need_large_region:
   ret = omx__get_region(ep, &req->send.segs, &region, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
-    ep->large_sends_avail_nr++;
-    /* let the caller handle the error */
     return ret;
   }
+  req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_LARGE_REGION;
+  omx__debug_assert(!req->generic.missing_resources);
 
   req->send.specific.large.region = region;
   req->send.specific.large.region_seqnum = region->last_seqnum++;
@@ -574,6 +606,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   omx_return_t ret;
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_LARGE;
+  req->generic.missing_resources = OMX_REQUEST_SEND_LARGE_RESOURCES;
 
   seqnum = partner->next_send_seq;
   OMX__SEQNUM_INCREASE(partner->next_send_seq);

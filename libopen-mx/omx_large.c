@@ -422,21 +422,33 @@ omx__submit_pull(struct omx_endpoint * ep,
   struct omx__large_region *region;
   uint32_t xfer_length = req->generic.status.xfer_length;
   struct omx__partner * partner = req->generic.partner;
+  int res = req->generic.missing_resources;
   omx_return_t ret;
   int err;
 
-  if (unlikely(ep->avail_exp_events < 1))
-    /* let the caller handle the error */
-    return OMX_INTERNAL_MISSING_RESOURCES;
+  if (likely(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
+    goto need_exp_event;
+  if (likely(res & OMX_REQUEST_RESOURCE_LARGE_REGION))
+    goto need_region;
+  if (likely(res & OMX_REQUEST_RESOURCE_PULL_HANDLE))
+    goto need_pull;
+  omx__abort("unexpected missing resources %x for pull request\n", res);
 
+ need_exp_event:
+  if (unlikely(ep->avail_exp_events < 1))
+    return OMX_INTERNAL_MISSING_RESOURCES;
+  req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_EXP_EVENT;
+
+ need_region:
   /* FIXME: could register xfer_length instead of the whole segments */
   ret = omx__get_region(ep, &req->recv.segs, &region, NULL);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
-    /* let the caller handle the error */
     return ret;
   }
+  req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_LARGE_REGION;
 
+ need_pull:
   pull_param.peer_index = partner->peer_index;
   pull_param.dest_endpoint = partner->endpoint_index;
   pull_param.shared = omx__partner_localization_shared(partner);
@@ -455,11 +467,11 @@ omx__submit_pull(struct omx_endpoint * ep,
     ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
 					     OMX_SUCCESS,
 					     "post pull request");
-    omx__put_region(ep, region, NULL);
-    /* let the caller handle the error */
-    /* change no system resources into a regular retry, FIXME? */
     return OMX_INTERNAL_MISSING_RESOURCES;
   }
+  req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_PULL_HANDLE;
+  omx__debug_assert(!req->generic.missing_resources);
+
   ep->avail_exp_events--;
 
   req->recv.specific.large.local_region = region;
@@ -477,6 +489,7 @@ omx__submit_or_queue_pull(struct omx_endpoint * ep,
 
   if (req->generic.status.xfer_length) {
     /* we need to pull some data */
+    req->generic.missing_resources = OMX_REQUEST_PULL_RESOURCES;
     ret = omx__submit_pull(ep, req);
     if (unlikely(ret != OMX_SUCCESS)) {
       omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);

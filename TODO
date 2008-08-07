@@ -1,3 +1,16 @@
+* alloc resources before getting a seqnum
+  + keep in the delete queue if missing resources without looking qt seqnums
+  + move the partner throttling queue if got resources but no seqnum
+* make sure requests are kept in order
+  + check resources before trying to setup any send
+    - global submit order
+  + once not delayed, check throttling before trying to post
+    - per partner submit order on the partner throttling queue
+* queue the notify on top of the delayed queue
+* alloc the small buffer from the beginning to prevent send small from ever
+  failing later
+* no need to have a missing resource flag for pull handle alloc in the kernel
+
 * if killed while registering, needed to mark the region as failed?
 
 * cleanup endpoint acquiring/locking/closing again
@@ -68,19 +81,10 @@
   + remove the user-space knowledge of window being registered for real
     - integrate into mmu notifier since there is no need anymore to notify userspace when region is invalidated
 
-* add flags for all queued state and split throttling/queued queue into per-flag queue
-  + let the callee requeue and return need_retry if did not queue to a better queue
-  + and use them and completing requests
-  + need memory for small
-    - add a counter of failure to register with ENOMEM and abort if too many?
-  + need exp events for medium and pull
-  + need sendq slots for medium
-  + need region for send large without deadlock
-  + need region for recv large
-  + need system resources for send large and recv large
-    - add a counter of failure to register with ENOMEM and abort if too many?
+* add a counter of failure to alloc small buffer with ENOMEM and abort if too many?
+* add a counter of failure to pull with ENOMEM and abort if too many?
 
- * if failing to deregister region
+* if failing to deregister region
   *** glibc detected *** tests/omx_pingpong: malloc(): memory corruption: 0x000000000064edd0 ***
 
 * 64bit internals by default
