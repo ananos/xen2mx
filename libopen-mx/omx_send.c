@@ -658,7 +658,7 @@ omx__post_notify(struct omx_endpoint *ep,
     omx__mark_partner_ack_sent(ep, partner);
 }
 
-void
+static INLINE void
 omx__alloc_setup_notify(struct omx_endpoint *ep,
 			union omx_request *req)
 {
@@ -695,11 +695,16 @@ omx__alloc_setup_notify(struct omx_endpoint *ep,
 }
 
 void
-omx__queue_notify(struct omx_endpoint *ep,
-		  union omx_request *req)
+omx__submit_notify(struct omx_endpoint *ep,
+		   union omx_request *req,
+		   int delayed)
 {
-  req->generic.state |= OMX_REQUEST_STATE_DELAYED;
-  omx__enqueue_request(&ep->delayed_send_req_q, req);
+  if (delayed) {
+    req->generic.state |= OMX_REQUEST_STATE_DELAYED;
+    omx__enqueue_request(&ep->delayed_send_req_q, req);
+  } else {
+    omx__alloc_setup_notify(ep, req);
+  }
 }
 
 /****************************

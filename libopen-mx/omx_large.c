@@ -506,7 +506,7 @@ omx__submit_pull(struct omx_endpoint * ep,
      */
     omx__debug_printf(LARGE, "large length 0, submitting request %p notify directly\n", req);
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
-    omx__queue_notify(ep, req);
+    omx__submit_notify(ep, req, 1 /* always delayed */);
   }
 }
 
@@ -566,7 +566,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx__dequeue_request(&ep->pull_req_q, req);
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
 
-  omx__alloc_setup_notify(ep, req);
+  omx__submit_notify(ep, req, 0);
 }
 
 void
