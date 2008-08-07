@@ -1023,19 +1023,12 @@ omx__process_resend_requests(struct omx_endpoint *ep)
   union omx_request *req, *next;
   uint64_t now = omx__driver_desc->jiffies;
 
-  /* move non acked requests to the resend_req_q */
+  /* resend the first requests from the non_acked queue */
   omx__foreach_request_safe(&ep->non_acked_req_q, req, next) {
     if (now - req->generic.last_send_jiffies < omx__globals.resend_delay_jiffies)
       /* the remaining ones are more recent, no need to resend them yet */
       break;
 
-    omx___dequeue_request(req);
-    req->generic.state |= OMX_REQUEST_STATE_RESENDING;
-    omx__enqueue_request(&ep->resend_req_q, req);
-  }
-
-  /* resend requests from the resend_req_q */
-  omx__foreach_request_safe(&ep->resend_req_q, req, next) {
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
@@ -1047,7 +1040,6 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       continue;
     }
 
-    req->generic.state &= ~OMX_REQUEST_STATE_RESENDING;
     omx___dequeue_request(req);
 
     switch (req->generic.type) {

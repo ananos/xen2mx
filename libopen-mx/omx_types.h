@@ -255,8 +255,6 @@ struct omx_endpoint {
   struct list_head connect_req_q;
   /* any request that needs to be resent, thus NEED_ACK, and is not IN DRIVER (queued by their queue_elt) */
   struct list_head non_acked_req_q;
-  /* any request that needs to be resent now, thus RESENDING and NEED_ACK, not IN_DRIVER (queued by their queue_elt) */
-  struct list_head resend_req_q;
   /* send to self waiting for the matching */
   struct list_head send_self_unexp_req_q;
 
@@ -327,7 +325,6 @@ enum omx__request_type {
  * CONNECT:
  *   NEED_REPLY: connect_req_q
  *
- * if RESENDING added, resend_req_q instead of non_acked_req_q
  * if DELAYED, delayed_send_req_q
  *
  * The DONE qnd ZOMBIE states of the request determines whether the done_elt
@@ -353,9 +350,8 @@ enum omx__request_state {
   OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
   /* needs a ack from the peer */
   OMX_REQUEST_STATE_NEED_ACK = (1<<6),
-  /* placed on a queue for resending through the driver soon */
-  OMX_REQUEST_STATE_RESENDING = (1<<7),
   /* request can already be completed by the application, even if not acked yet */
+
   OMX_REQUEST_STATE_DONE = (1<<8),
   /* request has been completed by the application and should not be notified when done for real (including acked) */
   OMX_REQUEST_STATE_ZOMBIE = (1<<9),

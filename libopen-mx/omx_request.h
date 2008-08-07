@@ -262,6 +262,12 @@ omx__dequeue_first_partner_throttling_request(struct omx__partner *partner)
   return req;
 }
 
+static inline int
+omx__empty_partner_throttling_request(struct omx__partner *partner)
+{
+  return list_empty(&partner->throttling_send_req_q);
+}
+
 #define omx__foreach_partner_throttling_request_safe(partner, req, next)		\
 list_for_each_entry_safe(req, next, &partner->throttling_send_req_q, generic.partner_elt)
 

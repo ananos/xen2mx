@@ -32,21 +32,14 @@ omx__mark_request_acked(struct omx_endpoint *ep,
 			union omx_request *req,
 			omx_return_t status)
 {
-  struct list_head *queue;
-
-  if (req->generic.state & OMX_REQUEST_STATE_RESENDING)
-    queue = &ep->resend_req_q;
-  else
-    queue = &ep->non_acked_req_q;
-
   omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_ACK);
-  req->generic.state &= ~(OMX_REQUEST_STATE_NEED_ACK|OMX_REQUEST_STATE_RESENDING);
+  req->generic.state &= ~OMX_REQUEST_STATE_NEED_ACK;
 
   switch (req->generic.type) {
 
   case OMX_REQUEST_TYPE_SEND_TINY:
   case OMX_REQUEST_TYPE_SEND_SMALL:
-    omx__dequeue_request(queue, req);
+    omx__dequeue_request(&ep->non_acked_req_q, req);
     omx__send_complete(ep, req, status);
     break;
 
@@ -57,14 +50,14 @@ omx__mark_request_acked(struct omx_endpoint *ep,
 	/* set the status (success for ack, error for nack) only if there has been no error early */
 	req->generic.status.code = omx__error_with_req(ep, req, status, "Send request nacked");
     } else {
-      omx__dequeue_request(queue, req);
+      omx__dequeue_request(&ep->non_acked_req_q, req);
       omx__send_complete(ep, req, status);
     }
     break;
 
   case OMX_REQUEST_TYPE_SEND_LARGE:
     /* if the request was already replied, it would have been acked at the same time */
-    omx__dequeue_request(queue, req);
+    omx__dequeue_request(&ep->non_acked_req_q, req);
     if (unlikely(status != OMX_SUCCESS)) {
       /* the request has been nacked, there won't be any reply */
       req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
@@ -78,7 +71,7 @@ omx__mark_request_acked(struct omx_endpoint *ep,
     break;
 
   case OMX_REQUEST_TYPE_RECV_LARGE:
-    omx__dequeue_request(queue, req);
+    omx__dequeue_request(&ep->non_acked_req_q, req);
     omx__recv_complete(ep, req, status);
     break;
 
