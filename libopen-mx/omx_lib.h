@@ -366,20 +366,20 @@ omx__endpoint_sendq_map_user(struct omx_endpoint * ep,
 /* sending messages */
 
 extern void
-omx__submit_notify(struct omx_endpoint *ep,
-		   union omx_request *req);
+omx__alloc_setup_notify(struct omx_endpoint *ep,
+			union omx_request *req);
 
 extern void
 omx__queue_notify(struct omx_endpoint *ep,
 		  union omx_request *req);
 
 extern omx_return_t
-omx__submit_pull(struct omx_endpoint * ep,
-	       union omx_request * req);
+omx__alloc_setup_pull(struct omx_endpoint * ep,
+		      union omx_request * req);
 
 extern void
-omx__submit_or_queue_pull(struct omx_endpoint * ep,
-			  union omx_request * req);
+omx__submit_pull(struct omx_endpoint * ep,
+		 union omx_request * req);
 
 extern void
 omx__send_complete(struct omx_endpoint *ep, union omx_request *req,

@@ -415,8 +415,8 @@ omx__put_region(struct omx_endpoint *ep,
  */
 
 omx_return_t
-omx__submit_pull(struct omx_endpoint * ep,
-		 union omx_request * req)
+omx__alloc_setup_pull(struct omx_endpoint * ep,
+		      union omx_request * req)
 {
   struct omx_cmd_pull pull_param;
   struct omx__large_region *region;
@@ -482,15 +482,15 @@ omx__submit_pull(struct omx_endpoint * ep,
 }
 
 void
-omx__submit_or_queue_pull(struct omx_endpoint * ep,
-			  union omx_request * req)
+omx__submit_pull(struct omx_endpoint * ep,
+		 union omx_request * req)
 {
   omx_return_t ret;
 
   if (req->generic.status.xfer_length) {
     /* we need to pull some data */
     req->generic.missing_resources = OMX_REQUEST_PULL_RESOURCES;
-    ret = omx__submit_pull(ep, req);
+    ret = omx__alloc_setup_pull(ep, req);
     if (unlikely(ret != OMX_SUCCESS)) {
       omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
       omx__debug_printf(SEND, "queueing large request %p\n", req);
@@ -566,7 +566,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx__dequeue_request(&ep->pull_req_q, req);
   req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
 
-  omx__submit_notify(ep, req);
+  omx__alloc_setup_notify(ep, req);
 }
 
 void

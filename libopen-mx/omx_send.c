@@ -104,9 +104,9 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
 }
 
 static INLINE void
-omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
-				struct omx__partner * partner,
-				union omx_request * req)
+omx__submit_isend_tiny(struct omx_endpoint *ep,
+		       struct omx__partner * partner,
+		       union omx_request * req)
 {
   struct omx_cmd_send_tiny * tiny_param;
   uint64_t match_info = req->generic.status.match_info;
@@ -180,11 +180,11 @@ omx__post_isend_small(struct omx_endpoint *ep,
 }
 
 static INLINE omx_return_t
-omx__submit_isend_small(struct omx_endpoint *ep,
-			union omx_request *req)
+omx__alloc_setup_isend_small(struct omx_endpoint *ep,
+			     struct omx__partner *partner,
+			     union omx_request *req)
 {
   struct omx_cmd_send_small * small_param;
-  struct omx__partner * partner = req->generic.partner;
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   uint32_t length = req->generic.status.msg_length;
@@ -242,9 +242,9 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 }
 
 static INLINE void
-omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
-				 struct omx__partner * partner,
-				 union omx_request *req)
+omx__submit_isend_small(struct omx_endpoint *ep,
+			struct omx__partner * partner,
+			union omx_request *req)
 {
   uint32_t length = req->send.segs.total_length;
   omx__seqnum_t seqnum;
@@ -262,7 +262,7 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  ret = omx__submit_isend_small(ep, req);
+  ret = omx__alloc_setup_isend_small(ep, partner, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
     omx__debug_printf(SEND, "delaying send small request %p\n", req);
@@ -408,11 +408,11 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 }
 
 static INLINE omx_return_t
-omx__submit_isend_medium(struct omx_endpoint *ep,
-			 union omx_request *req)
+omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
+			      struct omx__partner * partner,
+			      union omx_request *req)
 {
   struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
-  struct omx__partner * partner = req->generic.partner;
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   uint32_t length = req->generic.status.msg_length;
@@ -465,9 +465,9 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 }
 
 static INLINE void
-omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
-				  struct omx__partner * partner,
-				  union omx_request *req)
+omx__submit_isend_medium(struct omx_endpoint *ep,
+			 struct omx__partner * partner,
+			 union omx_request *req)
 {
   uint32_t length = req->send.segs.total_length;
   omx__seqnum_t seqnum;
@@ -488,7 +488,7 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  ret = omx__submit_isend_medium(ep, req);
+  ret = omx__alloc_setup_isend_medium(ep, partner, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
     omx__debug_printf(SEND, "delaying send medium request %p\n", req);
@@ -532,13 +532,13 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
 }
 
 static INLINE omx_return_t
-omx__submit_isend_rndv(struct omx_endpoint *ep,
-		       union omx_request *req)
+omx__alloc_setup_isend_large(struct omx_endpoint *ep,
+			     struct omx__partner * partner,
+			     union omx_request *req)
 {
   struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
   struct omx__rndv_data * data_n = (void *) rndv_param->data;
   struct omx__large_region *region;
-  struct omx__partner * partner = req->generic.partner;
   uint64_t match_info = req->generic.status.match_info;
   uint32_t length = req->generic.status.msg_length;
   int res = req->generic.missing_resources;
@@ -595,9 +595,9 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
 }
 
 static INLINE void
-omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
-				 struct omx__partner * partner,
-				 union omx_request *req)
+omx__submit_isend_large(struct omx_endpoint *ep,
+			struct omx__partner * partner,
+			union omx_request *req)
 {
   uint32_t length = req->send.segs.total_length;
   omx__seqnum_t seqnum;
@@ -615,7 +615,7 @@ omx__submit_or_queue_isend_large(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   /* will set xfer_length when receiving the notify */
 
-  ret = omx__submit_isend_rndv(ep, req);
+  ret = omx__alloc_setup_isend_large(ep, partner, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
     omx__debug_printf(SEND, "delaying large send request %p\n", req);
@@ -659,16 +659,14 @@ omx__post_notify(struct omx_endpoint *ep,
 }
 
 void
-omx__submit_notify(struct omx_endpoint *ep,
-		   union omx_request *req)
+omx__alloc_setup_notify(struct omx_endpoint *ep,
+			union omx_request *req)
 {
   struct omx_cmd_send_notify * notify_param;
-  struct omx__partner * partner;
+  struct omx__partner * partner = req->generic.partner;
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   omx__seqnum_t seqnum;
-
-  partner = req->generic.partner;
 
   seqnum = partner->next_send_seq;
   OMX__SEQNUM_INCREASE(partner->next_send_seq);
@@ -732,13 +730,13 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
     omx__mark_partner_throttling(ep, partner);
 
   } else if (likely(length <= OMX_TINY_MAX)) {
-    omx__submit_or_queue_isend_tiny(ep, partner, req);
+    omx__submit_isend_tiny(ep, partner, req);
   } else if (length <= OMX_SMALL_MAX) {
-    omx__submit_or_queue_isend_small(ep, partner, req);
+    omx__submit_isend_small(ep, partner, req);
   } else if (length <= partner->rndv_threshold) {
-    omx__submit_or_queue_isend_medium(ep, partner, req);
+    omx__submit_isend_medium(ep, partner, req);
   } else {
-    omx__submit_or_queue_isend_large(ep, partner, req);
+    omx__submit_isend_large(ep, partner, req);
   }
 
   if (requestp) {
@@ -854,7 +852,7 @@ omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
     omx__mark_partner_throttling(ep, partner);
 
   } else {
-    omx__submit_or_queue_isend_large(ep, partner, req);
+    omx__submit_isend_large(ep, partner, req);
   }
 
   if (requestp) {
@@ -964,19 +962,19 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
       omx__debug_printf(SEND, "trying to resubmit delayed send small request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
-      ret = omx__submit_isend_small(ep, req);
+      ret = omx__alloc_setup_isend_small(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
       omx__debug_printf(SEND, "trying to resubmit delayed send medium request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
-      ret = omx__submit_isend_medium(ep, req);
+      ret = omx__alloc_setup_isend_medium(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
       omx__debug_printf(SEND, "trying to resubmit delayed send large request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
-      ret = omx__submit_isend_rndv(ep, req);
+      ret = omx__alloc_setup_isend_large(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
       if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
@@ -984,13 +982,13 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
 	omx__debug_printf(SEND, "trying to resubmit delayed recv large request %p seqnum %d (#%d)\n", req,
 			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
-	ret = omx__submit_pull(ep, req);
+	ret = omx__alloc_setup_pull(ep, req);
       } else {
 	/* if not partial, the pull is already done, we need to send the notify */
 	omx__debug_printf(SEND, "trying to resubmit delayed recv large request notify message %p seqnum %d (#%d)\n", req,
 			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
-	omx__submit_notify(ep, req);
+	omx__alloc_setup_notify(ep, req);
 	ret = OMX_SUCCESS;
       }
       break;
@@ -1026,15 +1024,15 @@ omx__send_throttling_requests(struct omx_endpoint *ep, struct omx__partner *part
     req->generic.state = 0;
 
     if (req->throttling.ssend) {
-      omx__submit_or_queue_isend_large(ep, partner, req);
+      omx__submit_isend_large(ep, partner, req);
     } else if (likely(length <= OMX_TINY_MAX)) {
-      omx__submit_or_queue_isend_tiny(ep, partner, req);
+      omx__submit_isend_tiny(ep, partner, req);
     } else if (length <= OMX_SMALL_MAX) {
-      omx__submit_or_queue_isend_small(ep, partner, req);
+      omx__submit_isend_small(ep, partner, req);
     } else if (length <= partner->rndv_threshold) {
-      omx__submit_or_queue_isend_medium(ep, partner, req);
+      omx__submit_isend_medium(ep, partner, req);
     } else {
-      omx__submit_or_queue_isend_large(ep, partner, req);
+      omx__submit_isend_large(ep, partner, req);
     }
 
     omx__mark_partner_not_throttling(ep, partner);
