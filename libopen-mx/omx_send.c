@@ -98,7 +98,6 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
 
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
 
   if (!err)
     omx__mark_partner_ack_sent(ep, partner);
@@ -119,7 +118,9 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
 
   seqnum = partner->next_send_seq;
   OMX__SEQNUM_INCREASE(partner->next_send_seq);
+  req->generic.send_seqnum = seqnum;
   req->generic.resends = 0;
+  req->generic.resends_max = ep->req_resends_max;
 
   tiny_param = &req->send.specific.tiny.send_tiny_ioctl_param;
   tiny_param->hdr.peer_index = partner->peer_index;
@@ -133,15 +134,12 @@ omx__submit_or_queue_isend_tiny(struct omx_endpoint *ep,
 
   omx__post_isend_tiny(ep, partner, req);
 
-  /* no need to wait for a done event, tiny is synchronous */
-
-  req->generic.send_seqnum = seqnum;
-  req->generic.resends_max = ep->req_resends_max;
-  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
-
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
+
+  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
+  omx__enqueue_partner_non_acked_request(partner, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
   omx__notify_request_done_early(ep, ctxid, req);
@@ -176,7 +174,6 @@ omx__post_isend_small(struct omx_endpoint *ep,
 
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
 
   if (!err)
     omx__mark_partner_ack_sent(ep, partner);
@@ -228,17 +225,14 @@ omx__submit_isend_small(struct omx_endpoint *ep,
 
   omx__post_isend_small(ep, partner, req);
 
-  /* no need to wait for a done event, small is synchronous */
-
   /* bufferize data for retransmission (if not done already) */
   if (likely(req->send.segs.nseg == 1)) {
     omx_copy_from_segments(copy, &req->send.segs, length);
     small_param->vaddr = (uintptr_t) copy;
   }
 
-  req->generic.resends = 0;
-  req->generic.resends_max = ep->req_resends_max;
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
@@ -262,6 +256,8 @@ omx__submit_or_queue_isend_small(struct omx_endpoint *ep,
   seqnum = partner->next_send_seq;
   OMX__SEQNUM_INCREASE(partner->next_send_seq);
   req->generic.send_seqnum = seqnum;
+  req->generic.resends = 0;
+  req->generic.resends_max = ep->req_resends_max;
 
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
@@ -385,7 +381,6 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
   req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
-  omx__enqueue_request(&ep->driver_posted_req_q, req);
 
   /* at least one frag was posted, the ack has been sent for sure */
   omx__mark_partner_ack_sent(ep, partner);
@@ -410,7 +405,6 @@ omx__post_isend_medium(struct omx_endpoint *ep,
    * no frags were posted, keep the request as NEED_ACK
    * and let retransmission occur later
    */
-  omx__enqueue_request(&ep->non_acked_req_q, req);
 }
 
 static INLINE omx_return_t
@@ -446,11 +440,6 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_SENDQ_SLOT;
   omx__debug_assert(!req->generic.missing_resources);
 
-  req->generic.resends = 0;
-  req->generic.resends_max = ep->req_resends_max;
-  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
-
   medium_param->peer_index = partner->peer_index;
   medium_param->dest_endpoint = partner->endpoint_index;
   medium_param->shared = omx__partner_localization_shared(partner);
@@ -461,6 +450,13 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   medium_param->session_id = partner->true_session_id;
 
   omx__post_isend_medium(ep, partner, req);
+
+  req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
+  if (req->generic.state & OMX_REQUEST_STATE_IN_DRIVER)
+    omx__enqueue_request(&ep->driver_posted_req_q, req);
+  else
+    omx__enqueue_request(&ep->non_acked_req_q, req);
+  omx__enqueue_partner_non_acked_request(partner, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
   omx__notify_request_done_early(ep, ctxid, req);
@@ -483,6 +479,8 @@ omx__submit_or_queue_isend_medium(struct omx_endpoint *ep,
   seqnum = partner->next_send_seq;
   OMX__SEQNUM_INCREASE(partner->next_send_seq);
   req->generic.send_seqnum = seqnum;
+  req->generic.resends = 0;
+  req->generic.resends_max = ep->req_resends_max;
 
   /* need to wait for a done event, since the sendq pages
    * might still be in use
@@ -528,7 +526,6 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
 
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
 
   if (!err)
     omx__mark_partner_ack_sent(ep, partner);
@@ -571,9 +568,6 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
   req->send.specific.large.region = region;
   req->send.specific.large.region_seqnum = region->last_seqnum++;
 
-  req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
-  omx__enqueue_partner_non_acked_request(partner, req);
-
   rndv_param->hdr.peer_index = partner->peer_index;
   rndv_param->hdr.dest_endpoint = partner->endpoint_index;
   rndv_param->hdr.shared = omx__partner_localization_shared(partner);
@@ -591,7 +585,11 @@ omx__submit_isend_rndv(struct omx_endpoint *ep,
 
   omx__post_isend_rndv(ep, partner, req);
 
-  /* no need to wait for a done event, tiny is synchronous */
+  req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
+  omx__enqueue_partner_non_acked_request(partner, req);
+
+  /* cannot mark as done early since data is not buffered */
 
   return OMX_SUCCESS;
 }
@@ -655,7 +653,6 @@ omx__post_notify(struct omx_endpoint *ep,
 
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-  omx__enqueue_request(&ep->non_acked_req_q, req);
 
   if (!err)
     omx__mark_partner_ack_sent(ep, partner);
@@ -675,7 +672,6 @@ omx__submit_notify(struct omx_endpoint *ep,
 
   seqnum = partner->next_send_seq;
   OMX__SEQNUM_INCREASE(partner->next_send_seq);
-
   req->generic.send_seqnum = seqnum;
   req->generic.resends = 0;
   req->generic.resends_max = ep->req_resends_max;
@@ -692,8 +688,8 @@ omx__submit_notify(struct omx_endpoint *ep,
 
   omx__post_notify(ep, partner, req);
 
-  /* no need to wait for a done event, tiny is synchronous */
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
+  omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
@@ -1110,6 +1106,12 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       omx__abort("Failed to handle resend request with type %d\n",
 		 req->generic.type);
     }
+
+    if (req->generic.state & OMX_REQUEST_STATE_IN_DRIVER)
+      omx__enqueue_request(&ep->driver_posted_req_q, req);
+    else
+      /* move the request to the end of the same queue */
+      omx__enqueue_request(&ep->non_acked_req_q, req);
   }
 
   /* resend non-replied connect requests */
