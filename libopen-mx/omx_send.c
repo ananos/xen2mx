@@ -1125,11 +1125,12 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
 }
 
 void
-omx__send_throttling_requests(struct omx_endpoint *ep, struct omx__partner *partner, int nr)
+omx__process_throttling_requests(struct omx_endpoint *ep, struct omx__partner *partner, int nr)
 {
   union omx_request *req;
+  int sent = 0;
 
-  while (nr && (req = omx__dequeue_first_partner_throttling_request(partner)) != NULL) {
+  while (nr > sent && (req = omx__dequeue_first_partner_throttling_request(partner)) != NULL) {
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_NEED_SEQNUM);
     req->generic.state &= ~OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
 
@@ -1153,9 +1154,10 @@ omx__send_throttling_requests(struct omx_endpoint *ep, struct omx__partner *part
       omx__abort("Unexpected throttling request type %d\n", req->generic.type);
     }
 
-    omx__mark_partner_not_throttling(ep, partner);
-    nr--;
+    sent++;
   }
+
+  omx__update_partner_throttling(ep, partner, sent);
 }
 
 /*

@@ -241,10 +241,11 @@ omx__mark_partner_throttling(struct omx_endpoint *ep,
 }
 
 static inline void
-omx__mark_partner_not_throttling(struct omx_endpoint *ep,
-				 struct omx__partner *partner)
+omx__update_partner_throttling(struct omx_endpoint *ep,
+			       struct omx__partner *partner,
+			       int nr)
 {
-  if (!--partner->throttling_sends_nr)
+  if (nr && !(partner->throttling_sends_nr -= nr))
     list_del(&partner->endpoint_throttling_partners_elt);
 }
 
@@ -497,9 +498,9 @@ extern void
 omx__process_delayed_requests(struct omx_endpoint *ep);
 
 extern void
-omx__send_throttling_requests(struct omx_endpoint *ep,
-			      struct omx__partner *partner,
-			      int nr);
+omx__process_throttling_requests(struct omx_endpoint *ep,
+				 struct omx__partner *partner,
+				 int nr);
 
 extern void
 omx__complete_delayed_send_request(struct omx_endpoint *ep,

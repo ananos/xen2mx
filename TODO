@@ -3,7 +3,6 @@
 * alloc the small buffer from the beginning to prevent send small from ever
   failing later
 * no need to have a missing resource flag for pull handle alloc in the kernel
-* cleanup/rename omx__send_throttling_requests
 * reserve exp events for real during medium submission
   - how to deal with retransmission ? only resend what's possible...
 

@@ -129,7 +129,7 @@ omx__handle_ack(struct omx_endpoint *ep,
     partner->next_acked_send_seq = ack_before;
 
     /* there are some new seqnum available, dequeue throttling sends */
-    omx__send_throttling_requests(ep, partner, new_acks);
+    omx__process_throttling_requests(ep, partner, new_acks);
   }
 }
 
