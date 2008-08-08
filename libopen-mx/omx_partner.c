@@ -816,42 +816,17 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   omx__foreach_request_safe(&ep->delayed_send_req_q, req, next) {
     if (req->generic.partner != partner)
       continue;
-
     omx___dequeue_request(req);
     req->generic.state &= ~OMX_REQUEST_STATE_DELAYED;
     omx__debug_printf(CONNECT, "Dropping delayed send %p\n", req);
-
-    switch (req->generic.type) {
-    case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      /* no sendq slot has been allocated, make sure none will be released and complete the request */
-      req->send.specific.medium.frags_nr = 0;
-      omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
-      break;
-    case OMX_REQUEST_TYPE_SEND_LARGE:
-      /* no region has been allocated, just complete the request */
-      omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
-      break;
-    case OMX_REQUEST_TYPE_RECV_LARGE:
-      if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
-        /* pull request needs to the pushed to the driver, no region allocated yet, just complete the request */
-	req->generic.state &= OMX_REQUEST_STATE_RECV_PARTIAL;
-      } else {
-        /* the pull is already done, just drop the notify */
-      }
-      omx__recv_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
-      break;
-    default:
-      omx__abort("Failed to handle delayed request with type %d\n",
-                 req->generic.type);
-    }
-
+    omx__complete_delayed_send_request(ep, req);
     count++;
   }
   if (count)
     printf("Dropped %d delayed sends to partner\n", count);
 
   /*
-   * Drop throttling send request to this partner.
+   * Drop throttling send requests to this partner.
    * Just take them from the partner throttling_send_req_q, they
    * are not queued anywhere else.
    */
@@ -860,7 +835,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     omx__debug_printf(CONNECT, "Dropping throttling send %p\n", req);
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_NEED_SEQNUM);
     omx___dequeue_partner_throttling_request(req);
-    omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
+    omx__complete_delayed_send_request(ep, req);
     count++;
   }
   if (count)

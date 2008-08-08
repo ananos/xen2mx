@@ -346,7 +346,10 @@ enum omx__request_type {
  * CONNECT:
  *   NEED_REPLY: connect_req_q
  *
- * if DELAYED, delayed_send_req_q
+ * Before being posted for real, all send requests (and recv large notifying) may
+ * be:
+ * DELAYED: delayed_send_req_q
+ * NEED_SEQNUM: delayed in the partner throttling_send_req_q, in no endpoint queue
  *
  * The DONE qnd ZOMBIE states of the request determines whether the done_elt
  * is queued in the endpoint done_req_q:
@@ -480,10 +483,6 @@ union omx_request {
     uint32_t session_id;
     uint8_t connect_seqnum;
   } connect;
-
-  struct {
-    int ssend;
-  } throttling;
 };
 
 typedef void (*omx__process_recv_func_t) (struct omx_endpoint *ep,
