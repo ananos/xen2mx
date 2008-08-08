@@ -364,6 +364,10 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	return 0;
 
  out_with_endpoint:
+	/* fill and notify the src event anyway, so that the sender doesn't leak eventq slots */
+	src_event.sendq_page_offset = hdr->sendq_page_offset;
+	omx_notify_exp_event(src_endpoint, OMX_EVT_SEND_MEDIUM_FRAG_DONE, &src_event, sizeof(src_event));
+
 	omx_endpoint_release(dst_endpoint);
 	return err;
 }

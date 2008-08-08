@@ -143,7 +143,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 	((struct omx_evt_generic *) slot)->type = type;
 
 	/* wake up waiters */
-	dprintk(EVENT, "notify_exp waking up everybody1\n");
+	dprintk(EVENT, "notify_exp waking up everybody\n");
 	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	spin_unlock_bh(&endpoint->event_lock);
