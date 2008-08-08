@@ -1,7 +1,3 @@
-* make NEED_SEQNUM a resource and use DELAYED for throttling as well ?
-* add an endpoint throttling_send_req_q to help cleanup when exiting ?
-* no need to have a missing resource flag for pull handle alloc in the kernel
-
 * if killed while registering, needed to mark the region as failed?
 
 * cleanup endpoint acquiring/locking/closing again
@@ -72,8 +68,11 @@
   + remove the user-space knowledge of window being registered for real
     - integrate into mmu notifier since there is no need anymore to notify userspace when region is invalidated
 
-* add a counter of failure to alloc small buffer with ENOMEM and abort if too many?
-* add a counter of failure to pull with ENOMEM and abort if too many?
+* resource allocation cleanups
+  + make NEED_SEQNUM a resource and use DELAYED for throttling as well ?
+  + add an endpoint throttling_send_req_q to help cleanup when exiting ?
+  + add a counter of failure to alloc small buffer with ENOMEM and abort if too many?
+  + add a counter of failure to pull with ENOMEM and abort if too many?
 
 * if failing to deregister region
   *** glibc detected *** tests/omx_pingpong: malloc(): memory corruption: 0x000000000064edd0 ***
@@ -88,9 +87,8 @@
 * endpoint parameters
   + unexp queue length
 
-* improve retransmission
-  + don't free partner since we can't change the session anymore?
-    - or randomify the initial session?
+* don't free partner on disconnect since we can't change the session anymore?
+  - or randomify the initial session?
 
 * thread safety
   + filter wakeup on recv/send/connect/...
