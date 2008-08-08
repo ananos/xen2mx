@@ -386,7 +386,6 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 	goto err;
       }
 
-      ep->avail_exp_events--;
       remaining -= chunk;
       offset += chunk;
     }
@@ -427,7 +426,6 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 	goto err;
       }
 
-      ep->avail_exp_events--;
       remaining -= chunk;
     }
   }
@@ -450,7 +448,9 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 				     OMX_SUCCESS,
 				     "send medium message fragment");
 
+  /* update the number of fragment that we actually submitted */
   req->send.specific.medium.frags_pending_nr = i;
+  ep->avail_exp_events += frags_nr - i;
   if (i)
     /*
      * some frags were posted, mark the request as IN_DRIVER
@@ -504,7 +504,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
   uint32_t length = req->generic.status.msg_length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int res = req->generic.missing_resources;
-  int frags_nr;
+  int frags_nr = req->send.specific.medium.frags_nr;
 
   if (likely(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
     goto need_exp_events;
@@ -513,11 +513,9 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
   omx__abort("unexpected missing resources %x for medium send request\n", res);
 
  need_exp_events:
-  frags_nr = OMX_MEDIUM_FRAGS_NR(length);
-  omx__debug_assert(frags_nr <= 8); /* for the sendq_index array above */
-  req->send.specific.medium.frags_nr = frags_nr;
   if (unlikely(ep->avail_exp_events < frags_nr))
     return OMX_INTERNAL_MISSING_RESOURCES;
+  ep->avail_exp_events -= frags_nr;
   req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_EXP_EVENT;
 
  need_sendq_map_slot:
@@ -553,9 +551,14 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 {
   uint32_t length = req->send.segs.total_length;
   omx_return_t ret;
+  int frags_nr;
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
   req->generic.missing_resources = OMX_REQUEST_SEND_MEDIUM_RESOURCES;
+
+  frags_nr = OMX_MEDIUM_FRAGS_NR(length);
+  omx__debug_assert(frags_nr <= 8); /* for the sendq_index array above */
+  req->send.specific.medium.frags_nr = frags_nr;
 
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
@@ -1178,9 +1181,8 @@ omx__release_delayed_send_resources(struct omx_endpoint *ep, union omx_request *
     break;
 
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
-    /* nothing to do for OMX_REQUEST_RESOURCE_EXP_EVENT since
-     * we check if they are available without reserving them
-     */
+    if (!(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
+      ep->avail_exp_events += req->send.specific.medium.frags_nr;
 
     /* make sure we don't release garbage sendq map slots */
     if (res & OMX_REQUEST_RESOURCE_SENDQ_SLOT)
@@ -1201,9 +1203,8 @@ omx__release_delayed_send_resources(struct omx_endpoint *ep, union omx_request *
     if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
       /* delayed before pull */
 
-      /* nothing to do for OMX_REQUEST_RESOURCE_EXP_EVENT since
-       * we check if they are available without reserving them
-       */
+      if (!(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
+	ep->avail_exp_events++;
 
       if (!(res & OMX_REQUEST_RESOURCE_LARGE_REGION))
 	omx__put_region(ep, req->recv.specific.large.local_region, NULL);
@@ -1299,6 +1300,14 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       omx__debug_printf(SEND, "reposting resend medium request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
+      if (ep->avail_exp_events < req->send.specific.medium.frags_nr) {
+	/* not enough expected events available, stop resending for now, and try again later */
+	omx__debug_printf(SEND, "stopping resending for now, only %d exp events available to resend %d medium frags\n",
+			  ep->avail_exp_events, req->send.specific.medium.frags_nr);
+	omx__requeue_request(&ep->non_acked_req_q, req);
+	goto done_resending;
+      }
+      ep->avail_exp_events -= req->send.specific.medium.frags_nr;
       omx__post_isend_medium(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
@@ -1324,6 +1333,7 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       /* move the request to the end of the same queue */
       omx__enqueue_request(&ep->non_acked_req_q, req);
   }
+ done_resending:
 
   /* resend non-replied connect requests */
   omx__foreach_request_safe(&ep->connect_req_q, req, next) {

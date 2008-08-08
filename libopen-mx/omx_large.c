@@ -437,6 +437,7 @@ omx__alloc_setup_pull(struct omx_endpoint * ep,
  need_exp_event:
   if (unlikely(ep->avail_exp_events < 1))
     return OMX_INTERNAL_MISSING_RESOURCES;
+  ep->avail_exp_events--;
   req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_EXP_EVENT;
 
  need_region:
@@ -471,8 +472,6 @@ omx__alloc_setup_pull(struct omx_endpoint * ep,
   }
   req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_PULL_HANDLE;
   omx__debug_assert(!req->generic.missing_resources);
-
-  ep->avail_exp_events--;
 
   req->recv.specific.large.local_region = region;
   req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
