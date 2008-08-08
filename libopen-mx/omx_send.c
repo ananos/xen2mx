@@ -819,7 +819,8 @@ omx__submit_notify(struct omx_endpoint *ep,
 
   if (unlikely(!omx__empty_queue(&ep->delayed_send_req_q) || delayed)) {
     req->generic.state |= OMX_REQUEST_STATE_DELAYED;
-    omx__enqueue_request(&ep->delayed_send_req_q, req);
+    /* queue on top of the delayed queue to avoid being blocked by delayed requests */
+    omx__requeue_request(&ep->delayed_send_req_q, req);
   } else {
     omx__alloc_setup_notify(ep, req);
   }
