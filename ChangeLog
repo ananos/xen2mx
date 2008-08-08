@@ -1,5 +1,7 @@
 
 Major Enhancements:
+* Fixup management of requests in case of resource shortage to prevent
+  some deadlocks and other wrong behaviors.
 * Add a FAQ (also available online at http://open-mx.gforge.inria.fr/FAQ/)
   containing most of the old README and much more.
 
@@ -15,8 +17,6 @@ Other improvements from previous release:
 * Fix invalid memory free in case of early-received large message notify.
 
 Caveats:
-* Queueing of requests in case of resource shortage is not perfect yet,
-  some requests may not be processed in order.
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
 
