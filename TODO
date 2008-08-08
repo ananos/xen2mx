@@ -1,7 +1,5 @@
 * make NEED_SEQNUM a resource and use DELAYED for throttling as well ?
 * add an endpoint throttling_send_req_q to help cleanup when exiting ?
-* alloc the small buffer from the beginning to prevent send small from ever
-  failing later
 * no need to have a missing resource flag for pull handle alloc in the kernel
 
 * if killed while registering, needed to mark the region as failed?

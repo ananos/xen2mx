@@ -165,7 +165,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   uint32_t length = req->send.segs.total_length;
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_TINY;
-  /* no resources needed, just need to wait for all events to be processed */
+  /* no resources needed */
 
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
@@ -248,20 +248,7 @@ omx__alloc_setup_isend_small(struct omx_endpoint *ep,
 {
   struct omx_cmd_send_small * small_param;
   uint32_t length = req->generic.status.msg_length;
-  int res = req->generic.missing_resources;
-  void *copy;
-
-  if (likely(res & OMX_REQUEST_RESOURCE_SMALL_BUFFER))
-    goto need_small_buffer;
-  omx__abort("unexpected missing resources %x for small send request\n", res);
-
- need_small_buffer:
-  copy = malloc(length);
-  if (unlikely(!copy))
-    return OMX_INTERNAL_MISSING_RESOURCES;
-  req->send.specific.small.copy = copy;
-  req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_SMALL_BUFFER;
-  omx__debug_assert(!req->generic.missing_resources);
+  void *copy = req->send.specific.small.copy;
 
   small_param = &req->send.specific.small.send_small_ioctl_param;
   small_param->peer_index = partner->peer_index;
@@ -309,7 +296,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   omx_return_t ret;
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_SMALL;
-  req->generic.missing_resources = OMX_REQUEST_SEND_SMALL_RESOURCES;
+  /* no resources needed */
 
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
@@ -833,7 +820,7 @@ omx__submit_notify(struct omx_endpoint *ep,
  * ISEND Submission Routines
  */
 
-static INLINE void
+static INLINE omx_return_t
 omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 	       union omx_request *req, union omx_request **requestp)
 {
@@ -853,6 +840,10 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   if (likely(length <= OMX_TINY_MAX)) {
     omx__submit_isend_tiny(ep, partner, req);
   } else if (length <= OMX_SMALL_MAX) {
+    void *copy = malloc(length);
+    if (unlikely(!copy))
+      return omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating isend small copy buffer");
+    req->send.specific.small.copy = copy;
     omx__submit_isend_small(ep, partner, req);
   } else if (length <= partner->rndv_threshold) {
     omx__submit_isend_medium(ep, partner, req);
@@ -869,6 +860,8 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 
   /* progress a little bit */
   omx__progress(ep);
+
+  return OMX_SUCCESS;
 }
 
 /* API omx_isend */
@@ -898,7 +891,11 @@ omx_isend(struct omx_endpoint *ep,
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
 
-  omx__isend_req(ep, partner, req, requestp);
+  ret = omx__isend_req(ep, partner, req, requestp);
+  if (likely(ret != OMX_SUCCESS)) {
+    omx_free_segments(&req->send.segs);
+    omx__request_free(ep, req);
+  }
 
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
@@ -940,7 +937,11 @@ omx_isendv(omx_endpoint_t ep,
   req->generic.status.match_info = match_info;
   req->generic.status.context = context;
 
-  omx__isend_req(ep, partner, req, requestp);
+  ret = omx__isend_req(ep, partner, req, requestp);
+  if (likely(ret != OMX_SUCCESS)) {
+    omx_free_segments(&req->send.segs);
+    omx__request_free(ep, req);
+  }
 
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
@@ -1172,13 +1173,6 @@ omx__release_delayed_send_resources(struct omx_endpoint *ep, union omx_request *
   int res = req->generic.missing_resources;
 
   switch (req->generic.type) {
-
-  case OMX_REQUEST_TYPE_SEND_SMALL:
-    /* make sure we don't free unallocated garbage pointer */
-    if (res & OMX_REQUEST_RESOURCE_SMALL_BUFFER)
-      req->send.specific.small.copy = NULL;
-
-    break;
 
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
     if (!(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
