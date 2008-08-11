@@ -15,13 +15,13 @@ Other improvements from previous release:
   the target endpoint.
 * Fix forgotten/zombie send request support.
 * Fix the management of pinning errors in case of invalid memory segments.
+* Fix invalid memory free in case of early-received large message notify.
 * Fix omx_init start/stop timeout to deal with peer discovery start/stop
   delay better.
 * Fix cross-compilation when the cross-compiler is given at
   build and not at configure time.
 * Fix modinfo and modprobe usage in the startup script, they are supposed
   to be in /sbin.
-* Fix invalid memory free in case of early-received large message notify.
 
 Caveats:
 * No background progression or retransmission is done if the application

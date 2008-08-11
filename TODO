@@ -1,9 +1,6 @@
 * endpoint_close cannot be called from interrupt context
   - we can destroy region at first closing too?
 
-* write a omx_many which sends length 7,43,1057,14567,123456,1234567 10000 times (configurable)
-  with NULL as requestp and using omx_wait_any to complete
-
 * if killed while registering, needed to mark the region as failed?
 
 * cleanup endpoint acquiring/locking/closing again
@@ -34,8 +31,7 @@
   + use eth_hdr(), dev->header_ops->create() and ->parse() to clarify the accessing
     to eth headers of packets and make it less ethernet specific
 
-* fix/improve large messages
-  + regcache malloc hook
+* regcache malloc hook
 
 * affinity
   + add ioctls GET_BOARD_CPUMASK and GET_IRQ_CPUMASK
@@ -63,8 +59,6 @@
     - integrate into mmu notifier since there is no need anymore to notify userspace when region is invalidated
 
 * resource allocation cleanups
-  + make NEED_SEQNUM a resource and use DELAYED for throttling as well ?
-  + add an endpoint throttling_send_req_q to help cleanup when exiting ?
   + add a counter of failure to alloc small buffer with ENOMEM and abort if too many?
   + add a counter of failure to pull with ENOMEM and abort if too many?
 
@@ -125,9 +119,7 @@
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 
 * wire compat
-  + what's in src_generation ? unset/unchecked in OMX
   + fix lib ack contents?
-* wire-compat at runtime
 
 * make shared comms runtime-configurable in the driver
 
@@ -167,3 +159,7 @@
 === obsolete ideas
 * why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
 * change --iface into ---iface, and use --iface as a "close when no more endpoint"
+* make NEED_SEQNUM a resource and use DELAYED for throttling as well ?
+* add an endpoint throttling_send_req_q to help cleanup when exiting ?
+* what's in src_generation ? unset/unchecked in OMX
+* wire-compat at runtime (8kB frame needs 17bits for medium length)
