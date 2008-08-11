@@ -1001,7 +1001,7 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	/* pointer to the data, assuming it is linear */
 	mh = omx_skb_mac_header(skb);
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	if (skb->len < ETH_ZLEN) {
 		omx_counter_inc(iface, DROP_BAD_HEADER_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "packet smaller than ETH_ZLEN (%d)", ETH_ZLEN);

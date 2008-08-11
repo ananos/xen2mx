@@ -24,6 +24,8 @@
 #include <linux/rcupdate.h>
 #include <asm/processor.h>
 
+#include "omx_common.h"
+
 struct omx_endpoint;
 struct sk_buff;
 
@@ -80,7 +82,7 @@ struct omx_user_region_offset_cache {
 	int (*dma_memcpy_from_buf) (struct omx_user_region_offset_cache * cache, struct dma_chan *chan, dma_cookie_t *cookiep, void *buf, unsigned long length);
 #endif
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	unsigned long current_offset;
 	unsigned long max_offset;
 #endif
@@ -140,7 +142,7 @@ omx_user_region_immediate_full_pin(struct omx_user_region * region)
 	struct omx_user_region_pin_state pinstate;
 	unsigned long needed = region->total_length;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(omx_region_demand_pin);
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_NOT_PINNED);
 #endif
@@ -159,7 +161,7 @@ omx_user_region_parallel_pin_wait(struct omx_user_region * region, unsigned long
 {
 	unsigned long needed = *length;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(!omx_region_demand_pin);
 #endif
 
@@ -184,7 +186,7 @@ static inline void
 omx_user_region_demand_pin_init(struct omx_user_region_pin_state *pinstate,
 				struct omx_user_region * region)
 {
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(!omx_region_demand_pin);
 #endif
 
@@ -220,7 +222,7 @@ omx_user_region_demand_pin_continue(struct omx_user_region_pin_state *pinstate,
 
 	} else {
 		/* continue our pinning */
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 		BUG_ON(!omx_region_demand_pin);
 		BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
 #endif
@@ -245,7 +247,7 @@ omx_user_region_demand_pin_finish(struct omx_user_region_pin_state *pinstate)
 
 	} else {
 		/* finish our pinning */
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 		BUG_ON(!omx_region_demand_pin);
 		BUG_ON(pinstate->region->status != OMX_USER_REGION_STATUS_PINNED);
 #endif
@@ -270,7 +272,7 @@ omx_user_region_demand_pin_finish_or_parallel(struct omx_user_region_pin_state *
 
 	} else {
 		/* finish our pinning */
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 		BUG_ON(!omx_region_demand_pin);
 		BUG_ON(pinstate->region->status != OMX_USER_REGION_STATUS_PINNED);
 #endif

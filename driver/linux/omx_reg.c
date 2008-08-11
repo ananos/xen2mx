@@ -74,7 +74,7 @@ omx_user_region_add_segment(struct omx_cmd_user_region_segment * useg,
 		goto out;
 	}
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	memset(pages, 0, nr_pages * sizeof(struct page *));
 #endif
 
@@ -194,7 +194,7 @@ omx__user_region_pin_add_chunk(struct omx_user_region_pin_state *pinstate)
 		printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
 		goto out;
 	}
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(ret != chunk_pages);
 #endif
 
@@ -211,7 +211,7 @@ omx__user_region_pin_add_chunk(struct omx_user_region_pin_state *pinstate)
 
 	} else {
 		/* jump to next segment */
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 		BUG_ON(seg->pinned_pages != seg->nr_pages);
 #endif
 		pinstate->pages = NULL;
@@ -232,7 +232,7 @@ omx__user_region_pin_continue(struct omx_user_region_pin_state *pinstate,
 	unsigned long needed = *length;
 	int ret;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
 #endif
 
@@ -555,7 +555,7 @@ omx_user_region_offset_cache_contig_append_callback(struct omx_user_region_offse
 	unsigned pageoff = cache->pageoff;
 	int frags = 0;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(cache->current_offset + length >= cache->max_offset);
 #endif
 
@@ -597,7 +597,7 @@ omx_user_region_offset_cache_contig_append_callback(struct omx_user_region_offse
 
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length;
 #endif
 	return 0;
@@ -617,7 +617,7 @@ omx_user_region_offset_cache_vect_append_callback(struct omx_user_region_offset_
 	unsigned pageoff = cache->pageoff;
 	int frags = 0;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(cache->current_offset + length >= cache->max_offset);
 #endif
 
@@ -680,7 +680,7 @@ omx_user_region_offset_cache_vect_append_callback(struct omx_user_region_offset_
 	cache->segoff = segoff;
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length;
 #endif
 	return 0;
@@ -695,7 +695,7 @@ omx_user_region_offset_cache_contig_copy_callback(struct omx_user_region_offset_
 	struct page ** page = cache->page;
 	unsigned pageoff = cache->pageoff;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(cache->current_offset + length >= cache->max_offset);
 #endif
 
@@ -732,7 +732,7 @@ omx_user_region_offset_cache_contig_copy_callback(struct omx_user_region_offset_
 
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length;
 #endif
 }
@@ -750,7 +750,7 @@ omx_user_region_offset_cache_vect_copy_callback(struct omx_user_region_offset_ca
 	struct page ** page = cache->page;
 	unsigned pageoff = cache->pageoff;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(cache->current_offset + length >= cache->max_offset);
 #endif
 
@@ -808,7 +808,7 @@ omx_user_region_offset_cache_vect_copy_callback(struct omx_user_region_offset_ca
 	cache->segoff = segoff;
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length;
 #endif
 }
@@ -828,7 +828,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback(struct omx_user
 	struct page ** page = cache->page;
 	unsigned pageoff = cache->pageoff;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(cache->current_offset + length >= cache->max_offset);
 #endif
 
@@ -870,7 +870,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback(struct omx_user
 
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length;
 #endif
 	return 0;
@@ -878,7 +878,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback(struct omx_user
  out:
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length-remaining;
 #endif
 	return remaining;
@@ -898,7 +898,7 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback(struct omx_user_r
 	struct page ** page = cache->page;
 	unsigned pageoff = cache->pageoff;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(cache->current_offset + length >= cache->max_offset);
 #endif
 
@@ -961,14 +961,14 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback(struct omx_user_r
 	cache->segoff = segoff;
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length;
 #endif
 
  out:
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length-remaining;
 #endif
 	return remaining;
@@ -984,7 +984,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_pg_callback(struct omx_user_
 	struct page ** page = cache->page;
 	unsigned pageoff = cache->pageoff;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(cache->current_offset + length >= cache->max_offset);
 #endif
 
@@ -1026,7 +1026,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_pg_callback(struct omx_user_
 
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length;
 #endif
 	return 0;
@@ -1034,7 +1034,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_pg_callback(struct omx_user_
  out:
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length-remaining;
 #endif
 	return remaining;
@@ -1054,7 +1054,7 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback(struct omx_user_re
 	struct page ** page = cache->page;
 	unsigned pageoff = cache->pageoff;
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	BUG_ON(cache->current_offset + length >= cache->max_offset);
 #endif
 
@@ -1117,14 +1117,14 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback(struct omx_user_re
 	cache->segoff = segoff;
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length;
 #endif
 
  out:
 	cache->page = page;
 	cache->pageoff = pageoff;
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset += length-remaining;
 #endif
 	return remaining;
@@ -1194,7 +1194,7 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 		(unsigned long) (seg - &region->segments[0]), segoff,
 		(unsigned long) (cache->page - &seg->pages[0]), cache->pageoff);
 
-#ifdef OMX_DEBUG
+#ifdef OMX_DRIVER_DEBUG
 	cache->current_offset = offset;
 	cache->max_offset = offset + length;
 #endif
