@@ -561,7 +561,7 @@ omx_user_region_offset_cache_contig_append_callback(struct omx_user_region_offse
 	int frags = 0;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(cache->current_offset + length >= cache->max_offset);
+	BUG_ON(cache->current_offset + length > cache->max_offset);
 #endif
 
 	while (remaining) {
@@ -623,7 +623,7 @@ omx_user_region_offset_cache_vect_append_callback(struct omx_user_region_offset_
 	int frags = 0;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(cache->current_offset + length >= cache->max_offset);
+	BUG_ON(cache->current_offset + length > cache->max_offset);
 #endif
 
 	while (remaining) {
@@ -701,7 +701,7 @@ omx_user_region_offset_cache_contig_copy_callback(struct omx_user_region_offset_
 	unsigned pageoff = cache->pageoff;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(cache->current_offset + length >= cache->max_offset);
+	BUG_ON(cache->current_offset + length > cache->max_offset);
 #endif
 
 	while (remaining) {
@@ -756,7 +756,7 @@ omx_user_region_offset_cache_vect_copy_callback(struct omx_user_region_offset_ca
 	unsigned pageoff = cache->pageoff;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(cache->current_offset + length >= cache->max_offset);
+	BUG_ON(cache->current_offset + length > cache->max_offset);
 #endif
 
 	while (remaining) {
@@ -834,7 +834,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback(struct omx_user
 	unsigned pageoff = cache->pageoff;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(cache->current_offset + length >= cache->max_offset);
+	BUG_ON(cache->current_offset + length > cache->max_offset);
 #endif
 
 	while (remaining) {
@@ -904,7 +904,7 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback(struct omx_user_r
 	unsigned pageoff = cache->pageoff;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(cache->current_offset + length >= cache->max_offset);
+	BUG_ON(cache->current_offset + length > cache->max_offset);
 #endif
 
 	while (remaining) {
@@ -990,7 +990,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_pg_callback(struct omx_user_
 	unsigned pageoff = cache->pageoff;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(cache->current_offset + length >= cache->max_offset);
+	BUG_ON(cache->current_offset + length > cache->max_offset);
 #endif
 
 	while (remaining) {
@@ -1060,7 +1060,7 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback(struct omx_user_re
 	unsigned pageoff = cache->pageoff;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(cache->current_offset + length >= cache->max_offset);
+	BUG_ON(cache->current_offset + length > cache->max_offset);
 #endif
 
 	while (remaining) {
