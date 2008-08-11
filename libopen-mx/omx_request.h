@@ -394,6 +394,9 @@ omx__empty_partner_early_packet_queue(struct omx__partner *partner)
   return list_empty(&partner->early_recv_q);
 }
 
+#define omx__foreach_partner_early_packet(partner, early)	\
+list_for_each_entry(early, &partner->early_recv_q, partner_elt)
+
 #define omx__foreach_partner_early_packet_safe(partner, early, next)	\
 list_for_each_entry_safe(early, next, &partner->early_recv_q, partner_elt)
 

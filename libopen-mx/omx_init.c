@@ -38,6 +38,8 @@ omx__init_api(int app_api)
   char *env;
   int err;
 
+  omx__debug_init();
+
   if (app_api >> 8 != omx__lib_api >> 8
       /* support app_abi 0x0 for now, will drop in 1.0 */
       || app_api == 0) {

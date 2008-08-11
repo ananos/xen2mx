@@ -73,6 +73,8 @@
 
 #define omx__abort(args...) do { fprintf(stderr, "Open-MX fatal error: " args); assert(0); } while (0)
 
+extern void omx__debug_init(void);
+
 /*************
  * Optimizing
  */
@@ -610,6 +612,12 @@ extern const char *
 omx__strreqtype(enum omx__request_type type);
 
 extern void
+omx__sprintf_reqstate(uint16_t state, char *str);
+
+extern void
 omx__init_endpoint_list(void);
+
+extern void
+omx__foreach_endpoint(void (*func)(struct omx_endpoint *));
 
 #endif /* __omx_lib_h__ */

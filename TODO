@@ -87,8 +87,6 @@
   + change the wakeup_jiffies mapped value into an ioctl parameter?
   + add a last_poll_jiffies so that the driver knows if the progress thread is needed after a timeout
 
-* when debug enabled, SIGUSR1 dumps the status
-
 * unlockify the ring management in the driver event reporting code
   + use rcu to avoid having to lock the waiter's queue
     - allocate the waiter struct and free it with a rcu_call
