@@ -1,8 +1,5 @@
 * fix failed register
 
-* fix forgotten requests by adding a omx__forgot_req
-  + if DONE when setting ZOMBIE, remove from done queues
-
 * endpoint_close cannot be called from interrupt context
   - we can destroy region at first closing too?
 
