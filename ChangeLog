@@ -14,6 +14,7 @@ Other improvements from previous release:
 * Fix intra-node medium send completion in case of event queue full on
   the target endpoint.
 * Fix forgotten/zombie send request support.
+* Fix the management of pinning errors in case of invalid memory segments.
 * Fix omx_init start/stop timeout to deal with peer discovery start/stop
   delay better.
 * Fix cross-compilation when the cross-compiler is given at

@@ -1,5 +1,3 @@
-* fix failed register
-
 * endpoint_close cannot be called from interrupt context
   - we can destroy region at first closing too?
 

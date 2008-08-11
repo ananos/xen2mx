@@ -1005,7 +1005,7 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	if (skb->len < ETH_ZLEN) {
 		omx_counter_inc(iface, DROP_BAD_HEADER_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "packet smaller than ETH_ZLEN (%d)", ETH_ZLEN);
-		goto out;		
+		goto out;
 	}
 #endif
 

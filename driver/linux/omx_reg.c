@@ -190,13 +190,18 @@ omx__user_region_pin_add_chunk(struct omx_user_region_pin_state *pinstate)
 	chunk_pages = (chunk_offset + chunk_length + PAGE_SIZE-1) >> PAGE_SHIFT;
 
 	ret = get_user_pages(current, current->mm, aligned_vaddr, chunk_pages, 1, 0, pages, NULL);
-	if (unlikely(ret < 0)) {
-		printk(KERN_ERR "Open-MX: get_user_pages failed (error %d)\n", ret);
+	if (unlikely(ret != chunk_pages)) {
+		printk(KERN_ERR "Open-MX: get_user_pages failed (returned %d for %d pages)\n",
+		       ret, chunk_pages);
+		if (ret >= 0) {
+			/* if some pages were acquired, release them */
+			int i;
+			for(i=0; i<ret; i++)
+				put_page(pages[i]);
+			ret = -EFAULT;
+		}
 		goto out;
 	}
-#ifdef OMX_DRIVER_DEBUG
-	BUG_ON(ret != chunk_pages);
-#endif
 
 	seg->pinned_pages += chunk_pages;
 	region->total_registered_length += chunk_length;
