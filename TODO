@@ -1,3 +1,9 @@
+* endpoint_close cannot be called from interrupt context
+  - we can destroy region at first closing too?
+
+* write a omx_many which sends length 7,43,1057,14567,123456,1234567 10000 times (configurable)
+  with NULL as requestp and using omx_wait_any to complete
+
 * if killed while registering, needed to mark the region as failed?
 
 * cleanup endpoint acquiring/locking/closing again
@@ -15,11 +21,6 @@
 * cleanup the idr+BHlock for handles
   + sleep if not enough slot available
 
-* endpoint_close cannot be called from interrupt context
-  - we can sleep when calling prepare_exit
-    . it's NOT called when the last reference is released, it's called when closing first
-  - we can destroy region at first closing too?
-
 * fix/improve ioat support
   + sleep a bit before polling on synchronous copies
     - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param
@@ -35,11 +36,6 @@
 
 * fix/improve large messages
   + regcache malloc hook
-  + ph_prepare_exit only called when holding the iface mutex, may sleep
-    - but last_release may be called from interrupt context
-
-* shared
-  + why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
 
 * affinity
   + add ioctls GET_BOARD_CPUMASK and GET_IRQ_CPUMASK
@@ -53,8 +49,6 @@
   + add a pagesize in the region segment structure and use either pagesize of hugepagesize when possible
 * support for architecture with pagesize != 4k
   + add an pgoffset in the sendq/recvq entry
-
-* change --iface into ---iface, and use --iface as a "close when no more endpoint"
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
@@ -169,3 +163,7 @@
 * per-packet-type irq
   + can we detect when another packet is right behind? if so, process it
     and queue the early interrupt if it is not a small one
+
+=== obsolete ideas
+* why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
+* change --iface into ---iface, and use --iface as a "close when no more endpoint"

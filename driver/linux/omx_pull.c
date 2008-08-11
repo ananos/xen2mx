@@ -73,23 +73,21 @@ typedef uint8_t omx_block_frame_bitmask_t;
 enum omx_pull_handle_status {
 	/*
 	 * The handle is normal, being processed as usual and its timeout handler is running ok.
-	 * It is queued on the endpoint running_list.
+	 * It is queued on the endpoint list.
 	 */
 	OMX_PULL_HANDLE_STATUS_OK,
 
 	/*
-	 * The handle has been removed from the slot array, but the timeout handler is still running.
-	 * It is queued on the endpoint done_but_timer_list.
+	 * The handle has been removed from the slot array since no incoming packet can use it.
+	 * But the timeout handler is still running, so the handle is still queued on the endpoint list.
 	 * Either the pull has completed (or aborted on error), or the endpoint is being closed and
-	 * all handles have been scheduled for removal.
-	 * The timeout handler must exit next time it runs. It will release the reference on the handle,
-	 * dequeue it, and the handle may be destroyed.
+	 * the timeout handle must exit net time it runs (or del_timer_sync will kill it first).
 	 */
 	OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT,
 
 	/*
-	 * The handle has been removed from the slot array and the endpoint lists, and its timeout handler has exited
-	 * and released its reference.
+	 * The handle has been removed from the slot array and the endpoint list.
+	 * Its timeout handler has exited and released its reference on the handle and endpoint.
 	 * Either the pull has completed (or aborted on error) and the handler caught the MUST_EXIT status,
 	 * or the timeout was reached and its handler aborted the handle directly.
 	 */
@@ -168,19 +166,19 @@ static void omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_d
  * It also protects its handle status and its queueing in the endpoint lists and slot array.
  * This lock is always taken *before* the endpoint pull handle lock.
  *
- * The handle is always queued in one endpoint lists, and the endpoint closing will
- * enforce its destruction. When the endpoint starts to be closed (either ioctl, or
- * last closing of the file descriptor, or interface being removed), it calls
- * prepare_exit which sets all handles to timer_must_exit but cannot wait for them
- * because of the possible interrupt context. Later, the cleanup thread will cleanup
- * the endpoint, including destroying the handle timers that are still running.
+ * The handle is always queued on endpoint list as long as its timer is running.
+ * The endpoint closing enforces its destruction. When the endpoint starts to be
+ * closed (either ioctl, or last closing of the file descriptor, or interface being
+ * removed), it calls pull_handles_exit which sets all handles to timer_must_exit
+ * and uses del_timer_sync to either cancel the next timer or wait for it to end.
+ * Thend the timer will never run again and the handle may safely be destroyed.
  *
  * The pile of handles for an endpoint is protected by a spinlock. It is not taken
  * when acquiring an handle (when a pull reply or nack mcp arrives, likely in a
  * bottom half) because this is RCU protected. It is only taken for modification
  * when creating a handle (when the application request a pull), finishing a handle
  * (when a pull reply completes the pull request, likely in a bottom half), when
- * completing a handle on tiemout (from the timer softirq), and when destroying
+ * completing a handle on timeout (from the timer softirq), and when destroying
  * remaining handles (when the endpoint is closed).
  * Since a bottom half and the application may both acquire the spinlock, we must
  * always disable bottom halves when taking the spinlock.
@@ -438,20 +436,20 @@ omx_pull_handle_acquire_from_slot(struct omx_endpoint *endpoint,
 int
 omx_endpoint_pull_handles_init(struct omx_endpoint * endpoint)
 {
-	INIT_LIST_HEAD(&endpoint->pull_handles_running_list);
-	INIT_LIST_HEAD(&endpoint->pull_handles_done_but_timer_list);
+	INIT_LIST_HEAD(&endpoint->pull_handles_list);
 	omx_pull_handle_slots_init(endpoint);
 	spin_lock_init(&endpoint->pull_handles_lock);
 	return 0;
 }
 
 /*
- * Called when the last reference on the endpoint is removed,
- * possibly from unsafe context, cannot del_timer_sync() then.
+ * Called when the endpoint starts to be closed.
  */
 void
-omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
+omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 {
+	might_sleep();
+
 	/*
 	 * ask all pull handles of the endpoint to stop their timer.
 	 * but we can't take endpoint->pull_handles_lock before handle->lock since that would deadlock
@@ -459,93 +457,63 @@ omx_endpoint_pull_handles_prepare_exit(struct omx_endpoint * endpoint)
 	 */
 
 	spin_lock_bh(&endpoint->pull_handles_lock);
-	while (!list_empty(&endpoint->pull_handles_running_list)) {
+	while (!list_empty(&endpoint->pull_handles_list)) {
 		struct omx_pull_handle * handle;
+		int ret;
 
 		/* get the first handle of the list, acquire it and release the list lock */
-		handle = list_first_entry(&endpoint->pull_handles_running_list, struct omx_pull_handle, list_elt);
+		handle = list_first_entry(&endpoint->pull_handles_list, struct omx_pull_handle, list_elt);
 		omx_pull_handle_acquire(handle);
 		spin_unlock_bh(&endpoint->pull_handles_lock);
 
 		/* take the handle lock and check the status in case it changed while the lock was released */
 		spin_lock_bh(&handle->lock);
 		if (handle->status == OMX_PULL_HANDLE_STATUS_OK) {
-			/* the handle didn't change, do our stuff */
-			handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
-
-			/*
-			 * remove from the slot array so that no incoming packet can find it anymore,
-			 * and move to the done_but_timer list
-			 */
-			dprintk(PULL, "moving handle %p to the done_but_timer list and removing from slot array\n", handle);
+			/* the handle didn't change, remove from the slot array so that no incoming packet can find it anymore */
+			dprintk(PULL, "(endpoint close) removing pull handle %p from slot array\n", handle);
 			spin_lock(&endpoint->pull_handles_lock);
 			omx_pull_handle_free_slot(endpoint, handle);
-			list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
 			spin_unlock(&endpoint->pull_handles_lock);
-		} else {
-			/* the handle has been moved out of the list, it means that the timer is done, nothing to done */
-		}
+
+			/* release the lock and wait for the timer to exit */
+			handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
+		}	
 		spin_unlock_bh(&handle->lock);
+
+		dprintk(PULL, "(endpoint close) stopping handle %p timer with del_sync_timer\n", handle);
+		ret = del_timer_sync(&handle->retransmit_timer);
+		if (ret) {
+			/* we deactivated the timer, cleanup ourself */
+			spin_lock_bh(&handle->lock);
+
+			/* mark the timer as exited */
+			dprintk(PULL, "(endpoint close) del_timer_sync stopped pull handle %p timer\n", handle);
+			BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
+			handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
+
+			/* remove from the list */
+			spin_lock(&endpoint->pull_handles_lock);
+			list_del(&handle->list_elt);
+			spin_unlock(&endpoint->pull_handles_lock);
+
+			/* release the timer reference on the pull handle */
+			spin_unlock_bh(&handle->lock);
+			omx_pull_handle_release(handle);
+
+		} else {
+			/* the timer expired meanwhile, the handle is already removed from the list */
+			BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
+			dprintk(PULL, "(endpoint close) pull handle %p timer already exited\n", handle);
+		}
+
 		omx_pull_handle_release(handle);
 
+		/* take the list lock back before processing another handle */
 		spin_lock_bh(&endpoint->pull_handles_lock);
 	}
 	spin_unlock_bh(&endpoint->pull_handles_lock);
 
 	omx_pull_handle_slots_exit(endpoint);
-}
-
-/*
- * Called when cleaning the endpoint, always from the cleanup thread, may del_timer_sync() then.
- */
-void
-omx_endpoint_pull_handles_force_exit(struct omx_endpoint * endpoint)
-{
-	might_sleep();
-
-	spin_lock_bh(&endpoint->pull_handles_lock);
-	while (!list_empty(&endpoint->pull_handles_done_but_timer_list)) {
-		struct omx_pull_handle * handle;
-		int ret;
-
-		/* get the first handle of the list, acquire it and release the list lock */
-		handle = list_first_entry(&endpoint->pull_handles_done_but_timer_list, struct omx_pull_handle, list_elt);
-		omx_pull_handle_acquire(handle);
-		spin_unlock_bh(&endpoint->pull_handles_lock);
-
-		dprintk(PULL, "stopping handle %p timer with del_sync_timer\n", handle);
-		ret = del_timer_sync(&handle->retransmit_timer);
-		spin_lock_bh(&handle->lock);
-		if (ret) {
-			dprintk(PULL, "del_timer_sync stopped pull handle %p timer\n", handle);
-
-			/* we deactivated the timer, cleanup ourself */
-			BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
-			handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
-
-			/* drop from the list */
-			spin_lock(&endpoint->pull_handles_lock);
-			list_del(&handle->list_elt);
-			spin_unlock(&endpoint->pull_handles_lock);
-
-			spin_unlock_bh(&handle->lock);
-			/* release the timer reference */
-			omx_pull_handle_release(handle);
-			omx_endpoint_release(endpoint);
-
-		} else {
-			dprintk(PULL, "del_timer_sync was useless pull handle %p timer, already exited\n", handle);
-
-			/* the timer expired, nothing to do */
-			BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_EXITED);
-
-			spin_unlock_bh(&handle->lock);
-		}
-
-		omx_pull_handle_release(handle);
-		spin_lock_bh(&endpoint->pull_handles_lock);
-	}
-	spin_unlock_bh(&endpoint->pull_handles_lock);
 }
 
 /************************
@@ -696,8 +664,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	omx_endpoint_reacquire(endpoint); /* keep a reference for the timer */
 
 	/* queue in the endpoint list */
-	list_add_tail(&handle->list_elt,
-		      &endpoint->pull_handles_running_list);
+	list_add_tail(&handle->list_elt, &endpoint->pull_handles_list);
 
 	spin_unlock_bh(&endpoint->pull_handles_lock);
 
@@ -742,20 +709,11 @@ omx_pull_handle_mark_completed(struct omx_pull_handle * handle, uint8_t status)
 	__acquire(&handle->lock);
 
 	BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
-	handle->status = (status == OMX_EVT_PULL_DONE_TIMEOUT)
-			? OMX_PULL_HANDLE_STATUS_TIMER_EXITED
-			: OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
+	handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
 
-	/* remove from the slot array (and endpoint list) so that no incoming packet can find it anymore */
+	/* remove from the slot array so that no incoming packet can find it anymore */
 	spin_lock_bh(&endpoint->pull_handles_lock);
 	omx_pull_handle_free_slot(endpoint, handle);
-	if (status == OMX_EVT_PULL_DONE_TIMEOUT) {
-		dprintk(PULL, "pull handle %p timer done, removing from slot array and endpoint list\n", handle);
-		list_del(&handle->list_elt);
-	} else {
-		dprintk(PULL, "moving done handle %p to the done_but_timer list and removing from slot array\n", handle);
-		list_move(&handle->list_elt, &endpoint->pull_handles_done_but_timer_list);
-	}
 	spin_unlock_bh(&endpoint->pull_handles_lock);
 
 	/* finish filling the event for user-space */
@@ -1089,19 +1047,15 @@ omx_pull_handle_timeout_handler(unsigned long data)
 
 	if (handle->status != OMX_PULL_HANDLE_STATUS_OK) {
 		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
-		handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
 
-		dprintk(PULL, "pull handle %p timer exiting\n", handle);
-
-		/*
-		 * the handle has been moved to the done_but_timer_list,
-		 * it's already outside of the slot array, no need to lock bh
-		 */
-		spin_lock(&endpoint->pull_handles_lock);
+		dprintk(PULL, "pull handle %p timer exiting on close request\n", handle);
+		spin_lock_bh(&endpoint->pull_handles_lock);
 		list_del(&handle->list_elt);
-		spin_unlock(&endpoint->pull_handles_lock);
+		spin_unlock_bh(&endpoint->pull_handles_lock);
 
+		handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
 		spin_unlock(&handle->lock);
+
 		omx_pull_handle_release(handle);
 		omx_endpoint_release(endpoint);
 
@@ -1109,12 +1063,25 @@ omx_pull_handle_timeout_handler(unsigned long data)
 	}
 
 	if (jiffies > handle->last_retransmit_jiffies) {
-		omx_counter_inc(iface, PULL_TIMEOUT_ABORT);
+		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
+
 		dprintk(PULL, "pull handle %p last retransmit time reached, reporting an error\n", handle);
+		omx_counter_inc(iface, PULL_TIMEOUT_ABORT);
 
 		omx_pull_handle_mark_completed(handle, OMX_EVT_PULL_DONE_TIMEOUT);
+
+		dprintk(PULL, "pull handle %p timer done, removing from endpoint list\n", handle);
+		spin_lock_bh(&endpoint->pull_handles_lock);
+		list_del(&handle->list_elt);
+		spin_unlock_bh(&endpoint->pull_handles_lock);
+
+		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT);
+		handle->status = OMX_PULL_HANDLE_STATUS_TIMER_EXITED;
+
 		/* nobody is going to use this handle, no need to lock anymore */
 		spin_unlock(&handle->lock);
+		
+		/* let notify release the handle and endpoint */
 		omx_pull_handle_bh_notify(handle);
 
 		return; /* timer will never be called again (status is TIMER_EXITED) */

@@ -129,7 +129,7 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 	might_sleep();
 
 	omx_endpoint_user_regions_exit(endpoint);
-	omx_endpoint_pull_handles_force_exit(endpoint);
+
 	kfree(endpoint->recvq_pages);
 	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
@@ -271,6 +271,8 @@ omx_endpoint_close(struct omx_endpoint * endpoint,
 {
 	int ret;
 
+	might_sleep();
+
 	spin_lock(&endpoint->status_lock);
 
 	/* test whether the endpoint is ok to be closed */
@@ -301,15 +303,13 @@ omx_endpoint_close(struct omx_endpoint * endpoint,
 	omx_iface_detach_endpoint(endpoint, ifacelocked);
 	/* but keep the endpoint->iface valid until everybody releases the endpoint */
 
-	/* schedule the releasing of pending pull handles */
-	omx_endpoint_pull_handles_prepare_exit(endpoint);
-	// FIXME: no need to prepare, we can sleep here
+	/* destroy all pending pull handles */
+	omx_endpoint_pull_handles_exit(endpoint);
 
 	/*
 	 * current users may be:
 	 * - bottom halves receiving a packet (synchronize_rcu would catch them)
 	 * - send completion waiting before releasing sendq pages
-	 * - pull handle timeouts (scheduled for destruction above)
 	 */
 
 	/* release our refcount now that other users cannot use again */
