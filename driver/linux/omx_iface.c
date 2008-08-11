@@ -887,6 +887,8 @@ omx_netdevice_notifier_cb(struct notifier_block *unused,
 		}
 		mutex_unlock(&omx_ifaces_mutex);
 	}
+	/* could check NETDEV_DOWN, NETDEV_UP or NETDEV_CHANGEMTU and report a message */
+	/* could check NETDEV_CHANGENAME and update the peer name if unchanged */
 
 	return NOTIFY_DONE;
 }

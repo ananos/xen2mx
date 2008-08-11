@@ -502,14 +502,18 @@ omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
 
   switch (req->generic.type) {
   case OMX_REQUEST_TYPE_SEND_TINY:
-    /* Tiny are buffered as soon as they pass the throttling check */
+    /* Tiny are buffered as soon as they pass the throttling check
+     * (no NEED_SEQNUM state)
+     */
   case OMX_REQUEST_TYPE_SEND_SMALL:
     /* Small are buffered when they pass the throttling check
-     * and get a copy buffer.
+     * (no NEED_SEQNUM state)
+     * since the copy buffer is allocated when allocating the request.
      */
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
-    /* Medium are buffered once they pass the throttling check
-     * and if there are enough resources to avoid queueing.
+    /* Medium are buffered once they got all their resources allocated
+     * (no DELAYED state)
+     * and they passed the throttling check (no NEED_SEQNUM)
      */
 
     if (!(req->generic.state & (OMX_REQUEST_STATE_SEND_NEED_SEQNUM|OMX_REQUEST_STATE_DELAYED)))

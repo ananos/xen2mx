@@ -1,3 +1,6 @@
+Open-MX 0.9.0 aka 1.0-rc0 (August xxth 2008, svn r19xy)
+=======================================================
+The Many-Requests Release.
 
 Major Enhancements:
 * Fixup management of requests in case of resource shortage to prevent
@@ -8,6 +11,8 @@ Major Enhancements:
 Other improvements from previous release:
 * Optimize intra-node communication by overlapping memory-pinning,
   to be enabled with the demandpin kernel module parameter.
+* Fix intra-node medium send completion in case of event queue full on
+  the target endpoint.
 * Fix omx_init start/stop timeout to deal with peer discovery start/stop
   delay better.
 * Fix cross-compilation when the cross-compiler is given at
