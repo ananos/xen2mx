@@ -73,7 +73,7 @@
 
 #define omx__abort(args...) do { fprintf(stderr, "Open-MX fatal error: " args); assert(0); } while (0)
 
-extern void omx__debug_init(void);
+extern void omx__debug_init(int signum);
 
 /*************
  * Optimizing

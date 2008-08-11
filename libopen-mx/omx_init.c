@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+#include <signal.h>
 
 #include "omx_lib.h"
 
@@ -34,11 +35,11 @@ static int omx__lib_api = OMX_API;
 omx_return_t
 omx__init_api(int app_api)
 {
+  int debug_signal = 0;
+  int debug_signum = SIGUSR1;
   omx_return_t ret;
   char *env;
   int err;
-
-  omx__debug_init();
 
   if (app_api >> 8 != omx__lib_api >> 8
       /* support app_abi 0x0 for now, will drop in 1.0 */
@@ -150,6 +151,20 @@ omx__init_api(int app_api)
     omx__globals.verbdebug = val;
   }
 #endif /* OMX_LIB_DEBUG */
+
+#ifdef OMX_LIB_DEBUG
+  debug_signal = 1;
+#endif
+  env = getenv("OMX_DEBUG_SIGNAL");
+  if (env) {
+    debug_signal = (*env != 'n');
+    if (*env != '\0')
+      debug_signum = atoi(env);
+    if (debug_signal)
+      omx__verbose_printf("Enabling the debugging signal %d\n", debug_signum);
+  }
+  if (debug_signal)
+    omx__debug_init(debug_signum);
 
   /**********************************************
    * Shared and self communication configuration
