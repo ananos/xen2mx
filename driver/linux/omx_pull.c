@@ -167,11 +167,12 @@ static void omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_d
  * This lock is always taken *before* the endpoint pull handle lock.
  *
  * The handle is always queued on endpoint list as long as its timer is running.
+ * As long as the timer is pending, a reference on the handle and endpoint is held.
  * The endpoint closing enforces its destruction. When the endpoint starts to be
  * closed (either ioctl, or last closing of the file descriptor, or interface being
  * removed), it calls pull_handles_exit which sets all handles to timer_must_exit
  * and uses del_timer_sync to either cancel the next timer or wait for it to end.
- * Thend the timer will never run again and the handle may safely be destroyed.
+ * Then the timer will never run again and the handle may safely be destroyed.
  *
  * The pile of handles for an endpoint is protected by a spinlock. It is not taken
  * when acquiring an handle (when a pull reply or nack mcp arrives, likely in a
@@ -496,9 +497,10 @@ omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 			list_del(&handle->list_elt);
 			spin_unlock(&endpoint->pull_handles_lock);
 
-			/* release the timer reference on the pull handle */
+			/* release the timer reference on the pull handle and endpoint */
 			spin_unlock_bh(&handle->lock);
 			omx_pull_handle_release(handle);
+			omx_endpoint_release(endpoint);
 
 		} else {
 			/* the timer expired meanwhile, the handle is already removed from the list */
@@ -618,7 +620,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	__acquire(&handle->lock);
 
 	/* we are good now, finish filling the handle */
-	kref_init(&handle->refcount);
+	kref_init(&handle->refcount); /* the timer's reference */
 	handle->endpoint = endpoint;
 	handle->region = region;
 	handle->total_length = cmd->length;
@@ -1031,7 +1033,7 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 }
 
 /*
- * Retransmission callback, owns a reference on the handle.
+ * Retransmission callback, owns a reference on the handle and endpoint.
  * Running as long as status is OMX_PULL_HANDLE_STATUS_OK.
  */
 static void
