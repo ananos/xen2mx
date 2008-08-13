@@ -96,6 +96,10 @@ extern void omx__debug_init(int signum);
 #define OMX_MEDIUM_FRAG_LENGTH_MAX (1<<OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT)
 #define OMX_MEDIUM_FRAGS_NR(len) ((len+OMX_MEDIUM_FRAG_LENGTH_MAX-1)>>OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT)
 
+#if OMX_MEDIUM_FRAGS_MAX < OMX_MEDIUM_FRAGS_NR(OMX_MEDIUM_MAX)
+#error Medium messages cannot fit in so few frags
+#endif
+
 /******************
  * Various globals
  */

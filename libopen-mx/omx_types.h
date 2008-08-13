@@ -420,6 +420,8 @@ struct omx_segscan_state {
   uint32_t offset;
 };
 
+#define OMX_MEDIUM_FRAGS_MAX 8
+
 union omx_request {
   struct omx__generic_request generic;
 
@@ -438,7 +440,7 @@ union omx_request {
 	struct omx_cmd_send_medium send_medium_ioctl_param;
 	uint32_t frags_nr;
 	uint32_t frags_pending_nr;
-	int sendq_map_index[8]; /* FIXME #define NR_MEDIUM_FRAGS */
+	int sendq_map_index[OMX_MEDIUM_FRAGS_MAX];
       } medium;
       struct {
 	struct omx_cmd_send_rndv send_rndv_ioctl_param;

@@ -544,7 +544,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   req->generic.missing_resources = OMX_REQUEST_SEND_MEDIUM_RESOURCES;
 
   frags_nr = OMX_MEDIUM_FRAGS_NR(length);
-  omx__debug_assert(frags_nr <= 8); /* for the sendq_index array above */
+  omx__debug_assert(frags_nr <= OMX_MEDIUM_FRAGS_MAX); /* for the sendq_index array above */
   req->send.specific.medium.frags_nr = frags_nr;
 
   req->generic.status.msg_length = length;
