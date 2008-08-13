@@ -412,9 +412,9 @@ AC_ARG_ENABLE(mtu-1500,
 	enable_mtu_1500=$enableval, enable_mtu_1500=no)
 AC_MSG_CHECKING(if MTU 1500 is enabled)
 if test x$enable_mtu_1500 = xyes; then
-#  if test x$enable_mx_wire != xyes; then
-#    AC_MSG_ERROR([incompatible with MX-wire])
-#  fi
+  if test x$enable_mx_wire != xno; then
+    AC_MSG_ERROR([cannot be enabled without MX-wire compatibility disabled])
+  fi
   AC_MSG_RESULT(yes)
   AC_DEFINE_UNQUOTED(OMX_MTU_1500, 1, [Define to enable MTU 1500 support])
 else
