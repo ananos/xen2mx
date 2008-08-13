@@ -158,6 +158,9 @@ Also, the MTU should be large enough for Open-MX packets to transit.
 9000 will always be enough. Look in dmesg for the actual minimal MTU
 size, which may depend on the configuration.
     $ ifconfig eth2 mtu 9000
+It is possible to force Open-MX to use a 1500bytes MTU by passing
+--enable-mtu-1500 to the configure script, but it may reduce large
+message throughput a lot.
 
 
 ++====================++

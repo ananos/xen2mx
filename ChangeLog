@@ -1,3 +1,18 @@
+Open-MX 0.9.1 aka 1.0-rc1 (August 13th 2008, svn rxyzt)
+=======================================================
+The MTU 1500 Release.
+
+Major Enhancements:
+* Add support for MTU 1500 fabrics with --enable-mtu-1500
+  (and --disable-mx-wire).
+
+Other improvements from previous release:
+* Fix interface reference leak on the large message sender side.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 0.9.0 aka 1.0-rc0 (August 11th 2008, svn r1932)
 =======================================================
 The Many-Requests Release.
@@ -22,10 +37,6 @@ Other improvements from previous release:
   at configure time.
 * Fix modinfo and modprobe usage in the startup script, they are supposed
   to be in /sbin.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 0.7.0 (June 27th 2008, svn r1806)
 =========================================
