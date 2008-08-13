@@ -32,10 +32,17 @@
 #define OMX_ENDPOINT_INDEX_MAX 256
 #define OMX_PEER_INDEX_MAX 65536
 
+#ifdef OMX_MTU_1500
+#define OMX_MTU_MIN ((unsigned) (sizeof(struct omx_pkt_head) \
+				 + max( sizeof(struct omx_pkt_medium_frag) + 1024, \
+					sizeof(struct omx_pkt_pull_reply) + OMX_PULL_REPLY_LENGTH_MAX \
+				 )))
+#else
 #define OMX_MTU_MIN ((unsigned) (sizeof(struct omx_pkt_head) \
 				 + max( sizeof(struct omx_pkt_medium_frag) + OMX_SENDQ_ENTRY_SIZE, \
 					sizeof(struct omx_pkt_pull_reply) + OMX_PULL_REPLY_LENGTH_MAX \
 				 )))
+#endif
 
 /******************
  * Packet Subtypes

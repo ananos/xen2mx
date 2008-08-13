@@ -1,9 +1,7 @@
-* update mtu check in the driver
-
-* use 1500 frames (-header) for medium if mtu 1500 is enabled
-  + break medium wire compat to add frag length
-  + ignore pipeline
-  + replace >> pipeline with using the frag length
+* optimize mtu 1500 by using more than 1024k medium or pull reply packets
+  + break medium wire compat to add a medium frag length
+  + ignore medium frag pipeline, and replace >> pipeline with using the frag length
+  + update pull code to not assume the pull reply length is a pow2
 
 * req->recv.specific.medium.frags_received_mask and .accumulated_length are redundant
 
