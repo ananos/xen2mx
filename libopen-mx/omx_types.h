@@ -420,7 +420,11 @@ struct omx_segscan_state {
   uint32_t offset;
 };
 
+#ifdef OMX_MTU_1500
+#define OMX_MEDIUM_FRAGS_MAX 32
+#else
 #define OMX_MEDIUM_FRAGS_MAX 8
+#endif
 
 union omx_request {
   struct omx__generic_request generic;

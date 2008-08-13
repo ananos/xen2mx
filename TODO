@@ -1,3 +1,12 @@
+* add mtu 1500 support for pull
+  + enable mx-wire check in configure
+  + update mtu check in the driver
+
+* use 1500 frames (-header) for medium if mtu 1500 is enabled
+  + break medium wire compat to add frag length
+  + ignore pipeline
+  + replace >> pipeline with using the frag length
+
 * req->recv.specific.medium.frags_received_mask and .accumulated_length are redundant
 
 * endpoint_close cannot be called from interrupt context

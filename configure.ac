@@ -407,6 +407,20 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_ARG_ENABLE(mtu-1500,
+	[AS_HELP_STRING([--enable-mtu-1500], [enable MTU 1500 support])],
+	enable_mtu_1500=$enableval, enable_mtu_1500=no)
+AC_MSG_CHECKING(if MTU 1500 is enabled)
+if test x$enable_mtu_1500 = xyes; then
+#  if test x$enable_mx_wire != xyes; then
+#    AC_MSG_ERROR([incompatible with MX-wire])
+#  fi
+  AC_MSG_RESULT(yes)
+  AC_DEFINE_UNQUOTED(OMX_MTU_1500, 1, [Define to enable MTU 1500 support])
+else
+  AC_MSG_RESULT(no)
+fi
+
 AC_ARG_WITH(ethertype,
 	[AS_HELP_STRING([--with-ethertype=<value>], [change Ethertype (default is 0x86DF)])],
 	ethertype=$withval, ethertype=default)
