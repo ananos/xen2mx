@@ -478,7 +478,7 @@ omx_endpoint_pull_handles_exit(struct omx_endpoint * endpoint)
 
 			/* release the lock and wait for the timer to exit */
 			handle->status = OMX_PULL_HANDLE_STATUS_TIMER_MUST_EXIT;
-		}	
+		}
 		spin_unlock_bh(&handle->lock);
 
 		dprintk(PULL, "(endpoint close) stopping handle %p timer with del_sync_timer\n", handle);
@@ -876,6 +876,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	struct omx_iface * iface = endpoint->iface;
 	struct sk_buff * skb, * skbs[OMX_PULL_BLOCK_DESCS_NR] = { NULL };
 	uint32_t block_length;
+	uint32_t pulled_rdma_offset_in_frame;
 	int i;
 	int err = 0;
 
@@ -883,13 +884,6 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read send pull cmd hdr\n");
 		err = -EFAULT;
-		goto out;
-	}
-
-	/* check the offsets */
-	if (cmd.local_offset >= OMX_PULL_REPLY_LENGTH_MAX
-	    || cmd.remote_offset >= OMX_PULL_REPLY_LENGTH_MAX) {
-		err = -EINVAL;
 		goto out;
 	}
 
@@ -909,13 +903,17 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	/* tell the sparse checker that the lock has been taken by omx_pull_handle_create() */
 	__acquire(&handle->lock);
 
-	/* send a first pull block request */
-	block_length = OMX_PULL_BLOCK_LENGTH_MAX
-		- handle->pulled_rdma_offset;
+	/* send a first pull block request,
+	 * ignoring the frames that are before the pull request beginning
+	 * since we want to manipulate an actual msg offset
+	 * and we want some full blocks
+	 */
+	pulled_rdma_offset_in_frame = handle->pulled_rdma_offset % OMX_PULL_REPLY_LENGTH_MAX;
+	block_length = OMX_PULL_BLOCK_LENGTH_MAX - pulled_rdma_offset_in_frame;
 	if (block_length > handle->remaining_length)
 		block_length = handle->remaining_length;
 
-	omx_pull_handle_append_needed_frames(handle, block_length, handle->pulled_rdma_offset);
+	omx_pull_handle_append_needed_frames(handle, block_length, pulled_rdma_offset_in_frame);
 	skb = omx_fill_pull_block_request(handle, 0);
 	if (unlikely(IS_ERR(skb))) {
 		BUG_ON(PTR_ERR(skb) != -ENOMEM);
@@ -1082,7 +1080,7 @@ omx_pull_handle_timeout_handler(unsigned long data)
 
 		/* nobody is going to use this handle, no need to lock anymore */
 		spin_unlock(&handle->lock);
-		
+
 		/* let notify release the handle and endpoint */
 		omx_pull_handle_bh_notify(handle);
 
@@ -1209,7 +1207,8 @@ omx_recv_pull_request(struct omx_iface * iface,
 	/* initialize pull reply fields */
 	current_frame_seqnum = frame_index;
 	current_msg_offset = frame_index * OMX_PULL_REPLY_LENGTH_MAX
-		- pulled_rdma_offset + first_frame_offset;
+		- (pulled_rdma_offset % OMX_PULL_REPLY_LENGTH_MAX) /* hide the first frames that ignored in this pull since we want an actual msg offset */
+		+ first_frame_offset;
 	block_remaining_length = block_length;
 
 	/* initialize the region offset cache and check length/offset */
