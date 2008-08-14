@@ -271,6 +271,12 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 	struct omx_cmd_user_region_segment * usegs;
 	int ret, i;
 
+	if (unlikely(current->mm != endpoint->opener_mm)) {
+		printk(KERN_ERR "Open-MX: Tried to register from another process\n");
+		ret = -EFAULT; /* the application does crap, behave as if it was a segfault */
+		goto out;
+	}
+
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read create region cmd\n");
