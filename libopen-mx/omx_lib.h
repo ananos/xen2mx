@@ -91,8 +91,6 @@ extern void omx__debug_init(int signum);
  * Various macros
  */
 
-#define OMX_MEDIUM_SLOT_SHIFT 12 /* always use 4k pages to send medium slots (1<<12) */
-
 #ifdef OMX_MTU_1500
 #define OMX_MEDIUM_FRAG_PIPELINE 10 /* always send 4k pages (1<<12) */
 #else
