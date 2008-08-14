@@ -40,6 +40,7 @@ omx__init_api(int app_api)
   omx_return_t ret;
   char *env;
   int err;
+  int i;
 
   if (app_api >> 8 != omx__lib_api >> 8
       /* support app_abi 0x0 for now, will drop in 1.0 */
@@ -344,6 +345,21 @@ omx__init_api(int app_api)
    * Process binding
    */
   omx__globals.process_binding = getenv("OMX_PROCESS_BINDING");
+
+  /********************
+   * Tune medium frags
+   */
+  if (omx__driver_desc->mtu == 0)
+    omx__abort("MTU=0 reported by the driver\n");
+  for(i=0; (1<<i) < omx__driver_desc->mtu
+	   && i<=OMX_SENDQ_ENTRY_SHIFT
+	   && i<=OMX_RECVQ_ENTRY_SHIFT; i++);
+  i--;
+  omx__globals.medium_frag_pipeline = i;
+  omx__globals.medium_frag_length = 1<<i;
+  if ((OMX_MEDIUM_MAX+(1<<i)-1)>>i > OMX_MEDIUM_FRAGS_MAX)
+    omx__abort("MTU=%d requires up to %d medium frags, cannot store in %d frag slots per request\n",
+	       omx__driver_desc->mtu, (OMX_MEDIUM_MAX+(1<<i)-1)>>i, OMX_MEDIUM_FRAGS_MAX);
 
   /***************************
    * Terminate initialization

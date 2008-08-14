@@ -87,24 +87,6 @@ extern void omx__debug_init(int signum);
 #define unlikely(x)	(x)
 #endif
 
-/*****************
- * Various macros
- */
-
-#ifdef OMX_MTU_1500
-#define OMX_MEDIUM_FRAG_PIPELINE 10 /* always send 4k pages (1<<12) */
-#else
-#define OMX_MEDIUM_FRAG_PIPELINE 12 /* always send 1k pages (1<<10) */
-#endif
-
-#define OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT OMX_MEDIUM_FRAG_PIPELINE
-#define OMX_MEDIUM_FRAG_LENGTH_MAX (1<<OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT)
-#define OMX_MEDIUM_FRAGS_NR(len) ((len+OMX_MEDIUM_FRAG_LENGTH_MAX-1)>>OMX_MEDIUM_FRAG_LENGTH_MAX_SHIFT)
-
-#if OMX_MEDIUM_FRAGS_MAX < OMX_MEDIUM_FRAGS_NR(OMX_MEDIUM_MAX)
-#error Medium messages cannot fit in so few frags
-#endif
-
 /******************
  * Various globals
  */

@@ -420,11 +420,7 @@ struct omx_segscan_state {
   uint32_t offset;
 };
 
-#ifdef OMX_MTU_1500
-#define OMX_MEDIUM_FRAGS_MAX 32
-#else
-#define OMX_MEDIUM_FRAGS_MAX 8
-#endif
+#define OMX_MEDIUM_FRAGS_MAX 32 /* 32 are needed if MTU=1500, only 8 is the regular case */
 
 union omx_request {
   struct omx__generic_request generic;
@@ -518,6 +514,8 @@ struct omx__globals {
 #ifndef OMX_DISABLE_SHARED
   int sharedcomms;
 #endif
+  unsigned medium_frag_pipeline;
+  unsigned medium_frag_length;
   unsigned rndv_threshold;
   unsigned shared_rndv_threshold;
   unsigned ack_delay_jiffies;

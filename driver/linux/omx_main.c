@@ -300,6 +300,14 @@ omx_init(void)
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PINCACHE_INVALIDATE;
 #endif
 
+#ifdef OMX_MX_WIRE_COMPAT
+	omx_driver_userdesc->mtu = 4096+64; /* roughly MX "mtu" */
+#elif defined OMX_MTU_1500
+	omx_driver_userdesc->mtu = 1500;
+#else
+	omx_driver_userdesc->mtu = 9000;
+#endif
+
 	omx_driver_userdesc->board_max = omx_iface_max;
 	omx_driver_userdesc->endpoint_max = omx_endpoint_max;
 	omx_driver_userdesc->peer_max = omx_peer_max;
