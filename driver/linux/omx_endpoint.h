@@ -26,6 +26,10 @@
 #include <linux/list.h>
 #include <linux/wait.h>
 #include <linux/idr.h>
+#include <linux/mm.h>
+#ifdef CONFIG_MMU_NOTIFIER
+#include <linux/mmu_notifier.h>
+#endif
 
 #include "omx_io.h"
 
@@ -50,6 +54,7 @@ struct omx_endpoint {
 
 	pid_t opener_pid;
 	char opener_comm[TASK_COMM_LEN];
+	struct mm_struct *opener_mm;
 
 	enum omx_endpoint_status status;
 	spinlock_t status_lock;
@@ -82,6 +87,10 @@ struct omx_endpoint {
 	 * cannot rely on reading from it
 	 */
 	struct omx_endpoint_desc * userdesc;
+
+#ifdef CONFIG_MMU_NOTIFIER
+	struct mmu_notifier mmu_notifier;
+#endif
 };
 
 extern int omx_iface_attach_endpoint(struct omx_endpoint * endpoint);

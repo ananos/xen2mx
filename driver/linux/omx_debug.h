@@ -38,6 +38,7 @@
 #define OMX_DEBUG_KREF (1<<8)
 #define OMX_DEBUG_DMA (1<<9)
 #define OMX_DEBUG_QUERY (1<<10)
+#define OMX_DEBUG_MMU (1<<11)
 
 extern unsigned long omx_debug;
 #define omx_debug_type_enabled(type) (OMX_DEBUG_##type & omx_debug)

@@ -511,6 +511,45 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 	return NULL;
 }
 
+#ifdef CONFIG_MMU_NOTIFIER
+/****************
+ * MMU notifiers
+ */
+static void
+omx_mmu_invalidate_range_start(struct mmu_notifier *mn, struct mm_struct *mm,
+			       unsigned long start, unsigned long end)
+{
+	dprintk(MMU, "invalidate range start %lx-%lx\n", start, end);
+}
+
+static void
+omx_mmu_invalidate_range_end(struct mmu_notifier *mn, struct mm_struct *mm,
+			     unsigned long start, unsigned long end)
+{
+	dprintk(MMU, "invalidate range end %lx-%lx\n", start, end);
+}
+
+static void
+omx_mmu_invalidate_page(struct mmu_notifier *mn, struct mm_struct *mm,
+			unsigned long address)
+{
+	dprintk(MMU, "invalidate page address %lx\n", address);
+}
+
+static void
+omx_mmu_release(struct mmu_notifier *mn, struct mm_struct *mm)
+{
+	dprintk(MMU, "release\n");
+}
+
+const struct mmu_notifier_ops omx_mmu_ops = {
+	.invalidate_page	= omx_mmu_invalidate_page,
+        .invalidate_range_start	= omx_mmu_invalidate_range_start,
+        .invalidate_range_end	= omx_mmu_invalidate_range_end,
+        .release		= omx_mmu_release,
+};
+#endif /* CONFIG_MMU_NOTIFIER */
+
 /***************************************
  * Endpoint User Regions Initialization
  */
@@ -520,6 +559,11 @@ omx_endpoint_user_regions_init(struct omx_endpoint * endpoint)
 {
 	memset(endpoint->user_regions, 0, sizeof(endpoint->user_regions));
 	spin_lock_init(&endpoint->user_regions_lock);
+	endpoint->opener_mm = current->mm;
+#ifdef CONFIG_MMU_NOTIFIER
+	endpoint->mmu_notifier.ops = &omx_mmu_ops;
+	mmu_notifier_register(&endpoint->mmu_notifier, current->mm);
+#endif
 }
 
 void
@@ -544,6 +588,10 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 	}
 
 	spin_unlock(&endpoint->user_regions_lock);
+
+#ifdef CONFIG_MMU_NOTIFIER
+	mmu_notifier_unregister(&endpoint->mmu_notifier, endpoint->opener_mm);
+#endif
 }
 
 /*********************************

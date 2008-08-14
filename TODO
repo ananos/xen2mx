@@ -1,3 +1,5 @@
+* check or debug_check opener_mm at register
+
 * optimize mtu 1500 by using more than 1024k medium or pull reply packets
   + break medium wire compat to add a medium frag length
   + ignore medium frag pipeline, and replace >> pipeline with using the frag length
