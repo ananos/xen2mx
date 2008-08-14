@@ -19,6 +19,7 @@
 #include <net/if.h>
 
 #include "omx_io.h"
+#include "omx_wire.h"
 #include "omx_lib.h"
 #include "omx_raw.h"
 
@@ -36,6 +37,8 @@ assertions(void)
   CHECK(OMX_IF_NAMESIZE == IF_NAMESIZE);
   CHECK(sizeof(struct omx__endpoint_addr) == sizeof(struct omx_endpoint_addr));
   CHECK(OMX_RETURN_CODE_MAX < OMX_INTERNAL_RETURN_CODE_MIN);
+  CHECK(sizeof(omx__seqnum_t) == sizeof(((struct omx_pkt_msg *)NULL)->lib_seqnum));
+  CHECK(OMX__SESNUM_BITS+OMX__SEQNUM_BITS <= 8*sizeof(omx__seqnum_t));
 
   /* enforce connect lib data layout and values */
   CHECK(sizeof(((struct omx__connect_request_data *) NULL)->is_reply) == sizeof(((struct omx__connect_reply_data *) NULL)->is_reply));

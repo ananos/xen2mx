@@ -248,8 +248,6 @@ omx__submit_send_liback(struct omx_endpoint *ep,
     return ret;
   }
 
-  /* no need to wait for a done event, tiny is synchronous */
-
   return OMX_SUCCESS;
 }
 

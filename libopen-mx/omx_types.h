@@ -57,7 +57,7 @@ struct omx__large_region_map {
   } * array;
 };
 
-typedef uint16_t omx__seqnum_t; /* FIXME: assert same size on the wire */
+typedef uint16_t omx__seqnum_t;
 /* 14 bits for sequence numbers */
 #define OMX__SEQNUM_BITS 14
 #define OMX__SEQNUM_MASK ((1UL<<OMX__SEQNUM_BITS)-1)
