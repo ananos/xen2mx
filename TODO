@@ -3,8 +3,6 @@
   + ignore medium frag pipeline, and replace >> pipeline with using the frag length
   + update pull code to not assume the pull reply length is a pow2
 
-* req->recv.specific.medium.frags_received_mask and .accumulated_length are redundant
-
 * endpoint_close cannot be called from interrupt context
   - we can destroy region at first closing too?
 
@@ -34,7 +32,7 @@
     - no need to reduce the speed ever
 
 * support non-ethernet networks by providing ways to extract the mac address differently
-  + infiniband ifaces have too small mtu?
+  + infiniband ifaces need small mtu, make --enable-mtu-1500 more flexible
   + use eth_hdr(), dev->header_ops->create() and ->parse() to clarify the accessing
     to eth headers of packets and make it less ethernet specific
 
@@ -119,14 +117,11 @@
     - we don't really care about alignment in open-mx, pages are pinned first, adding 2 pages to a skb isn't very expensive
     - we will still follow the remote side requirements when pulling from MX
     - MX doesn't care about our alignement when it pulls from us
-  + design is ugly (fixed in 1.3?)
 
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 
 * wire compat
   + fix lib ack contents?
-
-* make shared comms runtime-configurable in the driver
 
 * optimize mediums
   + 2 pages if not mx wire compat
@@ -168,3 +163,6 @@
 * add an endpoint throttling_send_req_q to help cleanup when exiting ?
 * what's in src_generation ? unset/unchecked in OMX
 * wire-compat at runtime (8kB frame needs 17bits for medium length)
+* req->recv.specific.medium.frags_received_mask and .accumulated_length are redundant
+  + the mask is needed to detect duplicates, and the length prevents from precomputing the missing mask
+* make shared comms runtime-configurable in the driver
