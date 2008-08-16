@@ -91,6 +91,7 @@ extern void omx_ifaces_unlock(void);
 extern struct omx_iface * omx_iface_find_by_index_lock(int board_index);
 
 extern void omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *data);
+extern void omx_for_each_endpoint(int (*handler)(struct omx_endpoint *endpoint, void *data), void *data);
 
 extern int omx_ifnames_get(char *buf, struct kernel_param *kp);
 extern int omx_ifnames_set(const char *buf, struct kernel_param *kp);

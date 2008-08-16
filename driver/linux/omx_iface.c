@@ -299,6 +299,28 @@ omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *da
 	rcu_read_unlock();
 }
 
+void
+omx_for_each_endpoint(int (*handler)(struct omx_endpoint *endpoint, void *data), void *data)
+{
+	int i,j;
+
+	rcu_read_lock();
+	for(i=0; i<omx_iface_max; i++) {
+		struct omx_iface *iface = rcu_dereference(omx_ifaces[i]);
+		if (!iface)
+			continue;
+
+		for(j=0; j<omx_endpoint_max; j++) {
+			struct omx_endpoint *endpoint = rcu_dereference(iface->endpoints[j]);
+			if (!endpoint)
+				continue;
+			if (handler(endpoint, data) < 0)
+				break;
+		}
+	}
+	rcu_read_unlock();
+}
+
 /******************************
  * Attaching/Detaching interfaces
  */
