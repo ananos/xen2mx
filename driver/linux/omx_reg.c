@@ -525,21 +525,21 @@ static void
 omx_mmu_invalidate_range_start(struct mmu_notifier *mn, struct mm_struct *mm,
 			       unsigned long start, unsigned long end)
 {
-	dprintk(MMU, "invalidate range start %lx-%lx\n", start, end);
+	dprintk(MMU, "invalidate range start 0x%lx-0x%lx\n", start, end);
 }
 
 static void
 omx_mmu_invalidate_range_end(struct mmu_notifier *mn, struct mm_struct *mm,
 			     unsigned long start, unsigned long end)
 {
-	dprintk(MMU, "invalidate range end %lx-%lx\n", start, end);
+	dprintk(MMU, "invalidate range end 0x%lx-0x%lx\n", start, end);
 }
 
 static void
 omx_mmu_invalidate_page(struct mmu_notifier *mn, struct mm_struct *mm,
 			unsigned long address)
 {
-	dprintk(MMU, "invalidate page address %lx\n", address);
+	dprintk(MMU, "invalidate page address 0x%lx\n", address);
 }
 
 static void
