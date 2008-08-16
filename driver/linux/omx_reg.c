@@ -521,11 +521,55 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
 /****************
  * MMU notifiers
  */
+
+static int
+omx_mmu_invalidate_handler(struct omx_endpoint *endpoint, void *data)
+{
+	unsigned long inv_start = ((unsigned long *) data)[0];
+	unsigned long inv_end = ((unsigned long *) data)[1];
+	int ireg,iseg;
+
+	for(ireg=0; ireg<OMX_USER_REGION_MAX; ireg++) {
+		struct omx_user_region_segment * invalid_seg = NULL;
+		struct omx_user_region * region;
+
+		region = rcu_dereference(endpoint->user_regions[ireg]);
+		if (!region)
+			continue;
+
+		for(iseg=0; iseg<region->nr_segments; iseg++) {
+			struct omx_user_region_segment * segment = &region->segments[iseg];
+			unsigned long seg_start = segment->aligned_vaddr + segment->first_page_offset;
+			unsigned long seg_end = seg_start + segment->length;
+
+			/* there's overlap between 2 intervalles iff start1<end2 && start2<end1 */
+			if (seg_start < inv_end && inv_start < seg_end)
+				invalid_seg = segment;
+		}
+
+		if (invalid_seg) {
+			struct omx_iface *iface = endpoint->iface;
+			unsigned long seg_start = invalid_seg->aligned_vaddr + invalid_seg->first_page_offset;
+			unsigned long seg_end = seg_start + invalid_seg->length;
+			printk(KERN_INFO "Open-MX: WARNING: region #%d on endpoint #%d iface #%s (%s) is being invalidated\n"
+			       KERN_INFO "Open-MX:   segment #%d (0x%lx-0x%lx) within range 0x%lx-0x%lx\n",
+			       ireg, endpoint->endpoint_index, iface->eth_ifp->name, iface->peer.hostname,
+			       invalid_seg-&region->segments[0], seg_start, seg_end, inv_start, inv_end);
+		}
+	}
+
+	return 0;
+}
+
 static void
 omx_mmu_invalidate_range_start(struct mmu_notifier *mn, struct mm_struct *mm,
 			       unsigned long start, unsigned long end)
 {
+	unsigned long data[2] = { start, end };
+
 	dprintk(MMU, "invalidate range start 0x%lx-0x%lx\n", start, end);
+
+	omx_for_each_endpoint(omx_mmu_invalidate_handler, data);
 }
 
 static void
