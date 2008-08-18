@@ -1,3 +1,5 @@
+* wakeup waiter before close
+
 * optimize mtu 1500 by using more than 1024k medium or pull reply packets
   + break medium wire compat to add a medium frag length
   + ignore medium frag pipeline, and replace >> pipeline with using the frag length
@@ -110,6 +112,7 @@
     send failed with status (Endpoint Closed)
     omx_pingpong: /home/bgoglin/open-mx/build-x86_64/../src/libopen-mx/omx_large.c:96: 
     omx__endpoint_large_region_free: Assertion `array[index].region.use_count == 0' failed.
+    (needs debug enabled)
 
 * drop our region window offset ?
   + pull are aligned on the reader's pages because it's the slower side on native MX
