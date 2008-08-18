@@ -1,11 +1,12 @@
-Open-MX v0.1.0
+Open-MX v1.0.0
 Copyright © INRIA 2007-2008 (see AUTHORS file)
 
 The development of this software has been funded by Myricom, Inc.
 
 All the code is GPL licensed, except the code under libopen-mx/ and the
-corresponding header file common/open-mx.h, and the myriexpress.h and
-mx_extensions.h wrappers, which are LGPL licensed.
+corresponding header file common/open-mx.h, and the myriexpress.h, mx_raw.h
+and mx_extensions.h header files under common/mx/ subdirectories, which are
+LGPL licensed.
 Each source code file contains a header that describes the license for
 the code in that specific file.
 
