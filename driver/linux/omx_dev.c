@@ -238,7 +238,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
 	ifp = endpoint->iface->eth_ifp;
 	if (!(dev_get_flags(ifp) & IFF_UP))
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN;
-	if (ifp->mtu < OMX_MTU_MIN)
+	if (ifp->mtu < OMX_MTU)
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU;
 	if (ifp->ethtool_ops && ifp->ethtool_ops->get_coalesce) {
 		struct ethtool_coalesce coal;

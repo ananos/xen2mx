@@ -29,20 +29,31 @@
 #define ETH_P_OMX DEFAULT_ETH_P_OMX
 #endif
 
+#ifdef OMX_MX_WIRE_COMPAT
+# define OMX_PULL_REPLY_LENGTH_MAX 4096UL
+#else /* !OMX_MX_WIRE_COMPAT */
+# ifndef OMX_MTU
+#  define OMX_PULL_REPLY_LENGTH_MAX 8192UL
+# elif OMX_MTU < 2000 /* ugly since we can't compare with 1024+sizeof(pullreply) */
+#  define OMX_PULL_REPLY_LENGTH_MAX 1024UL
+# elif OMX_MTU < 3000
+#  define OMX_PULL_REPLY_LENGTH_MAX 2048UL
+# elif OMX_MTU < 5000
+#  define OMX_PULL_REPLY_LENGTH_MAX 4096UL
+# else
+#  define OMX_PULL_REPLY_LENGTH_MAX 8192UL
+# endif
+#endif /* !OMX_MX_WIRE_COMPAT */
+
+#ifndef OMX_MTU
+#define OMX_MTU ((unsigned) (sizeof(struct omx_pkt_head) \
+			     + max( sizeof(struct omx_pkt_medium_frag) + OMX_SENDQ_ENTRY_SIZE, \
+				    sizeof(struct omx_pkt_pull_reply) + OMX_PULL_REPLY_LENGTH_MAX \
+				   )))
+#endif
+
 #define OMX_ENDPOINT_INDEX_MAX 256
 #define OMX_PEER_INDEX_MAX 65536
-
-#ifdef OMX_MTU_1500
-#define OMX_MTU_MIN ((unsigned) (sizeof(struct omx_pkt_head) \
-				 + max( sizeof(struct omx_pkt_medium_frag) + 1024, \
-					sizeof(struct omx_pkt_pull_reply) + OMX_PULL_REPLY_LENGTH_MAX \
-				 )))
-#else
-#define OMX_MTU_MIN ((unsigned) (sizeof(struct omx_pkt_head) \
-				 + max( sizeof(struct omx_pkt_medium_frag) + OMX_SENDQ_ENTRY_SIZE, \
-					sizeof(struct omx_pkt_pull_reply) + OMX_PULL_REPLY_LENGTH_MAX \
-				 )))
-#endif
 
 /******************
  * Packet Subtypes
@@ -292,16 +303,11 @@ struct omx_pkt_pull_request {
 #endif /* ~OMX_MX_WIRE_COMPAT */
 
 #ifdef OMX_MX_WIRE_COMPAT
-#define OMX_PULL_REPLY_LENGTH_MAX 4096UL
 #define OMX_PULL_REPLY_PER_BLOCK 8
 #else
-#ifdef OMX_MTU_1500
-#define OMX_PULL_REPLY_LENGTH_MAX 1024UL
-#else
-#define OMX_PULL_REPLY_LENGTH_MAX 8192UL
-#endif
 #define OMX_PULL_REPLY_PER_BLOCK 32
 #endif
+
 #define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
 
 /* OMX_PULL_REPLY_LENGTH_MAX must fit inside pull_request.first_frame_offset */

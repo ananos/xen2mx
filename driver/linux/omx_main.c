@@ -239,7 +239,7 @@ omx_init(void)
 	printk(KERN_INFO "Open-MX: using Ethertype 0x%lx\n",
 	       (unsigned long) ETH_P_OMX);
 	printk(KERN_INFO "Open-MX: requires MTU >= %ld\n",
-	       (unsigned long) OMX_MTU_MIN);
+	       (unsigned long) OMX_MTU);
 	printk(KERN_INFO "Open-MX: using %ld x %ldkB pull replies per request, with %ld requests in parallel\n",
 	       (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
 	       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX,
@@ -311,10 +311,8 @@ omx_init(void)
 
 #ifdef OMX_MX_WIRE_COMPAT
 	omx_driver_userdesc->mtu = 4096+64; /* roughly MX "mtu" */
-#elif defined OMX_MTU_1500
-	omx_driver_userdesc->mtu = 1500;
 #else
-	omx_driver_userdesc->mtu = 9000;
+	omx_driver_userdesc->mtu = OMX_MTU;
 #endif
 
 	omx_driver_userdesc->board_max = omx_iface_max;

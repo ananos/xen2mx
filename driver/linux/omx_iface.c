@@ -400,9 +400,9 @@ omx_iface_attach(struct net_device * ifp)
 	if (!(dev_get_flags(ifp) & IFF_UP))
 		printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' is not up\n",
 		       ifp->name);
-	if (mtu < OMX_MTU_MIN)
+	if (mtu < OMX_MTU)
 		printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
-		       ifp->name, OMX_MTU_MIN, mtu);
+		       ifp->name, OMX_MTU, mtu);
 
 	if (ifp->ethtool_ops && ifp->ethtool_ops->get_coalesce) {
 		struct ethtool_coalesce coal;
@@ -1052,7 +1052,7 @@ omx_net_init(void)
 				printk(KERN_INFO "Open-MX: not attaching non-up interface '%s' by default\n",
 				       ifp->name);
 				continue;
-			} else if (ifp->mtu < OMX_MTU_MIN) {
+			} else if (ifp->mtu < OMX_MTU) {
 				printk(KERN_INFO "Open-MX: not attaching interface '%s' with small MTU %d by default\n",
 				       ifp->name, ifp->mtu);
 				continue;

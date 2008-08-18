@@ -419,13 +419,8 @@ if test x$with_mtu != x; then
   if test x$enable_mx_wire != xno; then
     AC_MSG_ERROR([Changing the MTU requires MX-wire compatibility to be disabled])
   fi
-  if test x$with_mtu != x1500 && test x$with_mtu != x9000; then
-    AC_MSG_ERROR([Only MTU 9000 (default) and 1500 are supported])
-  fi
   AC_MSG_RESULT($with_mtu)
-  if test x$with_mtu != x9000; then
-    AC_DEFINE_UNQUOTED(OMX_MTU_1500, 1, [Define to enable MTU 1500 support])
-  fi
+  AC_DEFINE_UNQUOTED(OMX_MTU, $with_mtu, [Define to change the MTU])
 else
   AC_MSG_RESULT([default (9000)])
 fi

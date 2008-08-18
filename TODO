@@ -32,7 +32,6 @@
     - no need to reduce the speed ever
 
 * support non-ethernet networks by providing ways to extract the mac address differently
-  + infiniband ifaces need small mtu, make --enable-mtu-1500 more flexible
   + use eth_hdr(), dev->header_ops->create() and ->parse() to clarify the accessing
     to eth headers of packets and make it less ethernet specific
 
