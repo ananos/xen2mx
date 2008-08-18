@@ -508,6 +508,7 @@ struct omx__globals {
   int waitspin;
   int zombie_max;
   int waitintr;
+  int fatal_errors;
 #ifndef OMX_DISABLE_SELF
   int selfcomms;
 #endif

@@ -373,6 +373,25 @@ omx__init_api(int app_api)
     omx__abort("MTU=%d requires up to %d medium frags, cannot store in %d frag slots per request\n",
 	       omx__driver_desc->mtu, (OMX_MEDIUM_MAX+(1<<i)-1)>>i, OMX_MEDIUM_FRAGS_MAX);
 
+  /*************************
+   * Error Handler Behavior
+   */
+  omx__globals.fatal_errors = 1;
+  env = getenv("OMX_FATAL_ERRORS");
+#ifdef OMX_MX_ABI_COMPAT
+  if (!env) {
+    env = getenv("MX_ERRORS_ARE_FATAL");
+    if (env)
+      omx__verbose_printf("Emulating MX_ERRORS_ARE_FATAL as OMX_FATAL_ERRORS\n");
+  }
+#endif /* OMX_MX_ABI_COMPAT */
+  if (env) {
+    omx__globals.fatal_errors = atoi(env);
+    omx__verbose_printf("Forcing errors to %s\n",
+			omx__globals.fatal_errors ? "to be fatal" : "to not be fatal");
+  }
+  
+
   /***************************
    * Terminate initialization
    */

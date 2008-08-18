@@ -55,7 +55,9 @@ static omx_error_handler_t omx__error_handler = (omx_error_handler_t) omx__error
 void
 omx__init_error_handler(void)
 {
-  omx__error_handler = (omx_error_handler_t) omx__errors_are_fatal;
+  omx__error_handler = omx__globals.fatal_errors ?
+			(omx_error_handler_t) omx__errors_are_fatal
+			: (omx_error_handler_t) omx__errors_return;
 }
 
 /***********************************************************
