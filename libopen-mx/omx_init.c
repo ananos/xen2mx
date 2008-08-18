@@ -23,6 +23,7 @@
 #include <signal.h>
 
 #include "omx_lib.h"
+#include "omx_wire.h"
 
 #define OMX_ZOMBIE_MAX_DEFAULT 512
 
@@ -351,10 +352,21 @@ omx__init_api(int app_api)
    */
   if (omx__driver_desc->mtu == 0)
     omx__abort("MTU=0 reported by the driver\n");
-  for(i=0; (1<<i) < omx__driver_desc->mtu
-	   && i<=OMX_SENDQ_ENTRY_SHIFT
-	   && i<=OMX_RECVQ_ENTRY_SHIFT; i++);
-  i--;
+  if (omx__driver_desc->features & OMX_DRIVER_FEATURE_WIRECOMPAT) {
+    i = 12; /* 4kB frags in wire-compat mode */
+    omx__verbose_printf("Using MX-wire-compatible 4kB medium frags (pipeline 12)\n");
+    omx__debug_assert(i <= OMX_SENDQ_ENTRY_SHIFT);
+    omx__debug_assert(i <= OMX_RECVQ_ENTRY_SHIFT);
+    omx__debug_assert((1<<i) + sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag) < omx__driver_desc->mtu);
+  } else {
+    /* find the largest power of two + headers that goes in this mtu */
+    for(i=0; (1<<i) + sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag) < omx__driver_desc->mtu
+	     && i<=OMX_SENDQ_ENTRY_SHIFT
+	     && i<=OMX_RECVQ_ENTRY_SHIFT; i++);
+    i--;
+    omx__verbose_printf("Using custom %dB medium frags (pipeline %d) for MTU %d\n",
+			1<<i, i, omx__driver_desc->mtu);
+  }
   omx__globals.medium_frag_pipeline = i;
   omx__globals.medium_frag_length = 1<<i;
   if ((OMX_MEDIUM_MAX+(1<<i)-1)>>i > OMX_MEDIUM_FRAGS_MAX)
