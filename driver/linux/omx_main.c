@@ -73,9 +73,9 @@ int omx_pin_chunk_pages_max = 1024;
 module_param_named(pinchunkmax, omx_pin_chunk_pages_max, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(pinchunkmax, "Maximum number of pages to pin at once");
 
-int omx_pincache_invalidate = 0;
-module_param_named(pininvalidate, omx_pincache_invalidate, uint, S_IRUGO);
-MODULE_PARM_DESC(pininvalidate, "User region pin-cache invalidating when MMU notifiers are supported");
+int omx_pin_invalidate = 0;
+module_param_named(pininvalidate, omx_pin_invalidate, uint, S_IRUGO);
+MODULE_PARM_DESC(pininvalidate, "User region pin invalidating when MMU notifiers are supported");
 
 #ifdef CONFIG_NET_DMA
 int omx_dmaengine = 0; /* disabled by default for now */
@@ -301,11 +301,11 @@ omx_init(void)
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
 #endif
 #ifdef CONFIG_MMU_NOTIFIER
-	if (omx_pincache_invalidate) {
-		omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PINCACHE_INVALIDATE;
-		printk(KERN_INFO "Open-MX: MMU notifiers supported, enabling pin-cache invalidating\n");
+	if (omx_pin_invalidate) {
+		omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PIN_INVALIDATE;
+		printk(KERN_INFO "Open-MX: MMU notifiers supported, enabling pin invalidating\n");
 	} else {
-		printk(KERN_INFO "Open-MX: MMU notifiers supported but pin-cache invalidating disabled\n");
+		printk(KERN_INFO "Open-MX: MMU notifiers supported but pin invalidating disabled\n");
 	}
 #endif
 

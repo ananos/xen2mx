@@ -43,7 +43,7 @@ extern int omx_copybench;
 extern int omx_region_demand_pin;
 extern int omx_pin_chunk_pages_min;
 extern int omx_pin_chunk_pages_max;
-extern int omx_pincache_invalidate;
+extern int omx_pin_invalidate;
 
 /* events */
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);

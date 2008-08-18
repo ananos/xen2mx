@@ -611,7 +611,7 @@ omx_endpoint_user_regions_init(struct omx_endpoint * endpoint)
 	spin_lock_init(&endpoint->user_regions_lock);
 	endpoint->opener_mm = current->mm;
 #ifdef CONFIG_MMU_NOTIFIER
-	if (omx_pincache_invalidate) {
+	if (omx_pin_invalidate) {
 		endpoint->mmu_notifier.ops = &omx_mmu_ops;
 		mmu_notifier_register(&endpoint->mmu_notifier, current->mm);
 	}
@@ -642,7 +642,7 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 	spin_unlock(&endpoint->user_regions_lock);
 
 #ifdef CONFIG_MMU_NOTIFIER
-	if (omx_pincache_invalidate)
+	if (omx_pin_invalidate)
 		mmu_notifier_unregister(&endpoint->mmu_notifier, endpoint->opener_mm);
 #endif
 }
