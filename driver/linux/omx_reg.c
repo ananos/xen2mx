@@ -569,7 +569,7 @@ omx_mmu_invalidate_range_start(struct mmu_notifier *mn, struct mm_struct *mm,
 
 	dprintk(MMU, "invalidate range start 0x%lx-0x%lx\n", start, end);
 
-	omx_for_each_endpoint(omx_mmu_invalidate_handler, data);
+	omx_for_each_endpoint_in_mm(mm, omx_mmu_invalidate_handler, data);
 }
 
 static void
