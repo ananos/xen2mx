@@ -408,18 +408,26 @@ else
   AC_MSG_RESULT(no)
 fi
 
-AC_ARG_ENABLE(mtu-1500,
-	[AS_HELP_STRING([--enable-mtu-1500], [enable MTU 1500 support])],
-	enable_mtu_1500=$enableval, enable_mtu_1500=no)
-AC_MSG_CHECKING(if MTU 1500 is enabled)
-if test x$enable_mtu_1500 = xyes; then
+# to drop on 2009/09
+AC_ARG_ENABLE(mtu_1500,, AC_MSG_ERROR([use --with-mtu=1500 instead]))
+
+AC_ARG_WITH(mtu,
+	[AS_HELP_STRING([--with-mtu=<n>], [change MTU (default is 9000)])],
+	with_mtu=$withval)
+AC_MSG_CHECKING(MTU)
+if test x$with_mtu != x; then
   if test x$enable_mx_wire != xno; then
-    AC_MSG_ERROR([cannot be enabled without MX-wire compatibility disabled])
+    AC_MSG_ERROR([Changing the MTU requires MX-wire compatibility to be disabled])
   fi
-  AC_MSG_RESULT(yes)
-  AC_DEFINE_UNQUOTED(OMX_MTU_1500, 1, [Define to enable MTU 1500 support])
+  if test x$with_mtu != x1500 && test x$with_mtu != x9000; then
+    AC_MSG_ERROR([Only MTU 9000 (default) and 1500 are supported])
+  fi
+  AC_MSG_RESULT($with_mtu)
+  if test x$with_mtu != x9000; then
+    AC_DEFINE_UNQUOTED(OMX_MTU_1500, 1, [Define to enable MTU 1500 support])
+  fi
 else
-  AC_MSG_RESULT(no)
+  AC_MSG_RESULT([default (9000)])
 fi
 
 AC_ARG_WITH(ethertype,
