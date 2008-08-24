@@ -432,7 +432,7 @@ omx__alloc_setup_pull(struct omx_endpoint * ep,
     goto need_region;
   if (likely(res & OMX_REQUEST_RESOURCE_PULL_HANDLE))
     goto need_pull;
-  omx__abort("unexpected missing resources %x for pull request\n", res);
+  omx__abort("Unexpected missing resources %x for pull request\n", res);
 
  need_exp_event:
   if (unlikely(ep->avail_exp_events < 1))

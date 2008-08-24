@@ -108,7 +108,7 @@ omx__strreqtype(enum omx__request_type type)
   case OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED:
     return "Receive Self Unexpected";
   default:
-    omx__abort("unknown request type %d\n", (unsigned) type);
+    omx__abort("Unknown request type %d\n", (unsigned) type);
   }
 }
 

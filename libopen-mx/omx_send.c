@@ -497,7 +497,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
     goto need_exp_events;
   if (likely(res & OMX_REQUEST_RESOURCE_SENDQ_SLOT))
     goto need_sendq_map_slot;
-  omx__abort("unexpected missing resources %x for medium send request\n", res);
+  omx__abort("Unexpected missing resources %x for medium send request\n", res);
 
  need_exp_events:
   if (unlikely(ep->avail_exp_events < frags_nr))
@@ -639,7 +639,7 @@ omx__alloc_setup_isend_large(struct omx_endpoint *ep,
     goto need_send_large_region;
   if (likely(res & OMX_REQUEST_RESOURCE_LARGE_REGION))
     goto need_large_region;
-  omx__abort("unexpected missing resources %x for large send request\n", res);
+  omx__abort("Unexpected missing resources %x for large send request\n", res);
 
  need_send_large_region:
   if (unlikely(!ep->large_sends_avail_nr))

@@ -171,7 +171,7 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
 	   ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED) {
-    omx__abort("Open-MX WARNING: Driver reporting endpoint %d being closed because interface %s (%s) has been removed\n",
+    omx__abort("Driver reporting endpoint %d being closed because interface %s (%s) has been removed\n",
 	       ep->endpoint_index, ep->board_info.ifacename, ep->board_info.hostname);
     /* FIXME: find a nice way to exit here? */
   }
