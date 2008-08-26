@@ -227,6 +227,8 @@ omx__open_endpoint(int fd,
  * Endpoint management
  */
 
+static int omx_comms_initialized = 0;
+
 /* API omx_open_endpoint */
 omx_return_t
 omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
@@ -246,6 +248,12 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   if (!omx__globals.initialized) {
     ret = omx__error(OMX_NOT_INITIALIZED, "Opening endpoint");
     goto out;
+  }
+
+  if (!omx_comms_initialized) {
+    omx__init_comms();
+    omx__init_endpoint_list();
+    omx_comms_initialized = 1;    
   }
 
   if (param_count && !param_array) {

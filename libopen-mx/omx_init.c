@@ -36,12 +36,18 @@ static int omx__lib_api = OMX_API;
 omx_return_t
 omx__init_api(int app_api)
 {
-  int debug_signal = 0;
-  int debug_signum = SIGUSR1;
   omx_return_t ret;
   char *env;
   int err;
-  int i;
+
+  if (omx__globals.initialized) {
+    ret = OMX_ALREADY_INITIALIZED;
+    goto out;
+  }
+
+  /***************************************
+   * Check the application-build-time API
+   */
 
   if (app_api >> 8 != omx__lib_api >> 8
       /* support app_abi 0x0 for now, will drop in 1.0 */
@@ -49,11 +55,6 @@ omx__init_api(int app_api)
     ret = omx__error(OMX_BAD_LIB_ABI,
 		     "Comparing library used at build-time (ABI 0x%x) with currently used library (ABI 0x%x)",
 		     omx__lib_api >> 8, app_api >> 8);
-    goto out;
-  }
-
-  if (omx__globals.initialized) {
-    ret = OMX_ALREADY_INITIALIZED;
     goto out;
   }
 
@@ -91,13 +92,6 @@ omx__init_api(int app_api)
 		     OMX_DRIVER_ABI_VERSION, omx__driver_desc->abi_version);
     goto out_with_fd;
   }
-
-  /*****************
-   * Misc constants
-   */
-
-  omx__globals.ack_delay_jiffies = omx__ack_delay_jiffies();
-  omx__globals.resend_delay_jiffies = omx__resend_delay_jiffies();
 
   /*******************************************
    * Verbose and debug messages configuration
@@ -153,6 +147,58 @@ omx__init_api(int app_api)
     omx__globals.verbdebug = val;
   }
 #endif /* OMX_LIB_DEBUG */
+
+  /*************************
+   * Error Handler Behavior
+   */
+  omx__globals.fatal_errors = 1;
+  env = getenv("OMX_FATAL_ERRORS");
+#ifdef OMX_MX_ABI_COMPAT
+  if (!env) {
+    env = getenv("MX_ERRORS_ARE_FATAL");
+    if (env)
+      omx__verbose_printf("Emulating MX_ERRORS_ARE_FATAL as OMX_FATAL_ERRORS\n");
+  }
+#endif /* OMX_MX_ABI_COMPAT */
+  if (env) {
+    omx__globals.fatal_errors = atoi(env);
+    omx__verbose_printf("Forcing errors to %s\n",
+			omx__globals.fatal_errors ? "to be fatal" : "to not be fatal");
+  }
+  
+  /***************************
+   * Terminate initialization
+   */
+
+  omx__init_error_handler();
+  omx__globals.initialized = 1;
+  return OMX_SUCCESS;
+
+ out_with_fd:
+  close(omx__globals.control_fd);
+ out:
+  return ret; 
+}
+
+void
+omx__init_comms(void)
+{
+  int debug_signal = 0;
+  int debug_signum = SIGUSR1;
+  char *env;
+  int i;
+
+  /***************
+   * Misc globals
+   */
+
+  omx__globals.rndv_threshold = OMX_MEDIUM_MAX;
+  omx__globals.ack_delay_jiffies = omx__ack_delay_jiffies();
+  omx__globals.resend_delay_jiffies = omx__resend_delay_jiffies();
+
+  /********************************
+   * Endpoint debug initialization
+   */
 
 #ifdef OMX_LIB_DEBUG
   debug_signal = 1;
@@ -215,8 +261,6 @@ omx__init_api(int app_api)
   /******************
    * Rndv thresholds
    */
-
-  omx__globals.rndv_threshold = OMX_MEDIUM_MAX;
 
 #ifndef OMX_DISABLE_SHARED
   /* must be AFTER sharedcomms init */
@@ -372,40 +416,6 @@ omx__init_api(int app_api)
   if ((OMX_MEDIUM_MAX+(1<<i)-1)>>i > OMX_MEDIUM_FRAGS_MAX)
     omx__abort("MTU=%d requires up to %d medium frags, cannot store in %d frag slots per request\n",
 	       omx__driver_desc->mtu, (OMX_MEDIUM_MAX+(1<<i)-1)>>i, OMX_MEDIUM_FRAGS_MAX);
-
-  /*************************
-   * Error Handler Behavior
-   */
-  omx__globals.fatal_errors = 1;
-  env = getenv("OMX_FATAL_ERRORS");
-#ifdef OMX_MX_ABI_COMPAT
-  if (!env) {
-    env = getenv("MX_ERRORS_ARE_FATAL");
-    if (env)
-      omx__verbose_printf("Emulating MX_ERRORS_ARE_FATAL as OMX_FATAL_ERRORS\n");
-  }
-#endif /* OMX_MX_ABI_COMPAT */
-  if (env) {
-    omx__globals.fatal_errors = atoi(env);
-    omx__verbose_printf("Forcing errors to %s\n",
-			omx__globals.fatal_errors ? "to be fatal" : "to not be fatal");
-  }
-  
-
-  /***************************
-   * Terminate initialization
-   */
-
-  omx__init_endpoint_list();
-
-  omx__init_error_handler();
-  omx__globals.initialized = 1;
-  return OMX_SUCCESS;
-
- out_with_fd:
-  close(omx__globals.control_fd);
- out:
-  return ret;
 }
 
 /* API omx_finalize */

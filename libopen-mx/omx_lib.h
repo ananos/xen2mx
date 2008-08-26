@@ -593,6 +593,9 @@ omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
 
 /* misc helpers */
 
+extern void
+omx__init_comms(void);
+
 extern omx_return_t
 omx__errno_to_return(void);
 
@@ -604,9 +607,6 @@ omx__strreqtype(enum omx__request_type type);
 
 extern void
 omx__sprintf_reqstate(uint16_t state, char *str);
-
-extern void
-omx__init_endpoint_list(void);
 
 extern void
 omx__foreach_endpoint(void (*func)(struct omx_endpoint *));
