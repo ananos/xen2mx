@@ -1,5 +1,4 @@
 * make endpoint's multifrag_medium_recv, driver_pulling and large_send_need_reply_req_q debug only
-* use the partner connect req q to match replies and make the connect queue debug only
 * update endpoint dump to rely on partner queues when possible
 
 * optimize mtu 1500 by using more than 1024k medium or pull reply packets

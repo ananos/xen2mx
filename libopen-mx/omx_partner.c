@@ -608,12 +608,11 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 
   omx__partner_check_localization(partner, event->shared);
 
-  omx__foreach_request(&ep->connect_req_q, req) {
+  omx__foreach_partner_request(&partner->connect_req_q, req) {
     /* check the endpoint session (so that the endpoint didn't close/reopen in the meantime)
      * and the partner and the connection seqnum given by this partner
      */
     if (src_session_id == ep->desc->session_id
-	&& partner == req->generic.partner
 	&& connect_seqnum == req->connect.connect_seqnum) {
       omx__handle_connect_reply(ep, partner, req, reply_data_n);
       break;
