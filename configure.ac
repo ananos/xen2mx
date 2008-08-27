@@ -460,6 +460,7 @@ AC_MSG_CHECKING(if thread safety is enabled in the library)
 if test x$enable_lib_threads = xyes; then
   AC_MSG_RESULT(yes)
   AC_DEFINE(OMX_LIB_THREAD_SAFETY, 1, [Define to enable thread safety support in the library])
+  AC_SUBST(OMX_LIB_THREAD_SAFETY, 1)
 else
   AC_MSG_RESULT(no)
 fi

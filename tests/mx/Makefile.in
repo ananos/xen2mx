@@ -5,9 +5,14 @@ prefix = @prefix@
 include @abs_top_srcdir@/common.mk
 REL_DIR	=	tests/mx/
 
+THREADED_TESTS	=	mx_wakeup_test
+ifneq (@OMX_LIB_THREAD_SAFETY@,1)
+	IGNORED_TESTS	=	$(THREADED_TESTS)
+endif
+
 SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
-TESTS	=	$(subst .o,,$(OBJS))
+TESTS	=	$(filter-out $(IGNORED_TESTS),$(subst .o,,$(OBJS)))
 
 CC	=	@CC@
 LD	=	$(CC) #FIXME
