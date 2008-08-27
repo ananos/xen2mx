@@ -434,6 +434,12 @@ omx_connect(omx_endpoint_t ep,
     }
   }
 
+  if (unlikely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
+    /* the request didn't complete, unqueue it before freeing */
+    omx__dequeue_request(&ep->connect_req_q, req);
+    omx__dequeue_partner_request(&req->generic.partner->pending_connect_req_q, req);
+  }
+
   omx__request_free(ep, req);
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
