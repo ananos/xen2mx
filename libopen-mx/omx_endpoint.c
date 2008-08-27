@@ -240,8 +240,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   struct omx_endpoint_desc * desc;
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
-  uint8_t ctxid_bits = 0, ctxid_shift = 0;
-  omx_error_handler_t error_handler = NULL;
+  uint8_t ctxid_bits;
+  uint8_t ctxid_shift;
+  omx_error_handler_t error_handler;
   omx_return_t ret = OMX_SUCCESS;
   int err, fd, i;
 
@@ -263,6 +264,10 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out;
   }
 
+  error_handler = NULL;
+  ctxid_bits = omx__globals.ctxid_bits;
+  ctxid_shift = omx__globals.ctxid_shift;
+
   for(i=0; i<param_count; i++) {
     switch (param_array[i].key) {
     case OMX_ENDPOINT_PARAM_ERROR_HANDLER: {
@@ -274,23 +279,10 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
       break;
     }
     case OMX_ENDPOINT_PARAM_CONTEXT_ID: {
-      uint8_t bits = param_array[i].val.context_id.bits;
-      uint8_t shift = param_array[i].val.context_id.shift;
-      if (bits > OMX_ENDPOINT_CONTEXT_ID_BITS_MAX) {
-	ret = omx__error(OMX_ENDPOINT_PARAM_BAD_VALUE,
-			 "Opening Endpoint with %d ctxid bits",
-			 (unsigned) bits);
-	goto out;
-      }
-      if (bits + shift > 64) {
-	ret = omx__error(OMX_ENDPOINT_PARAM_BAD_VALUE,
-			 "Opening Endpoint with %d ctxid bits at shift %d",
-			 (unsigned) bits, (unsigned) shift);
-	goto out;
-      }
       ctxid_bits = param_array[i].val.context_id.bits;
       ctxid_shift = param_array[i].val.context_id.shift;
-      omx__verbose_printf("using %d bits of context id at offset %d in matching\n", ctxid_bits, ctxid_shift);
+      omx__verbose_printf("Setting %d bits of context id at offset %d in matching\n",
+			  ctxid_bits, ctxid_shift);
       break;
     }
     default: {
@@ -299,6 +291,19 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
       goto out;
     }
     }
+  }
+
+  if (ctxid_bits > OMX_ENDPOINT_CONTEXT_ID_BITS_MAX) {
+    ret = omx__error(OMX_ENDPOINT_PARAM_BAD_VALUE,
+		     "Opening Endpoint with %d ctxid bits",
+		     (unsigned) ctxid_bits);
+    goto out;
+  }
+  if (ctxid_bits + ctxid_shift > 64) {
+    ret = omx__error(OMX_ENDPOINT_PARAM_BAD_VALUE,
+		     "Opening Endpoint with %d ctxid bits at shift %d",
+		     (unsigned) ctxid_bits, (unsigned) ctxid_shift);
+    goto out;
   }
 
   ep = malloc(sizeof(struct omx_endpoint));

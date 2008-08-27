@@ -527,6 +527,8 @@ struct omx__globals {
   unsigned resend_delay_jiffies;
   unsigned req_resends_max;
   unsigned not_acked_max;
+  unsigned ctxid_bits;
+  unsigned ctxid_shift;
   char *process_binding;
 };
 

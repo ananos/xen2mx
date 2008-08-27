@@ -422,6 +422,24 @@ omx__init_comms(void)
   if ((OMX_MEDIUM_MAX+(1<<i)-1)>>i > OMX_MEDIUM_FRAGS_MAX)
     omx__abort("MTU=%d requires up to %d medium frags, cannot store in %d frag slots per request\n",
 	       omx__driver_desc->mtu, (OMX_MEDIUM_MAX+(1<<i)-1)>>i, OMX_MEDIUM_FRAGS_MAX);
+
+  /*********
+   * Ctxids
+   */
+  omx__globals.ctxid_bits = 0;
+  omx__globals.ctxid_shift = 0;
+  env = getenv("OMX_CTXIDS");
+  if (env) {
+    char *env2;
+    env2 = strchr(env, ',');
+    if (env2) {
+      env2++;
+      omx__globals.ctxid_bits = atoi(env);
+      omx__globals.ctxid_shift = atoi(env2);
+      omx__verbose_printf("Forcing ctxid bits %d shift %d\n",
+			  omx__globals.ctxid_bits, omx__globals.ctxid_shift);
+    }
+  }
 }
 
 /* API omx_finalize */
