@@ -140,7 +140,7 @@ omx__dump_endpoint(struct omx_endpoint *ep)
 
       printf("    Non-acked requests:\n");
       count2 = 0;
-      omx__foreach_partner_non_acked_request(partner, req) {
+      omx__foreach_partner_request(&partner->non_acked_req_q, req) {
 	omx__dump_request("      ", req);
 	count2++;
       }

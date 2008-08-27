@@ -346,7 +346,7 @@ omx__connect_common(omx_endpoint_t ep,
   if (partner == ep->myself) {
     req->generic.partner = ep->myself;
     omx__enqueue_request(&ep->connect_req_q, req);
-    omx__enqueue_partner_connect_request(partner, req);
+    omx__enqueue_partner_request(&partner->pending_connect_req_q, req);
     omx__connect_complete(ep, req, OMX_SUCCESS, ep->desc->session_id);
 
     /*
@@ -380,7 +380,7 @@ omx__connect_common(omx_endpoint_t ep,
 
   /* no need to wait for a done event, connect is synchronous */
   omx__enqueue_request(&ep->connect_req_q, req);
-  omx__enqueue_partner_connect_request(partner, req);
+  omx__enqueue_partner_request(&partner->pending_connect_req_q, req);
 
   req->generic.partner = partner;
   req->generic.resends_max = ep->req_resends_max;
@@ -499,7 +499,7 @@ omx__connect_complete(struct omx_endpoint *ep,
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
 
   omx__dequeue_request(&ep->connect_req_q, req);
-  omx__dequeue_partner_connect_request(partner, req);
+  omx__dequeue_partner_request(&partner->pending_connect_req_q, req);
   req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
 
   if (likely(req->generic.status.code == OMX_SUCCESS)) {
@@ -777,11 +777,11 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * and they will be completed with this status when leaving driver_posted_req_q.
    */
   count = 0;
-  omx__foreach_partner_non_acked_request_safe(partner, req, next) {
+  omx__foreach_partner_request_safe(&partner->non_acked_req_q, req, next) {
     omx__debug_printf(CONNECT, "Dropping pending send %p with seqnum %d (#%d)\n", req,
 		      (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 		      (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
-    omx___dequeue_partner_non_acked_request(req);
+    omx___dequeue_partner_request(req);
     omx__mark_request_acked(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
     count++;
   }
@@ -831,10 +831,10 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * are not queued anywhere else.
    */
   count = 0;
-  omx__foreach_partner_throttling_request_safe(partner, req, next) {
+  omx__foreach_partner_request_safe(&partner->throttling_send_req_q, req, next) {
     omx__debug_printf(CONNECT, "Dropping throttling send %p\n", req);
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_SEQNUM);
-    omx___dequeue_partner_throttling_request(req);
+    omx___dequeue_partner_request(req);
     omx__complete_unsent_send_request(ep, req);
     count++;
   }
@@ -847,7 +847,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * from the endpoint connect_req_q.
    */
   count = 0;
-  omx__foreach_partner_connect_request_safe(partner, req, next) {
+  omx__foreach_partner_request_safe(&partner->pending_connect_req_q, req, next) {
     omx__debug_printf(CONNECT, "Dropping pending connect %p\n", req);
     omx__connect_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE, (uint32_t) -1);
     count++;
@@ -861,13 +861,13 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * from the endpoint multifrag_medium_recv_req_q or unexp_req_q.
    */
   count = 0;
-  omx__foreach_partner_partial_request_safe(partner, req, next) {
+  omx__foreach_partner_request_safe(&partner->partial_recv_req_q, req, next) {
     uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
 
     omx__debug_printf(CONNECT, "Dropping partial medium recv %p\n", req);
 
     /* dequeue and complete with status error */
-    omx___dequeue_partner_partial_request(req);
+    omx___dequeue_partner_request(req);
     omx__dequeue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)
                          ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
                          req);

@@ -133,6 +133,12 @@ struct omx__partner {
   struct list_head partial_recv_req_q;
   /* early packets (queued by their partner_elt) */
   struct list_head early_recv_q;
+  /* delayed send because of throttling (too many acks missing) */
+  struct list_head throttling_send_req_q;
+
+  /* throttling state */
+  uint32_t throttling_sends_nr;
+  struct list_head endpoint_throttling_partners_elt;
 
   /* seqnum of the next send */
   omx__seqnum_t next_send_seq;
@@ -167,11 +173,6 @@ struct omx__partner {
    * - if no partial receive, use next_match_recv_seq
    * if changing next_frag_recv_seq, ack all the previous seqnums
    */
-
-  /* delayed send because of throttling (too many acks missing) */
-  struct list_head throttling_send_req_q;
-  uint32_t throttling_sends_nr;
-  struct list_head endpoint_throttling_partners_elt;
 
   /* acks */
   struct list_head endpoint_partners_to_ack_elt;

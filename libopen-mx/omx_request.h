@@ -212,169 +212,70 @@ omx__empty_done_anyctxid_queue(struct omx_endpoint *ep)
   return list_empty(&ep->anyctxid.done_req_q);
 }
 
-/***********************************
- * Generic partner queue management
+/****************************
+ * Partner queues management
  */
+
+static inline void
+omx__enqueue_partner_request(struct list_head *head,
+			     union omx_request *req)
+{
+  list_add_tail(&req->generic.partner_elt, head);
+}
+
+static inline void
+omx___dequeue_partner_request(union omx_request *req)
+{
+  list_del(&req->generic.partner_elt);
+}
+
+static inline void
+omx__dequeue_partner_request(struct list_head *head,
+			     union omx_request *req)
+{
+#ifdef OMX_LIB_DEBUG
+  struct list_head *e;
+  list_for_each(e, head)
+    if (req == list_entry(e, union omx_request, generic.partner_elt))
+      goto found;
+
+  omx__abort("Failed to find request in partner queue for dequeueing\n");
+
+ found:
+#endif /* OMX_LIB_DEBUG */
+  omx___dequeue_partner_request(req);
+}
+
+static inline int
+omx__empty_partner_queue(struct list_head *head)
+{
+  return list_empty(head);
+}
+
+static inline union omx_request *
+omx__first_partner_request(struct list_head *head)
+{
+  return list_first_entry(head, union omx_request, generic.partner_elt);
+}
+
+static inline union omx_request *
+omx__dequeue_first_partner_request(struct list_head *head)
+ {
+  union omx_request *req;
+
+  if (list_empty(head))
+    return NULL;
+
+  req = list_first_entry(head, union omx_request, generic.partner_elt);
+  omx___dequeue_partner_request(req);
+  return req;
+}
 
 #define omx__foreach_partner_request(head, req)	\
 list_for_each_entry(req, head, generic.partner_elt)
 
 #define omx__foreach_partner_request_safe(head, req, next)	\
 list_for_each_entry_safe(req, next, head, generic.partner_elt)
-
-/*********************************************
- * Partner non-acked request queue management
- */
-
-static inline void
-omx__enqueue_partner_non_acked_request(struct omx__partner *partner,
-				       union omx_request *req)
-{
-  list_add_tail(&req->generic.partner_elt, &partner->non_acked_req_q);
-}
-
-static inline void
-omx___dequeue_partner_non_acked_request(union omx_request *req)
-{
-  list_del(&req->generic.partner_elt);
-}
-
-#define omx__foreach_partner_non_acked_request(partner, req)	\
-omx__foreach_partner_request(&partner->non_acked_req_q, req)
-
-#define omx__foreach_partner_non_acked_request_safe(partner, req, next)		\
-omx__foreach_partner_request_safe(&partner->non_acked_req_q, req, next)
-
-/***************************************************
- * Partner throttling send request queue management
- */
-
-static inline void
-omx__enqueue_partner_throttling_request(struct omx__partner *partner,
-					union omx_request *req)
-{
-  list_add_tail(&req->generic.partner_elt, &partner->throttling_send_req_q);
-}
-
-static inline void
-omx___dequeue_partner_throttling_request(union omx_request *req)
-{
-  list_del(&req->generic.partner_elt);
-}
-
-static inline union omx_request *
-omx__dequeue_first_partner_throttling_request(struct omx__partner *partner)
- {
-  union omx_request *req;
-
-  if (list_empty(&partner->throttling_send_req_q))
-    return NULL;
-
-  req = list_first_entry(&partner->throttling_send_req_q, union omx_request, generic.partner_elt);
-  omx___dequeue_partner_throttling_request(req);
-  return req;
-}
-
-static inline int
-omx__empty_partner_throttling_request(struct omx__partner *partner)
-{
-  return list_empty(&partner->throttling_send_req_q);
-}
-
-#define omx__foreach_partner_throttling_request_safe(partner, req, next)		\
-omx__foreach_partner_request_safe(&partner->throttling_send_req_q, req, next)
-
-/***************************************************
- * Partner pending connect request queue management
- */
-
-static inline void
-omx__enqueue_partner_connect_request(struct omx__partner *partner,
-				     union omx_request *req)
-{
-  list_add_tail(&req->generic.partner_elt, &partner->pending_connect_req_q);
-}
-
-static inline void
-omx___dequeue_partner_connect_request(union omx_request *req)
-{
-  list_del(&req->generic.partner_elt);
-}
-
-static inline void
-omx__dequeue_partner_connect_request(struct omx__partner *partner,
-				     union omx_request *req)
-{
-#ifdef OMX_LIB_DEBUG
-  struct list_head *e;
-  list_for_each(e, &partner->pending_connect_req_q)
-    if (req == list_entry(e, union omx_request, generic.partner_elt))
-      goto found;
-
-  omx__abort("Failed to find request in partner pending connect queue for dequeueing\n");
-
- found:
-#endif /* OMX_LIB_DEBUG */
-  omx___dequeue_partner_connect_request(req);
-}
-
-#define omx__foreach_partner_connect_request(partner, req)	\
-omx__foreach_partner_request(&partner->pending_connect_req_q, req)
-
-#define omx__foreach_partner_connect_request_safe(partner, req, next)	\
-omx__foreach_partner_request_safe(&partner->pending_connect_req_q, req, next)
-
-/*******************************************
- * Partner partial request queue management
- */
-
-static inline void
-omx__enqueue_partner_partial_request(struct omx__partner *partner,
-				     union omx_request *req)
-{
-  list_add_tail(&req->generic.partner_elt, &partner->partial_recv_req_q);
-}
-
-static inline void
-omx___dequeue_partner_partial_request(union omx_request *req)
-{
-  list_del(&req->generic.partner_elt);
-}
-
-static inline void
-omx__dequeue_partner_partial_request(struct omx__partner *partner,
-				     union omx_request *req)
-{
-#ifdef OMX_LIB_DEBUG
-  struct list_head *e;
-  list_for_each(e, &partner->partial_recv_req_q)
-    if (req == list_entry(e, union omx_request, generic.partner_elt))
-      goto found;
-
-  omx__abort("Failed to find request in partner partial queue for dequeueing\n");
-
- found:
-#endif /* OMX_LIB_DEBUG */
-  omx___dequeue_partner_partial_request(req);
-}
-
-static inline union omx_request *
-omx__first_partner_partial_request(struct omx__partner *partner)
-{
-  return list_first_entry(&partner->partial_recv_req_q, union omx_request, generic.partner_elt);
-}
-
-static inline int
-omx__empty_partner_partial_queue(struct omx__partner *partner)
-{
-  return list_empty(&partner->partial_recv_req_q);
-}
-
-#define omx__foreach_partner_partial_request(partner, req)		\
-omx__foreach_partner_request(&partner->partial_recv_req_q, req)
-
-#define omx__foreach_partner_partial_request_safe(partner, req, next)		\
-omx__foreach_partner_request_safe(&partner->partial_recv_req_q, req, next)
 
 /*****************************************
  * Partner early packets queue management

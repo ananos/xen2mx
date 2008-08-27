@@ -124,7 +124,7 @@ omx__setup_isend_tiny(struct omx_endpoint *ep,
 
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__enqueue_partner_non_acked_request(partner, req);
+  omx__enqueue_partner_request(&partner->non_acked_req_q, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
   omx__notify_request_done_early(ep, ctxid, req);
@@ -150,7 +150,7 @@ omx__alloc_setup_isend_tiny(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
-    omx__enqueue_partner_throttling_request(partner, req);
+    omx__enqueue_partner_request(&partner->throttling_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
     omx__setup_isend_tiny(ep, partner, req);
@@ -235,7 +235,7 @@ omx__setup_isend_small(struct omx_endpoint *ep,
 
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__enqueue_partner_non_acked_request(partner, req);
+  omx__enqueue_partner_request(&partner->non_acked_req_q, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
   omx__notify_request_done_early(ep, ctxid, req);
@@ -272,7 +272,7 @@ omx__alloc_setup_isend_small(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
-    omx__enqueue_partner_throttling_request(partner, req);
+    omx__enqueue_partner_request(&partner->throttling_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
     omx__setup_isend_small(ep, partner, req);
@@ -476,7 +476,7 @@ omx__setup_isend_medium(struct omx_endpoint *ep,
     omx__enqueue_request(&ep->driver_medium_sending_req_q, req);
   else
     omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__enqueue_partner_non_acked_request(partner, req);
+  omx__enqueue_partner_request(&partner->non_acked_req_q, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
   omx__notify_request_done_early(ep, ctxid, req);
@@ -522,7 +522,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
-    omx__enqueue_partner_throttling_request(partner, req);
+    omx__enqueue_partner_request(&partner->throttling_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
     omx__setup_isend_medium(ep, partner, req);
@@ -618,7 +618,7 @@ omx__setup_isend_rndv(struct omx_endpoint *ep,
 
   req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY|OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__enqueue_partner_non_acked_request(partner, req);
+  omx__enqueue_partner_request(&partner->non_acked_req_q, req);
 
   /* cannot mark as done early since data is not buffered */
 }
@@ -676,7 +676,7 @@ omx__alloc_setup_isend_large(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
-    omx__enqueue_partner_throttling_request(partner, req);
+    omx__enqueue_partner_request(&partner->throttling_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
     omx__setup_isend_rndv(ep, partner, req);
@@ -768,7 +768,7 @@ omx__setup_notify(struct omx_endpoint *ep,
 
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
   omx__enqueue_request(&ep->non_acked_req_q, req);
-  omx__enqueue_partner_non_acked_request(partner, req);
+  omx__enqueue_partner_request(&partner->non_acked_req_q, req);
 
   /* mark the request as done now, it will be resent/zombified later if necessary */
   omx__notify_request_done_early(ep, ctxid, req);
@@ -792,7 +792,7 @@ omx__alloc_setup_notify(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
-    omx__enqueue_partner_throttling_request(partner, req);
+    omx__enqueue_partner_request(&partner->throttling_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
     omx__setup_notify(ep, partner, req);
@@ -1138,7 +1138,7 @@ omx__process_throttling_requests(struct omx_endpoint *ep, struct omx__partner *p
   union omx_request *req;
   int sent = 0;
 
-  while (nr > sent && (req = omx__dequeue_first_partner_throttling_request(partner)) != NULL) {
+  while (nr > sent && (req = omx__dequeue_first_partner_request(&partner->throttling_send_req_q)) != NULL) {
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_SEQNUM);
     req->generic.state &= ~OMX_REQUEST_STATE_NEED_SEQNUM;
 

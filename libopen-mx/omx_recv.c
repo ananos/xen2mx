@@ -320,7 +320,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
     /* if there were previous frags, remove from the partialq */
     if (unlikely(!new))
-      omx__dequeue_partner_partial_request(partner, req);
+      omx__dequeue_partner_request(&partner->partial_recv_req_q, req);
 
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
     if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
@@ -336,7 +336,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
     if (unlikely(new)) {
       req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
-      omx__enqueue_partner_partial_request(partner, req);
+      omx__enqueue_partner_request(&partner->partial_recv_req_q, req);
     }
 
     omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)
@@ -538,10 +538,10 @@ omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
    * if no more partner partial request, we expect a frag for the new seqnum,
    * if not, we expect the fragment for at least the first partial seqnum
    */
-  if (omx__empty_partner_partial_queue(partner)) {
+  if (omx__empty_partner_queue(&partner->partial_recv_req_q)) {
     new_next_frag_recv_seq = partner->next_match_recv_seq;
   } else {
-    union omx_request *req = omx__first_partner_partial_request(partner);
+    union omx_request *req = omx__first_partner_request(&partner->partial_recv_req_q);
     new_next_frag_recv_seq = req->recv.seqnum;
   }
 
@@ -573,7 +573,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
   union omx_request * req = NULL;
   omx__seqnum_t new_index = OMX__SEQNUM(seqnum - partner->next_frag_recv_seq);
 
-  omx__foreach_partner_partial_request(partner, req) {
+  omx__foreach_partner_request(&partner->partial_recv_req_q, req) {
     omx__seqnum_t req_index = OMX__SEQNUM(req->recv.seqnum - partner->next_frag_recv_seq);
     if (likely(req_index == new_index)) {
       omx__dequeue_request(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV

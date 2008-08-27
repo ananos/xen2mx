@@ -107,7 +107,7 @@ omx__handle_ack(struct omx_endpoint *ep,
 		      (unsigned) OMX__SESNUM_SHIFTED(ack_before - 1),
 		      (unsigned long long) omx__driver_desc->jiffies);
 
-    omx__foreach_partner_non_acked_request_safe(partner, req, next) {
+    omx__foreach_partner_request_safe(&partner->non_acked_req_q, req, next) {
       /* take care of the seqnum wrap around here too */
       omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->next_acked_send_seq);
 
@@ -122,7 +122,7 @@ omx__handle_ack(struct omx_endpoint *ep,
       omx__debug_printf(ACK, "marking req with seqnum %x (#%d) as acked\n",
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
-      omx___dequeue_partner_non_acked_request(req);
+      omx___dequeue_partner_request(req);
       omx__mark_request_acked(ep, req, OMX_SUCCESS);
     }
 
@@ -178,14 +178,14 @@ omx__handle_nack(struct omx_endpoint *ep,
     goto try_pending_connect_req;
 
   /* look in the list of pending real messages */
-  omx__foreach_partner_non_acked_request(partner, req) {
+  omx__foreach_partner_request(&partner->non_acked_req_q, req) {
     omx__seqnum_t req_index = OMX__SEQNUM(req->generic.send_seqnum - partner->next_acked_send_seq);
 
     if (nack_index < req_index)
       break;
 
     if (nack_index == req_index) {
-      omx___dequeue_partner_non_acked_request(req);
+      omx___dequeue_partner_request(req);
       omx__mark_request_acked(ep, req, status);
       return;
     }
@@ -194,7 +194,7 @@ omx__handle_nack(struct omx_endpoint *ep,
  try_pending_connect_req:
 
   /* look in the list of pending connect requests */
-  omx__foreach_partner_connect_request(partner, req) {
+  omx__foreach_partner_request(&partner->pending_connect_req_q, req) {
     /* FIXME: if > then break,
      * but take care of the wrap around using partner->connect_seqnum
      * but this protocol is crap so far since we can't distinguish between nacks for send and connect
