@@ -714,8 +714,7 @@ omx__process_recv(struct omx_endpoint *ep,
 						  early->recv_func);
 	  /* ignore errors, the packet will be resent anyway, the recv seqnums didn't increase */
 
-	  if (early->data)
-	    free(early->data);
+	  free(early->data);
 	  free(early);
 	}
       }

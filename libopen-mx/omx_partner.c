@@ -886,8 +886,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     omx___dequeue_partner_early_packet(early);
     omx__debug_printf(CONNECT, "Dropping early fragment %p\n", early);
 
-    if (early->data)
-      free(early->data);
+    free(early->data);
     free(early);
     count++;
   }
