@@ -28,6 +28,10 @@ omx__dump_request(const char *prefix, union omx_request *req)
   enum omx__request_type type = req->generic.type;
   uint16_t state = req->generic.state;
   char strstate[128];
+
+  if (omx__globals.debug_signal_level <= 1)
+    return;
+
   omx__sprintf_reqstate(state, strstate);
 
   printf("%stype %s state %s\n",
@@ -72,13 +76,17 @@ omx__dump_req_q(const char * name, struct list_head *head)
   union omx_request *req;
   int count;
 
-  printf("  %s:\n", name);
+  printf("  %s: ", name);
+  if (omx__globals.debug_signal_level > 1) printf("\n");
+
   count = 0;
   omx__foreach_request(head, req) {
     omx__dump_request("    ", req);
     count++;
   }
-  printf("   (%d requests)\n", count);
+
+  if (omx__globals.debug_signal_level > 1) printf("   Total: ");
+  printf("%d requests\n", count);
 }
 
 static void
@@ -87,7 +95,9 @@ omx__dump_req_ctxidq(const char * name, struct list_head *head, int max, int off
   union omx_request *req;
   int i, count;
 
-  printf("  %s:\n", name);
+  printf("  %s: ", name);
+  if (omx__globals.debug_signal_level > 1) printf("\n");
+
   count = 0;
   for(i=0; i<max; i++) {
     omx__foreach_request(head+i*offset, req) {
@@ -95,76 +105,103 @@ omx__dump_req_ctxidq(const char * name, struct list_head *head, int max, int off
       count++;
     }
   }
-  printf("   (%d requests)\n", count);
+
+  if (omx__globals.debug_signal_level > 1) printf("   Total: ");
+  printf("%d requests\n", count);
+}
+
+static void
+omx__dump_partner_req_q(const char * name, struct list_head *head)
+{
+  union omx_request *req;
+  int count;
+
+  printf("    %s: ", name);
+  if (omx__globals.debug_signal_level > 1) printf("\n");
+
+  count = 0;
+  omx__foreach_partner_request(head, req) {
+    omx__dump_request("      ", req);
+    count++;
+  }
+
+  if (omx__globals.debug_signal_level > 1) printf("     Total: ");
+  printf("%d requests\n", count);
+}
+
+static void
+omx__dump_partner_early_q(struct omx__partner *partner)
+{
+  struct omx__early_packet *early;
+  int count;
+
+  printf("    Early packets: ");
+  if (omx__globals.debug_signal_level > 1) printf("\n");
+
+  count = 0;
+  omx__foreach_partner_early_packet(partner, early)
+    count++;
+
+  if (omx__globals.debug_signal_level > 1) printf("     Total: ");
+  printf("%d early packets\n", count);
 }
 
 static void
 omx__dump_endpoint(struct omx_endpoint *ep)
 {
-  union omx_request *req;
-  struct omx__early_packet *early;
-  int i, count, count2;
+  int i, count;
 
   OMX__ENDPOINT_LOCK(ep);
 
   printf("Endpoint %d on Board %d:\n",
 	 ep->endpoint_index, ep->board_index);
 
-  printf("  Partners:\n");
   count = 0;
   for(i=0; i<omx__driver_desc->peer_max * omx__driver_desc->endpoint_max; i++) {
     struct omx__partner *partner = ep->partners[i];
     if (partner && partner != ep->myself) {
-      printf("    partner addr %llx endpoint %d index %d:\n",
+      printf("  Partner addr %llx endpoint %d index %d:\n",
 	     (unsigned long long) partner->board_addr,
 	     (unsigned) partner->endpoint_index,
 	     (unsigned) partner->peer_index);
-      printf("      send session %x next %d ack next %d\n",
+      printf("    Send session %x next %d ack next %d\n",
 	     (unsigned) OMX__SESNUM(partner->next_send_seq),
 	     (unsigned) OMX__SEQNUM(partner->next_send_seq),
 	     (unsigned) OMX__SEQNUM(partner->next_acked_send_seq));
-      printf("      recv session %x next match %d next frag %d last acked %d\n",
+      printf("    Recv session %x next match %d next frag %d last acked %d\n",
 	     (unsigned) OMX__SESNUM(partner->next_match_recv_seq),
 	     (unsigned) OMX__SEQNUM(partner->next_match_recv_seq),
 	     (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq),
 	     (unsigned) OMX__SEQNUM(partner->last_acked_recv_seq));
       count++;
 
-      printf("    Delayed for missing seqnum requests:\n");
-      count2 = 0;
-      omx__foreach_partner_request(&partner->need_seqnum_send_req_q, req) {
-	omx__dump_request("      ", req);
-	count2++;
-      }
-      printf("     (%d send delayed for missing seqnum requests)\n", count2);
+      omx__dump_partner_req_q("Missing seqnum      ", &partner->need_seqnum_send_req_q);
+      omx__dump_partner_req_q("Non-acked           ", &partner->non_acked_req_q);
+      omx__dump_partner_req_q("Partial medium recv ", &partner->partial_medium_recv_req_q);
+      omx__dump_partner_req_q("Connect             ", &partner->connect_req_q);
 
-      printf("    Non-acked requests:\n");
-      count2 = 0;
-      omx__foreach_partner_request(&partner->non_acked_req_q, req) {
-	omx__dump_request("      ", req);
-	count2++;
-      }
-      printf("     (%d non-acked requests)\n", count2);
-
-      count2 = 0;
-      omx__foreach_partner_early_packet(partner, early)
-	count2++;
-      printf("    Early packets:\n");
-      printf("     (%d early packets)\n", count2);
+      omx__dump_partner_early_q(partner);
    }
   }
-  printf("   (%d partners excluding myself)\n", count);
+  printf("   Total %d partners excluding myself\n", count);
 
-  omx__dump_req_ctxidq("Recv", &ep->ctxid[0].recv_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
-  omx__dump_req_ctxidq("Unexpected", &ep->ctxid[0].unexp_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
-  omx__dump_req_ctxidq("Done", &ep->ctxid[0].done_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
-  omx__dump_req_q("Delayed for missing resources", &ep->need_resources_send_req_q);
-  omx__dump_req_q("Driver medium sending", &ep->driver_medium_sending_req_q);
-  omx__dump_req_q("Partial medium recv", &ep->partial_medium_recv_req_q);
-  omx__dump_req_q("Large send", &ep->large_send_need_reply_req_q);
-  omx__dump_req_q("Driver pulling", &ep->driver_pulling_req_q);
-  omx__dump_req_q("Connect", &ep->connect_req_q);
-  omx__dump_req_q("Unexpected self send", &ep->unexp_self_send_req_q);
+  if (unlikely(HAS_CTXIDS(ep))) {
+    omx__dump_req_ctxidq("Recv                  ", &ep->ctxid[0].recv_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
+    omx__dump_req_ctxidq("Unexpected            ", &ep->ctxid[0].unexp_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
+    omx__dump_req_ctxidq("Done                  ", &ep->ctxid[0].done_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
+  } else {
+    omx__dump_req_q("Recv                  ", &ep->ctxid[0].recv_req_q);
+    omx__dump_req_q("Unexpected            ", &ep->ctxid[0].unexp_req_q);
+    omx__dump_req_q("Done                  ", &ep->anyctxid.done_req_q); /* ctxid[0].done_req_q unused if no ctxids */
+  }
+  omx__dump_req_q("Missing resources     ", &ep->need_resources_send_req_q);
+  omx__dump_req_q("Driver medium sending ", &ep->driver_medium_sending_req_q);
+  omx__dump_req_q("Partial medium recv   ", &ep->partial_medium_recv_req_q);
+  omx__dump_req_q("Large send            ", &ep->large_send_need_reply_req_q);
+  omx__dump_req_q("Driver pulling        ", &ep->driver_pulling_req_q);
+  omx__dump_req_q("Connect               ", &ep->connect_req_q);
+  omx__dump_req_q("Non-acked             ", &ep->non_acked_req_q);
+  omx__dump_req_q("Unexpected self send  ", &ep->unexp_self_send_req_q);
 
   printf("\n");
   OMX__ENDPOINT_UNLOCK(ep);
