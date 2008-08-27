@@ -253,7 +253,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   if (!omx_comms_initialized) {
     omx__init_comms();
     omx__init_endpoint_list();
-    omx_comms_initialized = 1;    
+    omx_comms_initialized = 1;
   }
 
   if (param_count && !param_array) {
@@ -454,14 +454,14 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->unexp_handler = NULL;
   ep->progression_disabled = 0;
 
-  INIT_LIST_HEAD(&ep->delayed_send_req_q);
-  INIT_LIST_HEAD(&ep->driver_posted_req_q);
+  INIT_LIST_HEAD(&ep->need_resources_send_req_q);
+  INIT_LIST_HEAD(&ep->driver_medium_sending_req_q);
   INIT_LIST_HEAD(&ep->multifrag_medium_recv_req_q);
-  INIT_LIST_HEAD(&ep->large_send_req_q);
-  INIT_LIST_HEAD(&ep->pull_req_q);
+  INIT_LIST_HEAD(&ep->large_send_need_reply_req_q);
+  INIT_LIST_HEAD(&ep->driver_pulling_req_q);
   INIT_LIST_HEAD(&ep->connect_req_q);
   INIT_LIST_HEAD(&ep->non_acked_req_q);
-  INIT_LIST_HEAD(&ep->send_self_unexp_req_q);
+  INIT_LIST_HEAD(&ep->unexp_self_send_req_q);
 
   INIT_LIST_HEAD(&ep->partners_to_ack_immediate_list);
   INIT_LIST_HEAD(&ep->partners_to_ack_delayed_list);

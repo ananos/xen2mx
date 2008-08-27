@@ -496,8 +496,8 @@ omx__process_throttling_requests(struct omx_endpoint *ep,
 				 int nr);
 
 extern void
-omx__complete_delayed_send_request(struct omx_endpoint *ep,
-				   union omx_request *req);
+omx__complete_unsent_send_request(struct omx_endpoint *ep,
+				  union omx_request *req);
 
 extern void
 omx__process_partners_to_ack(struct omx_endpoint *ep);

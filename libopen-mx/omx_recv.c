@@ -237,7 +237,7 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 
   omx_copy_to_segments(&req->recv.segs, msg->specific.tiny.data, msg_length);
 
-  if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
+  if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   else
     omx__recv_complete(ep, req, OMX_SUCCESS);
@@ -253,7 +253,7 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 
   omx_copy_to_segments(&req->recv.segs, data, msg_length);
 
-  if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
+  if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   else
     omx__recv_complete(ep, req, OMX_SUCCESS);
@@ -293,7 +293,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 		      (unsigned) frag_seqnum,
 		      (unsigned) OMX__SEQNUM(req->recv.seqnum),
 		      (unsigned) OMX__SESNUM_SHIFTED(req->recv.seqnum));
-    omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
+    omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)
 			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			 req);
     return;
@@ -323,7 +323,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
       omx__dequeue_partner_partial_request(partner, req);
 
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
-    if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED))
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
       omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
     else
       omx__recv_complete(ep, req, OMX_SUCCESS);
@@ -339,7 +339,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
       omx__enqueue_partner_partial_request(partner, req);
     }
 
-    omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
+    omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)
 			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			 req);
   }
@@ -368,7 +368,7 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
   req->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
   req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
 
-  if (unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)) {
+  if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
     omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
   } else {
     omx__submit_pull(ep, req);
@@ -492,7 +492,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       return OMX_NO_RESOURCES;
 
     req->generic.type = OMX_REQUEST_TYPE_RECV;
-    req->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED;
+    req->generic.state = OMX_REQUEST_STATE_UNEXPECTED_RECV;
 
     if (msg->type == OMX_EVT_RECV_MEDIUM)
       omx__init_process_recv_medium(req);
@@ -576,7 +576,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
   omx__foreach_partner_partial_request(partner, req) {
     omx__seqnum_t req_index = OMX__SEQNUM(req->recv.seqnum - partner->next_frag_recv_seq);
     if (likely(req_index == new_index)) {
-      omx__dequeue_request(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED
+      omx__dequeue_request(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV
 			   ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
 			   req);
       omx__process_recv_medium_frag(ep, partner, req,
@@ -873,7 +873,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     }
 
     rreq->generic.type = OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED;
-    rreq->generic.state = OMX_REQUEST_STATE_RECV_UNEXPECTED;
+    rreq->generic.state = OMX_REQUEST_STATE_UNEXPECTED_RECV;
 
     omx_cache_single_segment(&rreq->recv.segs, unexp_buffer, msg_length);
 
@@ -889,8 +889,8 @@ omx__process_self_send(struct omx_endpoint *ep,
     /* self communication are always synchronous,
      * the send will be completed on matching
      */
-    sreq->generic.state |= OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED;
-    omx__enqueue_request(&ep->send_self_unexp_req_q, sreq);
+    sreq->generic.state |= OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND;
+    omx__enqueue_request(&ep->unexp_self_send_req_q, sreq);
 
   }
 
@@ -1017,8 +1017,8 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
       xfer_length = req->recv.segs.total_length < msg_length ? req->recv.segs.total_length : msg_length;
       req->generic.status.xfer_length = xfer_length;
 
-      omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED);
-      req->generic.state &= ~OMX_REQUEST_STATE_RECV_UNEXPECTED;
+      omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV);
+      req->generic.state &= ~OMX_REQUEST_STATE_UNEXPECTED_RECV;
 
       req->generic.status.context = context;
 
@@ -1036,9 +1036,9 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 	  free(unexp_buffer);
 	omx__recv_complete(ep, req, status_code);
 
-	omx__debug_assert(sreq->generic.state & OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED);
-	sreq->generic.state &= ~OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED;
-	omx__dequeue_request(&ep->send_self_unexp_req_q, sreq);
+	omx__debug_assert(sreq->generic.state & OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND);
+	sreq->generic.state &= ~OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND;
+	omx__dequeue_request(&ep->unexp_self_send_req_q, sreq);
 	sreq->generic.status.xfer_length = xfer_length;
 	omx__send_complete(ep, sreq, status_code);
 

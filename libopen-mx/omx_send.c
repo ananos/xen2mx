@@ -47,7 +47,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
     }
   }
 
-  if (req->generic.state & OMX_REQUEST_STATE_SEND_NEED_SEQNUM)
+  if (req->generic.state & OMX_REQUEST_STATE_NEED_SEQNUM)
     goto nothing_specific;
 
   switch (req->generic.type) {
@@ -149,7 +149,7 @@ omx__alloc_setup_isend_tiny(struct omx_endpoint *ep,
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
-    req->generic.state |= OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
+    req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
     omx__enqueue_partner_throttling_request(partner, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -170,13 +170,13 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  if (unlikely(!omx__empty_queue(&ep->delayed_send_req_q))) {
+  if (unlikely(!omx__empty_queue(&ep->need_resources_send_req_q))) {
     omx__alloc_setup_isend_tiny(ep, partner, req);
   } else {
     /* some requests are delayed, do not submit, queue as well */
     omx__debug_printf(SEND, "delaying send tiny request %p\n", req);
-    req->generic.state |= OMX_REQUEST_STATE_DELAYED;
-    omx__enqueue_request(&ep->delayed_send_req_q, req);
+    req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
+    omx__enqueue_request(&ep->need_resources_send_req_q, req);
   }
 }
 
@@ -271,7 +271,7 @@ omx__alloc_setup_isend_small(struct omx_endpoint *ep,
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
-    req->generic.state |= OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
+    req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
     omx__enqueue_partner_throttling_request(partner, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -301,7 +301,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  if (unlikely(!omx__empty_queue(&ep->delayed_send_req_q)))
+  if (unlikely(!omx__empty_queue(&ep->need_resources_send_req_q)))
     /* some requests are delayed, do not submit, queue as well */
     goto delay;
 
@@ -310,8 +310,8 @@ omx__submit_isend_small(struct omx_endpoint *ep,
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
 delay:
     omx__debug_printf(SEND, "delaying send small request %p\n", req);
-    req->generic.state |= OMX_REQUEST_STATE_DELAYED;
-    omx__enqueue_request(&ep->delayed_send_req_q, req);
+    req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
+    omx__enqueue_request(&ep->need_resources_send_req_q, req);
   }
 }
 
@@ -422,7 +422,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
  ok:
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-  req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
+  req->generic.state |= OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING;
 
   /* at least one frag was posted, the ack has been sent for sure */
   omx__mark_partner_ack_sent(ep, partner);
@@ -440,7 +440,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   ep->avail_exp_events += frags_nr - i;
   if (i)
     /*
-     * some frags were posted, mark the request as IN_DRIVER
+     * some frags were posted, mark the request as DRIVER_MEDIUM_SENDING
      * and let retransmission wait for send done events first
      */
     goto ok;
@@ -472,8 +472,8 @@ omx__setup_isend_medium(struct omx_endpoint *ep,
   omx__post_isend_medium(ep, partner, req);
 
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
-  if (req->generic.state & OMX_REQUEST_STATE_IN_DRIVER)
-    omx__enqueue_request(&ep->driver_posted_req_q, req);
+  if (req->generic.state & OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING)
+    omx__enqueue_request(&ep->driver_medium_sending_req_q, req);
   else
     omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_non_acked_request(partner, req);
@@ -521,7 +521,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
-    req->generic.state |= OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
+    req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
     omx__enqueue_partner_throttling_request(partner, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -550,7 +550,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  if (unlikely(!omx__empty_queue(&ep->delayed_send_req_q)))
+  if (unlikely(!omx__empty_queue(&ep->need_resources_send_req_q)))
     /* some requests are delayed, do not submit, queue as well */
     goto delay;
 
@@ -559,8 +559,8 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
 delay:
     omx__debug_printf(SEND, "delaying send medium request %p\n", req);
-    req->generic.state |= OMX_REQUEST_STATE_DELAYED;
-    omx__enqueue_request(&ep->delayed_send_req_q, req);
+    req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
+    omx__enqueue_request(&ep->need_resources_send_req_q, req);
   }
 }
 
@@ -675,7 +675,7 @@ omx__alloc_setup_isend_large(struct omx_endpoint *ep,
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
-    req->generic.state |= OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
+    req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
     omx__enqueue_partner_throttling_request(partner, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -699,7 +699,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   /* will set xfer_length when receiving the notify */
 
-  if (unlikely(!omx__empty_queue(&ep->delayed_send_req_q)))
+  if (unlikely(!omx__empty_queue(&ep->need_resources_send_req_q)))
     /* some requests are delayed, do not submit, queue as well */
     goto delay;
 
@@ -708,8 +708,8 @@ omx__submit_isend_large(struct omx_endpoint *ep,
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
 delay:
     omx__debug_printf(SEND, "delaying large send request %p\n", req);
-    req->generic.state |= OMX_REQUEST_STATE_DELAYED;
-    omx__enqueue_request(&ep->delayed_send_req_q, req);
+    req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
+    omx__enqueue_request(&ep->need_resources_send_req_q, req);
   }
 }
 
@@ -791,7 +791,7 @@ omx__alloc_setup_notify(struct omx_endpoint *ep,
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
-    req->generic.state |= OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
+    req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
     omx__enqueue_partner_throttling_request(partner, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -807,10 +807,10 @@ omx__submit_notify(struct omx_endpoint *ep,
   /* type, xfer_length and msg_length already set when the large recv got matched */
   /* no resources needed, just need to wait for all events to be processed */
 
-  if (unlikely(!omx__empty_queue(&ep->delayed_send_req_q) || delayed)) {
-    req->generic.state |= OMX_REQUEST_STATE_DELAYED;
+  if (unlikely(!omx__empty_queue(&ep->need_resources_send_req_q) || delayed)) {
+    req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
     /* queue on top of the delayed queue to avoid being blocked by delayed requests */
-    omx__requeue_request(&ep->delayed_send_req_q, req);
+    omx__requeue_request(&ep->need_resources_send_req_q, req);
   } else {
     omx__alloc_setup_notify(ep, req);
   }
@@ -1068,10 +1068,10 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
 {
   union omx_request *req, *next;
 
-  omx__foreach_request_safe(&ep->delayed_send_req_q, req, next) {
+  omx__foreach_request_safe(&ep->need_resources_send_req_q, req, next) {
     omx_return_t ret;
 
-    req->generic.state &= ~OMX_REQUEST_STATE_DELAYED;
+    req->generic.state &= ~OMX_REQUEST_STATE_NEED_RESOURCES;
     omx___dequeue_request(req);
 
     switch (req->generic.type) {
@@ -1125,8 +1125,8 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
       omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
       /* put back at the head of the queue */
       omx__debug_printf(SEND, "requeueing back delayed request %p\n", req);
-      req->generic.state |= OMX_REQUEST_STATE_DELAYED;
-      omx__requeue_request(&ep->delayed_send_req_q, req);
+      req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
+      omx__requeue_request(&ep->need_resources_send_req_q, req);
       break;
     }
   }
@@ -1139,8 +1139,8 @@ omx__process_throttling_requests(struct omx_endpoint *ep, struct omx__partner *p
   int sent = 0;
 
   while (nr > sent && (req = omx__dequeue_first_partner_throttling_request(partner)) != NULL) {
-    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_NEED_SEQNUM);
-    req->generic.state &= ~OMX_REQUEST_STATE_SEND_NEED_SEQNUM;
+    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_SEQNUM);
+    req->generic.state &= ~OMX_REQUEST_STATE_NEED_SEQNUM;
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:
@@ -1172,7 +1172,7 @@ omx__process_throttling_requests(struct omx_endpoint *ep, struct omx__partner *p
  * Cleanup send request state so that subsequent send/recv_complete doesn't break
  */
 static INLINE void
-omx__release_delayed_send_resources(struct omx_endpoint *ep, union omx_request *req)
+omx__release_unsent_send_resources(struct omx_endpoint *ep, union omx_request *req)
 {
   int res = req->generic.missing_resources;
 
@@ -1223,7 +1223,7 @@ omx__release_delayed_send_resources(struct omx_endpoint *ep, union omx_request *
 }
 
 void
-omx__complete_delayed_send_request(struct omx_endpoint *ep, union omx_request *req)
+omx__complete_unsent_send_request(struct omx_endpoint *ep, union omx_request *req)
 {
   switch (req->generic.type) {
 
@@ -1231,7 +1231,7 @@ omx__complete_delayed_send_request(struct omx_endpoint *ep, union omx_request *r
   case OMX_REQUEST_TYPE_SEND_SMALL:
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
   case OMX_REQUEST_TYPE_SEND_LARGE:
-    omx__release_delayed_send_resources(ep, req);
+    omx__release_unsent_send_resources(ep, req);
     omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
     break;
 
@@ -1241,7 +1241,7 @@ omx__complete_delayed_send_request(struct omx_endpoint *ep, union omx_request *r
       req->generic.state &= OMX_REQUEST_STATE_RECV_PARTIAL;
     } else {
       /* the pull is already done, just drop the notify */
-      omx__release_delayed_send_resources(ep, req);
+      omx__release_unsent_send_resources(ep, req);
     }
     omx__recv_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
     break;
@@ -1325,8 +1325,8 @@ omx__process_resend_requests(struct omx_endpoint *ep)
 		 req->generic.type);
     }
 
-    if (req->generic.state & OMX_REQUEST_STATE_IN_DRIVER)
-      omx__enqueue_request(&ep->driver_posted_req_q, req);
+    if (req->generic.state & OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING)
+      omx__enqueue_request(&ep->driver_medium_sending_req_q, req);
     else
       /* move the request to the end of the same queue */
       omx__enqueue_request(&ep->non_acked_req_q, req);

@@ -259,22 +259,22 @@ struct omx_endpoint {
   } * ctxid;
 
   /* non multiplexed queues */
-  /* SEND req with state = DELAYED (queued by their queue_elt) */
-  struct list_head delayed_send_req_q;
-  /* SEND req with state = IN_DRIVER (queued by their queue_elt) */
-  struct list_head driver_posted_req_q;
+  /* SEND req with state = NEED_RESOURCES (queued by their queue_elt) */
+  struct list_head need_resources_send_req_q;
+  /* SEND req with state = DRIVER_MEDIUM_SENDING (queued by their queue_elt) */
+  struct list_head driver_medium_sending_req_q;
   /* RECV MEDIUM req with state = PARTIAL (queued by their queue_elt) */
   struct list_head multifrag_medium_recv_req_q;
   /* SEND LARGE req with state = NEED_REPLY and already acked (queued by their queue_elt) */
-  struct list_head large_send_req_q;
-  /* RECV_LARGE req with state = IN_DRIVER (queued by their queue_elt) */
-  struct list_head pull_req_q;
+  struct list_head large_send_need_reply_req_q;
+  /* RECV_LARGE req with state = DRIVER_PULLING (queued by their queue_elt) */
+  struct list_head driver_pulling_req_q;
   /* CONNECT req with state = NEED_REPLY (queued by their queue_elt) */
   struct list_head connect_req_q;
   /* any request that needs to be resent, thus NEED_ACK, and is not IN DRIVER (queued by their queue_elt) */
   struct list_head non_acked_req_q;
   /* send to self waiting for the matching */
-  struct list_head send_self_unexp_req_q;
+  struct list_head unexp_self_send_req_q;
 
   struct omx__sendq_map sendq_map;
   struct omx__large_region_map large_region_map;
@@ -329,23 +329,23 @@ enum omx__request_type {
  * SEND_TINY and SEND_SMALL:
  *   NEED_ACK: non_acked_req_q
  * SEND_MEDIUM:
- *   IN_DRIVER|NEED_ACK: driver_posted_req_q
+ *   DRIVER_MEDIUM_SENDING | NEED_ACK: driver_medium_sending_req_q
  *   NEED_ACK: non_acked_req_q
- *   IN_DRIVER: driver_posted_req_q (unlikely)
+ *   DRIVER_MEDIUM_SENDING: driver_medium_sending_req_q (unlikely)
  * SEND_LARGE:
- *   NEED_REPLY|NEED_ACK: non_acked_req_q
+ *   NEED_REPLY | NEED_ACK: non_acked_req_q
  *   NEED_REPLY: large_send_req_q
  *   NEED_ACK: non_acked_req_q
  * RECV_LARGE:
- *   IN_DRIVER: pull_req_q
+ *   DRIVER_PULLING: driver_pulling_req_q
  *   NEED_ACK: non_acked_req_q
- *   IN_DRIVER|NEED_ACK: impossible, we switch from one to the other in pull_done
+ *   DRIVER_PULLING | NEED_ACK: impossible, we switch from one to the other in pull_done
  * CONNECT:
  *   NEED_REPLY: connect_req_q
  *
  * Before being posted for real, all send requests (and recv large notifying) may
  * be:
- * DELAYED: delayed_send_req_q
+ * NEED_RESOURCES: need_resources_send_req_q
  * NEED_SEQNUM: delayed in the partner throttling_send_req_q, in no endpoint queue
  *
  * The DONE qnd ZOMBIE states of the request determines whether the done_elt
@@ -358,30 +358,31 @@ enum omx__request_type {
 
 enum omx__request_state {
   /* placed on a queue for delayed posting due to resource shortage */
-  OMX_REQUEST_STATE_DELAYED = (1<<0),
-  /* posted to the driver, not done sending yet */
-  OMX_REQUEST_STATE_IN_DRIVER = (1<<1),
-  /* posted receive that didn't get match yet */
-  OMX_REQUEST_STATE_RECV_NEED_MATCHING = (1<<2),
-  /* partially received medium */
-  OMX_REQUEST_STATE_RECV_PARTIAL = (1<<3),
-  /* unexpected receive, needs to match a non-yet-posted receive */
-  OMX_REQUEST_STATE_RECV_UNEXPECTED = (1<<4),
-  /* needs an explicit reply from the peer */
-  OMX_REQUEST_STATE_NEED_REPLY = (1<<5),
-  /* needs a ack from the peer */
-  OMX_REQUEST_STATE_NEED_ACK = (1<<6),
-  /* request can already be completed by the application, even if not acked yet */
-
-  OMX_REQUEST_STATE_DONE = (1<<8),
-  /* request has been completed by the application and should not be notified when done for real (including acked) */
-  OMX_REQUEST_STATE_ZOMBIE = (1<<9),
-  /* request is internal, should not be queued in the doneq for peek/test_any */
-  OMX_REQUEST_STATE_INTERNAL = (1<<10),
-  /* request is a send to myself, needs to wait for the recv to match */
-  OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED = (1<<11),
+  OMX_REQUEST_STATE_NEED_RESOURCES = (1<<0),
   /* request is a send to a partner which didn't ack enough yet */
-  OMX_REQUEST_STATE_SEND_NEED_SEQNUM = (1<12),
+  OMX_REQUEST_STATE_NEED_SEQNUM = (1<<1),
+  /* posted medium frag to the driver, not done sending yet */
+  OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING = (1<<2),
+  /* needs a ack from the peer */
+  OMX_REQUEST_STATE_NEED_ACK = (1<<3),
+  /* needs an explicit reply from the peer, either send large or connect */
+  OMX_REQUEST_STATE_NEED_REPLY = (1<<4),
+  /* posted receive that didn't get match yet */
+  OMX_REQUEST_STATE_RECV_NEED_MATCHING = (1<<5),
+  /* partially received medium */
+  OMX_REQUEST_STATE_RECV_PARTIAL = (1<<6),
+  /* posted pull to the driver, not done pulling yet */
+  OMX_REQUEST_STATE_DRIVER_PULLING = (1<<7),
+  /* request is a send to myself, needs to wait for the recv to match */
+  OMX_REQUEST_STATE_UNEXPECTED_RECV = (1<<8),
+  /* request can already be completed by the application, even if not acked yet */
+  OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND = (1<<9),
+  /* unexpected receive, needs to match a non-yet-posted receive */
+  OMX_REQUEST_STATE_DONE = (1<<10),
+  /* request has been completed by the application and should not be notified when done for real (including acked) */
+  OMX_REQUEST_STATE_ZOMBIE = (1<<11),
+  /* request is internal, should not be queued in the doneq for peek/test_any */
+  OMX_REQUEST_STATE_INTERNAL = (1<<12),
 };
 
 struct omx__generic_request {

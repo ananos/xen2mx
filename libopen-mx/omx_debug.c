@@ -143,6 +143,8 @@ omx__dump_endpoint(struct omx_endpoint *ep)
 	count2++;
       printf("    Early packets:\n");
       printf("     (%d early packets)\n", count2);
+
+      /* FIXME: NEED_SEQNUM */
    }
   }
   printf("   (%d partners excluding myself)\n", count);
@@ -150,13 +152,13 @@ omx__dump_endpoint(struct omx_endpoint *ep)
   omx__dump_req_ctxidq("Recv", &ep->ctxid[0].recv_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
   omx__dump_req_ctxidq("Unexpected", &ep->ctxid[0].unexp_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
   omx__dump_req_ctxidq("Done", &ep->ctxid[0].done_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
-  omx__dump_req_q("Delayed for missing resources", &ep->delayed_send_req_q);
-  omx__dump_req_q("Driver posted", &ep->driver_posted_req_q);
+  omx__dump_req_q("Delayed for missing resources", &ep->need_resources_send_req_q);
+  omx__dump_req_q("Driver medium sending", &ep->driver_medium_sending_req_q);
   omx__dump_req_q("Multifrag medium recv", &ep->multifrag_medium_recv_req_q);
-  omx__dump_req_q("Large send", &ep->large_send_req_q);
-  omx__dump_req_q("Pull", &ep->pull_req_q);
+  omx__dump_req_q("Large send", &ep->large_send_need_reply_req_q);
+  omx__dump_req_q("Driver pulling", &ep->driver_pulling_req_q);
   omx__dump_req_q("Connect", &ep->connect_req_q);
-  omx__dump_req_q("Unexpected self send", &ep->send_self_unexp_req_q);
+  omx__dump_req_q("Unexpected self send", &ep->unexp_self_send_req_q);
 
   printf("\n");
   OMX__ENDPOINT_UNLOCK(ep);

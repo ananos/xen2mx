@@ -115,30 +115,32 @@ omx__strreqtype(enum omx__request_type type)
 void
 omx__sprintf_reqstate(uint16_t state, char *str)
 {
-  if (state & OMX_REQUEST_STATE_DELAYED)
-    str += sprintf(str, "Delayed ");
-  if (state & OMX_REQUEST_STATE_IN_DRIVER)
-    str += sprintf(str, "InDriver ");
+  if (state & OMX_REQUEST_STATE_NEED_RESOURCES)
+    str += sprintf(str, "NeedResources ");
+  if (state & OMX_REQUEST_STATE_NEED_SEQNUM)
+    str += sprintf(str, "NeedSeqnum ");
+  if (state & OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING)
+    str += sprintf(str, "DriverMediumSending ");
+  if (state & OMX_REQUEST_STATE_NEED_ACK)
+    str += sprintf(str, "NeedAck ");
+  if (state & OMX_REQUEST_STATE_NEED_REPLY)
+    str += sprintf(str, "NeedReply ");
   if (state & OMX_REQUEST_STATE_RECV_NEED_MATCHING)
     str += sprintf(str, "NeedMatch ");
   if (state & OMX_REQUEST_STATE_RECV_PARTIAL)
     str += sprintf(str, "RecvPartial ");
-  if (state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
-    str += sprintf(str, "RecvUnexp ");
-  if (state & OMX_REQUEST_STATE_NEED_REPLY)
-    str += sprintf(str, "NeedReply ");
-  if (state & OMX_REQUEST_STATE_NEED_ACK)
-    str += sprintf(str, "NeedAck ");
+  if (state & OMX_REQUEST_STATE_DRIVER_PULLING)
+    str += sprintf(str, "DriverPulling ");
+  if (state & OMX_REQUEST_STATE_UNEXPECTED_RECV)
+    str += sprintf(str, "UnexpRecv ");
+  if (state & OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND)
+    str += sprintf(str, "UnexpSelfSend ");
   if (state & OMX_REQUEST_STATE_DONE)
     str += sprintf(str, "Done ");
   if (state & OMX_REQUEST_STATE_ZOMBIE)
     str += sprintf(str, "Zombie ");
   if (state & OMX_REQUEST_STATE_INTERNAL)
       str += sprintf(str, "Internal ");
-  if (state & OMX_REQUEST_STATE_SEND_SELF_UNEXPECTED)
-    str += sprintf(str, "SendSelfUnexp ");
-  if (state & OMX_REQUEST_STATE_SEND_NEED_SEQNUM)
-    str += sprintf(str, "NeedSeqnum ");
 }
 
 /* API omx_strerror */

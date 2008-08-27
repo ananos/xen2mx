@@ -474,8 +474,8 @@ omx__alloc_setup_pull(struct omx_endpoint * ep,
   omx__debug_assert(!req->generic.missing_resources);
 
   req->recv.specific.large.local_region = region;
-  req->generic.state |= OMX_REQUEST_STATE_IN_DRIVER;
-  omx__enqueue_request(&ep->pull_req_q, req);
+  req->generic.state |= OMX_REQUEST_STATE_DRIVER_PULLING;
+  omx__enqueue_request(&ep->driver_pulling_req_q, req);
 
   return OMX_SUCCESS;
 }
@@ -493,8 +493,8 @@ omx__submit_pull(struct omx_endpoint * ep,
     if (unlikely(ret != OMX_SUCCESS)) {
       omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
       omx__debug_printf(SEND, "queueing large request %p\n", req);
-      req->generic.state |= OMX_REQUEST_STATE_DELAYED;
-      omx__enqueue_request(&ep->delayed_send_req_q, req);
+      req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
+      omx__enqueue_request(&ep->need_resources_send_req_q, req);
     }
 
   } else {
@@ -562,8 +562,8 @@ omx__process_pull_done(struct omx_endpoint * ep,
   }
 
   omx__put_region(ep, req->recv.specific.large.local_region, NULL);
-  omx__dequeue_request(&ep->pull_req_q, req);
-  req->generic.state &= ~(OMX_REQUEST_STATE_IN_DRIVER | OMX_REQUEST_STATE_RECV_PARTIAL);
+  omx__dequeue_request(&ep->driver_pulling_req_q, req);
+  req->generic.state &= ~(OMX_REQUEST_STATE_DRIVER_PULLING | OMX_REQUEST_STATE_RECV_PARTIAL);
 
   omx__submit_notify(ep, req, 0);
 }
@@ -599,7 +599,7 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   if (req->generic.state & OMX_REQUEST_STATE_NEED_ACK) {
     /* keep the request in the non_acked_req_q */
   } else {
-    omx__dequeue_request(&ep->large_send_req_q, req);
+    omx__dequeue_request(&ep->large_send_need_reply_req_q, req);
     omx__send_complete(ep, req, OMX_SUCCESS);
   }
 

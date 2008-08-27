@@ -516,11 +516,11 @@ omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
      */
   case OMX_REQUEST_TYPE_SEND_MEDIUM:
     /* Medium are buffered once they got all their resources allocated
-     * (no DELAYED state)
+     * (no NEED_RESOURCES state)
      * and they passed the throttling check (no NEED_SEQNUM)
      */
 
-    if (!(req->generic.state & (OMX_REQUEST_STATE_SEND_NEED_SEQNUM|OMX_REQUEST_STATE_DELAYED)))
+    if (!(req->generic.state & (OMX_REQUEST_STATE_NEED_RESOURCES | OMX_REQUEST_STATE_NEED_SEQNUM)))
       result = 1;
     break;
 

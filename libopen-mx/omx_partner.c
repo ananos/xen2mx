@@ -792,7 +792,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * Complete send large that were acked without being notified.
    */
   count = 0;
-  omx__foreach_request_safe(&ep->large_send_req_q, req, next) {
+  omx__foreach_request_safe(&ep->large_send_need_reply_req_q, req, next) {
     if (req->generic.partner != partner)
       continue;
     omx__debug_printf(CONNECT, "Dropping need-reply large send %p\n", req);
@@ -810,20 +810,20 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    */
 
   /*
-   * Drop delayed send requests.
+   * Drop delayed need resources send requests.
    */
   count = 0;
-  omx__foreach_request_safe(&ep->delayed_send_req_q, req, next) {
+  omx__foreach_request_safe(&ep->need_resources_send_req_q, req, next) {
     if (req->generic.partner != partner)
       continue;
     omx___dequeue_request(req);
-    req->generic.state &= ~OMX_REQUEST_STATE_DELAYED;
-    omx__debug_printf(CONNECT, "Dropping delayed send %p\n", req);
-    omx__complete_delayed_send_request(ep, req);
+    req->generic.state &= ~OMX_REQUEST_STATE_NEED_RESOURCES;
+    omx__debug_printf(CONNECT, "Dropping need-resources send %p\n", req);
+    omx__complete_unsent_send_request(ep, req);
     count++;
   }
   if (count)
-    printf("Dropped %d delayed sends to partner\n", count);
+    printf("Dropped %d need-resources sends to partner\n", count);
 
   /*
    * Drop throttling send requests to this partner.
@@ -833,9 +833,9 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   count = 0;
   omx__foreach_partner_throttling_request_safe(partner, req, next) {
     omx__debug_printf(CONNECT, "Dropping throttling send %p\n", req);
-    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_SEND_NEED_SEQNUM);
+    omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_SEQNUM);
     omx___dequeue_partner_throttling_request(req);
-    omx__complete_delayed_send_request(ep, req);
+    omx__complete_unsent_send_request(ep, req);
     count++;
   }
   if (count)
@@ -868,7 +868,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
 
     /* dequeue and complete with status error */
     omx___dequeue_partner_partial_request(req);
-    omx__dequeue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_RECV_UNEXPECTED)
+    omx__dequeue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)
                          ? &ep->ctxid[ctxid].unexp_req_q : &ep->multifrag_medium_recv_req_q,
                          req);
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
