@@ -130,6 +130,14 @@ omx__dump_endpoint(struct omx_endpoint *ep)
 	     (unsigned) OMX__SEQNUM(partner->last_acked_recv_seq));
       count++;
 
+      printf("    Throttling send requests:\n");
+      count2 = 0;
+      omx__foreach_partner_request(&partner->throttling_send_req_q, req) {
+	omx__dump_request("      ", req);
+	count2++;
+      }
+      printf("     (%d throttling send requests)\n", count2);
+
       printf("    Non-acked requests:\n");
       count2 = 0;
       omx__foreach_partner_non_acked_request(partner, req) {
@@ -143,8 +151,6 @@ omx__dump_endpoint(struct omx_endpoint *ep)
 	count2++;
       printf("    Early packets:\n");
       printf("     (%d early packets)\n", count2);
-
-      /* FIXME: NEED_SEQNUM */
    }
   }
   printf("   (%d partners excluding myself)\n", count);

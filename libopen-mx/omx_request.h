@@ -229,11 +229,17 @@ omx___dequeue_partner_non_acked_request(union omx_request *req)
   list_del(&req->generic.partner_elt);
 }
 
+#define omx__foreach_partner_request(head, req)	\
+list_for_each_entry(req, head, generic.partner_elt)
+
+#define omx__foreach_partner_request_safe(head, req, next)	\
+list_for_each_entry_safe(req, next, head, generic.partner_elt)
+
 #define omx__foreach_partner_non_acked_request(partner, req)	\
-list_for_each_entry(req, &partner->non_acked_req_q, generic.partner_elt)
+omx__foreach_partner_request(&partner->non_acked_req_q, req)
 
 #define omx__foreach_partner_non_acked_request_safe(partner, req, next)		\
-list_for_each_entry_safe(req, next, &partner->non_acked_req_q, generic.partner_elt)
+omx__foreach_partner_request_safe(&partner->non_acked_req_q, req, next)
 
 /***************************************************
  * Partner throttling send request queue management
