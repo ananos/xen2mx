@@ -212,6 +212,16 @@ omx__empty_done_anyctxid_queue(struct omx_endpoint *ep)
   return list_empty(&ep->anyctxid.done_req_q);
 }
 
+/***********************************
+ * Generic partner queue management
+ */
+
+#define omx__foreach_partner_request(head, req)	\
+list_for_each_entry(req, head, generic.partner_elt)
+
+#define omx__foreach_partner_request_safe(head, req, next)	\
+list_for_each_entry_safe(req, next, head, generic.partner_elt)
+
 /*********************************************
  * Partner non-acked request queue management
  */
@@ -228,12 +238,6 @@ omx___dequeue_partner_non_acked_request(union omx_request *req)
 {
   list_del(&req->generic.partner_elt);
 }
-
-#define omx__foreach_partner_request(head, req)	\
-list_for_each_entry(req, head, generic.partner_elt)
-
-#define omx__foreach_partner_request_safe(head, req, next)	\
-list_for_each_entry_safe(req, next, head, generic.partner_elt)
 
 #define omx__foreach_partner_non_acked_request(partner, req)	\
 omx__foreach_partner_request(&partner->non_acked_req_q, req)
@@ -278,7 +282,7 @@ omx__empty_partner_throttling_request(struct omx__partner *partner)
 }
 
 #define omx__foreach_partner_throttling_request_safe(partner, req, next)		\
-list_for_each_entry_safe(req, next, &partner->throttling_send_req_q, generic.partner_elt)
+omx__foreach_partner_request_safe(&partner->throttling_send_req_q, req, next)
 
 /***************************************************
  * Partner pending connect request queue management
@@ -315,10 +319,10 @@ omx__dequeue_partner_connect_request(struct omx__partner *partner,
 }
 
 #define omx__foreach_partner_connect_request(partner, req)	\
-list_for_each_entry(req, &partner->pending_connect_req_q, generic.partner_elt)
+omx__foreach_partner_request(&partner->pending_connect_req_q, req)
 
 #define omx__foreach_partner_connect_request_safe(partner, req, next)	\
-list_for_each_entry_safe(req, next, &partner->pending_connect_req_q, generic.partner_elt)
+omx__foreach_partner_request_safe(&partner->pending_connect_req_q, req, next)
 
 /*******************************************
  * Partner partial request queue management
@@ -367,10 +371,10 @@ omx__empty_partner_partial_queue(struct omx__partner *partner)
 }
 
 #define omx__foreach_partner_partial_request(partner, req)		\
-list_for_each_entry(req, &partner->partial_recv_req_q, generic.partner_elt)
+omx__foreach_partner_request(&partner->partial_recv_req_q, req)
 
 #define omx__foreach_partner_partial_request_safe(partner, req, next)		\
-list_for_each_entry_safe(req, next, &partner->partial_recv_req_q, generic.partner_elt)
+omx__foreach_partner_request_safe(&partner->partial_recv_req_q, req, next)
 
 /*****************************************
  * Partner early packets queue management
