@@ -273,7 +273,7 @@ struct omx_endpoint {
   struct list_head driver_pulling_req_q;
   /* CONNECT req with state = NEED_REPLY (queued by their queue_elt) */
   struct list_head connect_req_q;
-  /* any request that needs to be resent, thus NEED_ACK, and is not IN DRIVER (queued by their queue_elt) */
+  /* any request that needs to be resent, thus NEED_ACK, and is not DRIVER_MEDIUM_SENDING (queued by their queue_elt) */
   struct list_head non_acked_req_q;
   /* send to self waiting for the matching */
   struct list_head unexp_self_send_req_q;
@@ -512,6 +512,7 @@ struct omx__globals {
   int zombie_max;
   int waitintr;
   int fatal_errors;
+  int debug_signal_level;
 #ifndef OMX_DISABLE_SELF
   int selfcomms;
 #endif

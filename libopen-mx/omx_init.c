@@ -183,7 +183,6 @@ omx__init_api(int app_api)
 void
 omx__init_comms(void)
 {
-  int debug_signal = 0;
   int debug_signum = SIGUSR1;
   char *env;
   int i;
@@ -200,18 +199,25 @@ omx__init_comms(void)
    * Endpoint debug initialization
    */
 
+  omx__globals.debug_signal_level = 0;
 #ifdef OMX_LIB_DEBUG
-  debug_signal = 1;
+  omx__globals.debug_signal_level = 1;
 #endif
   env = getenv("OMX_DEBUG_SIGNAL");
   if (env) {
-    debug_signal = (*env != 'n');
-    if (*env != '\0')
-      debug_signum = atoi(env);
-    if (debug_signal)
-      omx__verbose_printf("Enabling the debugging signal %d\n", debug_signum);
+    omx__globals.debug_signal_level =  atoi(env);
+    omx__verbose_printf("Forcing debugging signal to %s (level %d)\n",
+			omx__globals.debug_signal_level?"enabled":"disabled",
+			omx__globals.debug_signal_level);
   }
-  if (debug_signal)
+  env = getenv("OMX_DEBUG_SIGNAL_NUM");
+  if (env) {
+    debug_signum = atoi(env);
+    omx__verbose_printf("Forcing debugging signal number to %d\n",
+			debug_signum);
+  }
+
+  if (omx__globals.debug_signal_level)
     omx__debug_init(debug_signum);
 
   /**********************************************
