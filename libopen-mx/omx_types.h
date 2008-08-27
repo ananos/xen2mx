@@ -128,13 +128,14 @@ struct omx__partner {
   /* list of non-acked request (queued by their partner_elt) */
   struct list_head non_acked_req_q;
   /* pending connect requests (queued by their partner_elt) */
-  struct list_head pending_connect_req_q;
+  struct list_head connect_req_q;
   /* list of request matched but not entirely received (queued by their partner_elt) */
-  struct list_head partial_recv_req_q;
+  struct list_head partial_medium_recv_req_q;
+  /* delayed send because of throttling (too many acks missing) (queued by their partner_elt) */
+  struct list_head need_seqnum_send_req_q;
+
   /* early packets (queued by their partner_elt) */
   struct list_head early_recv_q;
-  /* delayed send because of throttling (too many acks missing) */
-  struct list_head throttling_send_req_q;
 
   /* throttling state */
   uint32_t throttling_sends_nr;
@@ -265,7 +266,7 @@ struct omx_endpoint {
   /* SEND req with state = DRIVER_MEDIUM_SENDING (queued by their queue_elt) */
   struct list_head driver_medium_sending_req_q;
   /* RECV MEDIUM req with state = PARTIAL (queued by their queue_elt) */
-  struct list_head multifrag_medium_recv_req_q;
+  struct list_head partial_medium_recv_req_q;
   /* SEND LARGE req with state = NEED_REPLY and already acked (queued by their queue_elt) */
   struct list_head large_send_need_reply_req_q;
   /* RECV_LARGE req with state = DRIVER_PULLING (queued by their queue_elt) */

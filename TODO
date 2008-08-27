@@ -1,4 +1,3 @@
-* rename partner queues to something similar to endpoint queues
 * make endpoint's multifrag_medium_recv, driver_pulling and large_send_need_reply_req_q debug only
 * use the partner connect req q to match replies and make the connect queue debug only
 * update endpoint dump to rely on partner queues when possible

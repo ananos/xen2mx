@@ -175,7 +175,7 @@ omx__handle_nack(struct omx_endpoint *ep,
 
   if (unlikely(OMX__SESNUM(seqnum ^ partner->next_send_seq)) != 0)
     /* This cannot be a real send since the sesnum is wrong, but it can be a connect */
-    goto try_pending_connect_req;
+    goto try_connect_req;
 
   /* look in the list of pending real messages */
   omx__foreach_partner_request(&partner->non_acked_req_q, req) {
@@ -191,10 +191,10 @@ omx__handle_nack(struct omx_endpoint *ep,
     }
   }
 
- try_pending_connect_req:
+ try_connect_req:
 
   /* look in the list of pending connect requests */
-  omx__foreach_partner_request(&partner->pending_connect_req_q, req) {
+  omx__foreach_partner_request(&partner->connect_req_q, req) {
     /* FIXME: if > then break,
      * but take care of the wrap around using partner->connect_seqnum
      * but this protocol is crap so far since we can't distinguish between nacks for send and connect
