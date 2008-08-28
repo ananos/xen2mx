@@ -263,26 +263,26 @@ struct omx_endpoint {
   /* non multiplexed queues */
   /* SEND req with state = NEED_RESOURCES (queued by their queue_elt) */
   struct list_head need_resources_send_req_q;
-  /* SEND req with state = DRIVER_MEDIUM_SENDING (queued by their queue_elt) */
+  /* SEND MEDIUM req with state = DRIVER_MEDIUM_SENDING (queued by their queue_elt) */
   struct list_head driver_medium_sending_req_q;
-  /* RECV MEDIUM req with state = PARTIAL (queued by their queue_elt) */
-  struct list_head partial_medium_recv_req_q;
   /* SEND LARGE req with state = NEED_REPLY and already acked (queued by their queue_elt) */
   struct list_head large_send_need_reply_req_q;
   /* RECV_LARGE req with state = DRIVER_PULLING (queued by their queue_elt) */
   struct list_head driver_pulling_req_q;
-  /* CONNECT req with state = NEED_REPLY (queued by their queue_elt) */
+  /* any connect request that needs to be resent, thus NEED_REPLY (queued by their queue_elt) */
   struct list_head connect_req_q;
-  /* any request that needs to be resent, thus NEED_ACK, and is not DRIVER_MEDIUM_SENDING (queued by their queue_elt) */
+  /* any send request that needs to be resent, thus NEED_ACK, and is not DRIVER_MEDIUM_SENDING (queued by their queue_elt) */
   struct list_head non_acked_req_q;
-  /* send to self waiting for the matching */
+  /* send to self waiting for the matching (queued by their queue_elt) */
   struct list_head unexp_self_send_req_q;
 
 #ifdef OMX_LIB_DEBUG
   /* two debug queues so that a request queue_elt is always queued somewhere */
+  /* RECV MEDIUM req with state = PARTIAL (queued by their queue_elt) */
+  struct list_head partial_medium_recv_req_q;
   /* SEND req with state = NEED_SEQNUM (queued by their queue_elt) */
   struct list_head need_seqnum_send_req_q;
-  /* any request with state = DONE (done for real, not early, not zombie) (queued by their queue_elt) */
+  /* any request with state == DONE (done for real, not early, not zombie) (queued by their queue_elt) */
   struct list_head done_req_q;
 #endif
 
@@ -337,25 +337,30 @@ enum omx__request_type {
  *
  * The network state of the request determines where the queue_elt is queued:
  * SEND_TINY and SEND_SMALL:
- *   NEED_ACK: non_acked_req_q
+ *   NEED_ACK: ep->non_acked_req_q + partner->non_acked_req_q
  * SEND_MEDIUM:
- *   DRIVER_MEDIUM_SENDING | NEED_ACK: driver_medium_sending_req_q
- *   NEED_ACK: non_acked_req_q
- *   DRIVER_MEDIUM_SENDING: driver_medium_sending_req_q (unlikely)
+ *   DRIVER_MEDIUM_SENDING | NEED_ACK: ep->driver_medium_sending_req_q + partner->non_acked_req_q
+ *   NEED_ACK: ep->non_acked_req_q + partner->non_acked_req_q
+ *   DRIVER_MEDIUM_SENDING (unlikely): ep->driver_medium_sending_req_q
  * SEND_LARGE:
- *   NEED_REPLY | NEED_ACK: non_acked_req_q
- *   NEED_REPLY: large_send_req_q
- *   NEED_ACK: non_acked_req_q
+ *   NEED_REPLY | NEED_ACK: ep->non_acked_req_q + partner->non_acked_req_q
+ *   NEED_REPLY: ep->large_send_req_q
+ *   NEED_ACK (unlikely): ep->non_acked_req_q + partner->non_acked_req_q
+ * RECV (not RECV_LARGE):
+ *   UNEXPECTED_RECV: ep->ctxid[].unexp_req_q
+ *   UNEXPECTED_RECV | RECV_PARTIAL: ep->ctxid[].unexp_req_q + partner->partial_medium_recv_req_q
+ *   RECV_PARTIAL: ep->partial_medium_recv_req_q(DBG) + partner->partial_medium_recv_req_q
  * RECV_LARGE:
- *   DRIVER_PULLING: driver_pulling_req_q
- *   NEED_ACK: non_acked_req_q
+ *   DRIVER_PULLING: ep->driver_pulling_req_q
+ *   NEED_ACK: ep->non_acked_req_q + partner->non_acked_req_q
  *   DRIVER_PULLING | NEED_ACK: impossible, we switch from one to the other in pull_done
+ *   RECV_PARTIAL added if not pulling yet
  * CONNECT:
- *   NEED_REPLY: connect_req_q
+ *   NEED_REPLY: ep->connect_req_q + partner->connect_req_q
  *
  * Before being posted for real, all send requests (and recv large notifying) may be:
- * NEED_RESOURCES: need_resources_send_req_q
- * NEED_SEQNUM: delayed in the partner's throttling_req_q and endpoint's need_seqnum_send_req_q
+ * NEED_RESOURCES: ep->need_resources_send_req_q
+ * NEED_SEQNUM: ep->need_seqnum_send_req_q(DBG) + partner->need_seqnum_send_req_q
  *
  * The DONE and ZOMBIE states of the request determines whether the done_elt
  * is queued in the endpoint done_req_q:

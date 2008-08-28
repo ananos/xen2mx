@@ -873,9 +873,13 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
 
     /* dequeue and complete with status error */
     omx___dequeue_partner_request(req);
-    omx__dequeue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)
-                         ? &ep->ctxid[ctxid].unexp_req_q : &ep->partial_medium_recv_req_q,
-                         req);
+    if(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
+      omx__dequeue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+#ifdef OMX_LIB_DEBUG
+    else
+      omx__dequeue_request(&ep->partial_medium_recv_req_q, req);
+#endif
+
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
     omx__recv_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
     count++;

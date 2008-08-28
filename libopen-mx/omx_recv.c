@@ -293,9 +293,12 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 		      (unsigned) frag_seqnum,
 		      (unsigned) OMX__SEQNUM(req->recv.seqnum),
 		      (unsigned) OMX__SESNUM_SHIFTED(req->recv.seqnum));
-    omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)
-			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->partial_medium_recv_req_q,
-			 req);
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
+      omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+#ifdef OMX_LIB_DEBUG
+    else
+      omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
+#endif
     return;
   }
 
@@ -339,9 +342,12 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
       omx__enqueue_partner_request(&partner->partial_medium_recv_req_q, req);
     }
 
-    omx__enqueue_request(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)
-			 ? &ep->ctxid[ctxid].unexp_req_q : &ep->partial_medium_recv_req_q,
-			 req);
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
+      omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+#ifdef OMX_LIB_DEBUG
+    else
+      omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
+#endif
   }
 }
 
@@ -576,9 +582,12 @@ omx__continue_partial_request(struct omx_endpoint *ep,
   omx__foreach_partner_request(&partner->partial_medium_recv_req_q, req) {
     omx__seqnum_t req_index = OMX__SEQNUM(req->recv.seqnum - partner->next_frag_recv_seq);
     if (likely(req_index == new_index)) {
-      omx__dequeue_request(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV
-			   ? &ep->ctxid[ctxid].unexp_req_q : &ep->partial_medium_recv_req_q,
-			   req);
+      if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
+	omx__dequeue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+#ifdef OMX_LIB_DEBUG
+      else
+	omx__dequeue_request(&ep->partial_medium_recv_req_q, req);
+#endif
       omx__process_recv_medium_frag(ep, partner, req,
 				    msg, data, msg_length);
       omx__update_partner_next_frag_recv_seq(ep, partner);
@@ -1058,7 +1067,9 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
 	if (unlikely(req->generic.state)) {
 	  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);
 	  /* no need to reset the scan_state, the unexpected buffer didn't use it since it's contigous */
+#ifdef OMX_LIB_DEBUG
 	  omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
+#endif
 	} else {
 	  omx__recv_complete(ep, req, OMX_SUCCESS);
 
