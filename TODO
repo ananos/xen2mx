@@ -160,7 +160,6 @@
 * why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
 * change --iface into ---iface, and use --iface as a "close when no more endpoint"
 * make NEED_SEQNUM a resource and use DELAYED for throttling as well ?
-* add an endpoint throttling_send_req_q to help cleanup when exiting ?
 * what's in src_generation ? unset/unchecked in OMX
 * wire-compat at runtime (8kB frame needs 17bits for medium length)
 * req->recv.specific.medium.frags_received_mask and .accumulated_length are redundant

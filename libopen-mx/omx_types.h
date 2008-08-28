@@ -278,6 +278,14 @@ struct omx_endpoint {
   /* send to self waiting for the matching */
   struct list_head unexp_self_send_req_q;
 
+#ifdef OMX_LIB_DEBUG
+  /* two debug queues so that a request queue_elt is always queued somewhere */
+  /* SEND req with state = NEED_SEQNUM (queued by their queue_elt) */
+  struct list_head need_seqnum_send_req_q;
+  /* any request with state = DONE (done for real, not early, not zombie) (queued by their queue_elt) */
+  struct list_head done_req_q;
+#endif
+
   struct omx__sendq_map sendq_map;
   struct omx__large_region_map large_region_map;
   struct omx__partner ** partners;
@@ -345,12 +353,11 @@ enum omx__request_type {
  * CONNECT:
  *   NEED_REPLY: connect_req_q
  *
- * Before being posted for real, all send requests (and recv large notifying) may
- * be:
+ * Before being posted for real, all send requests (and recv large notifying) may be:
  * NEED_RESOURCES: need_resources_send_req_q
- * NEED_SEQNUM: delayed in the partner throttling_send_req_q, in no endpoint queue
+ * NEED_SEQNUM: delayed in the partner's throttling_req_q and endpoint's need_seqnum_send_req_q
  *
- * The DONE qnd ZOMBIE states of the request determines whether the done_elt
+ * The DONE and ZOMBIE states of the request determines whether the done_elt
  * is queued in the endpoint done_req_q:
  *   DONE: the done_elt is in the done_req_q and the request may complete it
  *   ZOMBIE: the done_elt has been removed from the done_req_q by the application completing

@@ -150,6 +150,9 @@ omx__alloc_setup_isend_tiny(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
+#ifdef OMX_LIB_DEBUG
+    omx__enqueue_request(&ep->need_seqnum_send_req_q, req);
+#endif
     omx__enqueue_partner_request(&partner->need_seqnum_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -272,6 +275,9 @@ omx__alloc_setup_isend_small(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
+#ifdef OMX_LIB_DEBUG
+    omx__enqueue_request(&ep->need_seqnum_send_req_q, req);
+#endif
     omx__enqueue_partner_request(&partner->need_seqnum_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -522,6 +528,9 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
+#ifdef OMX_LIB_DEBUG
+    omx__enqueue_request(&ep->need_seqnum_send_req_q, req);
+#endif
     omx__enqueue_partner_request(&partner->need_seqnum_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -676,6 +685,9 @@ omx__alloc_setup_isend_large(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
+#ifdef OMX_LIB_DEBUG
+    omx__enqueue_request(&ep->need_seqnum_send_req_q, req);
+#endif
     omx__enqueue_partner_request(&partner->need_seqnum_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -792,6 +804,9 @@ omx__alloc_setup_notify(struct omx_endpoint *ep,
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
+#ifdef OMX_LIB_DEBUG
+    omx__enqueue_request(&ep->need_seqnum_send_req_q, req);
+#endif
     omx__enqueue_partner_request(&partner->need_seqnum_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
@@ -1141,6 +1156,9 @@ omx__process_throttling_requests(struct omx_endpoint *ep, struct omx__partner *p
   while (nr > sent && (req = omx__dequeue_first_partner_request(&partner->need_seqnum_send_req_q)) != NULL) {
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_SEQNUM);
     req->generic.state &= ~OMX_REQUEST_STATE_NEED_SEQNUM;
+#ifdef OMX_LIB_DEBUG
+    omx__dequeue_request(&ep->need_seqnum_send_req_q, req);
+#endif
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:
