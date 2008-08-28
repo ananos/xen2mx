@@ -199,6 +199,7 @@ omx__dump_endpoint(struct omx_endpoint *ep)
 #ifdef OMX_LIB_DEBUG
   omx__dump_req_q("Non-acked             ", &ep->non_acked_req_q);
   omx__dump_req_q("Partial medium recv   ", &ep->partial_medium_recv_req_q);
+  omx__dump_req_q("Internal done         ", &ep->internal_done_req_q);
 #endif
   omx__dump_req_q("Large send            ", &ep->large_send_need_reply_req_q);
   omx__dump_req_q("Driver pulling        ", &ep->driver_pulling_req_q);

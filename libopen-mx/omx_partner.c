@@ -438,6 +438,10 @@ omx_connect(omx_endpoint_t ep,
     /* the request didn't complete, unqueue it before freeing */
     omx__dequeue_request(&ep->connect_req_q, req);
     omx__dequeue_partner_request(&req->generic.partner->connect_req_q, req);
+  } else {
+#ifdef OMX_LIB_DEBUG
+    omx__dequeue_request(&ep->internal_done_req_q, req);
+#endif
   }
 
   omx__request_free(ep, req);

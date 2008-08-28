@@ -284,6 +284,8 @@ struct omx_endpoint {
   struct list_head need_seqnum_send_req_q;
   /* any request with state == DONE (done for real, not early, not zombie) (queued by their queue_elt) */
   struct list_head done_req_q;
+  /* internal DONE requests (synchronous connect) */
+  struct list_head internal_done_req_q;
 #endif
 
   struct omx__sendq_map sendq_map;

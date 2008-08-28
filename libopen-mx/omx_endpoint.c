@@ -471,6 +471,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   INIT_LIST_HEAD(&ep->partial_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->need_seqnum_send_req_q);
   INIT_LIST_HEAD(&ep->done_req_q);
+  INIT_LIST_HEAD(&ep->internal_done_req_q);
 #endif
 
   INIT_LIST_HEAD(&ep->partners_to_ack_immediate_list);

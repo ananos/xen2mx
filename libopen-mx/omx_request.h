@@ -152,6 +152,9 @@ omx__notify_request_done(struct omx_endpoint *ep, uint32_t ctxid,
     omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_DONE));
     req->generic.state |= OMX_REQUEST_STATE_DONE;
     omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE));
+#ifdef OMX_LIB_DEBUG
+    omx__enqueue_request(&ep->internal_done_req_q, req);
+#endif
 
   } else if (likely(req->generic.state & OMX_REQUEST_STATE_ZOMBIE)) {
     /* request already completed by the application, just free it */
