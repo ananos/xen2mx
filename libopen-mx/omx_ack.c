@@ -61,6 +61,8 @@ omx__mark_request_acked(struct omx_endpoint *ep,
     if (unlikely(status != OMX_SUCCESS)) {
       /* the request has been nacked, there won't be any reply */
       req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
+      omx__put_region(ep, req->send.specific.large.region, req);
+      ep->large_sends_avail_nr++;
       omx__send_complete(ep, req, status);
     } else {
       if (req->generic.state & OMX_REQUEST_STATE_NEED_REPLY)

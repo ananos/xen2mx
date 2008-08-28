@@ -2,6 +2,7 @@
 
 Other improvements from previous release:
 * Fix completion of synchronous connect in case of timeout.
+* Fix completion of large send in case of unreachable destination.
 
 Caveats:
 * No background progression or retransmission is done if the application
