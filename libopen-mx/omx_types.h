@@ -308,6 +308,10 @@ struct omx_endpoint {
   omx_error_handler_t error_handler;
 
   struct list_head omx_endpoints_list_elt;
+
+#ifdef OMX_LIB_DEBUG
+  unsigned int req_alloc_nr;
+#endif
 };
 
 #define OMX__ENDPOINT_LOCK(ep) omx__lock(&(ep)->lock)

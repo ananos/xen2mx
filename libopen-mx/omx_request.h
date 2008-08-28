@@ -28,6 +28,23 @@
  * Request allocation
  */
 
+static inline void
+omx__request_alloc_init(struct omx_endpoint *ep)
+{
+#ifdef OMX_LIB_DEBUG
+  ep->req_alloc_nr = 0;
+#endif
+}
+
+static inline void
+omx__request_alloc_exit(struct omx_endpoint *ep)
+{
+#ifdef OMX_LIB_DEBUG
+  if (ep->req_alloc_nr)
+    omx__verbose_printf("%d requests were not freed on endpoint close\n", ep->req_alloc_nr);
+#endif
+}
+
 static inline union omx_request *
 omx__request_alloc(struct omx_endpoint *ep)
 {
@@ -44,6 +61,9 @@ omx__request_alloc(struct omx_endpoint *ep)
   req->generic.state = 0;
   req->generic.status.code = OMX_SUCCESS;
 
+#ifdef OMX_LIB_DEBUG
+  ep->req_alloc_nr++;
+#endif
   return req;
 }
 
@@ -51,6 +71,9 @@ static inline void
 omx__request_free(struct omx_endpoint *ep, union omx_request * req)
 {
   free(req);
+#ifdef OMX_LIB_DEBUG
+  ep->req_alloc_nr--;
+#endif
 }
 
 /***************************

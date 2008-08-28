@@ -103,6 +103,7 @@
   + or write event with non-temporal? hard in the kernel
 
 * group similar fields in structure for cache effects, cache-align some fields?
+  + add a counter per list and group them as well to reduce the progression loop overhead
 
 * free request (and buffers) on close
   + preallocated pool with free list

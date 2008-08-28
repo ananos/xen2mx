@@ -25,6 +25,7 @@
 #include <sched.h>
 
 #include "omx_lib.h"
+#include "omx_request.h"
 
 /***************************
  * Endpoint list management
@@ -408,6 +409,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->zombies = 0;
   ep->error_handler = error_handler;
 
+  /* initialize the request pool */
+  omx__request_alloc_init(ep);
+
   /* get some info */
   ret = omx__get_board_info(ep, -1, &ep->board_info);
   if (ret != OMX_SUCCESS) {
@@ -537,6 +541,8 @@ omx_close_endpoint(struct omx_endpoint *ep)
   }
 
   omx__flush_partners_to_ack(ep);
+
+  omx__request_alloc_exit(ep);
 
   free(ep->ctxid);
   for(i=0; i<omx__driver_desc->peer_max * omx__driver_desc->endpoint_max; i++)
