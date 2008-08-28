@@ -252,10 +252,19 @@ list_for_each_entry(req, &ep->ctxid[_ctxid].done_req_q, generic.done_ctxid_elt)
 #define omx__foreach_done_anyctxid_request(ep, req)		\
 list_for_each_entry(req, &ep->anyctxid.done_req_q, generic.done_anyctxid_elt)
 
+#define omx__foreach_done_anyctxid_request_safe(ep, req, next)		\
+list_for_each_entry_safe(req, next, &ep->anyctxid.done_req_q, generic.done_anyctxid_elt)
+
 static inline union omx_request *
 omx__first_done_anyctxid_request(struct omx_endpoint *ep)
 {
   return list_first_entry(&ep->anyctxid.done_req_q, union omx_request, generic.done_anyctxid_elt);
+}
+
+static inline int
+omx__empty_done_ctxid_queue(struct omx_endpoint *ep, uint32_t ctxid)
+{
+  return list_empty(&ep->ctxid[ctxid].done_req_q);
 }
 
 static inline int

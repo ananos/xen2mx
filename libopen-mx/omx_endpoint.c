@@ -26,6 +26,10 @@
 
 #include "omx_lib.h"
 #include "omx_request.h"
+#include "omx_segments.h"
+
+static void
+omx__destroy_requests_on_close(struct omx_endpoint *ep);
 
 /***************************
  * Endpoint list management
@@ -542,9 +546,8 @@ omx_close_endpoint(struct omx_endpoint *ep)
 
   omx__flush_partners_to_ack(ep);
 
-  /* FIXME: free requests, including segments, regions and unexp buffers */
-  /* FIXME: free early packets */
-
+  omx__destroy_requests_on_close(ep);
+  omx__request_alloc_check(ep);
   omx__request_alloc_exit(ep);
 
   free(ep->ctxid);
@@ -570,6 +573,236 @@ omx_close_endpoint(struct omx_endpoint *ep)
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
+}
+
+/********************
+ * Request releasing
+ */
+
+/* unlink the done queue elements if needed */
+static INLINE void
+omx__unlink_done_request_on_close(struct omx_endpoint *ep, union omx_request *req)
+{
+  if (req->generic.state & OMX_REQUEST_STATE_DONE) {
+    list_del(&req->generic.done_anyctxid_elt);
+    if (unlikely(HAS_CTXIDS(ep)))
+      list_del(&req->generic.done_ctxid_elt);
+  }
+}
+
+static void
+omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_request *req)
+{
+  enum omx__request_type type = req->generic.type;
+  int state = req->generic.state;
+  int resources = req->generic.missing_resources;
+
+  if (state == OMX_REQUEST_STATE_DONE)
+    goto out;
+
+  switch (type) {
+  case OMX_REQUEST_TYPE_CONNECT:
+    break;
+
+  case OMX_REQUEST_TYPE_SEND_TINY:
+    omx_free_segments(&req->send.segs);
+    break;
+
+  case OMX_REQUEST_TYPE_SEND_SMALL:
+    free(req->send.specific.small.copy);
+    omx_free_segments(&req->send.segs);
+    break;
+
+  case OMX_REQUEST_TYPE_SEND_MEDIUM:
+    /* don't care about releasing sendq_map */
+    omx_free_segments(&req->send.segs);
+    break;
+
+  case OMX_REQUEST_TYPE_SEND_LARGE:
+    if (!(resources & OMX_REQUEST_RESOURCE_LARGE_REGION)
+	&& (state & OMX_REQUEST_STATE_NEED_REPLY))
+      omx__put_region(ep, req->recv.specific.large.local_region, NULL);
+    omx_free_segments(&req->send.segs);
+    break;
+
+  case OMX_REQUEST_TYPE_RECV_LARGE:
+    if (state & OMX_REQUEST_STATE_UNEXPECTED_RECV) {
+      /* nothing to do */
+    } else {
+      if (!(resources & OMX_REQUEST_RESOURCE_LARGE_REGION)
+	  && (state & OMX_REQUEST_STATE_RECV_PARTIAL))
+	omx__put_region(ep, req->recv.specific.large.local_region, NULL);
+      omx_free_segments(&req->send.segs);
+    }
+    break;
+
+  case OMX_REQUEST_TYPE_RECV:
+    if (state & OMX_REQUEST_STATE_UNEXPECTED_RECV) {
+      if (req->generic.status.msg_length)
+	free(req->recv.segs.single.ptr);
+    } else {
+      omx_free_segments(&req->send.segs);
+    }
+    break;
+
+  case OMX_REQUEST_TYPE_SEND_SELF:
+    omx_free_segments(&req->send.segs);
+    break;
+
+  case OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED:
+    if (req->generic.status.msg_length)
+      free(req->recv.segs.single.ptr);
+    omx_free_segments(&req->send.segs);
+    break;
+
+  default:
+    omx__abort("Failed to destroy request with type %d\n", req->generic.type);
+  }
+
+ out:
+  /* no more resources to free */
+  omx__request_free(ep, req);
+}
+
+static void
+omx__destroy_requests_on_close(struct omx_endpoint *ep)
+{
+  union omx_request *req, *next;
+  struct omx__early_packet *early, *next_early;
+  int i;
+
+  for(i=0; i<omx__driver_desc->peer_max * omx__driver_desc->endpoint_max; i++) {
+    struct omx__partner *partner =  ep->partners[i];
+    if (!partner)
+      continue;
+
+    /* free early packets */
+    omx__foreach_partner_early_packet_safe(partner, early, next_early) {
+      omx___dequeue_partner_early_packet(early);
+      free(early->data);
+      free(early);
+    }
+
+    /* free throttling requests */
+    omx__foreach_partner_request_safe(&partner->need_seqnum_send_req_q, req, next) {
+      omx___dequeue_partner_request(req);
+#ifdef OMX_LIB_DEBUG
+      omx__dequeue_request(&ep->need_seqnum_send_req_q, req);
+#endif
+      /* cannot be done */
+      omx__destroy_unlinked_request_on_close(ep, req);
+    }
+
+    /* free non-acked requests */
+    omx__foreach_partner_request_safe(&partner->non_acked_req_q, req, next) {
+      omx___dequeue_partner_request(req);
+      /* the main request element is always queued when non-acked */
+      omx___dequeue_request(req);
+      omx__unlink_done_request_on_close(ep, req);
+      omx__destroy_unlinked_request_on_close(ep, req);
+    }
+
+    /* free connect_req_q requests */
+    omx__foreach_partner_request_safe(&partner->connect_req_q, req, next) {
+      omx___dequeue_partner_request(req);
+      omx__dequeue_request(&ep->connect_req_q, req);
+      /* cannot be done */
+      omx__destroy_unlinked_request_on_close(ep, req);
+    }
+
+    /* partial_medium_recv_req_q */
+    omx__foreach_partner_request_safe(&partner->partial_medium_recv_req_q, req, next) {
+      omx___dequeue_partner_request(req);
+      /* cannot be done */
+      omx__destroy_unlinked_request_on_close(ep, req);
+    }
+  }
+
+  /* now that partner's queues are empty, some endpoint queues have to be empty as well */
+  omx__debug_assert(omx__empty_queue(&ep->connect_req_q));
+  omx__debug_assert(omx__empty_queue(&ep->non_acked_req_q));
+#ifdef OMX_LIB_DEBUG
+  omx__debug_assert(omx__empty_queue(&ep->need_seqnum_send_req_q));
+  omx__debug_assert(omx__empty_queue(&ep->partial_medium_recv_req_q));
+#endif
+
+  /* free ctxid.recv and ctxid.unexp requests */
+  for(i=0; i<ep->ctxid_max; i++) {
+    omx__foreach_request_safe(&ep->ctxid[i].recv_req_q, req, next) {
+      omx___dequeue_request(req);
+      /* cannot be done */
+      omx__destroy_unlinked_request_on_close(ep, req);
+    }
+
+    omx__foreach_request_safe(&ep->ctxid[i].unexp_req_q, req, next) {
+      omx___dequeue_request(req);
+      /* cannot be done */
+      omx__destroy_unlinked_request_on_close(ep, req);
+    }
+  }
+
+  /* free need_resources reqs */
+  omx__foreach_request_safe(&ep->need_resources_send_req_q, req, next) {
+    omx___dequeue_request(req);
+    /* cannot be done */
+    omx__destroy_unlinked_request_on_close(ep, req);
+  }
+
+  /* free driver_medium_sending_req_q */
+  omx__foreach_request_safe(&ep->driver_medium_sending_req_q, req, next) {
+    omx___dequeue_request(req);
+    omx__unlink_done_request_on_close(ep, req);
+    omx__destroy_unlinked_request_on_close(ep, req);
+  }
+
+  /* free large_send_need_reply_req_q */
+  omx__foreach_request_safe(&ep->large_send_need_reply_req_q, req, next) {
+    omx___dequeue_request(req);
+    /* cannot be done */
+    omx__destroy_unlinked_request_on_close(ep, req);
+  }
+
+  /* free driver_pulling_req_q */
+  omx__foreach_request_safe(&ep->driver_pulling_req_q, req, next) {
+    omx___dequeue_request(req);
+    /* cannot be done */
+    omx__destroy_unlinked_request_on_close(ep, req);
+  }
+
+  /* free unexp_self_send_req_q */
+  omx__foreach_request_safe(&ep->unexp_self_send_req_q, req, next) {
+    omx___dequeue_request(req);
+    /* cannot be done */
+    omx__destroy_unlinked_request_on_close(ep, req);
+  }
+
+#ifdef OMX_LIB_DEBUG
+  /* there cannot be any internal requests anymore otherwise
+   * it would mean that another thread is still using the endpoint
+   * (it needs to destroy this request when he'll get the lock back)
+   */
+  omx__debug_assert(omx__empty_queue(&ep->internal_done_req_q));
+#endif
+
+  /* empty the anyctxid done queue. only really DONE requests are there since early done
+   * requests have been dropped thanks to the partner need_seqnum_send_req_q already
+   */
+  omx__foreach_done_anyctxid_request_safe(ep, req, next) {
+#ifdef OMX_LIB_DEBUG
+    omx__debug_assert(req->generic.state == OMX_REQUEST_STATE_DONE);
+    omx__dequeue_request(&ep->done_req_q, req);
+#endif
+    omx__unlink_done_request_on_close(ep, req);
+    omx__destroy_unlinked_request_on_close(ep, req);
+  }
+  /* if ctxids, check that all ctxids queues are empty as well */
+  if (unlikely(HAS_CTXIDS(ep)))
+    for(i=0; i<ep->ctxid_max; i++)
+      omx__debug_assert(omx__empty_done_ctxid_queue(ep, i));
+#ifdef OMX_LIB_DEBUG
+  /* check done_req_q is empty */
+  omx__debug_assert(omx__empty_queue(&ep->done_req_q));
+#endif
 }
 
 /***************************

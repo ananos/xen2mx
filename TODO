@@ -105,14 +105,6 @@
 * group similar fields in structure for cache effects, cache-align some fields?
   + add a counter per list and group them as well to reduce the progression loop overhead
 
-* free request (and buffers) on close
-  + preallocated pool with free list
-  + cleanup request to avoid below when killing during large
-    send failed with status (Endpoint Closed)
-    omx_pingpong: /home/bgoglin/open-mx/build-x86_64/../src/libopen-mx/omx_large.c:96: 
-    omx__endpoint_large_region_free: Assertion `array[index].region.use_count == 0' failed.
-    (needs debug enabled)
-
 * drop our region window offset ?
   + pull are aligned on the reader's pages because it's the slower side on native MX
     - we don't really care about alignment in open-mx, pages are pinned first, adding 2 pages to a skb isn't very expensive
