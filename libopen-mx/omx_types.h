@@ -531,6 +531,7 @@ struct omx__globals {
   int waitintr;
   int fatal_errors;
   int debug_signal_level;
+  int check_request_alloc;
 #ifndef OMX_DISABLE_SELF
   int selfcomms;
 #endif

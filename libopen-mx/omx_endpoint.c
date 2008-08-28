@@ -542,6 +542,9 @@ omx_close_endpoint(struct omx_endpoint *ep)
 
   omx__flush_partners_to_ack(ep);
 
+  /* FIXME: free requests, including segments, regions and unexp buffers */
+  /* FIXME: free early packets */
+
   omx__request_alloc_exit(ep);
 
   free(ep->ctxid);
@@ -567,4 +570,114 @@ omx_close_endpoint(struct omx_endpoint *ep)
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
+}
+
+/***************************
+ * Request Allocation Debug
+ */
+void
+omx__request_alloc_check(struct omx_endpoint *ep)
+{
+#ifdef OMX_LIB_DEBUG
+  int nr = 0;
+  int i,j;
+
+  for(i=0; i<ep->ctxid_max; i++) {
+    j = omx__queue_count(&ep->ctxid[i].recv_req_q);
+    if (j > 0) {
+      nr += j;
+      if (omx__globals.check_request_alloc > 2)
+        omx__verbose_printf("Found %d requests in recv queue #%d\n", j, i);
+    }
+
+    j = omx__queue_count(&ep->ctxid[i].unexp_req_q);
+    if (j > 0) {
+      nr += j;
+      if (omx__globals.check_request_alloc > 2)
+        omx__verbose_printf("Found %d requests in unexp queue #%d\n", j, i);
+    }
+  }
+
+  j = omx__queue_count(&ep->need_resources_send_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in need-resources send queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->need_seqnum_send_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in need-seqnum send queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->driver_medium_sending_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in driver medium sending queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->partial_medium_recv_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in partial medium recv queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->large_send_need_reply_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in large send need-reply queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->driver_pulling_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in driver pulling queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->connect_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in connect queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->non_acked_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in non-acked queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->unexp_self_send_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in large send self unexp queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->done_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in done queue\n", j);
+  }
+
+  j = omx__queue_count(&ep->internal_done_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf("Found %d requests in internal done queue\n", j);
+  }
+
+  if (nr != ep->req_alloc_nr || omx__globals.check_request_alloc > 1)
+    omx__verbose_printf("Found %d requests in queues for %d allocations\n", nr, ep->req_alloc_nr);
+  if (nr != ep->req_alloc_nr)
+    omx__abort("%d requests out of %d missing in endpoint queues\n", ep->req_alloc_nr - nr, ep->req_alloc_nr);
+#endif
 }

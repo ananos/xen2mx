@@ -76,6 +76,9 @@ omx__request_free(struct omx_endpoint *ep, union omx_request * req)
 #endif
 }
 
+extern void
+omx__request_alloc_check(struct omx_endpoint *ep);
+
 /***************************
  * Request queue management
  */
@@ -127,6 +130,16 @@ static inline int
 omx__empty_queue(struct list_head *head)
 {
   return list_empty(head);
+}
+
+static inline int
+omx__queue_count(struct list_head *head)
+{
+  struct list_head *elt;
+  int i=0;
+  list_for_each(elt, head)
+    i++;
+  return i;
 }
 
 #define omx__foreach_request(head, req)		\

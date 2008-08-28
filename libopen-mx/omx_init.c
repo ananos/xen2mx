@@ -220,6 +220,15 @@ omx__init_comms(void)
   if (omx__globals.debug_signal_level)
     omx__debug_init(debug_signum);
 
+  omx__globals.check_request_alloc = 0;
+#ifdef OMX_LIB_DEBUG
+  env = getenv("OMX_DEBUG_REQUESTS");
+  if (env) {
+    omx__globals.check_request_alloc = atoi(env);
+    omx__verbose_printf("Enabling request allocation check level %d\n", omx__globals.check_request_alloc);
+  }
+#endif
+
   /**********************************************
    * Shared and self communication configuration
    */
