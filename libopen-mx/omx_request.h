@@ -127,6 +127,7 @@ omx__notify_request_done_early(struct omx_endpoint *ep, uint32_t ctxid,
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_ZOMBIE))
     return;
 
+  omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_INTERNAL));
   omx__debug_assert(!(req->generic.state & OMX_REQUEST_STATE_DONE));
   omx__debug_assert(req->generic.state);
 
