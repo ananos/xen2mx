@@ -390,12 +390,14 @@ omx_iface_attach(struct net_device * ifp)
 	       (ifp->type == ARPHRD_ETHER ? "" : "non-"), ifp->name, i, mtu);
 
 	dev = omx_ifp_to_dev(ifp);
+#ifdef CONFIG_PCI
 	if (dev && dev->bus == &pci_bus_type) {
 		struct pci_dev *pdev = to_pci_dev(dev);
 		BUG_ON(!pdev->driver);
 		printk(KERN_INFO "Open-MX:   Interface '%s' is PCI device '%s' managed by driver '%s'\n",
 		       ifp->name, dev->bus_id, pdev->driver->name);
 	}
+#endif
 
 	if (!(dev_get_flags(ifp) & IFF_UP))
 		printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' is not up\n",
