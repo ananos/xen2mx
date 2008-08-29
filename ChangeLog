@@ -27,7 +27,7 @@ The Many-Requests Release.
 Major Enhancements:
 * Fixup management of requests in case of resource shortage to prevent
   some deadlocks and other wrong behaviors.
-* Add a FAQ (also available online at http://open-mx.gforge.inria.fr/FAQ/)
+* Add a FAQ (also available online at http://open-mx.org/FAQ/)
   containing most of the old README and much more.
 
 Other improvements from previous release:
