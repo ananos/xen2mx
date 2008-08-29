@@ -1,6 +1,7 @@
+Open-MX 0.9.2 aka 1.0-rc2 (September 1st 2008, svn r20xy)
+=========================================================
 
-
-Other improvements from previous release:
+Improvements from previous release:
 * Fix race condition between resending and timeouts introduced in 0.9.0.
 * Fix building on kernels without PCI support.
 * Fix completion of synchronous connect in case of timeout.

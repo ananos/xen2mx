@@ -346,6 +346,7 @@ enum omx__request_type {
  *   NEED_ACK: ep->non_acked_req_q + partner->non_acked_req_q
  * SEND_MEDIUM:
  *   DRIVER_MEDIUM_SENDING | NEED_ACK: ep->driver_medium_sending_req_q + partner->non_acked_req_q
+ *               (not on ep->non_acked_req_q since should not be resend before being done sending)
  *   NEED_ACK: ep->non_acked_req_q + partner->non_acked_req_q
  *   DRIVER_MEDIUM_SENDING (unlikely): ep->driver_medium_sending_req_q
  * SEND_LARGE:
