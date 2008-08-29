@@ -1279,17 +1279,18 @@ omx__process_resend_requests(struct omx_endpoint *ep)
 {
   union omx_request *req, *next;
   uint64_t now = omx__driver_desc->jiffies;
+  LIST_HEAD(tmp_req_q);
 
   /* resend the first requests from the non_acked queue */
   omx__foreach_request_safe(&ep->non_acked_req_q, req, next) {
     if (now - req->generic.last_send_jiffies < omx__globals.resend_delay_jiffies)
       /* the remaining ones are more recent, no need to resend them yet */
-      break;
+      goto done_resending;
 
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      printf("Send request (seqnum %d sesnum %d)  timeout, already sent %ld times, resetting partner status\n",
+      printf("Send request (seqnum %d sesnum %d) timeout, already sent %ld times, resetting partner status\n",
 	     (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 	     (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum),
 	     (unsigned long) req->generic.resends);
@@ -1346,16 +1347,17 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     if (req->generic.state & OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING)
       omx__enqueue_request(&ep->driver_medium_sending_req_q, req);
     else
-      /* move the request to the end of the same queue */
-      omx__enqueue_request(&ep->non_acked_req_q, req);
+      omx__enqueue_request(&tmp_req_q, req);
   }
  done_resending:
+  /* requeue requests at the end */
+  list_splice_init(&tmp_req_q, ep->non_acked_req_q.prev);
 
   /* resend non-replied connect requests */
   omx__foreach_request_safe(&ep->connect_req_q, req, next) {
     if (now - req->generic.last_send_jiffies < omx__globals.resend_delay_jiffies)
       /* the remaining ones are more recent, no need to resend them yet */
-      break;
+      goto done_reconnecting;
 
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
@@ -1368,6 +1370,11 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     }
 
     /* no need to dequeue/requeue */
+    omx___dequeue_request(req);
     omx__post_connect_request(ep, req->generic.partner, req);
+    omx__enqueue_request(&tmp_req_q, req);
   }
+ done_reconnecting:
+  /* requeue requests at the end */
+  list_splice(&tmp_req_q, ep->connect_req_q.prev);
 }
