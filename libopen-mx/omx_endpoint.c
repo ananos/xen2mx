@@ -128,21 +128,60 @@ omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
 static void
 omx__endpoint_bind_process(struct omx_endpoint *ep, const char *bindstring)
 {
-  int i;
   const char *c = bindstring;
-  for(i=0; i<ep->endpoint_index; i++) {
-    c = strchr(c, ',');
+  cpu_set_t cs;
+  CPU_ZERO(&cs);
+  int i;
+
+  if (*c == 'f') {
+    char *filename;
+    char line[OMX_PROCESS_BINDING_LENGTH_MAX];
+    FILE *file;
+    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+    unsigned long eid, irq;
+    unsigned long long irqmask;
+
+    filename = strchr(bindstring, ':');
+    if (filename)
+      filename++;
+    else
+      filename = OMX_PROCESS_BINDING_FILE;
+
+    file = fopen(filename, "r");
+    if (!file)
+      omx__abort("Failed to open binding map %s, %m\n", filename);
+    while (fgets(line, OMX_PROCESS_BINDING_LENGTH_MAX, file)) {
+      if (sscanf(line, "board %s ep %ld irq %ld mask %llx", board_addr_str, &eid, &irq, &irqmask) == 4
+	  && !strcmp(ep->board_addr_str, board_addr_str) && eid == ep->endpoint_index) {
+        omx__verbose_printf("Using binding %llx from file %s for process pid %ld with endpoint %d\n",
+			    irqmask, filename, (unsigned long) getpid(), ep->endpoint_index);
+	i=0;
+	while (irqmask) {
+	  if (irqmask & 1)
+	    CPU_SET(i, &cs);
+	  irqmask >>= 1;
+	  i++;
+        }
+        sched_setaffinity(0, sizeof(cpu_set_t), &cs);
+        break;
+      }
+    }
+    fclose(file);
+
+  } else {
+    for(i=0; i<ep->endpoint_index; i++) {
+      c = strchr(c, ',');
+      if (!c)
+	break;
+      c++;
+    }
     if (!c)
-      break;
-    c++;
-  }
-  if (c) {
-    cpu_set_t cs;
+      return;
+
     i = atoi(c);
-    CPU_ZERO(&cs);
     CPU_SET(i, &cs);
-    omx__verbose_printf("Forcing binding of process pid %ld with endpoint %d on cpu #%d\n",
-			(unsigned long) getpid(), ep->endpoint_index, i);
+    omx__verbose_printf("Forcing binding on cpu #%d for process pid %ld with endpoint %d\n",
+			i, (unsigned long) getpid(), ep->endpoint_index);
     sched_setaffinity(0, sizeof(cpu_set_t), &cs);
   }
 }

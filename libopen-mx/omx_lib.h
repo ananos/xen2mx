@@ -611,4 +611,7 @@ omx__sprintf_reqstate(uint16_t state, char *str);
 extern void
 omx__foreach_endpoint(void (*func)(struct omx_endpoint *));
 
+#define OMX_PROCESS_BINDING_FILE "/tmp/open-mx.bindings.dat"
+#define OMX_PROCESS_BINDING_LENGTH_MAX 128
+
 #endif /* __omx_lib_h__ */
