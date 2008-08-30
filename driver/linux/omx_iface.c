@@ -393,9 +393,18 @@ omx_iface_attach(struct net_device * ifp)
 #ifdef CONFIG_PCI
 	if (dev && dev->bus == &pci_bus_type) {
 		struct pci_dev *pdev = to_pci_dev(dev);
+		char *symbol_name;
+
 		BUG_ON(!pdev->driver);
 		printk(KERN_INFO "Open-MX:   Interface '%s' is PCI device '%s' managed by driver '%s'\n",
 		       ifp->name, dev->bus_id, pdev->driver->name);
+
+		symbol_name = kmalloc(sizeof(pdev->driver->name)
+				      +sizeof("_get_omx_endpoint_irq")+1, GFP_KERNEL);
+		if (symbol_name) {
+			sprintf(symbol_name, "%s_get_omx_endpoint_irq", pdev->driver->name);
+			iface->get_endpoint_irq_symbol_name = symbol_name;
+		}
 	}
 #endif
 
@@ -891,6 +900,41 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 
 	rcu_read_unlock();
 	return 0;
+
+ out_with_rcu_lock:
+	rcu_read_unlock();
+ out:
+	return ret;
+}
+
+int
+omx_iface_get_endpoint_irq(uint32_t board_index, uint32_t endpoint_index,
+			   uint32_t *irq)
+{
+	struct omx_iface *iface;
+	int (*get_endpoint_irq)(struct net_device *, uint32_t, unsigned int *);
+	int ret;
+
+	ret = -EINVAL;
+	if (board_index >= omx_iface_max)
+		goto out;
+
+	rcu_read_lock();
+	iface = rcu_dereference(omx_ifaces[board_index]);
+	if (!iface)
+		goto out_with_rcu_lock;
+
+	ret = -ENODEV;
+	if (!iface->get_endpoint_irq_symbol_name)
+		goto out_with_rcu_lock;
+
+	get_endpoint_irq = __symbol_get(iface->get_endpoint_irq_symbol_name);
+	if (!get_endpoint_irq)
+		goto out_with_rcu_lock;
+
+	ret = get_endpoint_irq(iface->eth_ifp, endpoint_index, irq);
+
+	symbol_put_addr(get_endpoint_irq);
 
  out_with_rcu_lock:
 	rcu_read_unlock();

@@ -588,6 +588,43 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		break;
 	}
 
+	case OMX_CMD_GET_ENDPOINT_IRQ: {
+		struct omx_endpoint * endpoint = file->private_data;
+		struct omx_cmd_get_endpoint_irq get_irq;
+
+		/*
+		 * the endpoint is already acquired by the file,
+		 * just check its status
+		 */
+		ret = -EINVAL;
+		if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
+			/* the endpoint is not open, get the command parameter and use its board_index */
+			ret = copy_from_user(&get_irq, (void __user *) arg,
+					     sizeof(get_irq));
+			if (unlikely(ret != 0)) {
+				ret = -EFAULT;
+				printk(KERN_ERR "Open-MX: Failed to read get_irq command argument, error %d\n", ret);
+				goto out;
+			}
+		} else {
+			/* endpoint acquired, use its board index */
+			get_irq.board_index = endpoint->board_index;
+			get_irq.endpoint_index = endpoint->endpoint_index;
+		}
+
+		ret = omx_iface_get_endpoint_irq(get_irq.board_index, get_irq.endpoint_index, &get_irq.irq);
+		if (ret < 0)
+			goto out;
+
+		ret = copy_to_user((void __user *) arg, &get_irq,
+				   sizeof(get_irq));
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
+			printk(KERN_ERR "Open-MX: Failed to write get_irq command result, error %d\n", ret);
+		}
+		break;
+	}
+
 	case OMX_CMD_PEER_TABLE_SET_STATE: {
 		struct omx_cmd_peer_table_state state;
 

@@ -59,6 +59,7 @@ struct omx_iface {
 
 	struct net_device * eth_ifp;
 	struct omx_peer peer;
+	char * get_endpoint_irq_symbol_name;
 
 	struct mutex endpoints_mutex;
 	enum omx_iface_status status;
@@ -100,6 +101,7 @@ extern int omx_ifnames_set(const char *buf, struct kernel_param *kp);
 
 extern int omx_ifaces_get_count(void);
 extern int omx_iface_get_info(uint32_t board_index, struct omx_board_info *info);
+extern int omx_iface_get_endpoint_irq(uint32_t board_index, uint32_t endpoint_index, uint32_t *irq);
 extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);
 extern struct omx_iface * omx_iface_find_by_addr(uint64_t addr);
 extern int omx_iface_get_counters(uint32_t board_index, int clear, uint64_t buffer_addr, uint32_t buffer_length);
