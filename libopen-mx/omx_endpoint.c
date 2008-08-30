@@ -121,6 +121,32 @@ omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
   free(ep->sendq_map.array);
 }
 
+/**********
+ * Binding
+ */
+
+static void
+omx__endpoint_bind_process(struct omx_endpoint *ep, const char *bindstring)
+{
+  int i;
+  const char *c = bindstring;
+  for(i=0; i<ep->endpoint_index; i++) {
+    c = strchr(c, ',');
+    if (!c)
+      break;
+    c++;
+  }
+  if (c) {
+    cpu_set_t cs;
+    i = atoi(c);
+    CPU_ZERO(&cs);
+    CPU_SET(i, &cs);
+    omx__verbose_printf("Forcing binding of process pid %ld with endpoint %d on cpu #%d\n",
+			(unsigned long) getpid(), ep->endpoint_index, i);
+    sched_setaffinity(0, sizeof(cpu_set_t), &cs);
+  }
+}
+
 /**********************************
  * Find a board/endpoint available
  */
@@ -351,24 +377,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   omx__board_addr_sprintf(ep->board_addr_str, ep->board_info.addr);
 
   /* bind the process if needed */
-  if (omx__globals.process_binding) {
-    int i;
-    char *c = omx__globals.process_binding;
-    for(i=0; i<endpoint_index; i++) {
-      c = strchr(c, ',');
-      if (!c)
-        break;
-      c++;
-    }
-    if (c) {
-      int i = atoi(c);
-      cpu_set_t cs;
-      CPU_ZERO(&cs);
-      CPU_SET(i, &cs);
-      omx__verbose_printf("Binding process with endpoint %d on cpu %d\n", endpoint_index, i);
-      sched_setaffinity(0, sizeof(cpu_set_t), &cs);
-    }
-  }
+  if (omx__globals.process_binding)
+    omx__endpoint_bind_process(ep, omx__globals.process_binding);
 
   /* prepare the sendq */
   ret = omx__endpoint_sendq_map_init(ep);
