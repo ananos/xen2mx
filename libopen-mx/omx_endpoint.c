@@ -242,7 +242,6 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 {
   /* FIXME: add parameters to choose the board name? */
   struct omx_endpoint * ep;
-  char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   struct omx_endpoint_desc * desc;
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   uint8_t ctxid_bits;
@@ -349,7 +348,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = omx__error(ret, "Getting new endpoint board info");
     goto out_with_attached;
   }
-  omx__board_addr_sprintf(board_addr_str, ep->board_info.addr);
+  omx__board_addr_sprintf(ep->board_addr_str, ep->board_info.addr);
 
   /* bind the process if needed */
   if (omx__globals.process_binding) {
@@ -402,7 +401,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   omx__debug_printf(ENDPOINT, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
 		    (unsigned long) endpoint_index, (unsigned long) board_index,
-		    ep->board_info.hostname, ep->board_info.ifacename, board_addr_str);
+		    ep->board_info.hostname, ep->board_info.ifacename, ep->board_addr_str);
 
   /* init most of the endpoint state */
   ep->desc = desc;
@@ -439,7 +438,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   }
 
   /* connect to myself */
-  ret = omx__connect_myself(ep, ep->board_info.addr);
+  ret = omx__connect_myself(ep);
   if (ret != OMX_SUCCESS) {
     ret = omx__error(ret, "Connecting new endpoint to itself");
     goto out_with_partners;

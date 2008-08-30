@@ -444,7 +444,7 @@ omx__notify_user_event(struct omx_endpoint *ep);
 /* connect management */
 
 extern omx_return_t
-omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr);
+omx__connect_myself(struct omx_endpoint *ep);
 
 extern void
 omx__post_connect_request(struct omx_endpoint *ep,

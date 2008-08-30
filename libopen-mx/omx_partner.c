@@ -250,25 +250,23 @@ omx__partner_lookup_by_addr(struct omx_endpoint *ep,
 }
 
 omx_return_t
-omx__connect_myself(struct omx_endpoint *ep, uint64_t board_addr)
+omx__connect_myself(struct omx_endpoint *ep)
 {
   uint16_t peer_index;
   omx_return_t ret;
   int maybe_self = 0;
   int maybe_shared = 0;
 
-  ret = omx__peer_addr_to_index(board_addr, &peer_index);
+  ret = omx__peer_addr_to_index(ep->board_info.addr, &peer_index);
   if (ret != OMX_SUCCESS) {
-    char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-    omx__board_addr_sprintf(board_addr_str, board_addr);
     fprintf(stderr, "Failed to find peer index of local board %s (%s)\n",
-	    board_addr_str, omx_strerror(ret));
+	    ep->board_addr_str, omx_strerror(ret));
     /* let open_endpoint handle the error */
     return ret;
   }
 
   ret = omx__partner_create(ep, peer_index,
-			    board_addr, ep->endpoint_index,
+			    ep->board_info.addr, ep->endpoint_index,
 			    &ep->myself);
   if (ret != OMX_SUCCESS)
     /* let open_endpoint handle the error */

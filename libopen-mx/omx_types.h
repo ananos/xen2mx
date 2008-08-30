@@ -222,6 +222,7 @@ struct omx_endpoint {
   int fd;
   int endpoint_index, board_index;
   struct omx_board_info board_info;
+  char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   uint32_t app_key;
   struct omx__lock lock;
   int progression_disabled;
