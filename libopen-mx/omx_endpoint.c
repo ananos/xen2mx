@@ -316,8 +316,6 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint");
     goto out;
   }
-  omx__lock_init(&ep->lock);
-  omx__cond_init(&ep->in_handler_cond);
 
   err = open(OMX_MAIN_DEVICE_NAME, O_RDWR);
   if (err < 0) {
@@ -338,6 +336,20 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = omx__error(ret, "Attaching endpoint to driver device");
     goto out_with_fd;
   }
+
+  /* setup basic fields so that we can use ep in some subroutines */
+  ep->fd = fd;
+  ep->board_index = board_index;
+  ep->endpoint_index = endpoint_index;
+  ep->app_key = key;
+
+  /* get some info */
+  ret = omx__get_board_info(ep, -1, &ep->board_info);
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error(ret, "Getting new endpoint board info");
+    goto out_with_attached;
+  }
+  omx__board_addr_sprintf(board_addr_str, ep->board_info.addr);
 
   /* bind the process if needed */
   if (omx__globals.process_binding) {
@@ -388,24 +400,17 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   omx__debug_printf(ENDPOINT, "desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
 		    desc, sendq, recvq, exp_eventq, unexp_eventq);
 
-  /* prepare the large regions */
-  ret = omx__endpoint_large_region_map_init(ep);
-  if (ret != OMX_SUCCESS) {
-    ret = omx__error(ret, "Initializing new endpoint large region map");
-    goto out_with_userq_mmap;
-  }
+  omx__debug_printf(ENDPOINT, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
+		    (unsigned long) endpoint_index, (unsigned long) board_index,
+		    ep->board_info.hostname, ep->board_info.ifacename, board_addr_str);
 
-  /* init driver specific fields */
-  ep->fd = fd;
+  /* init most of the endpoint state */
   ep->desc = desc;
   ep->sendq = sendq;
   ep->recvq = recvq;
   ep->exp_eventq = ep->next_exp_event = exp_eventq;
   ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
   ep->avail_exp_events = OMX_EXP_EVENTQ_ENTRY_NR;
-  ep->board_index = board_index;
-  ep->endpoint_index = endpoint_index;
-  ep->app_key = key;
   ep->req_resends_max = omx__globals.req_resends_max;
   ep->pull_resend_timeout_jiffies = omx__globals.resend_delay_jiffies * omx__globals.req_resends_max;
   ep->check_status_delay_jiffies = omx__driver_desc->hz; /* once per second */
@@ -413,20 +418,17 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->zombies = 0;
   ep->error_handler = error_handler;
 
-  /* initialize the request pool */
+  /* initialize some sub-structures */
   omx__request_alloc_init(ep);
+  omx__lock_init(&ep->lock);
+  omx__cond_init(&ep->in_handler_cond);
 
-  /* get some info */
-  ret = omx__get_board_info(ep, -1, &ep->board_info);
+  /* prepare the large regions */
+  ret = omx__endpoint_large_region_map_init(ep);
   if (ret != OMX_SUCCESS) {
-    ret = omx__error(ret, "Getting new endpoint board info");
-    goto out_with_large_regions;
+    ret = omx__error(ret, "Initializing new endpoint large region map");
+    goto out_with_userq_mmap;
   }
-
-  omx__board_addr_sprintf(board_addr_str, ep->board_info.addr);
-  omx__debug_printf(ENDPOINT, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
-		    (unsigned long) endpoint_index, (unsigned long) board_index,
-		    ep->board_info.hostname, ep->board_info.ifacename, board_addr_str);
 
   /* allocate partners */
   ep->partners = calloc(omx__driver_desc->peer_max * omx__driver_desc->endpoint_max,
