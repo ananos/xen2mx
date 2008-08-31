@@ -592,7 +592,7 @@ omx_mmu_release(struct mmu_notifier *mn, struct mm_struct *mm)
 	dprintk(MMU, "release\n");
 }
 
-const struct mmu_notifier_ops omx_mmu_ops = {
+static const struct mmu_notifier_ops omx_mmu_ops = {
 	.invalidate_page	= omx_mmu_invalidate_page,
         .invalidate_range_start	= omx_mmu_invalidate_range_start,
         .invalidate_range_end	= omx_mmu_invalidate_range_end,
