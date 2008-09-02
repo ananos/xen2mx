@@ -202,7 +202,7 @@ if test x$build_driver = xyes ; then
     # Find where the headers are (to avoid grepping at both places).
     # Do not check for autoconf.h or version.h since these are in
     # both the source and the build directory.
-    AC_MSG_CHECKING(kernel header include/linux/kernel.h)
+    AC_MSG_CHECKING(include/linux/kernel.h)
     LINUX_HDR=
     if test -f ${LINUX_SRC}/include/linux/kernel.h ; then
       LINUX_HDR=$LINUX_SRC
@@ -218,7 +218,7 @@ if test x$build_driver = xyes ; then
     # Find where the autoconf header is (to avoid grepping at both places).
     # The one in the build dir is preferred since this is where the configured
     # tree should be
-    AC_MSG_CHECKING(kernel configuration in include/linux/autoconf.h)
+    AC_MSG_CHECKING(include/linux/autoconf.h)
     LINUX_AUTOCONF_DIR=
     if test -f ${LINUX_BUILD}/include/linux/autoconf.h ; then
       LINUX_AUTOCONF_DIR=${LINUX_BUILD}
@@ -232,7 +232,7 @@ if test x$build_driver = xyes ; then
     AC_MSG_RESULT(found in ${LINUX_AUTOCONF_DIR})
 
     # Find where the kbuild Makefile is
-    AC_MSG_CHECKING(kernel build Makefile)
+    AC_MSG_CHECKING(kernel Makefile)
     if ! test -f ${LINUX_BUILD}/Makefile ; then
       AC_MSG_ERROR(not found in ${LINUX_BUILD})
     fi
