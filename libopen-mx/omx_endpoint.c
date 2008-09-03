@@ -128,12 +128,11 @@ omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
 static void
 omx__endpoint_bind_process(struct omx_endpoint *ep, const char *bindstring)
 {
-  const char *c = bindstring;
   cpu_set_t cs;
   CPU_ZERO(&cs);
   int i;
 
-  if (*c == 'f') {
+  if (!strncmp(bindstring, "file", 4)) {
     char *filename;
     char line[OMX_PROCESS_BINDING_LENGTH_MAX];
     FILE *file;
@@ -169,16 +168,23 @@ omx__endpoint_bind_process(struct omx_endpoint *ep, const char *bindstring)
     fclose(file);
 
   } else {
-    for(i=0; i<ep->endpoint_index; i++) {
-      c = strchr(c, ',');
+    if (!strncmp(bindstring, "all:", 4)) {
+      /* same binding whatever the endpoint */
+      i = atoi(bindstring+4);
+    } else {
+      /* per endpoint binding */
+      const char *c = bindstring;
+      for(i=0; i<ep->endpoint_index; i++) {
+	c = strchr(c, ',');
+	if (!c)
+	  break;
+	c++;
+      }
       if (!c)
-	break;
-      c++;
+	return;
+      i = atoi(c);
     }
-    if (!c)
-      return;
-
-    i = atoi(c);
+   
     CPU_SET(i, &cs);
     omx__verbose_printf("Forcing binding on cpu #%d for process pid %ld with endpoint %d\n",
 			i, (unsigned long) getpid(), ep->endpoint_index);
