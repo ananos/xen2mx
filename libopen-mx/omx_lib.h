@@ -58,20 +58,20 @@
 #define INLINE
 #define omx__debug_assert(x) assert(x)
 #define omx__debug_instr(x) do { x; } while (0)
-#define omx__debug_printf(type,args...) do { if (omx__verbdebug_type_enabled(type)) fprintf(stderr, "Open-MX: " args); } while (0)
+#define omx__debug_printf(type, format, ...) do { if (omx__verbdebug_type_enabled(type)) fprintf(stderr, "Open-MX: " format, ##__VA_ARGS__); } while (0)
 
 #else /* OMX_LIB_DEBUG */
 
 #define INLINE inline
 #define omx__debug_assert(x) /* nothing */
 #define omx__debug_instr(x) /* nothing */
-#define omx__debug_printf(type,args...) /* nothing */
+#define omx__debug_printf(type, format, ...) /* nothing */
 
 #endif /* OMX_LIB_DEBUG */
 
-#define omx__verbose_printf(args...) do { if (omx__globals.verbose) fprintf(stderr, "Open-MX: " args); } while (0)
+#define omx__verbose_printf(format, ...) do { if (omx__globals.verbose) fprintf(stderr, "Open-MX: " format, ##__VA_ARGS__); } while (0)
 
-#define omx__abort(args...) do { fprintf(stderr, "Open-MX fatal error: " args); assert(0); } while (0)
+#define omx__abort(format, ...) do { fprintf(stderr, "Open-MX fatal error: " format, ##__VA_ARGS__); assert(0); } while (0)
 
 extern void omx__debug_init(int signum);
 
