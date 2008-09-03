@@ -142,10 +142,6 @@
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
-* per-packet-type irq
-  + can we detect when another packet is right behind? if so, process it
-    and queue the early interrupt if it is not a small one
-
 === obsolete ideas
 * why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
 * change --iface into ---iface, and use --iface as a "close when no more endpoint"

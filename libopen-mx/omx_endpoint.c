@@ -286,6 +286,10 @@ omx__open_endpoint(int fd,
     board_start = board_end = *board_index_p;
   }
 
+  /* override OMX_ANY_ENDPOINT if needed */
+  if (*endpoint_index_p == OMX_ANY_ENDPOINT)
+    *endpoint_index_p = omx__globals.any_endpoint_id;
+
   if (*endpoint_index_p == OMX_ANY_ENDPOINT) {
     endpoint_start = 0;
     endpoint_end = omx__driver_desc->endpoint_max-1;

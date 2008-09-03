@@ -449,6 +449,17 @@ omx__init_comms(void)
 			  omx__globals.ctxid_bits, omx__globals.ctxid_shift);
     }
   }
+
+  /****************************
+   * OMX_ANY_ENDPOINT behavior
+   */
+  omx__globals.any_endpoint_id = OMX_ANY_ENDPOINT;
+  env = getenv("OMX_ANY_ENDPOINT");
+  if (env) {
+    omx__globals.any_endpoint_id = atoi(env);
+    omx__verbose_printf("Forcing OMX_ANY_ENDPOINT to endpoint #%ld\n",
+			(unsigned long) omx__globals.any_endpoint_id);
+  }
 }
 
 /* API omx_finalize */

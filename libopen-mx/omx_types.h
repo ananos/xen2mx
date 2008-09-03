@@ -534,6 +534,7 @@ struct omx__globals {
   int fatal_errors;
   int debug_signal_level;
   int check_request_alloc;
+  uint32_t any_endpoint_id;
 #ifndef OMX_DISABLE_SELF
   int selfcomms;
 #endif
