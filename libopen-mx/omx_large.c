@@ -432,7 +432,7 @@ omx__alloc_setup_pull(struct omx_endpoint * ep,
     goto need_region;
   if (likely(res & OMX_REQUEST_RESOURCE_PULL_HANDLE))
     goto need_pull;
-  omx__abort("Unexpected missing resources %x for pull request\n", res);
+  omx__abort(ep, "Unexpected missing resources %x for pull request\n", res);
 
  need_exp_event:
   if (unlikely(ep->avail_exp_events < 1))
@@ -551,7 +551,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
     status = OMX_REMOTE_ENDPOINT_UNREACHABLE;
     break;
   default:
-    omx__abort("Failed to handle NACK status %d\n",
+    omx__abort(ep, "Failed to handle NACK status %d\n",
 	       event->status);
   }
 

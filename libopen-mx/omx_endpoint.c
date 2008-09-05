@@ -148,7 +148,7 @@ omx__endpoint_bind_process(struct omx_endpoint *ep, const char *bindstring)
 
     file = fopen(filename, "r");
     if (!file)
-      omx__abort("Failed to open binding map %s, %m\n", filename);
+      omx__abort(ep, "Failed to open binding map %s, %m\n", filename);
     while (fgets(line, OMX_PROCESS_BINDING_LENGTH_MAX, file)) {
       if (sscanf(line, "board %s ep %ld irq %ld mask %llx", board_addr_str, &eid, &irq, &irqmask) == 4
 	  && !strcmp(ep->board_addr_str, board_addr_str) && eid == ep->endpoint_index) {
@@ -716,7 +716,7 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
     break;
 
   default:
-    omx__abort("Failed to destroy request with type %d\n", req->generic.type);
+    omx__abort(ep, "Failed to destroy request with type %d\n", req->generic.type);
   }
 
  out:
@@ -971,6 +971,6 @@ omx__request_alloc_check(struct omx_endpoint *ep)
   if (nr != ep->req_alloc_nr || omx__globals.check_request_alloc > 1)
     omx__verbose_printf("Found %d requests in queues for %d allocations\n", nr, ep->req_alloc_nr);
   if (nr != ep->req_alloc_nr)
-    omx__abort("%d requests out of %d missing in endpoint queues\n", ep->req_alloc_nr - nr, ep->req_alloc_nr);
+    omx__abort(ep, "%d requests out of %d missing in endpoint queues\n", ep->req_alloc_nr - nr, ep->req_alloc_nr);
 #endif
 }

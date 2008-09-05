@@ -72,7 +72,7 @@
 #define omx__printf(ep, format, ...) do { fprintf(stderr, "Open-MX: " format, ##__VA_ARGS__); } while (0)
 #define omx__verbose_printf(format, ...) do { if (omx__globals.verbose) omx__printf(NULL, format, ##__VA_ARGS__); } while (0)
 #define omx__warning(ep, format, ...) do { omx__printf(ep, "WARNING: " format, ##__VA_ARGS__); } while (0)
-#define omx__abort(format, ...) do { omx__printf(NULL, "FatalError: " format, ##__VA_ARGS__); assert(0); } while (0)
+#define omx__abort(ep, format, ...) do { omx__printf(ep, "FatalError: " format, ##__VA_ARGS__); assert(0); } while (0)
 
 extern void omx__debug_init(int signum);
 
@@ -325,7 +325,7 @@ omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
 #ifdef OMX_LIB_DEBUG
   for(i=1; i<nr; i++)
     if (user != array[indexes[i]].user)
-      omx__abort("Tried to put some unrelated sendq map entries\n");
+      omx__abort(ep, "Tried to put some unrelated sendq map entries\n");
 #endif
 
   omx__debug_assert(user != NULL);

@@ -82,7 +82,7 @@ omx__ioctl_errno_to_return_checked(omx_return_t ok, ...)
 
   va_end(va);
 
-  omx__abort("Failed to %s, driver replied %m\n", callermsg);
+  omx__abort(NULL, "Failed to %s, driver replied %m\n", callermsg);
 }
 
 const char *
@@ -108,7 +108,7 @@ omx__strreqtype(enum omx__request_type type)
   case OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED:
     return "Receive Self Unexpected";
   default:
-    omx__abort("Unknown request type %d\n", (unsigned) type);
+    omx__abort(NULL, "Unknown request type %d\n", (unsigned) type);
   }
 }
 
@@ -225,7 +225,7 @@ omx_strerror(omx_return_t ret)
   case OMX_RETURN_CODE_MAX:
     return "Maximum return code";
   }
-  omx__abort("Failed to stringify unknown return value %d\n",
+  omx__abort(NULL, "Failed to stringify unknown return value %d\n",
 	     ret);
 }
 

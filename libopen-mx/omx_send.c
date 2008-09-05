@@ -503,7 +503,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
     goto need_exp_events;
   if (likely(res & OMX_REQUEST_RESOURCE_SENDQ_SLOT))
     goto need_sendq_map_slot;
-  omx__abort("Unexpected missing resources %x for medium send request\n", res);
+  omx__abort(ep, "Unexpected missing resources %x for medium send request\n", res);
 
  need_exp_events:
   if (unlikely(ep->avail_exp_events < frags_nr))
@@ -648,7 +648,7 @@ omx__alloc_setup_isend_large(struct omx_endpoint *ep,
     goto need_send_large_region;
   if (likely(res & OMX_REQUEST_RESOURCE_LARGE_REGION))
     goto need_large_region;
-  omx__abort("Unexpected missing resources %x for large send request\n", res);
+  omx__abort(ep, "Unexpected missing resources %x for large send request\n", res);
 
  need_send_large_region:
   if (unlikely(!ep->large_sends_avail_nr))
@@ -1132,7 +1132,7 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
       }
       break;
     default:
-      omx__abort("Failed to handle delayed request with type %d\n",
+      omx__abort(ep, "Failed to handle delayed request with type %d\n",
 		 req->generic.type);
     }
 
@@ -1177,7 +1177,7 @@ omx__process_throttling_requests(struct omx_endpoint *ep, struct omx__partner *p
       omx__setup_notify(ep, partner, req);
       break;
     default:
-      omx__abort("Unexpected throttling request type %d\n", req->generic.type);
+      omx__abort(ep, "Unexpected throttling request type %d\n", req->generic.type);
     }
 
     sent++;
@@ -1265,7 +1265,7 @@ omx__complete_unsent_send_request(struct omx_endpoint *ep, union omx_request *re
     break;
 
   default:
-    omx__abort("Failed to handle delayed request with type %d\n",
+    omx__abort(ep, "Failed to handle delayed request with type %d\n",
 	       req->generic.type);
   }
 }
@@ -1340,7 +1340,7 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       omx__post_notify(ep, req->generic.partner, req);
       break;
     default:
-      omx__abort("Failed to handle resend request with type %d\n",
+      omx__abort(ep, "Failed to handle resend request with type %d\n",
 		 req->generic.type);
     }
 

@@ -95,7 +95,7 @@ omx_unlikely_return_to_mx(omx_return_t omxret)
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return MX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
   default:
-    omx__abort("Unexpected Open-MX return code %d to translate into MX\n", omxret);
+    omx__abort(NULL, "Unexpected Open-MX return code %d to translate into MX\n", omxret);
   }
 }
 
@@ -164,7 +164,7 @@ omx_unlikely_return_from_mx(mx_return_t mxret)
   case MX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
   default:
-    omx__abort("Unexpected MX return code %d to translate into Open-MX\n", mxret);
+    omx__abort(NULL, "Unexpected MX return code %d to translate into Open-MX\n", mxret);
   }
 }
 
@@ -193,7 +193,7 @@ omx_unlikely_status_code_to_mx(omx_return_t omxret)
   case OMX_NO_RESOURCES:
     return MX_STATUS_NO_RESOURCES;
   default:
-    omx__abort("Unexpected Open-MX return code %d to translate into MX status code\n", omxret);
+    omx__abort(NULL, "Unexpected Open-MX return code %d to translate into MX status code\n", omxret);
   }
 }
 
@@ -222,7 +222,7 @@ omx_unlikely_status_code_from_mx(mx_status_code_t mxcode)
   case MX_STATUS_NO_RESOURCES:
     return OMX_NO_RESOURCES;
   default:
-    omx__abort("Unexpected MX status code %d to translate into Open-MX\n", mxcode);
+    omx__abort(NULL, "Unexpected MX status code %d to translate into Open-MX\n", mxcode);
   }
 }
 
@@ -781,7 +781,7 @@ mx_strstatus(mx_status_code_t mxcode)
 mx_return_t
 mx_register_unexp_callback(mx_endpoint_t endpoint, mx_matching_callback_t cb, void *ctxt)
 {
-  omx__abort("mx_register_unexp_callback not implemented since it's deprecated by mx_register_unexp_handler\n");
+  omx__abort(NULL, "mx_register_unexp_callback not implemented since it's deprecated by mx_register_unexp_handler\n");
   return MX_BAD_BAD_BAD;
 }
 
@@ -790,7 +790,7 @@ mx_iput(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
 	mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
 	mx_request_t *request)
 {
-  omx__abort("mx_iput not implemented\n");
+  omx__abort(NULL, "mx_iput not implemented\n");
   return MX_BAD_BAD_BAD;
 }
 
@@ -799,13 +799,13 @@ mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t length,
 	mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
 	mx_request_t *request)
 {
-  omx__abort("mx_iget not implemented\n");
+  omx__abort(NULL, "mx_iget not implemented\n");
   return MX_BAD_BAD_BAD;
 }
 
 mx_return_t
 mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uint32_t *result)
 {
-  omx__abort("mx_buffered not implemented since it is not in MX either\n");
+  omx__abort(NULL, "mx_buffered not implemented since it is not in MX either\n");
   return MX_BAD_BAD_BAD;
 }

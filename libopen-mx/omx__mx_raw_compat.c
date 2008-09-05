@@ -140,7 +140,7 @@ mx_return_t
 mx_raw_remove_peer(mx_raw_endpoint_t endpoint,
 		   uint64_t destination_id)
 {
-  omx__abort("mx_raw_remove_peer not implemented\n");
+  omx__abort(NULL, "mx_raw_remove_peer not implemented\n");
   return MX_SUCCESS;
 }
 

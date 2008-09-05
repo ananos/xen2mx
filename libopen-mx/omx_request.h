@@ -113,7 +113,7 @@ omx__dequeue_request(struct list_head *head,
     if (req == list_entry(e, union omx_request, generic.queue_elt))
       goto found;
 
-  omx__abort("Failed to find request in queue for dequeueing\n");
+  omx__abort(NULL, "Failed to find request in queue for dequeueing\n");
 
  found:
 #endif /* OMX_LIB_DEBUG */
@@ -227,14 +227,14 @@ omx__dequeue_done_request(struct omx_endpoint *ep,
   list_for_each(e, &ep->anyctxid.done_req_q)
     if (req == list_entry(e, union omx_request, generic.done_anyctxid_elt))
       goto found2;
-  omx__abort("Failed to find request in anyctxid queue for dequeueing\n");
+  omx__abort(ep, "Failed to find request in anyctxid queue for dequeueing\n");
  found2:
 
   if (unlikely(HAS_CTXIDS(ep))) {
     list_for_each(e, &ep->ctxid[ctxid].done_req_q)
       if (req == list_entry(e, union omx_request, generic.done_ctxid_elt))
 	goto found;
-    omx__abort("Failed to find request in ctxid queue for dequeueing\n");
+    omx__abort(ep, "Failed to find request in ctxid queue for dequeueing\n");
   }
  found:
 
@@ -300,7 +300,7 @@ omx__dequeue_partner_request(struct list_head *head,
     if (req == list_entry(e, union omx_request, generic.partner_elt))
       goto found;
 
-  omx__abort("Failed to find request in partner queue for dequeueing\n");
+  omx__abort(NULL, "Failed to find request in partner queue for dequeueing\n");
 
  found:
 #endif /* OMX_LIB_DEBUG */

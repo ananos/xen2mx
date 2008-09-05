@@ -129,7 +129,7 @@ omx__raw_next_event(struct omx_raw_endpoint * endpoint, uint32_t *incoming_port,
       *incoming_port = 0;
   } else if (get_event.status == OMX_CMD_RAW_EVENT_SEND_COMPLETE) {
     if (!maybe_send)
-      omx__abort("Got unexpected raw send complete event");
+      omx__abort(NULL, "Got unexpected raw send complete event");
     *status = OMX_RAW_SEND_COMPLETE;
     if (context)
       *context = (void *)(uintptr_t) get_event.context;

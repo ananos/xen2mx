@@ -87,7 +87,7 @@ omx__init_api(int app_api)
 	case 'T': val |= OMX_VERBDEBUG_EVENT; break;
 	case 'W': val |= OMX_VERBDEBUG_WAIT; break;
 	case 'V': val |= OMX_VERBDEBUG_VECT; break;
-	default: omx__abort("Unknown verbose debug character '%c'\n", env[i]);
+	default: omx__abort(NULL, "Unknown verbose debug character '%c'\n", env[i]);
 	}
       }
     }
@@ -411,7 +411,7 @@ omx__init_comms(void)
    * Tune medium frags
    */
   if (omx__driver_desc->mtu == 0)
-    omx__abort("MTU=0 reported by the driver\n");
+    omx__abort(NULL, "MTU=0 reported by the driver\n");
   if (omx__driver_desc->features & OMX_DRIVER_FEATURE_WIRECOMPAT) {
     i = 12; /* 4kB frags in wire-compat mode */
     omx__verbose_printf("Using MX-wire-compatible 4kB medium frags (pipeline 12)\n");
@@ -430,7 +430,7 @@ omx__init_comms(void)
   omx__globals.medium_frag_pipeline = i;
   omx__globals.medium_frag_length = 1<<i;
   if ((OMX_MEDIUM_MAX+(1<<i)-1)>>i > OMX_MEDIUM_FRAGS_MAX)
-    omx__abort("MTU=%d requires up to %d medium frags, cannot store in %d frag slots per request\n",
+    omx__abort(NULL, "MTU=%d requires up to %d medium frags, cannot store in %d frag slots per request\n",
 	       omx__driver_desc->mtu, (OMX_MEDIUM_MAX+(1<<i)-1)>>i, OMX_MEDIUM_FRAGS_MAX);
 
   /*********

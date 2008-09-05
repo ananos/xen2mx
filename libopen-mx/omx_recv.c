@@ -135,7 +135,7 @@ omx__find_previous_early_packet(struct omx_endpoint *ep, struct omx__partner * p
     return NULL;
   }
 
-  omx__abort("Found no previous early");
+  omx__abort(ep, "Found no previous early");
 }
 
 static INLINE void
@@ -212,7 +212,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
   }
 
   default:
-    omx__abort("Failed to handle early packet with type %d\n",
+    omx__abort(ep, "Failed to handle early packet with type %d\n",
 	       msg->type);
   }
 
@@ -461,7 +461,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
 
     /* if not FINISHED, return MUST be CONTINUE */
     if (ret != OMX_UNEXP_HANDLER_RECV_CONTINUE) {
-      omx__abort("The unexpected handler must return either OMX_UNEXP_HANDLER_RECV_FINISHED or _CONTINUE\n");
+      omx__abort(ep, "The unexpected handler must return either OMX_UNEXP_HANDLER_RECV_FINISHED or _CONTINUE\n");
     }
 
     /* the unexp has been noticed check if a recv has been posted */
@@ -820,7 +820,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 
     /* if not FINISHED, return MUST be CONTINUE */
     if (ret != OMX_UNEXP_HANDLER_RECV_CONTINUE) {
-      omx__abort("The unexpected handler must return either OMX_UNEXP_HANDLER_RECV_FINISHED and _CONTINUE\n");
+      omx__abort(ep, "The unexpected handler must return either OMX_UNEXP_HANDLER_RECV_FINISHED and _CONTINUE\n");
     }
 
     /* the unexp has been noticed check if a recv has been posted */
@@ -943,7 +943,7 @@ omx__process_recv_truc(struct omx_endpoint *ep,
     break;
   }
   default:
-    omx__abort("Failed to handle truc message with type %d\n", truc_type);
+    omx__abort(ep, "Failed to handle truc message with type %d\n", truc_type);
   }
 }
 
@@ -986,7 +986,7 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
     status = OMX_REMOTE_ENDPOINT_BAD_SESSION;
     break;
   default:
-    omx__abort("Failed to handle NACK with unknown type (%d) from peer %s (index %d) seqnum %d (#%d)\n",
+    omx__abort(ep, "Failed to handle NACK with unknown type (%d) from peer %s (index %d) seqnum %d (#%d)\n",
 	       (unsigned) nack_type, board_addr_str, (unsigned) peer_index,
 	       (unsigned) OMX__SEQNUM(seqnum),
 	       (unsigned) OMX__SESNUM_SHIFTED(seqnum));

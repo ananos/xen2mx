@@ -127,7 +127,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   default:
-    omx__abort("Failed to handle event with unknown type %d\n",
+    omx__abort(ep, "Failed to handle event with unknown type %d\n",
 	       evt->generic.type);
   }
 }
@@ -156,7 +156,7 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     return;
 
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL) {
-    omx__abort("Driver reporting expected event queue full\n");
+    omx__abort(ep, "Driver reporting expected event queue full\n");
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL) {
     omx__printf(ep, "Driver reporting unexpected event queue full\n");
@@ -171,7 +171,7 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
 		 ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED) {
-    omx__abort("Driver reporting endpoint %d being closed because interface %s (%s) has been removed\n",
+    omx__abort(ep, "Driver reporting endpoint %d being closed because interface %s (%s) has been removed\n",
 	       ep->endpoint_index, ep->board_info.ifacename, ep->board_info.hostname);
     /* FIXME: find a nice way to exit here? */
   }
