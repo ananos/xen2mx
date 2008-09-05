@@ -162,7 +162,8 @@ omx_copy_from_to_segments(struct omx__req_seg *dstsegs, struct omx__req_seg *src
  * start at state and update state before returning
  */
 static inline void
-omx_continue_partial_copy_from_segments(void *dst, struct omx__req_seg *srcsegs,
+omx_continue_partial_copy_from_segments(struct omx_endpoint *ep,
+					void *dst, struct omx__req_seg *srcsegs,
 					uint32_t length,
 					struct omx_segscan_state *state)
 {
@@ -201,7 +202,8 @@ omx_continue_partial_copy_from_segments(void *dst, struct omx__req_seg *srcsegs,
  * start at state and update state before returning
  */
 static inline void
-omx_continue_partial_copy_to_segments(struct omx__req_seg *dstsegs, void *src,
+omx_continue_partial_copy_to_segments(struct omx_endpoint *ep,
+				      struct omx__req_seg *dstsegs, void *src,
 				      uint32_t length,
 				      struct omx_segscan_state *state)
 {
@@ -239,7 +241,8 @@ omx_continue_partial_copy_to_segments(struct omx__req_seg *dstsegs, void *src,
  * then, start at state and update state before returning.
  */
 static inline void
-omx_partial_copy_to_segments(struct omx__req_seg *dstsegs, void *src,
+omx_partial_copy_to_segments(struct omx_endpoint *ep,
+			     struct omx__req_seg *dstsegs, void *src,
 			     uint32_t length,
 			     uint32_t offset, struct omx_segscan_state *scan_state, uint32_t *scan_offset)
 {
@@ -254,7 +257,7 @@ omx_partial_copy_to_segments(struct omx__req_seg *dstsegs, void *src,
     scan_state->offset = offset - curoffset;
   }
 
-  omx_continue_partial_copy_to_segments(dstsegs, src, length, scan_state);
+  omx_continue_partial_copy_to_segments(ep, dstsegs, src, length, scan_state);
   *scan_offset = offset+length;
 }
 

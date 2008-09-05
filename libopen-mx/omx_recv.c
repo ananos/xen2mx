@@ -59,7 +59,7 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
  * or drop if duplicate
  */
 static INLINE struct list_head *
-omx__find_previous_early_packet(struct omx__partner * partner,
+omx__find_previous_early_packet(struct omx_endpoint *ep, struct omx__partner * partner,
 				struct omx_evt_recv_msg *msg)
 {
   omx__seqnum_t seqnum = msg->seqnum;
@@ -139,14 +139,14 @@ omx__find_previous_early_packet(struct omx__partner * partner,
 }
 
 static INLINE void
-omx__postpone_early_packet(struct omx__partner * partner,
+omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partner,
 			   struct omx_evt_recv_msg *msg, void *data,
 			   omx__process_recv_func_t recv_func)
 {
   struct omx__early_packet * early;
   struct list_head * prev;
 
-  prev = omx__find_previous_early_packet(partner, msg);
+  prev = omx__find_previous_early_packet(ep, partner, msg);
   if (!prev)
     /* obsolete early ? ignore */
     return;
@@ -309,7 +309,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   if (likely(req->recv.segs.nseg == 1))
     memcpy(req->recv.segs.single.ptr + offset, data, chunk);
   else
-    omx_partial_copy_to_segments(&req->recv.segs, data, chunk,
+    omx_partial_copy_to_segments(ep, &req->recv.segs, data, chunk,
 				 offset, &req->recv.specific.medium.scan_state,
 				 &req->recv.specific.medium.scan_offset);
   req->recv.specific.medium.frags_received_mask |= 1 << frag_seqnum;
@@ -731,7 +731,7 @@ omx__process_recv(struct omx_endpoint *ep,
 
   } else if (frag_index <= frag_index_max + OMX__EARLY_PACKET_OFFSET_MAX) {
     /* early fragment or message, postpone it */
-    omx__postpone_early_packet(partner,
+    omx__postpone_early_packet(ep, partner,
 			       msg, data,
 			       recv_func);
 

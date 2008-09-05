@@ -169,7 +169,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
 }
 
 static INLINE void
-omx__partner_check_localization(struct omx__partner * partner, int shared)
+omx__partner_check_localization(struct omx_endpoint * ep, struct omx__partner * partner, int shared)
 {
   enum omx__partner_localization localization;
 
@@ -608,7 +608,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
     return;
   }
 
-  omx__partner_check_localization(partner, event->shared);
+  omx__partner_check_localization(ep, partner, event->shared);
 
   omx__foreach_partner_request(&partner->connect_req_q, req) {
     /* check the endpoint session (so that the endpoint didn't close/reopen in the meantime)
@@ -648,7 +648,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     return;
   }
 
-  omx__partner_check_localization(partner, event->shared);
+  omx__partner_check_localization(ep, partner, event->shared);
 
   if (app_key == ep->app_key) {
     connect_status_code = OMX__CONNECT_SUCCESS;
