@@ -43,10 +43,13 @@ omx__init_api(int app_api)
   /**************************
    * Messaging configuration
    */
-  if (getenv("OMX_VERBOSE_PREFIX"))
+  env = getenv("OMX_VERBOSE_PREFIX");
+  if (!env)
+    omx__globals.message_prefix_format = "Open-MX: ";
+  else if (*env == '1')
     omx__globals.message_prefix_format = "Open-MX:p%P-p%E: ";
   else
-    omx__globals.message_prefix_format = "Open-MX: ";
+    omx__globals.message_prefix_format = env;
   omx__globals.message_prefix = omx__create_message_prefix(NULL);
 
   /*******************************************
