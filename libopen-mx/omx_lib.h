@@ -69,10 +69,10 @@
 
 #endif /* OMX_LIB_DEBUG */
 
-#define omx__printf(format, ...) do { fprintf(stderr, "Open-MX: " format, ##__VA_ARGS__); } while (0)
-#define omx__verbose_printf(format, ...) do { if (omx__globals.verbose) omx__printf(format, ##__VA_ARGS__); } while (0)
+#define omx__printf(ep, format, ...) do { fprintf(stderr, "Open-MX: " format, ##__VA_ARGS__); } while (0)
+#define omx__verbose_printf(format, ...) do { if (omx__globals.verbose) omx__printf(NULL, format, ##__VA_ARGS__); } while (0)
 
-#define omx__abort(format, ...) do { omx__printf("FatalError: " format, ##__VA_ARGS__); assert(0); } while (0)
+#define omx__abort(format, ...) do { omx__printf(NULL, "FatalError: " format, ##__VA_ARGS__); assert(0); } while (0)
 
 extern void omx__debug_init(int signum);
 

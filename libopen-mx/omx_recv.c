@@ -510,7 +510,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       if (msg_length) {
 	unexp_buffer = malloc(msg_length);
 	if (unlikely(!unexp_buffer)) {
-	  omx__printf("Failed to allocate buffer for unexpected messages, dropping\n");
+	  omx__printf(ep, "Failed to allocate buffer for unexpected messages, dropping\n");
 	  omx__request_free(ep, req);
 	  /* let the caller handle the error */
 	  return OMX_NO_RESOURCES;

@@ -54,7 +54,7 @@ omx__init_api(int app_api)
   if (!env) {
     env = getenv("MX_VERBOSE");
     if (env) {
-      omx__printf("Emulating MX_VERBOSE as OMX_VERBOSE\n");
+      omx__printf(NULL, "Emulating MX_VERBOSE as OMX_VERBOSE\n");
       env = "";
     }
   }

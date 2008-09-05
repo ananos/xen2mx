@@ -225,6 +225,6 @@ omx__debug_init(int signum)
   sigemptyset (&action.sa_mask);
   action.sa_flags = 0;
   if (sigaction(signum, &action, NULL) < 0) {
-    omx__printf("Failed to setup debug signal handler, %m\n");
+    omx__printf(NULL, "Failed to setup debug signal handler, %m\n");
   }
 }

@@ -159,15 +159,15 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     omx__abort("Driver reporting expected event queue full\n");
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL) {
-    omx__printf("Driver reporting unexpected event queue full\n");
-    omx__printf("Some packets are being dropped, they will be resent by the sender\n");
+    omx__printf(ep, "Driver reporting unexpected event queue full\n");
+    omx__printf(ep, "Some packets are being dropped, they will be resent by the sender\n");
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN) {
-    omx__printf("WARNING: Driver reporting that interface %s (%s) for endpoint %d is NOT up, check dmesg\n",
+    omx__printf(ep, "WARNING: Driver reporting that interface %s (%s) for endpoint %d is NOT up, check dmesg\n",
 		ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU) {
-    omx__printf("WARNING: Driver reporting too small MTU for interface %s (%s) for endpoint %d, check dmesg\n",
+    omx__printf(ep, "WARNING: Driver reporting too small MTU for interface %s (%s) for endpoint %d, check dmesg\n",
 		ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED) {
@@ -176,12 +176,12 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     /* FIXME: find a nice way to exit here? */
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_HIGH_INTRCOAL) {
-    omx__printf("WARNING: Driver reporting very high interrupt coalescing for interface %s (%s) for endpoint %d, check dmesg\n",
+    omx__printf(ep, "WARNING: Driver reporting very high interrupt coalescing for interface %s (%s) for endpoint %d, check dmesg\n",
 		ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
   }
 
   list_for_each_entry(partner, &ep->throttling_partners_list, endpoint_throttling_partners_elt)
-    omx__printf("Partner not acking enough, throttling %d send requests\n", partner->throttling_sends_nr);
+    omx__printf(ep, "Partner not acking enough, throttling %d send requests\n", partner->throttling_sends_nr);
 
   last_check = now;
 }
