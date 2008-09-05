@@ -1290,10 +1290,10 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      printf("Send request (seqnum %d sesnum %d) timeout, already sent %ld times, resetting partner status\n",
-	     (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
-	     (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum),
-	     (unsigned long) req->generic.resends);
+      omx__printf("Send request (seqnum %d sesnum %d) timeout, already sent %ld times, resetting partner status\n",
+		  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
+		  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum),
+		  (unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
     }
@@ -1362,9 +1362,9 @@ omx__process_resend_requests(struct omx_endpoint *ep)
     /* check before dequeueing so that omx__partner_cleanup() is called with queues in a coherent state */
     if (req->generic.resends > req->generic.resends_max) {
       /* Disconnect the peer (and drop the requests) */
-      printf("Connect request (connect seqnum %d) timeout, already sent %ld times, resetting partner status\n",
-	     (unsigned int) req->connect.connect_seqnum,
-	     (unsigned long) req->generic.resends);
+      omx__printf("Connect request (connect seqnum %d) timeout, already sent %ld times, resetting partner status\n",
+		  (unsigned int) req->connect.connect_seqnum,
+		  (unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
       continue;
     }
