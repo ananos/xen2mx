@@ -8,10 +8,11 @@ Major Enhancements:
 
 Other improvements from previous release:
 * Fix race condition between resending and timeouts introduced in 0.9.0.
-* Fix building on kernels without PCI support.
+* Fix driver build on kernels without PCI support.
 * Fix completion of synchronous connect in case of timeout.
 * Fix completion of large send in case of unreachable destination.
 * Add debugging capabilities to make sure no request has been lost.
+* Add verbose messages tuning capabilities.
 * Add advanced process binding capabilities for Open-MX-aware multislice
   Ethernet drivers.
 
