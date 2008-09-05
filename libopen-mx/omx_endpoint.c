@@ -203,7 +203,7 @@ omx__open_one_endpoint(int fd,
   struct omx_cmd_open_endpoint open_param;
   int err;
 
-  omx__debug_printf(ENDPOINT, "trying to open board #%d endpoint #%d\n",
+  omx__debug_printf(ENDPOINT, NULL, "trying to open board #%d endpoint #%d\n",
 		    board_index, endpoint_index);
 
   open_param.board_index = board_index;
@@ -239,7 +239,7 @@ omx__open_endpoint_in_range(int fd,
   omx_return_t ret;
   int busy = 0;
 
-  omx__debug_printf(ENDPOINT, "trying to open board [%d,%d] endpoint [%d,%d]\n",
+  omx__debug_printf(ENDPOINT, NULL, "trying to open board [%d,%d] endpoint [%d,%d]\n",
 		    board_start, board_end, endpoint_start, endpoint_end);
 
   /* loop on the board first, to distribute the load,
@@ -254,7 +254,7 @@ omx__open_endpoint_in_range(int fd,
 
       /* if success or error, return. if busy or nodev, try the next one */
       if (ret == OMX_SUCCESS) {
-	omx__debug_printf(ENDPOINT, "successfully open board #%d endpoint #%d\n",
+	omx__debug_printf(ENDPOINT, NULL, "successfully open board #%d endpoint #%d\n",
 			  board, endpoint);
 	*board_found_p = board;
 	*endpoint_found_p = endpoint;
@@ -455,10 +455,10 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
       ret = omx__error(ret, "Mapping endpoint control device");
     goto out_with_sendq_map;
   }
-  omx__debug_printf(ENDPOINT, "desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
+  omx__debug_printf(ENDPOINT, NULL, "desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
 		    desc, sendq, recvq, exp_eventq, unexp_eventq);
 
-  omx__debug_printf(ENDPOINT, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
+  omx__debug_printf(ENDPOINT, NULL, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
 		    (unsigned long) endpoint_index, (unsigned long) board_index,
 		    ep->board_info.hostname, ep->board_info.ifacename, ep->board_addr_str);
 

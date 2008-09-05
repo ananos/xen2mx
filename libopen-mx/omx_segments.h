@@ -176,7 +176,7 @@ omx_continue_partial_copy_from_segments(struct omx_endpoint *ep,
     uint32_t curchunk = curseg->len - curoff; /* remaining data in the segment */
     uint32_t chunk = curchunk > length ? length : curchunk; /* data to take */
     memcpy(dst, curseg->ptr + curoff, chunk);
-    omx__debug_printf(VECT, "copying %ld from seg %d at %ld\n",
+    omx__debug_printf(VECT, ep, "copying %ld from seg %d at %ld\n",
 		      (unsigned long) chunk, (unsigned) (curseg-&srcsegs->segs[0]), (unsigned long)curoff);
     length -= chunk;            
     dst += chunk;
@@ -214,7 +214,7 @@ omx_continue_partial_copy_to_segments(struct omx_endpoint *ep,
     uint32_t curchunk = curseg->len - curoff; /* remaining data in the segment */
     uint32_t chunk = curchunk > length ? length : curchunk; /* data to take */
     memcpy(curseg->ptr + curoff, src, chunk);
-    omx__debug_printf(VECT, "copying %ld into seg %d at %ld\n",
+    omx__debug_printf(VECT, ep, "copying %ld into seg %d at %ld\n",
 		      (unsigned long) chunk, (unsigned) (curseg-&dstsegs->segs[0]), (unsigned long)curoff);
     length -= chunk;            
     src += chunk;

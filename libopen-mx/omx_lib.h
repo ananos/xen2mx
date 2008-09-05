@@ -38,6 +38,11 @@
  * Debugging
  */
 
+#define omx__printf(ep, format, ...) do { fprintf(stderr, "Open-MX: " format, ##__VA_ARGS__); } while (0)
+#define omx__verbose_printf(ep, format, ...) do { if (omx__globals.verbose) omx__printf(ep, format, ##__VA_ARGS__); } while (0)
+#define omx__warning(ep, format, ...) do { omx__printf(ep, "WARNING: " format, ##__VA_ARGS__); } while (0)
+#define omx__abort(ep, format, ...) do { omx__printf(ep, "FatalError: " format, ##__VA_ARGS__); assert(0); } while (0)
+
 #ifdef OMX_LIB_DEBUG
 
 #define OMX_VERBDEBUG_ENDPOINT (1<<1)
@@ -58,7 +63,7 @@
 #define INLINE
 #define omx__debug_assert(x) assert(x)
 #define omx__debug_instr(x) do { x; } while (0)
-#define omx__debug_printf(type, format, ...) do { if (omx__verbdebug_type_enabled(type)) fprintf(stderr, "Open-MX: " format, ##__VA_ARGS__); } while (0)
+#define omx__debug_printf(type, ep, format, ...) do { if (omx__verbdebug_type_enabled(type)) omx__printf(ep, format, ##__VA_ARGS__); } while (0)
 
 #else /* OMX_LIB_DEBUG */
 
@@ -68,11 +73,6 @@
 #define omx__debug_printf(type, format, ...) /* nothing */
 
 #endif /* OMX_LIB_DEBUG */
-
-#define omx__printf(ep, format, ...) do { fprintf(stderr, "Open-MX: " format, ##__VA_ARGS__); } while (0)
-#define omx__verbose_printf(ep, format, ...) do { if (omx__globals.verbose) omx__printf(ep, format, ##__VA_ARGS__); } while (0)
-#define omx__warning(ep, format, ...) do { omx__printf(ep, "WARNING: " format, ##__VA_ARGS__); } while (0)
-#define omx__abort(ep, format, ...) do { omx__printf(ep, "FatalError: " format, ##__VA_ARGS__); assert(0); } while (0)
 
 extern void omx__debug_init(int signum);
 

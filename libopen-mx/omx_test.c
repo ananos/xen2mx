@@ -48,10 +48,10 @@ omx__wait(struct omx_endpoint *ep,
     return OMX_TIMEOUT;
 
   if (ms_timeout == OMX_TIMEOUT_INFINITE)
-    omx__debug_printf(WAIT, "%s going to sleep at %lld for ever\n",
+    omx__debug_printf(WAIT, ep, "%s going to sleep at %lld for ever\n",
 		      caller, (unsigned long long) omx__driver_desc->jiffies);
   else
-    omx__debug_printf(WAIT, "%s going to sleep at %lld until %lld\n",
+    omx__debug_printf(WAIT, ep, "%s going to sleep at %lld until %lld\n",
 		      caller,
 		      (unsigned long long) omx__driver_desc->jiffies,
 		      (unsigned long long) wait_param->jiffies_expire);
@@ -81,7 +81,7 @@ omx__wait(struct omx_endpoint *ep,
   }
 #endif
 
-  omx__debug_printf(WAIT, "%s woken up at %lld\n",
+  omx__debug_printf(WAIT, ep, "%s woken up at %lld\n",
 		    caller,
 		    (unsigned long long) omx__driver_desc->jiffies);
 
@@ -89,7 +89,7 @@ omx__wait(struct omx_endpoint *ep,
     omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
 				       "wait event in the driver");
 
-  omx__debug_printf(WAIT, "%s wait event result %d\n",
+  omx__debug_printf(WAIT, ep, "%s wait event result %d\n",
 		    caller,
 		    wait_param->status);
 

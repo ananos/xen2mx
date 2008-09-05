@@ -96,7 +96,7 @@ omx__handle_ack(struct omx_endpoint *ep,
   omx__seqnum_t new_acks = OMX__SEQNUM(ack_before - partner->next_acked_send_seq);
 
   if (!new_acks || new_acks > missing_acks) {
-    omx__debug_printf(ACK, "got obsolete ack up to %d (#%d), %d new for %d missing\n",
+    omx__debug_printf(ACK, ep, "got obsolete ack up to %d (#%d), %d new for %d missing\n",
 		      (unsigned) OMX__SEQNUM(ack_before - 1),
 		      (unsigned) OMX__SESNUM_SHIFTED(ack_before - 1),
 		      (unsigned) new_acks, (unsigned) missing_acks);
@@ -104,7 +104,7 @@ omx__handle_ack(struct omx_endpoint *ep,
   } else {
     union omx_request *req, *next;
 
-    omx__debug_printf(ACK, "marking seqnums up to %d (#%d) as acked (jiffies %lld)\n",
+    omx__debug_printf(ACK, ep, "marking seqnums up to %d (#%d) as acked (jiffies %lld)\n",
 		      (unsigned) OMX__SEQNUM(ack_before - 1),
 		      (unsigned) OMX__SESNUM_SHIFTED(ack_before - 1),
 		      (unsigned long long) omx__driver_desc->jiffies);
@@ -115,13 +115,13 @@ omx__handle_ack(struct omx_endpoint *ep,
 
       /* ack req_index from 0 to new_acks-1 */
       if (req_index >= new_acks) {
-	omx__debug_printf(ACK, "stopping marking reqs as acked at seqnum %x (#%d)\n",
+	omx__debug_printf(ACK, ep, "stopping marking reqs as acked at seqnum %x (#%d)\n",
 			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
 	break;
       }
 
-      omx__debug_printf(ACK, "marking req with seqnum %x (#%d) as acked\n",
+      omx__debug_printf(ACK, ep, "marking req with seqnum %x (#%d) as acked\n",
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx___dequeue_partner_request(req);
@@ -151,13 +151,13 @@ omx__handle_truc_ack(struct omx_endpoint *ep,
   }
 
   if (acknum <= partner->last_recv_acknum) {
-    omx__debug_printf(ACK, "got truc ack with obsolete acknum %d, expected more than %d\n",
+    omx__debug_printf(ACK, ep, "got truc ack with obsolete acknum %d, expected more than %d\n",
 		      (unsigned) acknum, (unsigned) partner->last_recv_acknum);
     return;
   }
   partner->last_recv_acknum = acknum;
 
-  omx__debug_printf(ACK, "got a truc ack for ack up to %d (#%d)\n",
+  omx__debug_printf(ACK, ep, "got a truc ack for ack up to %d (#%d)\n",
 		    (unsigned) OMX__SEQNUM(ack - 1),
 		    (unsigned) OMX__SESNUM_SHIFTED(ack - 1));
   omx__handle_ack(ep, partner, ack);
@@ -207,7 +207,7 @@ omx__handle_nack(struct omx_endpoint *ep,
     }
   }
 
-  omx__debug_printf(ACK, "Failed to find request to nack for seqnum %d, could be a duplicate, ignoring\n",
+  omx__debug_printf(ACK, ep, "Failed to find request to nack for seqnum %d, could be a duplicate, ignoring\n",
 		    seqnum);
 }
 
@@ -265,7 +265,7 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
 			   &ep->partners_to_ack_immediate_list, endpoint_partners_to_ack_elt) {
     omx_return_t ret;
 
-    omx__debug_printf(ACK, "acking immediately back to partner up to %d (#%d) at jiffies %lld\n",
+    omx__debug_printf(ACK, ep, "acking immediately back to partner up to %d (#%d) at jiffies %lld\n",
 		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
 		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		      (unsigned long long) now);
@@ -292,7 +292,7 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
       /* the remaining ones are more recent, no need to ack them yet */
       break;
 
-    omx__debug_printf(ACK, "delayed acking back to partner up to %d (#%d), jiffies %lld >> %lld\n",
+    omx__debug_printf(ACK, ep, "delayed acking back to partner up to %d (#%d), jiffies %lld >> %lld\n",
 		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
 		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		      (unsigned long long) now,
@@ -321,7 +321,7 @@ omx__flush_partners_to_ack(struct omx_endpoint *ep)
 			   &ep->partners_to_ack_delayed_list, endpoint_partners_to_ack_elt) {
     omx_return_t ret;
 
-    omx__debug_printf(ACK, "forcing ack back to partner up to %d (#%d), jiffies %lld instead of %lld\n",
+    omx__debug_printf(ACK, ep, "forcing ack back to partner up to %d (#%d), jiffies %lld instead of %lld\n",
 		      (unsigned) OMX__SEQNUM(partner->next_frag_recv_seq - 1),
 		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq - 1),
 		      (unsigned long long) omx__driver_desc->jiffies,
@@ -352,7 +352,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
     partner = list_first_entry(&ep->partners_to_ack_delayed_list, struct omx__partner, endpoint_partners_to_ack_elt);
     tmp = partner->oldest_recv_time_not_acked + omx__globals.ack_delay_jiffies;
 
-    omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for delayed acks\n",
+    omx__debug_printf(WAIT, ep, "need to wakeup at %lld jiffies (in %ld) for delayed acks\n",
 		      (unsigned long long) tmp, (unsigned long) (tmp - omx__driver_desc->jiffies));
 
     if (tmp < wakeup_jiffies || wakeup_jiffies == OMX_NO_WAKEUP_JIFFIES)
@@ -366,7 +366,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
     req = omx__first_request(&ep->non_acked_req_q);
     tmp = req->generic.last_send_jiffies + omx__globals.resend_delay_jiffies;
 
-    omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
+    omx__debug_printf(WAIT, ep, "need to wakeup at %lld jiffies (in %ld) for resend\n",
 		      (unsigned long long) tmp, (unsigned long) (tmp - omx__driver_desc->jiffies));
 
     if (tmp < wakeup_jiffies || wakeup_jiffies == OMX_NO_WAKEUP_JIFFIES)
@@ -380,7 +380,7 @@ omx__prepare_progress_wakeup(struct omx_endpoint *ep)
     req = omx__first_request(&ep->connect_req_q);
     tmp = req->generic.last_send_jiffies + omx__globals.resend_delay_jiffies;
 
-    omx__debug_printf(WAIT, "need to wakeup at %lld jiffies (in %ld) for resend\n",
+    omx__debug_printf(WAIT, ep, "need to wakeup at %lld jiffies (in %ld) for resend\n",
 		      (unsigned long long) tmp, (unsigned long) (tmp - omx__driver_desc->jiffies));
 
     if (tmp < wakeup_jiffies || wakeup_jiffies == OMX_NO_WAKEUP_JIFFIES)

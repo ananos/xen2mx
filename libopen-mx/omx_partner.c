@@ -163,7 +163,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   ep->partners[partner_index] = partner;
 
   *partnerp = partner;
-  omx__debug_printf(CONNECT, "created peer %d %d\n", peer_index, endpoint_index);
+  omx__debug_printf(CONNECT, ep, "created peer %d %d\n", peer_index, endpoint_index);
 
   return OMX_SUCCESS;
 }
@@ -175,7 +175,7 @@ omx__partner_check_localization(struct omx_endpoint * ep, struct omx__partner * 
 
 #ifdef OMX_DISABLE_SHARED
   if (shared)
-    omx__debug_printf(CONNECT, "Driver reporting shared peer while shared support is disabled in the lib\n");
+    omx__debug_printf(CONNECT, ep, "Driver reporting shared peer while shared support is disabled in the lib\n");
   localization = OMX__PARTNER_LOCALIZATION_REMOTE;
 #else
   localization = shared ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
@@ -185,7 +185,7 @@ omx__partner_check_localization(struct omx_endpoint * ep, struct omx__partner * 
     partner->localization = localization;
     partner->rndv_threshold = shared ? omx__globals.shared_rndv_threshold : omx__globals.rndv_threshold;
     if (shared)
-      omx__debug_printf(CONNECT, "Using shared communication for partner index %d\n", (unsigned) partner->peer_index);
+      omx__debug_printf(CONNECT, ep, "Using shared communication for partner index %d\n", (unsigned) partner->peer_index);
   } else {
     omx__debug_assert(partner->localization == localization);
   }
@@ -420,9 +420,9 @@ omx_connect(omx_endpoint_t ep,
     goto out_with_req;
   }
 
-  omx__debug_printf(CONNECT, "waiting for connect reply\n");
+  omx__debug_printf(CONNECT, ep, "waiting for connect reply\n");
   ret = omx__connect_wait(ep, req, timeout);
-  omx__debug_printf(CONNECT, "connect done\n");
+  omx__debug_printf(CONNECT, ep, "connect done\n");
 
   if (ret == OMX_SUCCESS) {
     if (req->generic.status.code == OMX_SUCCESS) {
@@ -553,7 +553,7 @@ omx__handle_connect_reply(struct omx_endpoint *ep,
     return;
   }
 
-  omx__debug_printf(CONNECT, "waking up on connect reply\n");
+  omx__debug_printf(CONNECT, ep, "waking up on connect reply\n");
 
   /* complete the request */
   omx__connect_complete(ep, req, status_code, target_session_id);
@@ -562,7 +562,7 @@ omx__handle_connect_reply(struct omx_endpoint *ep,
   if (status_code == OMX_SUCCESS) {
     /* connection successfull, initialize stuff */
 
-    omx__debug_printf(CONNECT, "got a connect reply with session id %lx while we have true %lx back %lx\n",
+    omx__debug_printf(CONNECT, ep, "got a connect reply with session id %lx while we have true %lx back %lx\n",
 		      (unsigned long) target_session_id,
 		      (unsigned long) partner->true_session_id, (unsigned long) partner->back_session_id);
     if (partner->back_session_id != target_session_id
@@ -576,7 +576,7 @@ omx__handle_connect_reply(struct omx_endpoint *ep,
 
     if (partner->true_session_id != target_session_id) {
       /* we were connected to this partner, and it changed, reset our send seqnums */
-      omx__debug_printf(SEQNUM, "connect reply (with new session id) requesting next send seqnum %d (#%d)\n",
+      omx__debug_printf(SEQNUM, ep, "connect reply (with new session id) requesting next send seqnum %d (#%d)\n",
 			(unsigned) OMX__SEQNUM(target_recv_seqnum_start),
 			(unsigned) OMX__SESNUM_SHIFTED(target_recv_seqnum_start));
       partner->next_send_seq = target_recv_seqnum_start;
@@ -656,7 +656,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     connect_status_code = OMX__CONNECT_BAD_KEY;
   }
 
-  omx__debug_printf(CONNECT, "got a connect request with session id %lx while we have true %lx back %lx\n",
+  omx__debug_printf(CONNECT, ep, "got a connect request with session id %lx while we have true %lx back %lx\n",
 		    (unsigned long) src_session_id,
 		    (unsigned long) partner->true_session_id, (unsigned long) partner->back_session_id);
   if (partner->back_session_id != src_session_id) {
@@ -675,7 +675,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   if (partner->true_session_id != src_session_id) {
     /* we were connected to this partner, and it changed, reset our send seqnums */
-    omx__debug_printf(SEQNUM, "connect request (with new session id) requesting next send seqnum %d (#%d)\n",
+    omx__debug_printf(SEQNUM, ep, "connect request (with new session id) requesting next send seqnum %d (#%d)\n",
 		      (unsigned) OMX__SEQNUM(target_recv_seqnum_start),
 		      (unsigned) OMX__SESNUM_SHIFTED(target_recv_seqnum_start));
     partner->next_send_seq = target_recv_seqnum_start;
@@ -785,7 +785,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    */
   count = 0;
   omx__foreach_partner_request_safe(&partner->non_acked_req_q, req, next) {
-    omx__debug_printf(CONNECT, "Dropping pending send %p with seqnum %d (#%d)\n", req,
+    omx__debug_printf(CONNECT, ep, "Dropping pending send %p with seqnum %d (#%d)\n", req,
 		      (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 		      (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
     omx___dequeue_partner_request(req);
@@ -802,7 +802,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   omx__foreach_request_safe(&ep->large_send_need_reply_req_q, req, next) {
     if (req->generic.partner != partner)
       continue;
-    omx__debug_printf(CONNECT, "Dropping need-reply large send %p\n", req);
+    omx__debug_printf(CONNECT, ep, "Dropping need-reply large send %p\n", req);
     omx___dequeue_request(req);
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_REPLY);
     req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
@@ -825,7 +825,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       continue;
     omx___dequeue_request(req);
     req->generic.state &= ~OMX_REQUEST_STATE_NEED_RESOURCES;
-    omx__debug_printf(CONNECT, "Dropping need-resources send %p\n", req);
+    omx__debug_printf(CONNECT, ep, "Dropping need-resources send %p\n", req);
     omx__complete_unsent_send_request(ep, req);
     count++;
   }
@@ -839,7 +839,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    */
   count = 0;
   omx__foreach_partner_request_safe(&partner->need_seqnum_send_req_q, req, next) {
-    omx__debug_printf(CONNECT, "Dropping need-seqnum send %p\n", req);
+    omx__debug_printf(CONNECT, ep, "Dropping need-seqnum send %p\n", req);
     omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_NEED_SEQNUM);
     omx___dequeue_partner_request(req);
     omx__complete_unsent_send_request(ep, req);
@@ -855,7 +855,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    */
   count = 0;
   omx__foreach_partner_request_safe(&partner->connect_req_q, req, next) {
-    omx__debug_printf(CONNECT, "Dropping pending connect %p\n", req);
+    omx__debug_printf(CONNECT, ep, "Dropping pending connect %p\n", req);
     omx__connect_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE, (uint32_t) -1);
     count++;
   }
@@ -871,7 +871,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   omx__foreach_partner_request_safe(&partner->partial_medium_recv_req_q, req, next) {
     uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
 
-    omx__debug_printf(CONNECT, "Dropping partial medium recv %p\n", req);
+    omx__debug_printf(CONNECT, ep, "Dropping partial medium recv %p\n", req);
 
     /* dequeue and complete with status error */
     omx___dequeue_partner_request(req);
@@ -895,7 +895,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   count = 0;
   omx__foreach_partner_early_packet_safe(partner, early, next_early) {
     omx___dequeue_partner_early_packet(early);
-    omx__debug_printf(CONNECT, "Dropping early fragment %p\n", early);
+    omx__debug_printf(CONNECT, ep, "Dropping early fragment %p\n", early);
 
     free(early->data);
     free(early);
@@ -914,7 +914,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       if (req->generic.partner != partner)
         continue;
 
-      omx__debug_printf(CONNECT, "Dropping unexpected recv %p\n", req);
+      omx__debug_printf(CONNECT, ep, "Dropping unexpected recv %p\n", req);
 
       /* drop it and that's it */
       omx___dequeue_request(req);
@@ -943,7 +943,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     partner->next_frag_recv_seq ^= OMX__SEQNUM(0xcf0f);
     partner->next_match_recv_seq += OMX__SESNUM_ONE;
     partner->next_frag_recv_seq += OMX__SESNUM_ONE;
-    omx__debug_printf(SEQNUM, "disconnect increasing session number to #%d\n",
+    omx__debug_printf(SEQNUM, ep, "disconnect increasing session number to #%d\n",
 		      (unsigned) OMX__SESNUM_SHIFTED(partner->next_match_recv_seq));
 
     if (disconnect > 1) {

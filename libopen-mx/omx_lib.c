@@ -33,7 +33,7 @@
 static void
 omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 {
-  omx__debug_printf(EVENT, "received type %d\n", evt->generic.type);
+  omx__debug_printf(EVENT, ep, "received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
 
   case OMX_EVT_RECV_CONNECT: {

@@ -195,9 +195,9 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
     if (!list_empty(&ep->reg_unused_list)) {
       struct omx__large_region *region;
       region = list_first_entry(&ep->reg_unused_list, struct omx__large_region, reg_unused_elt);
-      omx__debug_printf(LARGE, "regcache releasing unused region %d\n", region->id);
+      omx__debug_printf(LARGE, ep, "regcache releasing unused region %d\n", region->id);
       list_del(&region->reg_unused_elt);
-      omx__debug_printf(LARGE, "destroying region %d\n", region->id);
+      omx__debug_printf(LARGE, ep, "destroying region %d\n", region->id);
       omx__destroy_region(ep, region);
 
       /* try again now, it should work */
@@ -260,9 +260,9 @@ omx__get_contigous_region(struct omx_endpoint *ep,
   rdma_length = ((uint64_t) offset + (uint64_t) length + 4095) & ~4095;
 
   if (reserver)
-    omx__debug_printf(LARGE, "need a region reserved for object %p\n", reserver);
+    omx__debug_printf(LARGE, ep, "need a region reserved for object %p\n", reserver);
   else
-    omx__debug_printf(LARGE, "need a region without reserving it\n");
+    omx__debug_printf(LARGE, ep, "need a region without reserving it\n");
 
   if (omx__globals.regcache) {
     list_for_each_entry(region, &ep->reg_list, reg_elt) {
@@ -274,7 +274,7 @@ omx__get_contigous_region(struct omx_endpoint *ep,
 
 	if (!(region->use_count++))
 	  list_del(&region->reg_unused_elt);
-	omx__debug_printf(LARGE, "regcache reusing region %d (usecount %d)\n", region->id, region->use_count);
+	omx__debug_printf(LARGE, ep, "regcache reusing region %d (usecount %d)\n", region->id, region->use_count);
 	goto found;
       }
     }
@@ -296,12 +296,12 @@ omx__get_contigous_region(struct omx_endpoint *ep,
 
   list_add_tail(&region->reg_elt, &ep->reg_list);
   region->use_count++;
-  omx__debug_printf(LARGE, "created contigous region %d (usecount %d)\n", region->id, region->use_count);
+  omx__debug_printf(LARGE, ep, "created contigous region %d (usecount %d)\n", region->id, region->use_count);
 
  found:
   if (reserver) {
     omx__debug_assert(!region->reserver);
-    omx__debug_printf(LARGE, "reserving region %d for object %p\n", region->id, reserver);
+    omx__debug_printf(LARGE, ep, "reserving region %d for object %p\n", region->id, reserver);
     region->reserver = reserver;
   }
 
@@ -327,9 +327,9 @@ omx__get_vect_region(struct omx_endpoint *ep,
   int i;
 
   if (reserver)
-    omx__debug_printf(LARGE, "need a region reserved for object %p\n", reserver);
+    omx__debug_printf(LARGE, ep, "need a region reserved for object %p\n", reserver);
   else
-    omx__debug_printf(LARGE, "need a region without reserving it\n");
+    omx__debug_printf(LARGE, ep, "need a region without reserving it\n");
 
   /* no regcache for vectorials */
 
@@ -353,11 +353,11 @@ omx__get_vect_region(struct omx_endpoint *ep,
 
   list_add_tail(&region->reg_elt, &ep->reg_vect_list);
   region->use_count++;
-  omx__debug_printf(LARGE, "created vectorial region %d (usecount %d)\n", region->id, region->use_count);
+  omx__debug_printf(LARGE, ep, "created vectorial region %d (usecount %d)\n", region->id, region->use_count);
 
   if (reserver) {
     omx__debug_assert(!region->reserver);
-    omx__debug_printf(LARGE, "reserving region %d for object %p\n", region->id, reserver);
+    omx__debug_printf(LARGE, ep, "reserving region %d for object %p\n", region->id, reserver);
     region->reserver = reserver;
   }
 
@@ -394,16 +394,16 @@ omx__put_region(struct omx_endpoint *ep,
 
   if (reserver) {
     omx__debug_assert(region->reserver == reserver);
-    omx__debug_printf(LARGE, "unreserving region %d from object %p\n", region->id, reserver);
+    omx__debug_printf(LARGE, ep, "unreserving region %d from object %p\n", region->id, reserver);
     region->reserver = NULL;
   }
 
   if (omx__globals.regcache && region->nseg == 1) {
     if (!region->use_count)
       list_add_tail(&region->reg_unused_elt, &ep->reg_unused_list);
-    omx__debug_printf(LARGE, "regcache keeping region %d (usecount %d)\n", region->id, region->use_count);
+    omx__debug_printf(LARGE, ep, "regcache keeping region %d (usecount %d)\n", region->id, region->use_count);
   } else {
-    omx__debug_printf(LARGE, "destroying region %d\n", region->id);
+    omx__debug_printf(LARGE, ep, "destroying region %d\n", region->id);
     omx__destroy_region(ep, region);
   }
 
@@ -492,7 +492,7 @@ omx__submit_pull(struct omx_endpoint * ep,
     ret = omx__alloc_setup_pull(ep, req);
     if (unlikely(ret != OMX_SUCCESS)) {
       omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
-      omx__debug_printf(SEND, "queueing large request %p\n", req);
+      omx__debug_printf(SEND, ep, "queueing large request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
       omx__enqueue_request(&ep->need_resources_send_req_q, req);
     }
@@ -503,7 +503,7 @@ omx__submit_pull(struct omx_endpoint * ep,
      * so we queue, let progression finish processing events,
      * and then send the notify as a queued request with correct piggyack
      */
-    omx__debug_printf(LARGE, "large length 0, submitting request %p notify directly\n", req);
+    omx__debug_printf(LARGE, ep, "large length 0, submitting request %p notify directly\n", req);
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
     omx__submit_notify(ep, req, 1 /* always delayed */);
   }
@@ -526,7 +526,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE);
   omx__debug_assert(req->recv.specific.large.local_region == region);
 
-  omx__debug_printf(LARGE, "pull done with status %d\n", event->status);
+  omx__debug_printf(LARGE, ep, "pull done with status %d\n", event->status);
 
   switch (event->status) {
   case OMX_EVT_PULL_DONE_SUCCESS:

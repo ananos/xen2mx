@@ -82,7 +82,7 @@ omx__post_isend_tiny(struct omx_endpoint *ep,
   omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
+  omx__debug_printf(ACK, ep, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
 		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
@@ -177,7 +177,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
     omx__alloc_setup_isend_tiny(ep, partner, req);
   } else {
     /* some requests are delayed, do not submit, queue as well */
-    omx__debug_printf(SEND, "delaying send tiny request %p\n", req);
+    omx__debug_printf(SEND, ep, "delaying send tiny request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
     omx__enqueue_request(&ep->need_resources_send_req_q, req);
   }
@@ -196,7 +196,7 @@ omx__post_isend_small(struct omx_endpoint *ep,
   omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
+  omx__debug_printf(ACK, ep, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
 		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
@@ -315,7 +315,7 @@ omx__submit_isend_small(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
 delay:
-    omx__debug_printf(SEND, "delaying send small request %p\n", req);
+    omx__debug_printf(SEND, ep, "delaying send small request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
     omx__enqueue_request(&ep->need_resources_send_req_q, req);
   }
@@ -339,7 +339,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   int err;
   int i;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
+  omx__debug_printf(ACK, ep, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
 		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
@@ -356,7 +356,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
       medium_param->sendq_page_offset = sendq_index[i];
-      omx__debug_printf(MEDIUM, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+      omx__debug_printf(MEDIUM, ep, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
@@ -393,7 +393,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
       medium_param->sendq_page_offset = sendq_index[i];
-      omx__debug_printf(MEDIUM, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+      omx__debug_printf(MEDIUM, ep, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
@@ -567,7 +567,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
 delay:
-    omx__debug_printf(SEND, "delaying send medium request %p\n", req);
+    omx__debug_printf(SEND, ep, "delaying send medium request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
     omx__enqueue_request(&ep->need_resources_send_req_q, req);
   }
@@ -586,7 +586,7 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
   omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
+  omx__debug_printf(ACK, ep, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
 		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
@@ -719,7 +719,7 @@ omx__submit_isend_large(struct omx_endpoint *ep,
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
 delay:
-    omx__debug_printf(SEND, "delaying large send request %p\n", req);
+    omx__debug_printf(SEND, ep, "delaying large send request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
     omx__enqueue_request(&ep->need_resources_send_req_q, req);
   }
@@ -738,7 +738,7 @@ omx__post_notify(struct omx_endpoint *ep,
   omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
-  omx__debug_printf(ACK, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
+  omx__debug_printf(ACK, ep, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
 		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
@@ -841,7 +841,7 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 {
   uint32_t length = req->send.segs.total_length;
 
-  omx__debug_printf(SEND, "sending %ld bytes in %d segments using seqnum %d (#%d)\n",
+  omx__debug_printf(SEND, ep, "sending %ld bytes in %d segments using seqnum %d (#%d)\n",
 		    (unsigned long) length, (unsigned) req->send.segs.nseg,
 		    (unsigned) OMX__SEQNUM(partner->next_send_seq),
 		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
@@ -973,7 +973,7 @@ static INLINE void
 omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 		union omx_request *req,	union omx_request **requestp)
 {
-  omx__debug_printf(SEND, "ssending %ld bytes in %d segments using seqnum %d (#%d)\n",
+  omx__debug_printf(SEND, ep, "ssending %ld bytes in %d segments using seqnum %d (#%d)\n",
 		    (unsigned long) req->send.segs.total_length, (unsigned) req->send.segs.nseg,
 		    (unsigned) OMX__SEQNUM(partner->next_send_seq),
 		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
@@ -1091,26 +1091,26 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:
-      omx__debug_printf(SEND, "trying to resubmit delayed send tiny request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, ep, "trying to resubmit delayed send tiny request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__alloc_setup_isend_tiny(ep, req->generic.partner, req);
       ret = OMX_SUCCESS;
       break;
     case OMX_REQUEST_TYPE_SEND_SMALL:
-      omx__debug_printf(SEND, "trying to resubmit delayed send small request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, ep, "trying to resubmit delayed send small request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       ret = omx__alloc_setup_isend_small(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf(SEND, "trying to resubmit delayed send medium request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, ep, "trying to resubmit delayed send medium request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       ret = omx__alloc_setup_isend_medium(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf(SEND, "trying to resubmit delayed send large request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, ep, "trying to resubmit delayed send large request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       ret = omx__alloc_setup_isend_large(ep, req->generic.partner, req);
@@ -1118,13 +1118,13 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
     case OMX_REQUEST_TYPE_RECV_LARGE:
       if (req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL) {
 	/* if partial, we need to post the pull request to the driver */
-	omx__debug_printf(SEND, "trying to resubmit delayed recv large request %p seqnum %d (#%d)\n", req,
+	omx__debug_printf(SEND, ep, "trying to resubmit delayed recv large request %p seqnum %d (#%d)\n", req,
 			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
 	ret = omx__alloc_setup_pull(ep, req);
       } else {
 	/* if not partial, the pull is already done, we need to send the notify */
-	omx__debug_printf(SEND, "trying to resubmit delayed recv large request notify message %p seqnum %d (#%d)\n", req,
+	omx__debug_printf(SEND, ep, "trying to resubmit delayed recv large request notify message %p seqnum %d (#%d)\n", req,
 			  (unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
 	omx__alloc_setup_notify(ep, req);
@@ -1139,7 +1139,7 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
     if (unlikely(ret != OMX_SUCCESS)) {
       omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
       /* put back at the head of the queue */
-      omx__debug_printf(SEND, "requeueing back delayed request %p\n", req);
+      omx__debug_printf(SEND, ep, "requeueing back delayed request %p\n", req);
       req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
       omx__requeue_request(&ep->need_resources_send_req_q, req);
       break;
@@ -1302,24 +1302,24 @@ omx__process_resend_requests(struct omx_endpoint *ep)
 
     switch (req->generic.type) {
     case OMX_REQUEST_TYPE_SEND_TINY:
-      omx__debug_printf(SEND, "reposting resend tiny request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, ep, "reposting resend tiny request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_tiny(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_SMALL:
-      omx__debug_printf(SEND, "reposting resend small request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, ep, "reposting resend small request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_small(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf(SEND, "reposting resend medium request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, ep, "reposting resend medium request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       if (ep->avail_exp_events < req->send.specific.medium.frags_nr) {
 	/* not enough expected events available, stop resending for now, and try again later */
-	omx__debug_printf(SEND, "stopping resending for now, only %d exp events available to resend %d medium frags\n",
+	omx__debug_printf(SEND, ep, "stopping resending for now, only %d exp events available to resend %d medium frags\n",
 			  ep->avail_exp_events, req->send.specific.medium.frags_nr);
 	omx__requeue_request(&ep->non_acked_req_q, req);
 	goto done_resending;
@@ -1328,13 +1328,13 @@ omx__process_resend_requests(struct omx_endpoint *ep)
       omx__post_isend_medium(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
-      omx__debug_printf(SEND, "reposting resend rndv request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, ep, "reposting resend rndv request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_rndv(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_RECV_LARGE:
-      omx__debug_printf(SEND, "reposting resend notify request %p seqnum %d (#%d)\n", req,
+      omx__debug_printf(SEND, ep, "reposting resend notify request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_notify(ep, req->generic.partner, req);
