@@ -163,12 +163,12 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     omx__printf(ep, "Some packets are being dropped, they will be resent by the sender\n");
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN) {
-    omx__printf(ep, "WARNING: Driver reporting that interface %s (%s) for endpoint %d is NOT up, check dmesg\n",
-		ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
+    omx__warning(ep, "Driver reporting that interface %s (%s) for endpoint %d is NOT up, check dmesg\n",
+		 ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU) {
-    omx__printf(ep, "WARNING: Driver reporting too small MTU for interface %s (%s) for endpoint %d, check dmesg\n",
-		ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
+    omx__warning(ep, "Driver reporting too small MTU for interface %s (%s) for endpoint %d, check dmesg\n",
+		 ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED) {
     omx__abort("Driver reporting endpoint %d being closed because interface %s (%s) has been removed\n",
@@ -176,8 +176,8 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     /* FIXME: find a nice way to exit here? */
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_HIGH_INTRCOAL) {
-    omx__printf(ep, "WARNING: Driver reporting very high interrupt coalescing for interface %s (%s) for endpoint %d, check dmesg\n",
-		ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
+    omx__warning(ep, "Driver reporting very high interrupt coalescing for interface %s (%s) for endpoint %d, check dmesg\n",
+		 ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
   }
 
   list_for_each_entry(partner, &ep->throttling_partners_list, endpoint_throttling_partners_elt)
