@@ -40,62 +40,6 @@ omx__init_api(int app_api)
   char *env;
   int err;
 
-  /*******************************
-   * Check if already initialized
-   */
-  if (omx__globals.initialized) {
-    ret = omx__error(OMX_ALREADY_INITIALIZED, "Initializing the library");
-    goto out;
-  }
-
-  /***************************************
-   * Check the application-build-time API
-   */
-
-  if (app_api >> 8 != omx__lib_api >> 8
-      /* support app_abi 0x0 for now, will drop in 1.0 */
-      || app_api == 0) {
-    ret = omx__error(OMX_BAD_LIB_ABI,
-		     "Comparing library used at build-time (ABI 0x%x) with currently used library (ABI 0x%x)",
-		     omx__lib_api >> 8, app_api >> 8);
-    goto out;
-  }
-
-  /*********************************
-   * Open, map and check the driver
-   */
-
-  err = open(OMX_MAIN_DEVICE_NAME, O_RDONLY);
-  if (err < 0) {
-    ret = omx__errno_to_return();
-    if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
-      ret = omx__error(OMX_BAD_ERROR, "Opening global control device (%m)");
-    else if (ret == OMX_INTERNAL_MISC_ENODEV)
-      ret = omx__error(OMX_NO_DRIVER, "Opening endpoint control device");
-    else
-      ret = omx__error(ret, "Opening global control device");
-    goto out;
-  }
-  omx__globals.control_fd = err;
-
-  omx__driver_desc = mmap(NULL, OMX_DRIVER_DESC_SIZE, PROT_READ, MAP_SHARED,
-			  omx__globals.control_fd, OMX_DRIVER_DESC_FILE_OFFSET);
-  if (omx__driver_desc == MAP_FAILED) {
-    ret = omx__errno_to_return();
-    if (ret == OMX_INTERNAL_MISC_ENODEV || ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
-      ret = omx__error(OMX_BAD_ERROR, "Mapping global control device (%m)");
-    else
-      ret = omx__error(ret, "Mapping global control device");
-    goto out_with_fd;
-  }
-
-  if (omx__driver_desc->abi_version != OMX_DRIVER_ABI_VERSION) {
-    ret = omx__error(omx__driver_desc->abi_version < OMX_DRIVER_ABI_VERSION ? OMX_BAD_KERNEL_ABI : OMX_BAD_LIB_ABI,
-		     "Comparing library (ABI 0x%x) with driver (ABI 0x%x)",
-		     OMX_DRIVER_ABI_VERSION, omx__driver_desc->abi_version);
-    goto out_with_fd;
-  }
-
   /*******************************************
    * Verbose and debug messages configuration
    */
@@ -150,6 +94,60 @@ omx__init_api(int app_api)
     omx__globals.verbdebug = val;
   }
 #endif /* OMX_LIB_DEBUG */
+
+  /*******************************
+   * Check if already initialized
+   */
+  if (omx__globals.initialized) {
+    ret = omx__error(OMX_ALREADY_INITIALIZED, "Initializing the library");
+    goto out;
+  }
+
+  /***************************************
+   * Check the application-build-time API
+   */
+  if (app_api >> 8 != omx__lib_api >> 8
+      /* support app_abi 0x0 for now, will drop in 1.0 */
+      || app_api == 0) {
+    ret = omx__error(OMX_BAD_LIB_ABI,
+		     "Comparing library used at build-time (ABI 0x%x) with currently used library (ABI 0x%x)",
+		     omx__lib_api >> 8, app_api >> 8);
+    goto out;
+  }
+
+  /*********************************
+   * Open, map and check the driver
+   */
+  err = open(OMX_MAIN_DEVICE_NAME, O_RDONLY);
+  if (err < 0) {
+    ret = omx__errno_to_return();
+    if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+      ret = omx__error(OMX_BAD_ERROR, "Opening global control device (%m)");
+    else if (ret == OMX_INTERNAL_MISC_ENODEV)
+      ret = omx__error(OMX_NO_DRIVER, "Opening endpoint control device");
+    else
+      ret = omx__error(ret, "Opening global control device");
+    goto out;
+  }
+  omx__globals.control_fd = err;
+
+  omx__driver_desc = mmap(NULL, OMX_DRIVER_DESC_SIZE, PROT_READ, MAP_SHARED,
+			  omx__globals.control_fd, OMX_DRIVER_DESC_FILE_OFFSET);
+  if (omx__driver_desc == MAP_FAILED) {
+    ret = omx__errno_to_return();
+    if (ret == OMX_INTERNAL_MISC_ENODEV || ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+      ret = omx__error(OMX_BAD_ERROR, "Mapping global control device (%m)");
+    else
+      ret = omx__error(ret, "Mapping global control device");
+    goto out_with_fd;
+  }
+
+  if (omx__driver_desc->abi_version != OMX_DRIVER_ABI_VERSION) {
+    ret = omx__error(omx__driver_desc->abi_version < OMX_DRIVER_ABI_VERSION ? OMX_BAD_KERNEL_ABI : OMX_BAD_LIB_ABI,
+		     "Comparing library (ABI 0x%x) with driver (ABI 0x%x)",
+		     OMX_DRIVER_ABI_VERSION, omx__driver_desc->abi_version);
+    goto out_with_fd;
+  }
 
   /*************************
    * Error Handler Behavior
