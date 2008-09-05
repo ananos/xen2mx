@@ -40,8 +40,11 @@ omx__init_api(int app_api)
   char *env;
   int err;
 
+  /*******************************
+   * Check if already initialized
+   */
   if (omx__globals.initialized) {
-    ret = OMX_ALREADY_INITIALIZED;
+    ret = omx__error(OMX_ALREADY_INITIALIZED, "Initializing the library");
     goto out;
   }
 
