@@ -38,7 +38,9 @@
  * Debugging
  */
 
-#define omx__printf(ep, format, ...) do { fprintf(stderr, "Open-MX: " format, ##__VA_ARGS__); } while (0)
+#define omx__message_prefix(ep) ((ep) ? ((struct omx_endpoint *) ep)->message_prefix : omx__globals.message_prefix)
+
+#define omx__printf(ep, format, ...) do { fprintf(stderr, "%s" format, omx__message_prefix(ep), ##__VA_ARGS__); } while (0)
 #define omx__verbose_printf(ep, format, ...) do { if (omx__globals.verbose) omx__printf(ep, format, ##__VA_ARGS__); } while (0)
 #define omx__warning(ep, format, ...) do { omx__printf(ep, "WARNING: " format, ##__VA_ARGS__); } while (0)
 #define omx__abort(ep, format, ...) do { omx__printf(ep, "FatalError: " format, ##__VA_ARGS__); assert(0); } while (0)

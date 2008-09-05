@@ -313,6 +313,7 @@ struct omx_endpoint {
 #ifdef OMX_LIB_DEBUG
   unsigned int req_alloc_nr;
 #endif
+  char *message_prefix;
 };
 
 #define OMX__ENDPOINT_LOCK(ep) omx__lock(&(ep)->lock)
@@ -552,6 +553,7 @@ struct omx__globals {
   unsigned ctxid_bits;
   unsigned ctxid_shift;
   char *process_binding;
+  char *message_prefix;
 };
 
 enum omx__internal_return_code {

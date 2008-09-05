@@ -475,6 +475,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->zombie_max = omx__globals.zombie_max;
   ep->zombies = 0;
   ep->error_handler = error_handler;
+  ep->message_prefix = omx__globals.message_prefix;
 
   /* initialize some sub-structures */
   omx__request_alloc_init(ep);
