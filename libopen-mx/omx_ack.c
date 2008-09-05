@@ -144,7 +144,7 @@ omx__handle_truc_ack(struct omx_endpoint *ep,
   uint32_t acknum = OMX_FROM_PKT_FIELD(ack_n->acknum);
 
   if (unlikely(OMX__SESNUM(ack ^ partner->next_send_seq)) != 0) {
-    omx__verbose_printf("Obsolete session truc ack received (session %d seqnum %d instead of session %d)\n",
+    omx__verbose_printf(ep, "Obsolete session truc ack received (session %d seqnum %d instead of session %d)\n",
                         (unsigned) OMX__SESNUM_SHIFTED(ack), (unsigned) OMX__SEQNUM(ack),
                         (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
     return;

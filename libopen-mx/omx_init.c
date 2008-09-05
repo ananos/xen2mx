@@ -158,12 +158,12 @@ omx__init_api(int app_api)
   if (!env) {
     env = getenv("MX_ERRORS_ARE_FATAL");
     if (env)
-      omx__verbose_printf("Emulating MX_ERRORS_ARE_FATAL as OMX_FATAL_ERRORS\n");
+      omx__verbose_printf(NULL, "Emulating MX_ERRORS_ARE_FATAL as OMX_FATAL_ERRORS\n");
   }
 #endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.fatal_errors = atoi(env);
-    omx__verbose_printf("Forcing errors to %s\n",
+    omx__verbose_printf(NULL, "Forcing errors to %s\n",
 			omx__globals.fatal_errors ? "to be fatal" : "to not be fatal");
   }
   
@@ -207,14 +207,14 @@ omx__init_comms(void)
   env = getenv("OMX_DEBUG_SIGNAL");
   if (env) {
     omx__globals.debug_signal_level =  atoi(env);
-    omx__verbose_printf("Forcing debugging signal to %s (level %d)\n",
+    omx__verbose_printf(NULL, "Forcing debugging signal to %s (level %d)\n",
 			omx__globals.debug_signal_level?"enabled":"disabled",
 			omx__globals.debug_signal_level);
   }
   env = getenv("OMX_DEBUG_SIGNAL_NUM");
   if (env) {
     debug_signum = atoi(env);
-    omx__verbose_printf("Forcing debugging signal number to %d\n",
+    omx__verbose_printf(NULL, "Forcing debugging signal number to %d\n",
 			debug_signum);
   }
 
@@ -226,7 +226,7 @@ omx__init_comms(void)
   env = getenv("OMX_DEBUG_REQUESTS");
   if (env) {
     omx__globals.check_request_alloc = atoi(env);
-    omx__verbose_printf("Enabling request allocation check level %d\n", omx__globals.check_request_alloc);
+    omx__verbose_printf(NULL, "Enabling request allocation check level %d\n", omx__globals.check_request_alloc);
   }
 #endif
 
@@ -242,12 +242,12 @@ omx__init_comms(void)
   if (!env) {
     env = getenv("MX_DISABLE_SELF");
     if (env)
-      omx__verbose_printf("Emulating MX_DISABLE_SELF as OMX_DISABLE_SELF\n");
+      omx__verbose_printf(NULL, "Emulating MX_DISABLE_SELF as OMX_DISABLE_SELF\n");
   }
 #endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.selfcomms = !atoi(env);
-    omx__verbose_printf("Forcing self comms to %s\n",
+    omx__verbose_printf(NULL, "Forcing self comms to %s\n",
 			omx__globals.selfcomms ? "enabled" : "disabled");
   }
 #endif /* OMX_DISABLE_SELF */
@@ -256,19 +256,19 @@ omx__init_comms(void)
 #ifndef OMX_DISABLE_SHARED
   omx__globals.sharedcomms = (omx__driver_desc->features & OMX_DRIVER_FEATURE_SHARED);
   if (!omx__globals.sharedcomms) {
-    omx__verbose_printf("Shared comms support disabled in the driver\n");
+    omx__verbose_printf(NULL, "Shared comms support disabled in the driver\n");
   } else {
     env = getenv("OMX_DISABLE_SHARED");
 #ifdef OMX_MX_ABI_COMPAT
     if (!env) {
       env = getenv("MX_DISABLE_SHMEM");
       if (env)
-	omx__verbose_printf("Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
+	omx__verbose_printf(NULL, "Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
     }
 #endif /* OMX_MX_ABI_COMPAT */
     if (env) {
       omx__globals.sharedcomms = !atoi(env);
-      omx__verbose_printf("Forcing shared comms to %s\n",
+      omx__verbose_printf(NULL, "Forcing shared comms to %s\n",
 			  omx__globals.sharedcomms ? "enabled" : "disabled");
     }
   }
@@ -286,17 +286,17 @@ omx__init_comms(void)
     if (env) {
       int val = atoi(env);
       if (val < OMX_SMALL_MAX) {
-	omx__verbose_printf("Cannot set a rndv threshold to less than %d\n",
+	omx__verbose_printf(NULL, "Cannot set a rndv threshold to less than %d\n",
 			    OMX_SMALL_MAX);
 	val = OMX_SMALL_MAX;
       }
       if (val > OMX_MEDIUM_MAX) {
-	omx__verbose_printf("Cannot set a rndv threshold to more than %d\n",
+	omx__verbose_printf(NULL, "Cannot set a rndv threshold to more than %d\n",
 			    OMX_MEDIUM_MAX);
 	val = OMX_MEDIUM_MAX;
       }
       omx__globals.shared_rndv_threshold = val;
-      omx__verbose_printf("Forcing shared rndv threshold to %d\n",
+      omx__verbose_printf(NULL, "Forcing shared rndv threshold to %d\n",
 			  omx__globals.shared_rndv_threshold);
     }
   }
@@ -313,12 +313,12 @@ omx__init_comms(void)
   if (!env) {
     env = getenv("MX_MAX_RETRIES");
     if (env)
-      omx__verbose_printf("Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
+      omx__verbose_printf(NULL, "Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
   }
 #endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.req_resends_max = atoi(env);
-    omx__verbose_printf("Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
+    omx__verbose_printf(NULL, "Forcing resends max to %ld\n", (unsigned long) omx__globals.req_resends_max);
   }
 
   /* zombie send configuration */
@@ -328,12 +328,12 @@ omx__init_comms(void)
   if (!env) {
     env = getenv("MX_ZOMBIE_SEND");
     if (env)
-      omx__verbose_printf("Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
+      omx__verbose_printf(NULL, "Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
   }
 #endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.zombie_max = atoi(env);
-    omx__verbose_printf("Forcing zombie max to %d\n",
+    omx__verbose_printf(NULL, "Forcing zombie max to %d\n",
 			omx__globals.zombie_max);
   }
 
@@ -344,12 +344,12 @@ omx__init_comms(void)
   if (!env) {
     env = getenv("MX_IMM_ACK");
     if (env)
-      omx__verbose_printf("Emulating MX_IMM_ACK as OMX_NOTACKED_MAX\n");
+      omx__verbose_printf(NULL, "Emulating MX_IMM_ACK as OMX_NOTACKED_MAX\n");
   }
 #endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.not_acked_max = atoi(env);
-    omx__verbose_printf("Forcing immediate acking threshold to %d\n",
+    omx__verbose_printf(NULL, "Forcing immediate acking threshold to %d\n",
 			omx__globals.not_acked_max);
   }
 
@@ -363,7 +363,7 @@ omx__init_comms(void)
   /* could be enabled by MX_MONOTHREAD */
   if (env) {
     omx__globals.waitspin = atoi(env);
-    omx__verbose_printf("Forcing waitspin to %s\n",
+    omx__verbose_printf(NULL, "Forcing waitspin to %s\n",
 			omx__globals.waitspin ? "enabled" : "disabled");
   }
 
@@ -372,7 +372,7 @@ omx__init_comms(void)
   env = getenv("OMX_WAITINTR");
   if (env) {
     omx__globals.waitintr = atoi(env);
-    omx__verbose_printf("Forcing interrupted wait to %s\n",
+    omx__verbose_printf(NULL, "Forcing interrupted wait to %s\n",
 			omx__globals.waitintr ? "exit as timeout" : "go back to sleep");
   }
 
@@ -383,7 +383,7 @@ omx__init_comms(void)
   env = getenv("OMX_PRCACHE");
   if (env) {
     omx__globals.regcache = atoi(env);
-    omx__verbose_printf("Forcing parallel regcache to %s\n",
+    omx__verbose_printf(NULL, "Forcing parallel regcache to %s\n",
 			omx__globals.regcache ? "enabled" : "disabled");
   }
 
@@ -393,12 +393,12 @@ omx__init_comms(void)
   if (!env) {
     env = getenv("MX_RCACHE");
     if (env)
-      omx__verbose_printf("Emulating MX_RCACHE as OMX_RCACHE\n");
+      omx__verbose_printf(NULL, "Emulating MX_RCACHE as OMX_RCACHE\n");
   }
 #endif /* OMX_MX_ABI_COMPAT */
   if (env) {
     omx__globals.regcache = atoi(env);
-    omx__verbose_printf("Forcing regcache to %s\n",
+    omx__verbose_printf(NULL, "Forcing regcache to %s\n",
 			omx__globals.regcache ? "enabled" : "disabled");
   }
 
@@ -414,7 +414,7 @@ omx__init_comms(void)
     omx__abort(NULL, "MTU=0 reported by the driver\n");
   if (omx__driver_desc->features & OMX_DRIVER_FEATURE_WIRECOMPAT) {
     i = 12; /* 4kB frags in wire-compat mode */
-    omx__verbose_printf("Using MX-wire-compatible 4kB medium frags (pipeline 12)\n");
+    omx__verbose_printf(NULL, "Using MX-wire-compatible 4kB medium frags (pipeline 12)\n");
     omx__debug_assert(i <= OMX_SENDQ_ENTRY_SHIFT);
     omx__debug_assert(i <= OMX_RECVQ_ENTRY_SHIFT);
     omx__debug_assert((1<<i) + sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag) < omx__driver_desc->mtu);
@@ -424,7 +424,7 @@ omx__init_comms(void)
 	     && i<=OMX_SENDQ_ENTRY_SHIFT
 	     && i<=OMX_RECVQ_ENTRY_SHIFT; i++);
     i--;
-    omx__verbose_printf("Using custom %dB medium frags (pipeline %d) for MTU %d\n",
+    omx__verbose_printf(NULL, "Using custom %dB medium frags (pipeline %d) for MTU %d\n",
 			1<<i, i, omx__driver_desc->mtu);
   }
   omx__globals.medium_frag_pipeline = i;
@@ -446,7 +446,7 @@ omx__init_comms(void)
       env2++;
       omx__globals.ctxid_bits = atoi(env);
       omx__globals.ctxid_shift = atoi(env2);
-      omx__verbose_printf("Forcing ctxid bits %d shift %d\n",
+      omx__verbose_printf(NULL, "Forcing ctxid bits %d shift %d\n",
 			  omx__globals.ctxid_bits, omx__globals.ctxid_shift);
     }
   }
@@ -458,7 +458,7 @@ omx__init_comms(void)
   env = getenv("OMX_ANY_ENDPOINT");
   if (env) {
     omx__globals.any_endpoint_id = atoi(env);
-    omx__verbose_printf("Forcing OMX_ANY_ENDPOINT to endpoint #%ld\n",
+    omx__verbose_printf(NULL, "Forcing OMX_ANY_ENDPOINT to endpoint #%ld\n",
 			(unsigned long) omx__globals.any_endpoint_id);
   }
 }

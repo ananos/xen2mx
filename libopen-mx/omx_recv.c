@@ -450,7 +450,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     uint64_t now = omx__driver_desc->jiffies;
     uint64_t delay = now - omx_handler_jiffies_start;
     if (delay > omx__driver_desc->hz)
-      omx__verbose_printf("Unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
+      omx__verbose_printf(ep, "Unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
 			  (unsigned long long) delay/omx__driver_desc->hz, (unsigned long long) delay);
   }
 #endif
@@ -672,14 +672,14 @@ omx__process_recv(struct omx_endpoint *ep,
 		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq));
 
   if (unlikely(OMX__SESNUM(seqnum ^ partner->next_frag_recv_seq)) != 0) {
-    omx__verbose_printf("Obsolete session message received (session %d seqnum %d instead of session %d)\n",
+    omx__verbose_printf(ep, "Obsolete session message received (session %d seqnum %d instead of session %d)\n",
 			(unsigned) OMX__SESNUM_SHIFTED(seqnum), (unsigned) OMX__SEQNUM(seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(partner->next_frag_recv_seq));
     return;
   }
 
   if (unlikely(OMX__SESNUM(piggyack ^ partner->next_send_seq)) != 0) {
-    omx__verbose_printf("Obsolete session piggyack received (session %d seqnum %d instead of session %d)\n",
+    omx__verbose_printf(ep, "Obsolete session piggyack received (session %d seqnum %d instead of session %d)\n",
 			(unsigned) OMX__SESNUM_SHIFTED(piggyack), (unsigned) OMX__SEQNUM(piggyack),
 			(unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
     return;
@@ -806,7 +806,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     uint64_t now = omx__driver_desc->jiffies;
     uint64_t delay = now - omx_handler_jiffies_start;
     if (delay > omx__driver_desc->hz)
-      omx__verbose_printf("Unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
+      omx__verbose_printf(ep, "Unexpected handler disabled progression during %lld seconds (%lld jiffies)\n",
 			  (unsigned long long) delay/omx__driver_desc->hz, (unsigned long long) delay);
   }
 #endif

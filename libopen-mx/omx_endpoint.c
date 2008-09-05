@@ -152,7 +152,7 @@ omx__endpoint_bind_process(struct omx_endpoint *ep, const char *bindstring)
     while (fgets(line, OMX_PROCESS_BINDING_LENGTH_MAX, file)) {
       if (sscanf(line, "board %s ep %ld irq %ld mask %llx", board_addr_str, &eid, &irq, &irqmask) == 4
 	  && !strcmp(ep->board_addr_str, board_addr_str) && eid == ep->endpoint_index) {
-        omx__verbose_printf("Using binding %llx from file %s for process pid %ld with endpoint %d\n",
+        omx__verbose_printf(NULL, "Using binding %llx from file %s for process pid %ld with endpoint %d\n",
 			    irqmask, filename, (unsigned long) getpid(), ep->endpoint_index);
 	i=0;
 	while (irqmask) {
@@ -186,7 +186,7 @@ omx__endpoint_bind_process(struct omx_endpoint *ep, const char *bindstring)
     }
    
     CPU_SET(i, &cs);
-    omx__verbose_printf("Forcing binding on cpu #%d for process pid %ld with endpoint %d\n",
+    omx__verbose_printf(NULL, "Forcing binding on cpu #%d for process pid %ld with endpoint %d\n",
 			i, (unsigned long) getpid(), ep->endpoint_index);
     sched_setaffinity(0, sizeof(cpu_set_t), &cs);
   }
@@ -354,13 +354,13 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
       break;
     }
     case OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX: {
-      omx__verbose_printf("setting endpoint unexp queue max ignored for now\n");
+      omx__verbose_printf(NULL, "setting endpoint unexp queue max ignored for now\n");
       break;
     }
     case OMX_ENDPOINT_PARAM_CONTEXT_ID: {
       ctxid_bits = param_array[i].val.context_id.bits;
       ctxid_shift = param_array[i].val.context_id.shift;
-      omx__verbose_printf("Setting %d bits of context id at offset %d in matching\n",
+      omx__verbose_printf(NULL, "Setting %d bits of context id at offset %d in matching\n",
 			  ctxid_bits, ctxid_shift);
       break;
     }
@@ -880,14 +880,14 @@ omx__request_alloc_check(struct omx_endpoint *ep)
     if (j > 0) {
       nr += j;
       if (omx__globals.check_request_alloc > 2)
-        omx__verbose_printf("Found %d requests in recv queue #%d\n", j, i);
+        omx__verbose_printf(ep, "Found %d requests in recv queue #%d\n", j, i);
     }
 
     j = omx__queue_count(&ep->ctxid[i].unexp_req_q);
     if (j > 0) {
       nr += j;
       if (omx__globals.check_request_alloc > 2)
-        omx__verbose_printf("Found %d requests in unexp queue #%d\n", j, i);
+        omx__verbose_printf(ep, "Found %d requests in unexp queue #%d\n", j, i);
     }
   }
 
@@ -895,81 +895,81 @@ omx__request_alloc_check(struct omx_endpoint *ep)
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in need-resources send queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in need-resources send queue\n", j);
   }
 
   j = omx__queue_count(&ep->need_seqnum_send_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in need-seqnum send queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in need-seqnum send queue\n", j);
   }
 
   j = omx__queue_count(&ep->driver_medium_sending_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in driver medium sending queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in driver medium sending queue\n", j);
   }
 
   j = omx__queue_count(&ep->partial_medium_recv_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in partial medium recv queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in partial medium recv queue\n", j);
   }
 
   j = omx__queue_count(&ep->large_send_need_reply_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in large send need-reply queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in large send need-reply queue\n", j);
   }
 
   j = omx__queue_count(&ep->driver_pulling_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in driver pulling queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in driver pulling queue\n", j);
   }
 
   j = omx__queue_count(&ep->connect_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in connect queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in connect queue\n", j);
   }
 
   j = omx__queue_count(&ep->non_acked_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in non-acked queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in non-acked queue\n", j);
   }
 
   j = omx__queue_count(&ep->unexp_self_send_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in large send self unexp queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in large send self unexp queue\n", j);
   }
 
   j = omx__queue_count(&ep->done_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in done queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in done queue\n", j);
   }
 
   j = omx__queue_count(&ep->internal_done_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf("Found %d requests in internal done queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in internal done queue\n", j);
   }
 
   if (nr != ep->req_alloc_nr || omx__globals.check_request_alloc > 1)
-    omx__verbose_printf("Found %d requests in queues for %d allocations\n", nr, ep->req_alloc_nr);
+    omx__verbose_printf(ep, "Found %d requests in queues for %d allocations\n", nr, ep->req_alloc_nr);
   if (nr != ep->req_alloc_nr)
     omx__abort(ep, "%d requests out of %d missing in endpoint queues\n", ep->req_alloc_nr - nr, ep->req_alloc_nr);
 #endif

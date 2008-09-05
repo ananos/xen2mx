@@ -41,7 +41,7 @@ omx__request_alloc_exit(struct omx_endpoint *ep)
 {
 #ifdef OMX_LIB_DEBUG
   if (ep->req_alloc_nr)
-    omx__verbose_printf("%d requests were not freed on endpoint close\n", ep->req_alloc_nr);
+    omx__verbose_printf(ep, "%d requests were not freed on endpoint close\n", ep->req_alloc_nr);
 #endif
 }
 
