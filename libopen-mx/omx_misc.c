@@ -304,3 +304,39 @@ omx_cancel(omx_endpoint_t ep,
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
+
+#define OMX_MESSAGE_PREFIX_LENGTH_MAX 256
+char *
+omx__create_message_prefix(struct omx_endpoint *ep)
+{
+  char * buffer, *src, *dst, *c;
+  int len;
+
+  buffer = malloc(OMX_MESSAGE_PREFIX_LENGTH_MAX);
+  if (!buffer)
+    omx__abort(NULL, "Failed to allocate message prefix\n");
+
+  src = omx__globals.message_prefix_format;
+  dst = buffer;
+
+  while ((c = strchr(src, '%')) != NULL) {
+    strncpy(dst, src, c-src);
+    dst += c-src; src = c; 
+    if (!strncmp(src, "%P", 2)) {
+      len = sprintf(dst, "%ld", (unsigned long) getpid());
+      src += 2; dst += len;
+    } else if (!strncmp(src, "%E", 2)) {
+      if (ep) {
+        len = sprintf(dst, "%ld", (unsigned long) ep->endpoint_index);
+      } else {
+        *dst = 'X'; len = 1;
+      }
+      src += 2; dst += len;
+    } else {
+      *dst++ = *src++;
+    }
+  }
+  strcpy(dst, src);
+
+  return buffer;
+}

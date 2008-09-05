@@ -554,6 +554,7 @@ struct omx__globals {
   unsigned ctxid_shift;
   char *process_binding;
   char *message_prefix;
+  char *message_prefix_format;
 };
 
 enum omx__internal_return_code {

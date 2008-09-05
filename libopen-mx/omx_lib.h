@@ -24,6 +24,7 @@
 #endif
 
 #include <stdio.h>
+#include <unistd.h>
 #include <stdint.h>
 #include <string.h>
 #include <assert.h>
@@ -610,6 +611,9 @@ omx__strreqtype(enum omx__request_type type);
 
 extern void
 omx__sprintf_reqstate(uint16_t state, char *str);
+
+extern char *
+omx__create_message_prefix(struct omx_endpoint *ep);
 
 extern void
 omx__foreach_endpoint(void (*func)(struct omx_endpoint *));

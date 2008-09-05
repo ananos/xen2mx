@@ -40,7 +40,14 @@ omx__init_api(int app_api)
   char *env;
   int err;
 
-  omx__globals.message_prefix = "Open-MX: ";
+  /**************************
+   * Messaging configuration
+   */
+  if (getenv("OMX_VERBOSE_PREFIX"))
+    omx__globals.message_prefix_format = "Open-MX:p%P-p%E: ";
+  else
+    omx__globals.message_prefix_format = "Open-MX: ";
+  omx__globals.message_prefix = omx__create_message_prefix(NULL);
 
   /*******************************************
    * Verbose and debug messages configuration
