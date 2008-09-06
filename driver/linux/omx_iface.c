@@ -955,32 +955,53 @@ omx_netdevice_notifier_cb(struct notifier_block *unused,
 			   unsigned long event, void *ptr)
 {
 	struct net_device *ifp = (struct net_device *) ptr;
+	struct omx_iface * iface;
 
-	if (event == NETDEV_UNREGISTER) {
-		struct omx_iface * iface;
+	mutex_lock(&omx_ifaces_mutex);
+	iface = omx_iface_find_by_ifp(ifp);
+	if (!iface)
+		goto out_with_lock;
 
-		mutex_lock(&omx_ifaces_mutex);
-		iface = omx_iface_find_by_ifp(ifp);
-		if (iface) {
-			int ret;
-			printk(KERN_INFO "Open-MX: interface '%s' being unregistered, forcing closing of endpoints...\n",
-			       ifp->name);
-			/* there is no need to disable incoming packets since
-			 * the ethernet ifp is already disabled before the notifier is called
-			 */
-			ret = omx_iface_detach(iface, 1 /* force */);
-			BUG_ON(ret);
-
-			/*
-			 * the device will be released when the last reference is actually released,
-			 * there's no need to wait for it, the caller will do it in rtnl_unlock()
-			 */
-		}
-		mutex_unlock(&omx_ifaces_mutex);
+	switch (event) {
+	case NETDEV_UNREGISTER: {
+		int ret;
+		printk(KERN_INFO "Open-MX: interface '%s' being unregistered, forcing closing of endpoints...\n",
+		       ifp->name);
+		/* there is no need to disable incoming packets since
+		 * the ethernet ifp is already disabled before the notifier is called
+		 */
+		ret = omx_iface_detach(iface, 1 /* force */);
+		BUG_ON(ret);
+		/*
+		 * the device will be released when the last reference is actually released,
+		 * there's no need to wait for it, the caller will do it in rtnl_unlock()
+		 */
+		break;
 	}
-	/* could check NETDEV_DOWN, NETDEV_UP or NETDEV_CHANGEMTU and report a message */
-	/* could check NETDEV_CHANGENAME and update the peer name if unchanged */
+	case NETDEV_CHANGEMTU: {
+		unsigned mtu = ifp->mtu;
+		if (mtu < OMX_MTU)
+	                printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' MTU changed to %d, should be at least %d\n",
+			       ifp->name, mtu, OMX_MTU);
+		else
+	                printk(KERN_INFO "Open-MX: Interface '%s' MTU changed to %d, is ok now\n",
+			       ifp->name, mtu);
+		break;
+	}
+	case NETDEV_UP: {
+                printk(KERN_INFO "Open-MX: Interface '%s' MTU is now up\n",
+		       ifp->name);
+		break;
+	}
+	case NETDEV_DOWN: {
+		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' is now down\n",
+		       ifp->name);
+		break;
+	}
+	}
 
+ out_with_lock:
+	mutex_unlock(&omx_ifaces_mutex);
 	return NOTIFY_DONE;
 }
 
