@@ -1052,22 +1052,11 @@ omx_net_init(void)
 	if (omx_copybench)
 		omx_net_copy_bench();
 
-	omx_pkt_types_init();
-
-	dev_add_pack(&omx_pt);
-
-	ret = register_netdevice_notifier(&omx_netdevice_notifier);
-	if (ret < 0) {
-		printk(KERN_ERR "Open-MX: failed to register netdevice notifier\n");
-		goto out_with_pack;
-	}
-
-
 	omx_shared_fake_iface = kzalloc(sizeof(struct omx_iface), GFP_KERNEL);
 	if (!omx_shared_fake_iface) {
                 printk(KERN_ERR "Open-MX: Failed to the fake iface for shared communication counters\n");
                 ret = -ENOMEM;
-                goto out_with_notifier;
+                goto out;
         }
 
 	omx_ifaces = kzalloc(omx_iface_max * sizeof(struct omx_iface *), GFP_KERNEL);
@@ -1076,6 +1065,15 @@ omx_net_init(void)
 		ret = -ENOMEM;
 		goto out_with_shared_fake_iface;
 	}
+
+	ret = register_netdevice_notifier(&omx_netdevice_notifier);
+	if (ret < 0) {
+		printk(KERN_ERR "Open-MX: failed to register netdevice notifier\n");
+		goto out_with_ifaces;
+	}
+
+	omx_pkt_types_init();
+	dev_add_pack(&omx_pt);
 
 	if (omx_delayed_ifnames) {
 		/* attach ifaces whose name are in ifnames (limited to omx_iface_max) */
@@ -1116,12 +1114,11 @@ omx_net_init(void)
 	printk(KERN_INFO "Open-MX: attached %d interfaces\n", omx_iface_nr);
 	return 0;
 
+ out_with_ifaces:
+	kfree(omx_ifaces);
  out_with_shared_fake_iface:
 	kfree(omx_shared_fake_iface);
- out_with_notifier:
-	unregister_netdevice_notifier(&omx_netdevice_notifier);
- out_with_pack:
-	dev_remove_pack(&omx_pt);
+ out:
 	return ret;
 }
 
