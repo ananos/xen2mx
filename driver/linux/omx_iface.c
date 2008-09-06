@@ -300,6 +300,22 @@ omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *da
 }
 
 void
+omx_for_each_iface_endpoint(struct omx_iface *iface, int (*handler)(struct omx_endpoint *endpoint, void *data), void *data)
+{
+	int i;
+
+	rcu_read_lock();
+	for(i=0; i<omx_endpoint_max; i++) {
+		struct omx_endpoint *endpoint = rcu_dereference(iface->endpoints[i]);
+		if (!endpoint)
+			continue;
+		if (handler(endpoint, data) < 0)
+			break;
+	}
+	rcu_read_unlock();
+}
+
+void
 omx_for_each_endpoint(int (*handler)(struct omx_endpoint *endpoint, void *data), void *data)
 {
 	int i,j;
@@ -946,6 +962,22 @@ omx_iface_get_endpoint_irq(uint32_t board_index, uint32_t endpoint_index,
  * Netdevice notifier
  */
 
+static int
+omx_add_endpoint_desc_status_flag_handler(struct omx_endpoint *endpoint, void *data)
+{
+	unsigned long flag = (unsigned long) data;
+	endpoint->userdesc->status |= flag;
+	return 0;
+}
+
+static int
+omx_remove_endpoint_desc_status_flag_handler(struct omx_endpoint *endpoint, void *data)
+{
+	unsigned long flag = (unsigned long) data;
+	endpoint->userdesc->status &= ~flag;
+	return 0;
+}
+
 /*
  * There are no restrictions on this callback since this is a raw notifier chain,
  * it can block, allocate, ...
@@ -980,22 +1012,31 @@ omx_netdevice_notifier_cb(struct notifier_block *unused,
 	}
 	case NETDEV_CHANGEMTU: {
 		unsigned mtu = ifp->mtu;
-		if (mtu < OMX_MTU)
+		if (mtu < OMX_MTU) {
 	                printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' MTU changed to %d, should be at least %d\n",
 			       ifp->name, mtu, OMX_MTU);
-		else
+			omx_for_each_iface_endpoint(iface, omx_add_endpoint_desc_status_flag_handler,
+						    (void*) OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU);
+		} else {
 	                printk(KERN_INFO "Open-MX: Interface '%s' MTU changed to %d, is ok now\n",
 			       ifp->name, mtu);
+			omx_for_each_iface_endpoint(iface, omx_remove_endpoint_desc_status_flag_handler,
+						    (void*) OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU);
+		}
 		break;
 	}
 	case NETDEV_UP: {
                 printk(KERN_INFO "Open-MX: Interface '%s' MTU is now up\n",
 		       ifp->name);
+		omx_for_each_iface_endpoint(iface, omx_remove_endpoint_desc_status_flag_handler,
+					    (void*) OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN);
 		break;
 	}
 	case NETDEV_DOWN: {
 		printk(KERN_WARNING "Open-MX: WARNING: Interface '%s' is now down\n",
 		       ifp->name);
+		omx_for_each_iface_endpoint(iface, omx_add_endpoint_desc_status_flag_handler,
+					    (void*) OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN);
 		break;
 	}
 	}
