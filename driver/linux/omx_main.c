@@ -45,7 +45,7 @@ int omx_iface_max = 32;
 module_param_named(ifaces, omx_iface_max, uint, S_IRUGO);
 MODULE_PARM_DESC(ifaces, "Maximum number of attached interfaces");
 
-int omx_endpoint_max = 8;
+int omx_endpoint_max = 32;
 module_param_named(endpoints, omx_endpoint_max, uint, S_IRUGO);
 MODULE_PARM_DESC(endpoints, "Maximum number of endpoints per interface");
 
