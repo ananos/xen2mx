@@ -307,7 +307,7 @@ omx_for_each_iface_endpoint(struct omx_iface *iface, int (*handler)(struct omx_e
 	rcu_read_lock();
 	for(i=0; i<omx_endpoint_max; i++) {
 		struct omx_endpoint *endpoint = rcu_dereference(iface->endpoints[i]);
-		if (!endpoint)
+		if (!endpoint || endpoint->status != OMX_ENDPOINT_STATUS_OK)
 			continue;
 		if (handler(endpoint, data) < 0)
 			break;
@@ -328,7 +328,7 @@ omx_for_each_endpoint(int (*handler)(struct omx_endpoint *endpoint, void *data),
 
 		for(j=0; j<omx_endpoint_max; j++) {
 			struct omx_endpoint *endpoint = rcu_dereference(iface->endpoints[j]);
-			if (!endpoint)
+			if (!endpoint || endpoint->status != OMX_ENDPOINT_STATUS_OK)
 				continue;
 			if (handler(endpoint, data) < 0)
 				break;
@@ -351,7 +351,7 @@ omx_for_each_endpoint_in_mm(struct mm_struct *mm,
 
 		for(j=0; j<omx_endpoint_max; j++) {
 			struct omx_endpoint *endpoint = rcu_dereference(iface->endpoints[j]);
-			if (!endpoint || endpoint->opener_mm != mm)
+			if (!endpoint || endpoint->status != OMX_ENDPOINT_STATUS_OK || endpoint->opener_mm != mm)
 				continue;
 			if (handler(endpoint, data) < 0)
 				break;
