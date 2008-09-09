@@ -1137,8 +1137,10 @@ omx_net_init(void)
 	omx_pkt_types_init();
 	dev_add_pack(&omx_pt);
 
-	if (omx_delayed_ifnames) {
+	if (omx_delayed_ifnames && strcmp(omx_delayed_ifnames, "all")) {
 		/* attach ifaces whose name are in ifnames (limited to omx_iface_max) */
+		printk(KERN_INFO "Open-MX: attaching interfaces listed in '%s'...\n", omx_delayed_ifnames);
+
 		/* module parameter values are guaranteed to be \0-terminated */
 		omx_ifaces_store(omx_delayed_ifnames);
 		kfree(omx_delayed_ifnames);
@@ -1146,6 +1148,8 @@ omx_net_init(void)
 	} else {
 		/* attach everything ethernet/up/large-mtu (limited to omx_iface_max) */
 		struct net_device * ifp;
+
+		printk(KERN_INFO "Open-MX: attaching all valid interfaces...\n");
 
 		read_lock(&dev_base_lock);
 		omx_for_each_netdev(ifp) {
