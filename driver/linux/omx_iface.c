@@ -928,7 +928,7 @@ omx_iface_get_endpoint_irq(uint32_t board_index, uint32_t endpoint_index,
 			   uint32_t *irq)
 {
 	struct omx_iface *iface;
-	int (*get_endpoint_irq)(struct net_device *, uint32_t, unsigned int *);
+	int (*get_endpoint_irq)(struct net_device *, unsigned int, unsigned int *);
 	int ret;
 
 	ret = -EINVAL;
