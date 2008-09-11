@@ -160,8 +160,8 @@ int main(int argc, char *argv[])
   uint64_t dest_addr;
   int sender = 0;
   int verbose = 0;
-  char * recvbuffer;
-  char * sendbuffer;
+  void * recvbuffer;
+  void * sendbuffer;
   int align = 0;
   int wait = 0;
   int pause_ms = PAUSE_MS;
