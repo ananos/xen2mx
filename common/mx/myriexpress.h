@@ -24,6 +24,13 @@
 #ifndef MYRIEXPRESS_H
 #define MYRIEXPRESS_H
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+}
+#endif
+#endif
+
 #include <inttypes.h>
 #include <stdint.h>
 
@@ -354,5 +361,12 @@ extern mx_return_t mx_iget(mx_endpoint_t endpoint, void *local_addr, uint32_t le
 			   mx_endpoint_addr_t dest_endpoint, uint64_t remote_addr, void *context,
 			   mx_request_t *request);
 extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uint32_t *result);
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
 
 #endif /* MYRIEXPRESS_H */

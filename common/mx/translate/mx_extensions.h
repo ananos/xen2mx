@@ -26,6 +26,13 @@
 #ifndef MX_EXTENSIONS_H
 #define MX_EXTENSIONS_H
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+}
+#endif
+#endif
+
 #include "myriexpress.h"
 
 /***********************************
@@ -84,5 +91,12 @@ extern mx_return_t mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr,
 #define mx_get_endpoint_addr_context(addr,ctx) omx_get_endpoint_addr_context(addr,ctx)
 
 #define mx_decompose_endpoint_addr2(addr,nid,eid,sid) omx_decompose_endpoint_addr_with_session(addr,nid,eid,sid)
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
 
 #endif /* MX_EXTENSIONS_H */

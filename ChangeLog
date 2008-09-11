@@ -1,3 +1,12 @@
+Open-MX 0.9.3 aka 1.0-rc3 ()
+==========================================================
+
+* Make headers C++ compliant.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 0.9.2 aka 1.0-rc2 (September 8th 2008, svn r2040)
 =========================================================
 The Resource-Cleanup release.
@@ -14,10 +23,6 @@ Other improvements from previous release:
 * Detect various interface status change at runtime.
 * Add debugging capabilities to make sure no request has been lost.
 * Add verbose messages tuning capabilities.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 0.9.1 aka 1.0-rc1 (August 13th 2008, svn r1946)
 =======================================================

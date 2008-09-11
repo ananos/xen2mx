@@ -19,6 +19,13 @@
 #ifndef __open_mx_h__
 #define __open_mx_h__
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+}
+#endif
+#endif
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -367,5 +374,12 @@ omx_progress(omx_endpoint_t ep);
 omx_return_t
 omx_set_request_timeout(omx_endpoint_t endpoint,
 			omx_request_t request, uint32_t milliseconds);
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
 
 #endif /* __open_mx_h__ */

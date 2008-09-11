@@ -24,6 +24,13 @@
 #ifndef MX_EXTENSIONS_H
 #define MX_EXTENSIONS_H
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+}
+#endif
+#endif
+
 #include "myriexpress.h"
 
 #define MX_HAS_ICONNECT_V2 1
@@ -57,5 +64,12 @@ extern mx_return_t mx_get_endpoint_addr_context(mx_endpoint_addr_t endpoint_addr
 extern mx_return_t mx_set_request_timeout(mx_endpoint_t endpoint, mx_request_t request, uint32_t milli_seconds);
 
 extern mx_return_t mx_decompose_endpoint_addr2(mx_endpoint_addr_t endpoint_addr, uint64_t *nic_id, uint32_t *endpoint_id, uint32_t *session_id);
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
 
 #endif /* MX_EXTENSIONS_H */

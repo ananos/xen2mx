@@ -26,6 +26,13 @@
 #ifndef MYRIEXPRESS_H
 #define MYRIEXPRESS_H
 
+#ifdef __cplusplus
+extern "C" {
+#if 0
+}
+#endif
+#endif
+
 #include <inttypes.h>
 
 #include "open-mx.h"
@@ -331,5 +338,12 @@ extern mx_return_t mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, ui
 
 #define mx_strerror(ret) omx_strerror(ret)
 #define mx_strstatus(code) omx_strerror(code)
+
+#ifdef __cplusplus
+#if 0
+{
+#endif
+}
+#endif
 
 #endif /* MYRIEXPRESS_H */
