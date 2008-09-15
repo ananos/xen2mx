@@ -1,6 +1,7 @@
 Open-MX 0.9.3 aka 1.0-rc3 ()
 ==========================================================
 
+* Fix driver build on Centos 5.2 kernel.
 * Make headers C++ compliant.
 
 Caveats:

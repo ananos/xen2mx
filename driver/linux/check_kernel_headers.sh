@@ -134,10 +134,11 @@ else
   echo no
 fi
 
-# uts namespace arrived in 2.6.19
-echo -n "  checking (in kernel headers) UTS namespace availability ... "
-if grep "uts_ns" ${LINUX_HDR}/include/linux/utsname.h > /dev/null ; then
-  echo "#define OMX_HAVE_UTS_NAMESPACE 1" >> ${TMP_CHECKS_NAME}
+# task_struct nsproxy arrived in 2.6.19
+echo -n "  checking (in kernel headers) nsproxy presence in task_struct ... "
+if sed -ne '/^struct task_struct/,/^};/p' ${LINUX_HDR}/include/linux/sched.h \
+  | grep "struct nsproxy" > /dev/null ; then
+  echo "#define OMX_HAVE_TASK_STRUCT_NSPROXY 1" >> ${TMP_CHECKS_NAME}
   echo yes
 else
   echo no
