@@ -27,6 +27,7 @@ OMX_PEERS_FILE=@omx_peers_file@
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
 LINUX_RELEASE=$(uname -r)
+OMX_MODULE="${OMX_PREFIX}/lib/modules/${LINUX_RELEASE}/open-mx.ko"
 
 set -e
 
@@ -49,6 +50,7 @@ usage () {
 	echo "  --dynamic-peers=<prog>	Force <prog> as the peer discovery tool instead of $OMX_PEER_DISCOVERY"
 	echo "  --static-peers		Force static peers from $OMX_PEERS_FILE"
 	echo "  --static-peers=<file>		Force static peers from <file>"
+	echo "  --module=<file>		Use kernel module from <file>"
 	exit 1
 }
 
@@ -65,9 +67,11 @@ while [ ${1##--} != $1 ] ; do
     else if [ ${1##--static-peers=} != $1 ] ; then
 	OMX_STATIC_MAPPING=1
 	OMX_PEERS_FILE=${1##--static-peers=}
+    else if [ ${1##--module=} != $1 ] ; then
+	OMX_MODULE=${1##--module=}
     else
 	usage
-    fi fi fi fi
+    fi fi fi fi fi
     shift
     [ $# -eq 0 ] && usage
 done
@@ -87,7 +91,12 @@ unload_omx() {
 load_omx() {
     echo "Loading Open-MX driver"
     params=" $OMX_MODULE_PARAMS $*"
-    module="${OMX_PREFIX}/lib/modules/${LINUX_RELEASE}/open-mx.ko"
+    module=${OMX_MODULE}
+
+    if ! test -f $module; then
+	echo "Cannot find module $module"
+        exit -1
+    fi
 
     # modprobe the dependencies
     depends=$(/sbin/modinfo $module | grep ^depends | awk '{print $2}' | sed 's/,/ /')
