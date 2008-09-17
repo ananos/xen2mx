@@ -1,3 +1,9 @@
+* [k]cachegrind
+
+* constify the event queue as MX now does and mmap recvq+eventq's as RO
+
+* only poll what's really need to be polled in the progression loop
+
 * optimize mtu 1500 by using more than 1024k medium or pull reply packets
   + break medium wire compat to add a medium frag length
   + ignore medium frag pipeline, and replace >> pipeline with using the frag length

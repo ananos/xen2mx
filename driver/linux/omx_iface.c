@@ -947,10 +947,19 @@ omx_iface_get_endpoint_irq(uint32_t board_index, uint32_t endpoint_index,
 		goto out_with_rcu_lock;
 
 	get_endpoint_irq = __symbol_get(iface->get_endpoint_irq_symbol_name);
-	if (!get_endpoint_irq)
+	if (!get_endpoint_irq) {
+		printk("Open-MX: Failed to find driver hook '%s' for iface '%s'\n",
+		       iface->get_endpoint_irq_symbol_name, iface->eth_ifp->name);
+		kfree(iface->get_endpoint_irq_symbol_name);
+		iface->get_endpoint_irq_symbol_name = NULL;
 		goto out_with_rcu_lock;
+	}
 
 	ret = get_endpoint_irq(iface->eth_ifp, endpoint_index, irq);
+	if (ret < 0) {
+		printk("Open-MX: Driver hook '%s' for iface '%s' returned error %d\n",
+		       iface->get_endpoint_irq_symbol_name, iface->eth_ifp->name, ret);
+	}
 
 	symbol_put_addr(get_endpoint_irq);
 
