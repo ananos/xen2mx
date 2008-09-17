@@ -479,6 +479,7 @@ omx_iface_attach(struct net_device * ifp)
  out_with_iface_hostname:
 	kfree(hostname);
  out_with_iface:
+	kfree(iface->get_endpoint_irq_symbol_name);
 	kfree(iface);
  out_with_ifp_hold:
 	return ret;
@@ -497,6 +498,7 @@ __omx_iface_last_release(struct kref *kref)
 	omx_iface_raw_exit(&iface->raw);
 	kfree(iface->endpoints);
 	kfree(iface->peer.hostname);
+	kfree(iface->get_endpoint_irq_symbol_name);
 	kfree(iface);
 
 	/* release the interface now, it will wakeup the unregister notifier waiting in rtnl_unlock() */
