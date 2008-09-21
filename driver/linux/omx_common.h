@@ -92,6 +92,9 @@ extern int omx_recv_raw(struct omx_iface * iface, struct omx_hdr * mh, struct sk
 extern int omx_recv_host_query(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 extern int omx_recv_host_reply(struct omx_iface * iface, struct omx_hdr * mh, struct sk_buff * skb);
 
+/* misc */
+extern char * omx_get_driver_string(unsigned int *lenp);
+
 #endif /* __omx_common_h__ */
 
 /*

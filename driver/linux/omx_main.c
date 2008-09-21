@@ -203,6 +203,122 @@ omx_kthread_func(void *dummy)
 	return 0;
 }
 
+char *
+omx_get_driver_string(unsigned int *lenp)
+{
+	char *buffer, *tmp;
+	unsigned int buflen, len;
+
+	/* setup the driver desc string */
+#define OMX_DRIVER_STRING_LEN 1024
+	buffer = kmalloc(OMX_DRIVER_STRING_LEN, GFP_KERNEL);
+	if (!buffer) {
+		printk(KERN_ERR "Open-MX: failed to allocate driver string\n");
+		return NULL;
+	}
+	tmp = buffer;
+	buflen = 0;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		"Open-MX " VERSION "\n");
+	tmp += len;
+	buflen += len;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		" Driver ABI=0x%lx\n",
+		(unsigned long) omx_driver_userdesc->abi_version);
+	tmp += len;
+	buflen += len;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		" Configured for %d endpoints on %d interfaces with %d peers\n",
+		omx_endpoint_max, omx_iface_max, omx_peer_max);
+	tmp += len;
+	buflen += len;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		 " WireSpecs: %s EtherType=0x%lx MTU>=0x%ld\n",
+		 omx_driver_userdesc->features & OMX_DRIVER_FEATURE_WIRECOMPAT ? "WireCompatible" : "NoWireCompat",
+		 (unsigned long) ETH_P_OMX, (unsigned long) OMX_MTU);
+	tmp += len;
+	buflen += len;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		 " LargeMessages: %ld requests in parallel, %ld x %ldkB pull replies per request\n",
+		 (unsigned long) OMX_PULL_BLOCK_DESCS_NR,
+		 (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
+		 (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);
+	tmp += len;
+	buflen += len;
+	
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		" SkBuff: <=%d frags%s, ForcedCopy <=%dB\n",
+		omx_skb_frags, omx_skb_frags ? "" : " (always linear)", omx_skb_copy_max);
+	tmp += len;
+	buflen += len;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		" SharedComms: %s\n",
+		omx_driver_userdesc->features & OMX_DRIVER_FEATURE_SHARED ? "Enabled" : "Disabled");
+	tmp += len;
+	buflen += len;
+
+	if (omx_region_demand_pin)
+		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+			" Pinning: OnDemand ChunkPagesMin=%ld Max=%ld\n",
+			(unsigned long) omx_pin_chunk_pages_min,
+			(unsigned long) omx_pin_chunk_pages_max);
+	else
+		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+			" Pinning: Immediate\n");
+	tmp += len;
+	buflen += len;
+
+#ifdef CONFIG_MMU_NOTIFIER
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		" PinInvalidate: KernelSupported %s\n",
+		omx_driver_userdesc->features & OMX_DRIVER_FEATURE_PIN_INVALIDATE ? "Enabled" : "Disabled");
+#else
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		" PinInvalidate: NoKernelSupport\n");
+#endif
+	tmp += len;
+	buflen += len;
+
+#ifdef CONFIG_NET_DMA
+	if (omx_dmaengine)
+		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+			" DMAEngine: KernelSupported Enabled SyncCopyMin=%dB AsyncCopyMin=%dB (%dB per packet)\n",
+			omx_dma_sync_min, omx_dma_async_min, omx_dma_async_frag_min);
+	else
+		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+			" DMAEngine: KernelSupported Disabled\n");
+#else
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		" DMAEngine: NoKernelSupport\n");
+#endif
+	tmp += len;
+	buflen += len;
+
+#ifdef OMX_DRIVER_DEBUG
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		" Debug: Enabled MessageMask=0x%lx\n"
+		" DebugLossPacket: Tiny=%ld Small=%ld MediumFrag=%ld Rndv=%ld Pull=%ld PullReply=%ld\n"
+		" DebugLossPacket: Notify=%ld Connect=%ld Truc=%ld NackLib=%ld NackMCP=%ld Raw=%ld\n",
+		(unsigned long) omx_debug,
+		omx_TINY_packet_loss, omx_SMALL_packet_loss, omx_MEDIUM_FRAG_packet_loss, omx_RNDV_packet_loss,	omx_PULL_REQ_packet_loss, omx_PULL_REPLY_packet_loss,
+		omx_NOTIFY_packet_loss, omx_CONNECT_packet_loss, omx_TRUC_packet_loss, omx_NACK_LIB_packet_loss, omx_NACK_MCP_packet_loss, omx_RAW_packet_loss);
+#else
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		" Debug: Disabled\n");
+#endif
+	tmp += len;
+	buflen += len;
+
+	*lenp = buflen+1; /* add the ending \0 */
+	return buffer;
+}
+
 static __init int
 omx_init(void)
 {
@@ -247,8 +363,6 @@ omx_init(void)
 	omx_driver_userdesc->mtu = OMX_MTU;
 #endif
 
-	printk(KERN_INFO "Open-MX: configured for %d endpoints on %d interfaces with %d peers\n",
-	       omx_endpoint_max, omx_iface_max, omx_peer_max);
 	if (omx_endpoint_max > OMX_ENDPOINT_INDEX_MAX) {
 		printk(KERN_INFO "Open-MX: Cannot use more than %d endpoints per board\n",
 		       OMX_ENDPOINT_INDEX_MAX);
@@ -261,72 +375,12 @@ omx_init(void)
 		ret = -EINVAL;
 		goto out_with_driver_userdesc;
 	}
-
-	if (omx_skb_frags)
-		printk(KERN_INFO "Open-MX: using at most %d frags per skb\n", omx_skb_frags);
-	else
-		printk(KERN_INFO "Open-MX: using linear skb only (no frags)\n");
 	if (omx_skb_frags > MAX_SKB_FRAGS) {
 		printk(KERN_INFO "Open-MX: Cannot use more than MAX_SKB_FRAGS (%ld) skb frags\n",
 		       (unsigned long) MAX_SKB_FRAGS);
 		ret = -EINVAL;
 		goto out_with_driver_userdesc;
 	}
-
-	printk(KERN_INFO "Open-MX: using Ethertype 0x%lx\n",
-	       (unsigned long) ETH_P_OMX);
-	printk(KERN_INFO "Open-MX: requires MTU >= %ld\n",
-	       (unsigned long) OMX_MTU);
-	printk(KERN_INFO "Open-MX: using %ld x %ldkB pull replies per request, with %ld requests in parallel\n",
-	       (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
-	       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX,
-	       (unsigned long) OMX_PULL_BLOCK_DESCS_NR);
-
-#ifdef OMX_DRIVER_DEBUG
-	if (omx_TINY_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating tiny packet loss every %ld packets\n",
-		       omx_TINY_packet_loss);
-	if (omx_SMALL_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating small packet loss every %ld packets\n",
-		       omx_SMALL_packet_loss);
-	if (omx_MEDIUM_FRAG_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating medium frag packet loss every %ld packets\n",
-		       omx_MEDIUM_FRAG_packet_loss);
-	if (omx_RNDV_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating rndv packet loss every %ld packets\n",
-		       omx_RNDV_packet_loss);
-	if (omx_PULL_REQ_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating pull request packet loss every %ld packets\n",
-		       omx_PULL_REQ_packet_loss);
-	if (omx_PULL_REPLY_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating pull reply packet loss every %ld packets\n",
-		       omx_PULL_REPLY_packet_loss);
-	if (omx_NOTIFY_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating notify packet loss every %ld packets\n",
-		       omx_NOTIFY_packet_loss);
-	if (omx_CONNECT_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating connect packet loss every %ld packets\n",
-		       omx_CONNECT_packet_loss);
-	if (omx_TRUC_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating truc packet loss every %ld packets\n",
-		       omx_TRUC_packet_loss);
-	if (omx_NACK_LIB_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating nack lib packet loss every %ld packets\n",
-		       omx_NACK_LIB_packet_loss);
-	if (omx_NACK_MCP_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating nack mcp packet loss every %ld packets\n",
-		       omx_NACK_MCP_packet_loss);
-	if (omx_RAW_packet_loss)
-		printk(KERN_INFO "Open-MX: simulating raw packet loss every %ld packets\n",
-		       omx_NACK_MCP_packet_loss);
-#endif /* OMX_DRIVER_DEBUG */
-
-#ifdef CONFIG_MMU_NOTIFIER
-	if (omx_pin_invalidate)
-		printk(KERN_INFO "Open-MX: MMU notifiers supported, enabling pin invalidating\n");
-	else
-		printk(KERN_INFO "Open-MX: MMU notifiers supported but pin invalidating disabled\n");
-#endif
 
 	/* setup a timer to update jiffies in the driver user descriptor */
 	setup_timer(&omx_driver_userdesc_update_timer, omx_driver_userdesc_update_handler, 0);

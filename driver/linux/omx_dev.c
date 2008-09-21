@@ -820,12 +820,44 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 	}
 }
 
+ssize_t
+omx_miscdev_read(struct file* filp, char* buff, size_t count, loff_t* offp)
+{
+	ssize_t ret = 0;
+	char * buffer;
+	unsigned int len;
+	
+	buffer = omx_get_driver_string(&len);
+	if (!buffer)
+		goto out;
+
+	if (*offp > len)
+		goto out_with_buffer;
+
+	if (*offp + count > len)
+		count = len - *offp;
+
+	ret = copy_to_user(buff, buffer + *offp, count);
+	if (ret)
+		ret = -EFAULT;
+	else
+		ret = count;
+
+	*offp += count;
+
+ out_with_buffer:
+	kfree(buffer);
+ out:
+	return ret;
+}
+
 static struct file_operations
 omx_miscdev_fops = {
 	.owner = THIS_MODULE,
 	.open = omx_miscdev_open,
 	.release = omx_miscdev_release,
 	.mmap = omx_miscdev_mmap,
+	.read = omx_miscdev_read,
 	.unlocked_ioctl = omx_miscdev_ioctl,
 #ifdef CONFIG_COMPAT
 	.compat_ioctl = omx_miscdev_ioctl,

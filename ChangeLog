@@ -8,6 +8,7 @@ Open-MX 0.9.3 aka 1.0-rc3 ()
 Caveats:
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
+* Architectures with page size != 4kB are not supported yet.
 
 Open-MX 0.9.2 aka 1.0-rc2 (September 8th 2008, svn r2040)
 =========================================================
