@@ -10,6 +10,9 @@ Questions may be asked there too.
 When reporting a problem, make sure you include:
 * the version number of Open-MX
   (or the SVN revision if you checkouted the SVN repository)
+* the output (as root) of
+  + cat /dev/open-mx
+  + omx_info
 * a description of the ethernet interfaces that you are trying
   to use, with the whole outputs (as root) of:
   + lspci
@@ -19,8 +22,8 @@ When reporting a problem, make sure you include:
   + ethtool -c <iface>
 * a description of your network topology:
   + how are the interfaces connected?
-  + through what switch(es)? is the MTU set to 9000 there too?
+  + through what switch(es)? is the MTU configured there too?
 * the whole output of the program if a program did not work
   as expected
 * the whole output of configure, config.log and omx_check.h,
-  and of the compilation if reporting a kernel build problem
+  and of the compilation if reporting a build problem
