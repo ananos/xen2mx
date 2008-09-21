@@ -43,47 +43,6 @@ if test $AR = false; then
   AC_MSG_ERROR(ar program not found in \$PATH)
 fi
 
-AC_C_CONST
-AC_C_INLINE
-AC_C_VOLATILE
-
-AC_HEADER_STDC
-AC_HEADER_TIME
-AC_CHECK_HEADERS([arpa/inet.h])
-AC_CHECK_HEADERS([fcntl.h])
-AC_CHECK_HEADERS([inttypes.h])
-AC_CHECK_HEADERS([malloc.h])
-AC_CHECK_HEADERS([stdint.h])
-AC_CHECK_HEADERS([stdlib.h])
-AC_CHECK_HEADERS([string.h])
-AC_CHECK_HEADERS([sys/ioctl.h])
-AC_CHECK_HEADERS([sys/time.h])
-AC_CHECK_HEADERS([unistd.h])
-
-AC_TYPE_PID_T
-AC_TYPE_SIGNAL
-AC_TYPE_SIZE_T
-AC_TYPE_UINT8_T
-AC_TYPE_UINT16_T
-AC_TYPE_UINT32_T
-AC_TYPE_UINT64_T
-AC_TYPE_INT32_T
-
-AC_FUNC_MALLOC
-AC_FUNC_MMAP
-AC_FUNC_SETVBUF_REVERSED
-AC_FUNC_STRTOD
-
-AC_CHECK_FUNCS([gettimeofday])
-AC_CHECK_FUNCS([memset])
-AC_CHECK_FUNCS([memmove])
-AC_CHECK_FUNCS([munmap])
-AC_CHECK_FUNCS([putenv])
-AC_CHECK_FUNCS([strchr])
-AC_CHECK_FUNCS([strcspn])
-AC_CHECK_FUNCS([strerror])
-AC_CHECK_FUNCS([strtoul])
-
 ########################
 # save the build config
 
