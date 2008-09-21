@@ -210,19 +210,56 @@ omx_init(void)
 
 	printk(KERN_INFO "Open-MX " VERSION " initializing...\n");
 
+	omx_driver_userdesc = omx_vmalloc_user(sizeof(struct omx_driver_desc));
+	if (!omx_driver_userdesc) {
+		printk(KERN_ERR "Open-MX: failed to allocate driver user descriptor\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* fill the driver descriptor */
+	omx_driver_userdesc->abi_version = OMX_DRIVER_ABI_VERSION;
+	omx_driver_userdesc->board_max = omx_iface_max;
+	omx_driver_userdesc->endpoint_max = omx_endpoint_max;
+	omx_driver_userdesc->peer_max = omx_peer_max;
+	omx_driver_userdesc->hz = HZ;
+	omx_driver_userdesc->jiffies = jiffies;
+	omx_driver_userdesc->peer_table_configured = 0;
+	omx_driver_userdesc->peer_table_version = 0;
+	omx_driver_userdesc->peer_table_size = 0;
+	omx_driver_userdesc->peer_table_mapper_id = -1;
+
+	/* setup driver feature mask */
+	omx_driver_userdesc->features = 0;
+#ifdef OMX_MX_WIRE_COMPAT
+	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_WIRECOMPAT;
+#endif
+#ifndef OMX_DISABLE_SHARED
+	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
+#endif
+#ifdef CONFIG_MMU_NOTIFIER
+	if (omx_pin_invalidate)
+		omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PIN_INVALIDATE;
+#endif
+#ifdef OMX_MX_WIRE_COMPAT
+	omx_driver_userdesc->mtu = 4096+64; /* roughly MX "mtu" */
+#else
+	omx_driver_userdesc->mtu = OMX_MTU;
+#endif
+
 	printk(KERN_INFO "Open-MX: configured for %d endpoints on %d interfaces with %d peers\n",
 	       omx_endpoint_max, omx_iface_max, omx_peer_max);
 	if (omx_endpoint_max > OMX_ENDPOINT_INDEX_MAX) {
 		printk(KERN_INFO "Open-MX: Cannot use more than %d endpoints per board\n",
 		       OMX_ENDPOINT_INDEX_MAX);
 		ret = -EINVAL;
-		goto out;
+		goto out_with_driver_userdesc;
 	}
 	if (omx_peer_max > OMX_PEER_INDEX_MAX) {
 		printk(KERN_INFO "Open-MX: Cannot use more than %d peers\n",
 		       OMX_PEER_INDEX_MAX);
 		ret = -EINVAL;
-		goto out;
+		goto out_with_driver_userdesc;
 	}
 
 	if (omx_skb_frags)
@@ -233,7 +270,7 @@ omx_init(void)
 		printk(KERN_INFO "Open-MX: Cannot use more than MAX_SKB_FRAGS (%ld) skb frags\n",
 		       (unsigned long) MAX_SKB_FRAGS);
 		ret = -EINVAL;
-		goto out;
+		goto out_with_driver_userdesc;
 	}
 
 	printk(KERN_INFO "Open-MX: using Ethertype 0x%lx\n",
@@ -284,46 +321,12 @@ omx_init(void)
 		       omx_NACK_MCP_packet_loss);
 #endif /* OMX_DRIVER_DEBUG */
 
-	omx_driver_userdesc = omx_vmalloc_user(sizeof(struct omx_driver_desc));
-	if (!omx_driver_userdesc) {
-		printk(KERN_ERR "Open-MX: failed to allocate driver user descriptor\n");
-		ret = -ENOMEM;
-		goto out;
-	}
-
-	/* fill the driver descriptor */
-	omx_driver_userdesc->abi_version = OMX_DRIVER_ABI_VERSION;
-	omx_driver_userdesc->features = 0;
-#ifdef OMX_MX_WIRE_COMPAT
-	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_WIRECOMPAT;
-#endif
-#ifndef OMX_DISABLE_SHARED
-	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
-#endif
 #ifdef CONFIG_MMU_NOTIFIER
-	if (omx_pin_invalidate) {
-		omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PIN_INVALIDATE;
+	if (omx_pin_invalidate)
 		printk(KERN_INFO "Open-MX: MMU notifiers supported, enabling pin invalidating\n");
-	} else {
+	else
 		printk(KERN_INFO "Open-MX: MMU notifiers supported but pin invalidating disabled\n");
-	}
 #endif
-
-#ifdef OMX_MX_WIRE_COMPAT
-	omx_driver_userdesc->mtu = 4096+64; /* roughly MX "mtu" */
-#else
-	omx_driver_userdesc->mtu = OMX_MTU;
-#endif
-
-	omx_driver_userdesc->board_max = omx_iface_max;
-	omx_driver_userdesc->endpoint_max = omx_endpoint_max;
-	omx_driver_userdesc->peer_max = omx_peer_max;
-	omx_driver_userdesc->hz = HZ;
-	omx_driver_userdesc->jiffies = jiffies;
-	omx_driver_userdesc->peer_table_configured = 0;
-	omx_driver_userdesc->peer_table_version = 0;
-	omx_driver_userdesc->peer_table_size = 0;
-	omx_driver_userdesc->peer_table_mapper_id = -1;
 
 	/* setup a timer to update jiffies in the driver user descriptor */
 	setup_timer(&omx_driver_userdesc_update_timer, omx_driver_userdesc_update_handler, 0);
@@ -331,7 +334,7 @@ omx_init(void)
 
 	ret = omx_dma_init();
 	if (ret < 0)
-		goto out_with_driver_userdesc;
+		goto out_with_timer;
 
 	ret = omx_peers_init();
 	if (ret < 0)
@@ -368,8 +371,9 @@ omx_init(void)
 	omx_peers_init();
  out_with_dma:
 	omx_dma_exit();
- out_with_driver_userdesc:
+ out_with_timer:
 	del_timer_sync(&omx_driver_userdesc_update_timer);
+ out_with_driver_userdesc:
 	vfree(omx_driver_userdesc);
  out:
 	printk(KERN_ERR "Failed to initialize Open-MX\n");
