@@ -248,6 +248,7 @@ case "$cmd" in
     status)
 	if grep -E 'open(-|_)mx' /proc/modules > /dev/null; then
 	    echo "Open-MX driver is loaded"
+	    cat "$MAIN_DEVICE_NAME"
 	else
 	    echo "Open-MX driver is not loaded"
 	fi
