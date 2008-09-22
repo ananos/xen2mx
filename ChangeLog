@@ -1,6 +1,7 @@
-Open-MX 0.9.3 aka 1.0-rc3 ()
+Open-MX 0.9.3 aka 1.0-rc3 (September 22th 2008, svn r2061)
 ==========================================================
 
+Improvements from previous release:
 * Fix driver build on Centos 5.2 kernel.
 * Fix a small memory leak in the driver.
 * Make headers C++ compliant.

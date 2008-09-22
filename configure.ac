@@ -15,7 +15,7 @@
 # See the GNU General Public License in COPYING.GPL for more details.
 
 AC_INIT([Open-MX],
-        0.9.2,
+        0.9.3,
         [http://open-mx.org],
         open-mx)
 AC_PREREQ(2.60)
