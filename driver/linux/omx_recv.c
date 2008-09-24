@@ -477,7 +477,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* copy what's remaining */
 	if (remaining_copy) {
 		int offset = frag_length - remaining_copy;
-		err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset + offset, remaining_copy);
+		err = skb_copy_bits(skb, hdr_len + offset, endpoint->recvq + recvq_offset + offset, remaining_copy);
 		/* cannot fail since pages are allocated by us */
 		BUG_ON(err < 0);
 	}
