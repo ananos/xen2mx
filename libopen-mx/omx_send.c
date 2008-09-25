@@ -351,8 +351,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
     uint32_t offset = 0;
 
     for(i=0; i<frags_nr; i++) {
-      unsigned chunk = remaining > omx__globals.medium_frag_length
-        ? omx__globals.medium_frag_length : remaining;
+      unsigned chunk = remaining > OMX_PACKET_RING_ENTRY_SIZE
+        ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
       medium_param->sendq_offset = sendq_index[i] << OMX_PACKET_RING_ENTRY_SHIFT;
@@ -369,8 +369,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 	if (likely(!req->generic.resends)) {
 	  int j;
 	  for(j=i+1; j<frags_nr; i++) {
-	    unsigned chunk = remaining > omx__globals.medium_frag_length
-	      ? omx__globals.medium_frag_length : remaining;
+	    unsigned chunk = remaining > OMX_PACKET_RING_ENTRY_SIZE
+	      ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
 	    memcpy(ep->sendq + (sendq_index[j] << OMX_PACKET_RING_ENTRY_SHIFT), data + offset, chunk);
 	    remaining -= chunk;
 	    offset += chunk;
@@ -388,8 +388,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
     struct omx_segscan_state state = { .seg = &req->send.segs.segs[0], .offset = 0 };
 
     for(i=0; i<frags_nr; i++) {
-      unsigned chunk = remaining > omx__globals.medium_frag_length
-        ? omx__globals.medium_frag_length : remaining;
+      unsigned chunk = remaining > OMX_PACKET_RING_ENTRY_SIZE
+        ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
       medium_param->sendq_offset = sendq_index[i] << OMX_PACKET_RING_ENTRY_SHIFT;
@@ -408,8 +408,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 	if (likely(!req->generic.resends)) {
 	  int j;
 	  for(j=i+1; j<frags_nr; i++) {
-	    unsigned chunk = remaining > omx__globals.medium_frag_length
-	      ? omx__globals.medium_frag_length : remaining;
+	    unsigned chunk = remaining > OMX_PACKET_RING_ENTRY_SIZE
+	      ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
 	    omx_continue_partial_copy_from_segments(ep, ep->sendq + (sendq_index[j] << OMX_PACKET_RING_ENTRY_SHIFT),
 						    &req->send.segs, chunk,
 						    &state);
@@ -521,7 +521,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
   medium_param->dest_endpoint = partner->endpoint_index;
   medium_param->shared = omx__partner_localization_shared(partner);
   medium_param->match_info = req->generic.status.match_info;
-  medium_param->frag_pipeline = omx__globals.medium_frag_pipeline;
+  medium_param->frag_pipeline = OMX_PACKET_RING_ENTRY_SHIFT;
   medium_param->msg_length = length;
   medium_param->session_id = partner->true_session_id;
 
@@ -552,7 +552,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
   req->generic.missing_resources = OMX_REQUEST_SEND_MEDIUM_RESOURCES;
 
-  frags_nr = (length+omx__globals.medium_frag_length-1)>>omx__globals.medium_frag_pipeline;
+  frags_nr = (length+OMX_PACKET_RING_ENTRY_SIZE-1) >> OMX_PACKET_RING_ENTRY_SHIFT;
   omx__debug_assert(frags_nr <= OMX_MEDIUM_FRAGS_MAX); /* for the sendq_index array above */
   req->send.specific.medium.frags_nr = frags_nr;
 

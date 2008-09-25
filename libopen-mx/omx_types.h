@@ -542,8 +542,6 @@ struct omx__globals {
 #ifndef OMX_DISABLE_SHARED
   int sharedcomms;
 #endif
-  unsigned medium_frag_pipeline;
-  unsigned medium_frag_length;
   unsigned rndv_threshold;
   unsigned shared_rndv_threshold;
   unsigned ack_delay_jiffies;

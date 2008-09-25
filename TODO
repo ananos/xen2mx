@@ -1,5 +1,3 @@
-* re-hardwire medium pipeline size in the lib instead of having endpoint fields
-
 * constify the event queue as MX now does and mmap recvq+eventq's as RO
 
 * only poll what's really need to be polled in the progression loop

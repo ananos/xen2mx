@@ -418,12 +418,6 @@ omx__init_comms(void)
    */
   omx__globals.process_binding = getenv("OMX_PROCESS_BINDING");
 
-  /********************
-   * Tune medium frags
-   */
-  omx__globals.medium_frag_pipeline = OMX_PACKET_RING_ENTRY_SHIFT;
-  omx__globals.medium_frag_length = OMX_PACKET_RING_ENTRY_SIZE;
-
   /*********
    * Ctxids
    */
