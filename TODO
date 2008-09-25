@@ -1,4 +1,3 @@
-* use OMX_PACKET_RING_ENTRY_SHIFT directly for the pipeline in the lib
 * re-hardwire medium pipeline size in the lib instead of having endpoint fields
 * fix skbfrags checks for 8kb mediums
 

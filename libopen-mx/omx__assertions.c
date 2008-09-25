@@ -39,6 +39,7 @@ assertions(void)
   CHECK(OMX_RETURN_CODE_MAX < OMX_INTERNAL_RETURN_CODE_MIN);
   CHECK(sizeof(omx__seqnum_t) == sizeof(((struct omx_pkt_msg *)NULL)->lib_seqnum));
   CHECK(OMX__SESNUM_BITS+OMX__SEQNUM_BITS <= 8*sizeof(omx__seqnum_t));
+  CHECK(OMX_MEDIUM_MAX <= OMX_MEDIUM_FRAG_LENGTH_MAX * OMX_MEDIUM_FRAGS_MAX);
 
   /* enforce connect lib data layout and values */
   CHECK(sizeof(((struct omx__connect_request_data *) NULL)->is_reply) == sizeof(((struct omx__connect_reply_data *) NULL)->is_reply));

@@ -198,7 +198,6 @@ omx__init_comms(void)
 {
   int debug_signum = SIGUSR1;
   char *env;
-  int i;
 
   /***************
    * Misc globals
@@ -422,26 +421,8 @@ omx__init_comms(void)
   /********************
    * Tune medium frags
    */
-  if (omx__driver_desc->mtu == 0)
-    omx__abort(NULL, "MTU=0 reported by the driver\n");
-  if (omx__driver_desc->features & OMX_DRIVER_FEATURE_WIRECOMPAT) {
-    i = 12; /* 4kB frags in wire-compat mode */
-    omx__verbose_printf(NULL, "Using MX-wire-compatible 4kB medium frags (pipeline 12)\n");
-    omx__debug_assert(i <= OMX_PACKET_RING_ENTRY_SHIFT);
-    omx__debug_assert((1<<i) + sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag) < omx__driver_desc->mtu);
-  } else {
-    /* find the largest power of two + headers that goes in this mtu */
-    for(i=0; (1<<i) + sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag) < omx__driver_desc->mtu
-	     && i<=OMX_PACKET_RING_ENTRY_SHIFT; i++);
-    i--;
-    omx__verbose_printf(NULL, "Using custom %dB medium frags (pipeline %d) for MTU %d\n",
-			1<<i, i, omx__driver_desc->mtu);
-  }
-  omx__globals.medium_frag_pipeline = i;
-  omx__globals.medium_frag_length = 1<<i;
-  if ((OMX_MEDIUM_MAX+(1<<i)-1)>>i > OMX_MEDIUM_FRAGS_MAX)
-    omx__abort(NULL, "MTU=%d requires up to %d medium frags, cannot store in %d frag slots per request\n",
-	       omx__driver_desc->mtu, (OMX_MEDIUM_MAX+(1<<i)-1)>>i, OMX_MEDIUM_FRAGS_MAX);
+  omx__globals.medium_frag_pipeline = OMX_PACKET_RING_ENTRY_SHIFT;
+  omx__globals.medium_frag_length = OMX_PACKET_RING_ENTRY_SIZE;
 
   /*********
    * Ctxids
