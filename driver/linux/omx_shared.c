@@ -292,8 +292,10 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 #endif
 	int frag_length = hdr->frag_length;
 	int sendq_offset = hdr->sendq_offset;
+	int remaining;
+	int current_recvq_offset;
+	int current_sendq_offset;
 	int err;
-
 
 	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
 							      hdr->dest_endpoint, hdr->session_id,
@@ -310,22 +312,41 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	}
 
 	/* copy the data */
+	current_sendq_offset = sendq_offset;
+	current_recvq_offset = recvq_offset;
+	remaining = frag_length;
 #ifdef CONFIG_NET_DMA
 	if (omx_dmaengine && frag_length >= omx_dma_sync_min)
 		dma_chan = get_softnet_dma();
 	if (dma_chan) {
-		dma_cookie = dma_async_memcpy_pg_to_pg(dma_chan,
-						       dst_endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT], 0,
-						       src_endpoint->sendq_pages[sendq_offset >> PAGE_SHIFT], 0,
-						       frag_length);
-		dma_async_memcpy_issue_pending(dma_chan);
+
+		while (remaining) {
+			dma_cookie_t new_cookie;
+			int chunk = remaining;
+			if (chunk > PAGE_SIZE)
+				chunk = PAGE_SIZE;
+			new_cookie = dma_async_memcpy_pg_to_pg(dma_chan,
+							       dst_endpoint->recvq_pages[current_recvq_offset >> PAGE_SHIFT],
+							       current_recvq_offset & (~PAGE_MASK),
+							       src_endpoint->sendq_pages[current_sendq_offset >> PAGE_SHIFT],
+							       current_sendq_offset & (~PAGE_MASK),
+							       chunk);
+			if (new_cookie < 0)
+				break;
+			dma_cookie = new_cookie;
+			remaining -= chunk;
+			current_sendq_offset += chunk;
+			current_recvq_offset += chunk;
+		}
+
+		if (dma_cookie > 0)
+			dma_async_memcpy_issue_pending(dma_chan);
 	}
-	if (dma_cookie < 0)
 #endif
-	{
-		memcpy(dst_endpoint->recvq + recvq_offset,
-		       src_endpoint->sendq + sendq_offset,
-		       frag_length);
+	if (remaining) {
+		memcpy(dst_endpoint->recvq + current_recvq_offset,
+		       src_endpoint->sendq + current_sendq_offset,
+		       remaining);
 	}
 
 	/* fill the dst event */

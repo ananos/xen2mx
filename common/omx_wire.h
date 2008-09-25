@@ -30,20 +30,23 @@
 #endif
 
 #ifdef OMX_MX_WIRE_COMPAT
-# define OMX_PULL_REPLY_LENGTH_MAX 4096UL
+# define OMX_WIRE_FRAG_FRAME_SHIFT 12
 #else /* !OMX_MX_WIRE_COMPAT */
 # ifndef OMX_MTU
-#  define OMX_PULL_REPLY_LENGTH_MAX 8192UL
-# elif OMX_MTU < 2000 /* ugly since we can't compare with 1024+sizeof(pullreply) */
-#  define OMX_PULL_REPLY_LENGTH_MAX 1024UL
+#  define OMX_WIRE_FRAG_FRAME_SHIFT 13
+# elif OMX_MTU < 2000 /* ugly since we can't compare with 1024+sizeof(header) */
+#  define OMX_WIRE_FRAG_FRAME_SHIFT 10
 # elif OMX_MTU < 3000
-#  define OMX_PULL_REPLY_LENGTH_MAX 2048UL
+#  define OMX_WIRE_FRAG_FRAME_SHIFT 11
 # elif OMX_MTU < 5000
-#  define OMX_PULL_REPLY_LENGTH_MAX 4096UL
+#  define OMX_WIRE_FRAG_FRAME_SHIFT 12
 # else
-#  define OMX_PULL_REPLY_LENGTH_MAX 8192UL
+#  define OMX_WIRE_FRAG_FRAME_SHIFT 13
 # endif
 #endif /* !OMX_MX_WIRE_COMPAT */
+
+#define OMX_MEDIUM_FRAG_LENGTH_MAX (1UL<<OMX_WIRE_FRAG_FRAME_SHIFT)
+#define OMX_PULL_REPLY_LENGTH_MAX (1UL<<OMX_WIRE_FRAG_FRAME_SHIFT)
 
 #ifndef OMX_MTU
 #define OMX_MTU ((unsigned) (sizeof(struct omx_pkt_head) \

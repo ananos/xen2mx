@@ -212,8 +212,8 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
  */
 
 /*
- * The recvq accounting is trivial since there are as many recvq slot
- * than unexp event slot, the latter are accounted, and we allocate only
+ * The recvq accounting is trivial since there are as many recvq slots
+ * than unexp event slots, the latter are accounted, and we allocate only
  * one recvq slot per prepare()/commit() functions below (and no slot
  * in notify() above).
  */
@@ -248,6 +248,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	*recvq_offset_p = endpoint->next_recvq_offset;
 	endpoint->next_recvq_offset += OMX_PACKET_RING_ENTRY_SIZE;
 	if (unlikely(endpoint->next_recvq_offset >= OMX_RECVQ_SIZE))
+		/* all slots have the same size, so there can't be a slot that wraps around the end */
 		endpoint->next_recvq_offset = 0;
 
 	spin_unlock_bh(&endpoint->event_lock);

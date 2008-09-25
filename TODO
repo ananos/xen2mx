@@ -1,6 +1,6 @@
-* compute recvq/sendq slot size depending on mtu+wirecompat
-  + driver use/pin multiple send pages if sendq slot size > pagesize
-  + driver dmacopy into multiple recv pages if recvq slot size > pagesize
+* use OMX_PACKET_RING_ENTRY_SHIFT directly for the pipeline in the lib
+* re-hardwire medium pipeline size in the lib instead of having endpoint fields
+* fix skbfrags checks for 8kb mediums
 
 * constify the event queue as MX now does and mmap recvq+eventq's as RO
 
@@ -130,8 +130,6 @@
   + fix lib ack contents?
 
 * optimize mediums
-  + 2 pages if not mx wire compat
-    - double the recv queue size
   + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
 
 * use large region id in the lib, only allocate uint8_t id for the wire when

@@ -425,7 +425,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 	frag_length = cmd.frag_length;
 	if (unlikely(frag_length > OMX_PACKET_RING_ENTRY_SIZE)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a medium (tried %ld)\n",
-		       PAGE_SIZE * 1UL, (unsigned long) frag_length);
+		       OMX_PACKET_RING_ENTRY_SIZE, (unsigned long) frag_length);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -449,6 +449,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		/* use skb with frags */
 
 		struct omx_deferred_event * defevent;
+		unsigned int current_sendq_offset, remaining, desc;
 
 		skb = omx_new_skb(/* only allocate space for the header now, we'll attach pages later */
 				   hdr_len);
@@ -482,9 +483,20 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		}
 
 		/* attach the sendq page */
-		page = endpoint->sendq_pages[sendq_offset >> PAGE_SHIFT];
-		get_page(page);
-		skb_fill_page_desc(skb, 0, page, 0, frag_length);
+		current_sendq_offset = sendq_offset;
+		remaining = frag_length;
+		desc = 0;
+		while (remaining) {
+			unsigned int chunk = remaining;
+			if (chunk > PAGE_SIZE)
+				chunk = PAGE_SIZE;
+			page = endpoint->sendq_pages[current_sendq_offset >> PAGE_SHIFT];
+			get_page(page);
+			skb_fill_page_desc(skb, desc, page, current_sendq_offset & (~PAGE_MASK), chunk);
+			desc++;
+			remaining -= chunk;
+			current_sendq_offset += chunk;
+		}
 		skb->len += frag_length;
 		skb->data_len = frag_length;
 

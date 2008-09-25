@@ -73,15 +73,12 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	endpoint->exp_eventq = endpoint->recvq + OMX_RECVQ_SIZE;
 	endpoint->unexp_eventq = endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE;
 
-#if OMX_PACKET_RING_ENTRY_SIZE != PAGE_SIZE
-#error Incompatible page and sendq entry sizes
-#endif
-	sendq_pages = kmalloc(OMX_SENDQ_ENTRY_NR * sizeof(struct page *), GFP_KERNEL);
+	sendq_pages = kmalloc(OMX_SENDQ_SIZE/PAGE_SIZE * sizeof(struct page *), GFP_KERNEL);
 	if (!sendq_pages) {
 		printk(KERN_ERR "Open-MX: failed to allocate sendq pages array\n");
 		goto out_with_userq;
 	}
-	for(i=0; i<OMX_SENDQ_ENTRY_NR; i++) {
+	for(i=0; i<OMX_SENDQ_SIZE/PAGE_SIZE; i++) {
 		struct page * page;
 		page = vmalloc_to_page(endpoint->sendq + (i << PAGE_SHIFT));
 		BUG_ON(!page);
@@ -89,12 +86,12 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	}
 	endpoint->sendq_pages = sendq_pages;
 
-	recvq_pages = kmalloc(OMX_RECVQ_ENTRY_NR * sizeof(struct page *), GFP_KERNEL);
+	recvq_pages = kmalloc(OMX_RECVQ_SIZE/PAGE_SIZE * sizeof(struct page *), GFP_KERNEL);
 	if (!recvq_pages) {
 		printk(KERN_ERR "Open-MX: failed to allocate recvq pages array\n");
 		goto out_with_sendq_pages;
 	}
-	for(i=0; i<OMX_RECVQ_ENTRY_NR; i++) {
+	for(i=0; i<OMX_RECVQ_SIZE/PAGE_SIZE; i++) {
 		struct page * page;
 		page = vmalloc_to_page(endpoint->recvq + (i << PAGE_SHIFT));
 		BUG_ON(!page);
@@ -826,7 +823,7 @@ omx_miscdev_read(struct file* filp, char* buff, size_t count, loff_t* offp)
 	ssize_t ret = 0;
 	char * buffer;
 	unsigned int len;
-	
+
 	buffer = omx_get_driver_string(&len);
 	if (!buffer)
 		goto out;

@@ -244,7 +244,13 @@ omx_get_driver_string(unsigned int *lenp)
 	buflen += len;
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		 " LargeMessages: %ld requests in parallel, %ld x %ldkB pull replies per request\n",
+		 " MediumMessages: %ldB per fragment\n",
+		 (unsigned long) OMX_MEDIUM_FRAG_LENGTH_MAX);
+	tmp += len;
+	buflen += len;
+	
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		 " LargeMessages: %ld requests in parallel, %ld x %ldB pull replies per request\n",
 		 (unsigned long) OMX_PULL_BLOCK_DESCS_NR,
 		 (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
 		 (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);

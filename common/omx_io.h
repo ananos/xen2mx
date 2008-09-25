@@ -27,6 +27,8 @@
 #include <sys/ioctl.h>
 #endif
 
+#include "omx_wire.h"
+
 /*
  * The ABI version should be increased when ioctl commands are added
  * or modified, or when the user-mapped driver- and endpoint-descriptors
@@ -39,7 +41,7 @@
  */
 
 /* common packet slot for sendq and recvq */
-#define OMX_PACKET_RING_ENTRY_SHIFT	12
+#define OMX_PACKET_RING_ENTRY_SHIFT	OMX_WIRE_FRAG_FRAME_SHIFT
 #define OMX_PACKET_RING_ENTRY_SIZE	(1UL << OMX_PACKET_RING_ENTRY_SHIFT)
 
 /* sendq: where the lib passes data to send to the driver */
@@ -68,6 +70,9 @@
 
 #if OMX_SMALL_MAX > OMX_PACKET_RING_ENTRY_SIZE
 #error Small packet size too large for packet ring entry size
+#endif
+#if OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE
+#error Medium frag length is too big sendq/recvq slots
 #endif
 
 #define OMX_HOSTNAMELEN_MAX	80

@@ -443,10 +443,15 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	if (omx_dmaengine && frag_length >= omx_dma_sync_min) {
 		dma_chan = get_softnet_dma();
 		if (dma_chan) {
-			struct page * page = endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];
+			/* if multiple pages per ring entry:
+			 *   copy several pages, with the ring entries always page aligned, and no wrap around the ring
+			 * if one or less pages per ring entry:
+			 *   copy one page or less, always within the same page, but not necessarily starting aligned on a page
+			 */
+			struct page ** pages = &endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT];
 			remaining_copy = omx_dma_skb_copy_datagram_to_pages(dma_chan, &dma_cookie,
 									    skb, hdr_len,
-									    &page, 0,
+									    pages, recvq_offset & (~PAGE_MASK) /* 0 if multiple pages */,
 									    frag_length);
 			dma_async_memcpy_issue_pending(dma_chan);
 			if (remaining_copy) {
