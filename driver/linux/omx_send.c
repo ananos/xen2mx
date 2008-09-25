@@ -409,7 +409,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 	struct omx_cmd_send_medium cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
-	uint16_t sendq_page_offset;
+	uint32_t sendq_offset;
 	struct page * page;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag);
 	int ret;
@@ -430,10 +430,10 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	sendq_page_offset = cmd.sendq_page_offset;
-	if (unlikely(sendq_page_offset >= OMX_SENDQ_ENTRY_NR)) {
-		printk(KERN_ERR "Open-MX: Cannot send medium fragment from sendq page offset %ld (max %ld)\n",
-		       (unsigned long) sendq_page_offset, (unsigned long) OMX_SENDQ_ENTRY_NR);
+	sendq_offset = cmd.sendq_offset;
+	if (unlikely(sendq_offset >= OMX_SENDQ_SIZE)) {
+		printk(KERN_ERR "Open-MX: Cannot send medium fragment from sendq offset %ld (max %ld)\n",
+		       (unsigned long) sendq_offset, (unsigned long) OMX_SENDQ_SIZE);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -482,7 +482,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		}
 
 		/* attach the sendq page */
-		page = endpoint->sendq_pages[sendq_page_offset];
+		page = endpoint->sendq_pages[sendq_offset >> PAGE_SHIFT];
 		get_page(page);
 		skb_fill_page_desc(skb, 0, page, 0, frag_length);
 		skb->len += frag_length;
@@ -491,7 +491,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		/* prepare the deferred event now that we cannot fail anymore */
 		omx_endpoint_reacquire(endpoint); /* keep a reference in the defevent */
 		defevent->endpoint = endpoint;
-		defevent->evt.sendq_page_offset = cmd.sendq_page_offset;
+		defevent->evt.sendq_offset = cmd.sendq_offset;
 		omx_set_skb_destructor(skb, omx_medium_frag_skb_destructor, defevent);
 
 	} else {
@@ -525,10 +525,10 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		}
 
 		/* copy the data in the linear skb */
-		memcpy(data, endpoint->sendq + (sendq_page_offset << PAGE_SHIFT), frag_length);
+		memcpy(data, endpoint->sendq + sendq_offset, frag_length);
 
 		/* notify the event right now */
-		evt.sendq_page_offset = cmd.sendq_page_offset;
+		evt.sendq_offset = cmd.sendq_offset;
 		omx_notify_exp_event(endpoint,
 				     OMX_EVT_SEND_MEDIUM_FRAG_DONE,
 				     &evt, sizeof(evt));

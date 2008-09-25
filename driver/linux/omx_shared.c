@@ -291,7 +291,7 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	struct dma_chan *dma_chan = NULL;
 #endif
 	int frag_length = hdr->frag_length;
-	int sendq_page_nr = hdr->sendq_page_offset;
+	int sendq_offset = hdr->sendq_offset;
 	int err;
 
 
@@ -316,7 +316,7 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	if (dma_chan) {
 		dma_cookie = dma_async_memcpy_pg_to_pg(dma_chan,
 						       dst_endpoint->recvq_pages[recvq_offset >> PAGE_SHIFT], 0,
-						       src_endpoint->sendq_pages[sendq_page_nr], 0,
+						       src_endpoint->sendq_pages[sendq_offset >> PAGE_SHIFT], 0,
 						       frag_length);
 		dma_async_memcpy_issue_pending(dma_chan);
 	}
@@ -324,7 +324,7 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 #endif
 	{
 		memcpy(dst_endpoint->recvq + recvq_offset,
-		       src_endpoint->sendq + (sendq_page_nr << PAGE_SHIFT),
+		       src_endpoint->sendq + sendq_offset,
 		       frag_length);
 	}
 
@@ -355,7 +355,7 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_MEDIUM, &dst_event, sizeof(dst_event));
 
 	/* fill and notify the src event */
-	src_event.sendq_page_offset = hdr->sendq_page_offset;
+	src_event.sendq_offset = hdr->sendq_offset;
 	omx_notify_exp_event(src_endpoint, OMX_EVT_SEND_MEDIUM_FRAG_DONE, &src_event, sizeof(src_event));
 	omx_endpoint_release(dst_endpoint);
 
@@ -365,7 +365,7 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 
  out_with_endpoint:
 	/* fill and notify the src event anyway, so that the sender doesn't leak eventq slots */
-	src_event.sendq_page_offset = hdr->sendq_page_offset;
+	src_event.sendq_offset = hdr->sendq_offset;
 	omx_notify_exp_event(src_endpoint, OMX_EVT_SEND_MEDIUM_FRAG_DONE, &src_event, sizeof(src_event));
 
 	omx_endpoint_release(dst_endpoint);

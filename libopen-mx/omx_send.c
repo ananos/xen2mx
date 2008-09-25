@@ -355,7 +355,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
         ? omx__globals.medium_frag_length : remaining;
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
-      medium_param->sendq_page_offset = sendq_index[i];
+      medium_param->sendq_offset = sendq_index[i] << OMX_PACKET_RING_ENTRY_SHIFT;
       omx__debug_printf(MEDIUM, ep, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 
@@ -392,7 +392,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
         ? omx__globals.medium_frag_length : remaining;
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
-      medium_param->sendq_page_offset = sendq_index[i];
+      medium_param->sendq_offset = sendq_index[i] << OMX_PACKET_RING_ENTRY_SHIFT;
       omx__debug_printf(MEDIUM, ep, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 

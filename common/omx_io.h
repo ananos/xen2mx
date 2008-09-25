@@ -32,7 +32,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x151
+#define OMX_DRIVER_ABI_VERSION		0x152
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -312,8 +312,7 @@ struct omx_cmd_send_medium {
 	/* 8 */
 	uint16_t seqnum;
 	uint16_t piggyack;
-	uint16_t sendq_page_offset;
-	uint16_t pad2;
+	uint32_t sendq_offset;
 	/* 16 */
 	uint32_t msg_length;
 	uint16_t frag_length;
@@ -664,8 +663,8 @@ union omx_evt {
 
 	/* send medium frag done */
 	struct omx_evt_send_medium_frag_done {
-		uint16_t sendq_page_offset;
-		char pad[61];
+		uint32_t sendq_offset;
+		char pad[59];
 		uint8_t type;
 		/* 64 */
 	} send_medium_frag_done;
