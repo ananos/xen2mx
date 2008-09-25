@@ -1,5 +1,4 @@
 * re-hardwire medium pipeline size in the lib instead of having endpoint fields
-* fix skbfrags checks for 8kb mediums
 
 * constify the event queue as MX now does and mmap recvq+eventq's as RO
 

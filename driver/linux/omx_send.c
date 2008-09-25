@@ -445,7 +445,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 
 	if (unlikely(frag_length > omx_skb_copy_max
 		     && hdr_len + frag_length >= ETH_ZLEN
-		     && omx_skb_frags > 0)) {
+		     && omx_skb_frags >= (frag_length >> OMX_PACKET_RING_ENTRY_SHIFT))) {
 		/* use skb with frags */
 
 		struct omx_deferred_event * defevent;
