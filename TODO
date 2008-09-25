@@ -5,6 +5,14 @@
 * constify the event queue as MX now does and mmap recvq+eventq's as RO
 
 * only poll what's really need to be polled in the progression loop
+  + only poll the exp event queue if some events are expected
+  + only if jiffies changed
+    - check enough progression
+    - resend queue
+    - partners to ack
+  + only process delayed requests if something happened in other loops
+  + what about check endpoint desc ?
+  + make request_alloc_check() called in debug only
 
 * optimize mtu 1500 by using more than 1024k medium or pull reply packets
   + break medium wire compat to add a medium frag length

@@ -423,7 +423,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 	}
 
 	frag_length = cmd.frag_length;
-	if (unlikely(frag_length > OMX_SENDQ_ENTRY_SIZE)) {
+	if (unlikely(frag_length > OMX_PACKET_RING_ENTRY_SIZE)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a medium (tried %ld)\n",
 		       PAGE_SIZE * 1UL, (unsigned long) frag_length);
 		ret = -EINVAL;

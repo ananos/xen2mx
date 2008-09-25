@@ -246,7 +246,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 
 	/* take the next recvq slot and return it now */
 	*recvq_offset_p = endpoint->next_recvq_offset;
-	endpoint->next_recvq_offset += OMX_RECVQ_ENTRY_SIZE;
+	endpoint->next_recvq_offset += OMX_PACKET_RING_ENTRY_SIZE;
 	if (unlikely(endpoint->next_recvq_offset >= OMX_RECVQ_SIZE))
 		endpoint->next_recvq_offset = 0;
 

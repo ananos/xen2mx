@@ -427,14 +427,12 @@ omx__init_comms(void)
   if (omx__driver_desc->features & OMX_DRIVER_FEATURE_WIRECOMPAT) {
     i = 12; /* 4kB frags in wire-compat mode */
     omx__verbose_printf(NULL, "Using MX-wire-compatible 4kB medium frags (pipeline 12)\n");
-    omx__debug_assert(i <= OMX_SENDQ_ENTRY_SHIFT);
-    omx__debug_assert(i <= OMX_RECVQ_ENTRY_SHIFT);
+    omx__debug_assert(i <= OMX_PACKET_RING_ENTRY_SHIFT);
     omx__debug_assert((1<<i) + sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag) < omx__driver_desc->mtu);
   } else {
     /* find the largest power of two + headers that goes in this mtu */
     for(i=0; (1<<i) + sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag) < omx__driver_desc->mtu
-	     && i<=OMX_SENDQ_ENTRY_SHIFT
-	     && i<=OMX_RECVQ_ENTRY_SHIFT; i++);
+	     && i<=OMX_PACKET_RING_ENTRY_SHIFT; i++);
     i--;
     omx__verbose_printf(NULL, "Using custom %dB medium frags (pipeline %d) for MTU %d\n",
 			1<<i, i, omx__driver_desc->mtu);

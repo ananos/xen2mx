@@ -47,7 +47,7 @@
 
 #ifndef OMX_MTU
 #define OMX_MTU ((unsigned) (sizeof(struct omx_pkt_head) \
-			     + max( sizeof(struct omx_pkt_medium_frag) + OMX_SENDQ_ENTRY_SIZE, \
+			     + max( sizeof(struct omx_pkt_medium_frag) + OMX_PACKET_RING_ENTRY_SIZE, \
 				    sizeof(struct omx_pkt_pull_reply) + OMX_PULL_REPLY_LENGTH_MAX \
 				   )))
 #endif

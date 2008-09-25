@@ -73,7 +73,7 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	endpoint->exp_eventq = endpoint->recvq + OMX_RECVQ_SIZE;
 	endpoint->unexp_eventq = endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE;
 
-#if OMX_SENDQ_ENTRY_SIZE != PAGE_SIZE
+#if OMX_PACKET_RING_ENTRY_SIZE != PAGE_SIZE
 #error Incompatible page and sendq entry sizes
 #endif
 	sendq_pages = kmalloc(OMX_SENDQ_ENTRY_NR * sizeof(struct page *), GFP_KERNEL);
@@ -83,7 +83,7 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	}
 	for(i=0; i<OMX_SENDQ_ENTRY_NR; i++) {
 		struct page * page;
-		page = vmalloc_to_page(endpoint->sendq + (i << OMX_SENDQ_ENTRY_SHIFT));
+		page = vmalloc_to_page(endpoint->sendq + (i << PAGE_SHIFT));
 		BUG_ON(!page);
 		sendq_pages[i] = page;
 	}
@@ -96,7 +96,7 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	}
 	for(i=0; i<OMX_RECVQ_ENTRY_NR; i++) {
 		struct page * page;
-		page = vmalloc_to_page(endpoint->recvq + (i << OMX_RECVQ_ENTRY_SHIFT));
+		page = vmalloc_to_page(endpoint->recvq + (i << PAGE_SHIFT));
 		BUG_ON(!page);
 		recvq_pages[i] = page;
 	}

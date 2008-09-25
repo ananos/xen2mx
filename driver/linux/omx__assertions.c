@@ -36,9 +36,7 @@ assertions(void)
   CHECK(OMX_IF_NAMESIZE == IFNAMSIZ);
   CHECK(sizeof(uint64_t) >= sizeof(((struct ethhdr *)NULL)->h_dest));
   CHECK(sizeof(uint64_t) >= sizeof(((struct ethhdr *)NULL)->h_source));
-  CHECK(PAGE_SIZE%OMX_SENDQ_ENTRY_SIZE == 0);
-  CHECK(PAGE_SIZE%OMX_RECVQ_ENTRY_SIZE == 0);
-  CHECK(OMX_SENDQ_ENTRY_SIZE <= OMX_RECVQ_ENTRY_SIZE);
+  CHECK(PAGE_SIZE%OMX_PACKET_RING_ENTRY_SIZE == 0);
   CHECK(sizeof(union omx_evt) == OMX_EVENTQ_ENTRY_SIZE);
   CHECK(OMX_UNEXP_EVENTQ_ENTRY_NR == OMX_RECVQ_ENTRY_NR);
   CHECK((unsigned) OMX_PKT_TYPE_MAX == (1<<(sizeof(omx_packet_type_t)*8)) - 1);
