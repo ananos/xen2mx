@@ -1,3 +1,19 @@
+Open-MX 1.1.0
+=========================================================
+
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+* Architectures with page size != 4kB are not supported yet.
+
+Open-MX 1.0.0 (October 8th 2008, svn/open-mx-1.0.x r2077)
+=========================================================
+The first "stable" release.
+
+Improvements from previous release:
+* Miscellaneous minor fixes.
+
 Open-MX 0.9.3 aka 1.0-rc3 (September 22th 2008, svn r2061)
 ==========================================================
 
