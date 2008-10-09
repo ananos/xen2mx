@@ -56,8 +56,6 @@
 
 * huge page pinning support
   + add a pagesize in the region segment structure and use either pagesize of hugepagesize when possible
-* support for architecture with pagesize != 4k
-  + add an pgoffset in the sendq/recvq entry
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
