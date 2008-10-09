@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x152
+#define OMX_DRIVER_ABI_VERSION		0x153
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -135,13 +135,13 @@ struct omx_endpoint_desc {
 
 #define OMX_ENDPOINT_DESC_SIZE	sizeof(struct omx_endpoint_desc)
 
-/* fake mmap file offsets */
+/* fake mmap file offsets (anything unique, multiple of page size) */
 #define OMX_SENDQ_FILE_OFFSET		0
-#define OMX_RECVQ_FILE_OFFSET		4096
-#define OMX_EXP_EVENTQ_FILE_OFFSET	(2*4096)
-#define OMX_UNEXP_EVENTQ_FILE_OFFSET	(3*4096)
-#define OMX_DRIVER_DESC_FILE_OFFSET	(4096*4096)
-#define OMX_ENDPOINT_DESC_FILE_OFFSET	(2*4096*4096)
+#define OMX_RECVQ_FILE_OFFSET		(1024*1024)
+#define OMX_EXP_EVENTQ_FILE_OFFSET	(2*1024*1024)
+#define OMX_UNEXP_EVENTQ_FILE_OFFSET	(3*1024*1024)
+#define OMX_DRIVER_DESC_FILE_OFFSET	(4*1024*1024)
+#define OMX_ENDPOINT_DESC_FILE_OFFSET	(5*1024*1024)
 
 #define OMX_NO_WAKEUP_JIFFIES 0
 

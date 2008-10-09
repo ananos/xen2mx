@@ -1,11 +1,12 @@
 Open-MX 1.1.0
 =========================================================
 
+Improvements from previous release:
+* Add support for architectures with page size different from 4kB.
 
 Caveats:
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
-* Architectures with page size != 4kB are not supported yet.
 
 Open-MX 1.0.0 (October 8th 2008, svn/open-mx-1.0.x r2077)
 =========================================================
