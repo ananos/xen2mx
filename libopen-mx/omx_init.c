@@ -418,6 +418,11 @@ omx__init_comms(void)
    */
   omx__globals.process_binding = getenv("OMX_PROCESS_BINDING");
 
+  /********************
+   * Tune medium frags
+   */
+  omx__globals.packet_ring_entry_shift = omx__driver_desc->packet_ring_entry_shift;
+
   /*********
    * Ctxids
    */

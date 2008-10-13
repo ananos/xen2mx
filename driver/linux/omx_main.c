@@ -344,6 +344,7 @@ omx_init(void)
 	omx_driver_userdesc->board_max = omx_iface_max;
 	omx_driver_userdesc->endpoint_max = omx_endpoint_max;
 	omx_driver_userdesc->peer_max = omx_peer_max;
+	omx_driver_userdesc->packet_ring_entry_shift = OMX_PACKET_RING_ENTRY_SHIFT;
 	omx_driver_userdesc->hz = HZ;
 	omx_driver_userdesc->jiffies = jiffies;
 	omx_driver_userdesc->peer_table_configured = 0;

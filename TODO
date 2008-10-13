@@ -1,3 +1,13 @@
+* drop ring entry size/shift away from io.h, just rely on the driver desc
+
+* single cmd to send the whole medium message, with single done event
+
+* add a send from uvaddr command for medium
+  + only for nonv-ectorial first, and o some perf testing with netpipe
+  + add a env variable to switch from one to another
+  + add a fag in the endpoint desc for skbfrags
+  + add driver-specific skbfrags quirks?
+
 * constify the event queue as MX now does and mmap recvq+eventq's as RO
 
 * only poll what's really need to be polled in the progression loop

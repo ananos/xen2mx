@@ -86,7 +86,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_SEND_MEDIUM_FRAG_DONE: {
-    uint16_t sendq_index = evt->send_medium_frag_done.sendq_offset >> OMX_PACKET_RING_ENTRY_SHIFT;
+    uint16_t sendq_index = evt->send_medium_frag_done.sendq_offset >> omx__globals.packet_ring_entry_shift;
     union omx_request * req = omx__endpoint_sendq_map_user(ep, sendq_index);
 
     omx__debug_assert(req);

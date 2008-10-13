@@ -336,6 +336,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   uint32_t remaining = length;
   int * sendq_index = req->send.specific.medium.sendq_map_index;
   int frags_nr = req->send.specific.medium.frags_nr;
+  int frag_pipeline = req->send.specific.medium.frag_pipeline;
+  int frag_max = 1 << frag_pipeline;
   int err;
   int i;
 
@@ -351,17 +353,16 @@ omx__post_isend_medium(struct omx_endpoint *ep,
     uint32_t offset = 0;
 
     for(i=0; i<frags_nr; i++) {
-      unsigned chunk = remaining > OMX_PACKET_RING_ENTRY_SIZE
-        ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
+      unsigned chunk = remaining > frag_max ? frag_max : remaining;
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
-      medium_param->sendq_offset = sendq_index[i] << OMX_PACKET_RING_ENTRY_SHIFT;
+      medium_param->sendq_offset = sendq_index[i] << frag_pipeline;
       omx__debug_printf(MEDIUM, ep, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
       if (likely(!req->generic.resends))
-	memcpy(ep->sendq + (sendq_index[i] << OMX_PACKET_RING_ENTRY_SHIFT), data + offset, chunk);
+	memcpy(ep->sendq + (sendq_index[i] << frag_pipeline), data + offset, chunk);
 
       err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
       if (unlikely(err < 0)) {
@@ -369,9 +370,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 	if (likely(!req->generic.resends)) {
 	  int j;
 	  for(j=i+1; j<frags_nr; i++) {
-	    unsigned chunk = remaining > OMX_PACKET_RING_ENTRY_SIZE
-	      ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
-	    memcpy(ep->sendq + (sendq_index[j] << OMX_PACKET_RING_ENTRY_SHIFT), data + offset, chunk);
+	    unsigned chunk = remaining > frag_max ? frag_max : remaining;
+	    memcpy(ep->sendq + (sendq_index[j] << frag_pipeline), data + offset, chunk);
 	    remaining -= chunk;
 	    offset += chunk;
 	  }
@@ -388,17 +388,16 @@ omx__post_isend_medium(struct omx_endpoint *ep,
     struct omx_segscan_state state = { .seg = &req->send.segs.segs[0], .offset = 0 };
 
     for(i=0; i<frags_nr; i++) {
-      unsigned chunk = remaining > OMX_PACKET_RING_ENTRY_SIZE
-        ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
+      unsigned chunk = remaining > frag_max ? frag_max : remaining;
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
-      medium_param->sendq_offset = sendq_index[i] << OMX_PACKET_RING_ENTRY_SHIFT;
+      medium_param->sendq_offset = sendq_index[i] << frag_pipeline;
       omx__debug_printf(MEDIUM, ep, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
       if (likely(!req->generic.resends))
-	omx_continue_partial_copy_from_segments(ep, ep->sendq + (sendq_index[i] << OMX_PACKET_RING_ENTRY_SHIFT),
+	omx_continue_partial_copy_from_segments(ep, ep->sendq + (sendq_index[i] << frag_pipeline),
 						&req->send.segs, chunk,
 						&state);
 
@@ -408,9 +407,8 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 	if (likely(!req->generic.resends)) {
 	  int j;
 	  for(j=i+1; j<frags_nr; i++) {
-	    unsigned chunk = remaining > OMX_PACKET_RING_ENTRY_SIZE
-	      ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
-	    omx_continue_partial_copy_from_segments(ep, ep->sendq + (sendq_index[j] << OMX_PACKET_RING_ENTRY_SHIFT),
+	    unsigned chunk = remaining > frag_max ? frag_max : remaining;
+	    omx_continue_partial_copy_from_segments(ep, ep->sendq + (sendq_index[j] << frag_pipeline),
 						    &req->send.segs, chunk,
 						    &state);
 	    remaining -= chunk;
@@ -521,7 +519,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
   medium_param->dest_endpoint = partner->endpoint_index;
   medium_param->shared = omx__partner_localization_shared(partner);
   medium_param->match_info = req->generic.status.match_info;
-  medium_param->frag_pipeline = OMX_PACKET_RING_ENTRY_SHIFT;
+  medium_param->frag_pipeline = req->send.specific.medium.frag_pipeline;
   medium_param->msg_length = length;
   medium_param->session_id = partner->true_session_id;
 
@@ -547,14 +545,17 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
 {
   uint32_t length = req->send.segs.total_length;
   omx_return_t ret;
+  int frag_pipeline = omx__globals.packet_ring_entry_shift; /* the lib pipeline does not depend on the message size */
+  int frag_max = 1 << frag_pipeline;
   int frags_nr;
 
   req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
   req->generic.missing_resources = OMX_REQUEST_SEND_MEDIUM_RESOURCES;
 
-  frags_nr = (length+OMX_PACKET_RING_ENTRY_SIZE-1) >> OMX_PACKET_RING_ENTRY_SHIFT;
+  frags_nr = (length+frag_max-1) >> frag_pipeline;
   omx__debug_assert(frags_nr <= OMX_MEDIUM_FRAGS_MAX); /* for the sendq_index array above */
   req->send.specific.medium.frags_nr = frags_nr;
+  req->send.specific.medium.frag_pipeline = frag_pipeline;
 
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */

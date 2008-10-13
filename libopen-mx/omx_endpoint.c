@@ -438,8 +438,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 
   /* mmap */
   desc = mmap(0, OMX_ENDPOINT_DESC_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_ENDPOINT_DESC_FILE_OFFSET);
-  sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
-  recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
+  sendq = mmap(0, OMX_SENDQ_ENTRY_NR << omx__globals.packet_ring_entry_shift, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
+  recvq = mmap(0, OMX_RECVQ_ENTRY_NR << omx__globals.packet_ring_entry_shift, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
   exp_eventq = mmap(0, OMX_EXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EXP_EVENTQ_FILE_OFFSET);
   unexp_eventq = mmap(0, OMX_UNEXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_UNEXP_EVENTQ_FILE_OFFSET);
 
@@ -567,8 +567,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   omx__endpoint_large_region_map_exit(ep);
  out_with_userq_mmap:
   munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
-  munmap(ep->sendq, OMX_SENDQ_SIZE);
-  munmap(ep->recvq, OMX_RECVQ_SIZE);
+  munmap(ep->sendq, OMX_SENDQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
+  munmap(ep->recvq, OMX_RECVQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
   munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
   munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
  out_with_sendq_map:
@@ -618,8 +618,8 @@ omx_close_endpoint(struct omx_endpoint *ep)
   free(ep->partners);
   omx__endpoint_large_region_map_exit(ep);
   munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
-  munmap(ep->sendq, OMX_SENDQ_SIZE);
-  munmap(ep->recvq, OMX_RECVQ_SIZE);
+  munmap(ep->sendq, OMX_SENDQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
+  munmap(ep->recvq, OMX_RECVQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
   munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
   munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
   omx__endpoint_sendq_map_exit(ep);

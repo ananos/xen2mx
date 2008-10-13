@@ -101,7 +101,9 @@ struct omx_driver_desc {
 	uint64_t jiffies;
 	/* 16 */
 	uint32_t hz;
-	uint32_t mtu;
+	uint16_t mtu;
+	uint8_t packet_ring_entry_shift;
+	uint8_t pad1;
 	/* 24 */
 	uint32_t board_max;
 	uint32_t endpoint_max;
