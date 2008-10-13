@@ -303,6 +303,20 @@ omx__open_endpoint(int fd,
   /* let the caller handle the error */
 }
 
+/*******
+ * Misc
+ */
+
+static INLINE omx_return_t
+omx__check_mmap(const char * string)
+{
+  omx_return_t ret = omx__errno_to_return();
+  if (ret == OMX_INTERNAL_MISC_ENODEV || ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+    return omx__error(OMX_BAD_ERROR, "Mapping %s (%m)", string);
+  else
+    return omx__error(ret, "Mapping %s", string);
+}
+
 /**********************
  * Endpoint management
  */
@@ -436,38 +450,49 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_attached;
   }
 
-  /* mmap */
+  /* mmap desc */
   desc = mmap(0, OMX_ENDPOINT_DESC_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_ENDPOINT_DESC_FILE_OFFSET);
-  sendq = mmap(0, OMX_SENDQ_ENTRY_NR << omx__globals.packet_ring_entry_shift, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
-  recvq = mmap(0, OMX_RECVQ_ENTRY_NR << omx__globals.packet_ring_entry_shift, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
-  exp_eventq = mmap(0, OMX_EXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EXP_EVENTQ_FILE_OFFSET);
-  unexp_eventq = mmap(0, OMX_UNEXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_UNEXP_EVENTQ_FILE_OFFSET);
-
-  if (desc == (void *) -1
-      || sendq == (void *) -1
-      || recvq == (void *) -1
-      || exp_eventq == (void *) -1
-      || unexp_eventq == (void *) -1) {
-    ret = omx__errno_to_return();
-    if (ret == OMX_INTERNAL_MISC_ENODEV || ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
-      ret = omx__error(OMX_BAD_ERROR, "Mapping endpoint control device (%m)");
-    else
-      ret = omx__error(ret, "Mapping endpoint control device");
+  if (desc == MAP_FAILED) {
+    ret = omx__check_mmap("endpoint descriptor");
     goto out_with_sendq_map;
   }
+  ep->desc = desc;
+  /* mmap sendq */
+  sendq = mmap(0, OMX_SENDQ_ENTRY_NR << omx__globals.packet_ring_entry_shift, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
+  if (sendq == MAP_FAILED) {
+    ret = omx__check_mmap("endpoint send queue");
+    goto out_with_desc;
+  }
+  ep->sendq = sendq;
+  /* mmap recvq */
+  recvq = mmap(0, OMX_RECVQ_ENTRY_NR << omx__globals.packet_ring_entry_shift, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
+  if (recvq == MAP_FAILED) {
+    ret = omx__check_mmap("endpoint recv queue");
+    goto out_with_sendq;
+  }
+  ep->recvq = recvq;
+  /* mmap exp eventq */
+  exp_eventq = mmap(0, OMX_EXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EXP_EVENTQ_FILE_OFFSET);
+  if (exp_eventq == MAP_FAILED) {
+    ret = omx__check_mmap("endpoint expected event queue");
+    goto out_with_recvq;
+  }
+  ep->exp_eventq = ep->next_exp_event = exp_eventq;
+  /* mmap unexp eventq */
+  unexp_eventq = mmap(0, OMX_UNEXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_UNEXP_EVENTQ_FILE_OFFSET);
+  if (unexp_eventq == MAP_FAILED) {
+    ret = omx__check_mmap("endpoint unexpected event queue");
+    goto out_with_exp_eventq;
+  }
+  ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
+
   omx__debug_printf(ENDPOINT, NULL, "desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
 		    desc, sendq, recvq, exp_eventq, unexp_eventq);
-
   omx__debug_printf(ENDPOINT, NULL, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",
 		    (unsigned long) endpoint_index, (unsigned long) board_index,
 		    ep->board_info.hostname, ep->board_info.ifacename, ep->board_addr_str);
 
   /* init most of the endpoint state */
-  ep->desc = desc;
-  ep->sendq = sendq;
-  ep->recvq = recvq;
-  ep->exp_eventq = ep->next_exp_event = exp_eventq;
-  ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
   ep->avail_exp_events = OMX_EXP_EVENTQ_ENTRY_NR;
   ep->req_resends_max = omx__globals.req_resends_max;
   ep->pull_resend_timeout_jiffies = omx__globals.resend_delay_jiffies * omx__globals.req_resends_max;
@@ -566,11 +591,15 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
  out_with_large_regions:
   omx__endpoint_large_region_map_exit(ep);
  out_with_userq_mmap:
-  munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
-  munmap(ep->sendq, OMX_SENDQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
-  munmap(ep->recvq, OMX_RECVQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
   munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
+ out_with_exp_eventq:
   munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
+ out_with_recvq:
+  munmap(ep->recvq, OMX_RECVQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
+ out_with_sendq:
+  munmap(ep->sendq, OMX_SENDQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
+ out_with_desc:
+  munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
  out_with_sendq_map:
   omx__endpoint_sendq_map_exit(ep);
  out_with_attached:
@@ -617,11 +646,11 @@ omx_close_endpoint(struct omx_endpoint *ep)
       free(ep->partners[i]);
   free(ep->partners);
   omx__endpoint_large_region_map_exit(ep);
-  munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
-  munmap(ep->sendq, OMX_SENDQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
-  munmap(ep->recvq, OMX_RECVQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
-  munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
   munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
+  munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
+  munmap(ep->recvq, OMX_RECVQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
+  munmap(ep->sendq, OMX_SENDQ_ENTRY_NR << omx__globals.packet_ring_entry_shift);
+  munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
   omx__endpoint_sendq_map_exit(ep);
   /* nothing to do for detach, close will do it */
   close(ep->fd);

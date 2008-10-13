@@ -1,5 +1,3 @@
-* have different error path for all mmap when opening an endpoint
-
 * single cmd to send the whole medium message, with single done event
 
 * add a send from uvaddr command for medium
