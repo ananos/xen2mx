@@ -1,4 +1,4 @@
-* drop ring entry size/shift away from io.h, just rely on the driver desc
+* have different error path for all mmap when opening an endpoint
 
 * single cmd to send the whole medium message, with single done event
 

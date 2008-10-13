@@ -40,17 +40,9 @@
  * Common parameters or IOCTL subtypes
  */
 
-/* common packet slot for sendq and recvq */
-#define OMX_PACKET_RING_ENTRY_SHIFT	OMX_WIRE_FRAG_FRAME_SHIFT
-#define OMX_PACKET_RING_ENTRY_SIZE	(1UL << OMX_PACKET_RING_ENTRY_SHIFT)
-
-/* sendq: where the lib passes data to send to the driver */
+/* number of slots in the sendq and recvq */
 #define OMX_SENDQ_ENTRY_NR	1024
-#define OMX_SENDQ_SIZE		(OMX_PACKET_RING_ENTRY_SIZE * OMX_SENDQ_ENTRY_NR)
-
-/* recv: where the driver passes data received to the lib */
 #define OMX_RECVQ_ENTRY_NR	1024
-#define OMX_RECVQ_SIZE		(OMX_PACKET_RING_ENTRY_SIZE * OMX_RECVQ_ENTRY_NR)
 
 /* expected eventq: where expected events are stored, medium send done and pull done */
 /* unexpected eventq: where unexpected events are stored, incoming packets */
@@ -67,13 +59,6 @@
 #define OMX_RNDV_DATA_MAX	8
 #define OMX_CONNECT_DATA_MAX	32
 #define OMX_TRUC_DATA_MAX	48
-
-#if OMX_SMALL_MAX > OMX_PACKET_RING_ENTRY_SIZE
-#error Small packet size too large for packet ring entry size
-#endif
-#if OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE
-#error Medium frag length is too big sendq/recvq slots
-#endif
 
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16
