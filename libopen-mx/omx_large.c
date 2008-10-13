@@ -212,7 +212,6 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
 static omx_return_t
 omx__create_region(struct omx_endpoint *ep,
 		   struct omx_cmd_user_region_segment *segs, uint32_t nseg,
-		   uint16_t offset,
 		   struct omx__large_region **regionp)
 {
   struct omx__large_region *region = NULL;
@@ -223,7 +222,6 @@ omx__create_region(struct omx_endpoint *ep,
     /* let the caller handle the error */
     goto out;
 
-  region->offset = offset;
   region->segs = segs;
   region->nseg = nseg;
 
@@ -251,13 +249,6 @@ omx__get_contigous_region(struct omx_endpoint *ep,
   struct omx__large_region *region = NULL;
   struct omx_cmd_user_region_segment *rsegs;
   omx_return_t ret;
-  uint64_t vaddr;
-  uint64_t rdma_length;
-  uint16_t offset;
-
-  vaddr = ((uintptr_t) buffer) & ~4095;
-  offset = ((uintptr_t) buffer) & 4095;
-  rdma_length = ((uint64_t) offset + (uint64_t) length + 4095) & ~4095;
 
   if (reserver)
     omx__debug_printf(LARGE, ep, "need a region reserved for object %p\n", reserver);
@@ -268,9 +259,8 @@ omx__get_contigous_region(struct omx_endpoint *ep,
     list_for_each_entry(region, &ep->reg_list, reg_elt) {
       if ((!reserver || !region->reserver)
 	  && (omx__globals.parallel_regcache || !region->use_count)
-	  && region->segs[0].vaddr == vaddr
-	  && region->segs[0].len >= rdma_length
-	  && region->offset == offset) {
+	  && region->segs[0].vaddr == (uintptr_t) buffer
+	  && region->segs[0].len >= length) {
 
 	if (!(region->use_count++))
 	  list_del(&region->reg_unused_elt);
@@ -286,10 +276,10 @@ omx__get_contigous_region(struct omx_endpoint *ep,
     /* let the caller handle the error */
     goto out;
   }
-  rsegs[0].vaddr = vaddr;
-  rsegs[0].len = rdma_length;
+  rsegs[0].vaddr = (uintptr_t) buffer;
+  rsegs[0].len = length;
 
-  ret = omx__create_region(ep, rsegs, 1, offset, &region);
+  ret = omx__create_region(ep, rsegs, 1, &region);
   if (ret != OMX_SUCCESS)
     /* let the caller handle the error */
     goto out_with_segments;
@@ -346,7 +336,7 @@ omx__get_vect_region(struct omx_endpoint *ep,
     segs[i].len = seg->len;
   }
 
-  ret = omx__create_region(ep, segs, nseg, 0, &region);
+  ret = omx__create_region(ep, segs, nseg, &region);
   if (ret != OMX_SUCCESS)
     /* let the caller handle the error */
     goto out_with_segments;
@@ -457,7 +447,6 @@ omx__alloc_setup_pull(struct omx_endpoint * ep,
   pull_param.session_id = partner->back_session_id;
   pull_param.lib_cookie = (uintptr_t) req;
   pull_param.local_rdma_id = region->id;
-  pull_param.local_offset = region->offset;
   pull_param.remote_rdma_id = req->recv.specific.large.target_rdma_id;
   pull_param.remote_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
   pull_param.remote_offset = req->recv.specific.large.target_rdma_offset;

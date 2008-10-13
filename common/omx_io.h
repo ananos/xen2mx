@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x153
+#define OMX_DRIVER_ABI_VERSION		0x154
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -364,16 +364,13 @@ struct omx_cmd_pull {
 	uint32_t resend_timeout_jiffies;
 	/* 16 */
 	uint32_t local_rdma_id;
-	uint32_t local_offset; /* FIXME: 64bits ? */
+	uint32_t remote_offset; /* FIXME: 64bits ? */
 	/* 24 */
 	uint32_t remote_rdma_id;
 	uint32_t remote_rdma_seqnum;
 	/* 32 */
-	uint32_t remote_offset; /* FIXME: 64bits ? */
-	uint32_t pad2;
-	/* 40 */
 	uint64_t lib_cookie;
-	/* 48 */
+	/* 40 */
 };
 
 struct omx_cmd_send_notify {

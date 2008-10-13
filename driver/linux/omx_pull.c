@@ -115,7 +115,6 @@ struct omx_pull_handle {
 	struct omx_endpoint * endpoint;
 	struct omx_user_region * region;
 	uint32_t total_length;
-	uint32_t puller_rdma_offset;
 	uint32_t pulled_rdma_offset;
 
 	/* current status */
@@ -624,7 +623,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->endpoint = endpoint;
 	handle->region = region;
 	handle->total_length = cmd->length;
-	handle->puller_rdma_offset = cmd->local_offset;
 	handle->pulled_rdma_offset = cmd->remote_offset;
 
 	/* initialize variable stuff */
@@ -1793,7 +1791,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	if (omx_dmaengine
 	    && frame_length >= omx_dma_async_frag_min
 	    && handle->total_length >= omx_dma_async_min) {
-		remaining_copy = omx_pull_handle_reply_try_dma_copy(iface, handle, skb, msg_offset + handle->puller_rdma_offset, frame_length);
+		remaining_copy = omx_pull_handle_reply_try_dma_copy(iface, handle, skb, msg_offset, frame_length);
 		if (likely(remaining_copy != frame_length))
 			free_skb = 0;
 	}
@@ -1812,9 +1810,9 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
 		       (unsigned long) frame_length,
 		       (unsigned long) msg_offset,
-		       (unsigned long) msg_offset + handle->puller_rdma_offset);
+		       (unsigned long) msg_offset);
 		err = omx_user_region_fill_pages(handle->region,
-						 msg_offset + handle->puller_rdma_offset,
+						 msg_offset,
 						 skb,
 						 frame_length);
 		if (unlikely(err < 0)) {

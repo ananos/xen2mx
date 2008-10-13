@@ -120,12 +120,6 @@
 * group similar fields in structure for cache effects, cache-align some fields?
   + add a counter per list and group them as well to reduce the progression loop overhead
 
-* drop our region window offset ?
-  + pull are aligned on the reader's pages because it's the slower side on native MX
-    - we don't really care about alignment in open-mx, pages are pinned first, adding 2 pages to a skb isn't very expensive
-    - we will still follow the remote side requirements when pulling from MX
-    - MX doesn't care about our alignement when it pulls from us
-
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 
 * wire compat

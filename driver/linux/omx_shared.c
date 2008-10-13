@@ -505,7 +505,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 
 	/* pull from the dst region into the src region */
 	err = omx_copy_between_user_regions(dst_region, hdr->remote_offset,
-					    src_region, hdr->local_offset,
+					    src_region, 0,
 					    hdr->length);
 	event.status = err < 0 ? OMX_EVT_PULL_DONE_ABORTED : OMX_EVT_PULL_DONE_SUCCESS;
 

@@ -676,12 +676,12 @@ omx__alloc_setup_isend_large(struct omx_endpoint *ep,
   rndv_param->hdr.length = sizeof(struct omx__rndv_data);
   rndv_param->hdr.session_id = partner->true_session_id;
   rndv_param->hdr.user_region_id_needed = region->id;
-  rndv_param->hdr.user_region_length_needed = region->offset + length;
+  rndv_param->hdr.user_region_length_needed = length;
 
   OMX_PKT_FIELD_FROM(data_n->msg_length, length);
   OMX_PKT_FIELD_FROM(data_n->rdma_id, region->id);
   OMX_PKT_FIELD_FROM(data_n->rdma_seqnum, req->send.specific.large.region_seqnum);
-  OMX_PKT_FIELD_FROM(data_n->rdma_offset, region->offset);
+  OMX_PKT_FIELD_FROM(data_n->rdma_offset, 0); /* Open-MX does not need page-aligned stuff as MX does */
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
