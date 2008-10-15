@@ -526,7 +526,7 @@ omx__endpoint_large_region_map_exit(struct omx_endpoint * ep);
 
 extern omx_return_t
 omx__get_region(struct omx_endpoint *ep,
-		struct omx__req_seg *segs,
+		struct omx__req_segs *segs,
 		struct omx__large_region **regionp,
 		void * reserver);
 

@@ -1000,7 +1000,7 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
  */
 
 static INLINE omx_return_t
-omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_seg * reqsegs,
+omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_segs * reqsegs,
 		uint64_t match_info, uint64_t match_mask,
 		void *context, union omx_request **requestp)
 {
@@ -1124,7 +1124,7 @@ omx_irecv(struct omx_endpoint *ep,
 	  uint64_t match_info, uint64_t match_mask,
 	  void *context, union omx_request **requestp)
 {
-  struct omx__req_seg reqsegs;
+  struct omx__req_segs reqsegs;
   omx_return_t ret;
 
   if (unlikely(match_info & ~match_mask)) {
@@ -1167,7 +1167,7 @@ omx_irecvv(omx_endpoint_t ep,
 	   uint64_t match_info, uint64_t match_mask,
 	   void *context, omx_request_t * requestp)
 {
-  struct omx__req_seg reqsegs;
+  struct omx__req_segs reqsegs;
   omx_return_t ret;
 
   if (unlikely(match_info & ~match_mask)) {

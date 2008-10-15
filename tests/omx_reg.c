@@ -35,7 +35,7 @@ do_register(int fd, int id,
 	   void * buffer1, unsigned long len1,
 	   void * buffer2, unsigned long len2)
 {
-  struct omx_cmd_user_region_segment seg[2];
+  struct omx_cmd_user_segment seg[2];
   struct omx_cmd_create_user_region reg;
 
   seg[0].vaddr = (uintptr_t) buffer1;

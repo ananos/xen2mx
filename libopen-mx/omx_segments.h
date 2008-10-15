@@ -25,7 +25,7 @@
 #include "omx_types.h"
 
 static inline void
-omx_cache_single_segment(struct omx__req_seg * reqsegs, void * buffer, uint32_t length)
+omx_cache_single_segment(struct omx__req_segs * reqsegs, void * buffer, uint32_t length)
 {
   reqsegs->single.ptr = buffer;
   reqsegs->single.len = length;
@@ -35,7 +35,7 @@ omx_cache_single_segment(struct omx__req_seg * reqsegs, void * buffer, uint32_t 
 }
 
 static inline omx_return_t
-omx_cache_segments(struct omx__req_seg * reqsegs, omx_seg_t * segs, uint32_t nseg)
+omx_cache_segments(struct omx__req_segs * reqsegs, omx_seg_t * segs, uint32_t nseg)
 {
 
   if (nseg == 0) {
@@ -70,14 +70,14 @@ omx_cache_segments(struct omx__req_seg * reqsegs, omx_seg_t * segs, uint32_t nse
 }
 
 static inline void
-omx_free_segments(struct omx__req_seg * reqsegs)
+omx_free_segments(struct omx__req_segs * reqsegs)
 {
   if (unlikely(reqsegs->nseg > 1))
     free(reqsegs->segs);
 }
 
 static inline void
-omx_copy_from_segments(void *dst, struct omx__req_seg *srcsegs, uint32_t length)
+omx_copy_from_segments(void *dst, struct omx__req_segs *srcsegs, uint32_t length)
 {
   omx__debug_assert(length <= srcsegs->total_length);
 
@@ -96,7 +96,7 @@ omx_copy_from_segments(void *dst, struct omx__req_seg *srcsegs, uint32_t length)
 }
 
 static inline void
-omx_copy_to_segments(struct omx__req_seg *dstsegs, void *src, uint32_t length)
+omx_copy_to_segments(struct omx__req_segs *dstsegs, void *src, uint32_t length)
 {
   omx__debug_assert(length <= dstsegs->total_length);
 
@@ -115,7 +115,7 @@ omx_copy_to_segments(struct omx__req_seg *dstsegs, void *src, uint32_t length)
 }
 
 static inline void
-omx_copy_from_to_segments(struct omx__req_seg *dstsegs, struct omx__req_seg *srcsegs, uint32_t length)
+omx_copy_from_to_segments(struct omx__req_segs *dstsegs, struct omx__req_segs *srcsegs, uint32_t length)
 {
   omx__debug_assert(length <= dstsegs->total_length);
   omx__debug_assert(length <= srcsegs->total_length);
@@ -163,7 +163,7 @@ omx_copy_from_to_segments(struct omx__req_seg *dstsegs, struct omx__req_seg *src
  */
 static inline void
 omx_continue_partial_copy_from_segments(struct omx_endpoint *ep,
-					void *dst, struct omx__req_seg *srcsegs,
+					void *dst, struct omx__req_segs *srcsegs,
 					uint32_t length,
 					struct omx_segscan_state *state)
 {
@@ -203,7 +203,7 @@ omx_continue_partial_copy_from_segments(struct omx_endpoint *ep,
  */
 static inline void
 omx_continue_partial_copy_to_segments(struct omx_endpoint *ep,
-				      struct omx__req_seg *dstsegs, void *src,
+				      struct omx__req_segs *dstsegs, void *src,
 				      uint32_t length,
 				      struct omx_segscan_state *state)
 {
@@ -242,7 +242,7 @@ omx_continue_partial_copy_to_segments(struct omx_endpoint *ep,
  */
 static inline void
 omx_partial_copy_to_segments(struct omx_endpoint *ep,
-			     struct omx__req_seg *dstsegs, void *src,
+			     struct omx__req_segs *dstsegs, void *src,
 			     uint32_t length,
 			     uint32_t offset, struct omx_segscan_state *scan_state, uint32_t *scan_offset)
 {

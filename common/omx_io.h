@@ -71,7 +71,7 @@
 #define OMX_USER_REGION_MAX	256
 typedef uint8_t omx_user_region_id_t;
 
-struct omx_cmd_user_region_segment {
+struct omx_cmd_user_segment {
 	uint64_t vaddr;
 	/* 8 */
 	uint64_t len;

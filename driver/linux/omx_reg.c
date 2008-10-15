@@ -44,7 +44,7 @@
 #define OMX_REGION_VMALLOC_NR_PAGES_THRESHOLD 4096
 
 static int
-omx_user_region_add_segment(struct omx_cmd_user_region_segment * useg,
+omx_user_region_add_segment(struct omx_cmd_user_segment * useg,
 			    struct omx_user_region_segment * segment)
 {
 	unsigned long usegvaddr = useg->vaddr;
@@ -268,7 +268,7 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 	struct omx_cmd_create_user_region cmd;
 	struct omx_user_region * region;
 	struct omx_user_region_segment *seg;
-	struct omx_cmd_user_region_segment * usegs;
+	struct omx_cmd_user_segment * usegs;
 	int ret, i;
 
 	if (unlikely(current->mm != endpoint->opener_mm)) {
@@ -291,7 +291,7 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 	}
 
 	/* get the list of segments */
-	usegs = kmalloc(sizeof(struct omx_cmd_user_region_segment) * cmd.nr_segments,
+	usegs = kmalloc(sizeof(struct omx_cmd_user_segment) * cmd.nr_segments,
 			GFP_KERNEL);
 	if (unlikely(!usegs)) {
 		printk(KERN_ERR "Open-MX: Failed to allocate segments for user region\n");
@@ -300,7 +300,7 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 	}
 
 	ret = copy_from_user(usegs, (void __user *)(unsigned long) cmd.segments,
-			     sizeof(struct omx_cmd_user_region_segment) * cmd.nr_segments);
+			     sizeof(struct omx_cmd_user_segment) * cmd.nr_segments);
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read create region cmd\n");
 		ret = -EFAULT;

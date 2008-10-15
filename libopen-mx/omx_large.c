@@ -211,7 +211,7 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
 
 static omx_return_t
 omx__create_region(struct omx_endpoint *ep,
-		   struct omx_cmd_user_region_segment *segs, uint32_t nseg,
+		   struct omx_cmd_user_segment *segs, uint32_t nseg,
 		   struct omx__large_region **regionp)
 {
   struct omx__large_region *region = NULL;
@@ -247,7 +247,7 @@ omx__get_contigous_region(struct omx_endpoint *ep,
 			  void *reserver)
 {
   struct omx__large_region *region = NULL;
-  struct omx_cmd_user_region_segment *rsegs;
+  struct omx_cmd_user_segment *rsegs;
   omx_return_t ret;
 
   if (reserver)
@@ -306,12 +306,12 @@ omx__get_contigous_region(struct omx_endpoint *ep,
 
 static INLINE omx_return_t
 omx__get_vect_region(struct omx_endpoint *ep,
-		     struct omx__req_seg *reqsegs,
+		     struct omx__req_segs *reqsegs,
 		     struct omx__large_region **regionp,
 		     void *reserver)
 {
   struct omx__large_region *region = NULL;
-  struct omx_cmd_user_region_segment *segs;
+  struct omx_cmd_user_segment *segs;
   uint32_t nseg = reqsegs->nseg;
   omx_return_t ret;
   int i;
@@ -362,7 +362,7 @@ omx__get_vect_region(struct omx_endpoint *ep,
 
 omx_return_t
 omx__get_region(struct omx_endpoint *ep,
-		struct omx__req_seg *reqsegs,
+		struct omx__req_segs *reqsegs,
 		struct omx__large_region **regionp,
 		void *reserver)
 {

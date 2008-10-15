@@ -50,7 +50,7 @@ struct omx__large_region_map {
       uint8_t id;
       uint8_t last_seqnum;
       uint32_t nseg;
-      struct omx_cmd_user_region_segment *segs;
+      struct omx_cmd_user_segment *segs;
       void * reserver; /* single object that can be assigned (used for rndv/notify), while multiple pull may be pending */
     } region;
   } * array;
@@ -430,7 +430,7 @@ struct omx__generic_request {
   struct omx_status status;
 };
 
-struct omx__req_seg {
+struct omx__req_segs {
     omx_seg_t single; /* optimization to store the single segment */
     uint32_t nseg;
     omx_seg_t * segs;
@@ -450,7 +450,7 @@ union omx_request {
 
   struct omx__send_request {
     struct omx__generic_request generic;
-    struct omx__req_seg segs;
+    struct omx__req_segs segs;
     union {
       struct {
 	struct omx_cmd_send_tiny send_tiny_ioctl_param;
@@ -476,7 +476,7 @@ union omx_request {
 
   struct omx__recv_request {
     struct omx__generic_request generic;
-    struct omx__req_seg segs;
+    struct omx__req_segs segs;
     uint64_t match_info;
     uint64_t match_mask;
     omx__seqnum_t seqnum; /* seqnum of the incoming matched send */
