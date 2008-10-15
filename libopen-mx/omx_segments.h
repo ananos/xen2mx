@@ -80,6 +80,14 @@ omx_free_segments(struct omx__req_segs * reqsegs)
 }
 
 static inline void
+omx_clone_segments(struct omx__req_segs * dst, struct omx__req_segs * src)
+{
+  memcpy(dst, src, sizeof(*src));
+  if (src->nseg == 1)
+    dst->segs = &dst->single;
+}
+
+static inline void
 omx_copy_from_segments(void *dst, struct omx__req_segs *srcsegs, uint32_t length)
 {
   omx__debug_assert(length <= srcsegs->total_length);
