@@ -24,10 +24,13 @@
 #include "omx_lib.h"
 #include "omx_types.h"
 
+#define OMX_SEG_PTR_SET(_seg, _ptr) do { (_seg)->vaddr = (uintptr_t) (_ptr); } while (0)
+#define OMX_SEG_PTR(_seg) ((void *)(uintptr_t) (_seg)->vaddr)
+
 static inline void
 omx_cache_single_segment(struct omx__req_segs * reqsegs, void * buffer, uint32_t length)
 {
-  reqsegs->single.ptr = buffer;
+  OMX_SEG_PTR_SET(&reqsegs->single, buffer);
   reqsegs->single.len = length;
   reqsegs->nseg = 1;
   reqsegs->segs = &reqsegs->single;
@@ -52,18 +55,18 @@ omx_cache_segments(struct omx__req_segs * reqsegs, omx_seg_t * segs, uint32_t ns
       /* the caller checks error codes */
       return OMX_SEGMENTS_BAD_COUNT;
 
-    reqsegs->segs = malloc(nseg * sizeof(omx_seg_t));
+    reqsegs->segs = malloc(nseg * sizeof(struct omx_cmd_user_segment));
     if (!reqsegs->segs)
       /* the caller checks error codes */
       return OMX_NO_RESOURCES;
 
-    memcpy(reqsegs->segs, segs, nseg * sizeof(omx_seg_t));
-
-    reqsegs->total_length = 0;
-    for(i=0; i<nseg; i++)
-      reqsegs->total_length += segs[i].len;
-
     reqsegs->nseg = nseg;
+    reqsegs->total_length = 0;
+    for(i=0; i<nseg; i++) {
+      OMX_SEG_PTR_SET(&reqsegs->segs[i], segs[i].ptr);
+      reqsegs->segs[i].len = segs[i].len;
+      reqsegs->total_length += segs[i].len;
+    }
   }
 
   return OMX_SUCCESS;
@@ -82,12 +85,12 @@ omx_copy_from_segments(void *dst, struct omx__req_segs *srcsegs, uint32_t length
   omx__debug_assert(length <= srcsegs->total_length);
 
   if (likely(srcsegs->nseg == 1)) {
-    memcpy(dst, srcsegs->single.ptr, length);
+    memcpy(dst, OMX_SEG_PTR(&srcsegs->single), length);
   } else {
-    omx_seg_t * cseg = &srcsegs->segs[0];
+    struct omx_cmd_user_segment * cseg = &srcsegs->segs[0];
     while (length) {
       uint32_t chunk = cseg->len > length ? length : cseg->len;
-      memcpy(dst, cseg->ptr, chunk);
+      memcpy(dst, OMX_SEG_PTR(cseg), chunk);
       dst += chunk;
       length -= chunk;
       cseg++;
@@ -101,12 +104,12 @@ omx_copy_to_segments(struct omx__req_segs *dstsegs, void *src, uint32_t length)
   omx__debug_assert(length <= dstsegs->total_length);
 
   if (likely(dstsegs->nseg == 1)) {
-    memcpy(dstsegs->single.ptr, src, length);
+    memcpy(OMX_SEG_PTR(&dstsegs->single), src, length);
   } else {
-    omx_seg_t * cseg = &dstsegs->segs[0];
+    struct omx_cmd_user_segment * cseg = &dstsegs->segs[0];
     while (length) {
       uint32_t chunk = cseg->len > length ? length : cseg->len;
-      memcpy(cseg->ptr, src, chunk);
+      memcpy(OMX_SEG_PTR(cseg), src, chunk);
       src += chunk;
       length -= chunk;
       cseg++;
@@ -121,15 +124,15 @@ omx_copy_from_to_segments(struct omx__req_segs *dstsegs, struct omx__req_segs *s
   omx__debug_assert(length <= srcsegs->total_length);
 
   if (likely(srcsegs->nseg == 1)) {
-    omx_copy_to_segments(dstsegs, srcsegs->single.ptr, length);
+    omx_copy_to_segments(dstsegs, OMX_SEG_PTR(&srcsegs->single), length);
 
   } else if (likely(dstsegs->nseg == 1)) {
-    omx_copy_from_segments(dstsegs->single.ptr, srcsegs, length);
+    omx_copy_from_segments(OMX_SEG_PTR(&dstsegs->single), srcsegs, length);
 
   } else {
-    omx_seg_t * csseg = &srcsegs->segs[0];
+    struct omx_cmd_user_segment * csseg = &srcsegs->segs[0];
     int cssegoff = 0;
-    omx_seg_t * cdseg = &dstsegs->segs[0];
+    struct omx_cmd_user_segment * cdseg = &dstsegs->segs[0];
     int cdsegoff = 0;
 
     while (length) {
@@ -139,7 +142,7 @@ omx_copy_from_to_segments(struct omx__req_segs *dstsegs, struct omx__req_segs *s
       if (cdseg->len < chunk)
 	chunk = cdseg->len;
 
-      memcpy(cdseg->ptr + cdsegoff, csseg->ptr + cssegoff, chunk);
+      memcpy(OMX_SEG_PTR(cdseg) + cdsegoff, OMX_SEG_PTR(csseg) + cssegoff, chunk);
       length -= chunk;
 
       cssegoff += chunk;
@@ -167,7 +170,7 @@ omx_continue_partial_copy_from_segments(struct omx_endpoint *ep,
 					uint32_t length,
 					struct omx_segscan_state *state)
 {
-  omx_seg_t * curseg = state->seg;
+  struct omx_cmd_user_segment * curseg = state->seg;
   uint32_t curoff = state->offset;
 
   omx__debug_assert(srcsegs->nseg > 1);
@@ -175,10 +178,10 @@ omx_continue_partial_copy_from_segments(struct omx_endpoint *ep,
   while (1) {
     uint32_t curchunk = curseg->len - curoff; /* remaining data in the segment */
     uint32_t chunk = curchunk > length ? length : curchunk; /* data to take */
-    memcpy(dst, curseg->ptr + curoff, chunk);
+    memcpy(dst, OMX_SEG_PTR(curseg) + curoff, chunk);
     omx__debug_printf(VECT, ep, "copying %ld from seg %d at %ld\n",
 		      (unsigned long) chunk, (unsigned) (curseg-&srcsegs->segs[0]), (unsigned long)curoff);
-    length -= chunk;            
+    length -= chunk;
     dst += chunk;
     if (curchunk != chunk) {
       /* we didn't consume this whole segment, we're done */
@@ -207,16 +210,16 @@ omx_continue_partial_copy_to_segments(struct omx_endpoint *ep,
 				      uint32_t length,
 				      struct omx_segscan_state *state)
 {
-  omx_seg_t * curseg = state->seg;
+  struct omx_cmd_user_segment * curseg = state->seg;
   uint32_t curoff = state->offset;
 
   while (1) {
     uint32_t curchunk = curseg->len - curoff; /* remaining data in the segment */
     uint32_t chunk = curchunk > length ? length : curchunk; /* data to take */
-    memcpy(curseg->ptr + curoff, src, chunk);
+    memcpy(OMX_SEG_PTR(curseg) + curoff, src, chunk);
     omx__debug_printf(VECT, ep, "copying %ld into seg %d at %ld\n",
 		      (unsigned long) chunk, (unsigned) (curseg-&dstsegs->segs[0]), (unsigned long)curoff);
-    length -= chunk;            
+    length -= chunk;
     src += chunk;
     if (curchunk != chunk) {
       /* we didn't consume this whole segment, we're done */
@@ -247,7 +250,7 @@ omx_partial_copy_to_segments(struct omx_endpoint *ep,
 			     uint32_t offset, struct omx_segscan_state *scan_state, uint32_t *scan_offset)
 {
   if (offset != *scan_offset) {
-    omx_seg_t * curseg = &dstsegs->segs[0];
+    struct omx_cmd_user_segment * curseg = &dstsegs->segs[0];
     uint32_t curoffset = 0;
     while (offset > curoffset + curseg->len) {
       curoffset += curseg->len;

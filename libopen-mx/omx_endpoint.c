@@ -184,7 +184,7 @@ omx__endpoint_bind_process(struct omx_endpoint *ep, const char *bindstring)
 	return;
       i = atoi(c);
     }
-   
+
     CPU_SET(i, &cs);
     omx__verbose_printf(NULL, "Forcing binding on cpu #%d for process pid %ld with endpoint %d\n",
 			i, (unsigned long) getpid(), ep->endpoint_index);
@@ -729,7 +729,7 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
   case OMX_REQUEST_TYPE_RECV:
     if (state & OMX_REQUEST_STATE_UNEXPECTED_RECV) {
       if (req->generic.status.msg_length)
-	free(req->recv.segs.single.ptr);
+	free(OMX_SEG_PTR(&req->recv.segs.single));
     } else {
       omx_free_segments(&req->send.segs);
     }
@@ -741,7 +741,7 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
 
   case OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED:
     if (req->generic.status.msg_length)
-      free(req->recv.segs.single.ptr);
+      free(OMX_SEG_PTR(&req->recv.segs.single));
     omx_free_segments(&req->send.segs);
     break;
 

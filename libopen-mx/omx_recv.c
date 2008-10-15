@@ -307,7 +307,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     chunk = msg_length - offset;
 
   if (likely(req->recv.segs.nseg == 1))
-    memcpy(req->recv.segs.single.ptr + offset, data, chunk);
+    memcpy(OMX_SEG_PTR(&req->recv.segs.single) + offset, data, chunk);
   else
     omx_partial_copy_to_segments(ep, &req->recv.segs, data, chunk,
 				 offset, &req->recv.specific.medium.scan_state,
@@ -783,7 +783,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 #endif
 
     if (likely(sreq->send.segs.nseg == 1))
-      data_if_available = sreq->send.segs.single.ptr;
+      data_if_available = OMX_SEG_PTR(&sreq->send.segs.single);
     else
       data_if_available = NULL; /* FIXME: copy in a linear buffer first */
 
@@ -1016,7 +1016,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_segs * reqsegs,
       void * unexp_buffer;
 
       /* get the unexp buffer and store the new segments */
-      unexp_buffer = req->recv.segs.single.ptr;
+      unexp_buffer = OMX_SEG_PTR(&req->recv.segs.single);
       memcpy(&req->recv.segs, reqsegs, sizeof(*reqsegs));
 
       omx___dequeue_request(req);

@@ -266,7 +266,7 @@ omx__alloc_setup_isend_small(struct omx_endpoint *ep,
    * else copy it in the contigous copy buffer first
    */
   if (likely(req->send.segs.nseg == 1)) {
-    small_param->vaddr = (uintptr_t) req->send.segs.single.ptr;
+    small_param->vaddr = (uintptr_t) OMX_SEG_PTR(&req->send.segs.single);
   } else {
     omx_copy_from_segments(copy, &req->send.segs, length);
     small_param->vaddr = (uintptr_t) copy;
@@ -349,7 +349,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 
   if (likely(req->send.segs.nseg == 1)) {
     /* optimize the contigous send medium */
-    void * data = req->send.segs.single.ptr;
+    void * data = OMX_SEG_PTR(&req->send.segs.single);
     uint32_t offset = 0;
 
     for(i=0; i<frags_nr; i++) {

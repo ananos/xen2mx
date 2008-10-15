@@ -23,6 +23,7 @@
 #include "omx_io.h"
 #include "omx_lib.h"
 #include "omx_request.h"
+#include "omx_segments.h"
 
 /***********************
  * Region Map managment
@@ -314,7 +315,6 @@ omx__get_vect_region(struct omx_endpoint *ep,
   struct omx_cmd_user_segment *segs;
   uint32_t nseg = reqsegs->nseg;
   omx_return_t ret;
-  int i;
 
   if (reserver)
     omx__debug_printf(LARGE, ep, "need a region reserved for object %p\n", reserver);
@@ -330,11 +330,7 @@ omx__get_vect_region(struct omx_endpoint *ep,
     goto out;
   }
 
-  for(i=0; i<nseg; i++) {
-    omx_seg_t *seg = &reqsegs->segs[i];
-    segs[i].vaddr = (uintptr_t) seg->ptr;
-    segs[i].len = seg->len;
-  }
+  memcpy(segs, reqsegs->segs, nseg * sizeof(struct omx_cmd_user_segment));
 
   ret = omx__create_region(ep, segs, nseg, &region);
   if (ret != OMX_SUCCESS)
@@ -370,8 +366,8 @@ omx__get_region(struct omx_endpoint *ep,
   if (nseg > 1) {
     return omx__get_vect_region(ep, reqsegs, regionp, reserver);
   } else {
-    omx_seg_t *seg = &reqsegs->single;
-    return omx__get_contigous_region(ep, seg->ptr, seg->len, regionp, reserver);
+    struct omx_cmd_user_segment *seg = &reqsegs->single;
+    return omx__get_contigous_region(ep, OMX_SEG_PTR(seg), seg->len, regionp, reserver);
   }
 }
 

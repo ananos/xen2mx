@@ -29,6 +29,19 @@
  * Internal types
  */
 
+struct omx__req_segs {
+  struct omx_cmd_user_segment single; /* optimization to store the single segment */
+  uint32_t nseg;
+  struct omx_cmd_user_segment *segs;
+  uint32_t total_length;
+};
+
+/* current segment and offset within an array of segments */
+struct omx_segscan_state {
+  struct omx_cmd_user_segment *seg;
+  uint32_t offset;
+};
+
 struct omx__sendq_map {
   int first_free;
   int nr_free;
@@ -428,19 +441,6 @@ struct omx__generic_request {
   uint32_t resends;
 
   struct omx_status status;
-};
-
-struct omx__req_segs {
-    omx_seg_t single; /* optimization to store the single segment */
-    uint32_t nseg;
-    omx_seg_t * segs;
-    uint32_t total_length;
-};
-
-/* current segment and offset within an array of segments */
-struct omx_segscan_state {
-  omx_seg_t *seg;
-  uint32_t offset;
 };
 
 #define OMX_MEDIUM_FRAGS_MAX 32 /* 32 are needed if MTU=1500, only 8 is the regular case */
