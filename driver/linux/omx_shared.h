@@ -32,8 +32,8 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 		      struct omx_cmd_send_small *hdr);
 
 extern int
-omx_shared_send_medium(struct omx_endpoint *src_endpoint,
-		       struct omx_cmd_send_medium *hdr);
+omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
+			      struct omx_cmd_send_mediumsq_frag *hdr);
 
 extern int
 omx_shared_send_rndv(struct omx_endpoint *src_endpoint,

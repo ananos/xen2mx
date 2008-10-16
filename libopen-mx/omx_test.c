@@ -514,8 +514,8 @@ omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
      * (no NEED_SEQNUM state)
      * since the copy buffer is allocated when allocating the request.
      */
-  case OMX_REQUEST_TYPE_SEND_MEDIUM:
-    /* Medium are buffered once they got all their resources allocated
+  case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
+    /* Mediumsq are buffered in the sendq once they got all their resources allocated
      * (no NEED_RESOURCES state)
      * and they passed the throttling check (no NEED_SEQNUM)
      */

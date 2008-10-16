@@ -416,7 +416,7 @@ static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_BENCH)]			= omx_ioctl_bench,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_TINY)]		= omx_ioctl_send_tiny,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_SMALL)]		= omx_ioctl_send_small,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_MEDIUM)]		= omx_ioctl_send_medium,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_MEDIUMSQ_FRAG)]	= omx_ioctl_send_mediumsq_frag,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_RNDV)]		= omx_ioctl_send_rndv,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_PULL)]			= omx_ioctl_pull,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_NOTIFY)]		= omx_ioctl_send_notify,
@@ -744,7 +744,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_BENCH:
 	case OMX_CMD_SEND_TINY:
 	case OMX_CMD_SEND_SMALL:
-	case OMX_CMD_SEND_MEDIUM:
+	case OMX_CMD_SEND_MEDIUMSQ_FRAG:
 	case OMX_CMD_SEND_RNDV:
 	case OMX_CMD_PULL:
 	case OMX_CMD_SEND_NOTIFY:

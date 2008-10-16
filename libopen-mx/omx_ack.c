@@ -43,8 +43,8 @@ omx__mark_request_acked(struct omx_endpoint *ep,
     omx__send_complete(ep, req, status);
     break;
 
-  case OMX_REQUEST_TYPE_SEND_MEDIUM:
-    if (unlikely(req->generic.state & OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING)) {
+  case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_DRIVER_MEDIUMSQ_SENDING)) {
       /* keep the request in the driver_posted_req_q for now until it returns from the driver */
       if (req->generic.status.code == OMX_SUCCESS)
 	/* set the status (success for ack, error for nack) only if there has been no error early */

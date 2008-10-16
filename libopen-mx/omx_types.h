@@ -221,11 +221,11 @@ enum omx__request_resource {
   OMX_REQUEST_RESOURCE_LARGE_REGION = (1<<2),
   /* pull requests need kernel handle */
   OMX_REQUEST_RESOURCE_PULL_HANDLE = (1<<3),
-  /* medium send requests need sendq slots */
+  /* mediumsq send requests need sendq slots */
   OMX_REQUEST_RESOURCE_SENDQ_SLOT = (1<<4),
 };
 
-#define OMX_REQUEST_SEND_MEDIUM_RESOURCES (OMX_REQUEST_RESOURCE_EXP_EVENT | OMX_REQUEST_RESOURCE_SENDQ_SLOT)
+#define OMX_REQUEST_SEND_MEDIUMSQ_RESOURCES (OMX_REQUEST_RESOURCE_EXP_EVENT | OMX_REQUEST_RESOURCE_SENDQ_SLOT)
 #define OMX_REQUEST_SEND_LARGE_RESOURCES (OMX_REQUEST_RESOURCE_SEND_LARGE_REGION | OMX_REQUEST_RESOURCE_LARGE_REGION)
 #define OMX_REQUEST_PULL_RESOURCES (OMX_REQUEST_RESOURCE_EXP_EVENT | OMX_REQUEST_RESOURCE_LARGE_REGION | OMX_REQUEST_RESOURCE_PULL_HANDLE)
 
@@ -275,15 +275,15 @@ struct omx_endpoint {
   /* non multiplexed queues */
   /* SEND req with state = NEED_RESOURCES (queued by their queue_elt) */
   struct list_head need_resources_send_req_q;
-  /* SEND MEDIUM req with state = DRIVER_MEDIUM_SENDING (queued by their queue_elt) */
-  struct list_head driver_medium_sending_req_q;
+  /* SEND MEDIUMSQ req with state = DRIVER_MEDIUMSQ_SENDING (queued by their queue_elt) */
+  struct list_head driver_mediumsq_sending_req_q;
   /* SEND LARGE req with state = NEED_REPLY and already acked (queued by their queue_elt) */
   struct list_head large_send_need_reply_req_q;
   /* RECV_LARGE req with state = DRIVER_PULLING (queued by their queue_elt) */
   struct list_head driver_pulling_req_q;
   /* any connect request that needs to be resent, thus NEED_REPLY (queued by their queue_elt) */
   struct list_head connect_req_q;
-  /* any send request that needs to be resent, thus NEED_ACK, and is not DRIVER_MEDIUM_SENDING (queued by their queue_elt) */
+  /* any send request that needs to be resent, thus NEED_ACK, and is not DRIVER_MEDIUMSQ_SENDING (queued by their queue_elt) */
   struct list_head non_acked_req_q;
   /* send to self waiting for the matching (queued by their queue_elt) */
   struct list_head unexp_self_send_req_q;
@@ -337,7 +337,7 @@ enum omx__request_type {
   OMX_REQUEST_TYPE_CONNECT,
   OMX_REQUEST_TYPE_SEND_TINY,
   OMX_REQUEST_TYPE_SEND_SMALL,
-  OMX_REQUEST_TYPE_SEND_MEDIUM,
+  OMX_REQUEST_TYPE_SEND_MEDIUMSQ,
   OMX_REQUEST_TYPE_SEND_LARGE,
   OMX_REQUEST_TYPE_RECV,
   OMX_REQUEST_TYPE_RECV_LARGE,
@@ -357,11 +357,11 @@ enum omx__request_type {
  * The network state of the request determines where the queue_elt is queued:
  * SEND_TINY and SEND_SMALL:
  *   NEED_ACK: ep->non_acked_req_q + partner->non_acked_req_q
- * SEND_MEDIUM:
- *   DRIVER_MEDIUM_SENDING | NEED_ACK: ep->driver_medium_sending_req_q + partner->non_acked_req_q
+ * SEND_MEDIUMSQ:
+ *   DRIVER_MEDIUMSQ_SENDING | NEED_ACK: ep->driver_medium_sending_req_q + partner->non_acked_req_q
  *               (not on ep->non_acked_req_q since should not be resend before being done sending)
  *   NEED_ACK: ep->non_acked_req_q + partner->non_acked_req_q
- *   DRIVER_MEDIUM_SENDING (unlikely): ep->driver_medium_sending_req_q
+ *   DRIVER_MEDIUMSQ_SENDING (unlikely): ep->driver_mediumsq_sending_req_q
  * SEND_LARGE:
  *   NEED_REPLY | NEED_ACK: ep->non_acked_req_q + partner->non_acked_req_q
  *   NEED_REPLY: ep->large_send_req_q
@@ -395,8 +395,8 @@ enum omx__request_state {
   OMX_REQUEST_STATE_NEED_RESOURCES = (1<<0),
   /* request is a send to a partner which didn't ack enough yet */
   OMX_REQUEST_STATE_NEED_SEQNUM = (1<<1),
-  /* posted medium frag to the driver, not done sending yet */
-  OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING = (1<<2),
+  /* posted mediumsq frag to the driver, not done sending yet */
+  OMX_REQUEST_STATE_DRIVER_MEDIUMSQ_SENDING = (1<<2),
   /* needs a ack from the peer */
   OMX_REQUEST_STATE_NEED_ACK = (1<<3),
   /* needs an explicit reply from the peer, either send large or connect */
@@ -459,12 +459,12 @@ union omx_request {
 	void *copy; /* buffered data attached the request */
       } small;
       struct {
-	struct omx_cmd_send_medium send_medium_ioctl_param;
+	struct omx_cmd_send_mediumsq_frag send_mediumsq_frag_ioctl_param;
 	uint32_t frags_nr;
 	uint32_t frags_pending_nr;
 	unsigned frag_pipeline;
 	int sendq_map_index[OMX_MEDIUM_FRAGS_MAX];
-      } medium;
+      } mediumsq;
       struct {
 	struct omx_cmd_send_rndv send_rndv_ioctl_param;
 	struct omx__large_region * region;

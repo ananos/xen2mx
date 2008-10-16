@@ -89,7 +89,7 @@ omx_new_skb(unsigned long len)
 
 struct omx_deferred_event {
 	struct omx_endpoint *endpoint;
-	struct omx_evt_send_medium_frag_done evt;
+	struct omx_evt_send_mediumsq_frag_done evt;
 };
 
 /* medium frag skb destructor to release sendq pages */
@@ -101,7 +101,7 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 
 	/* report the event to user-space */
 	omx_notify_exp_event(endpoint,
-			     OMX_EVT_SEND_MEDIUM_FRAG_DONE,
+			     OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE,
 			     &defevent->evt, sizeof(defevent->evt));
 
 	/* release objects now */
@@ -398,15 +398,15 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 }
 
 int
-omx_ioctl_send_medium(struct omx_endpoint * endpoint,
-		      void __user * uparam)
+omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
+			     void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
 	struct omx_pkt_medium_frag *medium_n;
-	struct omx_cmd_send_medium cmd;
+	struct omx_cmd_send_mediumsq_frag cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	uint32_t sendq_offset;
@@ -417,14 +417,14 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read send medium cmd hdr\n");
+		printk(KERN_ERR "Open-MX: Failed to read send mediumsq frag cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
 	frag_length = cmd.frag_length;
 	if (unlikely(frag_length > OMX_PACKET_RING_ENTRY_SIZE)) {
-		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a medium (tried %ld)\n",
+		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a mediumsq frag (tried %ld)\n",
 		       OMX_PACKET_RING_ENTRY_SIZE, (unsigned long) frag_length);
 		ret = -EINVAL;
 		goto out;
@@ -432,7 +432,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 
 	sendq_offset = cmd.sendq_offset;
 	if (unlikely(sendq_offset >= OMX_SENDQ_SIZE)) {
-		printk(KERN_ERR "Open-MX: Cannot send medium fragment from sendq offset %ld (max %ld)\n",
+		printk(KERN_ERR "Open-MX: Cannot send mediumsq fragment from sendq offset %ld (max %ld)\n",
 		       (unsigned long) sendq_offset, (unsigned long) OMX_SENDQ_SIZE);
 		ret = -EINVAL;
 		goto out;
@@ -440,7 +440,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 
 #ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
-		return omx_shared_send_medium(endpoint, &cmd);
+		return omx_shared_send_mediumsq_frag(endpoint, &cmd);
 #endif
 
 	if (unlikely(frag_length > omx_skb_copy_max
@@ -455,7 +455,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 				   hdr_len);
 		if (unlikely(skb == NULL)) {
 			omx_counter_inc(iface, SEND_NOMEM_SKB);
-			printk(KERN_INFO "Open-MX: Failed to create medium skb\n");
+			printk(KERN_INFO "Open-MX: Failed to create mediumsq frag skb\n");
 			ret = -ENOMEM;
 			goto out;
 		}
@@ -463,7 +463,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		defevent = kmalloc(sizeof(*defevent), GFP_KERNEL);
 		if (unlikely(!defevent)) {
 			omx_counter_inc(iface, SEND_NOMEM_MEDIUM_DEFEVENT);
-			printk(KERN_INFO "Open-MX: Failed to allocate event\n");
+			printk(KERN_INFO "Open-MX: Failed to allocate mediumsq frag deferred event\n");
 			ret = -ENOMEM;
 			goto out_with_skb;
 		}
@@ -477,7 +477,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		/* set destination peer */
 		ret = omx_set_target_peer(ph, cmd.peer_index);
 		if (ret < 0) {
-			printk(KERN_INFO "Open-MX: Failed to fill target peer in medium header\n");
+			printk(KERN_INFO "Open-MX: Failed to fill target peer in mediumsq frag header\n");
 			kfree(defevent);
 			goto out_with_skb;
 		}
@@ -508,16 +508,16 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 
 	} else {
 		/* use a linear skb */
-		struct omx_evt_send_medium_frag_done evt;
+		struct omx_evt_send_mediumsq_frag_done evt;
 		void *data;
 
-		omx_counter_inc(iface, MEDIUM_FRAG_SEND_LINEAR);
+		omx_counter_inc(iface, MEDIUMSQ_FRAG_SEND_LINEAR);
 
 		skb = omx_new_skb(/* pad to ETH_ZLEN */
 				  max_t(unsigned long, hdr_len + frag_length, ETH_ZLEN));
 		if (unlikely(skb == NULL)) {
 			omx_counter_inc(iface, SEND_NOMEM_SKB);
-			printk(KERN_INFO "Open-MX: Failed to create linear medium skb\n");
+			printk(KERN_INFO "Open-MX: Failed to create linear mediumsq frag skb\n");
 			ret = -ENOMEM;
 			goto out;
 		}
@@ -532,7 +532,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		/* set destination peer */
 		ret = omx_set_target_peer(ph, cmd.peer_index);
 		if (ret < 0) {
-			printk(KERN_INFO "Open-MX: Failed to fill target peer in medium header\n");
+			printk(KERN_INFO "Open-MX: Failed to fill target peer in mediumsq frag header\n");
 			goto out_with_skb;
 		}
 
@@ -542,7 +542,7 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 		/* notify the event right now */
 		evt.sendq_offset = cmd.sendq_offset;
 		omx_notify_exp_event(endpoint,
-				     OMX_EVT_SEND_MEDIUM_FRAG_DONE,
+				     OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE,
 				     &evt, sizeof(evt));
 	}
 
@@ -563,9 +563,9 @@ omx_ioctl_send_medium(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, cmd.frag_seqnum);
 	OMX_PKT_FIELD_FROM(medium_n->frag_pipeline, cmd.frag_pipeline);
 
-	omx_send_dprintk(eh, "MEDIUM FRAG length %ld", (unsigned long) frag_length);
+	omx_send_dprintk(eh, "MEDIUMSQ FRAG length %ld", (unsigned long) frag_length);
 
-	omx_queue_xmit(iface, skb, MEDIUM_FRAG);
+	_omx_queue_xmit(iface, skb, MEDIUM_FRAG, MEDIUMSQ_FRAG);
 
 	return 0;
 

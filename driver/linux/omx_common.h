@@ -72,7 +72,7 @@ extern void omx_wakeup_endpoint_on_close(struct omx_endpoint * endpoint);
 extern struct sk_buff * omx_new_skb(unsigned long len);
 extern int omx_ioctl_send_tiny(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_small(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_ioctl_send_medium(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_rndv(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_pull(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_notify(struct omx_endpoint * endpoint, void __user * uparam);

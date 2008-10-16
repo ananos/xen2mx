@@ -85,21 +85,21 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     break;
   }
 
-  case OMX_EVT_SEND_MEDIUM_FRAG_DONE: {
-    uint16_t sendq_index = evt->send_medium_frag_done.sendq_offset >> omx__globals.packet_ring_entry_shift;
+  case OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE: {
+    uint16_t sendq_index = evt->send_mediumsq_frag_done.sendq_offset >> omx__globals.packet_ring_entry_shift;
     union omx_request * req = omx__endpoint_sendq_map_user(ep, sendq_index);
 
     omx__debug_assert(req);
-    omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUM);
+    omx__debug_assert(req->generic.type == OMX_REQUEST_TYPE_SEND_MEDIUMSQ);
 
     ep->avail_exp_events++;
 
     /* message is not done */
-    if (unlikely(--req->send.specific.medium.frags_pending_nr))
+    if (unlikely(--req->send.specific.mediumsq.frags_pending_nr))
       break;
 
-    req->generic.state &= ~OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING;
-    omx__dequeue_request(&ep->driver_medium_sending_req_q, req);
+    req->generic.state &= ~OMX_REQUEST_STATE_DRIVER_MEDIUMSQ_SENDING;
+    omx__dequeue_request(&ep->driver_mediumsq_sending_req_q, req);
 
     if (likely(req->generic.state & OMX_REQUEST_STATE_NEED_ACK))
       omx__enqueue_request(&ep->non_acked_req_q, req);

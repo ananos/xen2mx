@@ -296,7 +296,7 @@ struct omx_cmd_send_small {
 	/* 32 */
 };
 
-struct omx_cmd_send_medium {
+struct omx_cmd_send_mediumsq_frag {
 	uint16_t peer_index;
 	uint8_t dest_endpoint;
 	uint8_t shared;
@@ -501,7 +501,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x80, struct omx_cmd_bench)
 #define OMX_CMD_SEND_TINY		_IOR(OMX_CMD_MAGIC, 0x81, struct omx_cmd_send_tiny)
 #define OMX_CMD_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x82, struct omx_cmd_send_small)
-#define OMX_CMD_SEND_MEDIUM		_IOR(OMX_CMD_MAGIC, 0x83, struct omx_cmd_send_medium)
+#define OMX_CMD_SEND_MEDIUMSQ_FRAG	_IOR(OMX_CMD_MAGIC, 0x83, struct omx_cmd_send_mediumsq_frag)
 #define OMX_CMD_SEND_RNDV		_IOR(OMX_CMD_MAGIC, 0x84, struct omx_cmd_send_rndv)
 #define OMX_CMD_PULL			_IOR(OMX_CMD_MAGIC, 0x85, struct omx_cmd_pull)
 #define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x86, struct omx_cmd_send_notify)
@@ -554,8 +554,8 @@ omx_strcmd(unsigned cmd)
 		return "Send Tiny";
 	case OMX_CMD_SEND_SMALL:
 		return "Send Small";
-	case OMX_CMD_SEND_MEDIUM:
-		return "Send Medium";
+	case OMX_CMD_SEND_MEDIUMSQ_FRAG:
+		return "Send MediumSQ Fragment";
 	case OMX_CMD_SEND_RNDV:
 		return "Send Rendez-vous";
 	case OMX_CMD_PULL:
@@ -584,7 +584,7 @@ omx_strcmd(unsigned cmd)
  */
 
 #define OMX_EVT_NONE			0x00
-#define OMX_EVT_SEND_MEDIUM_FRAG_DONE	0x01
+#define OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE	0x01
 #define OMX_EVT_PULL_DONE		0x02
 #define OMX_EVT_RECV_CONNECT		0x11
 #define OMX_EVT_RECV_TINY		0x12
@@ -613,8 +613,8 @@ omx_strevt(unsigned type)
 	switch (type) {
 	case OMX_EVT_NONE:
 		return "None";
-	case OMX_EVT_SEND_MEDIUM_FRAG_DONE:
-		return "Send Medium Fragment Done";
+	case OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE:
+		return "Send MediumSQ Fragment Done";
 	case OMX_EVT_PULL_DONE:
 		return "Pull Done";
 	case OMX_EVT_RECV_CONNECT:
@@ -651,12 +651,12 @@ union omx_evt {
 	} generic;
 
 	/* send medium frag done */
-	struct omx_evt_send_medium_frag_done {
+	struct omx_evt_send_mediumsq_frag_done {
 		uint32_t sendq_offset;
 		char pad[59];
 		uint8_t type;
 		/* 64 */
-	} send_medium_frag_done;
+	} send_mediumsq_frag_done;
 
 	struct omx_evt_pull_done {
 		uint64_t lib_cookie;
@@ -784,7 +784,7 @@ union omx_evt {
 enum omx_counter_index {
 	OMX_COUNTER_SEND_TINY = 0,
 	OMX_COUNTER_SEND_SMALL,
-	OMX_COUNTER_SEND_MEDIUM_FRAG,
+	OMX_COUNTER_SEND_MEDIUMSQ_FRAG,
 	OMX_COUNTER_SEND_RNDV,
 	OMX_COUNTER_SEND_NOTIFY,
 	OMX_COUNTER_SEND_CONNECT,
@@ -823,7 +823,7 @@ enum omx_counter_index {
 	OMX_COUNTER_UNEXP_EVENTQ_FULL,
 	OMX_COUNTER_SEND_NOMEM_SKB,
 	OMX_COUNTER_SEND_NOMEM_MEDIUM_DEFEVENT,
-	OMX_COUNTER_MEDIUM_FRAG_SEND_LINEAR,
+	OMX_COUNTER_MEDIUMSQ_FRAG_SEND_LINEAR,
 	OMX_COUNTER_PULL_NONFIRST_BLOCK_DONE_EARLY,
 	OMX_COUNTER_PULL_REQUEST_NOTONLYFIRST_BLOCKS,
 	OMX_COUNTER_PULL_TIMEOUT_HANDLER_FIRST_BLOCK,
@@ -858,7 +858,7 @@ enum omx_counter_index {
 
 	OMX_COUNTER_SHARED_TINY,
 	OMX_COUNTER_SHARED_SMALL,
-	OMX_COUNTER_SHARED_MEDIUM_FRAG,
+	OMX_COUNTER_SHARED_MEDIUMSQ_FRAG,
 	OMX_COUNTER_SHARED_RNDV,
 	OMX_COUNTER_SHARED_NOTIFY,
 	OMX_COUNTER_SHARED_CONNECT,
@@ -880,8 +880,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Tiny";
 	case OMX_COUNTER_SEND_SMALL:
 		return "Send Small";
-	case OMX_COUNTER_SEND_MEDIUM_FRAG:
-		return "Send Medium Frag";
+	case OMX_COUNTER_SEND_MEDIUMSQ_FRAG:
+		return "Send MediumSQ Frag";
 	case OMX_COUNTER_SEND_RNDV:
 		return "Send Rndv";
 	case OMX_COUNTER_SEND_NOTIFY:
@@ -952,8 +952,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Skbuff Alloc Failed";
 	case OMX_COUNTER_SEND_NOMEM_MEDIUM_DEFEVENT:
 		return "Send Medium Deferred Event Alloc Failed";
-	case OMX_COUNTER_MEDIUM_FRAG_SEND_LINEAR:
-		return "Medium Frag Sent as Linear";
+	case OMX_COUNTER_MEDIUMSQ_FRAG_SEND_LINEAR:
+		return "MediumSQ Frag Sent as Linear";
 	case OMX_COUNTER_PULL_NONFIRST_BLOCK_DONE_EARLY:
 		return "Pull Non-First Block Done before First One";
 	case OMX_COUNTER_PULL_REQUEST_NOTONLYFIRST_BLOCKS:
@@ -1018,8 +1018,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Shared Tiny";
 	case OMX_COUNTER_SHARED_SMALL:
 		return "Shared Small";
-	case OMX_COUNTER_SHARED_MEDIUM_FRAG:
-		return "Shared Medium Frag";
+	case OMX_COUNTER_SHARED_MEDIUMSQ_FRAG:
+		return "Shared MediumSQ Frag";
 	case OMX_COUNTER_SHARED_RNDV:
 		return "Shared Rndv";
 	case OMX_COUNTER_SHARED_NOTIFY:

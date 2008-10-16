@@ -41,7 +41,7 @@ omx__dump_request(const char *prefix, union omx_request *req)
 
   if (type == OMX_REQUEST_TYPE_SEND_TINY
       || type == OMX_REQUEST_TYPE_SEND_SMALL
-      || type == OMX_REQUEST_TYPE_SEND_MEDIUM
+      || type == OMX_REQUEST_TYPE_SEND_MEDIUMSQ
       || type == OMX_REQUEST_TYPE_SEND_LARGE) {
     printf("%s  matchinfo %llx to addr %llx ep %d peer %d session %d seqnum %d resends %d\n",
 	   prefix,
@@ -195,7 +195,7 @@ omx__dump_endpoint(struct omx_endpoint *ep)
     omx__dump_req_q("Done                  ", &ep->anyctxid.done_req_q); /* ctxid[0].done_req_q unused if no ctxids */
   }
   omx__dump_req_q("Missing resources     ", &ep->need_resources_send_req_q);
-  omx__dump_req_q("Driver medium sending ", &ep->driver_medium_sending_req_q);
+  omx__dump_req_q("Driver mediumsq sending ", &ep->driver_mediumsq_sending_req_q);
 #ifdef OMX_LIB_DEBUG
   omx__dump_req_q("Non-acked             ", &ep->non_acked_req_q);
   omx__dump_req_q("Partial medium recv   ", &ep->partial_medium_recv_req_q);

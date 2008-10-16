@@ -54,8 +54,8 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
   case OMX_REQUEST_TYPE_SEND_SMALL:
     free(req->send.specific.small.copy);
     break;
-  case OMX_REQUEST_TYPE_SEND_MEDIUM:
-    omx__endpoint_sendq_map_put(ep, req->send.specific.medium.frags_nr, req->send.specific.medium.sendq_map_index);
+  case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
+    omx__endpoint_sendq_map_put(ep, req->send.specific.mediumsq.frags_nr, req->send.specific.mediumsq.sendq_map_index);
     break;
   default:
     break;
@@ -321,22 +321,22 @@ delay:
   }
 }
 
-/**************
- * Send Medium
+/*************************************
+ * Send Medium through the Send Queue
  */
 
 static void
-omx__post_isend_medium(struct omx_endpoint *ep,
-		       struct omx__partner *partner,
-		       union omx_request *req)
+omx__post_isend_mediumsq(struct omx_endpoint *ep,
+			 struct omx__partner *partner,
+			 union omx_request *req)
 {
-  struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
+  struct omx_cmd_send_mediumsq_frag * medium_param = &req->send.specific.mediumsq.send_mediumsq_frag_ioctl_param;
   omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   uint32_t length = req->generic.status.msg_length;
   uint32_t remaining = length;
-  int * sendq_index = req->send.specific.medium.sendq_map_index;
-  int frags_nr = req->send.specific.medium.frags_nr;
-  int frag_pipeline = req->send.specific.medium.frag_pipeline;
+  int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
+  int frags_nr = req->send.specific.mediumsq.frags_nr;
+  int frag_pipeline = req->send.specific.mediumsq.frag_pipeline;
   int frag_max = 1 << frag_pipeline;
   int err;
   int i;
@@ -357,14 +357,14 @@ omx__post_isend_medium(struct omx_endpoint *ep,
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
       medium_param->sendq_offset = sendq_index[i] << frag_pipeline;
-      omx__debug_printf(MEDIUM, ep, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+      omx__debug_printf(MEDIUM, ep, "sending mediumsq seqnum %d pipeline 2 length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
       if (likely(!req->generic.resends))
 	memcpy(ep->sendq + (sendq_index[i] << frag_pipeline), data + offset, chunk);
 
-      err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
+      err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUMSQ_FRAG, medium_param);
       if (unlikely(err < 0)) {
 	/* finish copying frags if not done already */
 	if (likely(!req->generic.resends)) {
@@ -392,7 +392,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
       medium_param->sendq_offset = sendq_index[i] << frag_pipeline;
-      omx__debug_printf(MEDIUM, ep, "sending medium seqnum %d pipeline 2 length %d of total %ld\n",
+      omx__debug_printf(MEDIUM, ep, "sending mediumsq seqnum %d pipeline 2 length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
@@ -401,7 +401,7 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 						&req->send.segs, chunk,
 						&state);
 
-      err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUM, medium_param);
+      err = ioctl(ep->fd, OMX_CMD_SEND_MEDIUMSQ_FRAG, medium_param);
       if (unlikely(err < 0)) {
 	/* finish copying frags if not done already */
 	if (likely(!req->generic.resends)) {
@@ -421,12 +421,12 @@ omx__post_isend_medium(struct omx_endpoint *ep,
     }
   }
 
-  req->send.specific.medium.frags_pending_nr = frags_nr;
+  req->send.specific.mediumsq.frags_pending_nr = frags_nr;
 
  ok:
   req->generic.resends++;
   req->generic.last_send_jiffies = omx__driver_desc->jiffies;
-  req->generic.state |= OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING;
+  req->generic.state |= OMX_REQUEST_STATE_DRIVER_MEDIUMSQ_SENDING;
 
   /* at least one frag was posted, the ack has been sent for sure */
   omx__mark_partner_ack_sent(ep, partner);
@@ -437,10 +437,10 @@ omx__post_isend_medium(struct omx_endpoint *ep,
   /* assume some frags got lost and let retransmission take care of it later */
   omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
 				     OMX_SUCCESS,
-				     "send medium message fragment");
+				     "send mediumsq message fragment");
 
   /* update the number of fragment that we actually submitted */
-  req->send.specific.medium.frags_pending_nr = i;
+  req->send.specific.mediumsq.frags_pending_nr = i;
   ep->avail_exp_events += frags_nr - i;
   if (i)
     /*
@@ -456,11 +456,11 @@ omx__post_isend_medium(struct omx_endpoint *ep,
 }
 
 static INLINE void
-omx__setup_isend_medium(struct omx_endpoint *ep,
-			struct omx__partner * partner,
-			union omx_request *req)
+omx__setup_isend_mediumsq(struct omx_endpoint *ep,
+			  struct omx__partner * partner,
+			  union omx_request *req)
 {
-  struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
+  struct omx_cmd_send_mediumsq_frag * medium_param = &req->send.specific.mediumsq.send_mediumsq_frag_ioctl_param;
   uint64_t match_info = req->generic.status.match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   omx__seqnum_t seqnum;
@@ -473,11 +473,11 @@ omx__setup_isend_medium(struct omx_endpoint *ep,
 
   medium_param->seqnum = seqnum;
 
-  omx__post_isend_medium(ep, partner, req);
+  omx__post_isend_mediumsq(ep, partner, req);
 
   req->generic.state |= OMX_REQUEST_STATE_NEED_ACK;
-  if (req->generic.state & OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING)
-    omx__enqueue_request(&ep->driver_medium_sending_req_q, req);
+  if (req->generic.state & OMX_REQUEST_STATE_DRIVER_MEDIUMSQ_SENDING)
+    omx__enqueue_request(&ep->driver_mediumsq_sending_req_q, req);
   else
     omx__enqueue_request(&ep->non_acked_req_q, req);
   omx__enqueue_partner_request(&partner->non_acked_req_q, req);
@@ -487,21 +487,21 @@ omx__setup_isend_medium(struct omx_endpoint *ep,
 }
 
 static INLINE omx_return_t
-omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
-			      struct omx__partner *partner,
-			      union omx_request *req)
+omx__alloc_setup_isend_mediumsq(struct omx_endpoint *ep,
+				struct omx__partner *partner,
+				union omx_request *req)
 {
-  struct omx_cmd_send_medium * medium_param = &req->send.specific.medium.send_medium_ioctl_param;
+  struct omx_cmd_send_mediumsq_frag * medium_param = &req->send.specific.mediumsq.send_mediumsq_frag_ioctl_param;
   uint32_t length = req->generic.status.msg_length;
-  int * sendq_index = req->send.specific.medium.sendq_map_index;
+  int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
   int res = req->generic.missing_resources;
-  int frags_nr = req->send.specific.medium.frags_nr;
+  int frags_nr = req->send.specific.mediumsq.frags_nr;
 
   if (likely(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
     goto need_exp_events;
   if (likely(res & OMX_REQUEST_RESOURCE_SENDQ_SLOT))
     goto need_sendq_map_slot;
-  omx__abort(ep, "Unexpected missing resources %x for medium send request\n", res);
+  omx__abort(ep, "Unexpected missing resources %x for mediumsq send request\n", res);
 
  need_exp_events:
   if (unlikely(ep->avail_exp_events < frags_nr))
@@ -510,7 +510,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
   req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_EXP_EVENT;
 
  need_sendq_map_slot:
-  if (unlikely(omx__endpoint_sendq_map_get(ep, req->send.specific.medium.frags_nr, req, sendq_index) < 0))
+  if (unlikely(omx__endpoint_sendq_map_get(ep, req->send.specific.mediumsq.frags_nr, req, sendq_index) < 0))
     return OMX_INTERNAL_MISSING_RESOURCES;
   req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_SENDQ_SLOT;
   omx__debug_assert(!req->generic.missing_resources);
@@ -519,7 +519,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
   medium_param->dest_endpoint = partner->endpoint_index;
   medium_param->shared = omx__partner_localization_shared(partner);
   medium_param->match_info = req->generic.status.match_info;
-  medium_param->frag_pipeline = req->send.specific.medium.frag_pipeline;
+  medium_param->frag_pipeline = req->send.specific.mediumsq.frag_pipeline;
   medium_param->msg_length = length;
   medium_param->session_id = partner->true_session_id;
 
@@ -532,7 +532,7 @@ omx__alloc_setup_isend_medium(struct omx_endpoint *ep,
     omx__enqueue_partner_request(&partner->need_seqnum_send_req_q, req);
     omx__mark_partner_throttling(ep, partner);
   } else {
-    omx__setup_isend_medium(ep, partner, req);
+    omx__setup_isend_mediumsq(ep, partner, req);
   }
 
   return OMX_SUCCESS;
@@ -549,13 +549,13 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   int frag_max = 1 << frag_pipeline;
   int frags_nr;
 
-  req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUM;
-  req->generic.missing_resources = OMX_REQUEST_SEND_MEDIUM_RESOURCES;
+  req->generic.type = OMX_REQUEST_TYPE_SEND_MEDIUMSQ;
+  req->generic.missing_resources = OMX_REQUEST_SEND_MEDIUMSQ_RESOURCES;
 
   frags_nr = (length+frag_max-1) >> frag_pipeline;
   omx__debug_assert(frags_nr <= OMX_MEDIUM_FRAGS_MAX); /* for the sendq_index array above */
-  req->send.specific.medium.frags_nr = frags_nr;
-  req->send.specific.medium.frag_pipeline = frag_pipeline;
+  req->send.specific.mediumsq.frags_nr = frags_nr;
+  req->send.specific.mediumsq.frag_pipeline = frag_pipeline;
 
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
@@ -564,11 +564,11 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
     /* some requests are delayed, do not submit, queue as well */
     goto delay;
 
-  ret = omx__alloc_setup_isend_medium(ep, partner, req);
+  ret = omx__alloc_setup_isend_mediumsq(ep, partner, req);
   if (unlikely(ret != OMX_SUCCESS)) {
     omx__debug_assert(ret == OMX_INTERNAL_MISSING_RESOURCES);
 delay:
-    omx__debug_printf(SEND, ep, "delaying send medium request %p\n", req);
+    omx__debug_printf(SEND, ep, "delaying send mediumsq request %p\n", req);
     req->generic.state |= OMX_REQUEST_STATE_NEED_RESOURCES;
     omx__enqueue_request(&ep->need_resources_send_req_q, req);
   }
@@ -1104,11 +1104,11 @@ omx__process_delayed_requests(struct omx_endpoint *ep)
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       ret = omx__alloc_setup_isend_small(ep, req->generic.partner, req);
       break;
-    case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf(SEND, ep, "trying to resubmit delayed send medium request %p seqnum %d (#%d)\n", req,
+    case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
+      omx__debug_printf(SEND, ep, "trying to resubmit delayed send mediumsq request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
-      ret = omx__alloc_setup_isend_medium(ep, req->generic.partner, req);
+      ret = omx__alloc_setup_isend_mediumsq(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
       omx__debug_printf(SEND, ep, "trying to resubmit delayed send large request %p seqnum %d (#%d)\n", req,
@@ -1168,8 +1168,8 @@ omx__process_throttling_requests(struct omx_endpoint *ep, struct omx__partner *p
     case OMX_REQUEST_TYPE_SEND_SMALL:
       omx__setup_isend_small(ep, partner, req);
       break;
-    case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__setup_isend_medium(ep, partner, req);
+    case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
+      omx__setup_isend_mediumsq(ep, partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
       omx__setup_isend_rndv(ep, partner, req);
@@ -1197,13 +1197,13 @@ omx__release_unsent_send_resources(struct omx_endpoint *ep, union omx_request *r
 
   switch (req->generic.type) {
 
-  case OMX_REQUEST_TYPE_SEND_MEDIUM:
+  case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
     if (!(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
-      ep->avail_exp_events += req->send.specific.medium.frags_nr;
+      ep->avail_exp_events += req->send.specific.mediumsq.frags_nr;
 
     /* make sure we don't release garbage sendq map slots */
     if (res & OMX_REQUEST_RESOURCE_SENDQ_SLOT)
-      req->send.specific.medium.frags_nr = 0;
+      req->send.specific.mediumsq.frags_nr = 0;
 
     break;
 
@@ -1248,7 +1248,7 @@ omx__complete_unsent_send_request(struct omx_endpoint *ep, union omx_request *re
 
   case OMX_REQUEST_TYPE_SEND_TINY:
   case OMX_REQUEST_TYPE_SEND_SMALL:
-  case OMX_REQUEST_TYPE_SEND_MEDIUM:
+  case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
   case OMX_REQUEST_TYPE_SEND_LARGE:
     omx__release_unsent_send_resources(ep, req);
     omx__send_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
@@ -1314,19 +1314,19 @@ omx__process_resend_requests(struct omx_endpoint *ep)
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
       omx__post_isend_small(ep, req->generic.partner, req);
       break;
-    case OMX_REQUEST_TYPE_SEND_MEDIUM:
-      omx__debug_printf(SEND, ep, "reposting resend medium request %p seqnum %d (#%d)\n", req,
+    case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
+      omx__debug_printf(SEND, ep, "reposting resend mediumsq request %p seqnum %d (#%d)\n", req,
 			(unsigned) OMX__SEQNUM(req->generic.send_seqnum),
 			(unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum));
-      if (ep->avail_exp_events < req->send.specific.medium.frags_nr) {
+      if (ep->avail_exp_events < req->send.specific.mediumsq.frags_nr) {
 	/* not enough expected events available, stop resending for now, and try again later */
-	omx__debug_printf(SEND, ep, "stopping resending for now, only %d exp events available to resend %d medium frags\n",
-			  ep->avail_exp_events, req->send.specific.medium.frags_nr);
+	omx__debug_printf(SEND, ep, "stopping resending for now, only %d exp events available to resend %d mediumsq frags\n",
+			  ep->avail_exp_events, req->send.specific.mediumsq.frags_nr);
 	omx__requeue_request(&ep->non_acked_req_q, req);
 	goto done_resending;
       }
-      ep->avail_exp_events -= req->send.specific.medium.frags_nr;
-      omx__post_isend_medium(ep, req->generic.partner, req);
+      ep->avail_exp_events -= req->send.specific.mediumsq.frags_nr;
+      omx__post_isend_mediumsq(ep, req->generic.partner, req);
       break;
     case OMX_REQUEST_TYPE_SEND_LARGE:
       omx__debug_printf(SEND, ep, "reposting resend rndv request %p seqnum %d (#%d)\n", req,
@@ -1345,8 +1345,8 @@ omx__process_resend_requests(struct omx_endpoint *ep)
 		 req->generic.type);
     }
 
-    if (req->generic.state & OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING)
-      omx__enqueue_request(&ep->driver_medium_sending_req_q, req);
+    if (req->generic.state & OMX_REQUEST_STATE_DRIVER_MEDIUMSQ_SENDING)
+      omx__enqueue_request(&ep->driver_mediumsq_sending_req_q, req);
     else
       omx__enqueue_request(&tmp_req_q, req);
   }

@@ -95,8 +95,8 @@ omx__strreqtype(enum omx__request_type type)
     return "Send Tiny";
   case OMX_REQUEST_TYPE_SEND_SMALL:
     return "Send Small";
-  case OMX_REQUEST_TYPE_SEND_MEDIUM:
-    return "Send Medium";
+  case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
+    return "Send MediumSQ";
   case OMX_REQUEST_TYPE_SEND_LARGE:
     return "Send Large";
   case OMX_REQUEST_TYPE_RECV:
@@ -119,8 +119,8 @@ omx__sprintf_reqstate(uint16_t state, char *str)
     str += sprintf(str, "NeedResources ");
   if (state & OMX_REQUEST_STATE_NEED_SEQNUM)
     str += sprintf(str, "NeedSeqnum ");
-  if (state & OMX_REQUEST_STATE_DRIVER_MEDIUM_SENDING)
-    str += sprintf(str, "DriverMediumSending ");
+  if (state & OMX_REQUEST_STATE_DRIVER_MEDIUMSQ_SENDING)
+    str += sprintf(str, "DriverMediumSQSending ");
   if (state & OMX_REQUEST_STATE_NEED_ACK)
     str += sprintf(str, "NeedAck ");
   if (state & OMX_REQUEST_STATE_NEED_REPLY)

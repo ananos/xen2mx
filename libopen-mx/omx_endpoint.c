@@ -554,7 +554,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->progression_disabled = 0;
 
   INIT_LIST_HEAD(&ep->need_resources_send_req_q);
-  INIT_LIST_HEAD(&ep->driver_medium_sending_req_q);
+  INIT_LIST_HEAD(&ep->driver_mediumsq_sending_req_q);
   INIT_LIST_HEAD(&ep->large_send_need_reply_req_q);
   INIT_LIST_HEAD(&ep->driver_pulling_req_q);
   INIT_LIST_HEAD(&ep->connect_req_q);
@@ -703,7 +703,7 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
     omx_free_segments(&req->send.segs);
     break;
 
-  case OMX_REQUEST_TYPE_SEND_MEDIUM:
+  case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
     /* don't care about releasing sendq_map */
     omx_free_segments(&req->send.segs);
     break;
@@ -838,8 +838,8 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep)
     omx__destroy_unlinked_request_on_close(ep, req);
   }
 
-  /* free driver_medium_sending_req_q */
-  omx__foreach_request_safe(&ep->driver_medium_sending_req_q, req, next) {
+  /* free driver_mediumsq_sending_req_q */
+  omx__foreach_request_safe(&ep->driver_mediumsq_sending_req_q, req, next) {
     omx___dequeue_request(req);
     omx__unlink_done_request_on_close(ep, req);
     omx__destroy_unlinked_request_on_close(ep, req);
@@ -935,11 +935,11 @@ omx__request_alloc_check(struct omx_endpoint *ep)
       omx__verbose_printf(ep, "Found %d requests in need-seqnum send queue\n", j);
   }
 
-  j = omx__queue_count(&ep->driver_medium_sending_req_q);
+  j = omx__queue_count(&ep->driver_mediumsq_sending_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf(ep, "Found %d requests in driver medium sending queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in driver mediumsq sending queue\n", j);
   }
 
   j = omx__queue_count(&ep->partial_medium_recv_req_q);

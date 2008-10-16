@@ -48,19 +48,21 @@ do {						\
 } while (0)
 
 #ifdef OMX_DRIVER_DEBUG
-#define omx_queue_xmit(iface, skb, type)					\
+#define _omx_queue_xmit(iface, skb, type, counter)				\
 	do {									\
 	if (omx_##type##_packet_loss &&						\
 	    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) {	\
 		kfree_skb(skb);							\
 		omx_##type##_packet_loss_index = 0;				\
 	} else {								\
-		__omx_queue_xmit(iface, skb, type);				\
+		__omx_queue_xmit(iface, skb, counter);				\
 	}									\
 } while (0)
 #else /* OMX_DRIVER_DEBUG */
-#define omx_queue_xmit __omx_queue_xmit
+#define _omx_queue_xmit(iface, skb, type, counter) __omx_queue_xmit(iface, skb, counter)
 #endif /* OMX_DRIVER_DEBUG */
+
+#define omx_queue_xmit(iface, skb, type) _omx_queue_xmit(iface, skb, type, type)
 
 /* translate omx_endpoint_acquire_by_iface_index return values into nack type */
 static inline enum omx_nack_type

@@ -279,12 +279,12 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 }
 
 int
-omx_shared_send_medium(struct omx_endpoint *src_endpoint,
-		       struct omx_cmd_send_medium *hdr)
+omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
+			      struct omx_cmd_send_mediumsq_frag *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg dst_event;
-	struct omx_evt_send_medium_frag_done src_event;
+	struct omx_evt_send_mediumsq_frag_done src_event;
 	unsigned long recvq_offset;
 #ifdef CONFIG_NET_DMA
 	dma_cookie_t dma_cookie = -1;
@@ -377,17 +377,17 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 
 	/* fill and notify the src event */
 	src_event.sendq_offset = hdr->sendq_offset;
-	omx_notify_exp_event(src_endpoint, OMX_EVT_SEND_MEDIUM_FRAG_DONE, &src_event, sizeof(src_event));
+	omx_notify_exp_event(src_endpoint, OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE, &src_event, sizeof(src_event));
 	omx_endpoint_release(dst_endpoint);
 
-	omx_counter_inc(omx_shared_fake_iface, SHARED_MEDIUM_FRAG);
+	omx_counter_inc(omx_shared_fake_iface, SHARED_MEDIUMSQ_FRAG);
 
 	return 0;
 
  out_with_endpoint:
 	/* fill and notify the src event anyway, so that the sender doesn't leak eventq slots */
 	src_event.sendq_offset = hdr->sendq_offset;
-	omx_notify_exp_event(src_endpoint, OMX_EVT_SEND_MEDIUM_FRAG_DONE, &src_event, sizeof(src_event));
+	omx_notify_exp_event(src_endpoint, OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE, &src_event, sizeof(src_event));
 
 	omx_endpoint_release(dst_endpoint);
 	return err;
