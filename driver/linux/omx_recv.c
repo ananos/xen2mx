@@ -471,11 +471,11 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(&medium_n->msg);
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
-	event.specific.medium.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
-	event.specific.medium.frag_length = frag_length;
-	event.specific.medium.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
-	event.specific.medium.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
-	event.specific.medium.recvq_offset = recvq_offset;
+	event.specific.medium_frag.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
+	event.specific.medium_frag.frag_length = frag_length;
+	event.specific.medium_frag.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
+	event.specific.medium_frag.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
+	event.specific.medium_frag.recvq_offset = recvq_offset;
 
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
@@ -497,7 +497,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 #endif
 
 	/* notify the event */
-	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_MEDIUM, &event, sizeof(event));
+	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_MEDIUM_FRAG, &event, sizeof(event));
 
 	omx_counter_inc(iface, RECV_MEDIUM_FRAG);
 	omx_endpoint_release(endpoint);

@@ -355,11 +355,11 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 	dst_event.match_info = hdr->match_info;
 	dst_event.seqnum = hdr->seqnum;
 	dst_event.piggyack = hdr->piggyack;
-	dst_event.specific.medium.msg_length = hdr->msg_length;
-	dst_event.specific.medium.frag_length = frag_length;
-	dst_event.specific.medium.frag_seqnum = hdr->frag_seqnum;
-	dst_event.specific.medium.frag_pipeline = hdr->frag_pipeline;
-	dst_event.specific.medium.recvq_offset = recvq_offset;
+	dst_event.specific.medium_frag.msg_length = hdr->msg_length;
+	dst_event.specific.medium_frag.frag_length = frag_length;
+	dst_event.specific.medium_frag.frag_seqnum = hdr->frag_seqnum;
+	dst_event.specific.medium_frag.frag_pipeline = hdr->frag_pipeline;
+	dst_event.specific.medium_frag.recvq_offset = recvq_offset;
 
 	/* make sure the copy is done */
 #ifdef CONFIG_NET_DMA
@@ -373,7 +373,7 @@ omx_shared_send_medium(struct omx_endpoint *src_endpoint,
 #endif
 
 	/* notify the dst event */
-	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_MEDIUM, &dst_event, sizeof(dst_event));
+	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_MEDIUM_FRAG, &dst_event, sizeof(dst_event));
 
 	/* fill and notify the src event */
 	src_event.sendq_offset = hdr->sendq_offset;

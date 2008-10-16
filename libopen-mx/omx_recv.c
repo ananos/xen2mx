@@ -108,10 +108,10 @@ omx__find_previous_early_packet(struct omx_endpoint *ep, struct omx__partner * p
       continue;
     }
 
-    if (msg->type == OMX_EVT_RECV_MEDIUM) {
+    if (msg->type == OMX_EVT_RECV_MEDIUM_FRAG) {
       /* medium early, check the frag num */
-      unsigned long current_frag_seqnum = current->msg.specific.medium.frag_seqnum;
-      unsigned long new_frag_seqnum = msg->specific.medium.frag_seqnum;
+      unsigned long current_frag_seqnum = current->msg.specific.medium_frag.frag_seqnum;
+      unsigned long new_frag_seqnum = msg->specific.medium_frag.frag_seqnum;
 
       if (new_frag_seqnum > current_frag_seqnum) {
 	/* found an earlier one, insert after it */
@@ -185,8 +185,8 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
     break;
   }
 
-  case OMX_EVT_RECV_MEDIUM: {
-    uint16_t frag_length = msg->specific.medium.frag_length;
+  case OMX_EVT_RECV_MEDIUM_FRAG: {
+    uint16_t frag_length = msg->specific.medium_frag.frag_length;
     char * early_data = malloc(frag_length);
     if (unlikely(!early_data)) {
       free(early);
@@ -195,7 +195,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
     }
     memcpy(early_data, data, frag_length);
     early->data = early_data;
-    early->msg_length = msg->specific.medium.msg_length;
+    early->msg_length = msg->specific.medium_frag.msg_length;
     break;
   }
 
@@ -277,9 +277,9 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 			      void *data, uint32_t msg_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
-  unsigned long chunk = msg->specific.medium.frag_length;
-  unsigned long frag_seqnum = msg->specific.medium.frag_seqnum;
-  unsigned long frag_pipeline = msg->specific.medium.frag_pipeline;
+  unsigned long chunk = msg->specific.medium_frag.frag_length;
+  unsigned long frag_seqnum = msg->specific.medium_frag.frag_seqnum;
+  unsigned long frag_pipeline = msg->specific.medium_frag.frag_pipeline;
   unsigned long offset = frag_seqnum << frag_pipeline;
   int new = (req->recv.specific.medium.frags_received_mask == 0);
 
@@ -484,7 +484,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     xfer_length = req->recv.segs.total_length < msg_length ? req->recv.segs.total_length : msg_length;
     req->generic.status.xfer_length = xfer_length;
 
-    if (msg->type == OMX_EVT_RECV_MEDIUM)
+    if (msg->type == OMX_EVT_RECV_MEDIUM_FRAG)
       omx__init_process_recv_medium(req);
 
     (*recv_func)(ep, partner, req, msg, data, xfer_length);
@@ -500,7 +500,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     req->generic.type = OMX_REQUEST_TYPE_RECV;
     req->generic.state = OMX_REQUEST_STATE_UNEXPECTED_RECV;
 
-    if (msg->type == OMX_EVT_RECV_MEDIUM)
+    if (msg->type == OMX_EVT_RECV_MEDIUM_FRAG)
       omx__init_process_recv_medium(req);
 
     if (likely(msg->type != OMX_EVT_RECV_RNDV)) {
@@ -634,7 +634,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
       omx__update_partner_next_frag_recv_seq(ep, partner);
     }
 
-  } else if (likely(msg->type == OMX_EVT_RECV_MEDIUM
+  } else if (likely(msg->type == OMX_EVT_RECV_MEDIUM_FRAG
 		    && frag_index < frag_index_max)) {
     /* fragment of already matched but incomplete medium message */
     omx__continue_partial_request(ep, partner, seqnum,

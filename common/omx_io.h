@@ -589,7 +589,7 @@ omx_strcmd(unsigned cmd)
 #define OMX_EVT_RECV_CONNECT		0x11
 #define OMX_EVT_RECV_TINY		0x12
 #define OMX_EVT_RECV_SMALL		0x13
-#define OMX_EVT_RECV_MEDIUM		0x14
+#define OMX_EVT_RECV_MEDIUM_FRAG	0x14
 #define OMX_EVT_RECV_RNDV		0x15
 #define OMX_EVT_RECV_NOTIFY		0x16
 #define OMX_EVT_RECV_TRUC		0x17
@@ -623,7 +623,7 @@ omx_strevt(unsigned type)
 		return "Receive Tiny";
 	case OMX_EVT_RECV_SMALL:
 		return "Receive Small";
-	case OMX_EVT_RECV_MEDIUM:
+	case OMX_EVT_RECV_MEDIUM_FRAG:
 		return "Receive Medium Fragment";
 	case OMX_EVT_RECV_RNDV:
 		return "Receive Rendez-vous";
@@ -745,7 +745,7 @@ union omx_evt {
 				/* 12 */
 				uint32_t pad[7];
 				/* 40 */
-			} medium;
+			} medium_frag;
 
 			struct {
 				uint8_t length;
