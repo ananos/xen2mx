@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x154
+#define OMX_DRIVER_ABI_VERSION		0x155
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -584,8 +584,7 @@ omx_strcmd(unsigned cmd)
  */
 
 #define OMX_EVT_NONE			0x00
-#define OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE	0x01
-#define OMX_EVT_PULL_DONE		0x02
+#define OMX_EVT_IGNORE			0x01
 #define OMX_EVT_RECV_CONNECT		0x11
 #define OMX_EVT_RECV_TINY		0x12
 #define OMX_EVT_RECV_SMALL		0x13
@@ -593,7 +592,9 @@ omx_strcmd(unsigned cmd)
 #define OMX_EVT_RECV_RNDV		0x15
 #define OMX_EVT_RECV_NOTIFY		0x16
 #define OMX_EVT_RECV_TRUC		0x17
-#define OMX_EVT_RECV_NACK_LIB		0x20
+#define OMX_EVT_RECV_NACK_LIB		0x18
+#define OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE	0x20
+#define OMX_EVT_PULL_DONE		0x21
 
 #define OMX_EVT_NACK_LIB_BAD_ENDPT	0x01
 #define OMX_EVT_NACK_LIB_ENDPT_CLOSED	0x02

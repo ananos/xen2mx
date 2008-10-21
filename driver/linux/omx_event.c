@@ -292,6 +292,36 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	spin_unlock_bh(&endpoint->event_lock);
 }
 
+/*
+ * Store an dummy "ignored" event in the next reserved slot
+ * (not always the one reserved during omx_commit_notify_unexp_event()
+ *  since prepare/commit calls could have been overlapped).
+ * We can't cancel for real since the recvq slot could not be the last one.
+ */
+void
+omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
+{
+	union omx_evt *slot;
+
+	spin_lock_bh(&endpoint->event_lock);
+
+	/* the caller should have called prepare() earlier */
+	BUG_ON(endpoint->next_reserved_unexp_eventq_offset == endpoint->next_free_unexp_eventq_offset);
+
+	/* update the next reserved slot in the queue */
+	slot = endpoint->unexp_eventq + endpoint->next_reserved_unexp_eventq_offset;
+	endpoint->next_reserved_unexp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
+	if (unlikely(endpoint->next_reserved_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
+		endpoint->next_reserved_unexp_eventq_offset = 0;
+
+	/* fill an event to be ignored by user-space */
+	((struct omx_evt_generic *) slot)->type = OMX_EVT_IGNORE;
+
+	/* no need to wakeup people */
+
+	spin_unlock_bh(&endpoint->event_lock);	
+}
+
 /***********
  * Sleeping
  */

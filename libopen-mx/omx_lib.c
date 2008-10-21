@@ -126,6 +126,9 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     break;
   }
 
+  case OMX_EVT_IGNORE:
+    break;
+
   default:
     omx__abort(ep, "Failed to handle event with unknown type %d\n",
 	       evt->generic.type);

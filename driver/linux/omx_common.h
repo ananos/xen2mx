@@ -64,6 +64,7 @@ extern int omx_notify_exp_event(struct omx_endpoint *endpoint, uint8_t type, voi
 extern int omx_notify_unexp_event(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
 extern int omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, unsigned long *recvq_offset);
 extern void omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, uint8_t type, void *event, int length);
+extern void omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint);
 extern int omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_wakeup(struct omx_endpoint * endpoint, void __user * uparam);
 extern void omx_wakeup_endpoint_on_close(struct omx_endpoint * endpoint);
