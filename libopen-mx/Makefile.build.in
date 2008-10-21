@@ -88,11 +88,11 @@ assertions: $(ASSERTIONS_STATIC_OBJ)
 
 $(STATIC_OBJS): %.o: @abs_srcdir@/%.c
 	$(CMDECHO) "  CC      $(REL_DIR)$@"
-	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(STATIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .o,.lo,$@) -MF $(patsubst %.o,$(DEPDIR)%.d, $@) $< -o $@
+	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(STATIC_CFLAGS) $(BUILDDEPFLAGS) -MT $@ -MT $(subst .o,.lo,$@) -MF $(patsubst %.o,$(DEPDIR)%.d, $@) $< -o $@
 
 $(DYNAMIC_OBJS): %.lo: @abs_srcdir@/%.c
 	$(CMDECHO) "  CC      $(REL_DIR)$@"
-	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(DYNAMIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .lo,.o,$@) -MF $(patsubst %.lo,$(DEPDIR)%.d, $@) $< -o $@
+	$(CMDPREFIX) $(CC) -c $(CPPFLAGS) $(CFLAGS) $(DYNAMIC_CFLAGS) $(BUILDDEPFLAGS) -MT $(subst .lo,.o,$@) -MT $@ -MF $(patsubst %.lo,$(DEPDIR)%.d, $@) $< -o $@
 
 ##########
 # install
