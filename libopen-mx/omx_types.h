@@ -338,6 +338,7 @@ enum omx__request_type {
   OMX_REQUEST_TYPE_SEND_TINY,
   OMX_REQUEST_TYPE_SEND_SMALL,
   OMX_REQUEST_TYPE_SEND_MEDIUMSQ,
+  OMX_REQUEST_TYPE_SEND_MEDIUMVA,
   OMX_REQUEST_TYPE_SEND_LARGE,
   OMX_REQUEST_TYPE_RECV,
   OMX_REQUEST_TYPE_RECV_LARGE,
@@ -466,6 +467,9 @@ union omx_request {
 	int sendq_map_index[OMX_MEDIUM_FRAGS_MAX];
       } mediumsq;
       struct {
+	struct omx_cmd_send_mediumva send_mediumva_ioctl_param;
+      } mediumva;
+      struct {
 	struct omx_cmd_send_rndv send_rndv_ioctl_param;
 	struct omx__large_region * region;
 	uint8_t region_seqnum;
@@ -534,6 +538,7 @@ struct omx__globals {
   int fatal_errors;
   int debug_signal_level;
   int check_request_alloc;
+  int medium_sendq;
   uint32_t any_endpoint_id;
 #ifndef OMX_DISABLE_SELF
   int selfcomms;

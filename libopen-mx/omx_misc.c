@@ -97,6 +97,8 @@ omx__strreqtype(enum omx__request_type type)
     return "Send Small";
   case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
     return "Send MediumSQ";
+  case OMX_REQUEST_TYPE_SEND_MEDIUMVA:
+    return "Send MediumVA";
   case OMX_REQUEST_TYPE_SEND_LARGE:
     return "Send Large";
   case OMX_REQUEST_TYPE_RECV:

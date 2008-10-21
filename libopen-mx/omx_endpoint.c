@@ -708,6 +708,10 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
     omx_free_segments(&req->send.segs);
     break;
 
+  case OMX_REQUEST_TYPE_SEND_MEDIUMVA:
+    omx_free_segments(&req->send.segs);
+    break;
+
   case OMX_REQUEST_TYPE_SEND_LARGE:
     if (!(resources & OMX_REQUEST_RESOURCE_LARGE_REGION)
 	&& (state & OMX_REQUEST_STATE_NEED_REPLY))

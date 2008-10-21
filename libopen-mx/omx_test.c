@@ -529,6 +529,8 @@ omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
     result = 1;
     break;
 
+  case OMX_REQUEST_TYPE_SEND_MEDIUMVA:
+    /* Medium send from vaddr is never buffered */
   case OMX_REQUEST_TYPE_SEND_LARGE:
     /* Large send is never buffered */
     break;

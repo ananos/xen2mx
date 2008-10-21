@@ -396,6 +396,143 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 }
 
 int
+omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
+			 struct omx_cmd_send_mediumva *hdr)
+{
+	struct omx_endpoint * dst_endpoint;
+	struct omx_evt_recv_msg dst_event;
+	struct omx_cmd_user_segment *usegs, *cur_useg;
+	uint16_t msg_length, remaining, cur_useg_remaining;
+	void __user * cur_udata;
+	unsigned long recvq_offset[OMX_MEDIUM_MAX >> OMX_PACKET_RING_ENTRY_SHIFT];
+	uint32_t nseg;
+	int ret;
+	int frags_nr;
+     	int i;
+
+	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
+							      hdr->dest_endpoint, hdr->session_id,
+							      hdr->seqnum);
+	if (unlikely(!dst_endpoint))
+		return 0;
+
+	nseg = hdr->nr_segments;
+	msg_length = hdr->length;
+	frags_nr = (msg_length + OMX_PACKET_RING_ENTRY_SIZE - 1) >> OMX_PACKET_RING_ENTRY_SHIFT;
+	/* FIXME: assert <= 8 */
+
+	/* get user segments */
+	usegs = kmalloc(nseg * sizeof(struct omx_cmd_user_segment), GFP_KERNEL);
+	if ( !usegs) {
+		printk(KERN_ERR "Open-MX: Cannot allocate segments for mediumva\n");
+		ret = -ENOMEM;
+		goto out_with_endpoint;
+	}
+	ret = copy_from_user(usegs, (void __user *)(unsigned long) hdr->segments,
+			     nseg * sizeof(struct omx_cmd_user_segment));
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read mediumva segments cmd\n");
+		ret = -EFAULT;
+		goto out_with_usegs;
+	}
+
+	/* compute the segments length */
+	remaining = 0;
+	for(i=0; i<nseg; i++)
+		remaining += usegs[i].len;
+	if (remaining != msg_length) {
+		printk(KERN_ERR "Open-MX: Cannot send mediumva without enough data in segments (%ld instead of %ld)\n",
+		       (unsigned long) remaining, (unsigned long) msg_length);
+		ret = -EINVAL;
+		goto out_with_usegs;
+	}
+
+	/* initialize position in segments */
+	cur_useg = &usegs[0];
+	cur_useg_remaining = cur_useg->len;
+	cur_udata = (__user void *)(unsigned long) cur_useg->vaddr;
+
+	/* get the dst eventq slot */
+	ret = omx_prepare_notify_unexp_events_with_recvq(dst_endpoint, frags_nr,
+							 recvq_offset);
+	if (unlikely(ret < 0)) {
+		/* no more unexpected eventq slot? just drop the message, it will be resent anyway */
+		ret = 0;
+		goto out_with_usegs;
+	}
+
+	/* fill the dst event */
+	dst_event.peer_index = src_endpoint->iface->peer.index;
+	dst_event.src_endpoint = src_endpoint->endpoint_index;
+	dst_event.match_info = hdr->match_info;
+	dst_event.seqnum = hdr->seqnum;
+	dst_event.piggyack = hdr->piggyack;
+	dst_event.specific.medium_frag.msg_length = hdr->length;
+	dst_event.specific.medium_frag.frag_pipeline = OMX_PACKET_RING_ENTRY_SHIFT;
+
+	/* initialize position in segments */
+	cur_useg = &usegs[0];
+	cur_useg_remaining = cur_useg->len;
+	cur_udata = (__user void *)(unsigned long) cur_useg->vaddr;
+
+	for(i=0; i<frags_nr; i++) {
+		uint16_t frag_length = remaining > OMX_PACKET_RING_ENTRY_SIZE ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
+		uint16_t frag_remaining = frag_length;
+		void *cur_dest = dst_endpoint->recvq + recvq_offset[i];
+
+		/* copy the data right after the header */
+		while (frag_remaining) {
+			uint16_t chunk = frag_remaining > cur_useg_remaining ? cur_useg_remaining : frag_remaining;
+
+			ret = copy_from_user(cur_dest, cur_udata, chunk);
+			if (unlikely(ret != 0)) {
+				printk(KERN_ERR "Open-MX: Failed to read send mediumva cmd data\n");
+				ret = -EFAULT;
+				goto out_with_events;
+			}
+
+			if (chunk == cur_useg_remaining) {
+				cur_useg++;
+				cur_udata = (__user void *)(unsigned long) cur_useg->vaddr;
+				cur_useg_remaining = cur_useg->len;
+			} else {
+				cur_udata += chunk;
+				cur_useg_remaining -= chunk;
+			}
+			frag_remaining -= chunk;
+			cur_dest += chunk;
+		}
+		remaining -= frag_length;
+	}
+
+	remaining = msg_length;
+	for(i=0; i<frags_nr; i++) {
+		uint16_t frag_length = remaining > OMX_PACKET_RING_ENTRY_SIZE ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
+		/* notify the dst event */
+		dst_event.specific.medium_frag.frag_length = frag_length;
+		dst_event.specific.medium_frag.frag_seqnum = i;
+		dst_event.specific.medium_frag.recvq_offset = recvq_offset[i];
+		omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_MEDIUM_FRAG, &dst_event, sizeof(dst_event));
+		remaining -= frag_length;
+	}
+
+	omx_endpoint_release(dst_endpoint);
+
+	omx_counter_inc(omx_shared_fake_iface, SHARED_MEDIUMVA);
+
+	return 0;
+
+ out_with_events:
+	for(i=0; i<frags_nr; i++)
+		omx_cancel_notify_unexp_event_with_recvq(dst_endpoint);
+ out_with_usegs:
+	kfree(usegs);
+ out_with_endpoint:
+	omx_endpoint_release(dst_endpoint);
+	return ret;
+}
+
+int
 omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 		     struct omx_cmd_send_rndv_hdr *hdr, void __user * data)
 {

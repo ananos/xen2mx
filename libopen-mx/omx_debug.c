@@ -42,6 +42,7 @@ omx__dump_request(const char *prefix, union omx_request *req)
   if (type == OMX_REQUEST_TYPE_SEND_TINY
       || type == OMX_REQUEST_TYPE_SEND_SMALL
       || type == OMX_REQUEST_TYPE_SEND_MEDIUMSQ
+      || type == OMX_REQUEST_TYPE_SEND_MEDIUMVA
       || type == OMX_REQUEST_TYPE_SEND_LARGE) {
     printf("%s  matchinfo %llx to addr %llx ep %d peer %d session %d seqnum %d resends %d\n",
 	   prefix,

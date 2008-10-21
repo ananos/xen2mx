@@ -423,6 +423,14 @@ omx__init_comms(void)
    */
   omx__globals.packet_ring_entry_shift = omx__driver_desc->packet_ring_entry_shift;
 
+  omx__globals.medium_sendq = 1;
+  env = getenv("OMX_MEDIUM_SENDQ");
+  if (env) {
+    omx__globals.medium_sendq = atoi(env);
+    omx__verbose_printf(NULL, "Forcing medium sendq to %s\n",
+			omx__globals.medium_sendq ? "enabled" : "disabled");
+  }
+
   /*********
    * Ctxids
    */

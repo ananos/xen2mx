@@ -36,6 +36,10 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 			      struct omx_cmd_send_mediumsq_frag *hdr);
 
 extern int
+omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
+			 struct omx_cmd_send_mediumva *hdr);
+
+extern int
 omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 		     struct omx_cmd_send_rndv_hdr *hdr, void __user * data);
 

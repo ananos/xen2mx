@@ -576,6 +576,164 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 }
 
 int
+omx_ioctl_send_mediumva(struct omx_endpoint * endpoint,
+			void __user * uparam)
+{
+	struct omx_cmd_send_mediumva cmd;
+	struct omx_iface * iface = endpoint->iface;
+	struct net_device * ifp = iface->eth_ifp;
+	struct sk_buff *skb;
+	struct omx_cmd_user_segment *usegs, *cur_useg;
+	uint16_t msg_length, remaining, cur_useg_remaining;
+	void __user * cur_udata;
+	uint32_t nseg;
+	int ret;
+	int frags_nr;
+     	int i;
+
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read send mediumva cmd hdr\n");
+		ret = -EFAULT;
+		goto out;
+	}
+
+	msg_length = cmd.length;
+	if (unlikely(msg_length > OMX_MEDIUM_MAX)) {
+		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a mediumva (tried %ld)\n",
+		       (unsigned long) OMX_MEDIUM_MAX, (unsigned long) msg_length);
+		ret = -EINVAL;
+		goto out;
+	}
+	frags_nr = (msg_length+OMX_MEDIUM_FRAG_LENGTH_MAX-1) >> OMX_MEDIUM_FRAG_SHIFT;
+	nseg = cmd.nr_segments;
+
+#ifndef OMX_DISABLE_SHARED
+	if (unlikely(cmd.shared))
+		return omx_shared_send_mediumva(endpoint, &cmd);
+#endif
+
+	/* get user segments */
+	usegs = kmalloc(nseg * sizeof(struct omx_cmd_user_segment), GFP_KERNEL);
+	if ( !usegs) {
+		printk(KERN_ERR "Open-MX: Cannot allocate segments for mediumva\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+	ret = copy_from_user(usegs, (void __user *)(unsigned long) cmd.segments,
+			     nseg * sizeof(struct omx_cmd_user_segment));
+	if (unlikely(ret != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read mediumva segments cmd\n");
+		ret = -EFAULT;
+		goto out_with_usegs;
+	}
+
+	/* compute the segments length */
+	remaining = 0;
+	for(i=0; i<nseg; i++)
+		remaining += usegs[i].len;
+	if (remaining != msg_length) {
+		printk(KERN_ERR "Open-MX: Cannot send mediumva without enough data in segments (%ld instead of %ld)\n",
+		       (unsigned long) remaining, (unsigned long) msg_length);
+		ret = -EINVAL;
+		goto out_with_usegs;
+	}
+
+	/* initialize position in segments */
+	cur_useg = &usegs[0];
+	cur_useg_remaining = cur_useg->len;
+	cur_udata = (__user void *)(unsigned long) cur_useg->vaddr;
+
+	for(i=0; i<frags_nr; i++) {
+		struct omx_hdr *mh;
+		struct omx_pkt_head *ph;
+		struct ethhdr *eh;
+		struct omx_pkt_medium_frag *medium_n;
+		size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag);
+		uint16_t frag_length = remaining > OMX_MEDIUM_FRAG_LENGTH_MAX ? OMX_MEDIUM_FRAG_LENGTH_MAX : remaining;
+		uint16_t frag_remaining = frag_length;
+		void *data;
+
+		skb = omx_new_skb(/* pad to ETH_ZLEN */
+				  max_t(unsigned long, hdr_len + frag_length, ETH_ZLEN));
+		if (unlikely(skb == NULL)) {
+			omx_counter_inc(iface, SEND_NOMEM_SKB);
+			printk(KERN_INFO "Open-MX: Failed to create linear mediumva skb\n");
+			ret = -ENOMEM;
+			goto out_with_usegs;
+		}
+
+		/* locate headers */
+		mh = omx_skb_mac_header(skb);
+		ph = &mh->head;
+		eh = &ph->eth;
+		medium_n = (struct omx_pkt_medium_frag *) (ph + 1);
+		data = (char*) (medium_n + 1);
+
+		/* set destination peer */
+		ret = omx_set_target_peer(ph, cmd.peer_index);
+		if (ret < 0) {
+			printk(KERN_INFO "Open-MX: Failed to fill target peer in medium sendq frag header\n");
+			goto out_with_skb;
+		}
+
+		/* fill ethernet header */
+		eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+		memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+		/* fill omx header */
+		OMX_PKT_FIELD_FROM(medium_n->msg.src_endpoint, endpoint->endpoint_index);
+		OMX_PKT_FIELD_FROM(medium_n->msg.dst_endpoint, cmd.dest_endpoint);
+		OMX_PKT_FIELD_FROM(medium_n->msg.ptype, OMX_PKT_TYPE_MEDIUM);
+		OMX_PKT_FIELD_FROM(medium_n->msg.length, msg_length);
+		OMX_PKT_FIELD_FROM(medium_n->msg.lib_seqnum, cmd.seqnum);
+		OMX_PKT_FIELD_FROM(medium_n->msg.lib_piggyack, cmd.piggyack);
+		OMX_PKT_FIELD_FROM(medium_n->msg.session, cmd.session_id);
+		OMX_PKT_MATCH_INFO_FROM(&medium_n->msg, cmd.match_info);
+		OMX_PKT_FIELD_FROM(medium_n->frag_length, frag_length);
+		OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, i);
+		OMX_PKT_FIELD_FROM(medium_n->frag_pipeline, OMX_MEDIUM_FRAG_SHIFT);
+
+		omx_send_dprintk(eh, "MEDIUMVA length %ld", (unsigned long) frag_length);
+
+		/* copy the data right after the header */
+		while (frag_remaining) {
+			uint16_t chunk = frag_remaining > cur_useg_remaining ? cur_useg_remaining : frag_remaining;
+			ret = copy_from_user(data, cur_udata, chunk);
+			if (unlikely(ret != 0)) {
+				printk(KERN_ERR "Open-MX: Failed to read send mediumva cmd data\n");
+				ret = -EFAULT;
+				goto out_with_skb;
+			}
+
+			if (chunk == cur_useg_remaining) {
+				cur_useg++;
+				cur_udata = (__user void *)(unsigned long) cur_useg->vaddr;
+				cur_useg_remaining = cur_useg->len;
+			} else {
+				cur_udata += chunk;
+				cur_useg_remaining -= chunk;
+			}
+			frag_remaining -= chunk;
+			data += chunk;
+		}
+		remaining -= frag_length;
+
+		_omx_queue_xmit(iface, skb, MEDIUM_FRAG, MEDIUMVA_FRAG);
+	}
+
+	kfree(usegs);
+	return 0;
+
+ out_with_skb:
+	kfree_skb(skb);
+ out_with_usegs:
+	kfree(usegs);
+ out:
+	return ret;
+}
+
+int
 omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		    void __user * uparam)
 {

@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x200
+#define OMX_DRIVER_ABI_VERSION		0x201
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -315,6 +315,25 @@ struct omx_cmd_send_mediumsq_frag {
 	/* 32 */
 };
 
+struct omx_cmd_send_mediumva {
+	uint16_t peer_index;
+	uint8_t dest_endpoint;
+	uint8_t shared;
+	uint32_t session_id;
+	/* 8 */
+	uint16_t seqnum;
+	uint16_t piggyack;
+	uint32_t length;
+	/* 16 */
+	uint32_t pad;
+	uint32_t nr_segments;
+	/* 24 */
+	uint64_t segments;
+	/* 32 */
+	uint64_t match_info;
+	/* 40 */
+};
+
 struct omx_cmd_send_rndv {
 	struct omx_cmd_send_rndv_hdr {
 		uint16_t peer_index;
@@ -508,9 +527,10 @@ struct omx_cmd_bench {
 #define OMX_CMD_SEND_CONNECT		_IOR(OMX_CMD_MAGIC, 0x87, struct omx_cmd_send_connect)
 #define OMX_CMD_SEND_TRUC		_IOR(OMX_CMD_MAGIC, 0x88, struct omx_cmd_send_truc)
 #define OMX_CMD_CREATE_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_create_user_region)
-#define OMX_CMD_DESTROY_USER_REGION		_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_destroy_user_region)
+#define OMX_CMD_DESTROY_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_destroy_user_region)
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8b, struct omx_cmd_wait_event)
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_wakeup)
+#define OMX_CMD_SEND_MEDIUMVA		_IOR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_send_mediumva)
 
 static inline const char *
 omx_strcmd(unsigned cmd)
@@ -556,6 +576,8 @@ omx_strcmd(unsigned cmd)
 		return "Send Small";
 	case OMX_CMD_SEND_MEDIUMSQ_FRAG:
 		return "Send MediumSQ Fragment";
+	case OMX_CMD_SEND_MEDIUMVA:
+		return "Send MediumVA";
 	case OMX_CMD_SEND_RNDV:
 		return "Send Rendez-vous";
 	case OMX_CMD_PULL:
@@ -788,6 +810,7 @@ enum omx_counter_index {
 	OMX_COUNTER_SEND_TINY = 0,
 	OMX_COUNTER_SEND_SMALL,
 	OMX_COUNTER_SEND_MEDIUMSQ_FRAG,
+	OMX_COUNTER_SEND_MEDIUMVA_FRAG,
 	OMX_COUNTER_SEND_RNDV,
 	OMX_COUNTER_SEND_NOTIFY,
 	OMX_COUNTER_SEND_CONNECT,
@@ -862,6 +885,7 @@ enum omx_counter_index {
 	OMX_COUNTER_SHARED_TINY,
 	OMX_COUNTER_SHARED_SMALL,
 	OMX_COUNTER_SHARED_MEDIUMSQ_FRAG,
+	OMX_COUNTER_SHARED_MEDIUMVA,
 	OMX_COUNTER_SHARED_RNDV,
 	OMX_COUNTER_SHARED_NOTIFY,
 	OMX_COUNTER_SHARED_CONNECT,
@@ -885,6 +909,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Small";
 	case OMX_COUNTER_SEND_MEDIUMSQ_FRAG:
 		return "Send MediumSQ Frag";
+	case OMX_COUNTER_SEND_MEDIUMVA_FRAG:
+		return "Send MediumVA Frag";
 	case OMX_COUNTER_SEND_RNDV:
 		return "Send Rndv";
 	case OMX_COUNTER_SEND_NOTIFY:
@@ -1023,6 +1049,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Shared Small";
 	case OMX_COUNTER_SHARED_MEDIUMSQ_FRAG:
 		return "Shared MediumSQ Frag";
+	case OMX_COUNTER_SHARED_MEDIUMVA:
+		return "Shared MediumVA";
 	case OMX_COUNTER_SHARED_RNDV:
 		return "Shared Rndv";
 	case OMX_COUNTER_SHARED_NOTIFY:

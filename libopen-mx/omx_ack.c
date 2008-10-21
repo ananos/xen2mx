@@ -39,6 +39,7 @@ omx__mark_request_acked(struct omx_endpoint *ep,
 
   case OMX_REQUEST_TYPE_SEND_TINY:
   case OMX_REQUEST_TYPE_SEND_SMALL:
+  case OMX_REQUEST_TYPE_SEND_MEDIUMVA:
     omx__dequeue_request(&ep->non_acked_req_q, req);
     omx__send_complete(ep, req, status);
     break;

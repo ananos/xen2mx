@@ -1,9 +1,11 @@
-* single cmd to send the whole medium message, with single done event
+* single cmd to send the whole mediumsq message, with single done event ?
+  + less pipelining
 
-* add a send from uvaddr command for medium
-  + only for nonv-ectorial first, and o some perf testing with netpipe
-  + add a env variable to switch from one to another
-  + add a fag in the endpoint desc for skbfrags
+* rework counters, distinguish packet/shared level transfer from 
+  commands and events ?
+
+* add a flag in the endpoint desc for skbfrags
+  + use mediumva by default if not skbfrags
   + add driver-specific skbfrags quirks?
 
 * constify the event queue as MX now does and mmap recvq+eventq's as RO
