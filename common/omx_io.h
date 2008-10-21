@@ -614,10 +614,8 @@ omx_strevt(unsigned type)
 	switch (type) {
 	case OMX_EVT_NONE:
 		return "None";
-	case OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE:
-		return "Send MediumSQ Fragment Done";
-	case OMX_EVT_PULL_DONE:
-		return "Pull Done";
+	case OMX_EVT_IGNORE:
+		return "Ignore";
 	case OMX_EVT_RECV_CONNECT:
 		return "Receive Connect";
 	case OMX_EVT_RECV_TINY:
@@ -634,6 +632,10 @@ omx_strevt(unsigned type)
 		return "Receive Truc";
 	case OMX_EVT_RECV_NACK_LIB:
 		return "Receive Nack Lib";
+	case OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE:
+		return "Send MediumSQ Fragment Done";
+	case OMX_EVT_PULL_DONE:
+		return "Pull Done";
 	default:
 		return "** Unknown **";
 	}
