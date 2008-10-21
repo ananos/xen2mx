@@ -255,6 +255,52 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	return 0;
 }
 
+/* Reserve nr more slots and returns the corresponding recvq slots to the caller */
+int
+omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
+					   int nr,
+					   unsigned long *recvq_offset_p)
+{
+	union omx_evt *slot;
+	unsigned long offset;
+	int i;
+
+	spin_lock_bh(&endpoint->event_lock);
+
+	/* check that there are enough slots available */
+	offset = endpoint->next_free_unexp_eventq_offset;
+	for(i=0; i<nr; i++) {
+		slot = endpoint->unexp_eventq + offset;
+		if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
+			dprintk(EVENT,
+				"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
+				endpoint->endpoint_index);
+			omx_counter_inc(endpoint->iface, EXP_EVENTQ_FULL);
+			endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
+			spin_unlock_bh(&endpoint->event_lock);
+			return -EBUSY;
+		}
+		offset += OMX_EVENTQ_ENTRY_SIZE;
+		if (unlikely(offset >= OMX_UNEXP_EVENTQ_SIZE))
+			offset = 0;
+	}
+
+	/* update the next free slot in the queue */
+	endpoint->next_free_unexp_eventq_offset = offset;
+
+	/* take the next recvq slots and return them now */
+	for(i=0; i<nr; i++) {
+		recvq_offset_p[i] = endpoint->next_recvq_offset;
+		endpoint->next_recvq_offset += OMX_PACKET_RING_ENTRY_SIZE;
+		if (unlikely(endpoint->next_recvq_offset >= OMX_RECVQ_SIZE))
+			/* all slots have the same size, so there can't be a slot that wraps around the end */
+			endpoint->next_recvq_offset = 0;
+	}
+
+	spin_unlock_bh(&endpoint->event_lock);
+	return 0;
+}
+
 /*
  * Store the event in the next reserved slot
  * (not always the one reserved during omx_commit_notify_unexp_event()
