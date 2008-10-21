@@ -255,7 +255,7 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read shared send small cmd data\n");
 		err = -EFAULT;
-		goto out_with_endpoint;
+		goto out_with_dst_event;
 	}
 
 	/* fill and notify the event */
@@ -273,6 +273,8 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 
 	return 0;
 
+ out_with_dst_event:
+	omx_cancel_notify_unexp_event_with_recvq(dst_endpoint);
  out_with_endpoint:
 	omx_endpoint_release(dst_endpoint);
 	return err;
