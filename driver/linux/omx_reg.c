@@ -522,6 +522,37 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
  * MMU notifiers
  */
 
+static void
+omx_invalidate_region(struct omx_endpoint *endpoint,
+		      struct omx_user_region *region)
+{
+	/* FIXME: we need some locking against concurrent registers/users here:
+	 * lock, if registered, unregister, unlock
+	 */
+
+	BUG_ON(region->status == OMX_USER_REGION_STATUS_FAILED); /* FIXME */
+
+	if (region->status == OMX_USER_REGION_STATUS_PINNED) {
+		unsigned long j;
+		int i;
+
+		/* wait for the pinner to be done */
+		while (region->total_length > region->total_registered_length)
+	                cpu_relax();
+
+		/* release pages */
+		for(i=0; i<region->nr_segments; i++) {
+			struct omx_user_region_segment * segment = &region->segments[i];
+			for(j=0; j<segment->pinned_pages; j++) {
+				put_page(segment->pages[j]);
+				segment->pinned_pages = 0;
+			}
+		}
+		region->total_registered_length = 0;
+		region->status = OMX_USER_REGION_STATUS_NOT_PINNED;
+	}
+}
+
 static int
 omx_mmu_invalidate_handler(struct omx_endpoint *endpoint, void *data)
 {
@@ -551,10 +582,18 @@ omx_mmu_invalidate_handler(struct omx_endpoint *endpoint, void *data)
 			struct omx_iface *iface = endpoint->iface;
 			unsigned long seg_start = invalid_seg->aligned_vaddr + invalid_seg->first_page_offset;
 			unsigned long seg_end = seg_start + invalid_seg->length;
-			printk(KERN_INFO "Open-MX: WARNING: region #%d on endpoint #%d iface #%s (%s) is being invalidated\n"
-			       KERN_INFO "Open-MX:   segment #%ld (0x%lx-0x%lx) within range 0x%lx-0x%lx\n",
-			       ireg, endpoint->endpoint_index, iface->eth_ifp->name, iface->peer.hostname,
-			       invalid_seg-&region->segments[0], seg_start, seg_end, inv_start, inv_end);
+
+			if (!omx_region_demand_pin) {
+				/* cannot invalidate if demand pinning is disabled */
+				printk(KERN_INFO "Open-MX: WARNING: reg#%d (ep#%d iface %s) being invalidated: seg#%ld (0x%lx-0x%lx) within 0x%lx-0x%lx\n",
+				       ireg, endpoint->endpoint_index, iface->eth_ifp->name,
+				       invalid_seg-&region->segments[0], seg_start, seg_end, inv_start, inv_end);
+			} else {
+				dprintk(MMU, "reg#%d (ep#%d iface %s) being invalidated: seg#%ld (0x%lx-0x%lx) within 0x%lx-0x%lx\n",
+				       ireg, endpoint->endpoint_index, iface->eth_ifp->name,
+				       invalid_seg-&region->segments[0], seg_start, seg_end, inv_start, inv_end);
+				omx_invalidate_region(endpoint, region);
+			}
 		}
 	}
 
