@@ -1,6 +1,16 @@
 * single cmd to send the whole mediumsq message, with single done event ?
   + less pipelining
 
+* overlap registration with rndv and pull on the network
+  + queue skb if touching after the registered_length
+    - dequeue after registering enough
+    - or just drop and let retransmission happen?
+* regcache
+  + cleanup the needed module parameters (make deferredpin = demandpin || pininvalidate ?)
+  + make sure the pininval driver feature is only exported when supported
+  + disable regcache in omx_rcache_test when the driver feature flag is missing
+  + enable regcache in the lib when the driver feature flag is set
+
 * rework counters, distinguish packet/shared level transfer from 
   commands and events ?
 
@@ -71,13 +81,6 @@
 
 * drop no-progression-during-one-second warning if no requests are pending?
   what's a pending request? anything but a posted recv?
-
-* overlap registration with rndv and pull on the network
-  + queue skb if touching after the registered_length
-    - dequeue after registering enough
-    - or just drop and let retransmission happen?
-  + remove the user-space knowledge of window being registered for real
-    - integrate into mmu notifier since there is no need anymore to notify userspace when region is invalidated
 
 * resource allocation cleanups
   + add a counter of failure to alloc small buffer with ENOMEM and abort if too many?
