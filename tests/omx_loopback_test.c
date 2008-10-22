@@ -138,7 +138,7 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
   fprintf(stderr, " -l <n>\tuse length instead of predefined ones\n");
-  fprintf(stderr, " -P <n>\tsend multiple messages in paralle [%d]\n", PARALLEL);
+  fprintf(stderr, " -P <n>\tsend multiple messages in parallel [%d]\n", PARALLEL);
   fprintf(stderr, " -s\tdo not disable shared communications\n");
   fprintf(stderr, " -S\tdo not disable self communications\n");
   fprintf(stderr, " -v\tenable verbose messages\n");
