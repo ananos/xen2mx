@@ -93,7 +93,7 @@ MODULE_PARM_DESC(pininvalidate, "User region pin invalidating when MMU notifiers
 
 #ifdef CONFIG_NET_DMA
 int omx_dmaengine = 0; /* disabled by default for now */
-module_param_call(dmaengine, omx_set_dmaengine, param_get_uint, &omx_dmaengine, S_IRUGO|S_IWUSR);
+module_param_named(dmaengine, omx_dmaengine, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmaengine, "Enable DMA engine support");
 int omx_dma_async_frag_min = 1024;
 module_param_named(dmaasyncfragmin, omx_dma_async_frag_min, uint, S_IRUGO|S_IWUSR);
@@ -314,13 +314,16 @@ omx_get_driver_string(unsigned int *lenp)
 	buflen += len;
 
 #ifdef CONFIG_NET_DMA
-	if (omx_dmaengine)
-		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-			" DMAEngine: KernelSupported Enabled SyncCopyMin=%dB AsyncCopyMin=%dB (%dB per packet)\n",
-			omx_dma_sync_min, omx_dma_async_min, omx_dma_async_frag_min);
-	else
+	if (!omx_dmaengine)
 		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 			" DMAEngine: KernelSupported Disabled\n");
+	else if (!__get_cpu_var(softnet_data).net_dma)
+		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+			" DMAEngine: KernelSupported Enabled NoChannelAvailable\n");
+	else
+		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+			" DMAEngine: KernelSupported Enabled ChansAvail SyncCopyMin=%dB AsyncCopyMin=%dB (%dB per packet)\n",
+			omx_dma_sync_min, omx_dma_async_min, omx_dma_async_frag_min);
 #else
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		" DMAEngine: NoKernelSupport\n");

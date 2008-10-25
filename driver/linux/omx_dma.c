@@ -25,36 +25,9 @@
 #include "omx_reg.h"
 #include "omx_dma.h"
 
-static INLINE void
-omx_dma_display_support(void)
-{
-	if (__get_cpu_var(softnet_data).net_dma)
-		printk(KERN_INFO "Open-MX: DMA engine support present, with some channels available\n");
-	else
-		printk(KERN_INFO "Open-MX: DMA engine support present, with no channels available so far\n");
-	if (omx_dmaengine) {
-		printk(KERN_INFO "Open-MX: DMA engine enabled for asynchronous copy of frags >=%d bytes in message >=%d bytes\n",
-		       omx_dma_async_frag_min, omx_dma_async_min);
-		printk(KERN_INFO "Open-MX: DMA engine enabled for synchronous copy of >=%d bytes\n",
-		       omx_dma_sync_min);
-	} else {
-		printk(KERN_INFO "Open-MX: DMA engine support disabled at runtime\n");
-	}
-}
-
-int
-omx_set_dmaengine(const char *val, struct kernel_param *kp)
-{
-  int ret;
-  ret = param_set_uint(val, kp);
-  omx_dma_display_support();
-  return ret;
-}
-
 int
 omx_dma_init(void)
 {
-	omx_dma_display_support();
 	return 0;
 }
 

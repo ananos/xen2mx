@@ -26,14 +26,12 @@
 #include <net/netdma.h>
 #endif
 
+#ifdef CONFIG_NET_DMA
+
 extern int omx_dmaengine;
 extern int omx_dma_async_frag_min;
 extern int omx_dma_async_min;
 extern int omx_dma_sync_min;
-
-#ifdef CONFIG_NET_DMA
-
-extern int omx_set_dmaengine(const char *val, struct kernel_param *kp);
 
 extern int omx_dma_init(void);
 extern void omx_dma_exit(void);
