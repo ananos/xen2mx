@@ -551,7 +551,7 @@ AC_SUBST(OPEN_MX_LIB_DYNAMIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.so)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_LINK_OPT, ${libopen_mx_name/lib/-l})
 AC_SUBST(MX_LIB_DYNAMIC_LINK_OPT, -lmyriexpress)
 
-if test x$build_driver = xyes && test "$srcdir" != "." ; then
+if test x$build_driver = xyes ; then
     orig_builddir=$(pwd)
     mkdir -p driver/linux/ ; cd driver/linux
 
@@ -559,9 +559,11 @@ if test x$build_driver = xyes && test "$srcdir" != "." ; then
     AC_MSG_NOTICE([checking kernel headers ...])
     ${orig_builddir}/${srcdir}/driver/linux/check_kernel_headers.sh --force omx_checks.h "$LINUX_BUILD" "$LINUX_HDR" "$LINUX_RELEASE"
 
-    # Symlink kernel sources into the build tree if needed
-    AC_MSG_NOTICE([creating symlinks to kernel sources in driver/linux/ ...])
-    for file in ${orig_builddir}/${srcdir}/driver/linux/*.[[ch]] ; do rm -f $(basename $file) ; ln -s $file ; done
+    if test "$srcdir" != "." ; then
+	# Symlink kernel sources into the build tree if needed
+	AC_MSG_NOTICE([creating symlinks to kernel sources in driver/linux/ ...])
+	for file in ${orig_builddir}/${srcdir}/driver/linux/*.[[ch]] ; do rm -f $(basename $file) ; ln -s $file ; done
+    fi
 
     cd ${orig_builddir} > /dev/null
 fi
