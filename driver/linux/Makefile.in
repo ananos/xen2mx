@@ -5,11 +5,15 @@ libdir	=	@libdir@
 include @abs_top_srcdir@/common.mk
 
 KCC	=	@KCC@
+ARCH	=	@ARCH@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 
 ifneq ($(KCC),)
   KBUILD_VARS	+=	CC="$(KCC)"
+endif
+ifneq ($(ARCH),)
+  KBUILD_VARS	+=	ARCH="$(ARCH)"
 endif
 
 HDRCHECKFILE	=	omx_checks.h

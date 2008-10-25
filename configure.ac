@@ -115,6 +115,8 @@ fi
 
 AC_ARG_VAR(KCC, [Compiler for building the Open-MX kernel module])
 
+AC_SUBST(ARCH)
+
 if test x$build_driver = xyes ; then
 
     if test -n "$KCC" ; then
