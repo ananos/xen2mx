@@ -176,6 +176,8 @@ omx_unlikely_status_code_to_mx(omx_return_t omxret)
     return MX_STATUS_TIMEOUT;
   case OMX_MESSAGE_TRUNCATED:
     return MX_STATUS_TRUNCATED;
+  case OMX_CANCELLED:
+    return MX_STATUS_CANCELLED;
   case OMX_REMOTE_ENDPOINT_CLOSED:
     return MX_STATUS_ENDPOINT_CLOSED;
   case OMX_REMOTE_ENDPOINT_UNREACHABLE:
@@ -205,6 +207,8 @@ omx_unlikely_status_code_from_mx(mx_status_code_t mxcode)
     return OMX_TIMEOUT;
   case MX_STATUS_TRUNCATED:
     return OMX_MESSAGE_TRUNCATED;
+  case MX_STATUS_CANCELLED:
+    return OMX_CANCELLED;
   case MX_STATUS_ENDPOINT_CLOSED:
     return OMX_REMOTE_ENDPOINT_CLOSED;
   case MX_STATUS_ENDPOINT_UNREACHABLE:

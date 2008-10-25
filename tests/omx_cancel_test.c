@@ -49,6 +49,7 @@ int main(int argc, char *argv[])
   uint32_t eid = EID;
   uint32_t rid = RID;
   uint32_t result;
+  omx_status_t status;
   omx_seg_t segs[2] = { { NULL, 0 }, { NULL, 0 } };
   char * dest_hostname = NULL;
   omx_request_t req;
@@ -137,6 +138,54 @@ int main(int argc, char *argv[])
   } else {
     printf("FAILED to cancel irecv\n");
   }
+
+  ret = omx_iconnect(ep, nic_id, rid, 0x12345678, 0, NULL, &req);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to iconnect (%s)\n",
+	    omx_strerror(ret));
+    goto out_with_ep;
+  }
+
+  ret = omx_cancel_notest(ep, &req, &result);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to cancel iconnect (%s)\n",
+	    omx_strerror(ret));
+    goto out_with_ep;
+  }
+  if (result) {
+    printf("successfully cancelled-notest iconnect\n");
+  } else {
+    printf("FAILED to cancel_notest iconnect\n");
+  }
+
+  ret = omx_irecvv(ep, segs, 2, 0, 0, NULL, &req);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to irecv (%s)\n",
+	    omx_strerror(ret));
+    goto out_with_ep;
+  }
+
+  ret = omx_cancel_notest(ep, &req, &result);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to cancel iconnect (%s)\n",
+	    omx_strerror(ret));
+    goto out_with_ep;
+  }
+  if (result) {
+    printf("successfully cancelled-notest irecv\n");
+  } else {
+    printf("FAILED to cancel_notest irecv\n");
+  }
+
+  ret = omx_test_any(ep, 0, 0, &status, &result);
+  assert(ret == OMX_SUCCESS);
+  assert(result);
+  assert(status.code == OMX_CANCELLED);
+
+  ret = omx_test_any(ep, 0, 0, &status, &result);
+  assert(ret == OMX_SUCCESS);
+  assert(result);
+  assert(status.code == OMX_CANCELLED);
 
   omx_close_endpoint(ep);
   omx_finalize();

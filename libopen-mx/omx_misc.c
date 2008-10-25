@@ -209,6 +209,8 @@ omx_strerror(omx_return_t ret)
     return "Library ABI too old, did you relink your program with the new library?";
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return "Matching info does not respect context id mask";
+  case OMX_CANCELLED:
+    return "Cancelled";
   case OMX_REMOTE_RDMA_WINDOW_BAD_ID:
     return "Remote Window Id is Invalid";
   case OMX_REMOTE_ENDPOINT_UNREACHABLE:
@@ -244,20 +246,12 @@ omx_context(omx_request_t *request, void ** context)
   return OMX_SUCCESS;
 }
 
-/* API omx_cancel */
 omx_return_t
-omx_cancel(omx_endpoint_t ep,
-	   omx_request_t *request,
-	   uint32_t *result)
+omx__cancel_common(omx_endpoint_t ep,
+		   union omx_request *req,
+		   uint32_t *result)
 {
-  union omx_request * req = *request;
-  omx_return_t ret;
-
-  OMX__ENDPOINT_LOCK(ep);
-
-  ret = omx__progress(ep);
-  if (ret != OMX_SUCCESS)
-    goto out_with_lock;
+  omx_return_t ret = OMX_SUCCESS;
 
   /* Search in the send request queue and recv request queue. */
 
@@ -268,8 +262,7 @@ omx_cancel(omx_endpoint_t ep,
       uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->recv.match_info);
       omx__dequeue_request(&ep->ctxid[ctxid].recv_req_q, req);
       omx_free_segments(&req->send.segs);
-      omx__request_free(ep, req);
-      *request = 0;
+      req->generic.state &= ~OMX_REQUEST_STATE_RECV_NEED_MATCHING;
       *result = 1;
     } else {
       /* already matched, too late */
@@ -289,8 +282,7 @@ omx_cancel(omx_endpoint_t ep,
       /* not replied, still in the connect queues */
       omx__dequeue_request(&ep->connect_req_q, req);
       omx__dequeue_partner_request(&req->generic.partner->connect_req_q, req);
-      omx__request_free(ep, req);
-      *request = 0;
+      req->generic.state &= ~OMX_REQUEST_STATE_NEED_REPLY;
       *result = 1;
     } else {
       /* the request is already completed */
@@ -302,6 +294,57 @@ omx_cancel(omx_endpoint_t ep,
     /* SEND_* are NOT cancellable with omx_cancel() */
     ret = omx__error_with_ep(ep, OMX_BAD_REQUEST,
 			     "Cancelling %s request", omx__strreqtype(req->generic.type));
+  }
+
+  return ret;
+}
+
+/* API omx_cancel */
+omx_return_t
+omx_cancel(omx_endpoint_t ep,
+	   omx_request_t *request,
+	   uint32_t *result)
+{
+  union omx_request * req = *request;
+  omx_return_t ret;
+
+  OMX__ENDPOINT_LOCK(ep);
+
+  ret = omx__progress(ep);
+  if (ret != OMX_SUCCESS)
+    goto out_with_lock;
+
+  ret = omx__cancel_common(ep, req, result);
+  if (ret == OMX_SUCCESS && *result) {
+    omx__request_free(ep, req);
+    *request = 0;
+  }
+
+ out_with_lock:
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
+}
+
+/* API omx_cancel_notest */
+omx_return_t
+omx_cancel_notest(omx_endpoint_t ep,
+		  omx_request_t *request,
+		  uint32_t *result)
+{
+  union omx_request * req = *request;
+  omx_return_t ret;
+
+  OMX__ENDPOINT_LOCK(ep);
+
+  ret = omx__progress(ep);
+  if (ret != OMX_SUCCESS)
+    goto out_with_lock;
+
+  ret = omx__cancel_common(ep, req, result);
+  if (ret == OMX_SUCCESS && *result) {
+    uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
+    req->generic.status.code = OMX_CANCELLED;
+    omx__notify_request_done(ep, ctxid, req);
   }
 
  out_with_lock:

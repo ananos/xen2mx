@@ -73,6 +73,7 @@ enum omx_return {
 
   OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK = 42,
 
+  OMX_CANCELLED = 90,
   OMX_REMOTE_RDMA_WINDOW_BAD_ID = 91,
   OMX_REMOTE_ENDPOINT_UNREACHABLE = 92,
   OMX_REMOTE_ENDPOINT_BAD_SESSION = 93,
@@ -341,6 +342,9 @@ typedef enum omx_info_key omx_info_key_t;
 
 omx_return_t
 omx_cancel(omx_endpoint_t ep, omx_request_t *request, uint32_t *result);
+
+omx_return_t
+omx_cancel_notest(omx_endpoint_t ep, omx_request_t *request, uint32_t *result);
 
 omx_return_t
 omx_forget(omx_endpoint_t ep, omx_request_t *request);

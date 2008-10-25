@@ -1,13 +1,18 @@
 * single cmd to send the whole mediumsq message, with single done event ?
   + less pipelining
 
+* only enable counters by default in debug mode
+  + add --enable-counters
+
+* make deferredpin the default in trunk
+  + or add --enable-advanced pinning
+  + demandpin is only about overlapped pinning
+  + pininvalidate is enough to get regcache to work
 * overlap registration with rndv and pull on the network
   + queue skb if touching after the registered_length
     - dequeue after registering enough
     - or just drop and let retransmission happen?
 * regcache
-  + cleanup the needed module parameters (make deferredpin = demandpin || pininvalidate ?)
-  + make sure the pininval driver feature is only exported when supported
   + disable regcache in omx_rcache_test when the driver feature flag is missing
   + enable regcache in the lib when the driver feature flag is set
 
