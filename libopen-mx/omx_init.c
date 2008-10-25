@@ -112,7 +112,7 @@ omx__init_api(int app_api)
    */
   if (omx__globals.initialized) {
     ret = omx__error(OMX_ALREADY_INITIALIZED, "Initializing the library");
-    goto out;
+    goto out_with_message_prefix;
   }
 
   /***************************************
@@ -124,7 +124,7 @@ omx__init_api(int app_api)
     ret = omx__error(OMX_BAD_LIB_ABI,
 		     "Comparing library used at build-time (ABI 0x%x) with currently used library (ABI 0x%x)",
 		     omx__lib_api >> 8, app_api >> 8);
-    goto out;
+    goto out_with_message_prefix;
   }
 
   /*********************************
@@ -139,7 +139,7 @@ omx__init_api(int app_api)
       ret = omx__error(OMX_NO_DRIVER, "Opening endpoint control device");
     else
       ret = omx__error(ret, "Opening global control device");
-    goto out;
+    goto out_with_message_prefix;
   }
   omx__globals.control_fd = err;
 
@@ -189,7 +189,8 @@ omx__init_api(int app_api)
 
  out_with_fd:
   close(omx__globals.control_fd);
- out:
+ out_with_message_prefix:
+  free(omx__globals.message_prefix);
   return ret; 
 }
 
@@ -470,7 +471,7 @@ omx_finalize(void)
   /* FIXME: check that no endpoint is still open */
 
   close(omx__globals.control_fd);
-
+  free(omx__globals.message_prefix);
   omx__globals.initialized = 0;
   return OMX_SUCCESS;
 }
