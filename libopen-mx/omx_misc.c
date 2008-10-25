@@ -22,6 +22,7 @@
 
 #include "omx_lib.h"
 #include "omx_request.h"
+#include "omx_segments.h"
 
 /***********************
  * Management of errors
@@ -266,6 +267,7 @@ omx_cancel(omx_endpoint_t ep,
       /* not matched, still in the recv queue */
       uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->recv.match_info);
       omx__dequeue_request(&ep->ctxid[ctxid].recv_req_q, req);
+      omx_free_segments(&req->send.segs);
       omx__request_free(ep, req);
       *request = 0;
       *result = 1;
@@ -283,10 +285,10 @@ omx_cancel(omx_endpoint_t ep,
 
   case OMX_REQUEST_TYPE_CONNECT:
 
-    if (req->generic.state) {
-      /* the request is pending on a queue */
-      struct list_head * head = &ep->connect_req_q;
-      omx__dequeue_request(head, req);
+    if (req->generic.state & OMX_REQUEST_STATE_NEED_REPLY) {
+      /* not replied, still in the connect queues */
+      omx__dequeue_request(&ep->connect_req_q, req);
+      omx__dequeue_partner_request(&req->generic.partner->connect_req_q, req);
       omx__request_free(ep, req);
       *request = 0;
       *result = 1;
