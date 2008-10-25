@@ -38,6 +38,20 @@
  * Module parameters
  */
 
+/* allow module parameters to be ignored when not supporting */
+
+int /* not static since maybe unused (and __maybe_unused appeared in 2.6.23) */
+omx_unavail_module_param_set(const char *buf, struct kernel_param *kp)
+{
+  printk(KERN_INFO "Open-MX: WARNING: %s\n", (char*) kp->arg);
+  return 0;
+}
+#define omx_unavail_module_param(name, reason) \
+module_param_call(name, omx_unavail_module_param_set, NULL, #name " unavailable unless " reason, S_IRUGO); \
+MODULE_PARM_DESC(name, "Unavailable unless " reason)
+
+/* actual module parameters */
+
 module_param_call(ifnames, omx_ifnames_set, omx_ifnames_get, NULL, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(ifnames, "Interfaces to attach on startup, comma-separated");
 
@@ -81,18 +95,20 @@ MODULE_PARM_DESC(pininvalidate, "User region pin invalidating when MMU notifiers
 int omx_dmaengine = 0; /* disabled by default for now */
 module_param_call(dmaengine, omx_set_dmaengine, param_get_uint, &omx_dmaengine, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmaengine, "Enable DMA engine support");
-
 int omx_dma_async_frag_min = 1024;
 module_param_named(dmaasyncfragmin, omx_dma_async_frag_min, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmaasyncfragmin, "Minimum fragment length to offload asynchronous copy on DMA engine");
-
 int omx_dma_async_min = 64*1024;
 module_param_named(dmaasyncmin, omx_dma_async_min, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmaasyncmin, "Minimum message length to offload all fragment copies asynchronously on DMA engine");
-
 int omx_dma_sync_min = 2*1024*1024;
 module_param_named(dmasyncmin, omx_dma_sync_min, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmasyncmin, "Minimum length to offload synchronous copy on DMA engine");
+#else /* CONFIG_NET_DMA */
+omx_unavail_module_param(dmaengine, "kernel has CONFIG_NET_DMA");
+omx_unavail_module_param(dmaasyncfragmin, "kernel has CONFIG_NET_DMA");
+omx_unavail_module_param(dmaasyncmin, "kernel has CONFIG_NET_DMA");
+omx_unavail_module_param(dmasyncmin, "kernel has CONFIG_NET_DMA");
 #endif /* CONFIG_NET_DMA */
 
 int omx_copybench = 0;
@@ -103,54 +119,60 @@ MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");
 unsigned long omx_debug = 0;
 module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(debug, "Bitmask of debugging messages to display");
+#else /* OMX_DRIVER_DEBUG */
+omx_unavail_module_param(debug, "--enable-debug was given");
+#endif /* OMX_DRIVER_DEBUG */
 
+#ifdef OMX_DRIVER_DEBUG
 unsigned long omx_TINY_packet_loss = 0;
 module_param_named(tiny_packet_loss, omx_TINY_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(tiny_packet_loss, "Explicit tiny reply packet loss frequency");
-
 unsigned long omx_SMALL_packet_loss = 0;
 module_param_named(small_packet_loss, omx_SMALL_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(small_packet_loss, "Explicit small reply packet loss frequency");
-
 unsigned long omx_MEDIUM_FRAG_packet_loss = 0;
 module_param_named(medium_frag_packet_loss, omx_MEDIUM_FRAG_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(medium_packet_loss, "Explicit medium reply packet loss frequency");
-
 unsigned long omx_RNDV_packet_loss = 0;
 module_param_named(rndv_packet_loss, omx_RNDV_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(rndv_packet_loss, "Explicit rndv reply packet loss frequency");
-
 unsigned long omx_PULL_REQ_packet_loss = 0;
 module_param_named(pull_packet_loss, omx_PULL_REQ_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(pull_packet_loss, "Explicit pull request packet loss frequency");
-
 unsigned long omx_PULL_REPLY_packet_loss = 0;
 module_param_named(pull_reply_packet_loss, omx_PULL_REPLY_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(pull_reply_packet_loss, "Explicit pull reply packet loss frequency");
-
 unsigned long omx_NOTIFY_packet_loss = 0;
 module_param_named(notify_packet_loss, omx_NOTIFY_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(notify_packet_loss, "Explicit notify packet loss frequency");
-
 unsigned long omx_CONNECT_packet_loss = 0;
 module_param_named(connect_packet_loss, omx_CONNECT_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(connect_packet_loss, "Explicit connect packet loss frequency");
-
 unsigned long omx_TRUC_packet_loss = 0;
 module_param_named(truc_packet_loss, omx_TRUC_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(truc_packet_loss, "Explicit truc packet loss frequency");
-
 unsigned long omx_NACK_LIB_packet_loss = 0;
 module_param_named(nack_lib_packet_loss, omx_NACK_LIB_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(nack_lib_packet_loss, "Explicit nack lib packet loss frequency");
-
 unsigned long omx_NACK_MCP_packet_loss = 0;
 module_param_named(nack_mcp_packet_loss, omx_NACK_MCP_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(nack_mcp_packet_loss, "Explicit nack mcp packet loss frequency");
-
 unsigned long omx_RAW_packet_loss = 0;
 module_param_named(raw_packet_loss, omx_RAW_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(raw_packet_loss, "Explicit raw packet loss frequency");
+#else /* OMX_DRIVER_DEBUG */
+omx_unavail_module_param(tiny_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(small_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(medium_frag_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(rndv_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(pull_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(pull_reply_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(notify_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(connect_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(truc_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(nack_lib_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(nack_mcp_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(raw_packet_loss, "--enable-debug was given");
 #endif /* OMX_DRIVER_DEBUG */
 
 /************************
