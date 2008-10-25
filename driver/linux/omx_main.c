@@ -43,11 +43,17 @@
 int /* not static since maybe unused (and __maybe_unused appeared in 2.6.23) */
 omx_unavail_module_param_set(const char *buf, struct kernel_param *kp)
 {
-  printk(KERN_INFO "Open-MX: WARNING: %s\n", (char*) kp->arg);
-  return 0;
+	printk(KERN_INFO "Open-MX: WARNING: %s\n", (char*) kp->arg);
+	return 0;
+}
+int /* not static since maybe unused (and __maybe_unused appeared in 2.6.23) */
+omx_unavail_module_param_get(char *buffer, struct kernel_param *kp)
+{                                                               \
+	return sprintf(buffer, "0");
 }
 #define omx_unavail_module_param(name, reason) \
-module_param_call(name, omx_unavail_module_param_set, NULL, #name " unavailable unless " reason, S_IRUGO); \
+module_param_call(name, omx_unavail_module_param_set, omx_unavail_module_param_get, \
+		  #name " unavailable unless " reason, S_IRUGO|S_IWUSR); \
 MODULE_PARM_DESC(name, "Unavailable unless " reason)
 
 /* actual module parameters */
