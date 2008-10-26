@@ -8,6 +8,15 @@ Caveats:
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
 
+Open-MX 1.0.1 (October 26th 2008, svn/open-mx-1.0.x r2131)
+==========================================================
+Bug Fixes:
+* Fix cancelling of iconnect requests.
+* Fix event ring management on the receiver side when the sender
+  fails to read user-space data during a shared small communication.
+* Fix various minor memory leaks.
+* Fix driver cross-compiling on some kernels.
+
 Open-MX 1.0.0 (October 8th 2008, svn/open-mx-1.0.x r2077)
 =========================================================
 The first "stable" release.
