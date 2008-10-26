@@ -130,6 +130,9 @@ omx_unavail_module_param(debug, "--enable-debug was given");
 #endif /* OMX_DRIVER_DEBUG */
 
 #ifdef OMX_DRIVER_DEBUG
+unsigned long omx_packet_loss = 0;
+module_param_named(packet_loss, omx_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(packet_loss, "Explicit packet loss frequency");
 unsigned long omx_TINY_packet_loss = 0;
 module_param_named(tiny_packet_loss, omx_TINY_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(tiny_packet_loss, "Explicit tiny packet loss frequency");
@@ -167,6 +170,7 @@ unsigned long omx_RAW_packet_loss = 0;
 module_param_named(raw_packet_loss, omx_RAW_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(raw_packet_loss, "Explicit raw packet loss frequency");
 #else /* OMX_DRIVER_DEBUG */
+omx_unavail_module_param(packet_loss, "--enable-debug was given");
 omx_unavail_module_param(tiny_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(small_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(medium_frag_packet_loss, "--enable-debug was given");

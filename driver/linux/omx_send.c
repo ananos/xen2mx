@@ -34,6 +34,7 @@
 
 #ifdef OMX_DRIVER_DEBUG
 /* defined as module parameters */
+extern unsigned long omx_packet_loss;
 extern unsigned long omx_TINY_packet_loss;
 extern unsigned long omx_SMALL_packet_loss;
 extern unsigned long omx_MEDIUM_FRAG_packet_loss;
@@ -44,6 +45,7 @@ extern unsigned long omx_TRUC_packet_loss;
 extern unsigned long omx_NACK_LIB_packet_loss;
 extern unsigned long omx_NACK_MCP_packet_loss;
 /* index between 0 and the above limit */
+unsigned long omx_packet_loss_index = 0;
 static unsigned long omx_TINY_packet_loss_index = 0;
 static unsigned long omx_SMALL_packet_loss_index = 0;
 static unsigned long omx_MEDIUM_FRAG_packet_loss_index = 0;

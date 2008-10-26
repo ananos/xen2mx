@@ -48,9 +48,15 @@ do {						\
 } while (0)
 
 #ifdef OMX_DRIVER_DEBUG
+extern unsigned long omx_packet_loss;
+extern unsigned long omx_packet_loss_index;
 #define _omx_queue_xmit(iface, skb, type, counter)				\
 	do {									\
-	if (omx_##type##_packet_loss &&						\
+	if (omx_packet_loss &&							\
+		   (++omx_packet_loss_index >= omx_packet_loss)) {		\
+		kfree_skb(skb);							\
+		omx_packet_loss_index = 0;					\
+	} else if (omx_##type##_packet_loss &&					\
 	    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) {	\
 		kfree_skb(skb);							\
 		omx_##type##_packet_loss_index = 0;				\
