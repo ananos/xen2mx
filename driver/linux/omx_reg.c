@@ -1667,7 +1667,6 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 			if (dpinlen < doff + chunk) {
 				dpinlen = doff + chunk;
 				ret = omx_user_region_demand_pin_continue(&dpinstate, &dpinlen);
-				if (ret < 0)
 				if (ret < 0) {
 					/* failed to pin, no need to fallback to memcpy */
 					remaining = 0;
