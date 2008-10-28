@@ -174,10 +174,10 @@ omx__user_region_pin_add_chunk(struct omx_user_region_pin_state *pinstate)
 	chunk_pages = pinstate->next_chunk_pages;
 	/* increase the next number of pages to pin if below the max */
 	if (chunk_pages < omx_pin_chunk_pages_max) {
-		chunk_pages <<= 1;
-		if (chunk_pages > omx_pin_chunk_pages_max)
-			chunk_pages = omx_pin_chunk_pages_max;
-		pinstate->next_chunk_pages = chunk_pages;
+		int next_chunk_pages = chunk_pages<<1;
+		if (next_chunk_pages > omx_pin_chunk_pages_max)
+			next_chunk_pages = omx_pin_chunk_pages_max;
+		pinstate->next_chunk_pages = next_chunk_pages;
 	}
 
 	/* compute the corresponding length */
