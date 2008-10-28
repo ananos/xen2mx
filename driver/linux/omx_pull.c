@@ -894,7 +894,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 
 	/* create, acquire and lock the handle */
 	handle = omx_pull_handle_create(endpoint, &cmd);
-	if (unlikely(!handle)) {
+	if (IS_ERR(handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		err = PTR_ERR(handle);
 		goto out;
