@@ -344,9 +344,11 @@ omx_get_driver_string(unsigned int *lenp)
 #ifdef OMX_DRIVER_DEBUG
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		" Debug: Enabled MessageMask=0x%lx\n"
+		" DebugLossPacket: All=%ld\n"
 		" DebugLossPacket: Tiny=%ld Small=%ld MediumFrag=%ld Rndv=%ld Pull=%ld PullReply=%ld\n"
 		" DebugLossPacket: Notify=%ld Connect=%ld Truc=%ld NackLib=%ld NackMCP=%ld Raw=%ld\n",
 		(unsigned long) omx_debug,
+		omx_packet_loss,
 		omx_TINY_packet_loss, omx_SMALL_packet_loss, omx_MEDIUM_FRAG_packet_loss, omx_RNDV_packet_loss,	omx_PULL_REQ_packet_loss, omx_PULL_REPLY_packet_loss,
 		omx_NOTIFY_packet_loss, omx_CONNECT_packet_loss, omx_TRUC_packet_loss, omx_NACK_LIB_packet_loss, omx_NACK_MCP_packet_loss, omx_RAW_packet_loss);
 #else
