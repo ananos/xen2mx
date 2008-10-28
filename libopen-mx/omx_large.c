@@ -129,6 +129,18 @@ omx__endpoint_large_region_map_exit(struct omx_endpoint * ep)
  * Low-level Registration/Deregistration
  */
 
+void
+omx__check_driver_pinning_error(struct omx_endpoint *ep, omx_return_t ret)
+{
+  if (ret == OMX_INTERNAL_MISC_EFAULT) {
+    /* Either a fault while reading the ioctl cmd/segs, or get_user_pages failed.
+     * The former would be a lib bug, so it shouldn't happen.
+     * The latter is an application bug, abort.
+     */
+    omx__abort(ep, "Driver returned Bad Address. Check kernel logs. Did the application pass an invalid buffer?\n");
+  }
+}
+
 static INLINE omx_return_t
 omx__register_region(struct omx_endpoint *ep,
 		     struct omx__large_region *region)
@@ -145,9 +157,13 @@ omx__register_region(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_CREATE_USER_REGION, &reg);
   if (unlikely(err < 0)) {
-    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
-				       OMX_SUCCESS,
-				       "create user region %d", region->id);
+    ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+					     OMX_INTERNAL_MISC_EFAULT, /* for failure to pin */
+					     OMX_SUCCESS,
+					     "create user region %d", region->id);
+    omx__check_driver_pinning_error(ep, ret);
+
+    /* let the caller try again later */
     ret = OMX_INTERNAL_MISSING_RESOURCES;
   }
 
@@ -435,8 +451,12 @@ omx__alloc_setup_pull(struct omx_endpoint * ep,
   err = ioctl(ep->fd, OMX_CMD_PULL, &pull_param);
   if (unlikely(err < 0)) {
     ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+					     OMX_INTERNAL_MISC_EFAULT, /* for failure to pin */
 					     OMX_SUCCESS,
 					     "post pull request");
+    omx__check_driver_pinning_error(ep, ret);
+
+    /* let the caller try again later */
     return OMX_INTERNAL_MISSING_RESOURCES;
   }
   req->generic.missing_resources &= ~OMX_REQUEST_RESOURCE_PULL_HANDLE;

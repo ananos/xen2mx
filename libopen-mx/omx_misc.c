@@ -49,6 +49,8 @@ omx__errno_to_return(void)
     return OMX_NO_DEVICE_FILE;
   case EBUSY:
     return OMX_BUSY;
+  case EFAULT:
+    return OMX_INTERNAL_MISC_EFAULT;
   default:
     return OMX_INTERNAL_UNEXPECTED_ERRNO;
   }

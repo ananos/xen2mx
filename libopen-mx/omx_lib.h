@@ -606,6 +606,9 @@ omx__errno_to_return(void);
 extern omx_return_t
 omx__ioctl_errno_to_return_checked(omx_return_t ok, ...);
 
+extern void
+omx__check_driver_pinning_error(struct omx_endpoint *ep, omx_return_t ret);
+
 extern const char *
 omx__strreqtype(enum omx__request_type type);
 

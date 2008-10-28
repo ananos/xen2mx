@@ -698,10 +698,14 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
 
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
   if (unlikely(err < 0)) {
-    omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
-				       OMX_SUCCESS,
-				       "send rndv message");
-    /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
+    omx_return_t ret;
+    ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+					     OMX_INTERNAL_MISC_EFAULT, /* for failure to pin */
+					     OMX_SUCCESS,
+					     "send rndv message");
+    omx__check_driver_pinning_error(ep, ret);
+
+    /* let the retransmission try again later */
   }
 
   req->generic.resends++;
