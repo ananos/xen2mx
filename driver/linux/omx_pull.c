@@ -580,7 +580,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	/* acquire the region */
 	region = omx_user_region_acquire(endpoint, cmd->local_rdma_id);
 	if (unlikely(!region)) {
-		err = -ENOMEM;
+		err = -EINVAL;
 		goto out;
 	}
 
@@ -601,6 +601,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle = kmalloc(sizeof(struct omx_pull_handle), GFP_KERNEL);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
+		err = -ENOMEM;
 		goto out_with_region;
 	}
 	/* initialize the lock, we will acquire it soon */
@@ -612,6 +613,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	if (unlikely(err < 0)) {
 		printk(KERN_ERR "Open-MX: Failed to find a slot for pull handle\n");
 		spin_unlock_bh(&endpoint->pull_handles_lock);
+		err = -ENOMEM;
 		goto out_with_handle;
 	}
 
@@ -684,7 +686,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
  out_with_region:
 	omx_user_region_release(region);
  out:
-	return NULL;
+	return ERR_PTR(err);
 }
 
 /*************************
@@ -894,7 +896,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	handle = omx_pull_handle_create(endpoint, &cmd);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
-		err = -ENOMEM;
+		err = PTR_ERR(handle);
 		goto out;
 	}
 
