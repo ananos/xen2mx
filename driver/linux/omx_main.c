@@ -399,6 +399,12 @@ omx_init(void)
 	omx_driver_userdesc->peer_table_size = 0;
 	omx_driver_userdesc->peer_table_mapper_id = -1;
 
+	/* check some module parameters */
+	if (omx_pin_synchronous && omx_pin_progressive) {
+		printk(KERN_INFO "Open-MX: Cannot use progressive pinning while synchronous\n");
+		omx_pin_progressive = 0;
+	}
+
 	/* setup driver feature mask */
 	omx_driver_userdesc->features = 0;
 #ifdef OMX_MX_WIRE_COMPAT
