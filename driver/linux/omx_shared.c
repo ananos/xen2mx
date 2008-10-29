@@ -588,6 +588,9 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	if (src_region) {
 		/* make sure the region is getting pinned now */
 		omx_user_region_demand_pin_finish(&pinstate);
+		/* ignore errors, the rndv is gone anyway
+		 * the pull with be aborted
+		 */
 		omx_user_region_release(src_region);
 	}
 
@@ -597,6 +600,9 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	if (src_region) {
 		/* make sure the region is getting pinned anyway */
 		omx_user_region_demand_pin_finish(&pinstate);
+		/* ignore errors, the rndv is gone anyway
+		 * the pull with be aborted
+		 */
 		omx_user_region_release(src_region);
 	}
  out_with_endpoint:

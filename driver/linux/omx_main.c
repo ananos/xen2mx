@@ -94,7 +94,7 @@ module_param_named(pinchunkmax, omx_pin_chunk_pages_max, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(pinchunkmax, "Maximum number of pages to pin at once");
 
 int omx_pin_invalidate = 0;
-module_param_named(pininvalidate, omx_pin_invalidate, uint, S_IRUGO);
+module_param_named(pininvalidate, omx_pin_invalidate, uint, S_IRUGO); /* not writable to simplify things */
 MODULE_PARM_DESC(pininvalidate, "User region pin invalidating when MMU notifiers are supported");
 
 #ifdef CONFIG_NET_DMA
@@ -252,73 +252,76 @@ omx_get_driver_string(unsigned int *lenp)
 	buflen = 0;
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		"Open-MX " VERSION "\n");
+		       "Open-MX " VERSION "\n");
 	tmp += len;
 	buflen += len;
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		" Driver ABI=0x%lx\n",
-		(unsigned long) omx_driver_userdesc->abi_version);
+		       " Driver ABI=0x%lx\n",
+		       (unsigned long) omx_driver_userdesc->abi_version);
 	tmp += len;
 	buflen += len;
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		" Configured for %d endpoints on %d interfaces with %d peers\n",
-		omx_endpoint_max, omx_iface_max, omx_peer_max);
+		       " Configured for %d endpoints on %d interfaces with %d peers\n",
+		       omx_endpoint_max, omx_iface_max, omx_peer_max);
 	tmp += len;
 	buflen += len;
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		 " WireSpecs: %s EtherType=0x%lx MTU>=0x%ld\n",
-		 omx_driver_userdesc->features & OMX_DRIVER_FEATURE_WIRECOMPAT ? "WireCompatible" : "NoWireCompat",
-		 (unsigned long) ETH_P_OMX, (unsigned long) OMX_MTU);
+		       " WireSpecs: %s EtherType=0x%lx MTU>=0x%ld\n",
+		       omx_driver_userdesc->features & OMX_DRIVER_FEATURE_WIRECOMPAT
+		       ? "WireCompatible" : "NoWireCompat",
+		       (unsigned long) ETH_P_OMX, (unsigned long) OMX_MTU);
 	tmp += len;
 	buflen += len;
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		 " MediumMessages: %ldB per fragment\n",
-		 (unsigned long) OMX_MEDIUM_FRAG_LENGTH_MAX);
-	tmp += len;
-	buflen += len;
-	
-	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		 " LargeMessages: %ld requests in parallel, %ld x %ldB pull replies per request\n",
-		 (unsigned long) OMX_PULL_BLOCK_DESCS_NR,
-		 (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
-		 (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);
-	tmp += len;
-	buflen += len;
-	
-	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		" SkBuff: <=%d frags%s, ForcedCopy <=%dB\n",
-		omx_skb_frags, omx_skb_frags ? "" : " (always linear)", omx_skb_copy_max);
+		       " MediumMessages: %ldB per fragment\n",
+		       (unsigned long) OMX_MEDIUM_FRAG_LENGTH_MAX);
 	tmp += len;
 	buflen += len;
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		" SharedComms: %s\n",
-		omx_driver_userdesc->features & OMX_DRIVER_FEATURE_SHARED ? "Enabled" : "Disabled");
+		       " LargeMessages: %ld requests in parallel, %ld x %ldB pull replies per request\n",
+		       (unsigned long) OMX_PULL_BLOCK_DESCS_NR,
+		       (unsigned long) OMX_PULL_REPLY_PER_BLOCK,
+		       (unsigned long) OMX_PULL_REPLY_LENGTH_MAX);
+	tmp += len;
+	buflen += len;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		       " SkBuff: <=%d frags%s, ForcedCopy <=%dB\n",
+		       omx_skb_frags, omx_skb_frags ? "" : " (always linear)", omx_skb_copy_max);
+	tmp += len;
+	buflen += len;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		       " SharedComms: %s\n",
+		       omx_driver_userdesc->features & OMX_DRIVER_FEATURE_SHARED
+		       ? "Enabled" : "Disabled");
 	tmp += len;
 	buflen += len;
 
 	if (omx_region_demand_pin)
 		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-			" Pinning: OnDemand ChunkPagesMin=%ld Max=%ld\n",
-			(unsigned long) omx_pin_chunk_pages_min,
-			(unsigned long) omx_pin_chunk_pages_max);
+			       " Pinning: OnDemand ChunkPagesMin=%ld Max=%ld\n",
+			       (unsigned long) omx_pin_chunk_pages_min,
+			       (unsigned long) omx_pin_chunk_pages_max);
 	else
 		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-			" Pinning: Immediate\n");
+			       " Pinning: Immediate\n");
 	tmp += len;
 	buflen += len;
 
 #ifdef CONFIG_MMU_NOTIFIER
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		" PinInvalidate: KernelSupported %s\n",
-		omx_driver_userdesc->features & OMX_DRIVER_FEATURE_PIN_INVALIDATE ? "Enabled" : "Disabled");
+		       " PinInvalidate: KernelSupported %s\n",
+		       omx_driver_userdesc->features & OMX_DRIVER_FEATURE_PIN_INVALIDATE
+		       ? "Enabled" : "Disabled");
 #else
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		" PinInvalidate: NoKernelSupport\n");
+		       " PinInvalidate: NoKernelSupport\n");
 #endif
 	tmp += len;
 	buflen += len;
@@ -326,34 +329,34 @@ omx_get_driver_string(unsigned int *lenp)
 #ifdef CONFIG_NET_DMA
 	if (!omx_dmaengine)
 		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-			" DMAEngine: KernelSupported Disabled\n");
+			       " DMAEngine: KernelSupported Disabled\n");
 	else if (!__get_cpu_var(softnet_data).net_dma)
 		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-			" DMAEngine: KernelSupported Enabled NoChannelAvailable\n");
+			       " DMAEngine: KernelSupported Enabled NoChannelAvailable\n");
 	else
 		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-			" DMAEngine: KernelSupported Enabled ChansAvail SyncCopyMin=%dB AsyncCopyMin=%dB (%dB per packet)\n",
-			omx_dma_sync_min, omx_dma_async_min, omx_dma_async_frag_min);
+			       " DMAEngine: KernelSupported Enabled ChansAvail SyncCopyMin=%dB AsyncCopyMin=%dB (%dB per packet)\n",
+			       omx_dma_sync_min, omx_dma_async_min, omx_dma_async_frag_min);
 #else
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		" DMAEngine: NoKernelSupport\n");
+		       " DMAEngine: NoKernelSupport\n");
 #endif
 	tmp += len;
 	buflen += len;
 
 #ifdef OMX_DRIVER_DEBUG
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		" Debug: Enabled MessageMask=0x%lx\n"
-		" DebugLossPacket: All=%ld\n"
-		" DebugLossPacket: Tiny=%ld Small=%ld MediumFrag=%ld Rndv=%ld Pull=%ld PullReply=%ld\n"
-		" DebugLossPacket: Notify=%ld Connect=%ld Truc=%ld NackLib=%ld NackMCP=%ld Raw=%ld\n",
-		(unsigned long) omx_debug,
-		omx_packet_loss,
-		omx_TINY_packet_loss, omx_SMALL_packet_loss, omx_MEDIUM_FRAG_packet_loss, omx_RNDV_packet_loss,	omx_PULL_REQ_packet_loss, omx_PULL_REPLY_packet_loss,
-		omx_NOTIFY_packet_loss, omx_CONNECT_packet_loss, omx_TRUC_packet_loss, omx_NACK_LIB_packet_loss, omx_NACK_MCP_packet_loss, omx_RAW_packet_loss);
+		       " Debug: Enabled MessageMask=0x%lx\n"
+		       " DebugLossPacket: All=%ld\n"
+		       " DebugLossPacket: Tiny=%ld Small=%ld MediumFrag=%ld Rndv=%ld Pull=%ld PullReply=%ld\n"
+		       " DebugLossPacket: Notify=%ld Connect=%ld Truc=%ld NackLib=%ld NackMCP=%ld Raw=%ld\n",
+		       (unsigned long) omx_debug,
+		       omx_packet_loss,
+		       omx_TINY_packet_loss, omx_SMALL_packet_loss, omx_MEDIUM_FRAG_packet_loss, omx_RNDV_packet_loss,	omx_PULL_REQ_packet_loss, omx_PULL_REPLY_packet_loss,
+		       omx_NOTIFY_packet_loss, omx_CONNECT_packet_loss, omx_TRUC_packet_loss, omx_NACK_LIB_packet_loss, omx_NACK_MCP_packet_loss, omx_RAW_packet_loss);
 #else
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		" Debug: Disabled\n");
+		       " Debug: Disabled\n");
 #endif
 	tmp += len;
 	buflen += len;
