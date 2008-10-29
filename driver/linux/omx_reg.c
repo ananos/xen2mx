@@ -1606,8 +1606,15 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 	if (!dma_chan)
 		goto fallback;
 
-	if (!omx_pin_synchronous)
+	if (!omx_pin_synchronous) {
 		omx_user_region_demand_pin_init(&dpinstate, dst_region);
+		if (!omx_pin_progressive) {
+			/* pin the whole region now */
+			ret = omx_user_region_demand_pin_finish(&dpinstate);
+			if (ret < 0)
+				goto out_with_dma;
+		}
+	}
 
 	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",
 		length,
@@ -1753,6 +1760,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		omx_counter_inc(omx_shared_fake_iface, SHARED_DMA_LARGE);
 	}
 
+ out_with_dma:
 	/* wait for dma completion at the end, to overlap a bit with everything else */
 	if (dma_chan) {
 		if (dma_last_cookie > 0) {

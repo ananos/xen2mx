@@ -574,7 +574,16 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 			err = -EINVAL;
 			goto out_with_endpoint;
 		}
+
 		omx_user_region_demand_pin_init(&pinstate, src_region);
+		if (!omx_pin_progressive) {
+			/* pin the whole region now */
+			err = omx_user_region_demand_pin_finish(&pinstate);
+			omx_user_region_release(src_region);
+			src_region = NULL;
+			if (err < 0)
+				goto out_with_endpoint;
+		}
 	}
 
 	/* notify the event */
