@@ -772,7 +772,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		return omx_shared_send_rndv(endpoint, &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
 #endif
 
-	if (omx_region_demand_pin) {
+	if (!omx_pin_synchronous) {
 		/* make sure the region is pinned */
 		struct omx_user_region * region;
 		struct omx_user_region_pin_state pinstate;
@@ -785,7 +785,8 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 
 		omx_user_region_demand_pin_init(&pinstate, region);
 		pinstate.next_chunk_pages = omx_pin_chunk_pages_max;
-		ret = omx_user_region_demand_pin_finish(&pinstate); /* will be _or_parallel once we overlap here too */
+		ret = omx_user_region_demand_pin_finish(&pinstate);
+		/* FIXME: deal with omx_pin_progressive (will be _or_parallel) */
 		omx_user_region_release(region);
 		if (ret < 0) {
 			dprintk(REG, "failed to pin user region\n");

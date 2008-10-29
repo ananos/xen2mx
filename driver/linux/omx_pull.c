@@ -584,13 +584,14 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	if (omx_region_demand_pin) {
+	if (!omx_pin_synchronous) {
 		/* make sure the region is pinned */
 		struct omx_user_region_pin_state pinstate;
 
 		omx_user_region_demand_pin_init(&pinstate, region);
 		pinstate.next_chunk_pages = omx_pin_chunk_pages_max;
-		err = omx_user_region_demand_pin_finish(&pinstate); /* will be _or_parallel once we overlap here */
+		err = omx_user_region_demand_pin_finish(&pinstate);
+		/* FIXME: deal with omx_pin_progressive (will be _or_parallel) */
 		if (err < 0) {
 			dprintk(REG, "failed to pin user region\n");
 			goto out_with_region;

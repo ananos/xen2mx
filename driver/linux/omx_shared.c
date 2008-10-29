@@ -568,7 +568,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	}
 
 	/* make sure the region is marked as pinning before reporting the event */
-	if (omx_region_demand_pin) {
+	if (!omx_pin_synchronous) {
 		src_region = omx_user_region_acquire(src_endpoint, hdr->user_region_id_needed);
 		if (unlikely(!src_region)) {
 			err = -EINVAL;

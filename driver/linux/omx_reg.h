@@ -143,7 +143,7 @@ omx_user_region_immediate_full_pin(struct omx_user_region * region)
 	unsigned long needed = region->total_length;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(omx_region_demand_pin);
+	BUG_ON(!omx_pin_synchronous);
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_NOT_PINNED);
 #endif
 	region->status = OMX_USER_REGION_STATUS_PINNED;
@@ -162,7 +162,7 @@ omx_user_region_parallel_pin_wait(struct omx_user_region * region, unsigned long
 	unsigned long needed = *length;
 
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(!omx_region_demand_pin);
+	BUG_ON(omx_pin_synchronous);
 #endif
 
 	while (needed > region->total_registered_length
@@ -187,7 +187,7 @@ omx_user_region_demand_pin_init(struct omx_user_region_pin_state *pinstate,
 				struct omx_user_region * region)
 {
 #ifdef OMX_DRIVER_DEBUG
-	BUG_ON(!omx_region_demand_pin);
+	BUG_ON(omx_pin_synchronous);
 #endif
 
 	if (cmpxchg(&region->status,
@@ -223,7 +223,7 @@ omx_user_region_demand_pin_continue(struct omx_user_region_pin_state *pinstate,
 	} else {
 		/* continue our pinning */
 #ifdef OMX_DRIVER_DEBUG
-		BUG_ON(!omx_region_demand_pin);
+		BUG_ON(omx_pin_synchronous);
 		BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
 #endif
 		return omx__user_region_pin_continue(pinstate, length);
@@ -248,7 +248,7 @@ omx_user_region_demand_pin_finish(struct omx_user_region_pin_state *pinstate)
 	} else {
 		/* finish our pinning */
 #ifdef OMX_DRIVER_DEBUG
-		BUG_ON(!omx_region_demand_pin);
+		BUG_ON(omx_pin_synchronous);
 		BUG_ON(pinstate->region->status != OMX_USER_REGION_STATUS_PINNED);
 #endif
 		return omx__user_region_pin_continue(pinstate, &needed);
@@ -273,7 +273,7 @@ omx_user_region_demand_pin_finish_or_parallel(struct omx_user_region_pin_state *
 	} else {
 		/* finish our pinning */
 #ifdef OMX_DRIVER_DEBUG
-		BUG_ON(!omx_region_demand_pin);
+		BUG_ON(omx_pin_synchronous);
 		BUG_ON(pinstate->region->status != OMX_USER_REGION_STATUS_PINNED);
 #endif
 		return omx__user_region_pin_continue(pinstate, &needed);

@@ -348,7 +348,7 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 	region->status = OMX_USER_REGION_STATUS_NOT_PINNED;
 	region->total_registered_length = 0;
 
-	if (!omx_region_demand_pin) {
+	if (omx_pin_synchronous) {
 		/* pin the region */
 		ret = omx_user_region_immediate_full_pin(region);
 		if (ret < 0) {
@@ -583,8 +583,8 @@ omx_mmu_invalidate_handler(struct omx_endpoint *endpoint, void *data)
 			unsigned long seg_start = invalid_seg->aligned_vaddr + invalid_seg->first_page_offset;
 			unsigned long seg_end = seg_start + invalid_seg->length;
 
-			if (!omx_region_demand_pin) {
-				/* cannot invalidate if demand pinning is disabled */
+			if (omx_pin_synchronous) {
+				/* cannot invalidate if pinning is synchronous */
 				printk(KERN_INFO "Open-MX: WARNING: reg#%d (ep#%d iface %s) being invalidated: seg#%ld (0x%lx-0x%lx) within 0x%lx-0x%lx\n",
 				       ireg, endpoint->endpoint_index, iface->eth_ifp->name,
 				       invalid_seg-&region->segments[0], seg_start, seg_end, inv_start, inv_end);
@@ -1518,7 +1518,7 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 		if (chunk > dseglen - dsegoff)
 			chunk = dseglen - dsegoff;
 
-		if (omx_region_demand_pin && spinlen < soff + chunk) {
+		if (omx_pin_progressive && spinlen < soff + chunk) {
 			spinlen = soff + chunk;
 			ret = omx_user_region_parallel_pin_wait(src_region, &spinlen);
 			if (ret < 0)
@@ -1606,7 +1606,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 	if (!dma_chan)
 		goto fallback;
 
-	if (omx_region_demand_pin)
+	if (!omx_pin_synchronous)
 		omx_user_region_demand_pin_init(&dpinstate, dst_region);
 
 	dprintk(REG, "shared region copy of %ld bytes from region #%ld len %ld starting at %ld into region #%ld len %ld starting at %ld\n",
@@ -1653,7 +1653,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		if (chunk > dseglen - dsegoff)
 			chunk = dseglen - dsegoff;
 
-		if (omx_region_demand_pin) {
+		if (omx_pin_progressive) {
 			if (spinlen < soff + chunk) {
 				spinlen = soff + chunk;
 				ret = omx_user_region_parallel_pin_wait(src_region, &spinlen);
@@ -1736,7 +1736,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		}
 	}
 
-	if (omx_region_demand_pin) {
+	if (omx_pin_progressive) {
 		omx_user_region_demand_pin_finish(&dpinstate);
 		/* ignore the return value, only the copy success matters */
 	}
