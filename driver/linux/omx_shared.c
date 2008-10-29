@@ -84,7 +84,10 @@ omx_shared_notify_nack(struct omx_endpoint *src_endpoint,
 
 	/* notify the event */
 	omx_notify_unexp_event(src_endpoint, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
-	/* ignore errors. if no more unexpected eventq slot, just drop the packet, it will be resent anyway */
+	/* ignore errors.
+	 * if no more unexpected eventq slot, just drop the packet,
+	 * it will be resent anyway
+	 */
 }
 
 /*
@@ -588,8 +591,8 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	if (src_region) {
 		/* make sure the region is getting pinned now */
 		omx_user_region_demand_pin_finish(&pinstate);
-		/* ignore errors, the rndv is gone anyway
-		 * the pull with be aborted
+		/* ignore errors, the rndv is gone anyway,
+		 * the pull will be aborted
 		 */
 		omx_user_region_release(src_region);
 	}
@@ -600,8 +603,8 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	if (src_region) {
 		/* make sure the region is getting pinned anyway */
 		omx_user_region_demand_pin_finish(&pinstate);
-		/* ignore errors, the rndv is gone anyway
-		 * the pull with be aborted
+		/* ignore errors, the rndv is gone anyway,
+		 * the pull will be aborted
 		 */
 		omx_user_region_release(src_region);
 	}
