@@ -4,10 +4,7 @@
 * only enable counters by default in debug mode
   + add --enable-counters
 
-* make deferredpin the default in trunk
-  + or add --enable-advanced pinning
-  + demandpin is only about overlapped pinning
-  + pininvalidate is enough to get regcache to work
+* make deferredpin the default in trunk ?
 * overlap registration with rndv and pull on the network
   + queue skb if touching after the registered_length
     - dequeue after registering enough

@@ -324,8 +324,9 @@ omx_get_driver_string(unsigned int *lenp)
 #ifdef CONFIG_MMU_NOTIFIER
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		       " PinInvalidate: KernelSupported %s\n",
-		       omx_driver_userdesc->features & OMX_DRIVER_FEATURE_PIN_INVALIDATE
-		       ? "Enabled" : "Disabled");
+		       omx_pin_invalidate
+		       ? (omx_pin_synchronous ? "DetectedOnly" : "Enabled")
+		       : "Disabled");
 #else
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		       " PinInvalidate: NoKernelSupport\n");
@@ -414,7 +415,7 @@ omx_init(void)
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
 #endif
 #ifdef CONFIG_MMU_NOTIFIER
-	if (omx_pin_invalidate)
+	if (omx_pin_invalidate && !omx_pin_synchronous)
 		omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PIN_INVALIDATE;
 #endif
 #ifdef OMX_MX_WIRE_COMPAT
