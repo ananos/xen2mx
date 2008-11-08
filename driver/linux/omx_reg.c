@@ -241,18 +241,18 @@ omx__user_region_pin_continue(struct omx_user_region_pin_state *pinstate,
 	BUG_ON(region->status != OMX_USER_REGION_STATUS_PINNED);
 #endif
 
-	down_write(&current->mm->mmap_sem);
+	down_read(&current->mm->mmap_sem);
 	while (region->total_registered_length < needed) {
 		ret = omx__user_region_pin_add_chunk(pinstate);
 		if (ret < 0)
 			goto out;
 	}
-	up_write(&current->mm->mmap_sem);
+	up_read(&current->mm->mmap_sem);
 	*length = region->total_registered_length;
 	return 0;
 
  out:
-	up_write(&current->mm->mmap_sem);
+	up_read(&current->mm->mmap_sem);
 	region->status = OMX_USER_REGION_STATUS_FAILED;
 	return ret;
 }
