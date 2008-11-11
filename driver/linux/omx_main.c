@@ -220,7 +220,7 @@ omx_kthread_func(void *dummy)
 		if (kthread_should_stop())
 			break;
 
-		msleep(1000);
+		msleep_interruptible(1000);
 
 		omx_endpoints_cleanup();
 		omx_user_regions_cleanup();
