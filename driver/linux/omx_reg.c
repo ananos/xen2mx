@@ -1610,6 +1610,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 		omx_user_region_demand_pin_init(&dpinstate, dst_region);
 		if (!omx_pin_progressive) {
 			/* pin the whole region now */
+			dpinstate.next_chunk_pages = omx_pin_chunk_pages_max;
 			ret = omx_user_region_demand_pin_finish(&dpinstate);
 			if (ret < 0)
 				goto out_with_dma;

@@ -578,6 +578,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 		omx_user_region_demand_pin_init(&pinstate, src_region);
 		if (!omx_pin_progressive) {
 			/* pin the whole region now */
+			pinstate.next_chunk_pages = omx_pin_chunk_pages_max;
 			err = omx_user_region_demand_pin_finish(&pinstate);
 			omx_user_region_release(src_region);
 			src_region = NULL;
@@ -611,6 +612,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
  out_with_region:
 	if (src_region) {
 		/* make sure the region is getting pinned anyway */
+		pinstate.next_chunk_pages = omx_pin_chunk_pages_max;
 		omx_user_region_demand_pin_finish(&pinstate);
 		/* ignore errors, the rndv is gone anyway,
 		 * the pull will be aborted
