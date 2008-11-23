@@ -564,7 +564,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 #ifdef OMX_LIB_DEBUG
   INIT_LIST_HEAD(&ep->partial_medium_recv_req_q);
   INIT_LIST_HEAD(&ep->need_seqnum_send_req_q);
-  INIT_LIST_HEAD(&ep->done_req_q);
+  INIT_LIST_HEAD(&ep->really_done_req_q);
   INIT_LIST_HEAD(&ep->internal_done_req_q);
 #endif
 
@@ -886,7 +886,7 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep)
   omx__foreach_done_anyctxid_request_safe(ep, req, next) {
 #ifdef OMX_LIB_DEBUG
     omx__debug_assert(req->generic.state == OMX_REQUEST_STATE_DONE);
-    omx__dequeue_request(&ep->done_req_q, req);
+    omx__dequeue_request(&ep->really_done_req_q, req);
 #endif
     omx__unlink_done_request_on_close(ep, req);
     omx__destroy_unlinked_request_on_close(ep, req);
@@ -896,8 +896,8 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep)
     for(i=0; i<ep->ctxid_max; i++)
       omx__debug_assert(omx__empty_done_ctxid_queue(ep, i));
 #ifdef OMX_LIB_DEBUG
-  /* check done_req_q is empty */
-  omx__debug_assert(omx__empty_queue(&ep->done_req_q));
+  /* check really_done_req_q is empty */
+  omx__debug_assert(omx__empty_queue(&ep->really_done_req_q));
 #endif
 }
 
@@ -990,11 +990,11 @@ omx__request_alloc_check(struct omx_endpoint *ep)
       omx__verbose_printf(ep, "Found %d requests in large send self unexp queue\n", j);
   }
 
-  j = omx__queue_count(&ep->done_req_q);
+  j = omx__queue_count(&ep->really_done_req_q);
   if (j > 0) {
     nr += j;
     if (omx__globals.check_request_alloc > 2)
-      omx__verbose_printf(ep, "Found %d requests in done queue\n", j);
+      omx__verbose_printf(ep, "Found %d requests in really done queue\n", j);
   }
 
   j = omx__queue_count(&ep->internal_done_req_q);

@@ -205,13 +205,13 @@ omx__notify_request_done(struct omx_endpoint *ep, uint32_t ctxid,
     if (unlikely(HAS_CTXIDS(ep)))
       list_add_tail(&req->generic.done_ctxid_elt, &ep->ctxid[ctxid].done_req_q);
 #ifdef OMX_LIB_DEBUG
-    omx__enqueue_request(&ep->done_req_q, req);
+    omx__enqueue_request(&ep->really_done_req_q, req);
 #endif
   } else {
     /* request was marked as done early, its done_*_elt are already queued */
     omx__debug_assert(req->generic.state == OMX_REQUEST_STATE_DONE);
 #ifdef OMX_LIB_DEBUG
-    omx__enqueue_request(&ep->done_req_q, req);
+    omx__enqueue_request(&ep->really_done_req_q, req);
 #endif
   }
 }
@@ -239,7 +239,7 @@ omx__dequeue_done_request(struct omx_endpoint *ep,
  found:
 
   if (req->generic.state == OMX_REQUEST_STATE_DONE)
-    omx__dequeue_request(&ep->done_req_q, req);
+    omx__dequeue_request(&ep->really_done_req_q, req);
 #endif /* OMX_LIB_DEBUG */
   list_del(&req->generic.done_anyctxid_elt);
   if (unlikely(HAS_CTXIDS(ep)))

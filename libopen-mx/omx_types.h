@@ -295,7 +295,7 @@ struct omx_endpoint {
   /* SEND req with state = NEED_SEQNUM (queued by their queue_elt) */
   struct list_head need_seqnum_send_req_q;
   /* any request with state == DONE (done for real, not early, not zombie) (queued by their queue_elt) */
-  struct list_head done_req_q;
+  struct list_head really_done_req_q;
   /* internal DONE requests (synchronous connect) */
   struct list_head internal_done_req_q;
 #endif
@@ -349,7 +349,7 @@ enum omx__request_type {
 /* Request states and queueing:
  * The request contains 3 queue elt:
  * + queue_elt: depends on the network state (need ack, need reply, posted to the driver, ...).
- *              used to queue the request on various endpoint queues (except the done_req_q)
+ *              used to queue the request on various endpoint queues (except the really_done_req_q)
  * + done_elt: used to queue the request on the endpoint done_req_q when the request is ready
  *             to be completed by by the application. It may happen before it is actually acked,
  *             and thus it is unrelated to where queue_elt is queued
