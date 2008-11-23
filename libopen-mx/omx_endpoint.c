@@ -676,9 +676,9 @@ static INLINE void
 omx__unlink_done_request_on_close(struct omx_endpoint *ep, union omx_request *req)
 {
   if (req->generic.state & OMX_REQUEST_STATE_DONE) {
-    list_del(&req->generic.done_anyctxid_elt);
+    list_del(&req->generic.done_elt);
     if (unlikely(HAS_CTXIDS(ep)))
-      list_del(&req->generic.done_ctxid_elt);
+      list_del(&req->generic.ctxid_elt);
   }
 }
 

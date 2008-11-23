@@ -257,7 +257,7 @@ struct omx_endpoint {
 
   /* global queues that contain all ctxid queues */
   struct {
-    /* done requests (queued by their done_anyctxid_elt) */
+    /* done requests (queued by their done_elt) */
     struct list_head done_req_q;
   } anyctxid;
 
@@ -268,7 +268,7 @@ struct omx_endpoint {
     /* posted non-matched receive (queued by their queue_elt) */
     struct list_head recv_req_q;
 
-    /* done requests (queued by their done_ctxid_elt), only if there are multiple ctxids */
+    /* done requests (queued by their ctxid_elt, only if there are multiple ctxids) */
     struct list_head done_req_q;
   } * ctxid;
 
@@ -423,10 +423,10 @@ enum omx__request_state {
 struct omx__generic_request {
   /* main queue elt, linked to one of the endpoint queues */
   struct list_head queue_elt;
-  /* done queue for any ctxid elt, queued to the endpoint doneq when ready to be completed */
-  struct list_head done_anyctxid_elt;
-  /* done queue for specific ctxid elt, queued to the endpoint doneq when ready to be completed */
-  struct list_head done_ctxid_elt;
+  /* done queue elt, queued to the endpoint main doneq when ready to be completed */
+  struct list_head done_elt;
+  /* queue for specific ctxid elt, queued to an endpoint ctxid doneq when ready to be completed */
+  struct list_head ctxid_elt;
   /* partner specific queue elt, either for partial receive, or for non-acked request (cannot be both) */
   struct list_head partner_elt;
 
