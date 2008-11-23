@@ -541,6 +541,10 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_myself;
   }
 
+  /* init lib specific fieds */
+  ep->unexp_handler = NULL;
+  ep->progression_disabled = 0;
+
   INIT_LIST_HEAD(&ep->anyctxid.done_req_q);
 
   for(i=0; i<ep->ctxid_max; i++) {
@@ -548,10 +552,6 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     INIT_LIST_HEAD(&ep->ctxid[i].recv_req_q);
     INIT_LIST_HEAD(&ep->ctxid[i].done_req_q);
   }
-
-  /* init lib specific fieds */
-  ep->unexp_handler = NULL;
-  ep->progression_disabled = 0;
 
   INIT_LIST_HEAD(&ep->need_resources_send_req_q);
   INIT_LIST_HEAD(&ep->driver_mediumsq_sending_req_q);
