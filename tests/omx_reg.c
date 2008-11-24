@@ -59,13 +59,40 @@ do_deregister(int fd, int id)
   return ioctl(fd, OMX_CMD_DESTROY_USER_REGION, &dereg);
 }
 
-int main(void)
+static void
+usage(int argc, char *argv[])
+{
+  fprintf(stderr, "%s [options]\n", argv[0]);
+  fprintf(stderr, " -l <n>\tchange buffer length [%d]\n", LENGTH);
+  fprintf(stderr, " -N <n>\tchange the number of iterations [%d]\n", ITER);
+}
+
+int main(int argc, char *argv[])
 {
   int fd, ret;
   struct omx_cmd_open_endpoint open_param;
   int i;
   struct timeval tv1, tv2;
   char *buffer1, *buffer2;
+  char c;
+  int length = LENGTH;
+  int iter = ITER;
+
+  while ((c = getopt(argc, argv, "l:N:h")) != -1)
+    switch (c) {
+    case 'l':
+      length = atoi(optarg);
+      break;
+    case 'N':
+      iter = atoi(optarg);
+      break;
+    default:
+      fprintf(stderr, "Unknown option -%c\n", c);
+    case 'h':
+      usage(argc, argv);
+      exit(-1);
+      break;
+    }
 
   fd = open(OMX_MAIN_DEVICE_NAME, O_RDWR);
   if (fd < 0) {
@@ -80,22 +107,22 @@ int main(void)
     perror("attach endpoint");
     goto out_with_fd;
   }
-  fprintf(stderr, "Successfully attached endpoint %d/%d\n", 0, 34);
+  fprintf(stderr, "Successfully attached endpoint %d/%d\n", 0, EP);
 
-  buffer1 = malloc(LENGTH);
-  buffer2 = malloc(LENGTH);
+  buffer1 = malloc(length);
+  buffer2 = malloc(length);
   if (!buffer1 || !buffer2) {
     fprintf(stderr, "Failed to allocate buffers\n");
     goto out_with_fd;
   }
 
-  ret = do_register(fd, 34, buffer1, LENGTH, buffer2, LENGTH);
+  ret = do_register(fd, 34, buffer1, length, buffer2, length);
   if (ret < 0) {
     fprintf(stderr, "Failed to register (%m)\n");
     goto out_with_fd;
   }
 
-  ret = do_register(fd, 34, buffer1, LENGTH, buffer2, LENGTH);
+  ret = do_register(fd, 34, buffer1, length, buffer2, length);
   if (ret < 0) {
     fprintf(stderr, "Successfully couldn't register window again (%m)\n");
   }
@@ -113,9 +140,9 @@ int main(void)
 
   gettimeofday(&tv1, NULL);
 
-  for(i=0; i<ITER; i++) {
+  for(i=0; i<iter; i++) {
 
-    ret = do_register(fd, 34, buffer1, LENGTH, buffer2, LENGTH);
+    ret = do_register(fd, 34, buffer1, length, buffer2, length);
     if (ret < 0) {
       fprintf(stderr, "Failed to register (%m)\n");
       goto out_with_fd;
@@ -129,7 +156,9 @@ int main(void)
   }
 
   gettimeofday(&tv2, NULL);
-  printf("%lld us\n", (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
+  printf("%d times register %d bytes => %lld us\n",
+	 iter, length,
+	 (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec));
 
   free(buffer2);
   free(buffer1);
