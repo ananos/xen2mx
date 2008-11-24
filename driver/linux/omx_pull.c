@@ -570,40 +570,19 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
  */
 static INLINE struct omx_pull_handle *
 omx_pull_handle_create(struct omx_endpoint * endpoint,
+		       struct omx_user_region * region,
 		       struct omx_cmd_pull * cmd)
 {
 	struct omx_pull_handle * handle;
-	struct omx_user_region * region;
 	int i;
 	int err;
-
-	/* acquire the region */
-	region = omx_user_region_acquire(endpoint, cmd->local_rdma_id);
-	if (unlikely(!region)) {
-		err = -EINVAL;
-		goto out;
-	}
-
-	if (!omx_pin_synchronous) {
-		/* make sure the region is pinned */
-		struct omx_user_region_pin_state pinstate;
-
-		omx_user_region_demand_pin_init(&pinstate, region);
-		pinstate.next_chunk_pages = omx_pin_chunk_pages_max;
-		err = omx_user_region_demand_pin_finish(&pinstate);
-		/* FIXME: deal with omx_pin_progressive (will be _or_parallel) */
-		if (err < 0) {
-			dprintk(REG, "failed to pin user region\n");
-			goto out_with_region;
-		}
-	}
 
 	/* alloc the pull handle */
 	handle = kmalloc(sizeof(struct omx_pull_handle), GFP_KERNEL);
 	if (unlikely(!handle)) {
 		printk(KERN_INFO "Open-MX: Failed to allocate a pull handle\n");
 		err = -ENOMEM;
-		goto out_with_region;
+		goto out;
 	}
 	/* initialize the lock, we will acquire it soon */
 	spin_lock_init(&handle->lock);
@@ -684,8 +663,6 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	spin_unlock(&handle->lock);
  out_with_handle:
 	kfree(handle);
- out_with_region:
-	omx_user_region_release(region);
  out:
 	return ERR_PTR(err);
 }
@@ -874,6 +851,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 {
 	struct omx_cmd_pull cmd;
 	struct omx_pull_handle * handle;
+	struct omx_user_region * region;
 	struct omx_iface * iface = endpoint->iface;
 	struct sk_buff * skb, * skbs[OMX_PULL_BLOCK_DESCS_NR] = { NULL };
 	uint32_t block_length;
@@ -893,11 +871,32 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		return omx_shared_pull(endpoint, &cmd);
 #endif
 
+	/* acquire the region */
+	region = omx_user_region_acquire(endpoint, cmd.local_rdma_id);
+	if (unlikely(!region)) {
+		err = -EINVAL;
+		goto out;
+	}
+
+	if (!omx_pin_synchronous) {
+		/* make sure the region is pinned */
+		struct omx_user_region_pin_state pinstate;
+
+		omx_user_region_demand_pin_init(&pinstate, region);
+		pinstate.next_chunk_pages = omx_pin_chunk_pages_max;
+		err = omx_user_region_demand_pin_finish(&pinstate);
+		/* FIXME: deal with omx_pin_progressive (will be _or_parallel) */
+		if (err < 0) {
+			dprintk(REG, "failed to pin user region\n");
+			goto out_with_region;
+		}
+	}
+
 	/* create, acquire and lock the handle */
-	handle = omx_pull_handle_create(endpoint, &cmd);
+	handle = omx_pull_handle_create(endpoint, region, &cmd);
 	if (IS_ERR(handle)) {
 		err = PTR_ERR(handle);
-		goto out;
+		goto out_with_region;
 	}
 
 	/* tell the sparse checker that the lock has been taken by omx_pull_handle_create() */
@@ -961,6 +960,8 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 
 	return 0;
 
+ out_with_region:
+	omx_user_region_release(region);
  out:
 	return err;
 }
