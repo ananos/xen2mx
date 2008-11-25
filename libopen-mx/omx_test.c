@@ -223,17 +223,15 @@ void
 omx__forget(struct omx_endpoint *ep, union omx_request *req)
 {
   if (req->generic.state == OMX_REQUEST_STATE_DONE) {
-    /* want to forget a request that is ready to complete? just complete it and ignore the return value */
-    struct omx_status dummy;
-    omx__test_success(ep, req, &dummy);
+    /* just dequeue and free */
+    omx__dequeue_done_request(ep, req);
+    omx__request_free(ep, req);
   } else {
     /* mark as zombie and let the real completion delete it later */
     if (req->generic.state & OMX_REQUEST_STATE_DONE) {
       /* remove from the done queue since the application doesn't want any completion */
       req->generic.state &= ~OMX_REQUEST_STATE_DONE;
-      list_del(&req->generic.done_elt);
-      if (unlikely(HAS_CTXIDS(ep)))
-        list_del(&req->generic.ctxid_elt);
+      omx__dequeue_done_request(ep, req);
     }
     req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
     ep->zombies++;
