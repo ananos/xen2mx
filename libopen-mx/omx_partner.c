@@ -272,8 +272,11 @@ omx__connect_myself(struct omx_endpoint *ep)
     /* let open_endpoint handle the error */
     return ret;
 
+  /* connect seqnums and sessions for real */
   ep->myself->next_send_seq = OMX__SEQNUM(1);
   ep->myself->next_acked_send_seq = OMX__SEQNUM(1);
+  ep->myself->next_match_recv_seq = OMX__SEQNUM(1);
+  ep->myself->next_frag_recv_seq = OMX__SEQNUM(1);
   ep->myself->true_session_id = ep->desc->session_id;
   ep->myself->back_session_id = ep->desc->session_id;
 
