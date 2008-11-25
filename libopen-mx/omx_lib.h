@@ -445,6 +445,9 @@ omx__progress(struct omx_endpoint * ep);
 extern void
 omx__notify_user_event(struct omx_endpoint *ep);
 
+extern void
+omx__forget(struct omx_endpoint *ep, union omx_request *req);
+
 /* connect management */
 
 extern omx_return_t

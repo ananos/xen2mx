@@ -218,6 +218,28 @@ omx_wait(struct omx_endpoint *ep, union omx_request **requestp,
   return ret;
 }
 
+/* mark a request as zombie, assuming it wasn't already */
+void
+omx__forget(struct omx_endpoint *ep, union omx_request *req)
+{
+  if (req->generic.state == OMX_REQUEST_STATE_DONE) {
+    /* want to forget a request that is ready to complete? just complete it and ignore the return value */
+    struct omx_status dummy;
+    omx__test_success(ep, req, &dummy);
+  } else {
+    /* mark as zombie and let the real completion delete it later */
+    if (req->generic.state & OMX_REQUEST_STATE_DONE) {
+      /* remove from the done queue since the application doesn't want any completion */
+      req->generic.state &= ~OMX_REQUEST_STATE_DONE;
+      list_del(&req->generic.done_elt);
+      if (unlikely(HAS_CTXIDS(ep)))
+        list_del(&req->generic.ctxid_elt);
+    }
+    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
+    ep->zombies++;
+  }
+}
+
 /* API omx_forget */
 omx_return_t
 omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
@@ -226,24 +248,8 @@ omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
 
   OMX__ENDPOINT_LOCK(ep);
 
-  if (!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE)) {
-    if (req->generic.state == OMX_REQUEST_STATE_DONE) {
-      /* want to forget a request that is ready to complete? just complete it and ignore the return value */
-      struct omx_status dummy;
-      omx__test_success(ep, req, &dummy);
-    } else {
-      /* mark as zombie and let the real completion delete it later */
-      if (req->generic.state & OMX_REQUEST_STATE_DONE) {
-	/* remove from the done queue since the application doesn't want any completion */
-	req->generic.state &= ~OMX_REQUEST_STATE_DONE;
-	list_del(&req->generic.done_elt);
-	if (unlikely(HAS_CTXIDS(ep)))
-	  list_del(&req->generic.ctxid_elt);
-      }
-      req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-      ep->zombies++;
-    }
-  }
+  if (!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE))
+    omx__forget(ep, req);
 
   OMX__ENDPOINT_UNLOCK(ep);
 
