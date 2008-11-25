@@ -1107,8 +1107,7 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_segs * reqsegs,
   if (requestp) {
     *requestp = req;
   } else {
-    req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-    ep->zombies++;
+    omx__forget(ep, req);
   }
 
   return OMX_SUCCESS;
