@@ -233,11 +233,14 @@ omx_forget(struct omx_endpoint *ep, union omx_request **requestp)
       omx__test_success(ep, req, &dummy);
     } else {
       /* mark as zombie and let the real completion delete it later */
-      req->generic.state &= ~OMX_REQUEST_STATE_DONE;
+      if (req->generic.state & OMX_REQUEST_STATE_DONE) {
+	/* remove from the done queue since the application doesn't want any completion */
+	req->generic.state &= ~OMX_REQUEST_STATE_DONE;
+	list_del(&req->generic.done_elt);
+	if (unlikely(HAS_CTXIDS(ep)))
+	  list_del(&req->generic.ctxid_elt);
+      }
       req->generic.state |= OMX_REQUEST_STATE_ZOMBIE;
-      list_del(&req->generic.done_elt);
-      if (unlikely(HAS_CTXIDS(ep)))
-	list_del(&req->generic.ctxid_elt);
       ep->zombies++;
     }
   }
