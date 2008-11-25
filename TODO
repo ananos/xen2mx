@@ -1,6 +1,8 @@
 * single cmd to send the whole mediumsq message, with single done event ?
   + less pipelining
 
+* add an option to enable paranoid debug request checks from the configure line
+
 * only enable counters by default in debug mode
   + add --enable-counters
 
@@ -51,8 +53,6 @@
 
 * drop the iface endpoint array mutex and use the big ifaces mutex?
 * drop the peer mutex as well since we have rcu everywhere?
-
-* allow to probe across ctxids by adding a anyctxid unexpq
 
 * cleanup the idr+BHlock for handles
   + sleep if not enough slot available

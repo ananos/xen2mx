@@ -562,13 +562,25 @@ omx__iprobe_common(struct omx_endpoint *ep,
 		   uint64_t match_info, uint64_t match_mask,
 		   omx_status_t *status)
 {
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
 
-  omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
-    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
-      memcpy(status, &req->generic.status, sizeof(*status));
-      return 1;
+  if (likely(!HAS_CTXIDS(ep) || MATCHING_CROSS_CTXIDS(ep, match_mask))) {
+    /* no ctxids, or matching across multiple ctxids, so use the anyctxid queue */
+    omx__foreach_request(&ep->anyctxid.unexp_req_q, req) {
+      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
+	memcpy(status, &req->generic.status, sizeof(*status));
+	return 1;
+      }
+    }
+ 
+  } else {
+    /* use one of the ctxid queues */
+    uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
+    omx__foreach_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req) {
+      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
+	memcpy(status, &req->generic.status, sizeof(*status));
+	return 1;
+      }
     }
   }
 
@@ -587,14 +599,6 @@ omx_iprobe(struct omx_endpoint *ep, uint64_t match_info, uint64_t match_mask,
     ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
 			     "iprobe with match info %llx mask %llx",
 			     (unsigned long long) match_info, (unsigned long long) match_mask);
-    goto out;
-  }
-
-  /* check that there's no wildcard in the context id range */
-  if (unlikely(ep->ctxid_mask & ~match_mask)) {
-    ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
-			     "iprobe with match mask %llx and ctxid mask %llx",
-			     (unsigned long long) match_mask, ep->ctxid_mask);
     goto out;
   }
 
@@ -630,14 +634,6 @@ omx_probe(struct omx_endpoint *ep,
     ret = omx__error_with_ep(ep, OMX_BAD_MATCH_MASK,
 			     "probe with match info %llx mask %llx",
 			     (unsigned long long) match_info, (unsigned long long) match_mask);
-    goto out;
-  }
-
-  /* check that there's no wildcard in the context id range */
-  if (unlikely(ep->ctxid_mask & ~match_mask)) {
-    ret = omx__error_with_ep(ep, OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK,
-			     "probe with match mask %llx and ctxid mask %llx",
-			     (unsigned long long) match_mask, ep->ctxid_mask);
     goto out;
   }
 
