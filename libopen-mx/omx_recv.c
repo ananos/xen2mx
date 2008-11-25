@@ -999,6 +999,83 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
  * Main IRECV and IRECVV routines
  */
 
+static INLINE void
+omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
+				 union omx_request *req,
+				 struct omx__req_segs * reqsegs,
+				 void *context)
+{
+  void * unexp_buffer;
+  uint32_t msg_length;
+  uint32_t xfer_length;
+
+  omx___dequeue_request(req);
+
+  /* get the unexp buffer and store the new segments */
+  unexp_buffer = OMX_SEG_PTR(&req->recv.segs.single);
+  memcpy(&req->recv.segs, reqsegs, sizeof(*reqsegs));
+
+  /* compute xfer_length */
+  msg_length = req->generic.status.msg_length;
+  xfer_length = req->recv.segs.total_length < msg_length ? req->recv.segs.total_length : msg_length;
+  req->generic.status.xfer_length = xfer_length;
+
+  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV);
+  req->generic.state &= ~OMX_REQUEST_STATE_UNEXPECTED_RECV;
+
+  req->generic.status.context = context;
+
+  if (unlikely(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE)) {
+    /* it's a large message, queue the recv large */
+    omx__submit_pull(ep, req);
+
+  } else if (unlikely(req->generic.type == OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED)) {
+    /* it's a unexpected from self, we need to complete the corresponding send */
+    union omx_request *sreq = req->recv.specific.self_unexp.sreq;
+    omx_return_t status_code = xfer_length < msg_length ? OMX_MESSAGE_TRUNCATED : OMX_SUCCESS;
+
+    omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length);
+    if (msg_length)
+      free(unexp_buffer);
+    omx__recv_complete(ep, req, status_code);
+
+    omx__debug_assert(sreq->generic.state & OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND);
+    sreq->generic.state &= ~OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND;
+    omx__dequeue_request(&ep->unexp_self_send_req_q, sreq);
+    sreq->generic.status.xfer_length = xfer_length;
+    omx__send_complete(ep, sreq, status_code);
+
+    /*
+     * need to wakeup some possible send-done or recv-done waiters
+     * since this event does not come from the driver
+     */
+    omx__notify_user_event(ep);
+
+  } else {
+    /* it's a tiny/small/medium, copy the data back to our buffer */
+
+    omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length); /* FIXME: could just copy what has been received */
+    if (msg_length)
+      free(unexp_buffer);
+
+    if (unlikely(req->generic.state)) {
+      omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);
+      /* no need to reset the scan_state, the unexpected buffer didn't use it since it's contigous */
+#ifdef OMX_LIB_DEBUG
+      omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
+#endif
+    } else {
+      omx__recv_complete(ep, req, OMX_SUCCESS);
+
+      /*
+       * need to wakeup some possible recv-done waiters
+       * since this event does not come from the driver
+       */
+      omx__notify_user_event(ep);
+    }
+  }
+}
+
 static INLINE omx_return_t
 omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_segs * reqsegs,
 		uint64_t match_info, uint64_t match_mask,
@@ -1007,80 +1084,11 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_segs * reqsegs,
   union omx_request * req;
   omx_return_t ret;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
-  uint32_t msg_length;
-  uint32_t xfer_length;
 
   omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
     if (likely((req->generic.status.match_info & match_mask) == match_info)) {
       /* matched an unexpected */
-      void * unexp_buffer;
-
-      /* get the unexp buffer and store the new segments */
-      unexp_buffer = OMX_SEG_PTR(&req->recv.segs.single);
-      memcpy(&req->recv.segs, reqsegs, sizeof(*reqsegs));
-
-      omx___dequeue_request(req);
-
-      /* compute xfer_length */
-      msg_length = req->generic.status.msg_length;
-      xfer_length = req->recv.segs.total_length < msg_length ? req->recv.segs.total_length : msg_length;
-      req->generic.status.xfer_length = xfer_length;
-
-      omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV);
-      req->generic.state &= ~OMX_REQUEST_STATE_UNEXPECTED_RECV;
-
-      req->generic.status.context = context;
-
-      if (unlikely(req->generic.type == OMX_REQUEST_TYPE_RECV_LARGE)) {
-	/* it's a large message, queue the recv large */
-	omx__submit_pull(ep, req);
-
-      } else if (unlikely(req->generic.type == OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED)) {
-	/* it's a unexpected from self, we need to complete the corresponding send */
-	union omx_request *sreq = req->recv.specific.self_unexp.sreq;
-	omx_return_t status_code = xfer_length < msg_length ? OMX_MESSAGE_TRUNCATED : OMX_SUCCESS;
-
-	omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length);
-	if (msg_length)
-	  free(unexp_buffer);
-	omx__recv_complete(ep, req, status_code);
-
-	omx__debug_assert(sreq->generic.state & OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND);
-	sreq->generic.state &= ~OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND;
-	omx__dequeue_request(&ep->unexp_self_send_req_q, sreq);
-	sreq->generic.status.xfer_length = xfer_length;
-	omx__send_complete(ep, sreq, status_code);
-
-	/*
-	 * need to wakeup some possible send-done or recv-done waiters
-	 * since this event does not come from the driver
-	 */
-	omx__notify_user_event(ep);
-
-      } else {
-	/* it's a tiny/small/medium, copy the data back to our buffer */
-
-	omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length); /* FIXME: could just copy what has been received */
-	if (msg_length)
-	  free(unexp_buffer);
-
-	if (unlikely(req->generic.state)) {
-	  omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);
-	  /* no need to reset the scan_state, the unexpected buffer didn't use it since it's contigous */
-#ifdef OMX_LIB_DEBUG
-	  omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
-#endif
-	} else {
-	  omx__recv_complete(ep, req, OMX_SUCCESS);
-
-	  /*
-	   * need to wakeup some possible recv-done waiters
-	   * since this event does not come from the driver
-	   */
-	  omx__notify_user_event(ep);
-	}
-      }
-
+      omx__complete_unexp_req_as_irecv(ep, req, reqsegs, context);
       goto ok;
     }
   }
