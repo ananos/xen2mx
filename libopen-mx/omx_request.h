@@ -148,6 +148,43 @@ list_for_each_entry(req, head, generic.queue_elt)
 #define omx__foreach_request_safe(head, req, next)	\
 list_for_each_entry_safe(req, next, head, generic.queue_elt)
 
+/*********************************
+ * Request ctxid queue management
+ */
+
+static inline void
+omx__enqueue_ctxid_request(struct list_head *head,
+			   union omx_request *req)
+{
+  list_add_tail(&req->generic.ctxid_elt, head);
+}
+
+static inline void
+omx___dequeue_ctxid_request(union omx_request *req)
+{
+  list_del(&req->generic.ctxid_elt);
+}
+
+static inline void
+omx__dequeue_ctxid_request(struct list_head *head,
+			   union omx_request *req)
+{
+#ifdef OMX_LIB_DEBUG
+  struct list_head *e;
+  list_for_each(e, head)
+    if (req == list_entry(e, union omx_request, generic.ctxid_elt))
+      goto found;
+
+  omx__abort(NULL, "Failed to find request in ctxid queue for dequeueing\n");
+
+ found:
+#endif /* OMX_LIB_DEBUG */
+  omx___dequeue_ctxid_request(req);
+}
+
+#define omx__foreach_ctxid_request(head, req)	\
+list_for_each_entry(req, head, generic.ctxid_elt)
+
 /********************************
  * Done request queue management
  */

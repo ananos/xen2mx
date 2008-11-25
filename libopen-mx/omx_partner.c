@@ -772,7 +772,6 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   union omx_request *req, *next;
   struct omx__early_packet *early, *next_early;
-  uint32_t ctxid;
   int count;
 
   omx__board_addr_sprintf(board_addr_str, partner->board_addr);
@@ -878,12 +877,15 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
 
     /* dequeue and complete with status error */
     omx___dequeue_partner_request(req);
-    if(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
-      omx__dequeue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+    if(unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
+      omx__dequeue_request(&ep->anyctxid.unexp_req_q, req);
+      if (unlikely(HAS_CTXIDS(ep)))
+	omx__dequeue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
 #ifdef OMX_LIB_DEBUG
-    else
+    } else {
       omx__dequeue_request(&ep->partial_medium_recv_req_q, req);
 #endif
+    }
 
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
     omx__recv_complete(ep, req, OMX_REMOTE_ENDPOINT_UNREACHABLE);
@@ -912,23 +914,21 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
    * Take them in the endpoint unexp_req_q.
    */
   count = 0;
-  for(ctxid=0; ctxid < ep->ctxid_max; ctxid++) {
-    omx__foreach_request_safe(&ep->ctxid[ctxid].unexp_req_q, req, next) {
-      if (req->generic.partner != partner)
-        continue;
+  omx__foreach_request_safe(&ep->anyctxid.unexp_req_q, req, next) {
+    if (req->generic.partner != partner)
+      continue;
 
-      omx__debug_printf(CONNECT, ep, "Dropping unexpected recv %p\n", req);
+    omx__debug_printf(CONNECT, ep, "Dropping unexpected recv %p\n", req);
 
-      /* drop it and that's it */
-      omx___dequeue_request(req);
-      if (req->generic.type != OMX_REQUEST_TYPE_RECV_LARGE
-	  && req->generic.status.msg_length > 0)
-	/* release the single segment used for unexp buffer */
-	free(OMX_SEG_PTR(&req->recv.segs.single));
-      omx__request_free(ep, req);
+    /* drop it and that's it */
+    omx___dequeue_request(req);
+    if (req->generic.type != OMX_REQUEST_TYPE_RECV_LARGE
+	&& req->generic.status.msg_length > 0)
+      /* release the single segment used for unexp buffer */
+      free(OMX_SEG_PTR(&req->recv.segs.single));
+    omx__request_free(ep, req);
 
-      count++;
-    }
+    count++;
   }
   if (count)
     omx__printf(ep, "Dropped %d unexpected message from partner\n", count);

@@ -192,7 +192,7 @@ omx__dump_endpoint(struct omx_endpoint *ep)
     omx__dump_req_ctxidq("Done                  ", &ep->ctxid[0].done_req_q, ep->ctxid_max, sizeof(ep->ctxid[0]));
   } else {
     omx__dump_req_q("Recv                  ", &ep->ctxid[0].recv_req_q);
-    omx__dump_req_q("Unexpected            ", &ep->ctxid[0].unexp_req_q);
+    omx__dump_req_q("Unexpected            ", &ep->anyctxid.unexp_req_q); /* ctxid[0].unexp_req_q unused if no ctxids */
     omx__dump_req_q("Done                  ", &ep->anyctxid.done_req_q); /* ctxid[0].done_req_q unused if no ctxids */
   }
   omx__dump_req_q("Missing resources     ", &ep->need_resources_send_req_q);

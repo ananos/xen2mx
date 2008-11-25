@@ -546,6 +546,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->progression_disabled = 0;
 
   INIT_LIST_HEAD(&ep->anyctxid.done_req_q);
+  INIT_LIST_HEAD(&ep->anyctxid.unexp_req_q);
 
   for(i=0; i<ep->ctxid_max; i++) {
     INIT_LIST_HEAD(&ep->ctxid[i].unexp_req_q);
@@ -829,12 +830,15 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep)
       /* cannot be done */
       omx__destroy_unlinked_request_on_close(ep, req);
     }
+  }
 
-    omx__foreach_request_safe(&ep->ctxid[i].unexp_req_q, req, next) {
-      omx___dequeue_request(req);
-      /* cannot be done */
-      omx__destroy_unlinked_request_on_close(ep, req);
-    }
+  /* free unexp reqs */
+  omx__foreach_request_safe(&ep->anyctxid.unexp_req_q, req, next) {
+    omx___dequeue_request(req);
+    if (unlikely(HAS_CTXIDS(ep)))
+      omx___dequeue_ctxid_request(req);
+    /* cannot be done */
+    omx__destroy_unlinked_request_on_close(ep, req);
   }
 
   /* free need_resources reqs */
@@ -918,13 +922,13 @@ omx__request_alloc_check(struct omx_endpoint *ep)
       if (omx__globals.check_request_alloc > 2)
         omx__verbose_printf(ep, "Found %d requests in recv queue #%d\n", j, i);
     }
+  }
 
-    j = omx__queue_count(&ep->ctxid[i].unexp_req_q);
-    if (j > 0) {
-      nr += j;
-      if (omx__globals.check_request_alloc > 2)
-        omx__verbose_printf(ep, "Found %d requests in unexp queue #%d\n", j, i);
-    }
+  j = omx__queue_count(&ep->anyctxid.unexp_req_q);
+  if (j > 0) {
+    nr += j;
+    if (omx__globals.check_request_alloc > 2)
+      omx__verbose_printf(ep, "Found %d requests in unexp queue #%d\n", j, i);
   }
 
   j = omx__queue_count(&ep->need_resources_send_req_q);

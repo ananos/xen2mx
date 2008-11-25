@@ -237,10 +237,13 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 
   omx_copy_to_segments(&req->recv.segs, msg->specific.tiny.data, msg_length);
 
-  if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
-    omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
-  else
+  if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
+    omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
+    if (unlikely(HAS_CTXIDS(ep)))
+      omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
+  } else {
     omx__recv_complete(ep, req, OMX_SUCCESS);
+  }
 }
 
 void
@@ -253,10 +256,13 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 
   omx_copy_to_segments(&req->recv.segs, data, msg_length);
 
-  if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
-    omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
-  else
+  if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
+    omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
+    if (unlikely(HAS_CTXIDS(ep)))
+      omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
+  } else {
     omx__recv_complete(ep, req, OMX_SUCCESS);
+  }
 }
 
 static INLINE void
@@ -293,12 +299,15 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 		      (unsigned) frag_seqnum,
 		      (unsigned) OMX__SEQNUM(req->recv.seqnum),
 		      (unsigned) OMX__SESNUM_SHIFTED(req->recv.seqnum));
-    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
-      omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
+      omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
+      if (unlikely(HAS_CTXIDS(ep)))
+	omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
 #ifdef OMX_LIB_DEBUG
-    else
+    } else {
       omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
 #endif
+    }
     return;
   }
 
@@ -326,10 +335,13 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
       omx__dequeue_partner_request(&partner->partial_medium_recv_req_q, req);
 
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
-    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
-      omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
-    else
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
+      omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
+      if (unlikely(HAS_CTXIDS(ep)))
+	omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
+    } else {
       omx__recv_complete(ep, req, OMX_SUCCESS);
+    }
 
   } else {
     /* more frags missing */
@@ -342,12 +354,15 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
       omx__enqueue_partner_request(&partner->partial_medium_recv_req_q, req);
     }
 
-    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
-      omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
+      omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
+      if (unlikely(HAS_CTXIDS(ep)))
+	omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
 #ifdef OMX_LIB_DEBUG
-    else
+    } else {
       omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
 #endif
+    }
   }
 }
 
@@ -375,7 +390,9 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
   req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
 
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
-    omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+    omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
+    if (unlikely(HAS_CTXIDS(ep)))
+      omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
   } else {
     omx__submit_pull(ep, req);
   }
@@ -582,12 +599,15 @@ omx__continue_partial_request(struct omx_endpoint *ep,
   omx__foreach_partner_request(&partner->partial_medium_recv_req_q, req) {
     omx__seqnum_t req_index = OMX__SEQNUM(req->recv.seqnum - partner->next_frag_recv_seq);
     if (likely(req_index == new_index)) {
-      if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))
-	omx__dequeue_request(&ep->ctxid[ctxid].unexp_req_q, req);
+      if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
+	omx__dequeue_request(&ep->anyctxid.unexp_req_q, req);
+	if (unlikely(HAS_CTXIDS(ep)))
+	  omx__dequeue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
 #ifdef OMX_LIB_DEBUG
-      else
+      } else {
 	omx__dequeue_request(&ep->partial_medium_recv_req_q, req);
 #endif
+      }
       omx__process_recv_medium_frag(ep, partner, req,
 				    msg, data, msg_length);
       omx__update_partner_next_frag_recv_seq(ep, partner);
@@ -893,7 +913,9 @@ omx__process_self_send(struct omx_endpoint *ep,
 
     rreq->recv.specific.self_unexp.sreq = sreq;
     omx_copy_from_segments(unexp_buffer, &sreq->send.segs, msg_length);
-    omx__enqueue_request(&ep->ctxid[ctxid].unexp_req_q, rreq);
+    omx__enqueue_request(&ep->anyctxid.unexp_req_q, rreq);
+    if (unlikely(HAS_CTXIDS(ep)))
+      omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, rreq);
 
     /* self communication are always synchronous,
      * the send will be completed on matching
@@ -1010,6 +1032,8 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
   uint32_t xfer_length;
 
   omx___dequeue_request(req);
+  if (unlikely(HAS_CTXIDS(ep)))
+    omx___dequeue_ctxid_request(req);
 
   /* get the unexp buffer and store the new segments */
   unexp_buffer = OMX_SEG_PTR(&req->recv.segs.single);
@@ -1081,15 +1105,25 @@ omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_segs * reqsegs,
 		uint64_t match_info, uint64_t match_mask,
 		void *context, union omx_request **requestp)
 {
+  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req;
   omx_return_t ret;
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
 
-  omx__foreach_request(&ep->ctxid[ctxid].unexp_req_q, req) {
-    if (likely((req->generic.status.match_info & match_mask) == match_info)) {
-      /* matched an unexpected */
-      omx__complete_unexp_req_as_irecv(ep, req, reqsegs, context);
-      goto ok;
+  if (unlikely(HAS_CTXIDS(ep))) {
+    omx__foreach_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req) {
+      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
+	/* matched an unexpected in the ctxid queue */
+	omx__complete_unexp_req_as_irecv(ep, req, reqsegs, context);
+	goto ok;
+      }
+    }
+  } else {
+    omx__foreach_request(&ep->anyctxid.unexp_req_q, req) {
+      if (likely((req->generic.status.match_info & match_mask) == match_info)) {
+	/* matched an unexpected in the anyctxid queue */
+	omx__complete_unexp_req_as_irecv(ep, req, reqsegs, context);
+	goto ok;
+      }
     }
   }
 

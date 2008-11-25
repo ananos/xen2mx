@@ -259,11 +259,13 @@ struct omx_endpoint {
   struct {
     /* done requests (queued by their done_elt) */
     struct list_head done_req_q;
+    /* unexpected receive, may be partial (queued by their queue_elt) */
+    struct list_head unexp_req_q;
   } anyctxid;
 
   /* context id array for multiplexed queues */
   struct {
-    /* unexpected receive, may be partial (queued by their queue_elt) */
+    /* unexpected receive, may be partial (queued by their ctxid_elt, only if there are multiple ctxids) */
     struct list_head unexp_req_q;
     /* posted non-matched receive (queued by their queue_elt) */
     struct list_head recv_req_q;
@@ -368,8 +370,8 @@ enum omx__request_type {
  *   NEED_REPLY: ep->large_send_req_q
  *   NEED_ACK (unlikely): ep->non_acked_req_q + partner->non_acked_req_q
  * RECV (not RECV_LARGE):
- *   UNEXPECTED_RECV: ep->ctxid[].unexp_req_q
- *   UNEXPECTED_RECV | RECV_PARTIAL: ep->ctxid[].unexp_req_q + partner->partial_medium_recv_req_q
+ *   UNEXPECTED_RECV: ep->unexp_req_q
+ *   UNEXPECTED_RECV | RECV_PARTIAL: ep->unexp_req_q + partner->partial_medium_recv_req_q
  *   RECV_PARTIAL: ep->partial_medium_recv_req_q(DBG) + partner->partial_medium_recv_req_q
  * RECV_LARGE:
  *   DRIVER_PULLING: ep->driver_pulling_req_q
