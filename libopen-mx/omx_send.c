@@ -173,7 +173,7 @@ omx__submit_isend_tiny(struct omx_endpoint *ep,
   req->generic.status.msg_length = length;
   req->generic.status.xfer_length = length; /* truncation not notified to the sender */
 
-  if (unlikely(omx__empty_queue(&ep->need_resources_send_req_q))) {
+  if (likely(omx__empty_queue(&ep->need_resources_send_req_q))) {
     omx__alloc_setup_isend_tiny(ep, partner, req);
   } else {
     /* some requests are delayed, do not submit, queue as well */
