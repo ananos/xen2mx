@@ -8,6 +8,14 @@ Caveats:
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
 
+Open-MX 1.0.2 (November 26th 2008, svn/open-mx-1.0.x r2185)
+===========================================================
+Bug Fixes:
+* Fix the management of delayed tiny send requests.
+* Fix the management of forgotten requests.
+* Make sure the kernel thread does not seem to increase the host load.
+* Misc minor pinning-related fixes.
+
 Open-MX 1.0.1 (October 26th 2008, svn/open-mx-1.0.x r2131)
 ==========================================================
 Bug Fixes:
