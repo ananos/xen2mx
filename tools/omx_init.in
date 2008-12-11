@@ -95,8 +95,8 @@ unload_omx() {
 
 # Load the Open-MX module
 load_omx() {
-    echo "Loading Open-MX driver"
-    params=" $OMX_MODULE_PARAMS $*"
+    params="$OMX_MODULE_PARAMS $module_params"
+    echo "Loading Open-MX driver (with $params)"
     module=${OMX_MODULE}
 
     if ! test -f $module; then
