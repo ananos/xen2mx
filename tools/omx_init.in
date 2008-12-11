@@ -54,9 +54,10 @@ usage () {
 	exit 1
 }
 
-[ $# -eq 0 ] && usage
+cmd=
+module_params=
 
-while [ ${1##--} != $1 ] ; do
+while [ $# -ne 0 ] ; do
     if [ $1 = "--dynamic-peers" ] ; then
 	OMX_STATIC_MAPPING=0
     else if [ ${1##--dynamic-peers=} != $1 ] ; then
@@ -69,12 +70,17 @@ while [ ${1##--} != $1 ] ; do
 	OMX_PEERS_FILE=${1##--static-peers=}
     else if [ ${1##--module=} != $1 ] ; then
 	OMX_MODULE=${1##--module=}
-    else
+    else if [ ${1##--} != $1 ] ; then
 	usage
-    fi fi fi fi fi
+    else if [ -z "$cmd" ] ; then
+	cmd=$1
+    else
+	module_params="$module_params $1"
+    fi fi fi fi fi fi fi
     shift
-    [ $# -eq 0 ] && usage
 done
+
+[ -z "$cmd" ] && usage
 
 OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${IFACES}"
 
@@ -208,12 +214,9 @@ kill_peer_discovery() {
     sleep 1
 }
 
-cmd="$1"
-shift
-
 case "$cmd" in
     start)
-	load_omx "$@"
+	load_omx
 	start_peer_discovery
 	;;
     stop)
@@ -228,7 +231,7 @@ case "$cmd" in
     restart)
 	stop_peer_discovery
 	unload_omx
-	load_omx "$@"
+	load_omx
 	start_peer_discovery
         ;;
     start-discovery)
@@ -254,6 +257,7 @@ case "$cmd" in
 	fi
 	;;
     *)
+	echo "Unknown command: $cmd"
 	usage
 esac
 
