@@ -12,6 +12,12 @@
 # Description:       Starts the Open-MX driver
 ### END INIT INFO
 
+# The following configuration variable may be defined in the OMX_CONFIG
+# file or in the environment:
+#  OMX_IFACES (which interfaces should be attached by the driver on load)
+#  OMX_MODULE_PARAMS (module parameters to be passed to the driver)
+#  OMX_MODULE_DEPENDS (other modules that should be loaded first, useful if modinfo is missing)
+
 # Note that this is replaced by make install, not configure!
 OMX_PREFIX=@omx_install_prefix@
 MAIN_DEVICE_NAME=@omx_main_device_name@
