@@ -8,3 +8,6 @@ IFACES="all"
 
 # Additional open-mx module parameters
 OMX_MODULE_PARAMS=
+
+# Additional open-mx module dependencies (useful if modinfo is missing)
+OMX_MODULE_DEPENDS=

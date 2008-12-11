@@ -105,7 +105,7 @@ load_omx() {
     fi
 
     # modprobe the dependencies
-    depends=$(/sbin/modinfo $module | grep ^depends | awk '{print $2}' | sed 's/,/ /')
+    depends="$(/sbin/modinfo $module 2>/dev/null | grep ^depends | awk '{print $2}' | sed 's/,/ /') $OMX_MODULE_DEPENDS"
     for depend in $depends ; do
 	echo "Loading dependency module: $depend"
 	/sbin/modprobe $depend
