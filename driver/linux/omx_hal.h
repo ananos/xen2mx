@@ -122,7 +122,7 @@ omx_ifp_node(struct net_device *ifp)
   return dev ? dev_to_node(dev) : -1;
 }
 #else
-#define omx_ifp_node(ifp) -3
+#define omx_ifp_node(ifp) -1
 #endif
 
 /* work_struct switch to container_of in 2.6.20 */
