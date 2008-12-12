@@ -58,6 +58,7 @@ extern int omx_pin_progressive;
 extern int omx_pin_chunk_pages_min;
 extern int omx_pin_chunk_pages_max;
 extern int omx_pin_invalidate;
+extern unsigned long omx_user_rights;
 
 /* events */
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);
@@ -111,6 +112,12 @@ extern int omx_recv_host_reply(struct omx_iface * iface, struct omx_hdr * mh, st
 
 /* misc */
 extern char * omx_get_driver_string(unsigned int *lenp);
+
+/* user rights */
+#define OMX_USER_RIGHT_COUNTERS (1<<0)
+#define OMX_USER_RIGHT_HOSTNAME (1<<1)
+#define OMX_USER_RIGHT_PEERTABLE (1<<2)
+#define OMX_HAS_USER_RIGHT(x) ((omx_user_rights & OMX_USER_RIGHT_##x) || capable(CAP_SYS_ADMIN))
 
 #endif /* __omx_common_h__ */
 

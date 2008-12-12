@@ -545,7 +545,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		}
 
 		ret = -EPERM;
-		if (get_counters.clear && !capable(CAP_SYS_ADMIN))
+		if (get_counters.clear && !OMX_HAS_USER_RIGHT(COUNTERS))
 			goto out;
 
 		ret = omx_iface_get_counters(get_counters.board_index,
@@ -575,7 +575,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		}
 
 		ret = -EPERM;
-		if (!capable(CAP_SYS_ADMIN))
+		if (!OMX_HAS_USER_RIGHT(HOSTNAME))
 			goto out;
 
 		set_hostname.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
@@ -627,7 +627,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		struct omx_cmd_peer_table_state state;
 
 		ret = -EPERM;
-		if (!capable(CAP_SYS_ADMIN))
+		if (!OMX_HAS_USER_RIGHT(PEERTABLE))
 			goto out;
 
 		ret = copy_from_user(&state, (void __user *) arg,
@@ -648,7 +648,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_PEER_TABLE_CLEAR: {
 
 		ret = -EPERM;
-		if (!capable(CAP_SYS_ADMIN))
+		if (!OMX_HAS_USER_RIGHT(PEERTABLE))
 			goto out;
 
 		omx_peers_clear(0); /* clear all peers except the local ifaces */
@@ -660,7 +660,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_PEER_TABLE_CLEAR_NAMES: {
 
 		ret = -EPERM;
-		if (!capable(CAP_SYS_ADMIN))
+		if (!OMX_HAS_USER_RIGHT(PEERTABLE))
 			goto out;
 
 		omx_peers_clear_names();
@@ -674,7 +674,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		char *hostname;
 
 		ret = -EPERM;
-		if (!capable(CAP_SYS_ADMIN))
+		if (!OMX_HAS_USER_RIGHT(PEERTABLE))
 			goto out;
 
 		ret = copy_from_user(&peer_info, (void __user *) arg,
