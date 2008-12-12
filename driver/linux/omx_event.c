@@ -388,6 +388,9 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	void (*timer_handler)(unsigned long) = NULL;
 	uint64_t timer_jiffies = 0;
 
+	/* cache current jiffies */
+	u64 current_jiffies;
+
 	err = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read wait event cmd hdr\n");
@@ -435,27 +438,30 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 		timer_jiffies = wakeup_jiffies;
 	}
 
+	/* cache jiffies for multiple later use */
+	current_jiffies = get_jiffies_64();
+
 	/* setup the timer for real now */
 	if (timer_handler) {
 		/* check timer races */
-		if (jiffies >= timer_jiffies) {
+		if (current_jiffies >= timer_jiffies) {
 			dprintk(EVENT, "wait event expire %lld has passed (now is %lld), not sleeping\n",
-				(unsigned long long) cmd.jiffies_expire, (unsigned long long) jiffies);
+				(unsigned long long) cmd.jiffies_expire, (unsigned long long) current_jiffies);
 			waiter.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
 			goto wakeup;
 		}
 		setup_timer(&timer, timer_handler, (unsigned long) &waiter);
 		__mod_timer(&timer, timer_jiffies);
 		dprintk(EVENT, "wait event timer setup at %lld (now is %lld)\n",
-			(unsigned long long) timer_jiffies, (unsigned long long) jiffies);
+			(unsigned long long) timer_jiffies, (unsigned long long) current_jiffies);
 	}
 
 	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_NONE
 	    && !signal_pending(current)) {
 		/* if nothing happened, let's go to sleep */
-		dprintk(EVENT, "going to sleep at %lld\n", (unsigned long long) jiffies);
+		dprintk(EVENT, "going to sleep at %lld\n", (unsigned long long) current_jiffies);
 		schedule();
-		dprintk(EVENT, "waking up from sleep at %lld\n", (unsigned long long) jiffies);
+		dprintk(EVENT, "waking up from sleep at %lld\n", (unsigned long long) current_jiffies);
 
 	} else {
 		/* already "woken-up", no need to sleep */

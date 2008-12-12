@@ -618,7 +618,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	for(i=0; i<OMX_PULL_BLOCK_DESCS_NR-1; i++)
 		handle->block_desc[i].frames_missing_bitmap = 0; /* make sure the invalid block descs are easy to check */
 	handle->already_rerequested_blocks = 0;
-	handle->last_retransmit_jiffies = cmd->resend_timeout_jiffies + jiffies;
+	handle->last_retransmit_jiffies = get_jiffies_64() + cmd->resend_timeout_jiffies;
 
 	handle->host_copy_nr_frames = 0;
 
@@ -946,7 +946,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
  skbs_ready:
 	/* schedule the timeout handler now that we are ready to send the requests */
 	__mod_timer(&handle->retransmit_timer,
-		    jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+		    get_jiffies_64() + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	/*
 	 * do not keep the lock while sending
@@ -1018,7 +1018,7 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 
 	/* reschedule another timeout handler */
 	mod_timer(&handle->retransmit_timer,
-		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+		  get_jiffies_64() + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	/*
 	 * do not keep the lock while sending
@@ -1063,7 +1063,7 @@ omx_pull_handle_timeout_handler(unsigned long data)
 		return; /* timer will never be called again (status is TIMER_EXITED) */
 	}
 
-	if (jiffies > handle->last_retransmit_jiffies) {
+	if (get_jiffies_64() > handle->last_retransmit_jiffies) {
 		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
 
 		dprintk(PULL, "pull handle %p last retransmit time reached, reporting an error\n", handle);
@@ -1648,7 +1648,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 
 	/* reschedule the timeout handler now that we are ready to send the requests */
 	mod_timer(&handle->retransmit_timer,
-		  jiffies + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+		  get_jiffies_64() + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	/*
 	 * do not keep the lock while sending
