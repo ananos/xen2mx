@@ -486,6 +486,18 @@ AC_MSG_NOTICE(using static peers file in $with_peers_file)
 AC_SUBST(OMX_PEERS_FILE, $with_peers_file)
 
 ######################
+# FMS specific config
+
+AC_ARG_WITH(fms-run,
+	[AS_HELP_STRING([--with-fms-run=<dir>], [directory where fms data is to be stored])],
+	FMS_RUN=$withval, FMS_RUN=/var/run/fms)
+AC_ARG_WITH(fms-server,
+	[AS_HELP_STRING([--with-fms-server=<fms_server>], [node on which fms process will run])],
+	FMS_SERVER=$withval, FMS_SERVER="")
+AC_SUBST(FMS_RUN)
+AC_SUBST(FMS_SERVER)
+
+######################
 # installation config
 
 AC_ARG_WITH(device,

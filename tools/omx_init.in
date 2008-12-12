@@ -17,6 +17,7 @@
 #  OMX_IFACES (which interfaces should be attached by the driver on load)
 #  OMX_MODULE_PARAMS (module parameters to be passed to the driver)
 #  OMX_MODULE_DEPENDS (other modules that should be loaded first, useful if modinfo is missing)
+#  OMX_FMA_PARAMS (fma command-line parameters)
 
 # Note that this is replaced by make install, not configure!
 OMX_PREFIX=@omx_install_prefix@
@@ -29,6 +30,8 @@ RAW_DEVICE_MODE=@omx_raw_device_mode@
 OMX_STATIC_MAPPING=@omx_static_peers@
 OMX_PEER_DISCOVERY=@omx_peer_discovery@
 OMX_PEERS_FILE=@omx_peers_file@
+FMS_RUN=@fms_run@
+FMS_SERVER=@fms_server@
 
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
@@ -175,14 +178,36 @@ start_peer_discovery() {
 	    echo "Peers file ${OMX_PEERS_FILE} does not exist, remember to run omx_peers_init with the correct file"
 	fi
     else
-	echo "Starting the dynamic peer discovery (${OMX_PEER_DISCOVERY})"
-	${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} &
+	if [ "${OMX_PEER_DISCOVERY}" = "fma" ] ; then
+	    discover_params="-d $OMX_FMA_PARAMS"
+
+	    if [ -n "$FMS_SERVER" ] ; then
+		discover_params="$discover_params -s $FMS_SERVER"
+	    fi
+
+	    if [ ! -d "$FMS_RUN" ] ; then
+		echo "Creating FMS run directory $FMS_RUN..."
+		mkdir -p "$FMS_RUN"
+	    fi
+	fi
+
+	# save the old fma.pid to see if it changed
+	[ "${OMX_PEER_DISCOVERY}" = "fma" ] && oldfmapid=$(cat "$FMS_RUN/fma.pid" 2>/dev/null || true)
+
+	echo "Starting the dynamic peer discovery (${OMX_PEER_DISCOVERY} ${discover_params})"
+	${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ${discover_params} &
 	pid=$!
 
 	# wait a bit for the process to start (and maybe fail)
 	# FMA can take up to 5 seconds
 	sleep 5
 
+	if [ "${OMX_PEER_DISCOVERY}" = "fma" ] ; then
+	    # fma -d will daemonize, so the $pid child is gone.
+	    # look in fma.pid and use it if it changed
+	    newfmapid=$(cat "$FMS_RUN/fma.pid" 2>/dev/null || true)
+	    [ "$newfmapid" != "$oldfmapid" ] && [ -n "$newfmapid" ] && pid="$newfmapid"
+	fi
 	cmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
 	if [ -z "$cmdname" ] ; then
 	    echo "Discovery exited early"

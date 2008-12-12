@@ -85,6 +85,8 @@ installonly:
 		-e 's£@omx_static_peers@£@OMX_STATIC_PEERS@£' \
 		-e 's£@omx_peer_discovery@£@OMX_PEER_DISCOVERY@£' \
 		-e 's£@omx_peers_file@£@OMX_PEERS_FILE@£' \
+		-e 's£@fms_run@£@FMS_RUN@£' \
+		-e 's£@fms_server@£@FMS_SERVER@£' \
 		< @srcdir@/omx_init.in > omx_init
 	$(CMDPREFIX) $(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/
 

@@ -11,3 +11,6 @@ OMX_MODULE_PARAMS=
 
 # Additional open-mx module dependencies (useful if modinfo is missing)
 OMX_MODULE_DEPENDS=
+
+# Additional fma command-line parameters (-D for debug, ...)
+OMX_FMA_PARAMS=
