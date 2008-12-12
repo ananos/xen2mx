@@ -587,11 +587,11 @@ omx_mmu_invalidate_handler(struct omx_endpoint *endpoint, void *data)
 				/* cannot invalidate if pinning is synchronous */
 				printk(KERN_INFO "Open-MX: WARNING: reg#%d (ep#%d iface %s) being invalidated: seg#%ld (0x%lx-0x%lx) within 0x%lx-0x%lx\n",
 				       ireg, endpoint->endpoint_index, iface->eth_ifp->name,
-				       invalid_seg-&region->segments[0], seg_start, seg_end, inv_start, inv_end);
+				       (unsigned long) (invalid_seg-&region->segments[0]), seg_start, seg_end, inv_start, inv_end);
 			} else {
 				dprintk(MMU, "reg#%d (ep#%d iface %s) being invalidated: seg#%ld (0x%lx-0x%lx) within 0x%lx-0x%lx\n",
 				       ireg, endpoint->endpoint_index, iface->eth_ifp->name,
-				       invalid_seg-&region->segments[0], seg_start, seg_end, inv_start, inv_end);
+				       (unsigned long) (invalid_seg-&region->segments[0]), seg_start, seg_end, inv_start, inv_end);
 				omx_invalidate_region(endpoint, region);
 			}
 		}
