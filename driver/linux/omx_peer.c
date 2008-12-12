@@ -713,19 +713,18 @@ omx_peer_host_query(struct omx_peer *peer)
 void
 omx_process_peers_to_host_query(void)
 {
-	struct omx_peer *peer;
+	struct omx_peer *peer, *npeer;
 
 	mutex_lock(&omx_peers_mutex);
 
-	list_for_each_entry(peer, &omx_host_query_peer_list, host_query_list_elt) {
+	list_for_each_entry_safe(peer, npeer, &omx_host_query_peer_list, host_query_list_elt) {
 		dprintk(QUERY, "need to query peer %d?\n", peer->index);
 		if (peer->host_query_last_resend_jiffies + OMX_HOST_QUERY_RESEND_JIFFIES > jiffies)
 			break;
 
 		omx_peer_host_query(peer);
 		peer->host_query_last_resend_jiffies = jiffies;
-		list_del(&peer->host_query_list_elt);
-		list_add_tail(&peer->host_query_list_elt, &omx_host_query_peer_list);
+		list_move_tail(&peer->host_query_list_elt, &omx_host_query_peer_list);
 	}
 
 	mutex_unlock(&omx_peers_mutex);
@@ -794,6 +793,7 @@ omx_recv_host_reply(struct omx_iface * iface,
 	skb->sk = (void *) iface;
 
 	skb_queue_tail(&omx_host_reply_list, skb);
+	dprintk(QUERY, "got host reply\n");
 	omx_counter_inc(iface, RECV_HOST_REPLY);
 	return 0;
 }
