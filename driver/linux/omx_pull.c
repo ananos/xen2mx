@@ -1790,7 +1790,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->block_desc[idesc].frames_missing_bitmap &= ~bitmap_mask;
 	handle->nr_missing_frames--;
 
-#ifdef CONFIG_NET_DMA
+#if (defined CONFIG_NET_DMA) && !(defined OMX_NORECVCOPY)
 	if (omx_dmaengine
 	    && frame_length >= omx_dma_async_frag_min
 	    && handle->total_length >= omx_dma_async_min) {
@@ -1808,6 +1808,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	/* tell the sparse checker that the lock has been released by omx_progress_pull_on_recv_pull_reply_locked() */
 	__release(&handle->lock);
 
+#ifndef OMX_NORECVCOPY
 	if (remaining_copy) {
 		/* fill segment pages, if something remains to be copied */
 		dprintk(PULL, "copying PULL_REPLY %ld bytes for msg_offset %ld at region offset %ld\n",
@@ -1833,6 +1834,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 			goto out;
 		}
 	}
+#endif /* OMX_NORECVCOPY */
 
 	/* take the lock back to prepare to complete */
 	spin_lock(&handle->lock);

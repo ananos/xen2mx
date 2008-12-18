@@ -438,7 +438,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-#ifdef CONFIG_NET_DMA
+#if (defined CONFIG_NET_DMA) && !(defined OMX_NORECVCOPY)
 	/* try to submit the dma copy */
 	if (omx_dmaengine && frag_length >= omx_dma_sync_min) {
 		dma_chan = get_softnet_dma();
@@ -479,6 +479,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
+#ifndef OMX_NORECVCOPY
 	/* copy what's remaining */
 	if (remaining_copy) {
 		int offset = frag_length - remaining_copy;
@@ -495,6 +496,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		dma_chan_put(dma_chan);
 	}
 #endif
+#endif /* OMX_NORECVCOPY */
 
 	/* notify the event */
 	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_MEDIUM_FRAG, &event, sizeof(event));

@@ -304,6 +304,17 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_ARG_ENABLE(recvcopy,
+	[AS_HELP_STRING([--disable-recvcopy], [do not copy data on the receive side, pass random data to user-space])],
+	enable_recvcopy=$enableval, enable_recvcopy=yes)
+if test x$enable_recvcopy = xno ; then
+  AC_MSG_CHECKING(if data is copied by the driver on the receive side)
+  AC_MSG_RESULT(no)
+  AC_DEFINE_UNQUOTED(OMX_NORECVCOPY, 1, [Enable to remove the driver copy on the receive side and pass random data to user-space])
+# else
+  # print nothing in the regular case, this is a high-debug options
+fi
+
 #######################################
 # self and shared communication config
 

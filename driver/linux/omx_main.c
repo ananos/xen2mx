@@ -374,6 +374,13 @@ omx_get_driver_string(unsigned int *lenp)
 	tmp += len;
 	buflen += len;
 
+#ifdef OMX_NORECVCOPY
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		       " DriverReceiveCopy: disabled\n");
+	tmp += len;
+	buflen += len;
+#endif
+
 	*lenp = buflen+1; /* add the ending \0 */
 	return buffer;
 }
