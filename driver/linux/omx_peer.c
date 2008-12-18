@@ -721,7 +721,7 @@ omx_process_peers_to_host_query(void)
 	current_jiffies = get_jiffies_64();
 	list_for_each_entry_safe(peer, npeer, &omx_host_query_peer_list, host_query_list_elt) {
 		dprintk(QUERY, "need to query peer %d?\n", peer->index);
-		if (peer->host_query_last_resend_jiffies + OMX_HOST_QUERY_RESEND_JIFFIES > current_jiffies)
+		if (time_after64(peer->host_query_last_resend_jiffies + OMX_HOST_QUERY_RESEND_JIFFIES, current_jiffies))
 			break;
 
 		omx_peer_host_query(peer);

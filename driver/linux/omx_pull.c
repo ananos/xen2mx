@@ -1063,7 +1063,7 @@ omx_pull_handle_timeout_handler(unsigned long data)
 		return; /* timer will never be called again (status is TIMER_EXITED) */
 	}
 
-	if (get_jiffies_64() > handle->last_retransmit_jiffies) {
+	if (time_after64(get_jiffies_64(), handle->last_retransmit_jiffies)) {
 		BUG_ON(handle->status != OMX_PULL_HANDLE_STATUS_OK);
 
 		dprintk(PULL, "pull handle %p last retransmit time reached, reporting an error\n", handle);

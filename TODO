@@ -1,5 +1,3 @@
-* use time_after64 or so
-
 * single cmd to send the whole mediumsq message, with single done event ?
   + less pipelining
 

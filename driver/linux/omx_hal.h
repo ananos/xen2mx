@@ -136,6 +136,22 @@ typedef void * omx_work_struct_data_t;
 typedef struct work_struct * omx_work_struct_data_t;
 #endif
 
+/* 64bits jiffies comparison routines appeared in 2.6.19 */
+#include <linux/jiffies.h>
+#ifndef time_after64
+#define time_after64(a,b)	\
+	(typecheck(__u64, a) &&	\
+	 typecheck(__u64, b) &&	\
+	((__s64)(b) - (__s64)(a) < 0))
+#define time_before64(a,b)	time_after64(b,a)
+
+#define time_after_eq64(a,b)	\
+	(typecheck(__u64, a) &&	\
+	 typecheck(__u64, b) &&	\
+	((__s64)(a) - (__s64)(b) >= 0))
+#define time_before_eq64(a,b) 	time_after_eq64(b,a)
+#endif
+
 #endif /* __omx_hal_h__ */
 
 /*

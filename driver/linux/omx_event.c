@@ -433,7 +433,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	}
 	/* setup the timer if needed by a progress timeout */
 	if (wakeup_jiffies != OMX_NO_WAKEUP_JIFFIES
-	    && (!timer_handler || wakeup_jiffies < timer_jiffies)) {
+	    && (!timer_handler || time_before64(wakeup_jiffies, timer_jiffies))) {
 		timer_handler = omx_wakeup_on_progress_timeout_handler;
 		timer_jiffies = wakeup_jiffies;
 	}
@@ -444,7 +444,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	/* setup the timer for real now */
 	if (timer_handler) {
 		/* check timer races */
-		if (current_jiffies >= timer_jiffies) {
+		if (time_after_eq64(current_jiffies, timer_jiffies)) {
 			dprintk(EVENT, "wait event expire %lld has passed (now is %lld), not sleeping\n",
 				(unsigned long long) cmd.jiffies_expire, (unsigned long long) current_jiffies);
 			waiter.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
