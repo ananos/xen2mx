@@ -8,6 +8,17 @@ Caveats:
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
 
+Open-MX 1.0.3 (December 22nd 2008, svn/open-mx-1.0.x r2219)
+===========================================================
+Bug Fixes:
+* Fix kernel timing on some 32bits architectures that could lead
+  to bad retransmission or slow hostname resolution.
+* Fix hostname resolution so that it can actually occur in parallel
+  instead of one peer per second or so.
+* Improve FMA/FMS support in configure and omx_init.
+* Rename omx_pingpong into omx_perf to avoid confusion with
+  mx_pingpong which is incompatible.
+
 Open-MX 1.0.2 (November 26th 2008, svn/open-mx-1.0.x r2185)
 ===========================================================
 Bug Fixes:
