@@ -31,6 +31,7 @@ usage(int argc, char *argv[])
 {
   fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange board id [%d]\n", BID);
+  fprintf(stderr, " -v\tverbose messages\n");
 }
 
 int main(int argc, char *argv[])
@@ -41,7 +42,8 @@ int main(int argc, char *argv[])
   uint32_t board_index = BID;
   omx_return_t ret;
   uint32_t emax;
-  int i, err;
+  int verbose = 0;
+  int i, count, err;
   int c;
 
   ret = omx_init();
@@ -54,10 +56,13 @@ int main(int argc, char *argv[])
   /* get endpoint max */
   emax = omx__driver_desc->endpoint_max;
 
-  while ((c = getopt(argc, argv, "b:h")) != -1)
+  while ((c = getopt(argc, argv, "b:vh")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
+      break;
+    case 'v':
+      verbose = 1;
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
@@ -86,12 +91,13 @@ int main(int argc, char *argv[])
     goto out;
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&get_endpoint_info, sizeof(get_endpoint_info));
 
-  if (get_endpoint_info.info.closed)
-    printf("  raw\tnot open\n");
-  else
+  if (!get_endpoint_info.info.closed)
     printf("  raw\topen by pid %ld (%s)\n",
 	   (unsigned long) get_endpoint_info.info.pid, get_endpoint_info.info.command);
+  else if (verbose)
+    printf("  raw\tnot open\n");
 
+  count = 0;
   for(i=0; i<emax; i++) {
     get_endpoint_info.board_index = board_index;
     get_endpoint_info.endpoint_index = i;
@@ -101,12 +107,14 @@ int main(int argc, char *argv[])
       goto out;
     OMX_VALGRIND_MEMORY_MAKE_READABLE(&get_endpoint_info, sizeof(get_endpoint_info));
 
-    if (get_endpoint_info.info.closed)
-      printf("  %d\tnot open\n", i);
-    else
+    if (!get_endpoint_info.info.closed) {
       printf("  %d\topen by pid %ld (%s)\n", i,
 	     (unsigned long) get_endpoint_info.info.pid, get_endpoint_info.info.command);
+      count++;
+    } else if (verbose)
+      printf("  %d\tnot open\n", i);
   }
+  printf("%d regular endpoints open (out of %d)\n", count, (unsigned) emax);
 
   return 0;
 
