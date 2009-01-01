@@ -202,9 +202,12 @@ omx__notify_request_done_early(struct omx_endpoint *ep, uint32_t ctxid,
   omx__debug_assert(req->generic.state);
 
   req->generic.state |= OMX_REQUEST_STATE_DONE;
-  list_add_tail(&req->generic.done_elt, &ep->anyctxid.done_req_q);
-  if (unlikely(HAS_CTXIDS(ep)))
-    list_add_tail(&req->generic.ctxid_elt, &ep->ctxid[ctxid].done_req_q);
+
+  if (likely(!(req->generic.state & OMX_REQUEST_STATE_ZOMBIE))) {
+    list_add_tail(&req->generic.done_elt, &ep->anyctxid.done_req_q);
+    if (unlikely(HAS_CTXIDS(ep)))
+      list_add_tail(&req->generic.ctxid_elt, &ep->ctxid[ctxid].done_req_q);
+  }
 
   /*
    * need to wakeup some possible send-done waiters (or recv-done for notify)
