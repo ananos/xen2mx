@@ -1,6 +1,6 @@
 /*
  * Open-MX
- * Copyright © INRIA 2007-2008 (see AUTHORS file)
+ * Copyright © INRIA 2007-2009 (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
  *
