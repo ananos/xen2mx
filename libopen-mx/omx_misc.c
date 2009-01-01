@@ -232,8 +232,20 @@ omx_strerror(omx_return_t ret)
   case OMX_RETURN_CODE_MAX:
     return "Maximum return code";
   }
-  omx__abort(NULL, "Failed to stringify unknown return value %d\n",
-	     ret);
+
+  /* only used for debugging, should not happen */
+  if (ret == OMX_INTERNAL_MISSING_RESOURCES)
+    return "Internal Error (Missing Resource)";
+  else if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+    return "Internal Error (Unexpected Errno)";
+  else if (ret == OMX_INTERNAL_MISC_ENODEV)
+    return "Internal Error (Misc ENODEV)";
+  else if (ret == OMX_INTERNAL_MISC_EINVAL)
+    return "Internal Error (Misc EINVAL)";
+  else if (ret == OMX_INTERNAL_MISC_EFAULT)
+    return "Internal Error (Misc EFAULT)";
+  omx__warning(NULL, "Failed to stringify unknown return value %d\n", ret);
+  return "Unknown Return Code";
 }
 
 /*************************
