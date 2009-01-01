@@ -147,7 +147,7 @@ omx__init_api(int app_api)
 			  omx__globals.control_fd, OMX_DRIVER_DESC_FILE_OFFSET);
   if (omx__driver_desc == MAP_FAILED) {
     ret = omx__errno_to_return();
-    if (ret == OMX_INTERNAL_MISC_ENODEV || ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
+    if (ret == OMX_INTERNAL_MISC_EINVAL || ret == OMX_INTERNAL_MISC_ENODEV || ret == OMX_INTERNAL_UNEXPECTED_ERRNO)
       ret = omx__error(OMX_BAD_ERROR, "Mapping global control device (%m)");
     else
       ret = omx__error(ret, "Mapping global control device");
