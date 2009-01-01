@@ -369,6 +369,10 @@ omx__submit_notify(struct omx_endpoint *ep,
 		   int delayed);
 
 extern omx_return_t
+omx__submit_discarded_notify(struct omx_endpoint *ep, struct omx__partner * partner,
+			     struct omx_evt_recv_msg *msg);
+
+extern omx_return_t
 omx__alloc_setup_pull(struct omx_endpoint * ep,
 		      union omx_request * req);
 

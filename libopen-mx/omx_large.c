@@ -22,6 +22,7 @@
 
 #include "omx_io.h"
 #include "omx_lib.h"
+#include "omx_wire_access.h"
 #include "omx_request.h"
 #include "omx_segments.h"
 
@@ -555,6 +556,35 @@ omx__process_pull_done(struct omx_endpoint * ep,
   req->generic.state &= ~(OMX_REQUEST_STATE_DRIVER_PULLING | OMX_REQUEST_STATE_RECV_PARTIAL);
 
   omx__submit_notify(ep, req, 0);
+}
+
+omx_return_t
+omx__submit_discarded_notify(struct omx_endpoint *ep, struct omx__partner * partner,
+			     struct omx_evt_recv_msg *msg)
+{
+  struct omx__rndv_data * data_n = (void *) msg->specific.rndv.data;
+  uint8_t rdma_id = OMX_FROM_PKT_FIELD(data_n->rdma_id);
+  uint8_t rdma_seqnum = OMX_FROM_PKT_FIELD(data_n->rdma_seqnum);
+  uint16_t rdma_offset = OMX_FROM_PKT_FIELD(data_n->rdma_offset);
+  union omx_request * fakereq;
+
+  fakereq = omx__request_alloc(ep);
+  if (unlikely(!fakereq)) {
+    /* FIXME? */
+    omx__abort(ep, "Couldn't allocate fake recv for discarded rndv request");
+  }
+
+  omx_cache_single_segment(&fakereq->recv.segs, NULL, 0);
+  fakereq->generic.partner = partner;
+  fakereq->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
+  fakereq->generic.state = OMX_REQUEST_STATE_ZOMBIE;
+  fakereq->recv.specific.large.target_rdma_id = rdma_id;
+  fakereq->recv.specific.large.target_rdma_seqnum = rdma_seqnum;
+  fakereq->recv.specific.large.target_rdma_offset = rdma_offset;
+  ep->zombies++;
+
+  omx__submit_notify(ep, fakereq, 1 /* always delayed */);
+  return OMX_SUCCESS;
 }
 
 void

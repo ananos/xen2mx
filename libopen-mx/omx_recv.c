@@ -472,9 +472,12 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
   }
 #endif
 
-    if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED)
+    if (ret == OMX_UNEXP_HANDLER_RECV_FINISHED) {
       /* the handler took care of the message, we now discard it */
+      if (msg->type == OMX_EVT_RECV_RNDV)
+	omx__submit_discarded_notify(ep, partner, msg);
       return OMX_SUCCESS;
+    }
 
     /* if not FINISHED, return MUST be CONTINUE */
     if (ret != OMX_UNEXP_HANDLER_RECV_CONTINUE) {
