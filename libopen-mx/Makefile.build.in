@@ -36,18 +36,16 @@ else
 endif
 
 STATIC_OBJS	=	$(patsubst @abs_srcdir@/%.c,%.o,$(SRCS))
-ASSERTIONS_STATIC_OBJ	=	omx__assertions.o
-STATIC_LIB_OBJS	=	$(filter-out $(ASSERTIONS_STATIC_OBJ),$(STATIC_OBJS))
+STATIC_LIB_OBJS	=	$(STATIC_OBJS)
 STATIC_LIB	=	@OPEN_MX_LIB_STATIC@
 
 DYNAMIC_OBJS	=	$(subst .o,.lo,$(STATIC_OBJS))
-DYNAMIC_LIB_OBJS	=	$(subst .o,.lo,$(STATIC_LIB_OBJS))
+DYNAMIC_LIB_OBJS	=	$(DYNAMIC_OBJS)
 DYNAMIC_LIB	=	@OPEN_MX_LIB_DYNAMIC@
 
-.PHONY: all installonly install assertions depend clean distclean
+.PHONY: all installonly install depend clean distclean
 
-# build assertions first, then the actual lib
-all: assertions $(STATIC_LIB) $(DYNAMIC_LIB)
+all: $(STATIC_LIB) $(DYNAMIC_LIB)
 
 ###############
 # dependencies
@@ -81,8 +79,6 @@ $(DYNAMIC_LIB): $(DYNAMIC_LIB_OBJS)
 		$(RM) libmyriexpress.so ; \
 		$(LN_S) $(DYNAMIC_LIB) libmyriexpress.so ; \
 	fi
-
-assertions: $(ASSERTIONS_STATIC_OBJ)
 
 # build and create dependency file
 
@@ -120,8 +116,8 @@ install: all installonly
 # clean
 
 clean:
-	$(CMDECHO) "  RM      $(patsubst %,$(REL_DIR)%,$(STATIC_LIB) $(STATIC_LIB_OBJS) $(DYNAMIC_LIB) $(DYNAMIC_LIB_OBJS) $(ASSERTIONS_STATIC_OBJ))"
-	$(CMDPREFIX) $(RM) $(STATIC_LIB) $(STATIC_LIB_OBJS) $(DYNAMIC_LIB) $(DYNAMIC_LIB_OBJS) $(ASSERTIONS_STATIC_OBJ)
+	$(CMDECHO) "  RM      $(patsubst %,$(REL_DIR)%,$(STATIC_LIB) $(STATIC_LIB_OBJS) $(DYNAMIC_LIB) $(DYNAMIC_LIB_OBJS))"
+	$(CMDPREFIX) $(RM) $(STATIC_LIB) $(STATIC_LIB_OBJS) $(DYNAMIC_LIB) $(DYNAMIC_LIB_OBJS)
 
 distclean: clean
 	$(CMDECHO) "  RM      $(patsubst %,$(REL_DIR)%,$(DEPS))"
