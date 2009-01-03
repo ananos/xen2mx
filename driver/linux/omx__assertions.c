@@ -20,6 +20,7 @@
 #include "omx_wire.h"
 #include "omx_common.h"
 
+#include <linux/kernel.h>
 #include <linux/if_ether.h>
 #include <linux/if.h>
 
@@ -27,33 +28,31 @@
  * This file runs build-time assertions without ever being linked to anybody
  */
 
-#define CHECK(x) do { char (*a)[(x) ? 1 : -1] = NULL; (void) a; } while (0)
-
 extern void assertions(void); /* shut-up the sparse checker */
 
 void
 assertions(void)
 {
-  CHECK(OMX_IF_NAMESIZE == IFNAMSIZ);
-  CHECK(sizeof(uint64_t) >= sizeof(((struct ethhdr *)NULL)->h_dest));
-  CHECK(sizeof(uint64_t) >= sizeof(((struct ethhdr *)NULL)->h_source));
-  CHECK(PAGE_SIZE%OMX_PACKET_RING_ENTRY_SIZE == 0 || OMX_PACKET_RING_ENTRY_SIZE%PAGE_SIZE == 0);
-  CHECK(sizeof(union omx_evt) == OMX_EVENTQ_ENTRY_SIZE);
-  CHECK(OMX_UNEXP_EVENTQ_ENTRY_NR == OMX_RECVQ_ENTRY_NR);
-  CHECK((unsigned) OMX_PKT_TYPE_MAX == (1<<(sizeof(omx_packet_type_t)*8)) - 1);
+  BUILD_BUG_ON(OMX_IF_NAMESIZE != IFNAMSIZ);
+  BUILD_BUG_ON(sizeof(uint64_t) < sizeof(((struct ethhdr *)NULL)->h_dest));
+  BUILD_BUG_ON(sizeof(uint64_t) < sizeof(((struct ethhdr *)NULL)->h_source));
+  BUILD_BUG_ON(PAGE_SIZE%OMX_PACKET_RING_ENTRY_SIZE != 0 && OMX_PACKET_RING_ENTRY_SIZE%PAGE_SIZE != 0);
+  BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);
+  BUILD_BUG_ON(OMX_UNEXP_EVENTQ_ENTRY_NR != OMX_RECVQ_ENTRY_NR);
+  BUILD_BUG_ON((unsigned) OMX_PKT_TYPE_MAX != (1<<(sizeof(omx_packet_type_t)*8)) - 1);
 
-  CHECK(OMX_PKT_TYPE_MAX <= 255); /* uint8_t is used on the wire */
-  CHECK(OMX_NACK_TYPE_MAX <= 255); /* uint8_t is used on the wire */
-  CHECK(OMX_EVT_NACK_LIB_BAD_ENDPT == OMX_NACK_TYPE_BAD_ENDPT);
-  CHECK(OMX_EVT_NACK_LIB_ENDPT_CLOSED == OMX_NACK_TYPE_ENDPT_CLOSED);
-  CHECK(OMX_EVT_NACK_LIB_BAD_SESSION == OMX_NACK_TYPE_BAD_SESSION);
+  BUILD_BUG_ON(OMX_PKT_TYPE_MAX > 255); /* uint8_t is used on the wire */
+  BUILD_BUG_ON(OMX_NACK_TYPE_MAX > 255); /* uint8_t is used on the wire */
+  BUILD_BUG_ON(OMX_EVT_NACK_LIB_BAD_ENDPT != OMX_NACK_TYPE_BAD_ENDPT);
+  BUILD_BUG_ON(OMX_EVT_NACK_LIB_ENDPT_CLOSED != OMX_NACK_TYPE_ENDPT_CLOSED);
+  BUILD_BUG_ON(OMX_EVT_NACK_LIB_BAD_SESSION != OMX_NACK_TYPE_BAD_SESSION);
 
-  CHECK(OMX_EVT_PULL_DONE_BAD_ENDPT == OMX_NACK_TYPE_BAD_ENDPT);
-  CHECK(OMX_EVT_PULL_DONE_ENDPT_CLOSED == OMX_NACK_TYPE_ENDPT_CLOSED);
-  CHECK(OMX_EVT_PULL_DONE_BAD_SESSION == OMX_NACK_TYPE_BAD_SESSION);
-  CHECK(OMX_EVT_PULL_DONE_BAD_RDMAWIN == OMX_NACK_TYPE_BAD_RDMAWIN);
+  BUILD_BUG_ON(OMX_EVT_PULL_DONE_BAD_ENDPT != OMX_NACK_TYPE_BAD_ENDPT);
+  BUILD_BUG_ON(OMX_EVT_PULL_DONE_ENDPT_CLOSED != OMX_NACK_TYPE_ENDPT_CLOSED);
+  BUILD_BUG_ON(OMX_EVT_PULL_DONE_BAD_SESSION != OMX_NACK_TYPE_BAD_SESSION);
+  BUILD_BUG_ON(OMX_EVT_PULL_DONE_BAD_RDMAWIN != OMX_NACK_TYPE_BAD_RDMAWIN);
 
   /* make sure we can always dereference omx_pkt_head and ptype in incoming skb */
-  CHECK(ETH_ZLEN >= sizeof(struct omx_pkt_head));
-  CHECK(ETH_ZLEN >= OMX_HDR_PTYPE_OFFSET + sizeof(omx_packet_type_t));
+  BUILD_BUG_ON(ETH_ZLEN < sizeof(struct omx_pkt_head));
+  BUILD_BUG_ON(ETH_ZLEN < OMX_HDR_PTYPE_OFFSET + sizeof(omx_packet_type_t));
 }
