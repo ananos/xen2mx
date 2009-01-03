@@ -234,6 +234,8 @@ omx_strerror(omx_return_t ret)
   }
 
   /* only used for debugging, should not happen */
+  BUILD_BUG_ON(OMX_RETURN_CODE_MAX >= OMX_INTERNAL_RETURN_CODE_MIN);
+
   if (ret == OMX_INTERNAL_MISSING_RESOURCES)
     return "Internal Error (Missing Resource)";
   else if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)

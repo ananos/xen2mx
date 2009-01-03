@@ -299,6 +299,15 @@ mx_open_endpoint(uint32_t board_number, uint32_t endpoint_id,
 		 mx_endpoint_t *endpoint)
 {
   omx_return_t omxret;
+
+  /* check various constants */
+  BUILD_BUG_ON(MX_ANY_NIC != OMX_ANY_NIC);
+  BUILD_BUG_ON(MX_ANY_ENDPOINT != OMX_ANY_ENDPOINT);
+  /* check endpoint parameter keys */
+  BUILD_BUG_ON(MX_PARAM_ERROR_HANDLER != OMX_ENDPOINT_PARAM_ERROR_HANDLER);
+  BUILD_BUG_ON(MX_PARAM_UNEXP_QUEUE_MAX != OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX);
+  BUILD_BUG_ON(MX_PARAM_CONTEXT_ID != OMX_ENDPOINT_PARAM_CONTEXT_ID);
+
   omxret = omx_open_endpoint(board_number, endpoint_id, endpoint_key,
 			     omx_endpoint_param_ptr_from_mx(params_array), params_count,
 			     omx_endpoint_ptr_from_mx(endpoint));
@@ -325,6 +334,11 @@ mx_return_t
 mx_register_unexp_handler(mx_endpoint_t endpoint, mx_unexp_handler_t handler, void *context)
 {
   omx_return_t omxret;
+
+  /* check unexp handler return values */
+  BUILD_BUG_ON(MX_RECV_CONTINUE != OMX_UNEXP_HANDLER_RECV_CONTINUE);
+  BUILD_BUG_ON(MX_RECV_FINISHED != OMX_UNEXP_HANDLER_RECV_FINISHED);
+
   omxret = omx_register_unexp_handler(omx_endpoint_from_mx(endpoint),
 				      omx_unexp_handler_from_mx(handler),
 				      context);
@@ -361,6 +375,14 @@ mx_isend(mx_endpoint_t endpoint, mx_segment_t *segments_list, uint32_t segments_
 	 mx_request_t *request)
 {
   omx_return_t omxret;
+
+  /* check the contents of segment types, since their fields are different */
+  BUILD_BUG_ON(sizeof(mx_segment_t) != sizeof(omx_seg_t));
+  BUILD_BUG_ON(offsetof(mx_segment_t, segment_ptr) != offsetof(omx_seg_t, ptr));
+  BUILD_BUG_ON(sizeof(((mx_segment_t*)NULL)->segment_ptr) != sizeof(((omx_seg_t*)NULL)->ptr));
+  BUILD_BUG_ON(offsetof(mx_segment_t, segment_length) != offsetof(omx_seg_t, len));
+  BUILD_BUG_ON(sizeof(((mx_segment_t*)NULL)->segment_length) != sizeof(((omx_seg_t*)NULL)->len));
+
   omxret = omx_isendv(omx_endpoint_from_mx(endpoint),
 		      omx_seg_ptr_from_mx(segments_list), segments_count,
 		      omx_endpoint_addr_from_mx(dest_endpoint),
@@ -681,6 +703,13 @@ mx_connect(mx_endpoint_t endpoint, uint64_t nic_id, uint32_t endpoint_id,
 	   uint32_t key, uint32_t timeout, mx_endpoint_addr_t *addr)
 {
   omx_return_t omxret;
+
+  /* enforce connect lib data layout and values */
+  BUILD_BUG_ON(sizeof(((struct omx__connect_request_data *) NULL)->is_reply) != sizeof(((struct omx__connect_reply_data *) NULL)->is_reply));
+  BUILD_BUG_ON(offsetof(struct omx__connect_request_data, is_reply) != offsetof(struct omx__connect_reply_data, is_reply));
+  BUILD_BUG_ON(OMX__CONNECT_SUCCESS != 0);
+  BUILD_BUG_ON(OMX__CONNECT_BAD_KEY != 11);
+
   omxret = omx_connect(omx_endpoint_from_mx(endpoint),
 		       nic_id, endpoint_id, key,
 		       omx_timeout_from_mx(timeout),
@@ -743,6 +772,10 @@ mx_return_t
 mx_get_endpoint_addr(mx_endpoint_t endpoint, mx_endpoint_addr_t *endpoint_addr)
 {
   omx_return_t omxret;
+
+  /* check various constants */
+  BUILD_BUG_ON(MX_SIZEOF_ADDR != OMX_SIZEOF_ADDR);
+
   omxret = omx_get_endpoint_addr(omx_endpoint_from_mx(endpoint),
 				 omx_endpoint_addr_ptr_from_mx(endpoint_addr));
   return omx_return_to_mx(omxret);

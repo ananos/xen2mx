@@ -82,6 +82,12 @@ mx_raw_next_event(mx_raw_endpoint_t endpoint, uint32_t *incoming_port,
 		  mx_raw_status_t *status)
 {
   omx_return_t omxret;
+
+  /* check raw api status codes */
+  BUILD_BUG_ON(MX_RAW_NO_EVENT != OMX_RAW_NO_EVENT);
+  BUILD_BUG_ON(MX_RAW_SEND_COMPLETE != OMX_RAW_SEND_COMPLETE);
+  BUILD_BUG_ON(MX_RAW_RECV_COMPLETE != OMX_RAW_RECV_COMPLETE);
+
   omxret = omx__raw_next_event(omx_raw_endpoint_from_mx(endpoint),
 			       incoming_port, context,
 			       recv_buffer, recv_bytes,

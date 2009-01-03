@@ -639,6 +639,8 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   int use_sendq = omx__globals.medium_sendq;
   omx_return_t ret;
 
+  BUILD_BUG_ON(OMX_MEDIUM_MAX > OMX_MEDIUM_FRAG_LENGTH_MAX * OMX_MEDIUM_FRAGS_MAX);
+
   if (use_sendq) {
     int frag_pipeline = omx__globals.packet_ring_entry_shift; /* the lib pipeline does not depend on the message size */
     int frag_max = 1 << frag_pipeline;

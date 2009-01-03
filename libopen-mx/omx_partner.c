@@ -118,6 +118,9 @@ omx__partner_reset(struct omx__partner *partner)
   INIT_LIST_HEAD(&partner->early_recv_q);
   INIT_LIST_HEAD(&partner->need_seqnum_send_req_q);
 
+  BUILD_BUG_ON(sizeof(omx__seqnum_t) != sizeof(((struct omx_pkt_msg *)NULL)->lib_seqnum));
+  BUILD_BUG_ON(OMX__SESNUM_BITS+OMX__SEQNUM_BITS > 8*sizeof(omx__seqnum_t));
+
   partner->true_session_id = -1; /* will be initialized when we will be connected to the peer */
   partner->back_session_id = -1; /* will be initialized when the partner will connect to me */
   partner->next_send_seq = -1; /* will be initialized when the partner will reply to my connect */

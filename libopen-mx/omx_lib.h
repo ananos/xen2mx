@@ -79,6 +79,8 @@
 
 extern void omx__debug_init(int signum);
 
+#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+
 /*************
  * Optimizing
  */
@@ -138,6 +140,7 @@ omx__timeout_ms_to_absolute_jiffies(uint32_t ms)
 static inline struct omx__partner *
 omx__partner_from_addr(omx_endpoint_addr_t * addr)
 {
+  BUILD_BUG_ON(sizeof(struct omx__endpoint_addr) != sizeof(struct omx_endpoint_addr));
   return ((struct omx__endpoint_addr *) addr)->partner;
 }
 

@@ -43,6 +43,9 @@ omx_unlikely_return_to_mx(omx_return_t omxret);
 static inline mx_return_t
 omx_return_to_mx(omx_return_t omxret)
 {
+  /* check the size of enums */
+  BUILD_BUG_ON(sizeof(mx_return_t) != sizeof(omx_return_t));
+
   if (likely(omxret == OMX_SUCCESS))
     return MX_SUCCESS;
   else
@@ -67,6 +70,9 @@ omx_unlikely_status_code_to_mx(omx_return_t omxret);
 static inline mx_status_code_t
 omx_status_code_to_mx(omx_return_t omxret)
 {
+  /* check the size of enums */
+  BUILD_BUG_ON(sizeof(mx_status_code_t) != sizeof(omx_return_t));
+
   if (likely(omxret == OMX_SUCCESS))
     return MX_STATUS_SUCCESS;
   else
@@ -115,6 +121,21 @@ omx_timeout_from_mx(uint32_t mx_timeout)
 static inline void
 omx_status_to_mx(struct mx_status *mxst, struct omx_status *omxst)
 {
+  /* check the contents of status types, since their fields are different */
+  BUILD_BUG_ON(sizeof(mx_status_t) != sizeof(omx_status_t));
+  BUILD_BUG_ON(offsetof(mx_status_t, code) != offsetof(omx_status_t, code));
+  BUILD_BUG_ON(sizeof(((mx_status_t*)NULL)->code) != sizeof(((omx_status_t*)NULL)->code));
+  BUILD_BUG_ON(offsetof(mx_status_t, source) != offsetof(omx_status_t, addr));
+  BUILD_BUG_ON(sizeof(((mx_status_t*)NULL)->source) != sizeof(((omx_status_t*)NULL)->addr));
+  BUILD_BUG_ON(offsetof(mx_status_t, match_info) != offsetof(omx_status_t, match_info));
+  BUILD_BUG_ON(sizeof(((mx_status_t*)NULL)->match_info) != sizeof(((omx_status_t*)NULL)->match_info));
+  BUILD_BUG_ON(offsetof(mx_status_t, msg_length) != offsetof(omx_status_t, msg_length));
+  BUILD_BUG_ON(sizeof(((mx_status_t*)NULL)->msg_length) != sizeof(((omx_status_t*)NULL)->msg_length));
+  BUILD_BUG_ON(offsetof(mx_status_t, xfer_length) != offsetof(omx_status_t, xfer_length));
+  BUILD_BUG_ON(sizeof(((mx_status_t*)NULL)->xfer_length) != sizeof(((omx_status_t*)NULL)->xfer_length));
+  BUILD_BUG_ON(offsetof(mx_status_t, context) != offsetof(omx_status_t, context));
+  BUILD_BUG_ON(sizeof(((mx_status_t*)NULL)->context) != sizeof(((omx_status_t*)NULL)->context));
+
   memcpy(mxst, omxst, sizeof(*mxst));
   mxst->code = omx_status_code_to_mx(omxst->code);
 }

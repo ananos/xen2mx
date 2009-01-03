@@ -555,6 +555,12 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx__dequeue_request(&ep->driver_pulling_req_q, req);
   req->generic.state &= ~(OMX_REQUEST_STATE_DRIVER_PULLING | OMX_REQUEST_STATE_RECV_PARTIAL);
 
+  /* enforce that segments are stored at the same place in send and recv
+   * requests since we have to free recv large segments after using the
+   * request as a send notify.
+   */
+  BUILD_BUG_ON(offsetof(struct omx__send_request, segs) != offsetof(struct omx__recv_request, segs));
+
   omx__submit_notify(ep, req, 0);
 }
 

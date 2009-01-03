@@ -486,6 +486,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   }
   ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
 
+  BUILD_BUG_ON(sizeof(struct omx_evt_recv_msg) != OMX_EVENTQ_ENTRY_SIZE);
+  BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);
+
   omx__debug_printf(ENDPOINT, NULL, "desc at %p sendq at %p, recvq at %p, exp eventq at %p, unexp at %p\n",
 		    desc, sendq, recvq, exp_eventq, unexp_eventq);
   omx__debug_printf(ENDPOINT, NULL, "Successfully attached endpoint #%ld on board #%ld (hostname '%s', name '%s', addr %s)\n",

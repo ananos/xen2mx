@@ -17,6 +17,7 @@
  */
 
 #include <sys/ioctl.h>
+#include <net/if.h> /* for IF_NAMESIZE */
 
 #include "omx_io.h"
 #include "omx_lib.h"
@@ -89,6 +90,7 @@ omx__get_board_info(struct omx_endpoint * ep, uint32_t index, struct omx_board_i
     /* let the caller handle this */
     goto out;
   }
+  BUILD_BUG_ON(OMX_IF_NAMESIZE != IF_NAMESIZE);
   OMX_VALGRIND_MEMORY_MAKE_READABLE(get_info.info.hostname, OMX_HOSTNAMELEN_MAX);
   OMX_VALGRIND_MEMORY_MAKE_READABLE(get_info.info.ifacename, OMX_IF_NAMESIZE);
   OMX_VALGRIND_MEMORY_MAKE_READABLE(&get_info.info.addr, sizeof(get_info.info.addr));
