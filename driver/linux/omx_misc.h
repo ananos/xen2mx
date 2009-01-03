@@ -100,6 +100,7 @@ omx_board_addr_from_netdevice(struct net_device * ifp)
 static inline uint64_t
 omx_board_addr_from_ethhdr_src(struct ethhdr * eh)
 {
+	BUILD_BUG_ON(sizeof(uint64_t) < sizeof(eh->h_source)); 
 	return (((uint64_t) eh->h_source[0]) << 40)
 	     + (((uint64_t) eh->h_source[1]) << 32)
 	     + (((uint64_t) eh->h_source[2]) << 24)
@@ -111,6 +112,7 @@ omx_board_addr_from_ethhdr_src(struct ethhdr * eh)
 static inline void
 omx_board_addr_to_ethhdr_dst(struct ethhdr * eh, uint64_t board_addr)
 {
+	BUILD_BUG_ON(sizeof(uint64_t) < sizeof(eh->h_dest));
 	eh->h_dest[0] = (uint8_t)((board_addr >> 40 & 0xff));
 	eh->h_dest[1] = (uint8_t)((board_addr >> 32 & 0xff));
 	eh->h_dest[2] = (uint8_t)((board_addr >> 24 & 0xff));

@@ -79,6 +79,11 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 {
 	union omx_evt * evt;
 
+	/* sanity checks */
+	BUILD_BUG_ON(PAGE_SIZE%OMX_PACKET_RING_ENTRY_SIZE != 0 && OMX_PACKET_RING_ENTRY_SIZE%PAGE_SIZE != 0);
+	BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);
+	BUILD_BUG_ON(OMX_UNEXP_EVENTQ_ENTRY_NR != OMX_RECVQ_ENTRY_NR);
+
 	/* initialize all expected events to none */
 	for(evt = endpoint->exp_eventq;
 	    (void *) evt < endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE;

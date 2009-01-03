@@ -1,3 +1,5 @@
+* make test and use it in the tinderbox
+
 * single cmd to send the whole mediumsq message, with single done event ?
   + less pipelining
 

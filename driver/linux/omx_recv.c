@@ -860,7 +860,11 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
 	event.seqnum = lib_seqnum;
-	event.nack_type = nack_type; /* types are different, values are the same */
+	/* enforce that nack type and pull status have same values */
+	BUILD_BUG_ON(OMX_EVT_NACK_LIB_BAD_ENDPT != OMX_NACK_TYPE_BAD_ENDPT);
+	BUILD_BUG_ON(OMX_EVT_NACK_LIB_ENDPT_CLOSED != OMX_NACK_TYPE_ENDPT_CLOSED);
+	BUILD_BUG_ON(OMX_EVT_NACK_LIB_BAD_SESSION != OMX_NACK_TYPE_BAD_SESSION);
+	event.nack_type = nack_type;
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
@@ -1008,6 +1012,9 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 	/* pointer to the data, assuming it is linear */
 	mh = omx_skb_mac_header(skb);
 
+	/* make sure we can always dereference omx_pkt_head and ptype in incoming skb */
+	BUILD_BUG_ON(ETH_ZLEN < sizeof(struct omx_pkt_head));
+	BUILD_BUG_ON(ETH_ZLEN < OMX_HDR_PTYPE_OFFSET + sizeof(omx_packet_type_t));
 #ifdef OMX_DRIVER_DEBUG
 	if (skb->len < ETH_ZLEN) {
 		omx_counter_inc(iface, DROP_BAD_HEADER_DATALEN);
@@ -1015,6 +1022,11 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 		goto out;
 	}
 #endif
+
+	/* a couple more sanity checks */
+	BUILD_BUG_ON((unsigned) OMX_PKT_TYPE_MAX != (1<<(sizeof(omx_packet_type_t)*8)) - 1);
+	BUILD_BUG_ON(OMX_PKT_TYPE_MAX > 255); /* uint8_t is used on the wire */
+	BUILD_BUG_ON(OMX_NACK_TYPE_MAX > 255); /* uint8_t is used on the wire */
 
 	/* get the actual packet type, either from linear data or not */
 	if (likely(skb_headlen(skb) >= OMX_HDR_PTYPE_OFFSET + sizeof(ptype))) {

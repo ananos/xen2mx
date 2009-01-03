@@ -697,6 +697,11 @@ omx_pull_handle_mark_completed(struct omx_pull_handle * handle, uint8_t status)
 	spin_unlock_bh(&endpoint->pull_handles_lock);
 
 	/* finish filling the event for user-space */
+	/* enforce that nack type and pull status have same values */
+	BUILD_BUG_ON(OMX_EVT_PULL_DONE_BAD_ENDPT != OMX_NACK_TYPE_BAD_ENDPT);
+	BUILD_BUG_ON(OMX_EVT_PULL_DONE_ENDPT_CLOSED != OMX_NACK_TYPE_ENDPT_CLOSED);
+	BUILD_BUG_ON(OMX_EVT_PULL_DONE_BAD_SESSION != OMX_NACK_TYPE_BAD_SESSION);
+	BUILD_BUG_ON(OMX_EVT_PULL_DONE_BAD_RDMAWIN != OMX_NACK_TYPE_BAD_RDMAWIN);
 	handle->done_event.status = status;
 
 	/* tell the sparse checker that the caller took the lock */

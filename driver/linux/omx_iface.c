@@ -159,6 +159,8 @@ omx_iface_get_info(uint32_t board_index, struct omx_board_info *info)
 	struct net_device * ifp;
 	int ret;
 
+	BUILD_BUG_ON(OMX_IF_NAMESIZE != IFNAMSIZ);
+
 	rcu_read_lock();
 
 	if (board_index == OMX_SHARED_FAKE_IFACE_INDEX) {
@@ -722,7 +724,7 @@ omx_ifaces_store(const char *buf)
 	const char *ptr = buf;
 
 	while (1) {
-		char tmp[IFNAMSIZ+2];
+		char tmp[OMX_IF_NAMESIZE+2];
 		size_t len;
 
 		len = strcspn(ptr, ",\n\0");
