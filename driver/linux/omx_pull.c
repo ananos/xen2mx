@@ -1586,55 +1586,40 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 		 * current first block request is done
 		 */
 
-		uint32_t block_length;
+		int first_block;
 
 		omx_pull_handle_first_block_done(handle);
-
-		if (!handle->remaining_length)
-			goto skbs_ready;
-
-		/* start the next block */
-		dprintk(PULL, "queueing next pull block request\n");
-		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
-		if (block_length > handle->remaining_length)
-			block_length = handle->remaining_length;
-
-		omx_pull_handle_append_needed_frames(handle, block_length, 0);
-		skb = omx_fill_pull_block_request(handle, OMX_PULL_BLOCK_DESCS_NR-1);
-		if (unlikely(IS_ERR(skb))) {
-			BUG_ON(PTR_ERR(skb) != -ENOMEM);
-			/* let the timeout expire and resend */
-			goto skbs_ready;
-		} else {
-			skbs[0] = skb;
-		}
-
+		/* drop next blocks if they are done */
 		for(i=1; i<OMX_PULL_BLOCK_DESCS_NR; i++) {
-
-			/* the second current block (now first) request might be done too
-			 * (in case of out-or-order packets)
-			 */
-
-			if (handle->block_desc[0].frames_missing_bitmap)
-				goto skbs_ready;
-
-			/* current second block request is done */
+			if (!handle->nr_valid_block_descs
+			    || handle->block_desc[0].frames_missing_bitmap)
+				break;
 			omx_pull_handle_first_block_done(handle);
+		}
+		first_block = handle->nr_valid_block_descs;
 
-			/* is there more to request? if so, use the now-freed second block */
-			if (!handle->remaining_length)
-				goto skbs_ready;
-
-			omx_counter_inc(iface, PULL_REQUEST_NOTONLYFIRST_BLOCKS);
-
-			/* start another next block */
-			dprintk(PULL, "queueing another next pull block request\n");
+		/* prepare as many new blocks as needed */
+		while (handle->nr_valid_block_descs < OMX_PULL_BLOCK_DESCS_NR
+		       && handle->remaining_length) {
+			uint32_t block_length;
+			/* prepare the next block */
 			block_length = OMX_PULL_BLOCK_LENGTH_MAX;
 			if (block_length > handle->remaining_length)
 				block_length = handle->remaining_length;
-
 			omx_pull_handle_append_needed_frames(handle, block_length, 0);
-			skb = omx_fill_pull_block_request(handle, OMX_PULL_BLOCK_DESCS_NR-1);
+		}
+
+		if (handle->nr_valid_block_descs - first_block > 1)
+			omx_counter_inc(iface, PULL_REQUEST_NOTONLYFIRST_BLOCKS);
+
+		/* try to actually request the needed new blocks */
+		for(i=first_block; i<handle->nr_valid_block_descs; i++) {
+			if (i > first_block)
+				dprintk(PULL, "queueing another next pull block request\n");
+			else
+				dprintk(PULL, "queueing next pull block request\n");
+
+			skb = omx_fill_pull_block_request(handle, i);
 			if (unlikely(IS_ERR(skb))) {
 				BUG_ON(PTR_ERR(skb) != -ENOMEM);
 				/* let the timeout expire and resend */
