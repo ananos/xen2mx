@@ -1569,13 +1569,15 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 				handle);
 
 			for(i=handle->already_rerequested_blocks; i<idesc; i++) {
-				skb = omx_fill_pull_block_request(handle, i);
-				if (unlikely(IS_ERR(skb))) {
-					BUG_ON(PTR_ERR(skb) != -ENOMEM);
-					goto skbs_ready; /* don't try to submit more */
-				} else {
-					skbs[i] = skb;
-					handle->already_rerequested_blocks = i+1;
+				if (handle->block_desc[i].frames_missing_bitmap) {
+					skb = omx_fill_pull_block_request(handle, i);
+					if (unlikely(IS_ERR(skb))) {
+						BUG_ON(PTR_ERR(skb) != -ENOMEM);
+						goto skbs_ready; /* don't try to submit more */
+					} else {
+						skbs[i] = skb;
+						handle->already_rerequested_blocks = i+1;
+					}
 				}
 			}
 		}
