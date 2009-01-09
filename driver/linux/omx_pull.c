@@ -918,31 +918,30 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		block_length = handle->remaining_length;
 
 	omx_pull_handle_append_needed_frames(handle, block_length, pulled_rdma_offset_in_frame);
-	skb = omx_fill_pull_block_request(handle, 0);
-	if (unlikely(IS_ERR(skb))) {
-		BUG_ON(PTR_ERR(skb) != -ENOMEM);
-		/* just ignore the memory allocation failure and let retransmission take care of it */
-		goto skbs_ready; /* don't try to submit more */
-	} else {
-		skbs[0] = skb;
-	}
 
-	for(i=1; i<OMX_PULL_BLOCK_DESCS_NR; i++) {
-		/* send another pull block request if needed */
-
-		if (!handle->remaining_length)
-			break;
-
+	/* prepare as many new blocks as needed */
+	while (handle->nr_valid_block_descs < OMX_PULL_BLOCK_DESCS_NR
+	       && handle->remaining_length) {
+		uint32_t block_length;
+		/* prepare the next block */
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
 		if (block_length > handle->remaining_length)
 			block_length = handle->remaining_length;
-
 		omx_pull_handle_append_needed_frames(handle, block_length, 0);
+	}
+
+	/* try to actually request the needed new blocks */
+	for(i=0; i<handle->nr_valid_block_descs; i++) {
+		if (i > 0)
+			dprintk(PULL, "queueing another pull block request\n");
+		else
+			dprintk(PULL, "queueing pull block request\n");
+
 		skb = omx_fill_pull_block_request(handle, i);
 		if (unlikely(IS_ERR(skb))) {
 			BUG_ON(PTR_ERR(skb) != -ENOMEM);
-			/* just ignore the memory allocation failure and let retransmission take care of it */
-			goto skbs_ready; /* don't try to submit more */
+			/* let the timeout expire and resend */
+			goto skbs_ready;
 		} else {
 			skbs[i] = skb;
 		}
