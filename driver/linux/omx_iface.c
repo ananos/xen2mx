@@ -301,7 +301,7 @@ omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *da
 	rcu_read_unlock();
 }
 
-void
+static void
 omx_for_each_iface_endpoint(struct omx_iface *iface, int (*handler)(struct omx_endpoint *endpoint, void *data), void *data)
 {
 	int i;

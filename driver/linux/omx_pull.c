@@ -922,7 +922,6 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	/* prepare as many new blocks as needed */
 	while (handle->nr_valid_block_descs < OMX_PULL_BLOCK_DESCS_NR
 	       && handle->remaining_length) {
-		uint32_t block_length;
 		/* prepare the next block */
 		block_length = OMX_PULL_BLOCK_LENGTH_MAX;
 		if (block_length > handle->remaining_length)
