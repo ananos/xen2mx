@@ -25,14 +25,22 @@
 #include <arpa/inet.h>
 #endif
 
-#define OMX_PKT_FIELD_FROM(_pkt_field, _field)					\
-do {										\
-	if (sizeof(_pkt_field) == 1)						\
-		_pkt_field = (uint8_t) (_field);				\
-	else if (sizeof(_pkt_field) == 2)					\
-		_pkt_field = (typeof(_pkt_field)) htons((uint16_t) (_field));	\
-	else									\
-		_pkt_field = (typeof(_pkt_field)) htonl((uint32_t) (_field));	\
+#define OMX_PKT_FIELD_FROM(_pkt_field, _field)	\
+do {						\
+	uint32_t _tmp;				\
+	/* check _pkt_field length */		\
+	BUILD_BUG_ON(sizeof(_pkt_field) < 1);	\
+	BUILD_BUG_ON(sizeof(_pkt_field) > 4);	\
+	BUILD_BUG_ON(sizeof(_pkt_field) == 3);	\
+	/* swap bytes and store in uint32_t */	\
+	if (sizeof(_pkt_field) == 1)		\
+		_tmp = (uint8_t) (_field);	\
+	else if (sizeof(_pkt_field) == 2)	\
+		_tmp = htons(_field);		\
+	else					\
+		_tmp = htonl(_field);		\
+	/* save (and cast) result */		\
+	_pkt_field = _tmp;			\
 } while (0)
 
 #define OMX_FROM_PKT_FIELD(_pkt_field)	\
