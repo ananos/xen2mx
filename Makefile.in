@@ -114,6 +114,88 @@ other-installonly:
 
 other-install: other-installonly
 
+##############
+# test
+
+.PHONY: check check-base check-loopback check-misc check-vect check-pingpong check-random-loop
+check: check-base check-loopback check-misc check-vect check-pingpong check-random-loop
+
+check-base:
+	@echo "  *************"
+	@echo "  TEST omx_info"
+	$(CMDPREFIX) tools/omx_info
+	@echo "  **************************"
+	@echo "  CHECK board #0 is loopback"
+	$(CMDPREFIX) tools/omx_info | grep "board #0 name lo addr 00:00:00:00:00:00" >/dev/null 2>&1 || echo "No"
+
+check-loopback:
+	@echo "  ************************************"
+	@echo "  TEST loopback with native networking"
+	$(CMDPREFIX) tests/omx_loopback_test
+	@echo "  ************************************"
+	@echo "  TEST loopback with shared networking"
+	$(CMDPREFIX) tests/omx_loopback_test -s
+	@echo "  **********************************"
+	@echo "  TEST loopback with self networking"
+	$(CMDPREFIX) tests/omx_loopback_test -S
+
+check-misc:
+	@echo "  ***************"
+	@echo "  TEST unexpected"
+	$(CMDPREFIX) tests/omx_unexp_test
+	@echo "  ***************************"
+	@echo "  TEST unexpected with ctxids"
+	$(CMDPREFIX) OMX_CTXIDS=10,10 tests/omx_unexp_test
+	@echo "  ***********************"
+	@echo "  TEST unexpected handler"
+	$(CMDPREFIX) tests/omx_unexp_handler_test
+	@echo "  *************"
+	@echo "  TEST wait_any"
+	$(CMDPREFIX) OMX_DISABLE_SHARED=1 tests/mx/mx_wait_any_test & _pid=$$! ; sleep 1 ; \
+		OMX_DISABLE_SHARED=1 tests/mx/mx_wait_any_test -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		kill -9 $$_pid 2>/dev/null ; sleep 1
+	@echo "  ***********"
+	@echo "  TEST cancel"
+	$(CMDPREFIX) tests/omx_cancel_test & _pid=$$! ; sleep 1 ; kill -STOP $$_pid ; sleep 1 ; \
+		tests/omx_cancel_test -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		kill -9 $$_pid ; kill -CONT $$_pid ; sleep 1
+	@echo "  ***********"
+	@echo "  TEST wakeup"
+	$(CMDPREFIX) if [ -e tests/mx/mx_wakeup_test ] ; then \
+		tests/mx/mx_wakeup_test & _pid=$$! ; sleep 1 ; kill -STOP $$_pid ; sleep 1 ; \
+		tests/mx/mx_wakeup_test -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		kill -9 $$_pid ; kill -CONT $$_pid ; sleep 1 ; \
+	else echo "Not built" ; fi
+
+check-vect:
+	@echo "  **************************************"
+	@echo "  TEST vectorials with native networking"
+	$(CMDPREFIX) tests/omx_vect_test
+	@echo "  **************************************"
+	@echo "  TEST vectorials with shared networking"
+	$(CMDPREFIX) tests/omx_vect_test -s
+	@echo "  ************************************"
+	@echo "  TEST vectorials with self networking"
+	$(CMDPREFIX) tests/omx_vect_test -S
+
+check-pingpong:
+	@echo "  ************************************"
+	@echo "  TEST pingpong with native networking"
+	$(CMDPREFIX) OMX_DISABLE_SHARED=1 tests/omx_perf & _pid=$$! ; sleep 1 ; \
+		OMX_DISABLE_SHARED=1 tests/omx_perf -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		kill -9 $$_pid 2>/dev/null ; sleep 1
+	@echo "  ************************************"
+	@echo "  TEST pingpong with shared networking"
+	$(CMDPREFIX) tests/omx_perf & _pid=$$! ; sleep 1 ; \
+		tests/omx_perf -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		kill -9 $$_pid 2>/dev/null ; sleep 1
+
+check-random-loop:
+	@echo "  ******************************************************"
+	@echo "  TEST random msg loop with native networking during 20s"
+	$(CMDPREFIX) tests/mx/mx_msg_loop -R -P 11 & _pid=$$! ; sleep 20 ; \
+		kill -9 $$_pid 2>/dev/null ; sleep 1
+
 ##################
 # create tarballs
 
