@@ -386,17 +386,19 @@ AC_ARG_ENABLE(mtu_1500,, AC_MSG_ERROR([use --with-mtu=1500 instead]))
 AC_ARG_WITH(mtu,
 	[AS_HELP_STRING([--with-mtu=<n>], [change MTU (default is 9000)])],
 	with_mtu=$withval)
-AC_MSG_CHECKING(MTU)
-if test x$with_mtu != x; then
-  if test x$enable_mx_wire != xno; then
-    AC_MSG_ERROR([Changing the MTU requires MX-wire compatibility to be disabled])
+if test x$enable_mx_wire = xno; then
+  AC_MSG_CHECKING(MTU)
+  if test x$with_mtu != x; then
+    AC_MSG_RESULT($with_mtu)
+    AC_DEFINE_UNQUOTED(OMX_MTU, $with_mtu, [Define to change the MTU])
+  else
+    AC_MSG_RESULT([default (9000)])
   fi
-  AC_MSG_RESULT($with_mtu)
-  AC_DEFINE_UNQUOTED(OMX_MTU, $with_mtu, [Define to change the MTU])
 else
-  AC_MSG_RESULT([default (9000)])
+  if test x$with_mtu != x; then
+    AC_MSG_ERROR([Changing the MTU requires MX-wire compatibility to be disabled (--disable-mx-wire)])
+  fi
 fi
-
 AC_ARG_WITH(ethertype,
 	[AS_HELP_STRING([--with-ethertype=<value>], [change Ethertype (default is 0x86DF)])],
 	ethertype=$withval, ethertype=default)
