@@ -858,7 +858,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	struct omx_pull_handle * handle;
 	struct omx_user_region * region;
 	struct omx_iface * iface = endpoint->iface;
-	struct sk_buff * skb, * skbs[OMX_PULL_BLOCK_DESCS_NR] = { NULL };
+	struct sk_buff * skb, * skbs[] = { [0 ... OMX_PULL_BLOCK_DESCS_NR-1] = NULL };
 	uint32_t block_length;
 	uint32_t pulled_rdma_offset_in_frame;
 	int i;
@@ -977,7 +977,7 @@ static INLINE void
 omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 						  struct omx_pull_handle * handle)
 {
-	struct sk_buff *skb, *skbs[OMX_PULL_BLOCK_DESCS_NR] = { NULL };
+	struct sk_buff *skb, *skbs[] = { [0 ... OMX_PULL_BLOCK_DESCS_NR-1] = NULL };
 	int i;
 
 	/* tell the sparse checker that the lock has been taken by the caller */
@@ -1543,7 +1543,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 					    struct omx_pull_handle * handle,
 					    int idesc)
 {
-	struct sk_buff * skb, * skbs[OMX_PULL_BLOCK_DESCS_NR] = { NULL };
+	struct sk_buff * skb, * skbs[] = { [0 ... OMX_PULL_BLOCK_DESCS_NR-1] = NULL };
 	int completed_block = !handle->block_desc[idesc].frames_missing_bitmap;
 	int i;
 
