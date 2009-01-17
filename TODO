@@ -1,4 +1,4 @@
-* make test and use it in the tinderbox
+* add an alias for localhost automatically
 
 * single cmd to send the whole mediumsq message, with single done event ?
   + less pipelining
@@ -173,3 +173,4 @@
 * req->recv.specific.medium.frags_received_mask and .accumulated_length are redundant
   + the mask is needed to detect duplicates, and the length prevents from precomputing the missing mask
 * make shared comms runtime-configurable in the driver
+* use mediumva for shared medium? seems slower
