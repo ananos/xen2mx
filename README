@@ -37,11 +37,11 @@ b. Make sure both interfaces are up with a large MTU
 
 c. Load the open-mx kernel module and tell it which interface to use
      $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
-   See sections II (Building and Installing) for details.
+   See Section II (Building and Installing) for details.
 
-d. Wait a couple seconds and run /path/to/open-mx/bin/omx_info to
+d. Wait a couple of seconds and run /path/to/open-mx/bin/omx_info to
    check that all peers are seeing each other.
-   See section IV (Peer Discovery) for details.
+   See Section IV (Peer Discovery) for details.
      $ omx_info
      node1:0 (board #0 name eth2 addr 01:02:03:04:05:06)
      ==============================================
@@ -78,7 +78,7 @@ By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
 the configure line to change this (or set prefix on the 'make install'
 command line).
 
-Open-MX brings the omx_init initialization scripts which takes care of
+Open-MX provides the omx_init initialization scripts which takes care of
 loading/unloading the driver and managing the peer table.
     $ sbin/omx_init start
 To choose which interfaces have to be attached, some module parameters
@@ -119,7 +119,7 @@ The omx_init script takes care of loading the module
 $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
 
 This module works at least on Linux kernels >=2.6.17 on i386 and x86_64 
-architectures. It also builds fine with kernels up to 2.6.15 on various
+architectures. It also builds correctly with kernels up to 2.6.15 on various
 architectures but it has not been tested intensively on these.
 
 
@@ -168,7 +168,7 @@ message throughput a lot.
 ++====================++
 
 Each Open-MX node has to be aware of the hostnames and MAC addresses
-of all other peers. By default, a dynamic peer discovery is performed
+of all the other peers. By default, a dynamic peer discovery is performed
 but it is also possible to enter a static list of peers manually.
 
 The --enable-static-peers option may be used on the configure command
@@ -268,9 +268,9 @@ Once peers are setup on both MX and Open-MX nodes, the fabric is ready.
 +--------------------------------
 | V.b. ABI and API compatibility
 
-The Open-MX API is slightly different from that of MX, but Open-MX provides
+The Open-MX API is slightly different from the MX one, but Open-MX provides
 a compatibility layer which enables:
- + Linking of applications that were compiled against MX
- + Building of applications that were written for the MX API 
+ + To link applications that were compiled against MX
+ + To build applications that were written for the MX API 
 This compatibility is enabled by default and has a very low overhead since
 it only involves going across basic conversion routines.
