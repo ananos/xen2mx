@@ -8,6 +8,16 @@ Caveats:
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
 
+Open-MX 1.0.4 (January 9th 2009, svn/open-mx-1.0.x r2244)
+=========================================================
+Bug fixes:
+* Fix management of large messages in case of many packet loss
+  at the end of the message.
+* Fix management of forgotten/zombie large receive requests.
+* Fix support for discarding rendezvous messages within the
+  unexpected handler.
+* Miscellaneous internal error code management fixes.
+
 Open-MX 1.0.3 (December 22nd 2008, svn/open-mx-1.0.x r2219)
 ===========================================================
 Bug Fixes:
