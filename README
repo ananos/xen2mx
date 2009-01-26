@@ -48,12 +48,12 @@ d. Wait a couple of seconds and run /path/to/open-mx/bin/omx_info to
      1) 01:02:03:04:05:06 node1:0
      2) a0:b0:c0:d0:e0:f0 node2:0
 
-e. Use omx_pingpong to test actual communications, on the first node:
-     node1 $ omx_pingpong
+e. Use omx_perf to test actual communications, on the first node:
+     node1 $ omx_perf
      Successfully attached endpoint #0 on board #0 (hostname 'node1:0', name 'eth2', addr 01:02:03:04:05:06)
      Starting receiver...
    then on the second node:
-     node2 $ omx_pingpong -d node1:0
+     node2 $ omx_perf -d node1:0
      Successfully attached endpoint #0 on board #0 (hostname 'node2:0', name 'eth2', addr a0:b0:c0:d0:e0:f0)
      Starting sender to node1:0...
    You should get performance numbers such as
