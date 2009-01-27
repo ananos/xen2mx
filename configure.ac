@@ -260,6 +260,19 @@ else
 fi fi
 AC_SUBST(LIB_TARGETS)
 
+AC_ARG_ENABLE(counters,
+	[AS_HELP_STRING([--enable-counters], [enable counter support in the driver])],
+	enable_profiling=$enableval, enable_counters=no)
+AC_MSG_CHECKING(if counter support is enabled in the driver)
+if test x$enable_counters = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_DRIVER_COUNTERS, [1], [Define to enable countering in the driver])
+  AC_SUBST(OMX_DRIVER_COUNTERS, 1)
+else
+  AC_MSG_RESULT(no)
+  AC_SUBST(OMX_DRIVER_COUNTERS, 0)
+fi
+
 AC_ARG_ENABLE(profiling,
 	[AS_HELP_STRING([--enable-profiling], [enable profiling support in the driver])],
 	enable_profiling=$enableval, enable_profiling=no)

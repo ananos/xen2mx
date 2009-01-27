@@ -112,10 +112,14 @@ extern void omx__raw_detach_iface_locked(struct omx_iface *iface);
 extern struct omx_iface * omx_shared_fake_iface;
 
 /* counters */
-#define omx_counter_inc(iface, index)		\
+#if defined(OMX_DRIVER_COUNTERS)
+#  define omx_counter_inc(iface, index)		\
 do {						\
 	iface->counters[OMX_COUNTER_##index]++;	\
 } while (0)
+#else
+#  define omx_counter_inc(iface, index)
+#endif /* OMX_DRIVER_COUNTERS */
 
 #endif /* __omx_iface_h__ */
 
