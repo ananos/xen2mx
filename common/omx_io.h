@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x201
+#define OMX_DRIVER_ABI_VERSION		0x202
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -62,6 +62,7 @@
 
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16
+#define OMX_DRIVER_NAMESIZE	16
 #define OMX_COMMAND_LEN_MAX	32
 
 #define OMX_RAW_PKT_LEN_MAX	1024
@@ -160,8 +161,10 @@ struct omx_cmd_get_board_info {
 		/* 96 */
 		char ifacename[OMX_IF_NAMESIZE];
 		/* 112 */
+		char drivername[OMX_DRIVER_NAMESIZE];
+		/* 128 */
 	} info;
-	/* 120 */
+	/* 136 */
 };
 
 struct omx_cmd_get_endpoint_info {

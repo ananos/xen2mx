@@ -161,6 +161,8 @@ omx_iface_get_info(uint32_t board_index, struct omx_board_info *info)
 
 	BUILD_BUG_ON(OMX_IF_NAMESIZE != IFNAMSIZ);
 
+	info->drivername[0] = '\0';
+
 	rcu_read_lock();
 
 	if (board_index == OMX_SHARED_FAKE_IFACE_INDEX) {
@@ -172,6 +174,10 @@ omx_iface_get_info(uint32_t board_index, struct omx_board_info *info)
 		info->hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 
 	} else {
+#ifdef CONFIG_PCI
+		struct device *dev;
+#endif
+
 		ret = -EINVAL;
 		if (board_index >= omx_iface_max)
 			goto out_with_lock;
@@ -188,6 +194,16 @@ omx_iface_get_info(uint32_t board_index, struct omx_board_info *info)
 		info->ifacename[OMX_IF_NAMESIZE-1] = '\0';
 		strncpy(info->hostname, iface->peer.hostname, OMX_HOSTNAMELEN_MAX);
 		info->hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+
+#ifdef CONFIG_PCI
+		dev = omx_ifp_to_dev(ifp);
+		if (dev && dev->bus == &pci_bus_type) {
+			struct pci_dev *pdev = to_pci_dev(dev);
+			BUG_ON(!pdev->driver);
+			strncpy(info->drivername, pdev->driver->name, OMX_DRIVER_NAMESIZE);
+			info->drivername[OMX_DRIVER_NAMESIZE-1] = '\0';
+		}
+#endif
 	}
 
 	rcu_read_unlock();

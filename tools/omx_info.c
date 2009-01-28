@@ -107,6 +107,8 @@ int main(int argc, char *argv[])
     printf("%s (board #%d name %s addr %s)\n",
 	   board_info.hostname, i, board_info.ifacename, board_addr_str);
 
+    if (board_info.drivername[0] != '\0')
+      printf("  managed by driver '%s'\n", board_info.drivername);
     if (board_info.numa_node != -1)
       printf("  attached to numa node %d\n", board_info.numa_node);
     printf("==============================================\n");
