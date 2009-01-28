@@ -846,3 +846,38 @@ mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uin
   omx__abort(NULL, "mx_buffered not implemented since it is not in MX either\n");
   return MX_BAD_BAD_BAD;
 }
+
+/****************************************
+ * Internal MX symbols (for OpenMPI 1.3)
+ */
+
+mx_return_t
+mx_open_board(int i, mx_endpt_handle_t *handle)
+{
+  return MX_SUCCESS;
+}
+
+typedef struct {
+  uint32_t board_number;
+  uint8_t mapper_mac[6];
+  uint16_t iport;
+  uint32_t map_version;
+  uint32_t num_hosts;
+  uint32_t network_configured;
+  uint32_t routes_valid;
+  uint32_t level;
+  uint32_t flags;
+} mx_mapper_state_t;
+
+mx_return_t
+mx__get_mapper_state(mx_endpt_handle_t handle, mx_mapper_state_t *p)
+{
+  memset(&p->mapper_mac, 0, sizeof(p->mapper_mac));
+  return MX_SUCCESS;
+}
+
+int
+mx__regcache_clean(void *ptr, size_t len)
+{
+  return 0;
+}
