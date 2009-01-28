@@ -6,8 +6,6 @@
 * pre-alloc many requests in the critical path to avoid ENOMEM in the background later ?
   + stop aborting on failure to alloc a fake recv notify when discard an unexp rndv
 
-* add an option to enable paranoid debug request checks from the configure line
-
 * only enable counters by default in debug mode
   + add --enable-counters
 

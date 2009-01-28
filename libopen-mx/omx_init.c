@@ -235,6 +235,10 @@ omx__init_comms(void)
 
   omx__globals.check_request_alloc = 0;
 #ifdef OMX_LIB_DEBUG
+#  ifdef OMX_DEBUG_REQUESTS
+  omx__globals.check_request_alloc = 1;
+  omx__verbose_printf(NULL, "Enabling request allocation check by default to level %d\n", omx__globals.check_request_alloc);
+#  endif  
   env = getenv("OMX_DEBUG_REQUESTS");
   if (env) {
     omx__globals.check_request_alloc = atoi(env);
