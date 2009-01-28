@@ -6,9 +6,6 @@
 * pre-alloc many requests in the critical path to avoid ENOMEM in the background later ?
   + stop aborting on failure to alloc a fake recv notify when discard an unexp rndv
 
-* only enable counters by default in debug mode
-  + add --enable-counters
-
 * make deferredpin the default in trunk ?
 * overlap registration with rndv and pull on the network
   + queue skb if touching after the registered_length
