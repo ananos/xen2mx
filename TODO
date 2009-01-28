@@ -1,24 +1,33 @@
+* how to tune mtu/packet-ring-size since 8k-mediums do not always help?
+
 * add an alias for localhost automatically
+  + or just rename automatically?
 
 * make omx_prepare_binding more flexible:
   + work on a single board, with --append or --clearfile
   + pass a modulo, or even a hash function
   + pass a irq-name/pattern
+* add a tool to auto-tune the interface coalescing and binding?
+  + do it within the startup script?
 
 * single cmd to send the whole mediumsq message, with single done event ?
-  + less pipelining
+  + get_user_pages/dev_queue_xmit, put_pages in the last callback
+  + less pipelining copy/queue_xmit
 
 * pre-alloc many requests in the critical path to avoid ENOMEM in the background later ?
   + stop aborting on failure to alloc a fake recv notify when discard an unexp rndv
 
-* make deferredpin the default in trunk ?
 * overlap registration with rndv and pull on the network
-  + queue skb if touching after the registered_length
-    - dequeue after registering enough
-    - or just drop and let retransmission happen?
+  + is there a page reference leak?
+  + highly experimental and optional (or keep it in a branch?)
 * regcache
   + disable regcache in omx_rcache_test when the driver feature flag is missing
-  + enable regcache in the lib when the driver feature flag is set
+* regcache malloc hook (if no driver feature flag)
+* if killed while registering, needed to mark the region as failed?
+* huge page pinning support
+  + add a pagesize in the region segment structure and use either pagesize of hugepagesize when possible
+* if failing to deregister region
+  *** glibc detected *** tests/omx_pingpong: malloc(): memory corruption: 0x000000000064edd0 ***
 
 * rework counters, distinguish packet/shared level transfer from 
   commands and events ?
@@ -45,9 +54,7 @@
   + update pull code to not assume the pull reply length is a pow2
 
 * endpoint_close cannot be called from interrupt context
-  - we can destroy region at first closing too?
-
-* if killed while registering, needed to mark the region as failed?
+  + we can destroy region at first closing too?
 
 * cleanup endpoint acquiring/locking/closing again
   + synchronize_rcu before freeing after unlinking
@@ -74,15 +81,10 @@
   + use eth_hdr(), dev->header_ops->create() and ->parse() to clarify the accessing
     to eth headers of packets and make it less ethernet specific
 
-* regcache malloc hook
-
 * affinity
   + add OMX_BH_PREWARM_CACHE= to use non-temporal only if not on the process core
     - store the process core binding when opening the endpoint
       and assume the binding won't change if the env var was set
-
-* huge page pinning support
-  + add a pagesize in the region segment structure and use either pagesize of hugepagesize when possible
 
 * error handler when completing zombie send/recv only if ep totally open, with special message
 
@@ -92,9 +94,6 @@
 * resource allocation cleanups
   + add a counter of failure to alloc small buffer with ENOMEM and abort if too many?
   + add a counter of failure to pull with ENOMEM and abort if too many?
-
-* if failing to deregister region
-  *** glibc detected *** tests/omx_pingpong: malloc(): memory corruption: 0x000000000064edd0 ***
 
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
@@ -107,7 +106,7 @@
   + unexp queue length
 
 * don't free partner on disconnect since we can't change the session anymore?
-  - or randomify the initial session?
+  + or randomify the initial session?
 
 * thread safety
   + filter wakeup on recv/send/connect/...
@@ -136,9 +135,6 @@
 
 * wire compat
   + fix lib ack contents?
-
-* optimize mediums
-  + single ioctl, pipeline get_user_pages/dev_queue_xmit, put_pages in the last callback
 
 * use large region id in the lib, only allocate uint8_t id for the wire when
   posting the rndv message or the pull request
@@ -174,3 +170,4 @@
   + the mask is needed to detect duplicates, and the length prevents from precomputing the missing mask
 * make shared comms runtime-configurable in the driver
 * use mediumva for shared medium? seems slower
+  + and mediums are not that useful for shared anyway (lower rndv threshold)
