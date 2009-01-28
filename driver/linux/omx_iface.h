@@ -118,7 +118,7 @@ do {						\
 	iface->counters[OMX_COUNTER_##index]++;	\
 } while (0)
 #else
-#  define omx_counter_inc(iface, index)
+#  define omx_counter_inc(iface, index) (void) iface /* to silence unused warning */
 #endif /* OMX_DRIVER_COUNTERS */
 
 #endif /* __omx_iface_h__ */
