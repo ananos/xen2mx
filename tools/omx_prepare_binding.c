@@ -16,8 +16,10 @@
  * See the GNU General Public License in COPYING.GPL for more details.
  */
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
@@ -32,12 +34,19 @@
 static int verbose = 0;
 static uint32_t emax;
 
+#define OMX_PROC_INTERRUPTS_LENGTH_MAX 256
+#define OMX_IFACE_SLICE_MAX 128
+
 static int
 omx__try_prepare_board(FILE *output, uint32_t board_index)
 {
+  int slice_irq[OMX_IFACE_SLICE_MAX] = { [0 ... OMX_IFACE_SLICE_MAX-1] = 0 };
+  char line[OMX_PROC_INTERRUPTS_LENGTH_MAX];
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   struct omx_board_info board_info;
   omx_return_t ret;
+  FILE *file;
+  int slicemax = 0, slicemodulo;
   int j;
 
   ret = omx__get_board_info(NULL, board_index, &board_info);
@@ -48,33 +57,112 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
 	    (unsigned long) board_index, omx_strerror(ret));
     return -1;
   }
-
   omx__board_addr_sprintf(board_addr_str, board_info.addr);
 
+  file = fopen("/proc/interrupts", "r");
+  if (!file) {
+    fprintf(stderr, "Cannot read /proc/interrupts\n");
+    return -1;
+  }
+
+  while (fgets(line, OMX_PROC_INTERRUPTS_LENGTH_MAX, file)) {
+    char *end, *tmp, *slicename;
+
+    end = strchr(line, '\n');
+    if (!end) {
+      fprintf(stderr, "/proc/interrupts line are too long, OMX_PROC_INTERRUPTS_LENGTH_MAX (%d) should be increased\n",
+	      OMX_PROC_INTERRUPTS_LENGTH_MAX);
+      fclose(file);
+      return -1;
+    }
+    *end = '\0';
+
+    if (!strchr(line, ':'))
+      /* no colon, this line is useless */
+      continue;
+
+    slicename = strrchr(line, ' ');
+    if (!slicename)
+      /* no separator, this line is useless */
+      continue;
+    slicename++;
+
+    tmp = strstr(slicename, board_info.ifacename);
+    if (tmp) {
+      int irq,slice,index;
+
+      irq = atoi(line);
+
+      /* ignore Tx interrupts */
+      if (strcasestr(slicename, "tx")) {
+	/* FIXME: add an option to cancel ignoring */
+	if (verbose)
+	  fprintf(stderr, "Ignoring Tx interrupt %d name %s\n", irq, slicename);
+	continue;
+      }
+
+      /* hide the ifacename within the slicename while searching for the slice number */
+      memset(tmp, 'X', strlen(board_info.ifacename));
+
+      index = strcspn(slicename, "0123456789");
+      tmp = slicename + index;
+      if (*tmp == '\0') {
+	if (verbose)
+	  fprintf(stderr, "Found no slice number for irq %d in slice %s\n",
+		  irq, slicename);
+	/* FIXME: assume it's slice 0, and abort if already known */
+        continue;
+      }
+      slice = atoi(tmp);
+
+      if (verbose)
+	fprintf(stderr, "Found irq %d for iface %s slice %d\n", irq, board_info.ifacename, slice);
+
+      if (slice < 0 || slice >= OMX_IFACE_SLICE_MAX) {
+	abort();
+      }
+	
+      slice_irq[slice] = irq;
+      if (slice >= slicemax)
+	slicemax = slice+1;
+    }
+  }
+
+  fclose(file);
+
+  /* if we have a contigous set of interrupts, if so, use it as a modulo key */
+  slicemodulo = slicemax;
+  for(j=0; j<slicemax; j++) {
+    if (!slice_irq[j]) {
+      if (verbose)
+	fprintf(stderr, "Non-contigous slice range found (max=%d while %d missing), disabling modulo\n",
+		slicemax, slicemodulo);
+      slicemodulo = 0;
+    }
+  }
+
   for(j=0; j<emax; j++) {
-    struct omx_cmd_get_endpoint_irq get_irq;
     char smp_affinity_path[10+strlen("/proc/irq/*/smp_affinity")];
     char line[OMX_PROCESS_BINDING_LENGTH_MAX], *end;
+    int slice, irq;
     int err;
     int fd;
 
-    get_irq.board_index = board_index;
-    get_irq.endpoint_index = j;
-    err = ioctl(omx__globals.control_fd, OMX_CMD_GET_ENDPOINT_IRQ, &get_irq);
-    if (err < 0) {
+    slice = slicemodulo ? j%slicemodulo : j;
+    irq = slice_irq[slice];
+    if (!irq) {
       if (verbose)
-	fprintf(stderr, "No IRQ found for endpoint %ld on board %ld (%s)\n",
-		(unsigned long) j, (unsigned long) board_index, board_addr_str);
+	fprintf(stderr, "Found no irq for endpoint %d\n", j);
       continue;
     }
 
-    sprintf(smp_affinity_path, "/proc/irq/%d/smp_affinity", get_irq.irq);
+    sprintf(smp_affinity_path, "/proc/irq/%d/smp_affinity", irq);
     fd = open(smp_affinity_path, O_RDONLY);
     if (fd < 0) {
       if (errno == ENOENT) {
 	if (verbose)
 	  fprintf(stderr, "No affinity found for IRQ %ld for endpoint %ld on board %ld (%s)\n",
-		  (unsigned long) get_irq.irq, (unsigned long) j, (unsigned long) board_index, board_addr_str);
+		  (unsigned long) irq, (unsigned long) j, (unsigned long) board_index, board_addr_str);
         continue;
       }
       fprintf(stderr, "Failed to open %s, %m\n", smp_affinity_path);
@@ -92,10 +180,10 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
       *end = '\0';
 
     fprintf(output, "board %s ep %ld irq %ld mask %s\n",
-	    board_addr_str, (unsigned long) j, (unsigned long) get_irq.irq, line);
+	    board_addr_str, (unsigned long) j, (unsigned long) irq, line);
     if (verbose)
       printf("Found irq %ld mask %s for endpoint %ld on board %ld (%s)\n",
-	     (unsigned long) get_irq.irq, line, (unsigned long) j, (unsigned long) board_index, board_addr_str);
+	     (unsigned long) irq, line, (unsigned long) j, (unsigned long) board_index, board_addr_str);
   }
 
   return 1;

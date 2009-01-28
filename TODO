@@ -1,5 +1,10 @@
 * add an alias for localhost automatically
 
+* make omx_prepare_binding more flexible:
+  + work on a single board, with --append or --clearfile
+  + pass a modulo, or even a hash function
+  + pass a irq-name/pattern
+
 * single cmd to send the whole mediumsq message, with single done event ?
   + less pipelining
 
