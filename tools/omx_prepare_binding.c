@@ -59,11 +59,19 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
   }
   omx__board_addr_sprintf(board_addr_str, board_info.addr);
 
+  if (verbose)
+    fprintf(stderr, "Looking at board %ld (%s)\n",
+	    (unsigned long) board_index, board_addr_str);
+
   file = fopen("/proc/interrupts", "r");
   if (!file) {
     fprintf(stderr, "Cannot read /proc/interrupts\n");
     return -1;
   }
+
+  if (verbose)
+    fprintf(stderr, "  Trying to find out interface %s interrupts\n",
+	    board_info.ifacename);
 
   while (fgets(line, OMX_PROC_INTERRUPTS_LENGTH_MAX, file)) {
     char *end, *tmp, *slicename;
@@ -97,7 +105,7 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
       if (strcasestr(slicename, "tx")) {
 	/* FIXME: add an option to cancel ignoring */
 	if (verbose)
-	  fprintf(stderr, "Ignoring Tx interrupt %d name %s\n", irq, slicename);
+	  fprintf(stderr, "    Ignoring Tx interrupt %d name %s\n", irq, slicename);
 	continue;
       }
 
@@ -108,7 +116,7 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
       tmp = slicename + index;
       if (*tmp == '\0') {
 	if (verbose)
-	  fprintf(stderr, "Found no slice number for irq %d in slice %s\n",
+	  fprintf(stderr, "    Found no slice number for irq %d in slice %s\n",
 		  irq, slicename);
 	/* FIXME: assume it's slice 0, and abort if already known */
         continue;
@@ -116,7 +124,7 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
       slice = atoi(tmp);
 
       if (verbose)
-	fprintf(stderr, "Found irq %d for iface %s slice %d\n", irq, board_info.ifacename, slice);
+	fprintf(stderr, "    Found irq %d for iface %s slice %d\n", irq, board_info.ifacename, slice);
 
       if (slice < 0 || slice >= OMX_IFACE_SLICE_MAX) {
 	abort();
@@ -130,12 +138,16 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
 
   fclose(file);
 
+  if (verbose)
+    fprintf(stderr, "  Trying to associate interface %s interrupts with endpoints\n",
+	    board_info.ifacename);
+
   /* if we have a contigous set of interrupts, if so, use it as a modulo key */
   slicemodulo = slicemax;
   for(j=0; j<slicemax; j++) {
     if (!slice_irq[j]) {
       if (verbose)
-	fprintf(stderr, "Non-contigous slice range found (max=%d while %d missing), disabling modulo\n",
+	fprintf(stderr, "    Non-contigous slice range found (max=%d while %d missing), disabling modulo\n",
 		slicemax, slicemodulo);
       slicemodulo = 0;
     }
@@ -152,7 +164,7 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
     irq = slice_irq[slice];
     if (!irq) {
       if (verbose)
-	fprintf(stderr, "Found no irq for endpoint %d\n", j);
+	fprintf(stderr, "    Found no irq for endpoint %d\n", j);
       continue;
     }
 
@@ -161,7 +173,7 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
     if (fd < 0) {
       if (errno == ENOENT) {
 	if (verbose)
-	  fprintf(stderr, "No affinity found for IRQ %ld for endpoint %ld on board %ld (%s)\n",
+	  fprintf(stderr, "    No affinity found for IRQ %ld for endpoint %ld on board %ld (%s)\n",
 		  (unsigned long) irq, (unsigned long) j, (unsigned long) board_index, board_addr_str);
         continue;
       }
@@ -182,7 +194,7 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
     fprintf(output, "board %s ep %ld irq %ld mask %s\n",
 	    board_addr_str, (unsigned long) j, (unsigned long) irq, line);
     if (verbose)
-      printf("Found irq %ld mask %s for endpoint %ld on board %ld (%s)\n",
+      printf("    Found irq %ld mask %s for endpoint %ld on board %ld (%s)\n",
 	     (unsigned long) irq, line, (unsigned long) j, (unsigned long) board_index, board_addr_str);
   }
 
