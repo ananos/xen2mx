@@ -400,6 +400,10 @@ omx__init_comms(void)
   }
 
   omx__globals.regcache = omx__globals.parallel_regcache;
+  if (omx__driver_desc->features & OMX_DRIVER_FEATURE_PIN_INVALIDATE) {
+    omx__globals.regcache = 1;
+    omx__verbose_printf(NULL, "Enabling regcache by default since driver reports pin-invalidate support\n");
+  }
   env = getenv("OMX_RCACHE");
 #ifdef OMX_MX_ABI_COMPAT
   if (!env) {
