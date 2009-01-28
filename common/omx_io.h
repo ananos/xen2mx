@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x202
+#define OMX_DRIVER_ABI_VERSION		0x203
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -199,14 +199,6 @@ struct omx_cmd_set_hostname {
 	/* 8 */
 	char hostname[OMX_HOSTNAMELEN_MAX];
 	/* 88 */
-};
-
-struct omx_cmd_get_endpoint_irq {
-	uint32_t board_index;
-	uint32_t endpoint_index;
-	/* 8 */
-	uint32_t irq;
-	uint32_t pad;
 };
 
 struct omx_cmd_misc_peer_info {
@@ -507,7 +499,6 @@ struct omx_cmd_bench {
 #define OMX_CMD_GET_ENDPOINT_INFO	_IOWR(OMX_CMD_MAGIC, 0x13, struct omx_cmd_get_endpoint_info)
 #define OMX_CMD_GET_COUNTERS		_IOWR(OMX_CMD_MAGIC, 0x14, struct omx_cmd_get_counters)
 #define OMX_CMD_SET_HOSTNAME		_IOR(OMX_CMD_MAGIC, 0x15, struct omx_cmd_set_hostname)
-#define OMX_CMD_GET_ENDPOINT_IRQ	_IOWR(OMX_CMD_MAGIC, 0x16, struct omx_cmd_get_endpoint_irq)
 #define OMX_CMD_PEER_TABLE_SET_STATE	_IOW(OMX_CMD_MAGIC, 0x20, struct omx_cmd_peer_table_state)
 #define OMX_CMD_PEER_TABLE_CLEAR	_IO(OMX_CMD_MAGIC, 0x21)
 #define OMX_CMD_PEER_TABLE_CLEAR_NAMES	_IO(OMX_CMD_MAGIC, 0x22)

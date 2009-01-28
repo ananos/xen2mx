@@ -427,18 +427,10 @@ omx_iface_attach(struct net_device * ifp)
 #ifdef CONFIG_PCI
 	if (dev && dev->bus == &pci_bus_type) {
 		struct pci_dev *pdev = to_pci_dev(dev);
-		char *symbol_name;
 
 		BUG_ON(!pdev->driver);
 		printk(KERN_INFO "Open-MX:   Interface '%s' is PCI device '%s' managed by driver '%s'\n",
 		       ifp->name, dev->bus_id, pdev->driver->name);
-
-		symbol_name = kmalloc(sizeof(pdev->driver->name)
-				      +sizeof("_get_omx_endpoint_irq")+1, GFP_KERNEL);
-		if (symbol_name) {
-			sprintf(symbol_name, "%s_get_omx_endpoint_irq", pdev->driver->name);
-			iface->get_endpoint_irq_symbol_name = symbol_name;
-		}
 	}
 #endif
 
@@ -497,7 +489,6 @@ omx_iface_attach(struct net_device * ifp)
  out_with_iface_hostname:
 	kfree(hostname);
  out_with_iface:
-	kfree(iface->get_endpoint_irq_symbol_name);
 	kfree(iface);
  out_with_ifp_hold:
 	return ret;
@@ -516,7 +507,6 @@ __omx_iface_last_release(struct kref *kref)
 	omx_iface_raw_exit(&iface->raw);
 	kfree(iface->endpoints);
 	kfree(iface->peer.hostname);
-	kfree(iface->get_endpoint_irq_symbol_name);
 	kfree(iface);
 
 	/* release the interface now, it will wakeup the unregister notifier waiting in rtnl_unlock() */
@@ -936,50 +926,6 @@ omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 
 	rcu_read_unlock();
 	return 0;
-
- out_with_rcu_lock:
-	rcu_read_unlock();
- out:
-	return ret;
-}
-
-int
-omx_iface_get_endpoint_irq(uint32_t board_index, uint32_t endpoint_index,
-			   uint32_t *irq)
-{
-	struct omx_iface *iface;
-	int (*get_endpoint_irq)(struct net_device *, unsigned int, unsigned int *);
-	int ret;
-
-	ret = -EINVAL;
-	if (board_index >= omx_iface_max)
-		goto out;
-
-	rcu_read_lock();
-	iface = rcu_dereference(omx_ifaces[board_index]);
-	if (!iface)
-		goto out_with_rcu_lock;
-
-	ret = -ENODEV;
-	if (!iface->get_endpoint_irq_symbol_name)
-		goto out_with_rcu_lock;
-
-	get_endpoint_irq = __symbol_get(iface->get_endpoint_irq_symbol_name);
-	if (!get_endpoint_irq) {
-		printk("Open-MX: Failed to find driver hook '%s' for iface '%s'\n",
-		       iface->get_endpoint_irq_symbol_name, iface->eth_ifp->name);
-		kfree(iface->get_endpoint_irq_symbol_name);
-		iface->get_endpoint_irq_symbol_name = NULL;
-		goto out_with_rcu_lock;
-	}
-
-	ret = get_endpoint_irq(iface->eth_ifp, endpoint_index, irq);
-	if (ret < 0) {
-		printk("Open-MX: Driver hook '%s' for iface '%s' returned error %d\n",
-		       iface->get_endpoint_irq_symbol_name, iface->eth_ifp->name, ret);
-	}
-
-	symbol_put_addr(get_endpoint_irq);
 
  out_with_rcu_lock:
 	rcu_read_unlock();
