@@ -262,7 +262,7 @@ AC_SUBST(LIB_TARGETS)
 
 AC_ARG_ENABLE(counters,
 	[AS_HELP_STRING([--enable-counters], [enable counter support in the driver])],
-	enable_profiling=$enableval, enable_counters=no)
+	enable_counters=$enableval, enable_counters=yes)
 AC_MSG_CHECKING(if counter support is enabled in the driver)
 if test x$enable_counters = xyes; then
   AC_MSG_RESULT(yes)
