@@ -115,6 +115,18 @@ other-installonly:
 other-install: other-installonly
 
 ##############
+# tags
+
+CTAGS ?= ctags
+ETAGS ?= etags
+
+.PHONY: tags
+
+tags:
+	$(CTAGS) --recurse=yes $(srcdir)
+	$(ETAGS) --recurse=yes $(srcdir)
+
+##############
 # test
 
 .PHONY: check check-base check-loopback check-misc check-vect check-pingpong check-random-loop
