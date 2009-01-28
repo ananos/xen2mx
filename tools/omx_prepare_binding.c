@@ -29,6 +29,78 @@
 
 #include "omx_lib.h"
 
+static int verbose = 0;
+static uint32_t emax;
+
+static int
+omx__try_prepare_board(FILE *output, uint32_t board_index)
+{
+  char board_addr_str[OMX_BOARD_ADDR_STRLEN];
+  struct omx_board_info board_info;
+  omx_return_t ret;
+  int j;
+
+  ret = omx__get_board_info(NULL, board_index, &board_info);
+  if (ret == OMX_BOARD_NOT_FOUND)
+    return 0;
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to read board #%ld id, %s\n",
+	    (unsigned long) board_index, omx_strerror(ret));
+    return -1;
+  }
+
+  omx__board_addr_sprintf(board_addr_str, board_info.addr);
+
+  for(j=0; j<emax; j++) {
+    struct omx_cmd_get_endpoint_irq get_irq;
+    char smp_affinity_path[10+strlen("/proc/irq/*/smp_affinity")];
+    char line[OMX_PROCESS_BINDING_LENGTH_MAX], *end;
+    int err;
+    int fd;
+
+    get_irq.board_index = board_index;
+    get_irq.endpoint_index = j;
+    err = ioctl(omx__globals.control_fd, OMX_CMD_GET_ENDPOINT_IRQ, &get_irq);
+    if (err < 0) {
+      if (verbose)
+	fprintf(stderr, "No IRQ found for endpoint %ld on board %ld (%s)\n",
+		(unsigned long) j, (unsigned long) board_index, board_addr_str);
+      continue;
+    }
+
+    sprintf(smp_affinity_path, "/proc/irq/%d/smp_affinity", get_irq.irq);
+    fd = open(smp_affinity_path, O_RDONLY);
+    if (fd < 0) {
+      if (errno == ENOENT) {
+	if (verbose)
+	  fprintf(stderr, "No affinity found for IRQ %ld for endpoint %ld on board %ld (%s)\n",
+		  (unsigned long) get_irq.irq, (unsigned long) j, (unsigned long) board_index, board_addr_str);
+        continue;
+      }
+      fprintf(stderr, "Failed to open %s, %m\n", smp_affinity_path);
+      return -1;
+    }
+
+    err = read(fd, line, OMX_PROCESS_BINDING_LENGTH_MAX);
+    if (err < 0) {
+      fprintf(stderr, "Failed to read %s, %m\n", smp_affinity_path);
+      return -1;
+    }
+    line[err] = '\0';
+    end = strchr(line, '\n');
+    if (end)
+      *end = '\0';
+
+    fprintf(output, "board %s ep %ld irq %ld mask %s\n",
+	    board_addr_str, (unsigned long) j, (unsigned long) get_irq.irq, line);
+    if (verbose)
+      printf("Found irq %ld mask %s for endpoint %ld on board %ld (%s)\n",
+	     (unsigned long) get_irq.irq, line, (unsigned long) j, (unsigned long) board_index, board_addr_str);
+  }
+
+  return 1;
+}
+
 static void
 usage(int argc, char *argv[])
 {
@@ -39,14 +111,12 @@ usage(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-  char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   omx_return_t ret;
   char *file = OMX_PROCESS_BINDING_FILE;
   int outfd;
   FILE *output;
-  uint32_t max, emax, count;
-  int found, i, j;
-  int verbose = 0;
+  uint32_t max, count;
+  int found, i;
   int c;
 
   ret = omx_init();
@@ -92,69 +162,13 @@ int main(int argc, char *argv[])
   }
 
   for(i=0, found=0; i<max && found<count; i++) {
-    uint32_t board_index = i;
-    struct omx_board_info board_info;
-
-    ret = omx__get_board_info(NULL, board_index, &board_info);
-    if (ret == OMX_BOARD_NOT_FOUND)
-      continue;
-    if (ret != OMX_SUCCESS) {
-      fprintf(stderr, "Failed to read board #%d id, %s\n", i, omx_strerror(ret));
+    int err = omx__try_prepare_board(output, i);
+    if (err < 0)
       goto out;
-    }
-
-    assert(i == board_index);
-    found++;
-
-    omx__board_addr_sprintf(board_addr_str, board_info.addr);
-
-    for(j=0; j<emax; j++) {
-      struct omx_cmd_get_endpoint_irq get_irq;
-      char smp_affinity_path[10+strlen("/proc/irq/*/smp_affinity")];
-      char line[OMX_PROCESS_BINDING_LENGTH_MAX], *end;
-      int err;
-      int fd;
-
-      get_irq.board_index = board_index;
-      get_irq.endpoint_index = j;
-      err = ioctl(omx__globals.control_fd, OMX_CMD_GET_ENDPOINT_IRQ, &get_irq);
-      if (err < 0) {
-	if (verbose)
-	  fprintf(stderr, "No IRQ found for endpoint %ld on board %ld (%s)\n",
-		  (unsigned long) j, (unsigned long) i, board_addr_str);
-        continue;
-      }
-
-      sprintf(smp_affinity_path, "/proc/irq/%d/smp_affinity", get_irq.irq);
-      fd = open(smp_affinity_path, O_RDONLY);
-      if (fd < 0) {
-	if (errno == ENOENT) {
-	  if (verbose)
-	    fprintf(stderr, "No affinity found for IRQ %ld for endpoint %ld on board %ld (%s)\n",
-		    (unsigned long) get_irq.irq, (unsigned long) j, (unsigned long) i, board_addr_str);
-          continue;
-	}
-	fprintf(stderr, "Failed to open %s, %m\n", smp_affinity_path);
-	goto out;
-      }
-
-      err = read(fd, line, OMX_PROCESS_BINDING_LENGTH_MAX);
-      if (err < 0) {
-	fprintf(stderr, "Failed to read %s, %m\n", smp_affinity_path);
-	goto out;
-      }
-      line[err] = '\0';
-      end = strchr(line, '\n');
-      if (end)
-	*end = '\0';
-
-      fprintf(output, "board %s ep %ld irq %ld mask %s\n",
-	      board_addr_str, (unsigned long) j, (unsigned long) get_irq.irq, line);
-      if (verbose)
-	printf("Found irq %ld mask %s for endpoint %ld on board %ld (%s)\n",
-	       (unsigned long) get_irq.irq, line, (unsigned long) j, (unsigned long) i, board_addr_str);
-    }
+    if (err)
+      found++;
   }
+
   fclose(output);
   printf("Generated bindings in %s\n", file);
 
