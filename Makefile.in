@@ -138,7 +138,7 @@ check-base:
 	$(CMDPREFIX) tools/omx_info
 	@echo "  **************************"
 	@echo "  CHECK board #0 is loopback"
-	$(CMDPREFIX) tools/omx_info | grep "board #0 name lo addr 00:00:00:00:00:00" >/dev/null 2>&1 || echo "No"
+	$(CMDPREFIX) tools/omx_info | grep "board #0 name lo addr 00:00:00:00:00:00" >/dev/null 2>&1 || (echo "No" && false)
 
 check-loopback:
 	@echo "  ************************************"
@@ -164,18 +164,18 @@ check-misc:
 	@echo "  *************"
 	@echo "  TEST wait_any"
 	$(CMDPREFIX) OMX_DISABLE_SHARED=1 tests/mx/mx_wait_any_test & _pid=$$! ; sleep 1 ; \
-		OMX_DISABLE_SHARED=1 tests/mx/mx_wait_any_test -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		OMX_DISABLE_SHARED=1 tests/mx/mx_wait_any_test -e 3 -d localhost ; sleep 1 ; \
 		kill -9 $$_pid 2>/dev/null ; sleep 1
 	@echo "  ***********"
 	@echo "  TEST cancel"
 	$(CMDPREFIX) tests/omx_cancel_test & _pid=$$! ; sleep 1 ; kill -STOP $$_pid ; sleep 1 ; \
-		tests/omx_cancel_test -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		tests/omx_cancel_test -e 3 -d localhost ; sleep 1 ; \
 		kill -9 $$_pid ; kill -CONT $$_pid ; sleep 1
 	@echo "  ***********"
 	@echo "  TEST wakeup"
 	$(CMDPREFIX) if [ -e tests/mx/mx_wakeup_test ] ; then \
 		tests/mx/mx_wakeup_test & _pid=$$! ; sleep 1 ; kill -STOP $$_pid ; sleep 1 ; \
-		tests/mx/mx_wakeup_test -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		tests/mx/mx_wakeup_test -e 3 -d localhost ; sleep 1 ; \
 		kill -9 $$_pid ; kill -CONT $$_pid ; sleep 1 ; \
 	else echo "Not built" ; fi
 
@@ -194,12 +194,12 @@ check-pingpong:
 	@echo "  ************************************"
 	@echo "  TEST pingpong with native networking"
 	$(CMDPREFIX) OMX_DISABLE_SHARED=1 tests/omx_perf & _pid=$$! ; sleep 1 ; \
-		OMX_DISABLE_SHARED=1 tests/omx_perf -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		OMX_DISABLE_SHARED=1 tests/omx_perf -e 3 -d localhost ; sleep 1 ; \
 		kill -9 $$_pid 2>/dev/null ; sleep 1
 	@echo "  ************************************"
 	@echo "  TEST pingpong with shared networking"
 	$(CMDPREFIX) tests/omx_perf & _pid=$$! ; sleep 1 ; \
-		tests/omx_perf -e 3 -d $(shell tools/omx_info | grep "board #0" | cut -d' ' -f1 2>/dev/null) ; sleep 1 ; \
+		tests/omx_perf -e 3 -d localhost ; sleep 1 ; \
 		kill -9 $$_pid 2>/dev/null ; sleep 1
 
 check-random-loop:
