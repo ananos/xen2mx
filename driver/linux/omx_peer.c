@@ -291,8 +291,10 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 
 	list_for_each_entry(oldpeer, &omx_peer_addr_hash_array[hash], addr_hash_elt) {
 		if (oldpeer->board_addr == board_addr) {
-
 			/* the peer is already in the table, replace it */
+
+			/* there cannot be another iface with same address */
+			BUG_ON(ifacepeer->local_iface);
 
 			index = oldpeer->index;
 
