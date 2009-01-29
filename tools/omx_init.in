@@ -100,6 +100,7 @@ unload_omx() {
         /sbin/rmmod open-mx
     fi
     rm -f "$MAIN_DEVICE_NAME" || true
+    rm -f "$RAW_DEVICE_NAME" || true
 }
 
 # Load the Open-MX module
