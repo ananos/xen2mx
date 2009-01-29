@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
   int i;
   struct timeval tv1, tv2;
   char *buffer1, *buffer2;
-  char c;
+  int c;
   int length = LENGTH;
   int iter = ITER;
 
