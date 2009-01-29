@@ -456,7 +456,10 @@ omx_iface_attach(struct net_device * ifp)
 		goto out_with_iface;
 	}
 
-	snprintf(hostname, OMX_HOSTNAMELEN_MAX, "%s:%d", omx_current_utsname.nodename, i);
+	if (ifp->type == ARPHRD_LOOPBACK)
+		snprintf(hostname, OMX_HOSTNAMELEN_MAX, "localhost");
+	else
+		snprintf(hostname, OMX_HOSTNAMELEN_MAX, "%s:%d", omx_current_utsname.nodename, i);
 	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 	iface->peer.hostname = hostname;
 	iface->peer.index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
