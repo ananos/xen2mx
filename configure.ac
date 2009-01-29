@@ -278,7 +278,7 @@ else
 fi
 
 AC_ARG_ENABLE(counters,
-	[AS_HELP_STRING([--enable-counters], [enable counter support in the driver])],
+	[AS_HELP_STRING([--disable-counters], [disable counters support in the driver])],
 	enable_counters=$enableval, enable_counters=yes)
 AC_MSG_CHECKING(if counter support is enabled in the driver)
 if test x$enable_counters = xyes; then
