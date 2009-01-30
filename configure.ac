@@ -553,8 +553,8 @@ OMX_MAIN_DEVICE_NAME=open-mx
 OMX_MAIN_DEVICE_GROUP=root
 OMX_MAIN_DEVICE_MODE=0666
 main_device_path=$(echo $main_device_attrs | cut -d: -f1)
-main_device_group=$(echo $main_device_attrs | cut -d: -f2)
-main_device_mode=$(echo $main_device_attrs | cut -d: -f3)
+main_device_group=$(echo $main_device_attrs | cut -d: -f2 -s)
+main_device_mode=$(echo $main_device_attrs | cut -d: -f3 -s)
 if ! test -z "$main_device_path"; then
   main_device_path=$(echo "$main_device_path" | sed -r -e 's@//+@/@g')
   main_device_name=${main_device_path##/dev/}
@@ -588,8 +588,8 @@ OMX_RAW_DEVICE_NAME=open-mx-raw
 OMX_RAW_DEVICE_GROUP=root
 OMX_RAW_DEVICE_MODE=0660
 raw_device_path=$(echo $raw_device_attrs | cut -d: -f1)
-raw_device_group=$(echo $raw_device_attrs | cut -d: -f2)
-raw_device_mode=$(echo $raw_device_attrs | cut -d: -f3)
+raw_device_group=$(echo $raw_device_attrs | cut -d: -f2 -s)
+raw_device_mode=$(echo $raw_device_attrs | cut -d: -f3 -s)
 if ! test -z "$raw_device_path"; then
   raw_device_path=$(echo "$raw_device_path" | sed -r -e 's@//+@/@g')
   raw_device_name=${raw_device_path##/dev/}
