@@ -550,7 +550,11 @@ AC_ARG_WITH(device,
 
 AC_MSG_CHECKING(main device node name)
 OMX_MAIN_DEVICE_NAME=open-mx
+OMX_MAIN_DEVICE_GROUP=root
+OMX_MAIN_DEVICE_MODE=0666
 main_device_path=$(echo $main_device_attrs | cut -d: -f1)
+main_device_group=$(echo $main_device_attrs | cut -d: -f2)
+main_device_mode=$(echo $main_device_attrs | cut -d: -f3)
 if ! test -z "$main_device_path"; then
   main_device_path=$(echo "$main_device_path" | sed -r -e 's@//+@/@g')
   main_device_name=${main_device_path##/dev/}
@@ -562,22 +566,16 @@ if ! test -z "$main_device_path"; then
   fi
   OMX_MAIN_DEVICE_NAME="$main_device_name"
 fi
-AC_MSG_RESULT($OMX_MAIN_DEVICE_NAME)
-AC_DEFINE_UNQUOTED(OMX_MAIN_DEVICE_NAME, "$OMX_MAIN_DEVICE_NAME", [Define to change the main device node name])
-AC_SUBST(OMX_MAIN_DEVICE_NAME)
-
-OMX_MAIN_DEVICE_GROUP=root
-main_device_group=$(echo $main_device_attrs | cut -d: -f2)
 if ! test -z "$main_device_group"; then
   OMX_MAIN_DEVICE_GROUP=$main_device_group
 fi
-AC_SUBST(OMX_MAIN_DEVICE_GROUP)
-
-OMX_MAIN_DEVICE_MODE=0666
-main_device_mode=$(echo $main_device_attrs | cut -d: -f3)
 if ! test -z "$main_device_mode"; then
   OMX_MAIN_DEVICE_MODE=$main_device_mode
 fi
+AC_MSG_RESULT($OMX_MAIN_DEVICE_NAME (group=$OMX_MAIN_DEVICE_GROUP, mode=$OMX_MAIN_DEVICE_MODE))
+AC_DEFINE_UNQUOTED(OMX_MAIN_DEVICE_NAME, "$OMX_MAIN_DEVICE_NAME", [Define to change the main device node name])
+AC_SUBST(OMX_MAIN_DEVICE_NAME)
+AC_SUBST(OMX_MAIN_DEVICE_GROUP)
 AC_SUBST(OMX_MAIN_DEVICE_MODE)
 
 AC_ARG_WITH(raw-device,
@@ -587,7 +585,11 @@ AC_ARG_WITH(raw-device,
 
 AC_MSG_CHECKING(raw device node name)
 OMX_RAW_DEVICE_NAME=open-mx-raw
+OMX_RAW_DEVICE_GROUP=root
+OMX_RAW_DEVICE_MODE=0660
 raw_device_path=$(echo $raw_device_attrs | cut -d: -f1)
+raw_device_group=$(echo $raw_device_attrs | cut -d: -f2)
+raw_device_mode=$(echo $raw_device_attrs | cut -d: -f3)
 if ! test -z "$raw_device_path"; then
   raw_device_path=$(echo "$raw_device_path" | sed -r -e 's@//+@/@g')
   raw_device_name=${raw_device_path##/dev/}
@@ -599,22 +601,16 @@ if ! test -z "$raw_device_path"; then
   fi
   OMX_RAW_DEVICE_NAME="$raw_device_name"
 fi
-AC_MSG_RESULT($OMX_RAW_DEVICE_NAME)
-AC_DEFINE_UNQUOTED(OMX_RAW_DEVICE_NAME, "$OMX_RAW_DEVICE_NAME", [Define to change the raw device node name])
-AC_SUBST(OMX_RAW_DEVICE_NAME)
-
-OMX_RAW_DEVICE_GROUP=root
-raw_device_group=$(echo $raw_device_attrs | cut -d: -f2)
 if ! test -z "$raw_device_group"; then
   OMX_RAW_DEVICE_GROUP=$raw_device_group
 fi
-AC_SUBST(OMX_RAW_DEVICE_GROUP)
-
-OMX_RAW_DEVICE_MODE=0660
-raw_device_mode=$(echo $raw_device_attrs | cut -d: -f3)
 if ! test -z "$raw_device_mode"; then
   OMX_RAW_DEVICE_MODE=$raw_device_mode
 fi
+AC_MSG_RESULT($OMX_RAW_DEVICE_NAME (group=$OMX_RAW_DEVICE_GROUP, mode=$OMX_RAW_DEVICE_MODE))
+AC_DEFINE_UNQUOTED(OMX_RAW_DEVICE_NAME, "$OMX_RAW_DEVICE_NAME", [Define to change the raw device node name])
+AC_SUBST(OMX_RAW_DEVICE_NAME)
+AC_SUBST(OMX_RAW_DEVICE_GROUP)
 AC_SUBST(OMX_RAW_DEVICE_MODE)
 
 AC_ARG_WITH(udev-rules-dir,
