@@ -548,11 +548,21 @@ AC_ARG_WITH(device,
 	[change main device node name, group and/or mode])],
 	main_device_attrs=$withval, main_device_attrs="")
 
-OMX_MAIN_DEVICE_NAME=/dev/open-mx
-main_device_name=$(echo $main_device_attrs | cut -d: -f1)
-if ! test -z "$main_device_name"; then
-  OMX_MAIN_DEVICE_NAME=$main_device_name
+AC_MSG_CHECKING(main device node name)
+OMX_MAIN_DEVICE_NAME=open-mx
+main_device_path=$(echo $main_device_attrs | cut -d: -f1)
+if ! test -z "$main_device_path"; then
+  main_device_path=$(echo "$main_device_path" | sed -r -e 's@//+@/@g')
+  main_device_name=${main_device_path##/dev/}
+  if test "$main_device_name" = "$main_device_path"; then
+    AC_MSG_ERROR(device path must start with /dev/)
+  fi
+  if test -z "$main_device_name" ; then
+    AC_MSG_ERROR(cannot use empty device name within /dev/)
+  fi
+  OMX_MAIN_DEVICE_NAME="$main_device_name"
 fi
+AC_MSG_RESULT($OMX_MAIN_DEVICE_NAME)
 AC_DEFINE_UNQUOTED(OMX_MAIN_DEVICE_NAME, "$OMX_MAIN_DEVICE_NAME", [Define to change the main device node name])
 AC_SUBST(OMX_MAIN_DEVICE_NAME)
 
@@ -575,11 +585,21 @@ AC_ARG_WITH(raw-device,
 	[change raw device node name, group and/or mode])],
 	raw_device_attrs=$withval, raw_device_attrs="")
 
-OMX_RAW_DEVICE_NAME=/dev/open-mx-raw
-raw_device_name=$(echo $raw_device_attrs | cut -d: -f1)
-if ! test -z "$raw_device_name"; then
-  OMX_RAW_DEVICE_NAME=$raw_device_name
+AC_MSG_CHECKING(raw device node name)
+OMX_RAW_DEVICE_NAME=open-mx-raw
+raw_device_path=$(echo $raw_device_attrs | cut -d: -f1)
+if ! test -z "$raw_device_path"; then
+  raw_device_path=$(echo "$raw_device_path" | sed -r -e 's@//+@/@g')
+  raw_device_name=${raw_device_path##/dev/}
+  if test "$raw_device_name" = "$raw_device_path"; then
+    AC_MSG_ERROR(raw device path must start with /dev/)
+  fi
+  if test -z "$raw_device_name" ; then
+    AC_MSG_ERROR(cannot use empty raw device name within /dev/)
+  fi
+  OMX_RAW_DEVICE_NAME="$raw_device_name"
 fi
+AC_MSG_RESULT($OMX_RAW_DEVICE_NAME)
 AC_DEFINE_UNQUOTED(OMX_RAW_DEVICE_NAME, "$OMX_RAW_DEVICE_NAME", [Define to change the raw device node name])
 AC_SUBST(OMX_RAW_DEVICE_NAME)
 

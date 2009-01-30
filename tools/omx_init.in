@@ -99,8 +99,8 @@ unload_omx() {
         echo "Removing Open-MX driver"
         /sbin/rmmod open-mx
     fi
-    rm -f "$MAIN_DEVICE_NAME" || true
-    rm -f "$RAW_DEVICE_NAME" || true
+    rm -f "/dev/$MAIN_DEVICE_NAME" || true
+    rm -f "/dev/$RAW_DEVICE_NAME" || true
 }
 
 # Load the Open-MX module
@@ -128,43 +128,43 @@ load_omx() {
     sleep 1
 
     # create the main device node if necessary
-    if ! test -e $MAIN_DEVICE_NAME; then
-	echo "Creating '$MAIN_DEVICE_NAME'"
+    if ! test -e "/dev/$MAIN_DEVICE_NAME"; then
+	echo "Creating '/dev/$MAIN_DEVICE_NAME'"
 	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
 	minor=$(sed -nr -e 's/ *([0-9]+) *open-mx$/\1/p' /proc/misc)
 	if test -z "$major" -o -z "$minor"; then
 	    echo "[ERROR] Failed to retrieve main device major/minor numbers"
 	else
-	    mknod "$MAIN_DEVICE_NAME" c "$major" "$minor" \
+	    mknod "/dev/$MAIN_DEVICE_NAME" c "$major" "$minor" \
 		|| echo "[ERROR] Failed to create main device node"
 	fi
     fi
 
     # set main device node mode and group
-    echo "Setting group '$MAIN_DEVICE_GROUP' and mode '$MAIN_DEVICE_MODE' on main device '$MAIN_DEVICE_NAME'"
-    chgrp "$MAIN_DEVICE_GROUP" "$MAIN_DEVICE_NAME" \
+    echo "Setting group '$MAIN_DEVICE_GROUP' and mode '$MAIN_DEVICE_MODE' on main device '/dev/$MAIN_DEVICE_NAME'"
+    chgrp "$MAIN_DEVICE_GROUP" "/dev/$MAIN_DEVICE_NAME" \
 	|| echo "[ERROR] Failed to set main device mode"
-    chmod "$MAIN_DEVICE_MODE" "$MAIN_DEVICE_NAME" \
+    chmod "$MAIN_DEVICE_MODE" "/dev/$MAIN_DEVICE_NAME" \
 	|| echo "[ERROR] Failed to set main device group"
 
     # create the raw device node if necessary
-    if ! test -e $RAW_DEVICE_NAME; then
-	echo "Creating '$RAW_DEVICE_NAME'"
+    if ! test -e "/dev/$RAW_DEVICE_NAME"; then
+	echo "Creating '/dev/$RAW_DEVICE_NAME'"
 	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
 	minor=$(sed -nr -e 's/ *([0-9]+) *open-mx-raw$/\1/p' /proc/misc)
 	if test -z "$major" -o -z "$minor"; then
 	    echo "[ERROR] Failed to retrieve raw device major/minor numbers"
 	else
-	    mknod "$RAW_DEVICE_NAME" c "$major" "$minor" \
+	    mknod "/dev/$RAW_DEVICE_NAME" c "$major" "$minor" \
 		|| echo "[ERROR] Failed to create raw device node"
 	fi
     fi
 
     # set raw device node mode and group
-    echo "Setting group '$RAW_DEVICE_GROUP' and mode '$RAW_DEVICE_MODE' on raw device '$RAW_DEVICE_NAME'"
-    chgrp "$RAW_DEVICE_GROUP" "$RAW_DEVICE_NAME" \
+    echo "Setting group '$RAW_DEVICE_GROUP' and mode '$RAW_DEVICE_MODE' on raw device '/dev/$RAW_DEVICE_NAME'"
+    chgrp "$RAW_DEVICE_GROUP" "/dev/$RAW_DEVICE_NAME" \
 	|| echo "[ERROR] Failed to set raw device mode"
-    chmod "$RAW_DEVICE_MODE" "$RAW_DEVICE_NAME" \
+    chmod "$RAW_DEVICE_MODE" "/dev/$RAW_DEVICE_NAME" \
 	|| echo "[ERROR] Failed to set raw device group"
 }
 
@@ -283,7 +283,7 @@ case "$cmd" in
     status)
 	if grep -E 'open(-|_)mx' /proc/modules > /dev/null; then
 	    echo "Open-MX driver is loaded"
-	    cat "$MAIN_DEVICE_NAME"
+	    cat "/dev/$MAIN_DEVICE_NAME"
 	else
 	    echo "Open-MX driver is not loaded"
 	fi

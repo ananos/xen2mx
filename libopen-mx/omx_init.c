@@ -130,7 +130,7 @@ omx__init_api(int app_api)
   /*********************************
    * Open, map and check the driver
    */
-  err = open(OMX_MAIN_DEVICE_NAME, O_RDONLY);
+  err = open("/dev/" OMX_MAIN_DEVICE_NAME, O_RDONLY);
   if (err < 0) {
     ret = omx__errno_to_return();
     if (ret == OMX_INTERNAL_UNEXPECTED_ERRNO)

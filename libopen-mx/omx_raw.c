@@ -40,7 +40,7 @@ omx_raw_open_endpoint(uint32_t board_number,
   struct omx_raw_endpoint *ep;
   int fd, err;
 
-  fd = open(OMX_RAW_DEVICE_NAME, O_RDWR);
+  fd = open("/dev/" OMX_RAW_DEVICE_NAME, O_RDWR);
   if (fd < 0)
     return omx__errno_to_return();
 
