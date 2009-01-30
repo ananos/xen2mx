@@ -10,9 +10,9 @@ OMX_CONFIG_STUB=${OMX_PREFIX}/sbin/open-mx.conf
 OMX_CONFIG_DIR=/etc/open-mx
 OMX_CONFIG_DEST=${OMX_CONFIG_DIR}/open-mx.conf
 
-UDEV_RULES_DIR=/etc/udev/rules.d
-UDEV_RULES_FILE=${OMX_PREFIX}/sbin/45-open-mx.rules
-UDEV_RULES_DEST=${UDEV_RULES_DIR}/45-open-mx.rules
+UDEV_RULES_DIR=@omx_udev_rules_dir@
+UDEV_RULES_FILE=${OMX_PREFIX}/sbin/@omx_udev_rules_file@
+UDEV_RULES_DEST=${UDEV_RULES_DIR}/@omx_udev_rules_file@
 
 set -e
 

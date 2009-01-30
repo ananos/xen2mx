@@ -85,20 +85,24 @@ installonly:
 		-e 's£@omx_static_peers@£@OMX_STATIC_PEERS@£' \
 		-e 's£@omx_peer_discovery@£@OMX_PEER_DISCOVERY@£' \
 		-e 's£@omx_peers_file@£@OMX_PEERS_FILE@£' \
+		-e 's£@omx_udev_rules_dir@£@OMX_UDEV_RULES_DIR@£' \
+		-e 's£@omx_udev_rules_file@£@OMX_UDEV_RULES_FILE@£' \
 		-e 's£@fms_run@£@FMS_RUN@£' \
 		-e 's£@fms_server@£@FMS_SERVER@£' \
 		< @srcdir@/omx_init.in > omx_init
 	$(CMDPREFIX) $(INSTALL) -m 0755 omx_init $(DESTDIR)$(sbindir)/
 
-	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/45-open-mx.rules"
-	$(CMDPREFIX) $(RM) $(DESTDIR)$(sbindir)/45-open-mx.rules
+	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/@OMX_UDEV_RULES_FILE@"
+	$(CMDPREFIX) $(RM) $(DESTDIR)$(sbindir)/@OMX_UDEV_RULES_FILE@
 	$(CMDPREFIX) echo "KERNEL==\"open-mx\", NAME=\"@OMX_MAIN_DEVICE_NAME@\", GROUP=\"@OMX_MAIN_DEVICE_GROUP@\", MODE=\"@OMX_MAIN_DEVICE_MODE@\"" \
-		>> $(DESTDIR)$(sbindir)/45-open-mx.rules
+		>> $(DESTDIR)$(sbindir)/@OMX_UDEV_RULES_FILE@
 	$(CMDPREFIX) echo "KERNEL==\"open-mx-raw\", NAME=\"@OMX_RAW_DEVICE_NAME@\", GROUP=\"@OMX_RAW_DEVICE_GROUP@\", MODE=\"@OMX_RAW_DEVICE_MODE@\"" \
-		>> $(DESTDIR)$(sbindir)/45-open-mx.rules
+		>> $(DESTDIR)$(sbindir)/@OMX_UDEV_RULES_FILE@
 
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/omx_local_install"
 	$(CMDPREFIX) $(SED)	-e 's£@omx_install_prefix@£$(prefix)£' \
+		-e 's£@omx_udev_rules_dir@£@OMX_UDEV_RULES_DIR@£' \
+		-e 's£@omx_udev_rules_file@£@OMX_UDEV_RULES_FILE@£' \
 		< @srcdir@/omx_local_install.in > omx_local_install
 	$(CMDPREFIX) $(INSTALL) -m 0755 omx_local_install $(DESTDIR)$(sbindir)/
 

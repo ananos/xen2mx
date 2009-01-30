@@ -617,6 +617,21 @@ if ! test -z "$raw_device_mode"; then
 fi
 AC_SUBST(OMX_RAW_DEVICE_MODE)
 
+AC_ARG_WITH(udev-rules-dir,
+	[AS_HELP_STRING([--with-udev-rules-dir=<path>],
+	[change udev rules.d directory (default is /etc/udev/rules.d)])],
+	udev_rules_dir=$withval, udev_rules_dir=/etc/udev/rules.d)
+AC_SUBST(OMX_UDEV_RULES_DIR, $udev_rules_dir)
+
+AC_ARG_WITH(udev-rules-file,
+	[AS_HELP_STRING([--with-udev-rules-file=<filename>.rules],
+	[change udev rules filename (default is 45-open-mx.rules)])],
+	udev_rules_file=$withval, udev_rules_file=45-open-mx.rules)
+if test "$udev_rules_file" = "${udev_rules_file%%.rules}"; then
+  AC_ERROR(udev rules filename should end with '.rules')
+fi
+AC_SUBST(OMX_UDEV_RULES_FILE, $udev_rules_file)
+
 ##########
 # Globals
 

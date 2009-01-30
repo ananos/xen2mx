@@ -33,8 +33,8 @@ OMX_PEERS_FILE=@omx_peers_file@
 FMS_RUN=@fms_run@
 FMS_SERVER=@fms_server@
 
-UDEV_RULES_DIR=/etc/udev/rules.d
-UDEV_RULES_FILE=${UDEV_RULES_DIR}/45-open-mx.rules
+UDEV_RULES_DIR=@omx_udev_rules_dir@
+UDEV_RULES_FILE=${UDEV_RULES_DIR}/@omx_udev_rules_file@
 
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
