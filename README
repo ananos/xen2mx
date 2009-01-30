@@ -26,11 +26,10 @@ a. Build and install Open-MX in /opt/open-mx
      $ make
      $ make install
 
-   Note that if building from SVN, you will need to generate the
-   configure script and common/omx_config.h.in header first.
-   autoconf and autoheader are required to do so:
-     $ autoconf
-     $ autoheader
+   Note that if building from SVN, the configure script and
+   common/omx_config.h.in header should be generated first.
+   autoconf and autoheader are required to do so.
+     $ ./autogen.sh <configure options>
 
 b. Make sure both interfaces are up with a large MTU
      $ ifconfig eth2 up mtu 9000
