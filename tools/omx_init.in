@@ -232,7 +232,7 @@ stop_peer_discovery() {
 	    sleep 1
 	fi
 	done
-	rm ${OMX_PID_FILE} || true
+	rm -f ${OMX_PID_FILE} || true
     else
 	echo "Cannot find dynamic peer discovery to kill"
     fi
