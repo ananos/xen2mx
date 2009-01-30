@@ -7,11 +7,6 @@
 * add a tool to auto-tune the interface coalescing and binding?
   + do it within the startup script?
 
-* omx_init checks whether udev is used
-  + if yes, don't chmod/mknod unless --with-device was given
-  + if no, behave as currently
-  + add a FAQ about permissions
-
 * single cmd to send the whole mediumsq message, with single done event ?
   + get_user_pages/dev_queue_xmit, put_pages in the last callback
   + less pipelining copy/queue_xmit

@@ -33,6 +33,9 @@ OMX_PEERS_FILE=@omx_peers_file@
 FMS_RUN=@fms_run@
 FMS_SERVER=@fms_server@
 
+UDEV_RULES_DIR=/etc/udev/rules.d
+UDEV_RULES_FILE=${UDEV_RULES_DIR}/45-open-mx.rules
+
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
 LINUX_RELEASE=$(uname -r)
@@ -99,8 +102,51 @@ unload_omx() {
         echo "Removing Open-MX driver"
         /sbin/rmmod open-mx
     fi
+
+    # always remove device nodes, even if udev wasn't used.
+    # we could be stopping a session from another build anyway
     rm -f "/dev/$MAIN_DEVICE_NAME" || true
     rm -f "/dev/$RAW_DEVICE_NAME" || true
+}
+
+# Check whether udev is running
+udev_is_active() {
+    test -d /dev/.udev || test -e /dev/.udev.tdb || test -d /dev/.udevdb
+}
+
+# Create device node file if necessary
+check_or_create_device() {
+    path="$1"; shift
+    group="$1"; shift
+    mode="$1"; shift
+    kernelname="$1"; shift
+    name="$1"; shift
+    
+    # create the device node if udev is disabled or if the file doesn't exist yet
+    if ! udev_is_active || ! test -e "$path" ; then
+	echo "  Creating '$path' which does not exist yet"
+	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
+	minor=$(sed -nr -e 's/ *([0-9]+) *'$kernelname'$/\1/p' /proc/misc)
+	if test -z "$major" -o -z "$minor"; then
+	    echo "  [ERROR] Failed to retrieve $name device major/minor numbers"
+	else
+	    mknod "$path" c "$major" "$minor" \
+		|| echo "  [ERROR] Failed to create $name device node"
+	fi
+	created_device=1
+    fi
+
+    # set device node mode and group if we created it manually, or if udev is disabled or doesn't know how to do it
+    if test x$created_device = "x1" || ! udev_is_active || ! test -f "$UDEV_RULES_FILE" ; then
+	echo "  Setting group '$group' and mode '$mode' on $name device '$path'"
+	chgrp "$group" "$path" \
+	    || echo "  [ERROR] Failed to set $name device mode"
+	chmod "$mode" "$path" \
+	    || echo "  [ERROR] Failed to set $name device group"
+    fi
+
+    # print the device status
+    ls -l "$path" | sed -e 's/^/  /'
 }
 
 # Load the Open-MX module
@@ -127,45 +173,25 @@ load_omx() {
     # sleep a bit so that udev is done
     sleep 1
 
-    # create the main device node if necessary
-    if ! test -e "/dev/$MAIN_DEVICE_NAME"; then
-	echo "Creating '/dev/$MAIN_DEVICE_NAME'"
-	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
-	minor=$(sed -nr -e 's/ *([0-9]+) *open-mx$/\1/p' /proc/misc)
-	if test -z "$major" -o -z "$minor"; then
-	    echo "[ERROR] Failed to retrieve main device major/minor numbers"
-	else
-	    mknod "/dev/$MAIN_DEVICE_NAME" c "$major" "$minor" \
-		|| echo "[ERROR] Failed to create main device node"
-	fi
-    fi
+    # take care of device nodes
+    echo "Creating device node files if necessary..."
 
-    # set main device node mode and group
-    echo "Setting group '$MAIN_DEVICE_GROUP' and mode '$MAIN_DEVICE_MODE' on main device '/dev/$MAIN_DEVICE_NAME'"
-    chgrp "$MAIN_DEVICE_GROUP" "/dev/$MAIN_DEVICE_NAME" \
-	|| echo "[ERROR] Failed to set main device mode"
-    chmod "$MAIN_DEVICE_MODE" "/dev/$MAIN_DEVICE_NAME" \
-	|| echo "[ERROR] Failed to set main device group"
+    # say a bit about what's happening
+    if ! udev_is_active ; then
+	echo "  udev does not seem to be running,"
+	echo "   creating device nodes manually."
+    else if ! test -f "$UDEV_RULES_FILE" ; then
+	echo "  udev rules not found (UDEV_RULES_FILE=$UDEV_RULES_FILE),"
+	echo "   only creating device nodes manually and setting their"
+ 	echo "   group and mode if udev did not create them."
+    else
+	echo "  udev rules found (UDEV_RULES_FILE=$UDEV_RULES_FILE),"
+	echo "   assuming udev manages device files, unless a file is missing."
+    fi fi
 
-    # create the raw device node if necessary
-    if ! test -e "/dev/$RAW_DEVICE_NAME"; then
-	echo "Creating '/dev/$RAW_DEVICE_NAME'"
-	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
-	minor=$(sed -nr -e 's/ *([0-9]+) *open-mx-raw$/\1/p' /proc/misc)
-	if test -z "$major" -o -z "$minor"; then
-	    echo "[ERROR] Failed to retrieve raw device major/minor numbers"
-	else
-	    mknod "/dev/$RAW_DEVICE_NAME" c "$major" "$minor" \
-		|| echo "[ERROR] Failed to create raw device node"
-	fi
-    fi
-
-    # set raw device node mode and group
-    echo "Setting group '$RAW_DEVICE_GROUP' and mode '$RAW_DEVICE_MODE' on raw device '/dev/$RAW_DEVICE_NAME'"
-    chgrp "$RAW_DEVICE_GROUP" "/dev/$RAW_DEVICE_NAME" \
-	|| echo "[ERROR] Failed to set raw device mode"
-    chmod "$RAW_DEVICE_MODE" "/dev/$RAW_DEVICE_NAME" \
-	|| echo "[ERROR] Failed to set raw device group"
+    # do the actual work
+    check_or_create_device "/dev/$MAIN_DEVICE_NAME" "$MAIN_DEVICE_GROUP" "$MAIN_DEVICE_MODE" "open-mx" "main"
+    check_or_create_device "/dev/$RAW_DEVICE_NAME" "$RAW_DEVICE_GROUP" "$RAW_DEVICE_MODE" "open-mx-raw" "raw"
 }
 
 # Start the peer discovery
