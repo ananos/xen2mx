@@ -3,6 +3,21 @@ Open-MX 1.1.0
 
 Improvements from previous release:
 * Add support for architectures with page size different from 4kB.
+* Improve MTU=9000 support by using 8kB fragments for medium messages
+  as well.
+* Add a new optional medium send path relying on page pinning and
+  fragmented DMAs instead of page copy and large contigous socket
+  buffers.
+* Add an optional kernel-based memory pinning cache invalidation
+  support through MMU-notifier (starting with Linux kernel 2.6.27),
+  enable OMX_RCACHE by default when supported.
+* Add udev support by installing a rules file in omx_local_install
+  and not overriding udev work when the environment looks sane.
+* The loopback interface hostname is now automatically set to
+  'localhost'.
+* Enable driver status retrieval by reading /dev/open-mx.
+* Allow probing across multiple ctxids.
+* Miscellaneous small improvements and cleanups all over the place.
 
 Caveats:
 * No background progression or retransmission is done if the application
