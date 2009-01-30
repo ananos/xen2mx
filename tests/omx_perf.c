@@ -190,6 +190,7 @@ int main(int argc, char *argv[])
 	goto out;
       }
       sender = 1;
+      eid = OMX_ANY_ENDPOINT;
       break;
     case 'r':
       rid = atoi(optarg);
