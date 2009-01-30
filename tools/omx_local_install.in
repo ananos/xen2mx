@@ -20,21 +20,33 @@ fi
 
 DATE=$(date +%Y%m%d.%H%M%S)
 
-if test -f ${OMX_INIT_SCRIPT_DEST} ; then
-	echo "Saving the old ${OMX_INIT_SCRIPT_DEST} into ${OMX_INIT_SCRIPT_DEST}.${DATE}..."
-	mv ${OMX_INIT_SCRIPT_DEST} ${OMX_INIT_SCRIPT_DEST}.${DATE}
-fi
-echo "Installing ${OMX_INIT_SCRIPT_DEST}..."
-cp ${OMX_INIT_SCRIPT} ${OMX_INIT_SCRIPT_DEST}
+cmp_mv_old_and_install_new() {
+    src="$1" ; shift
+    dest="$1"; shift
+    installname="$1" ; shift
 
+    if test -f "$dest" ; then
+	# if no difference, do nothing
+	if cmp -s "$dest" "$src" ; then
+	    echo "  File $dest is unchanged"
+	    return
+	fi
+
+	# move the old file away
+	echo "  Saving the old $dest into ${dest}.${DATE}..."
+	mv -f "$dest" "${dest}.${DATE}"
+    fi
+
+    echo "  Installing $installname $dest..."
+    cp -f "$src" "$dest"
+}
+
+echo "Installing startup script..."
+cmp_mv_old_and_install_new "${OMX_INIT_SCRIPT}" "${OMX_INIT_SCRIPT_DEST}" "startup script"
+
+echo "Installing config file..."
 if test ! -d ${OMX_CONFIG_DIR} ; then
-	echo "Creating ${OMX_CONFIG_DIR} directory..."
+	echo "  Creating ${OMX_CONFIG_DIR} directory..."
 	mkdir ${OMX_CONFIG_DIR}
 fi
-
-if test -f ${OMX_CONFIG_DEST} ; then
-	echo "Saving the old ${OMX_CONFIG_DEST} into ${OMX_CONFIG_DEST}.${DATE}..."
-	mv ${OMX_CONFIG_DEST} ${OMX_CONFIG_DEST}.${DATE}
-fi
-echo "Installing a stub ${OMX_CONFIG_DEST}..."
-cp ${OMX_CONFIG_STUB} ${OMX_CONFIG_DEST}
+cmp_mv_old_and_install_new "${OMX_CONFIG_STUB}" "${OMX_CONFIG_DEST}" "stub config"
