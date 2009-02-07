@@ -1,5 +1,14 @@
 * how to tune mtu/packet-ring-size since 8k-mediums do not always help?
 
+* stop making the lib wire-compat-config-independent since it's
+  not other-config-independent anyway?
+  + it'll simplify/optimize many things
+
+* update all thresholds in non-wire-compat
+  + make them configurable?
+  + merge small/tiny and change the packet type in the driver to TINY
+    only in wire-compat mode?
+
 * make omx_prepare_binding more flexible:
   + work on a single board, with --append or --clearfile
   + pass a modulo, or even a hash function
