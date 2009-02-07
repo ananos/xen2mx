@@ -18,6 +18,7 @@ AC_INIT([Open-MX],
         1.0.90,
         [http://open-mx.org],
         open-mx)
+AC_CONFIG_SRCDIR(common/omx_io.h)
 AC_PREREQ(2.60)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/open-mx)
