@@ -1343,7 +1343,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 	return err;
 }
 
-#ifdef CONFIG_DMA_ENGINE
+#ifdef CONFIG_NET_DMA
 
 /****************************
  * DMA Copy for pull replies
@@ -1527,7 +1527,7 @@ omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle *handle)
 	}
 }
 
-#endif /* ~CONFIG_DMA_ENGINE */
+#endif /* ~CONFIG_NET_DMA */
 
 /********************
  * Recv pull replies
