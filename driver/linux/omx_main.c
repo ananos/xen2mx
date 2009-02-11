@@ -334,7 +334,7 @@ omx_get_driver_string(unsigned int *lenp)
 		       : "Disabled");
 #else
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		       " PinInvalidate: NoKernelSupport\n");
+		       " PinInvalidate: NoKernelSupport (kernel misses CONFIG_MMU_NOTIFIER)\n");
 #endif
 	tmp += len;
 	buflen += len;
@@ -354,7 +354,7 @@ omx_get_driver_string(unsigned int *lenp)
 	omx_dmaengine_put();
 #else
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		       " DMAEngine: NoKernelSupport\n");
+		       " DMAEngine: NoKernelSupport (kernel misses " OMX_DMA_ENGINE_CONFIG_STR ")\n");
 #endif
 	tmp += len;
 	buflen += len;
