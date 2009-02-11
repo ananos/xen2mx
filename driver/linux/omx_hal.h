@@ -152,8 +152,9 @@ typedef struct work_struct * omx_work_struct_data_t;
 #define time_before_eq64(a,b) 	time_after_eq64(b,a)
 #endif
 
-#ifdef OMX_HAVE_OLD_NETDMA
+#ifdef OMX_HAVE_OLD_DMA_ENGINE_API
 
+/* kernel <= 2.6.28 with DMA engine support through NET_DMA */
 #ifdef CONFIG_NET_DMA
 #define OMX_HAVE_DMA_ENGINE 1
 #include <net/netdma.h>
@@ -167,8 +168,9 @@ typedef struct work_struct * omx_work_struct_data_t;
 #define OMX_DMA_ENGINE_CONFIG_STR "CONFIG_NET_DMA"
 #endif
 
-#else /* OMX_HAVE_OLD_NETDMA */
+#elif defined OMX_HAVE_DMA_ENGINE_API
 
+/* kernel >= 2.6.29 with nice DMA engine suport */
 #ifdef CONFIG_DMA_ENGINE
 #define OMX_HAVE_DMA_ENGINE 1
 #include <linux/dmaengine.h>
@@ -181,7 +183,12 @@ typedef struct work_struct * omx_work_struct_data_t;
 #define OMX_DMA_ENGINE_CONFIG_STR "CONFIG_DMA_ENGINE"
 #endif
 
-#endif /* OMX_HAVE_OLD_NETDMA */
+#else /* !OMX_HAVE_{OLD_,}DMA_ENGINE_API */
+
+/* kernel <= 2.6.17 with no DMA engine at all */
+#define OMX_DMA_ENGINE_CONFIG_STR "CONFIG_DMA_ENGINE"
+
+#endif /* OMX_HAVE_DMA_ENGINE */
 
 #endif /* __omx_hal_h__ */
 

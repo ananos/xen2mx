@@ -17,7 +17,6 @@
  */
 
 #include <linux/kernel.h>
-#include <linux/dmaengine.h>
 #include <linux/rcupdate.h>
 
 #include "omx_common.h"
