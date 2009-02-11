@@ -119,10 +119,10 @@ int omx_dma_sync_min = 2*1024*1024;
 module_param_named(dmasyncmin, omx_dma_sync_min, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmasyncmin, "Minimum length to offload synchronous copy on DMA engine");
 #else /* CONFIG_NET_DMA */
-omx_unavail_module_param(dmaengine, "kernel has CONFIG_NET_DMA");
-omx_unavail_module_param(dmaasyncfragmin, "kernel has CONFIG_NET_DMA");
-omx_unavail_module_param(dmaasyncmin, "kernel has CONFIG_NET_DMA");
-omx_unavail_module_param(dmasyncmin, "kernel has CONFIG_NET_DMA");
+omx_unavail_module_param(dmaengine, "kernel misses CONFIG_NET_DMA");
+omx_unavail_module_param(dmaasyncfragmin, "kernel misses CONFIG_NET_DMA");
+omx_unavail_module_param(dmaasyncmin, "kernel misses CONFIG_NET_DMA");
+omx_unavail_module_param(dmasyncmin, "kernel misses CONFIG_NET_DMA");
 #endif /* CONFIG_NET_DMA */
 
 int omx_copybench = 0;
