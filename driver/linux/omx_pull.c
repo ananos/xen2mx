@@ -133,7 +133,7 @@ struct omx_pull_handle {
 	uint32_t host_copy_nr_frames; /* frames received but not copied yet*/
 
 	/* asynchronous DMA engine copies */
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 	struct dma_chan *dma_copy_chan; /* NULL when no pending copy */
 	dma_cookie_t dma_copy_last_cookie; /* -1 when no pending copy */
 	struct sk_buff_head dma_copy_skb_queue; /* used without its internal lock */
@@ -149,7 +149,7 @@ struct omx_pull_handle {
 
 static void omx_pull_handle_timeout_handler(unsigned long data);
 
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 static void omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle);
 static int omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle *handle);
 static void omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_data_t data);
@@ -622,7 +622,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 
 	handle->host_copy_nr_frames = 0;
 
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 	handle->dma_copy_chan = NULL;
 	handle->dma_copy_last_cookie = -1;
 	skb_queue_head_init(&handle->dma_copy_skb_queue);
@@ -1343,7 +1343,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 	return err;
 }
 
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 
 /****************************
  * DMA Copy for pull replies
@@ -1364,7 +1364,7 @@ omx_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_hand
 	struct dma_chan *dma_chan = handle->dma_copy_chan;
 
 	if (unlikely(!dma_chan)) {
-		dma_chan = handle->dma_copy_chan = get_softnet_dma();
+		dma_chan = handle->dma_copy_chan = omx_dma_chan_get();
 		acquired_chan = 1;
 	}
 
@@ -1390,7 +1390,7 @@ omx_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_hand
 
 		} else if (acquired_chan) {
 			/* release the acquired channel, we didn't use it */
-			dma_chan_put(dma_chan);
+			omx_dma_chan_put(dma_chan);
 			handle->dma_copy_chan = NULL;
 		}
 	}
@@ -1457,7 +1457,7 @@ omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle)
 		/* All copies are already done, it's safe to free early-copied skbs now */
 		dprintk(DMA, "all cookies are ready\n");
 		__skb_queue_purge(&handle->dma_copy_skb_queue);
-		dma_chan_put(dma_chan);
+		omx_dma_chan_put(dma_chan);
 		handle->dma_copy_chan = NULL;
 		handle->dma_copy_last_cookie = -1;
 	}
@@ -1486,7 +1486,7 @@ omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle)
 	/* All copies already done, it's safe to free early-copied skbs now */
 	dprintk(DMA, "all cookies are ready\n");
 	__skb_queue_purge(&handle->dma_copy_skb_queue);
-	dma_chan_put(dma_chan);
+	omx_dma_chan_put(dma_chan);
 	handle->dma_copy_chan = NULL;
 	handle->dma_copy_last_cookie = -1;
 }
@@ -1527,7 +1527,7 @@ omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle *handle)
 	}
 }
 
-#endif /* ~CONFIG_NET_DMA */
+#endif /* !OMX_HAVE_DMA_ENGINE */
 
 /********************
  * Recv pull replies
@@ -1780,7 +1780,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->block_desc[idesc].frames_missing_bitmap &= ~bitmap_mask;
 	handle->nr_missing_frames--;
 
-#if (defined CONFIG_NET_DMA) && !(defined OMX_NORECVCOPY)
+#if (defined OMX_HAVE_DMA_ENGINE) && !(defined OMX_NORECVCOPY)
 	if (omx_dmaengine
 	    && frame_length >= omx_dma_async_frag_min
 	    && handle->total_length >= omx_dma_async_min) {

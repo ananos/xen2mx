@@ -22,11 +22,10 @@
 #include <linux/netdevice.h>
 #include <linux/skbuff.h>
 #include <linux/moduleparam.h>
-#ifdef CONFIG_NET_DMA
-#include <net/netdma.h>
-#endif
 
-#ifdef CONFIG_NET_DMA
+#include "omx_hal.h"
+
+#ifdef OMX_HAVE_DMA_ENGINE
 
 extern int omx_dmaengine;
 extern int omx_dma_async_frag_min;
@@ -39,12 +38,12 @@ extern void omx_dma_exit(void);
 extern int omx_dma_skb_copy_datagram_to_pages(struct dma_chan *chan, dma_cookie_t *cookiep, struct sk_buff *skb, int offset, struct page **pages, int pgoff, size_t len);
 extern int omx_dma_skb_copy_datagram_to_user_region(struct dma_chan *chan, dma_cookie_t *cookiep, struct sk_buff *skb, struct omx_user_region *region, uint32_t regoff, size_t len);
 
-#else /* CONFIG_NET_DMA */
+#else /* OMX_HAVE_DMA_ENGINE */
 
 static inline int omx_dma_init(void) { return 0; }
 static inline void omx_dma_exit(void) { /* nothing */ }
 
-#endif /* CONFIG_NET_DMA */
+#endif /* OMX_HAVE_DMA_ENGINE */
 
 #endif /* __omx_dma_h__ */
 

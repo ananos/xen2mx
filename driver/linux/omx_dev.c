@@ -108,6 +108,11 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 	/* initialize pull handles */
 	omx_endpoint_pull_handles_init(endpoint);
 
+#ifdef OMX_HAVE_DMA_ENGINE
+	/* take a reference on the dmaengine subsystem */
+	omx_dmaengine_get();
+#endif
+
 	return 0;
 
  out_with_sendq_pages:
@@ -131,6 +136,10 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 	kfree(endpoint->sendq_pages);
 	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
 	vfree(endpoint->userdesc);
+
+#ifdef OMX_HAVE_DMA_ENGINE
+	omx_dmaengine_put();
+#endif
 }
 
 /****************************

@@ -105,7 +105,7 @@ unsigned long omx_user_rights = 0;
 module_param_named(userrights, omx_user_rights, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(userrights, "Mask of privileged operation rights that are granted regular users");
 
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 int omx_dmaengine = 0; /* disabled by default for now */
 module_param_named(dmaengine, omx_dmaengine, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmaengine, "Enable DMA engine support");
@@ -118,12 +118,12 @@ MODULE_PARM_DESC(dmaasyncmin, "Minimum message length to offload all fragment co
 int omx_dma_sync_min = 2*1024*1024;
 module_param_named(dmasyncmin, omx_dma_sync_min, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmasyncmin, "Minimum length to offload synchronous copy on DMA engine");
-#else /* CONFIG_NET_DMA */
-omx_unavail_module_param(dmaengine, "kernel misses CONFIG_NET_DMA");
-omx_unavail_module_param(dmaasyncfragmin, "kernel misses CONFIG_NET_DMA");
-omx_unavail_module_param(dmaasyncmin, "kernel misses CONFIG_NET_DMA");
-omx_unavail_module_param(dmasyncmin, "kernel misses CONFIG_NET_DMA");
-#endif /* CONFIG_NET_DMA */
+#else /* OMX_HAVE_DMA_ENGINE */
+omx_unavail_module_param(dmaengine, "kernel misses " OMX_DMA_ENGINE_CONFIG_STR);
+omx_unavail_module_param(dmaasyncfragmin, "kernel misses " OMX_DMA_ENGINE_CONFIG_STR);
+omx_unavail_module_param(dmaasyncmin, "kernel misses " OMX_DMA_ENGINE_CONFIG_STR);
+omx_unavail_module_param(dmasyncmin, "kernel misses " OMX_DMA_ENGINE_CONFIG_STR);
+#endif /* OMX_HAVE_DMA_ENGINE */
 
 int omx_copybench = 0;
 module_param_named(copybench, omx_copybench, uint, S_IRUGO);
@@ -339,17 +339,19 @@ omx_get_driver_string(unsigned int *lenp)
 	tmp += len;
 	buflen += len;
 
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
+	omx_dmaengine_get();
 	if (!omx_dmaengine)
 		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 			       " DMAEngine: KernelSupported Disabled\n");
-	else if (!__get_cpu_var(softnet_data).net_dma)
+	else if (!omx_dma_chan_avail())
 		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 			       " DMAEngine: KernelSupported Enabled NoChannelAvailable\n");
 	else
 		len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 			       " DMAEngine: KernelSupported Enabled ChansAvail SyncCopyMin=%dB AsyncCopyMin=%dB (%dB per packet)\n",
 			       omx_dma_sync_min, omx_dma_async_min, omx_dma_async_frag_min);
+	omx_dmaengine_put();
 #else
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		       " DMAEngine: NoKernelSupport\n");

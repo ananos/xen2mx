@@ -372,7 +372,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
 	int remaining_copy = frag_length;
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 	struct dma_chan *dma_chan = NULL;
 	dma_cookie_t dma_cookie = 0;
 #endif
@@ -438,10 +438,10 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-#if (defined CONFIG_NET_DMA) && !(defined OMX_NORECVCOPY)
+#if (defined OMX_HAVE_DMA_ENGINE) && !(defined OMX_NORECVCOPY)
 	/* try to submit the dma copy */
 	if (omx_dmaengine && frag_length >= omx_dma_sync_min) {
-		dma_chan = get_softnet_dma();
+		dma_chan = omx_dma_chan_get();
 		if (dma_chan) {
 			/* if multiple pages per ring entry:
 			 *   copy several pages, with the ring entries always page aligned, and no wrap around the ring
@@ -489,11 +489,11 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	}
 
 	/* end the offloaded copy */
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 	if (dma_chan) {
 		if (dma_cookie > 0)
 			while (dma_async_memcpy_complete(dma_chan, dma_cookie, NULL, NULL) == DMA_IN_PROGRESS);
-		dma_chan_put(dma_chan);
+		omx_dma_chan_put(dma_chan);
 	}
 #endif
 #endif /* OMX_NORECVCOPY */

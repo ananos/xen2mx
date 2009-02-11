@@ -182,6 +182,15 @@ else
   echo no
 fi
 
+# dmaengine API reworked in 2.6.29
+echo -n "  checking (in kernel headers) for the new dmaengine ... "
+if grep dmaengine_get ${LINUX_HDR}/include/linux/dmaengine.h > /dev/null ; then
+  echo yes
+else
+  echo "#define OMX_HAVE_OLD_NETDMA 1" >> ${TMP_CHECKS_NAME}
+  echo no
+fi
+
 # add the footer
 echo "" >> ${TMP_CHECKS_NAME}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_NAME}

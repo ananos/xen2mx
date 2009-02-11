@@ -152,6 +152,37 @@ typedef struct work_struct * omx_work_struct_data_t;
 #define time_before_eq64(a,b) 	time_after_eq64(b,a)
 #endif
 
+#ifdef OMX_HAVE_OLD_NETDMA
+
+#ifdef CONFIG_NET_DMA
+#define OMX_HAVE_DMA_ENGINE 1
+#include <net/netdma.h>
+#include <linux/netdevice.h>
+#define omx_dmaengine_get() do { /* do nothing */ } while (0)
+#define omx_dmaengine_put() do { /* do nothing */ } while (0)
+#define omx_dma_chan_avail() __get_cpu_var(softnet_data).net_dma
+#define omx_dma_chan_get() get_softnet_dma()
+#define omx_dma_chan_put(chan) dma_chan_put(chan)
+#else
+#define OMX_DMA_ENGINE_CONFIG_STR "CONFIG_NET_DMA"
+#endif
+
+#else /* OMX_HAVE_OLD_NETDMA */
+
+#ifdef CONFIG_DMA_ENGINE
+#define OMX_HAVE_DMA_ENGINE 1
+#include <linux/dmaengine.h>
+#define omx_dmaengine_get() dmaengine_get()
+#define omx_dmaengine_put() dmaengine_put()
+#define omx_dma_chan_avail() dma_find_channel(DMA_MEMCPY)
+#define omx_dma_chan_get() dma_find_channel(DMA_MEMCPY)
+#define omx_dma_chan_put(chan) do { /* do nothing */ } while (0)
+#else
+#define OMX_DMA_ENGINE_CONFIG_STR "CONFIG_DMA_ENGINE"
+#endif
+
+#endif /* OMX_HAVE_OLD_NETDMA */
+
 #endif /* __omx_hal_h__ */
 
 /*

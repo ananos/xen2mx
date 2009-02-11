@@ -958,7 +958,7 @@ omx_user_region_offset_cache_vect_copy_callback(struct omx_user_region_offset_ca
 #endif
 }
 
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 /**************************
  * DMA Copy to User-Region
  */
@@ -1275,7 +1275,7 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback(struct omx_user_re
 	return remaining;
 }
 
-#endif /* CONFIG_NET_DMA */
+#endif /* OMX_HAVE_DMA_ENGINE */
 
 /*********************
  * Generic Cache Init
@@ -1300,7 +1300,7 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 		/* vectorial callbacks */
 		cache->append_pages_to_skb = omx_user_region_offset_cache_vect_append_callback;
 		cache->copy_pages_to_buf = omx_user_region_offset_cache_vect_copy_callback;
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 		cache->dma_memcpy_from_pg = omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback;
 		cache->dma_memcpy_from_buf = omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback;
 #endif
@@ -1317,7 +1317,7 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 		/* vectorial callbacks */
 		cache->append_pages_to_skb = omx_user_region_offset_cache_contig_append_callback;
 		cache->copy_pages_to_buf = omx_user_region_offset_cache_contig_copy_callback;
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 		cache->dma_memcpy_from_pg = omx_user_region_offset_cache_dma_contig_memcpy_from_pg_callback;
 		cache->dma_memcpy_from_buf = omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback;
 #endif
@@ -1582,7 +1582,7 @@ omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, 
 	return 0;
 }
 
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 static INLINE int
 omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset,
 				  struct omx_user_region * dst_region, unsigned long dst_offset,
@@ -1602,7 +1602,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 	dma_cookie_t dma_last_cookie = -1;
 	int ret = 0;
 
-	dma_chan = get_softnet_dma();
+	dma_chan = omx_dma_chan_get();
 	if (!dma_chan)
 		goto fallback;
 
@@ -1768,12 +1768,12 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 			dma_async_memcpy_issue_pending(dma_chan);
 			while (dma_async_memcpy_complete(dma_chan, dma_last_cookie, NULL, NULL) == DMA_IN_PROGRESS);
 		}
-		dma_chan_put(dma_chan);
+		omx_dma_chan_put(dma_chan);
 	}
 
 	return ret;
 }
-#endif /* CONFIG_NET_DMA */
+#endif /* OMX_HAVE_DMA_ENGINE */
 
 int
 omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset,
@@ -1787,11 +1787,11 @@ omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long
 	    || dst_offset + length > dst_region->total_length)
 		return -EINVAL;
 
-#ifdef CONFIG_NET_DMA
+#ifdef OMX_HAVE_DMA_ENGINE
 	if (omx_dmaengine && length >= omx_dma_sync_min)
 		return omx_dma_copy_between_user_regions(src_region, src_offset, dst_region, dst_offset, length);
 	else
-#endif /* CONFIG_NET_DMA */
+#endif /* OMX_HAVE_DMA_ENGINE */
 		return omx_memcpy_between_user_regions_to_current(src_region, src_offset, dst_region, dst_offset, length);
 }
 

@@ -25,6 +25,8 @@
 #include "omx_reg.h"
 #include "omx_dma.h"
 
+#ifdef OMX_HAVE_DMA_ENGINE
+
 int
 omx_dma_init(void)
 {
@@ -251,6 +253,8 @@ omx_dma_skb_copy_datagram_to_user_region(struct dma_chan *chan, dma_cookie_t *co
 
 	return omx__dma_skb_copy_datagram_to_user_region(&regcache, chan, cookiep, skb, skb_offset, len);
 }
+
+#endif /* OMX_HAVE_DMA_ENGINE */
 
 /*
  * Local variables:
