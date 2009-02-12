@@ -161,6 +161,13 @@ omx__init_api(int app_api)
     goto out_with_fd;
   }
 
+  if (omx__driver_desc->abi_features != omx_get_abi_config()) {
+    ret = omx__error(OMX_BAD_KERNEL_ABI,
+		     "Comparing library (ABI features 0x%x) with driver (ABI features 0x%x)",
+		     omx_get_abi_config(), omx__driver_desc->abi_features);
+    goto out_with_fd;
+  }
+
   /*************************
    * Error Handler Behavior
    */

@@ -108,6 +108,18 @@ struct omx_driver_desc {
 	/* 60 */
 };
 
+static inline uint32_t
+omx_get_abi_config(void) {
+	uint32_t val;
+#ifdef OMX_MX_WIRE_COMPAT
+	val |= OMX_ABI_CONFIG_WIRECOMPAT;
+#endif
+#ifdef OMX_ENDIAN_COMPAT
+	val |= OMX_ABI_CONFIG_ENDIANCOMPAT;
+#endif
+	return val;
+}
+
 #define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
 
 #define OMX_DRIVER_FEATURE_WIRECOMPAT		(1<<0)
