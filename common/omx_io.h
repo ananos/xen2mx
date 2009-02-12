@@ -79,29 +79,33 @@ struct omx_cmd_user_segment {
 	/* 16 */
 };
 
+#define OMX_ABI_CONFIG_WIRECOMPAT		(1<<0)
+#define OMX_ABI_CONFIG_ENDIANCOMPAT		(1<<1)
+
 /* driver desc */
 struct omx_driver_desc {
 	uint32_t abi_version;
-	uint32_t features;
+	uint32_t abi_features;
 	/* 8 */
+	uint32_t features;
 	uint64_t jiffies;
 	/* 16 */
 	uint32_t hz;
 	uint16_t mtu;
 	uint8_t packet_ring_entry_shift;
 	uint8_t pad1;
-	/* 24 */
+	/* 32 */
 	uint32_t board_max;
 	uint32_t endpoint_max;
-	/* 32 */
+	/* 40 */
 	uint32_t peer_max;
 	uint32_t peer_table_size;
-	/* 40 */
+	/* 48 */
 	uint32_t peer_table_configured;
 	uint32_t peer_table_version;
-	/* 48 */
-	uint64_t peer_table_mapper_id;
 	/* 56 */
+	uint64_t peer_table_mapper_id;
+	/* 60 */
 };
 
 #define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
