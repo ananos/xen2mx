@@ -424,7 +424,7 @@ omx_init(void)
 	omx_driver_userdesc->features = 0;
 #ifdef OMX_MX_WIRE_COMPAT
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_WIRECOMPAT;
-	omx_driver_userdesc->abi_features |= OMX_ABI_CONFIG_WIRECOMPAT;
+	omx_driver_userdesc->abi_config |= OMX_ABI_CONFIG_WIRECOMPAT;
 #endif
 #ifndef OMX_DISABLE_SHARED
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
@@ -439,7 +439,7 @@ omx_init(void)
 	omx_driver_userdesc->mtu = OMX_MTU;
 #endif
 #ifdef OMX_ENDIAN_COMPAT
-	omx_driver_userdesc->abi_features |= OMX_ABI_CONFIG_ENDIANCOMPAT;
+	omx_driver_userdesc->abi_config |= OMX_ABI_CONFIG_ENDIANCOMPAT;
 #endif
 
 	if (omx_endpoint_max > OMX_ENDPOINT_INDEX_MAX) {

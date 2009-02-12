@@ -85,7 +85,7 @@ struct omx_cmd_user_segment {
 /* driver desc */
 struct omx_driver_desc {
 	uint32_t abi_version;
-	uint32_t abi_features;
+	uint32_t abi_config;
 	/* 8 */
 	uint32_t features;
 	uint64_t jiffies;
@@ -110,7 +110,7 @@ struct omx_driver_desc {
 
 static inline uint32_t
 omx_get_abi_config(void) {
-	uint32_t val;
+	uint32_t val = 0;
 #ifdef OMX_MX_WIRE_COMPAT
 	val |= OMX_ABI_CONFIG_WIRECOMPAT;
 #endif
