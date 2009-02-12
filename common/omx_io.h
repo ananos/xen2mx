@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x203
+#define OMX_DRIVER_ABI_VERSION		0x204
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -88,8 +88,10 @@ struct omx_driver_desc {
 	uint32_t abi_config;
 	/* 8 */
 	uint32_t features;
-	uint64_t jiffies;
+	uint32_t pad0;
 	/* 16 */
+	uint64_t jiffies;
+	/* 24 */
 	uint32_t hz;
 	uint16_t mtu;
 	uint8_t packet_ring_entry_shift;
@@ -105,7 +107,7 @@ struct omx_driver_desc {
 	uint32_t peer_table_version;
 	/* 56 */
 	uint64_t peer_table_mapper_id;
-	/* 60 */
+	/* 64 */
 };
 
 static inline uint32_t

@@ -1,3 +1,5 @@
+* check that the mtu is abi compatible as well
+
 * how to tune mtu/packet-ring-size since 8k-mediums do not always help?
 
 * stop making the lib wire-compat-config-independent since it's

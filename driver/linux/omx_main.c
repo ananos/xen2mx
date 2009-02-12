@@ -420,11 +420,11 @@ omx_init(void)
 		omx_pin_progressive = 0;
 	}
 
-	/* setup driver feature mask */
+	/* setup driver abi config, feature mask and mtu */
+	omx_driver_userdesc->abi_config = omx_get_abi_config();
 	omx_driver_userdesc->features = 0;
 #ifdef OMX_MX_WIRE_COMPAT
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_WIRECOMPAT;
-	omx_driver_userdesc->abi_config |= OMX_ABI_CONFIG_WIRECOMPAT;
 #endif
 #ifndef OMX_DISABLE_SHARED
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
@@ -437,9 +437,6 @@ omx_init(void)
 	omx_driver_userdesc->mtu = 4096+64; /* roughly MX "mtu" */
 #else
 	omx_driver_userdesc->mtu = OMX_MTU;
-#endif
-#ifdef OMX_ENDIAN_COMPAT
-	omx_driver_userdesc->abi_config |= OMX_ABI_CONFIG_ENDIANCOMPAT;
 #endif
 
 	if (omx_endpoint_max > OMX_ENDPOINT_INDEX_MAX) {
