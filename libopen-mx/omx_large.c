@@ -628,7 +628,7 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
     omx__send_complete(ep, req, OMX_SUCCESS);
   }
 
-  if (omx__driver_desc->features & OMX_DRIVER_FEATURE_WIRECOMPAT) {
+  if (omx__driver_desc->abi_config & OMX_ABI_CONFIG_WIRECOMPAT) {
     /* MX < 1.2.5 needs an immediate ack for notify since it cannot mark
      * large recv as zombies.
      * But we can only do that if all previous seqnum are ready to be acked

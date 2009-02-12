@@ -279,7 +279,7 @@ omx_get_driver_string(unsigned int *lenp)
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		       " WireSpecs: %s EtherType=0x%lx MTU>=0x%ld\n",
-		       omx_driver_userdesc->features & OMX_DRIVER_FEATURE_WIRECOMPAT
+		       omx_driver_userdesc->abi_config & OMX_ABI_CONFIG_WIRECOMPAT
 		       ? "WireCompatible" : "NoWireCompat",
 		       (unsigned long) ETH_P_OMX, (unsigned long) OMX_MTU);
 	tmp += len;
@@ -423,9 +423,6 @@ omx_init(void)
 	/* setup driver abi config, feature mask and mtu */
 	omx_driver_userdesc->abi_config = omx_get_abi_config();
 	omx_driver_userdesc->features = 0;
-#ifdef OMX_MX_WIRE_COMPAT
-	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_WIRECOMPAT;
-#endif
 #ifndef OMX_DISABLE_SHARED
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
 #endif
