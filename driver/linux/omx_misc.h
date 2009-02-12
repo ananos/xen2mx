@@ -100,7 +100,7 @@ omx_board_addr_from_netdevice(struct net_device * ifp)
 static inline uint64_t
 omx_board_addr_from_ethhdr_src(struct ethhdr * eh)
 {
-	BUILD_BUG_ON(sizeof(uint64_t) < sizeof(eh->h_source)); 
+	BUILD_BUG_ON(sizeof(uint64_t) < sizeof(eh->h_source));
 	return (((uint64_t) eh->h_source[0]) << 40)
 	     + (((uint64_t) eh->h_source[1]) << 32)
 	     + (((uint64_t) eh->h_source[2]) << 24)

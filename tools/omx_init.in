@@ -121,7 +121,7 @@ check_or_create_device() {
     mode="$1"; shift
     kernelname="$1"; shift
     name="$1"; shift
-    
+
     # create the device node if udev is disabled or if the file doesn't exist yet
     if ! udev_is_active || ! test -e "$path" ; then
 	echo "  Creating '$path' which does not exist yet"

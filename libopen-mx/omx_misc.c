@@ -384,7 +384,7 @@ omx__create_message_prefix(struct omx_endpoint *ep)
 
   while ((c = strchr(src, '%')) != NULL) {
     strncpy(dst, src, c-src);
-    dst += c-src; src = c; 
+    dst += c-src; src = c;
     if (!strncmp(src, "%P", 2)) {
       len = sprintf(dst, "%ld", (unsigned long) getpid());
       src += 2; dst += len;

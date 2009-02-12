@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     omx__board_addr_sprintf(board_addr_str, mapper_id);
     printf("Peer table is ready, mapper is %s.\n", board_addr_str);
   } else {
-    printf("Peer table is not configured yet.\n");  
+    printf("Peer table is not configured yet.\n");
   }
 
   for(i=0, found=0; i<max && found<count; i++) {

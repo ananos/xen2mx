@@ -35,7 +35,7 @@
 * if failing to deregister region
   *** glibc detected *** tests/omx_pingpong: malloc(): memory corruption: 0x000000000064edd0 ***
 
-* rework counters, distinguish packet/shared level transfer from 
+* rework counters, distinguish packet/shared level transfer from
   commands and events ?
 
 * add a flag in the endpoint desc for skbfrags
@@ -78,7 +78,7 @@
 * fix/improve ioat support
   + sleep a bit before polling on synchronous copies
     - add an empirical ioat speed, tested at startup, tuned at runtime, configurable with a module param
-    - use the empirical ioat speed to sleep using msleep during large 
+    - use the empirical ioat speed to sleep using msleep during large
       synchronous copy instead of polling
     - if copy completed on first poll, increase the speed by 12.5% or so
     - no need to reduce the speed ever

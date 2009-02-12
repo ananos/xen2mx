@@ -17,7 +17,7 @@
  */
 
 /*
- * This file is used to translate the MX API into Open-MX at compile time 
+ * This file is used to translate the MX API into Open-MX at compile time
  * to avoid going across compatibility wrappers at runtime.
  * Applications will thus use the ABI of Open-MX and thus won't be linkable
  * with MX.

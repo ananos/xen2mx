@@ -129,7 +129,7 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
       if (slice < 0 || slice >= OMX_IFACE_SLICE_MAX) {
 	abort();
       }
-	
+
       slice_irq[slice] = irq;
       if (slice >= slicemax)
 	slicemax = slice+1;
@@ -246,7 +246,7 @@ int main(int argc, char *argv[])
   if (outfd < 0) {
     fprintf(stderr, "Failed to open %s for writing, %m\n", file);
     goto out;
-  }    
+  }
   output = fdopen(outfd, "w");
   assert(output);
 

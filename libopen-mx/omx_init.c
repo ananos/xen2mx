@@ -178,7 +178,7 @@ omx__init_api(int app_api)
     omx__verbose_printf(NULL, "Forcing errors to %s\n",
 			omx__globals.fatal_errors ? "to be fatal" : "to not be fatal");
   }
-  
+
   /***************************
    * Terminate initialization
    */
@@ -191,7 +191,7 @@ omx__init_api(int app_api)
   close(omx__globals.control_fd);
  out_with_message_prefix:
   free(omx__globals.message_prefix);
-  return ret; 
+  return ret;
 }
 
 void
@@ -238,7 +238,7 @@ omx__init_comms(void)
 #  ifdef OMX_DEBUG_REQUESTS
   omx__globals.check_request_alloc = 1;
   omx__verbose_printf(NULL, "Enabling request allocation check by default to level %d\n", omx__globals.check_request_alloc);
-#  endif  
+#  endif
   env = getenv("OMX_DEBUG_REQUESTS");
   if (env) {
     omx__globals.check_request_alloc = atoi(env);

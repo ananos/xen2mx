@@ -117,7 +117,7 @@ usage of Open-MX. If not loaded, a "No device" error will be returned.
 The omx_init script takes care of loading the module
 $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
 
-This module works at least on Linux kernels >=2.6.17 on i386 and x86_64 
+This module works at least on Linux kernels >=2.6.17 on i386 and x86_64
 architectures. It also builds correctly with kernels up to 2.6.15 on various
 architectures but it has not been tested intensively on these.
 
@@ -270,6 +270,6 @@ Once peers are setup on both MX and Open-MX nodes, the fabric is ready.
 The Open-MX API is slightly different from the MX one, but Open-MX provides
 a compatibility layer which enables:
  + To link applications that were compiled against MX
- + To build applications that were written for the MX API 
+ + To build applications that were written for the MX API
 This compatibility is enabled by default and has a very low overhead since
 it only involves going across basic conversion routines.

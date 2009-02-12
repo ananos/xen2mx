@@ -572,7 +572,7 @@ omx__iprobe_common(struct omx_endpoint *ep,
 	return 1;
       }
     }
- 
+
   } else {
     /* use one of the ctxid queues */
     uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);

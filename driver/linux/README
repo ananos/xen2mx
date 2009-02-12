@@ -11,7 +11,7 @@ the last user will release it for real.
 The spinlock is taken when opening and closing. Bottom halves acquire the endpoint
 first, test the status, and release if the status is wrong.
 
-The iface has both a kref to detect the last user and also has a number of endpoints 
+The iface has both a kref to detect the last user and also has a number of endpoints
 attached to detect when we need to force.
 There's a mutex to protect this array against concurrent endpoint attach/detach.
 When removing an iface (either by the user or by the netdevice notifier), the status
