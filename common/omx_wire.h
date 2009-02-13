@@ -31,13 +31,22 @@
 
 #ifdef OMX_MX_WIRE_COMPAT
 
+/*
+ * MX uses 4096 payload max, plus headers.
+ * that's not really a MTU, but we need it to simplify things.
+ */
 # ifdef OMX_MTU
 #  error OMX_MTU should not be defined in wire-compatible mode
 # endif
+# define OMX_MTU ((unsigned) (sizeof(struct omx_pkt_head) + 4096		\
+			      + max( sizeof(struct omx_pkt_medium_frag),	\
+				     sizeof(struct omx_pkt_pull_reply) )	\
+				    ))
 # define OMX_WIRE_FRAG_FRAME_SHIFT 12
 
 #else /* !OMX_MX_WIRE_COMPAT */
 
+/* configure-enforced MTU */
 # ifndef OMX_MTU
 #  error OMX_MTU should be defined in non-wire-compatible mode
 # endif
@@ -56,13 +65,6 @@
 #define OMX_MEDIUM_FRAG_SHIFT OMX_WIRE_FRAG_FRAME_SHIFT
 #define OMX_MEDIUM_FRAG_LENGTH_MAX (1UL<<OMX_WIRE_FRAG_FRAME_SHIFT)
 #define OMX_PULL_REPLY_LENGTH_MAX (1UL<<OMX_WIRE_FRAG_FRAME_SHIFT)
-
-#ifndef OMX_MTU
-#define OMX_MTU ((unsigned) (sizeof(struct omx_pkt_head) \
-			     + max( sizeof(struct omx_pkt_medium_frag) + OMX_MEDIUM_FRAG_LENGTH_MAX, \
-				    sizeof(struct omx_pkt_pull_reply) + OMX_PULL_REPLY_LENGTH_MAX \
-				   )))
-#endif
 
 #define OMX_ENDPOINT_INDEX_MAX 256
 #define OMX_PEER_INDEX_MAX 65536

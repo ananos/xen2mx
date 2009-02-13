@@ -430,11 +430,7 @@ omx_init(void)
 	if (omx_pin_invalidate && !omx_pin_synchronous)
 		omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PIN_INVALIDATE;
 #endif
-#ifdef OMX_MX_WIRE_COMPAT
-	omx_driver_userdesc->mtu = 4096+64; /* roughly MX "mtu" */
-#else
 	omx_driver_userdesc->mtu = OMX_MTU;
-#endif
 
 	if (omx_endpoint_max > OMX_ENDPOINT_INDEX_MAX) {
 		printk(KERN_INFO "Open-MX: Cannot use more than %d endpoints per board\n",
