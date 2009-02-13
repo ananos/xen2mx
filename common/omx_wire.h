@@ -30,11 +30,18 @@
 #endif
 
 #ifdef OMX_MX_WIRE_COMPAT
+
+# ifdef OMX_MTU
+#  error OMX_MTU should not be defined in wire-compatible mode
+# endif
 # define OMX_WIRE_FRAG_FRAME_SHIFT 12
+
 #else /* !OMX_MX_WIRE_COMPAT */
+
 # ifndef OMX_MTU
-#  define OMX_WIRE_FRAG_FRAME_SHIFT 13
-# elif OMX_MTU < 2000 /* ugly since we can't compare with 1024+sizeof(header) */
+#  error OMX_MTU should be defined in non-wire-compatible mode
+# endif
+# if OMX_MTU < 2000 /* ugly since we can't compare with 1024+sizeof(header) */
 #  define OMX_WIRE_FRAG_FRAME_SHIFT 10
 # elif OMX_MTU < 3000
 #  define OMX_WIRE_FRAG_FRAME_SHIFT 11
@@ -43,6 +50,7 @@
 # else
 #  define OMX_WIRE_FRAG_FRAME_SHIFT 13
 # endif
+
 #endif /* !OMX_MX_WIRE_COMPAT */
 
 #define OMX_MEDIUM_FRAG_SHIFT OMX_WIRE_FRAG_FRAME_SHIFT
