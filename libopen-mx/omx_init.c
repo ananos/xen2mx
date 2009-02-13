@@ -168,6 +168,13 @@ omx__init_api(int app_api)
     goto out_with_fd;
   }
 
+  if (omx__driver_desc->mtu != OMX_MTU) {
+    ret = omx__error(OMX_BAD_LIB_ABI,
+		     "Comparing library (MTU %d) with driver (MTU %d)",
+		     OMX_MTU, omx__driver_desc->mtu);
+    goto out_with_fd;
+  }
+
   /*************************
    * Error Handler Behavior
    */

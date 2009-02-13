@@ -19,6 +19,19 @@
 #ifndef __omx_wire_h__
 #define __omx_wire_h__
 
+/***************
+ * Misc helpers
+ */
+
+#ifndef max
+#define max(x, y) ({				\
+	typeof(x) _max1 = (x);			\
+	typeof(y) _max2 = (y);			\
+	(void) (&_max1 == &_max2);		\
+	_max1 > _max2 ? _max1 : _max2; })
+#endif
+
+
 /************
  * Constants
  */
