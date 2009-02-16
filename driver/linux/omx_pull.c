@@ -890,7 +890,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		omx_user_region_demand_pin_init(&pinstate, region);
 		pinstate.next_chunk_pages = omx_pin_chunk_pages_max;
 		err = omx_user_region_demand_pin_finish(&pinstate);
-		/* FIXME: deal with omx_pin_progressive (will be _or_parallel) */
+		/* no progressive/demand-pinning for native networking */
 		if (err < 0) {
 			dprintk(REG, "failed to pin user region\n");
 			goto out_with_region;

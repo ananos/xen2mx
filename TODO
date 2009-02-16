@@ -1,4 +1,5 @@
-* check that the mtu is abi compatible as well
+* when invalidating a pinned region, change its status first, with a memory barrier
+  and rcu_synchronize if possible so that people using it are gone and won't come back
 
 * how to tune mtu/packet-ring-size since 8k-mediums do not always help?
 
@@ -25,9 +26,6 @@
 * pre-alloc many requests in the critical path to avoid ENOMEM in the background later ?
   + stop aborting on failure to alloc a fake recv notify when discard an unexp rndv
 
-* overlap registration with rndv and pull on the network
-  + is there a page reference leak?
-  + highly experimental and optional (or keep it in a branch?)
 * regcache
   + disable regcache in omx_rcache_test when the driver feature flag is missing
 * regcache malloc hook (if no driver feature flag)
