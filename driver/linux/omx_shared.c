@@ -407,7 +407,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	struct omx_cmd_user_segment *usegs, *cur_useg;
 	uint16_t msg_length, remaining, cur_useg_remaining;
 	void __user * cur_udata;
-	unsigned long recvq_offset[OMX_MEDIUM_MSG_LENGTH_MAX >> OMX_PACKET_RING_ENTRY_SHIFT];
+	unsigned long recvq_offset[OMX_MEDIUM_MSG_LENGTH_MAX >> OMX_RECVQ_ENTRY_SHIFT];
 	uint32_t nseg;
 	int ret;
 	int frags_nr;
@@ -421,7 +421,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 
 	nseg = hdr->nr_segments;
 	msg_length = hdr->length;
-	frags_nr = (msg_length + OMX_PACKET_RING_ENTRY_SIZE - 1) >> OMX_PACKET_RING_ENTRY_SHIFT;
+	frags_nr = (msg_length + OMX_RECVQ_ENTRY_SIZE - 1) >> OMX_RECVQ_ENTRY_SHIFT;
 	/* FIXME: assert <= 8 */
 
 	/* get user segments */
@@ -471,7 +471,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	dst_event.seqnum = hdr->seqnum;
 	dst_event.piggyack = hdr->piggyack;
 	dst_event.specific.medium_frag.msg_length = hdr->length;
-	dst_event.specific.medium_frag.frag_pipeline = OMX_PACKET_RING_ENTRY_SHIFT;
+	dst_event.specific.medium_frag.frag_pipeline = OMX_RECVQ_ENTRY_SHIFT;
 
 	/* initialize position in segments */
 	cur_useg = &usegs[0];
@@ -479,7 +479,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	cur_udata = (__user void *)(unsigned long) cur_useg->vaddr;
 
 	for(i=0; i<frags_nr; i++) {
-		uint16_t frag_length = remaining > OMX_PACKET_RING_ENTRY_SIZE ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
+		uint16_t frag_length = remaining > OMX_RECVQ_ENTRY_SIZE ? OMX_RECVQ_ENTRY_SIZE : remaining;
 		uint16_t frag_remaining = frag_length;
 		void *cur_dest = dst_endpoint->recvq + recvq_offset[i];
 
@@ -510,7 +510,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 
 	remaining = msg_length;
 	for(i=0; i<frags_nr; i++) {
-		uint16_t frag_length = remaining > OMX_PACKET_RING_ENTRY_SIZE ? OMX_PACKET_RING_ENTRY_SIZE : remaining;
+		uint16_t frag_length = remaining > OMX_RECVQ_ENTRY_SIZE ? OMX_RECVQ_ENTRY_SIZE : remaining;
 		/* notify the dst event */
 		dst_event.specific.medium_frag.frag_length = frag_length;
 		dst_event.specific.medium_frag.frag_seqnum = i;

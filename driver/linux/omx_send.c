@@ -329,7 +329,7 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	BUILD_BUG_ON(OMX_SMALL_MSG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE);
+	BUILD_BUG_ON(OMX_SMALL_MSG_LENGTH_MAX > OMX_SENDQ_ENTRY_SIZE);
 
 	length = cmd.length;
 	if (unlikely(length > OMX_SMALL_MSG_LENGTH_MAX)) {
@@ -426,12 +426,12 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	BUILD_BUG_ON(OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE);
+	BUILD_BUG_ON(OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_SENDQ_ENTRY_SIZE);
 
 	frag_length = cmd.frag_length;
-	if (unlikely(frag_length > OMX_PACKET_RING_ENTRY_SIZE)) {
+	if (unlikely(frag_length > OMX_SENDQ_ENTRY_SIZE)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a mediumsq frag (tried %ld)\n",
-		       OMX_PACKET_RING_ENTRY_SIZE, (unsigned long) frag_length);
+		       OMX_SENDQ_ENTRY_SIZE, (unsigned long) frag_length);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -451,7 +451,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 
 	if (unlikely(frag_length > omx_skb_copy_max
 		     && hdr_len + frag_length >= ETH_ZLEN
-		     && omx_skb_frags >= (frag_length >> OMX_PACKET_RING_ENTRY_SHIFT))) {
+		     && omx_skb_frags >= (frag_length >> OMX_SENDQ_ENTRY_SHIFT))) {
 		/* use skb with frags */
 
 		struct omx_deferred_event * defevent;

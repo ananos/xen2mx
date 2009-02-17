@@ -263,7 +263,7 @@ omx_recv_small(struct omx_iface * iface,
 	unsigned long recvq_offset;
 	int err;
 
-	BUILD_BUG_ON(OMX_SMALL_MSG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE);
+	BUILD_BUG_ON(OMX_SMALL_MSG_LENGTH_MAX > OMX_RECVQ_ENTRY_SIZE);
 
 	/* check packet length */
 	if (unlikely(length > OMX_SMALL_MSG_LENGTH_MAX)) {
@@ -380,10 +380,10 @@ omx_recv_medium_frag(struct omx_iface * iface,
 #endif
 	int err;
 
-	BUILD_BUG_ON(OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE);
+	BUILD_BUG_ON(OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_RECVQ_ENTRY_SIZE);
 
 	/* check packet length */
-	if (unlikely(frag_length > OMX_PACKET_RING_ENTRY_SIZE)) {
+	if (unlikely(frag_length > OMX_RECVQ_ENTRY_SIZE)) {
 		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "MEDIUM fragment packet too long (length %d)",
 				 (unsigned) frag_length);

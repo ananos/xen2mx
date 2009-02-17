@@ -80,7 +80,8 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	union omx_evt * evt;
 
 	/* sanity checks */
-	BUILD_BUG_ON(PAGE_SIZE%OMX_PACKET_RING_ENTRY_SIZE != 0 && OMX_PACKET_RING_ENTRY_SIZE%PAGE_SIZE != 0);
+	BUILD_BUG_ON(PAGE_SIZE%OMX_SENDQ_ENTRY_SIZE != 0 && OMX_SENDQ_ENTRY_SIZE%PAGE_SIZE != 0);
+	BUILD_BUG_ON(PAGE_SIZE%OMX_RECVQ_ENTRY_SIZE != 0 && OMX_RECVQ_ENTRY_SIZE%PAGE_SIZE != 0);
 	BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);
 	BUILD_BUG_ON(OMX_UNEXP_EVENTQ_ENTRY_NR != OMX_RECVQ_ENTRY_NR);
 
@@ -251,7 +252,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 
 	/* take the next recvq slot and return it now */
 	*recvq_offset_p = endpoint->next_recvq_offset;
-	endpoint->next_recvq_offset += OMX_PACKET_RING_ENTRY_SIZE;
+	endpoint->next_recvq_offset += OMX_RECVQ_ENTRY_SIZE;
 	if (unlikely(endpoint->next_recvq_offset >= OMX_RECVQ_SIZE))
 		/* all slots have the same size, so there can't be a slot that wraps around the end */
 		endpoint->next_recvq_offset = 0;
@@ -296,7 +297,7 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
 	/* take the next recvq slots and return them now */
 	for(i=0; i<nr; i++) {
 		recvq_offset_p[i] = endpoint->next_recvq_offset;
-		endpoint->next_recvq_offset += OMX_PACKET_RING_ENTRY_SIZE;
+		endpoint->next_recvq_offset += OMX_RECVQ_ENTRY_SIZE;
 		if (unlikely(endpoint->next_recvq_offset >= OMX_RECVQ_SIZE))
 			/* all slots have the same size, so there can't be a slot that wraps around the end */
 			endpoint->next_recvq_offset = 0;
