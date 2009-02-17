@@ -286,6 +286,18 @@ omx_get_driver_string(unsigned int *lenp)
 	buflen += len;
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		       " SendQ: %ldB x %ld slots\n",
+		       (unsigned long) OMX_SENDQ_ENTRY_SIZE, (unsigned long) OMX_SENDQ_ENTRY_NR);
+	tmp += len;
+	buflen += len;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
+		       " RecvQ: %ldB x %ld slots\n",
+		       (unsigned long) OMX_RECVQ_ENTRY_SIZE, (unsigned long) OMX_RECVQ_ENTRY_NR);
+	tmp += len;
+	buflen += len;
+
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		       " MediumMessages: %ldB per fragment\n",
 		       (unsigned long) OMX_MEDIUM_FRAG_LENGTH_MAX);
 	tmp += len;
