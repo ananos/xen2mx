@@ -652,7 +652,13 @@ if test x$build_driver = xyes ; then
     if test ! "$srcdir" -ef "." ; then
 	# Symlink kernel sources into the build tree if needed
 	AC_MSG_NOTICE([creating symlinks to kernel sources in driver/linux/ ...])
-	for file in ${orig_builddir}/${srcdir}/driver/linux/*.[[ch]] ; do rm -f $(basename $file) ; ln -s $file ; done
+	for file in ${orig_builddir}/${srcdir}/driver/linux/*.[[ch]] ; do
+	    # don't symlink omx_checks.h, it has been generated in builddir above.
+	    # this will avoid problems if it has been generated in srcdir as well.
+	    if test "$(basename $file)" != omx_checks.h ; then
+		rm -f $(basename $file) && ln -s $file
+	    fi
+	done
     fi
 
     cd ${orig_builddir} > /dev/null
