@@ -44,6 +44,12 @@
 #define OMX_SENDQ_ENTRY_NR	1024
 #define OMX_RECVQ_ENTRY_NR	1024
 
+/* common packet slot for sendq and recvq */
+#define OMX_PACKET_RING_ENTRY_SHIFT     OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT
+#define OMX_PACKET_RING_ENTRY_SIZE      (1UL << OMX_PACKET_RING_ENTRY_SHIFT)
+#define OMX_SENDQ_SIZE  (OMX_SENDQ_ENTRY_NR << OMX_PACKET_RING_ENTRY_SHIFT)
+#define OMX_RECVQ_SIZE  (OMX_RECVQ_ENTRY_NR << OMX_PACKET_RING_ENTRY_SHIFT)
+
 /* expected eventq: where expected events are stored, medium send done and pull done */
 /* unexpected eventq: where unexpected events are stored, incoming packets */
 #define OMX_EVENTQ_ENTRY_SHIFT	6

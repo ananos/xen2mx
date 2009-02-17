@@ -30,11 +30,6 @@ struct sk_buff;
 /* constants */
 #define OMX_PULL_BLOCK_DESCS_NR 4
 #define OMX_IFACE_RX_USECS_WARN_MIN 10
-/* common packet slot for sendq and recvq */
-#define OMX_PACKET_RING_ENTRY_SHIFT     OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT
-#define OMX_PACKET_RING_ENTRY_SIZE      (1UL << OMX_PACKET_RING_ENTRY_SHIFT)
-#define OMX_SENDQ_SIZE	(OMX_SENDQ_ENTRY_NR << OMX_PACKET_RING_ENTRY_SHIFT)
-#define OMX_RECVQ_SIZE	(OMX_RECVQ_ENTRY_NR << OMX_PACKET_RING_ENTRY_SHIFT)
 
 /* globals */
 extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */
