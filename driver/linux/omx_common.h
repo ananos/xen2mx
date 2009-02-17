@@ -36,13 +36,6 @@ struct sk_buff;
 #define OMX_SENDQ_SIZE	(OMX_SENDQ_ENTRY_NR << OMX_PACKET_RING_ENTRY_SHIFT)
 #define OMX_RECVQ_SIZE	(OMX_RECVQ_ENTRY_NR << OMX_PACKET_RING_ENTRY_SHIFT)
 
-#if OMX_SMALL_MSG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE
-#error Small packet size too large for packet ring entry size
-#endif
-#if OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE
-#error Medium frag length is too big sendq/recvq slots
-#endif
-
 /* globals */
 extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */
 

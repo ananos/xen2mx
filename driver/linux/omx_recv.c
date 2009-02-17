@@ -263,6 +263,8 @@ omx_recv_small(struct omx_iface * iface,
 	unsigned long recvq_offset;
 	int err;
 
+	BUILD_BUG_ON(OMX_SMALL_MSG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE);
+
 	/* check packet length */
 	if (unlikely(length > OMX_SMALL_MSG_LENGTH_MAX)) {
 		omx_counter_inc(iface, DROP_BAD_DATALEN);
@@ -377,6 +379,8 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	dma_cookie_t dma_cookie = 0;
 #endif
 	int err;
+
+	BUILD_BUG_ON(OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE);
 
 	/* check packet length */
 	if (unlikely(frag_length > OMX_PACKET_RING_ENTRY_SIZE)) {

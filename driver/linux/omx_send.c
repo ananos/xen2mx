@@ -329,6 +329,8 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+	BUILD_BUG_ON(OMX_SMALL_MSG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE);
+
 	length = cmd.length;
 	if (unlikely(length > OMX_SMALL_MSG_LENGTH_MAX)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %d as a small (tried %d)\n",
@@ -423,6 +425,8 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 		ret = -EFAULT;
 		goto out;
 	}
+
+	BUILD_BUG_ON(OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_PACKET_RING_ENTRY_SIZE);
 
 	frag_length = cmd.frag_length;
 	if (unlikely(frag_length > OMX_PACKET_RING_ENTRY_SIZE)) {
