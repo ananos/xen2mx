@@ -218,7 +218,7 @@ omx__init_comms(void)
    * Misc globals
    */
 
-  omx__globals.rndv_threshold = OMX_MEDIUM_MAX;
+  omx__globals.rndv_threshold = OMX_MEDIUM_MSG_LENGTH_MAX;
   omx__globals.ack_delay_jiffies = omx__ack_delay_jiffies();
   omx__globals.resend_delay_jiffies = omx__resend_delay_jiffies();
 
@@ -315,15 +315,15 @@ omx__init_comms(void)
     env = getenv("OMX_SHARED_RNDV_THRESHOLD");
     if (env) {
       int val = atoi(env);
-      if (val < OMX_SMALL_MAX) {
+      if (val < OMX_SMALL_MSG_LENGTH_MAX) {
 	omx__verbose_printf(NULL, "Cannot set a rndv threshold to less than %d\n",
-			    OMX_SMALL_MAX);
-	val = OMX_SMALL_MAX;
+			    OMX_SMALL_MSG_LENGTH_MAX);
+	val = OMX_SMALL_MSG_LENGTH_MAX;
       }
-      if (val > OMX_MEDIUM_MAX) {
+      if (val > OMX_MEDIUM_MSG_LENGTH_MAX) {
 	omx__verbose_printf(NULL, "Cannot set a rndv threshold to more than %d\n",
-			    OMX_MEDIUM_MAX);
-	val = OMX_MEDIUM_MAX;
+			    OMX_MEDIUM_MSG_LENGTH_MAX);
+	val = OMX_MEDIUM_MSG_LENGTH_MAX;
       }
       omx__globals.shared_rndv_threshold = val;
       omx__verbose_printf(NULL, "Forcing shared rndv threshold to %d\n",

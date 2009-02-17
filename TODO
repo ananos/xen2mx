@@ -1,3 +1,9 @@
+* cleanup the skbfrags stuff:
+  + is it the number of attached frags, or also the linear part?
+  + enforce it or just try to optimize?
+  + fix the way to compute frags in medium_sends
+  + or just make it a binary?
+
 * when invalidating a pinned region, change its status first, with a memory barrier
   and rcu_synchronize if possible so that people using it are gone and won't come back
 

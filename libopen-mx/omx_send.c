@@ -639,7 +639,7 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   int use_sendq = omx__globals.medium_sendq;
   omx_return_t ret;
 
-  BUILD_BUG_ON(OMX_MEDIUM_MAX > OMX_MEDIUM_FRAG_LENGTH_MAX * OMX_MEDIUM_FRAGS_MAX);
+  BUILD_BUG_ON(OMX_MEDIUM_MSG_LENGTH_MAX > OMX_MEDIUM_FRAG_LENGTH_MAX * OMX_MEDIUM_FRAGS_MAX);
 
   if (use_sendq) {
     int frag_pipeline = omx__globals.packet_ring_entry_shift; /* the lib pipeline does not depend on the message size */
@@ -962,9 +962,9 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   } else
 #endif
 
-  if (likely(length <= OMX_TINY_MAX)) {
+  if (likely(length <= OMX_TINY_MSG_LENGTH_MAX)) {
     omx__submit_isend_tiny(ep, partner, req);
-  } else if (length <= OMX_SMALL_MAX) {
+  } else if (length <= OMX_SMALL_MSG_LENGTH_MAX) {
     void *copy = malloc(length);
     if (unlikely(!copy))
       return omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating isend small copy buffer");

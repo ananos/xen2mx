@@ -140,9 +140,9 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 	}
 
 	length = cmd.length;
-	if (unlikely(length > OMX_CONNECT_DATA_MAX)) {
+	if (unlikely(length > OMX_CONNECT_DATA_LENGTH_MAX)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %d as connect data (tried %d)\n",
-		       OMX_CONNECT_DATA_MAX, length);
+		       OMX_CONNECT_DATA_LENGTH_MAX, length);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -236,9 +236,9 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 	}
 
 	length = cmd.length;
-	if (unlikely(length > OMX_TINY_MAX)) {
+	if (unlikely(length > OMX_TINY_MSG_LENGTH_MAX)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %d as a tiny (tried %d)\n",
-		       OMX_TINY_MAX, length);
+		       OMX_TINY_MSG_LENGTH_MAX, length);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -330,9 +330,9 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 	}
 
 	length = cmd.length;
-	if (unlikely(length > OMX_SMALL_MAX)) {
+	if (unlikely(length > OMX_SMALL_MSG_LENGTH_MAX)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %d as a small (tried %d)\n",
-		       OMX_SMALL_MAX, length);
+		       OMX_SMALL_MSG_LENGTH_MAX, length);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -601,9 +601,9 @@ omx_ioctl_send_mediumva(struct omx_endpoint * endpoint,
 	}
 
 	msg_length = cmd.length;
-	if (unlikely(msg_length > OMX_MEDIUM_MAX)) {
+	if (unlikely(msg_length > OMX_MEDIUM_MSG_LENGTH_MAX)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a mediumva (tried %ld)\n",
-		       (unsigned long) OMX_MEDIUM_MAX, (unsigned long) msg_length);
+		       (unsigned long) OMX_MEDIUM_MSG_LENGTH_MAX, (unsigned long) msg_length);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -760,9 +760,9 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	}
 
 	length = cmd.length;
-	if (unlikely(length > OMX_RNDV_DATA_MAX)) {
+	if (unlikely(length > OMX_RNDV_DATA_LENGTH_MAX)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %d as a rndv (tried %d)\n",
-		       OMX_RNDV_DATA_MAX, length);
+		       OMX_RNDV_DATA_LENGTH_MAX, length);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -951,9 +951,9 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 	}
 
 	length = cmd.length;
-	if (unlikely(length > OMX_TRUC_DATA_MAX)) {
+	if (unlikely(length > OMX_TRUC_DATA_LENGTH_MAX)) {
 		printk(KERN_ERR "Open-MX: Cannot send more than %d as truc data (tried %d)\n",
-		       OMX_TRUC_DATA_MAX, length);
+		       OMX_TRUC_DATA_LENGTH_MAX, length);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1153,7 +1153,7 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_cmd_bench_hdr cmd;
-	char data[OMX_TINY_MAX];
+	char data[OMX_TINY_MSG_LENGTH_MAX];
 	int ret = 0;
 
 	/* level 00: only pass the command and get the endpoint */
@@ -1194,7 +1194,7 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	if (cmd.type == OMX_CMD_BENCH_TYPE_SEND_PREP)
 		goto out_with_skb;
 
-	ret = copy_from_user(data, &((struct omx_cmd_bench __user *) uparam)->dummy_data, OMX_TINY_MAX);
+	ret = copy_from_user(data, &((struct omx_cmd_bench __user *) uparam)->dummy_data, OMX_TINY_MSG_LENGTH_MAX);
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read send tiny cmd data\n");
 		ret = -EFAULT;

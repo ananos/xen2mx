@@ -53,7 +53,7 @@ omx_recv_connect(struct omx_iface * iface,
 	int err = 0;
 
 	/* check packet length */
-	if (unlikely(length > OMX_CONNECT_DATA_MAX)) {
+	if (unlikely(length > OMX_CONNECT_DATA_LENGTH_MAX)) {
 		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(eh, "CONNECT packet data too long (length %d)",
 				 (unsigned) length);
@@ -158,7 +158,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	int err = 0;
 
 	/* check packet length */
-	if (unlikely(length > OMX_TINY_MAX)) {
+	if (unlikely(length > OMX_TINY_MSG_LENGTH_MAX)) {
 		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "TINY packet too long (length %d)",
 				 (unsigned) length);
@@ -264,7 +264,7 @@ omx_recv_small(struct omx_iface * iface,
 	int err;
 
 	/* check packet length */
-	if (unlikely(length > OMX_SMALL_MAX)) {
+	if (unlikely(length > OMX_SMALL_MSG_LENGTH_MAX)) {
 		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "SMALL packet too long (length %d)",
 				 (unsigned) length);
@@ -532,7 +532,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	int err = 0;
 
 	/* check packet length */
-	if (unlikely(length > OMX_RNDV_DATA_MAX)) {
+	if (unlikely(length > OMX_RNDV_DATA_LENGTH_MAX)) {
 		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "RNDV packet too long (length %d)",
 				 (unsigned) length);
@@ -715,7 +715,7 @@ omx_recv_truc(struct omx_iface * iface,
 	int err = 0;
 
 	/* check packet length */
-	if (unlikely(length > OMX_TRUC_DATA_MAX)) {
+	if (unlikely(length > OMX_TRUC_DATA_LENGTH_MAX)) {
 		omx_counter_inc(iface, DROP_BAD_DATALEN);
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet too long (length %d)",
 				 (unsigned) length);

@@ -53,12 +53,12 @@
 #define OMX_EXP_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE * OMX_EXP_EVENTQ_ENTRY_NR)
 #define OMX_UNEXP_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE * OMX_UNEXP_EVENTQ_ENTRY_NR)
 
-#define OMX_TINY_MAX		32
-#define OMX_SMALL_MAX		128
-#define OMX_MEDIUM_MAX		32768
-#define OMX_RNDV_DATA_MAX	8
-#define OMX_CONNECT_DATA_MAX	32
-#define OMX_TRUC_DATA_MAX	48
+#define OMX_TINY_MSG_LENGTH_MAX		32
+#define OMX_SMALL_MSG_LENGTH_MAX	128
+#define OMX_MEDIUM_MSG_LENGTH_MAX	32768
+#define OMX_RNDV_DATA_LENGTH_MAX	8
+#define OMX_CONNECT_DATA_LENGTH_MAX	32
+#define OMX_TRUC_DATA_LENGTH_MAX	48
 
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16
@@ -287,7 +287,7 @@ struct omx_cmd_send_tiny {
 		/* 24 */
 	} hdr;
 	/* 24 */
-	char data[OMX_TINY_MAX];
+	char data[OMX_TINY_MSG_LENGTH_MAX];
 	/* 56 */
 };
 
@@ -366,7 +366,7 @@ struct omx_cmd_send_rndv {
 		/* 32 */
 	} hdr;
 	/* 32 */
-	char data[OMX_RNDV_DATA_MAX];
+	char data[OMX_RNDV_DATA_LENGTH_MAX];
 	/* 40 */
 };
 
@@ -381,7 +381,7 @@ struct omx_cmd_send_connect {
 		/* 8 */
 	} hdr;
 	/* 8 */
-	char data[OMX_CONNECT_DATA_MAX];
+	char data[OMX_CONNECT_DATA_LENGTH_MAX];
 	/* 40 */
 };
 
@@ -432,7 +432,7 @@ struct omx_cmd_send_truc {
 		/* 16 */
 	} hdr;
 	/* 16 */
-	char data[OMX_TRUC_DATA_MAX];
+	char data[OMX_TRUC_DATA_LENGTH_MAX];
 	/* 48 */
 };
 
@@ -500,7 +500,7 @@ struct omx_cmd_bench {
 		/* 8 */
 	} hdr;
 	/* 8 */
-	char dummy_data[OMX_TINY_MAX];
+	char dummy_data[OMX_TINY_MSG_LENGTH_MAX];
 	/* 40 */
 };
 
@@ -714,7 +714,7 @@ union omx_evt {
 		uint8_t length;
 		uint8_t pad2;
 		/* 8 */
-		uint8_t data[OMX_CONNECT_DATA_MAX];
+		uint8_t data[OMX_CONNECT_DATA_LENGTH_MAX];
 		/* 40 */
 		uint8_t pad3[23];
 		uint8_t type;
@@ -727,7 +727,7 @@ union omx_evt {
 		uint8_t length;
 		uint8_t pad2[4];
 		/* 8 */
-		char data[OMX_TRUC_DATA_MAX];
+		char data[OMX_TRUC_DATA_LENGTH_MAX];
 		/* 56 */
 		uint8_t pad3[7];
 		uint8_t type;
@@ -760,7 +760,7 @@ union omx_evt {
 				uint8_t length;
 				uint8_t pad[7];
 				/* 8 */
-				char data[OMX_TINY_MAX];
+				char data[OMX_TINY_MSG_LENGTH_MAX];
 				/* 40 */
 			} tiny;
 
@@ -787,7 +787,7 @@ union omx_evt {
 				uint8_t length;
 				uint8_t pad1[7];
 				/* 8 */
-				char data[OMX_RNDV_DATA_MAX];
+				char data[OMX_RNDV_DATA_LENGTH_MAX];
 				/* 16 */
 				uint64_t pad2[3];
 				/* 40 */

@@ -407,7 +407,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	struct omx_cmd_user_segment *usegs, *cur_useg;
 	uint16_t msg_length, remaining, cur_useg_remaining;
 	void __user * cur_udata;
-	unsigned long recvq_offset[OMX_MEDIUM_MAX >> OMX_PACKET_RING_ENTRY_SHIFT];
+	unsigned long recvq_offset[OMX_MEDIUM_MSG_LENGTH_MAX >> OMX_PACKET_RING_ENTRY_SHIFT];
 	uint32_t nseg;
 	int ret;
 	int frags_nr;
