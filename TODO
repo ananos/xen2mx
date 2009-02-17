@@ -1,3 +1,6 @@
+* cleanup the computation of packet sizes depending on the MTU in omx_wire.h
+  when not wire-compatible
+
 * cleanup the skbfrags stuff:
   + is it the number of attached frags, or also the linear part?
   + enforce it or just try to optimize?
