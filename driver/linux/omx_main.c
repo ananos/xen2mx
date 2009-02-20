@@ -118,12 +118,12 @@ MODULE_PARM_DESC(dmaasyncmin, "Minimum message length to offload all fragment co
 int omx_dma_sync_min = 2*1024*1024;
 module_param_named(dmasyncmin, omx_dma_sync_min, uint, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(dmasyncmin, "Minimum length to offload synchronous copy on DMA engine");
-#else /* OMX_HAVE_DMA_ENGINE */
+#else /* !OMX_HAVE_DMA_ENGINE */
 omx_unavail_module_param(dmaengine, "kernel misses " OMX_DMA_ENGINE_CONFIG_STR);
 omx_unavail_module_param(dmaasyncfragmin, "kernel misses " OMX_DMA_ENGINE_CONFIG_STR);
 omx_unavail_module_param(dmaasyncmin, "kernel misses " OMX_DMA_ENGINE_CONFIG_STR);
 omx_unavail_module_param(dmasyncmin, "kernel misses " OMX_DMA_ENGINE_CONFIG_STR);
-#endif /* OMX_HAVE_DMA_ENGINE */
+#endif /* !OMX_HAVE_DMA_ENGINE */
 
 int omx_copybench = 0;
 module_param_named(copybench, omx_copybench, uint, S_IRUGO);
@@ -133,9 +133,9 @@ MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");
 unsigned long omx_debug = 0;
 module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(debug, "Bitmask of debugging messages to display");
-#else /* OMX_DRIVER_DEBUG */
+#else /* !OMX_DRIVER_DEBUG */
 omx_unavail_module_param(debug, "--enable-debug was given");
-#endif /* OMX_DRIVER_DEBUG */
+#endif /* !OMX_DRIVER_DEBUG */
 
 #ifdef OMX_DRIVER_DEBUG
 unsigned long omx_packet_loss = 0;
@@ -177,7 +177,7 @@ MODULE_PARM_DESC(nack_mcp_packet_loss, "Explicit nack mcp packet loss frequency"
 unsigned long omx_RAW_packet_loss = 0;
 module_param_named(raw_packet_loss, omx_RAW_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(raw_packet_loss, "Explicit raw packet loss frequency");
-#else /* OMX_DRIVER_DEBUG */
+#else /* !OMX_DRIVER_DEBUG */
 omx_unavail_module_param(packet_loss, "--enable-debug was given");
 omx_unavail_module_param(tiny_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(small_packet_loss, "--enable-debug was given");
@@ -191,7 +191,7 @@ omx_unavail_module_param(truc_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(nack_lib_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(nack_mcp_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(raw_packet_loss, "--enable-debug was given");
-#endif /* OMX_DRIVER_DEBUG */
+#endif /* !OMX_DRIVER_DEBUG */
 
 /************************
  * Main Module Init/Exit

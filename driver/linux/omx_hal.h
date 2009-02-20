@@ -27,7 +27,7 @@
 #ifdef OMX_HAVE_REMAP_VMALLOC_RANGE
 #define omx_vmalloc_user vmalloc_user
 #define omx_remap_vmalloc_range remap_vmalloc_range
-#else /* OMX_HAVE_REMAP_VMALLOC_RANGE */
+#else /* !OMX_HAVE_REMAP_VMALLOC_RANGE */
 static inline void *
 omx_vmalloc_user(unsigned long size)
 {
@@ -58,31 +58,31 @@ omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pg
 
 	return ret;
 }
-#endif /* OMX_HAVE_REMAP_VMALLOC_RANGE */
+#endif /* !OMX_HAVE_REMAP_VMALLOC_RANGE */
 
 #ifdef OMX_HAVE_FOR_EACH_NETDEV
 #define omx_for_each_netdev(_ifp) for_each_netdev(&init_net, _ifp)
 #elif defined OMX_HAVE_FOR_EACH_NETDEV_WITHOUT_NS
 #define omx_for_each_netdev(_ifp) for_each_netdev(_ifp)
-#else /* OMX_HAVE_FOR_EACH_NETDEV */
+#else /* !OMX_HAVE_FOR_EACH_NETDEV && !OMX_HAVE_FOR_EACH_NETDEV_WITHOUT_NS */
 #define omx_for_each_netdev(_ifp) for ((_ifp) = dev_base; (_ifp) != NULL; (_ifp) = (_ifp)->next)
-#endif /* OMX_HAVE_FOR_EACH_NETDEV */
+#endif /* !OMX_HAVE_FOR_EACH_NETDEV && !OMX_HAVE_FOR_EACH_NETDEV_WITHOUT_NS */
 
 #ifdef OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS
 #define omx_dev_get_by_name dev_get_by_name
-#else /* OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS */
+#else /* !OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS */
 #define omx_dev_get_by_name(name) dev_get_by_name(&init_net, name)
-#endif /* OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS */
+#endif /* !OMX_HAVE_DEV_GET_BY_NAME_WITHOUT_NS */
 
 #ifdef OMX_HAVE_SKB_HEADERS
 #define omx_skb_reset_mac_header skb_reset_mac_header
 #define omx_skb_reset_network_header skb_reset_network_header
 #define omx_skb_mac_header(skb) ((struct omx_hdr *) skb_mac_header(skb))
-#else /* OMX_HAVE_SKB_HEADERS */
+#else /* !OMX_HAVE_SKB_HEADERS */
 #define omx_skb_reset_mac_header(skb) skb->mac.raw = skb->data
 #define omx_skb_reset_network_header(skb) skb->nh.raw = skb->mac.raw
 #define omx_skb_mac_header(skb) ((struct omx_hdr *) skb->mac.raw)
-#endif /* OMX_HAVE_SKB_HEADERS */
+#endif /* !OMX_HAVE_SKB_HEADERS */
 
 #ifdef OMX_HAVE_TASK_STRUCT_NSPROXY
 /* task_struct ns_proxy introduced in 2.6.19 */
@@ -188,7 +188,7 @@ typedef struct work_struct * omx_work_struct_data_t;
 /* kernel <= 2.6.17 with no DMA engine at all */
 #define OMX_DMA_ENGINE_CONFIG_STR "CONFIG_DMA_ENGINE"
 
-#endif /* OMX_HAVE_DMA_ENGINE */
+#endif /* !OMX_HAVE_{OLD_,}DMA_ENGINE_API */
 
 #endif /* __omx_hal_h__ */
 

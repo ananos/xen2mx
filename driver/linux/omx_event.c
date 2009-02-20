@@ -371,7 +371,7 @@ omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
 
 	/* no need to wakeup people */
 
-	spin_unlock_bh(&endpoint->event_lock);	
+	spin_unlock_bh(&endpoint->event_lock);
 }
 
 /***********

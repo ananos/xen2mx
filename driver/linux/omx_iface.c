@@ -232,7 +232,7 @@ omx_iface_get_counters(uint32_t board_index, int clear,
 			goto out_with_lock;
 
 		iface = rcu_dereference(omx_ifaces[board_index]);
-		if (!iface)	
+		if (!iface)
 			goto out_with_lock;
 	}
 

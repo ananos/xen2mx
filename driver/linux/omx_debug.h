@@ -45,9 +45,9 @@ extern unsigned long omx_debug;
 
 #define dprintk(type, x...) do { if (omx_debug_type_enabled(type)) printk(KERN_INFO "OMXdbg-" #type ": " x); } while (0)
 
-#else /* OMX_DRIVER_DEBUG */
+#else /* !OMX_DRIVER_DEBUG */
 #define dprintk(type, x...) do { /* nothing */ } while (0)
-#endif /* OMX_DRIVER_DEBUG */
+#endif /* !OMX_DRIVER_DEBUG */
 
 #define omx_send_dprintk(_eh, _format, ...) \
 dprintk(SEND, \

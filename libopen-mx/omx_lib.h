@@ -68,14 +68,14 @@
 #define omx__debug_instr(x) do { x; } while (0)
 #define omx__debug_printf(type, ep, format, ...) do { if (omx__verbdebug_type_enabled(type)) omx__printf(ep, format, ##__VA_ARGS__); } while (0)
 
-#else /* OMX_LIB_DEBUG */
+#else /* !OMX_LIB_DEBUG */
 
 #define INLINE inline
 #define omx__debug_assert(x) /* nothing */
 #define omx__debug_instr(x) /* nothing */
 #define omx__debug_printf(type, format, ...) /* nothing */
 
-#endif /* OMX_LIB_DEBUG */
+#endif /* !OMX_LIB_DEBUG */
 
 extern void omx__debug_init(int signum);
 

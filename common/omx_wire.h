@@ -234,7 +234,7 @@ struct omx_pkt_host_reply {
 	uint32_t magic;
 	uint32_t pad1;
 	/* 16 */
-};	
+};
 
 struct omx_pkt_truc {
 	omx_packet_type_t ptype;
@@ -310,7 +310,7 @@ struct omx_pkt_pull_request {
 	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull), MX's index */
 	/* 32 */
 };
-#else /* ~OMX_MX_WIRE_COMPAT */
+#else /* !OMX_MX_WIRE_COMPAT */
 struct omx_pkt_pull_request {
 	omx_packet_type_t ptype;
 	uint8_t dst_endpoint;
@@ -334,7 +334,7 @@ struct omx_pkt_pull_request {
 	uint32_t frame_index; /* pull iteration index (page_nr/page_per_pull), MX's index */
 	/* 44 */
 };
-#endif /* ~OMX_MX_WIRE_COMPAT */
+#endif /* !OMX_MX_WIRE_COMPAT */
 
 #ifdef OMX_MX_WIRE_COMPAT
 #define OMX_PULL_REPLY_PER_BLOCK 8

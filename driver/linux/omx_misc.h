@@ -64,9 +64,9 @@ extern unsigned long omx_packet_loss_index;
 		__omx_queue_xmit(iface, skb, counter);				\
 	}									\
 } while (0)
-#else /* OMX_DRIVER_DEBUG */
+#else /* !OMX_DRIVER_DEBUG */
 #define _omx_queue_xmit(iface, skb, type, counter) __omx_queue_xmit(iface, skb, counter)
-#endif /* OMX_DRIVER_DEBUG */
+#endif /* !OMX_DRIVER_DEBUG */
 
 #define omx_queue_xmit(iface, skb, type) _omx_queue_xmit(iface, skb, type, type)
 
