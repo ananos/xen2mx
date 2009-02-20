@@ -9,6 +9,7 @@ REL_DIR	=	tools/
 SRCS	=	$(wildcard @srcdir@/*.c)
 OBJS	=	$(patsubst @srcdir@/%.c,%.o,$(SRCS))
 TOOLS	=	$(subst .o,,$(OBJS))
+SCRIPTS	=	$(patsubst @srcdir@/%,%,$(wildcard @srcdir@/*.sh))
 
 CC	=	@CC@
 LD	=	$(CC) #FIXME
@@ -30,7 +31,7 @@ DYNAMIC_LIB_OPT	=	@OPEN_MX_LIB_DYNAMIC_LINK_OPT@
 
 omxoed_LIBS	=	-lpthread
 
-all: $(TOOLS)
+all: $(TOOLS) $(SCRIPTS)
 
 ###############
 # dependencies
@@ -52,6 +53,10 @@ $(TOOLS): %: %.o $(STATIC_LIB)
 	$(CMDPREFIX) $(LD) $^ $($(@)_LIBS) -o $@
 endif
 
+$(SCRIPTS): %.sh: @srcdir@/%.sh
+	$(CMDECHO) "  CP      $(REL_DIR)$@"
+	$(CMDPREFIX) cp $^ $@
+
 # build and create dependency file
 $(OBJS): %.o: @srcdir@/%.c
 	$(CMDECHO) "  CC      $(REL_DIR)$@"
@@ -66,8 +71,8 @@ installonly:
 		$(MKDIR_P) $(DESTDIR)$(bindir) ; \
 	fi
 
-	$(CMDECHO) "  INSTALL $(patsubst %,$(DESTDIR)$(bindir)/%,$(TOOLS))"
-	$(CMDPREFIX) $(INSTALL) -m 0755 $(TOOLS) $(DESTDIR)$(bindir)/
+	$(CMDECHO) "  INSTALL $(patsubst %,$(DESTDIR)$(bindir)/%,$(TOOLS) $(SCRIPTS))"
+	$(CMDPREFIX) $(INSTALL) -m 0755 $(TOOLS) $(SCRIPTS) $(DESTDIR)$(bindir)/
 
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(sbindir)"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(sbindir); then \
