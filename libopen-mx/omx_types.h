@@ -560,6 +560,7 @@ struct omx__globals {
   char *process_binding;
   char *message_prefix;
   char *message_prefix_format;
+  unsigned abort_sleeps;
 };
 
 enum omx__internal_return_code {

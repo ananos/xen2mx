@@ -31,6 +31,7 @@ static omx_return_t
 omx__errors_before_init(const char *buffer, omx_return_t ret)
 {
   omx__printf(NULL, "BeforeInit: %s: %s\n", buffer, omx_strerror(ret));
+  omx__error_sleeps();
   exit(-1);
 }
 
@@ -38,6 +39,7 @@ omx_return_t
 omx__errors_are_fatal(const char *buffer, omx_return_t ret)
 {
   omx__printf(NULL, "%s: %s\n", buffer, omx_strerror(ret));
+  omx__error_sleeps();
   exit(-1);
 }
 const omx_error_handler_t OMX_ERRORS_ARE_FATAL = (omx_error_handler_t) omx__errors_are_fatal;

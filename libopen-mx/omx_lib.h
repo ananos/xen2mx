@@ -41,10 +41,22 @@
 
 #define omx__message_prefix(ep) ((ep) ? ((struct omx_endpoint *) ep)->message_prefix : omx__globals.message_prefix)
 
+#define omx__error_sleeps() do {								\
+  if (omx__globals.abort_sleeps) {								\
+    fprintf(stderr, "Open-MX sleeping %d before aborting, you may attach with gdb -p %ld\n",	\
+	    omx__globals.abort_sleeps, (unsigned long) getpid());				\
+    sleep(omx__globals.abort_sleeps);								\
+  }												\
+} while (0)
+
 #define omx__printf(ep, format, ...) do { fprintf(stderr, "%s" format, omx__message_prefix(ep), ##__VA_ARGS__); } while (0)
 #define omx__verbose_printf(ep, format, ...) do { if (omx__globals.verbose) omx__printf(ep, format, ##__VA_ARGS__); } while (0)
 #define omx__warning(ep, format, ...) do { omx__printf(ep, "WARNING: " format, ##__VA_ARGS__); } while (0)
-#define omx__abort(ep, format, ...) do { omx__printf(ep, "FatalError: " format, ##__VA_ARGS__); assert(0); } while (0)
+#define omx__abort(ep, format, ...) do {			\
+  omx__printf(ep, "FatalError: " format, ##__VA_ARGS__);	\
+  omx__error_sleeps();						\
+  assert(0);							\
+} while (0)
 
 #ifdef OMX_LIB_DEBUG
 

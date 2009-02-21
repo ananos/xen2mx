@@ -107,6 +107,15 @@ omx__init_api(int app_api)
   }
 #endif /* OMX_LIB_DEBUG */
 
+  omx__globals.abort_sleeps = 0;
+  env = getenv("OMX_ABORT_SLEEPS");
+  if (env) {
+    omx__globals.abort_sleeps = atoi(env);
+    if (omx__globals.abort_sleeps)
+      omx__verbose_printf(NULL, "Will sleep %d seconds in case of abort\n",
+			  omx__globals.abort_sleeps);
+  }
+
   /*******************************
    * Check if already initialized
    */
