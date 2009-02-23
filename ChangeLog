@@ -3,8 +3,9 @@ Open-MX 1.1.0
 
 Improvements from previous release:
 * Add support for architectures with page size different from 4kB.
-* Improve MTU=9000 support by using 8kB fragments for medium messages
-  as well.
+* Improve non-wire-compatible medium and large message performance by
+  using the full MTU packet in most cases instead of a power-of-two
+  payload size.
 * Add a new optional medium send path relying on page pinning and
   fragmented DMAs instead of page copy and large contigous socket
   buffers.
