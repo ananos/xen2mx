@@ -1,10 +1,18 @@
 * check return values in omx_check.sh and abort earlier on error
+* add omx_check.sh to the main FAQ (after starting with lo)
+* cleanup the pretty printing
+
+* move the FAQ inside the source tree and copy it to the website on release
 
 * if recv_frag_length != MEDIUM_FRAG_LENGTH_MAX,
   check that frag_seqnum * MAX + frag_length = msg_length if DEBUG
 
 * cleanup the computation of packet sizes depending on the MTU in omx_wire.h
   when not wire-compatible
+* stop supporting mtu!=1500/9000 ?
+  + go back to mtu/wire-compat indep library, with send
+    function pointers initialized at connect
+    - how to generate the multiple instances ?
 
 * cleanup the skbfrags stuff:
   + is it the number of attached frags, or also the linear part?
@@ -12,14 +20,10 @@
   + fix the way to compute frags in medium_sends
   + or just make it a binary?
 
-* when invalidating a pinned region, change its status first, with a memory barrier
-  and rcu_synchronize if possible so that people using it are gone and won't come back
-
 * how to tune mtu/packet-ring-size since 8k-mediums do not always help?
 
-* stop making the lib wire-compat-config-independent since it's
-  not other-config-independent anyway?
-  + it'll simplify/optimize many things
+* when invalidating a pinned region, change its status first, with a memory barrier
+  and rcu_synchronize if possible so that people using it are gone and won't come back
 
 * update all thresholds in non-wire-compat
   + make them configurable?
@@ -67,11 +71,6 @@
   + only process delayed requests if something happened in other loops
   + what about check endpoint desc ?
   + make request_alloc_check() called in debug only
-
-* optimize mtu 1500 by using more than 1024k medium or pull reply packets
-  + break medium wire compat to add a medium frag length
-  + ignore medium frag pipeline, and replace >> pipeline with using the frag length
-  + update pull code to not assume the pull reply length is a pow2
 
 * endpoint_close cannot be called from interrupt context
   + we can destroy region at first closing too?
