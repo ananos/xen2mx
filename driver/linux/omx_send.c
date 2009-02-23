@@ -567,7 +567,9 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 	OMX_PKT_MATCH_INFO_FROM(&medium_n->msg, cmd.match_info);
 	OMX_PKT_FIELD_FROM(medium_n->frag_length, frag_length);
 	OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, cmd.frag_seqnum);
+#ifdef OMX_MX_WIRE_COMPAT
 	OMX_PKT_FIELD_FROM(medium_n->frag_pipeline, cmd.frag_pipeline);
+#endif
 
 	omx_send_dprintk(eh, "MEDIUMSQ FRAG length %ld", (unsigned long) frag_length);
 
@@ -698,7 +700,9 @@ omx_ioctl_send_mediumva(struct omx_endpoint * endpoint,
 		OMX_PKT_MATCH_INFO_FROM(&medium_n->msg, cmd.match_info);
 		OMX_PKT_FIELD_FROM(medium_n->frag_length, frag_length);
 		OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, i);
-		OMX_PKT_FIELD_FROM(medium_n->frag_pipeline, OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT); /* FIXME: make it needed only in wire-compat mode, and use OMX_MEDIUM_FRAG_LENGTH_SHIFT then */
+#ifdef OMX_MX_WIRE_COMPAT
+		OMX_PKT_FIELD_FROM(medium_n->frag_pipeline, OMX_MEDIUM_FRAG_LENGTH_SHIFT);
+#endif
 
 		omx_send_dprintk(eh, "MEDIUMVA length %ld", (unsigned long) frag_length);
 

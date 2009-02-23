@@ -465,7 +465,9 @@ union omx_request {
 	struct omx_cmd_send_mediumsq_frag send_mediumsq_frag_ioctl_param;
 	uint32_t frags_nr;
 	uint32_t frags_pending_nr;
+#ifdef OMX_MX_WIRE_COMPAT
 	unsigned frag_pipeline;
+#endif
 	int sendq_map_index[OMX_MEDIUM_FRAGS_MAX];
       } mediumsq;
       struct {
@@ -548,7 +550,6 @@ struct omx__globals {
 #ifndef OMX_DISABLE_SHARED
   int sharedcomms;
 #endif
-  unsigned packet_ring_entry_shift;
   unsigned rndv_threshold;
   unsigned shared_rndv_threshold;
   unsigned ack_delay_jiffies;

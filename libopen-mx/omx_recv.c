@@ -285,12 +285,11 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
   unsigned long chunk = msg->specific.medium_frag.frag_length;
   unsigned long frag_seqnum = msg->specific.medium_frag.frag_seqnum;
-  unsigned long frag_pipeline = msg->specific.medium_frag.frag_pipeline;
-  unsigned long offset = frag_seqnum << frag_pipeline;
+  unsigned long offset = frag_seqnum * OMX_MEDIUM_FRAG_LENGTH_MAX;
   int new = (req->recv.specific.medium.frags_received_mask == 0);
 
-  omx__debug_printf(MEDIUM, ep, "got a medium frag seqnum %d pipeline %d length %d offset %d of total %d\n",
-		    (unsigned) frag_seqnum, (unsigned) frag_pipeline, (unsigned) chunk,
+  omx__debug_printf(MEDIUM, ep, "got a medium frag seqnum %d length %d offset %d of total %d\n",
+		    (unsigned) frag_seqnum, (unsigned) chunk,
 		    (unsigned) offset, (unsigned) msg_length);
 
   if (unlikely(req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum))) {

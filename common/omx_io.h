@@ -102,8 +102,7 @@ struct omx_driver_desc {
 	/* 24 */
 	uint32_t hz;
 	uint16_t mtu;
-	uint8_t packet_ring_entry_shift;
-	uint8_t pad1;
+	uint16_t pad1;
 	/* 32 */
 	uint32_t board_max;
 	uint32_t endpoint_max;

@@ -478,7 +478,9 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event.specific.medium_frag.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
 	event.specific.medium_frag.frag_length = frag_length;
 	event.specific.medium_frag.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
+#ifdef OMX_MX_WIRE_COMPAT
 	event.specific.medium_frag.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
+#endif
 	event.specific.medium_frag.recvq_offset = recvq_offset;
 
 	omx_recv_dprintk(&mh->head.eth, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
