@@ -1,8 +1,8 @@
 exec_prefix	=	@exec_prefix@
-prefix	=	@prefix@
-bindir	=	@bindir@
+prefix		=	@prefix@
+bindir		=	@bindir@
 includedir	=	@includedir@
-srcdir	=	@srcdir@
+srcdir		=	@srcdir@
 
 OMX_CONFIGURED	=	@OMX_CONFIGURED@
 
@@ -148,13 +148,13 @@ ifeq ($(OMX_CONFIGURED),1)
   endif
 endif
 
-SVN_URL	=	svn://scm.gforge.inria.fr/svn/open-mx/
-SVN_BRANCH	=	trunk
-SVN_FAQ_NAME	=	site/FAQ/index.html
-GITSVN_BRANCH	=	
+SVN_URL			=	svn://scm.gforge.inria.fr/svn/open-mx/
+SVN_BRANCH		=	trunk
+SVN_FAQ_NAME		=	site/FAQ/index.html
+GITSVN_BRANCH		=	
 TARBALL_FAQ_NAME	=	FAQ.html
-PATCHES	=
-ABS_PATCHES	=	$(abspath $(PATCHES))
+PATCHES			=
+ABS_PATCHES		=	$(abspath $(PATCHES))
 
 dist:
 	@if [ -z "$(TARBALL)" ] ; then echo "Cannot create tarball with empty TARBALL name" ; /bin/false ; fi
