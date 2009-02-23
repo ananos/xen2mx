@@ -79,7 +79,7 @@
 #  define OMX_MEDIUM_FRAG_LENGTH_MAX		(OMX_MTU-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_medium_frag))
 #  define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT	13
 # else
-#  define OMX_PULL_REPLY_LENGTH_MAX		8192 /* FIXME: Should use OMX_MTU-sizeof(...) as above */
+#  define OMX_PULL_REPLY_LENGTH_MAX		(OMX_MTU-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_pull_reply))
 #  define OMX_MEDIUM_FRAG_LENGTH_MAX		8192 /* FIXME: Should use OMX_MTU-sizeof(...) as above */
 #  define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT	13
 # endif
