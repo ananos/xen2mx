@@ -67,19 +67,19 @@
 #  error OMX_MTU should be defined in non-wire-compatible mode
 # endif
 # if OMX_MTU < 2000 /* ugly since we can't compare with 1024+sizeof(header) */
-#  define OMX_PULL_REPLY_LENGTH_MAX		1024
+#  define OMX_PULL_REPLY_LENGTH_MAX		(OMX_MTU-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_pull_reply))
 #  define OMX_MEDIUM_FRAG_LENGTH_MAX		(OMX_MTU-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_medium_frag))
 #  define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT	11 /* the power-of-two above or equal to the max length */
 # elif OMX_MTU < 3000
-#  define OMX_PULL_REPLY_LENGTH_MAX		2048
+#  define OMX_PULL_REPLY_LENGTH_MAX		(OMX_MTU-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_pull_reply))
 #  define OMX_MEDIUM_FRAG_LENGTH_MAX		(OMX_MTU-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_medium_frag))
 #  define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT	12
 # elif OMX_MTU < 5000
-#  define OMX_PULL_REPLY_LENGTH_MAX		4096
+#  define OMX_PULL_REPLY_LENGTH_MAX		(OMX_MTU-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_pull_reply))
 #  define OMX_MEDIUM_FRAG_LENGTH_MAX		(OMX_MTU-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_medium_frag))
 #  define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT	13
 # else
-#  define OMX_PULL_REPLY_LENGTH_MAX		8192
+#  define OMX_PULL_REPLY_LENGTH_MAX		8192 /* FIXME: Should use OMX_MTU-sizeof(...) as above */
 #  define OMX_MEDIUM_FRAG_LENGTH_MAX		8192 /* FIXME: Should use OMX_MTU-sizeof(...) as above */
 #  define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT	13
 # endif
