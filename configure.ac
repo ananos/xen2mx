@@ -411,9 +411,6 @@ else
   AC_MSG_RESULT(no)
 fi
 
-# to drop on 2009/09
-AC_ARG_ENABLE(mtu_1500,, AC_MSG_ERROR([use --with-mtu=1500 instead]))
-
 AC_ARG_WITH(mtu,
 	[AS_HELP_STRING([--with-mtu=<n>], [change MTU (default is 9000 in non-MX-wire-compatible mode)])],
 	with_mtu=$withval)
