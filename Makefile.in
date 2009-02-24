@@ -15,7 +15,7 @@ MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 SED	=	@SED@
 
-COMPONENTS	=	
+COMPONENTS	=
 ifeq (@OMX_BUILD_DRIVER@,1)
   COMPONENTS	+=	driver
 endif
@@ -151,7 +151,7 @@ endif
 SVN_URL			=	svn://scm.gforge.inria.fr/svn/open-mx/
 SVN_BRANCH		=	trunk
 SVN_FAQ_NAME		=	site/FAQ/index.html
-GITSVN_BRANCH		=	
+GITSVN_BRANCH		=
 TARBALL_FAQ_NAME	=	FAQ.html
 PATCHES			=
 ABS_PATCHES		=	$(abspath $(PATCHES))
