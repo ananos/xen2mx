@@ -82,7 +82,7 @@ if [ $dobase -eq 1 ] ; then
 	echo "*************"
 	${TOOLS_DIR}/omx_info
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 
 	echo
@@ -100,7 +100,7 @@ if [ $doloopback -eq 1 ] ; then
 	echo "************************************"
 	${TESTS_DIR}/omx_loopback_test
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 
 	echo
@@ -109,7 +109,7 @@ if [ $doloopback -eq 1 ] ; then
 	echo "************************************"
 	${TESTS_DIR}/omx_loopback_test -s
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 
 	echo
@@ -118,7 +118,7 @@ if [ $doloopback -eq 1 ] ; then
 	echo "**********************************"
 	${TESTS_DIR}/omx_loopback_test -S
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 fi
 
@@ -132,7 +132,7 @@ start_double_application() {
 	disable_shared=$2
 	OMX_DISABLE_SHARED=$disable_shared $application & _pid=$! ; sleep 1
 	if [ $(is_process_running $_pid) -eq 0 ] ; then
-		echo "Open-MX not started" && exit 1
+		echo "Failed" && exit 1
 	fi
 	OMX_DISABLE_SHARED=$disable_shared $application -e 3 -d localhost ; err=$? ; sleep 1
 	kill -9 $_pid 2>/dev/null ; sleep 1
@@ -146,7 +146,7 @@ start_double_application_with_stop() {
 	disable_shared=$2
 	OMX_DISABLE_SHARED=$disable_shared $application & _pid=$! ; sleep 1 ; kill -STOP $_pid ; sleep 1
 	if [ $(is_process_running $_pid) -eq 0 ] ; then
-		echo "Open-MX not started" && exit 1
+		echo "Failed" && exit 1
 	fi
 	OMX_DISABLE_SHARED=$disable_shared $application -e 3 -d localhost ; err=$? ; sleep 1
 	kill -9 $_pid ; kill -CONT $_pid ; sleep 1
@@ -163,7 +163,7 @@ if [ $domisc -eq 1 ] ; then
 	echo "***************"
 	${TESTS_DIR}/omx_unexp_test
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 
 	echo
@@ -172,7 +172,7 @@ if [ $domisc -eq 1 ] ; then
 	echo "***************************"
 	OMX_CTXIDS=10,10 ${TESTS_DIR}/omx_unexp_test
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 
 	echo
@@ -181,7 +181,7 @@ if [ $domisc -eq 1 ] ; then
 	echo "***********************"
 	${TESTS_DIR}/omx_unexp_handler_test
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 
 	echo
@@ -215,7 +215,7 @@ if [ $dovect -eq 1 ] ; then
 	echo "**************************************"
 	${TESTS_DIR}/omx_vect_test
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 
 	echo
@@ -224,7 +224,7 @@ if [ $dovect -eq 1 ] ; then
 	echo "**************************************"
 	${TESTS_DIR}/omx_vect_test -s
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 
 	echo
@@ -233,7 +233,7 @@ if [ $dovect -eq 1 ] ; then
 	echo "************************************"
 	${TESTS_DIR}/omx_vect_test -S
 	if [ $? -ne 0 ] ; then
-	    echo "Open-MX not started" && exit 1
+	    echo "Failed" && exit 1
 	fi
 fi
 
