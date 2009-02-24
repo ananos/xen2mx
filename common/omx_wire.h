@@ -73,11 +73,14 @@
 #  error OMX_MTU should be defined in non-wire-compatible mode
 # endif
 
+#ifndef OMX_PULL_REPLY_LENGTH_MAX
 /*
  * large message fragments use the full MTU all the time if non-wire compatible mode.
  */
 #define OMX_PULL_REPLY_LENGTH_MAX OMX_PULL_REPLY_PAYLOAD_OF_MTU(OMX_MTU)
+#endif /* !OMX_PULL_REPLY_LENGTH_MAX */
 
+#ifndef OMX_MEDIUM_FRAG_LENGTH_MAX
 /*
  * As long as a packet is under 4kB, use the exact MTU-hdrlen for medium and large fragments.
  * After 4kB, we may need more than a page, so just round to the power-of-two below (4kB or 8kB)
@@ -87,6 +90,7 @@
     ? OMX_MEDIUM_FRAG_PAYLOAD_OF_MTU(OMX_MTU)				\
     : ( OMX_MEDIUM_FRAG_MTU_OF_PAYLOAD(8192) > OMX_MTU ? 4096 : 8192 )	\
 )
+#endif /* !OMX_MEDIUM_FRAG_LENGTH_MAX */
 
 /*
  * the power-of-two above or equal to the above OMX_MEDIUM_FRAG_LENGTH_MAX.
