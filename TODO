@@ -1,5 +1,4 @@
 * add omx_check.sh to the main FAQ (after starting with lo)
-* cleanup the pretty printing
 
 * move the FAQ inside the source tree and copy it to the website on release
 

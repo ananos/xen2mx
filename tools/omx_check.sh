@@ -76,30 +76,43 @@ fi
 
 if [ $dobase -eq 1 ] ; then
 	# check base
-	echo "  *************"
-	echo "  TEST omx_info"
+	echo
+	echo "*************"
+	echo "TEST omx_info"
+	echo "*************"
 	${TOOLS_DIR}/omx_info
 	if [ $? -ne 0 ] ; then
 	    echo "Open-MX not started" && exit 1
 	fi
-	echo "  **************************"
-	echo "  CHECK board #0 is loopback"
+
+	echo
+	echo "**************************"
+	echo "CHECK board #0 is loopback"
+	echo "**************************"
 	${TOOLS_DIR}/omx_info | grep "board #0 name lo addr 00:00:00:00:00:00" >/dev/null 2>&1 || (echo "No" && false)
 fi
 
 if [ $doloopback -eq 1 ] ; then
 	# check-loopback
-	echo "  ************************************"
-	echo "  TEST loopback with native networking"
+	echo
+	echo "************************************"
+	echo "TEST loopback with native networking"
+	echo "************************************"
 	${TESTS_DIR}/omx_loopback_test
 	if [ $? -ne 0 ] ; then
 	    echo "Open-MX not started" && exit 1
 	fi
-	echo "  ************************************"
-	echo "  TEST loopback with shared networking"
+
+	echo
+	echo "************************************"
+	echo "TEST loopback with shared networking"
+	echo "************************************"
 	${TESTS_DIR}/omx_loopback_test -s
-	echo "  **********************************"
-	echo "  TEST loopback with self networking"
+
+	echo
+	echo "**********************************"
+	echo "TEST loopback with self networking"
+	echo "**********************************"
 	${TESTS_DIR}/omx_loopback_test -S
 fi
 
@@ -132,26 +145,43 @@ start_double_application_with_stop() {
 
 if [ $domisc -eq 1 ] ; then
 	# check-misc
-	echo "  ***************"
-	echo "  TEST unexpected"
+	echo
+	echo "***************"
+	echo "TEST unexpected"
+	echo "***************"
 	${TESTS_DIR}/omx_unexp_test
 	if [ $? -ne 0 ] ; then
 	    echo "Open-MX not started" && exit 1
 	fi
-	echo "  ***************************"
-	echo "  TEST unexpected with ctxids"
+
+	echo
+	echo "***************************"
+	echo "TEST unexpected with ctxids"
+	echo "***************************"
 	OMX_CTXIDS=10,10 ${TESTS_DIR}/omx_unexp_test
-	echo "  ***********************"
-	echo "  TEST unexpected handler"
+
+	echo
+	echo "***********************"
+	echo "TEST unexpected handler"
+	echo "***********************"
 	${TESTS_DIR}/omx_unexp_handler_test
-	echo "  *************"
-	echo "  TEST wait_any"
+
+	echo
+	echo "*************"
+	echo "TEST wait_any"
+	echo "*************"
 	start_double_application ${TESTS_DIR}/mx/mx_wait_any_test 1
-	echo "  ***********"
-	echo "  TEST cancel"
+
+	echo
+	echo "***********"
+	echo "TEST cancel"
+	echo "***********"
 	start_double_application_with_stop ${TESTS_DIR}/omx_cancel_test 0
-	echo "  ***********"
-	echo "  TEST wakeup"
+
+	echo
+	echo "***********"
+	echo "TEST wakeup"
+	echo "***********"
 	if [ -e ${TESTS_DIR}/mx/mx_wakeup_test ] ; then
 		start_double_application_with_stop ${TESTS_DIR}/mx/mx_wakeup_test 0
 	else
@@ -161,34 +191,49 @@ fi
 
 if [ $dovect -eq 1 ] ; then
 	# check-vect
-	echo "  **************************************"
-	echo "  TEST vectorials with native networking"
+	echo
+	echo "**************************************"
+	echo " vectorials with native networking"
+	echo "**************************************"
 	${TESTS_DIR}/omx_vect_test
 	if [ $? -ne 0 ] ; then
 	    echo "Open-MX not started" && exit 1
 	fi
-	echo "  **************************************"
-	echo "  TEST vectorials with shared networking"
+
+	echo
+	echo "**************************************"
+	echo "TEST vectorials with shared networking"
+	echo "**************************************"
 	${TESTS_DIR}/omx_vect_test -s
-	echo "  ************************************"
-	echo "  TEST vectorials with self networking"
+
+	echo
+	echo "************************************"
+	echo "TEST vectorials with self networking"
+	echo "************************************"
 	${TESTS_DIR}/omx_vect_test -S
 fi
 
 if [ $dopingpong -eq 1 ] ; then
 	# check-pingpong
-	echo "  ************************************"
-	echo " 	TEST pingpong with native networking"
+	echo
+	echo "************************************"
+	echo "TEST pingpong with native networking"
+	echo "************************************"
 	start_double_application ${TESTS_DIR}/omx_perf 1
-	echo "  ************************************"
-	echo "  TEST pingpong with shared networking"
+
+	echo
+	echo "************************************"
+	echo "TEST pingpong with shared networking"
+	echo "************************************"
 	start_double_application ${TESTS_DIR}/omx_perf 0
 fi
 
 if [ $dorandomloop -eq 1 ] ; then
 	# check-random-loop
-	echo "  ******************************************************"
-	echo "  TEST random msg loop with native networking during 20s"
+	echo
+	echo "******************************************************"
+	echo "TEST random msg loop with native networking during 20s"
+	echo "******************************************************"
 	${TESTS_DIR}/mx/mx_msg_loop -R -P 11 & _pid=$! ; sleep 20
 	kill -9 $_pid 2>/dev/null ; sleep 1
 fi
