@@ -103,6 +103,33 @@ if [ $doloopback -eq 1 ] ; then
 	${TESTS_DIR}/omx_loopback_test -S
 fi
 
+is_process_running() {
+    res=$(ps -p $1 | wc -l)
+    if [ $res -eq 1 ] ; then echo 0 ; else echo 1; fi
+}
+
+start_double_application() {
+	application=$1
+	disable_shared=$2
+	OMX_DISABLE_SHARED=$disable_shared $application & _pid=$! ; sleep 1
+	if [ $(is_process_running $_pid) -eq 0 ] ; then
+		echo "Open-MX not started" && exit 1
+	fi
+	OMX_DISABLE_SHARED=$disable_shared $application -e 3 -d localhost ; sleep 1
+	kill -9 $_pid 2>/dev/null ; sleep 1
+}
+
+start_double_application_with_stop() {
+	application=$1
+	disable_shared=$2
+	OMX_DISABLE_SHARED=$disable_shared $application & _pid=$! ; sleep 1 ; kill -STOP $_pid ; sleep 1
+	if [ $(is_process_running $_pid) -eq 0 ] ; then
+		echo "Open-MX not started" && exit 1
+	fi
+	OMX_DISABLE_SHARED=$disable_shared $application -e 3 -d localhost ; sleep 1
+	kill -9 $_pid ; kill -CONT $_pid ; sleep 1
+}
+
 if [ $domisc -eq 1 ] ; then
 	# check-misc
 	echo "  ***************"
@@ -119,20 +146,14 @@ if [ $domisc -eq 1 ] ; then
 	${TESTS_DIR}/omx_unexp_handler_test
 	echo "  *************"
 	echo "  TEST wait_any"
-	OMX_DISABLE_SHARED=1 ${TESTS_DIR}/mx/mx_wait_any_test & _pid=$! ; sleep 1
-	OMX_DISABLE_SHARED=1 ${TESTS_DIR}/mx/mx_wait_any_test -e 3 -d localhost ; sleep 1
-	kill -9 $_pid 2>/dev/null ; sleep 1
+	start_double_application ${TESTS_DIR}/mx/mx_wait_any_test 1
 	echo "  ***********"
 	echo "  TEST cancel"
-	${TESTS_DIR}/omx_cancel_test & _pid=$! ; sleep 1 ; kill -STOP $_pid ; sleep 1
-	${TESTS_DIR}/omx_cancel_test -e 3 -d localhost ; sleep 1
-	kill -9 $_pid ; kill -CONT $_pid ; sleep 1
+	start_double_application_with_stop ${TESTS_DIR}/omx_cancel_test 0
 	echo "  ***********"
 	echo "  TEST wakeup"
 	if [ -e ${TESTS_DIR}/mx/mx_wakeup_test ] ; then
-		${TESTS_DIR}/mx/mx_wakeup_test & _pid=$! ; sleep 1 ; kill -STOP $_pid ; sleep 1
-		${TESTS_DIR}/mx/mx_wakeup_test -e 3 -d localhost ; sleep 1
-		kill -9 $_pid ; kill -CONT $_pid ; sleep 1
+		start_double_application_with_stop ${TESTS_DIR}/mx/mx_wakeup_test 0
 	else
 		echo "Not built"
 	fi
@@ -158,14 +179,10 @@ if [ $dopingpong -eq 1 ] ; then
 	# check-pingpong
 	echo "  ************************************"
 	echo " 	TEST pingpong with native networking"
-	OMX_DISABLE_SHARED=1 ${TESTS_DIR}/omx_perf & _pid=$! ; sleep 1
-	OMX_DISABLE_SHARED=1 ${TESTS_DIR}/omx_perf -e 3 -d localhost ; sleep 1
-	kill -9 $_pid 2>/dev/null ; sleep 1
+	start_double_application ${TESTS_DIR}/omx_perf 1
 	echo "  ************************************"
 	echo "  TEST pingpong with shared networking"
-	${TESTS_DIR}/omx_perf & _pid=$! ; sleep 1
-	${TESTS_DIR}/omx_perf -e 3 -d localhost ; sleep 1
-	kill -9 $_pid 2>/dev/null ; sleep 1
+	start_double_application ${TESTS_DIR}/omx_perf 0
 fi
 
 if [ $dorandomloop -eq 1 ] ; then
