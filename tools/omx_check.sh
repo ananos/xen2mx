@@ -79,6 +79,9 @@ if [ $dobase -eq 1 ] ; then
 	echo "  *************"
 	echo "  TEST omx_info"
 	${TOOLS_DIR}/omx_info
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 	echo "  **************************"
 	echo "  CHECK board #0 is loopback"
 	${TOOLS_DIR}/omx_info | grep "board #0 name lo addr 00:00:00:00:00:00" >/dev/null 2>&1 || (echo "No" && false)
@@ -89,6 +92,9 @@ if [ $doloopback -eq 1 ] ; then
 	echo "  ************************************"
 	echo "  TEST loopback with native networking"
 	${TESTS_DIR}/omx_loopback_test
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 	echo "  ************************************"
 	echo "  TEST loopback with shared networking"
 	${TESTS_DIR}/omx_loopback_test -s
@@ -102,6 +108,9 @@ if [ $domisc -eq 1 ] ; then
 	echo "  ***************"
 	echo "  TEST unexpected"
 	${TESTS_DIR}/omx_unexp_test
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 	echo "  ***************************"
 	echo "  TEST unexpected with ctxids"
 	OMX_CTXIDS=10,10 ${TESTS_DIR}/omx_unexp_test
@@ -134,6 +143,9 @@ if [ $dovect -eq 1 ] ; then
 	echo "  **************************************"
 	echo "  TEST vectorials with native networking"
 	${TESTS_DIR}/omx_vect_test
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 	echo "  **************************************"
 	echo "  TEST vectorials with shared networking"
 	${TESTS_DIR}/omx_vect_test -s
