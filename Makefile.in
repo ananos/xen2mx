@@ -130,8 +130,8 @@ tags:
 # check
 
 .PHONY: check check-base check-loopback check-misc check-vect check-pingpong check-random-loop
-check: check-base check-loopback check-misc check-vect check-pingpong check-random-loop
-
+check:
+	tools/omx_check.sh
 check-base check-loopback check-misc check-vect check-pingpong check-random-loop:
 	tools/omx_check.sh $(patsubst check-%,%,$@)
 
