@@ -1,4 +1,3 @@
-* check return values in omx_check.sh and abort earlier on error
 * add omx_check.sh to the main FAQ (after starting with lo)
 * cleanup the pretty printing
 
