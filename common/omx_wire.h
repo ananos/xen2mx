@@ -42,6 +42,12 @@
 #define ETH_P_OMX DEFAULT_ETH_P_OMX
 #endif
 
+#define OMX_PULL_REPLY_PAYLOAD_OF_MTU(x) (x-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_pull_reply))
+#define OMX_PULL_REPLY_MTU_OF_PAYLOAD(x) (x+sizeof(struct omx_pkt_head)+sizeof(struct omx_pkt_pull_reply))
+
+#define OMX_MEDIUM_FRAG_PAYLOAD_OF_MTU(x) (x-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_medium_frag))
+#define OMX_MEDIUM_FRAG_MTU_OF_PAYLOAD(x) (x+sizeof(struct omx_pkt_head)+sizeof(struct omx_pkt_medium_frag))
+
 #ifdef OMX_MX_WIRE_COMPAT
 
 /*
@@ -70,15 +76,12 @@
 /*
  * large message fragments use the full MTU all the time if non-wire compatible mode.
  */
-#define OMX_PULL_REPLY_PAYLOAD_OF_MTU(x) (x-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_pull_reply))
 #define OMX_PULL_REPLY_LENGTH_MAX OMX_PULL_REPLY_PAYLOAD_OF_MTU(OMX_MTU)
 
 /*
  * As long as a packet is under 4kB, use the exact MTU-hdrlen for medium and large fragments.
  * After 4kB, we may need more than a page, so just round to the power-of-two below (4kB or 8kB)
  */
-#define OMX_MEDIUM_FRAG_PAYLOAD_OF_MTU(x) (x-sizeof(struct omx_pkt_head)-sizeof(struct omx_pkt_medium_frag))
-#define OMX_MEDIUM_FRAG_MTU_OF_PAYLOAD(x) (x+sizeof(struct omx_pkt_head)+sizeof(struct omx_pkt_medium_frag))
 #define OMX_MEDIUM_FRAG_LENGTH_MAX (					\
   OMX_MEDIUM_FRAG_PAYLOAD_OF_MTU(OMX_MTU) <= 4096			\
     ? OMX_MEDIUM_FRAG_PAYLOAD_OF_MTU(OMX_MTU)				\
