@@ -92,16 +92,14 @@
  * the power-of-two above or equal to the above OMX_MEDIUM_FRAG_LENGTH_MAX.
  * it is used to allocate sendq/recvq rings
  */
-#define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT (			\
-  OMX_PULL_REPLY_PAYLOAD_OF_MTU(OMX_MTU) <= 1024		\
-    ? 10							\
-    : OMX_PULL_REPLY_PAYLOAD_OF_MTU(OMX_MTU) <= 2048		\
-      ? 11							\
-      : OMX_PULL_REPLY_PAYLOAD_OF_MTU(OMX_MTU) <= 4096		\
-	? 12							\
-	: OMX_MEDIUM_FRAG_MTU_OF_PAYLOAD(8192) > OMX_MTU	\
-	  ? 12							\
-	  : 13							\
+#define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT (	\
+  OMX_MEDIUM_FRAG_LENGTH_MAX <= 1024		\
+    ? 10					\
+    : OMX_MEDIUM_FRAG_LENGTH_MAX <= 2048	\
+      ? 11					\
+      : OMX_MEDIUM_FRAG_LENGTH_MAX <= 4096	\
+	? 12					\
+	: 13					\
 )
 
 #endif /* !OMX_MX_WIRE_COMPAT */
