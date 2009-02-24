@@ -1143,6 +1143,8 @@ omx_recv_pull_request(struct omx_iface * iface,
 	int replies, i;
 	int err = 0;
 
+	BUILD_BUG_ON(OMX_PULL_REPLY_MTU_OF_PAYLOAD(OMX_PULL_REPLY_LENGTH_MAX) > OMX_MTU);
+
 	omx_counter_inc(iface, RECV_PULL_REQ);
 
         /* check the peer index */
