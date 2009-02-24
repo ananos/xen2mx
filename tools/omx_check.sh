@@ -108,12 +108,18 @@ if [ $doloopback -eq 1 ] ; then
 	echo "TEST loopback with shared networking"
 	echo "************************************"
 	${TESTS_DIR}/omx_loopback_test -s
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 
 	echo
 	echo "**********************************"
 	echo "TEST loopback with self networking"
 	echo "**********************************"
 	${TESTS_DIR}/omx_loopback_test -S
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 fi
 
 is_process_running() {
@@ -165,12 +171,18 @@ if [ $domisc -eq 1 ] ; then
 	echo "TEST unexpected with ctxids"
 	echo "***************************"
 	OMX_CTXIDS=10,10 ${TESTS_DIR}/omx_unexp_test
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 
 	echo
 	echo "***********************"
 	echo "TEST unexpected handler"
 	echo "***********************"
 	${TESTS_DIR}/omx_unexp_handler_test
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 
 	echo
 	echo "*************"
@@ -211,12 +223,18 @@ if [ $dovect -eq 1 ] ; then
 	echo "TEST vectorials with shared networking"
 	echo "**************************************"
 	${TESTS_DIR}/omx_vect_test -s
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 
 	echo
 	echo "************************************"
 	echo "TEST vectorials with self networking"
 	echo "************************************"
 	${TESTS_DIR}/omx_vect_test -S
+	if [ $? -ne 0 ] ; then
+	    echo "Open-MX not started" && exit 1
+	fi
 fi
 
 if [ $dopingpong -eq 1 ] ; then
