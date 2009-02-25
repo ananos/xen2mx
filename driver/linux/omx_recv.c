@@ -983,6 +983,9 @@ omx_pkt_types_init(void)
 	omx_pkt_type_hdr_len[OMX_PKT_TYPE_NOTIFY] += sizeof(struct omx_pkt_notify);
 	omx_pkt_type_hdr_len[OMX_PKT_TYPE_NACK_LIB] += sizeof(struct omx_pkt_nack_lib);
 	omx_pkt_type_hdr_len[OMX_PKT_TYPE_NACK_MCP] += sizeof(struct omx_pkt_nack_mcp);
+
+	/* make sure the packet is always large enough to contain the required headers */
+	BUILD_BUG_ON(sizeof(struct omx_hdr) > ETH_ZLEN);
 }
 
 /***********************
@@ -1054,11 +1057,7 @@ omx_recv(struct sk_buff *skb, struct net_device *ifp, struct packet_type *pt,
 		/* copy the header in the a linear buffer */
 		omx_counter_inc(iface, RECV_NONLINEAR_HEADER);
 		err = skb_copy_bits(skb, 0, &linear_header, hdr_len);
-		if (unlikely(err < 0)) {
-			omx_counter_inc(iface, DROP_BAD_HEADER_DATALEN);
-			omx_drop_dprintk(&mh->head.eth, "couldn't get packet header");
-			goto out;
-		}
+		BUG_ON(unlikely(err < 0)); /* there's always at least ETH_ZLEN */
 		mh = &linear_header;
 	} else {
 		/* the header inside the skb (mh) is already linear */
