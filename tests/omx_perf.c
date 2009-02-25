@@ -267,8 +267,12 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  printf("Successfully open endpoint %d for hostname '%s' iface '%s'\n",
-	 eid, my_hostname, my_ifacename);
+  if (eid == OMX_ANY_ENDPOINT)
+    printf("Successfully open any endpoint for hostname '%s' iface '%s'\n",
+	   my_hostname, my_ifacename);
+  else
+    printf("Successfully open endpoint %d for hostname '%s' iface '%s'\n",
+	   eid, my_hostname, my_ifacename);
 
   if (sender) {
     /* sender */
