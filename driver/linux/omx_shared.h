@@ -56,8 +56,8 @@ omx_shared_send_notify(struct omx_endpoint *src_endpoint,
 		       struct omx_cmd_send_notify *hdr);
 
 extern int
-omx_shared_send_truc(struct omx_endpoint *src_endpoint,
-		     struct omx_cmd_send_truc_hdr *hdr, void __user * data);
+omx_shared_send_liback(struct omx_endpoint *src_endpoint,
+		       struct omx_cmd_send_liback *hdr);
 
 #endif /* __omx_shared_h__ */
 

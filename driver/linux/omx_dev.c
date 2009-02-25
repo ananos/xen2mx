@@ -432,7 +432,7 @@ static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_NOTIFY)]		= omx_ioctl_send_notify,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_CONNECT_REQUEST)]	= omx_ioctl_send_connect_request,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_CONNECT_REPLY)]	= omx_ioctl_send_connect_reply,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_TRUC)]		= omx_ioctl_send_truc,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_LIBACK)]		= omx_ioctl_send_liback,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_CREATE_USER_REGION)]   	= omx_ioctl_user_region_create,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_DESTROY_USER_REGION)]	= omx_ioctl_user_region_destroy,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
@@ -725,7 +725,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_SEND_NOTIFY:
 	case OMX_CMD_SEND_CONNECT_REQUEST:
 	case OMX_CMD_SEND_CONNECT_REPLY:
-	case OMX_CMD_SEND_TRUC:
+	case OMX_CMD_SEND_LIBACK:
 	case OMX_CMD_CREATE_USER_REGION:
 	case OMX_CMD_DESTROY_USER_REGION:
 	case OMX_CMD_WAIT_EVENT:

@@ -120,8 +120,8 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
     break;
   }
 
-  case OMX_EVT_RECV_TRUC: {
-    omx__process_recv_truc(ep, &evt->recv_truc);
+  case OMX_EVT_RECV_LIBACK: {
+    omx__process_recv_liback(ep, &evt->recv_liback);
     break;
   }
 

@@ -21,22 +21,4 @@
 
 #include <stdint.h>
 
-union omx__truc_data {
-  uint8_t type;
-  struct omx__truc_ack_data {
-    uint8_t type;
-    uint8_t pad;
-    uint16_t lib_seqnum;
-    uint32_t session_id;
-    uint32_t acknum;
-    uint16_t send_seq;
-    uint8_t resent;
-    uint8_t pad1;
-  } ack;
-};
-
-enum omx__truc_data_type {
-  OMX__TRUC_DATA_TYPE_ACK = 0x55,
-};
-
 #endif /* __omx_lib_wire_h__ */

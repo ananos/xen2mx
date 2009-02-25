@@ -941,31 +941,22 @@ omx__process_self_send(struct omx_endpoint *ep,
   omx__notify_user_event(ep);
 }
 
-/***********************
- * Truc Message Receive
+/*************************
+ * LibAck Message Receive
  */
 
 void
-omx__process_recv_truc(struct omx_endpoint *ep,
-		       struct omx_evt_recv_truc *truc)
+omx__process_recv_liback(struct omx_endpoint *ep,
+			 struct omx_evt_recv_liback *liback)
 {
-  union omx__truc_data *data_n = (void *) truc->data;
-  uint8_t truc_type = OMX_FROM_PKT_FIELD(data_n->type);
   struct omx__partner *partner;
 
-  omx__partner_recv_lookup(ep, truc->peer_index, truc->src_endpoint,
+  omx__partner_recv_lookup(ep, liback->peer_index, liback->src_endpoint,
 			   &partner);
   if (unlikely(!partner))
     return;
 
-  switch (truc_type) {
-  case OMX__TRUC_DATA_TYPE_ACK: {
-    omx__handle_truc_ack(ep, partner, &data_n->ack);
-    break;
-  }
-  default:
-    omx__abort(ep, "Failed to handle truc message with type %d\n", truc_type);
-  }
+  omx__handle_liback(ep, partner, liback);
 }
 
 /***************************

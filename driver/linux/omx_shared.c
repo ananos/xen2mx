@@ -779,11 +779,11 @@ omx_shared_send_notify(struct omx_endpoint *src_endpoint,
 }
 
 int
-omx_shared_send_truc(struct omx_endpoint *src_endpoint,
-		     struct omx_cmd_send_truc_hdr *hdr, void __user * data)
+omx_shared_send_liback(struct omx_endpoint *src_endpoint,
+		       struct omx_cmd_send_liback *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
-	struct omx_evt_recv_truc event;
+	struct omx_evt_recv_liback event;
 	int err;
 
 	/* don't notify a nack if the endpoint is invalid */
@@ -796,18 +796,13 @@ omx_shared_send_truc(struct omx_endpoint *src_endpoint,
 	/* fill the event */
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
-	event.length = hdr->length;
-
-	/* copy the data */
-	err = copy_from_user(&event.data, data, hdr->length);
-	if (unlikely(err != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read shared send truc cmd data\n");
-		err = -EFAULT;
-		goto out_with_endpoint;
-	}
+	event.acknum = hdr->acknum;
+	event.lib_seqnum = hdr->lib_seqnum;
+	event.send_seq = hdr->send_seq;
+	event.resent = hdr->resent;
 
 	/* notify the event */
-	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_TRUC, &event, sizeof(event));
+	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_LIBACK, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		err = 0;
@@ -815,7 +810,7 @@ omx_shared_send_truc(struct omx_endpoint *src_endpoint,
 	}
 	omx_endpoint_release(dst_endpoint);
 
-	omx_counter_inc(omx_shared_fake_iface, SHARED_TRUC);
+	omx_counter_inc(omx_shared_fake_iface, SHARED_LIBACK);
 
 	return 0;
 

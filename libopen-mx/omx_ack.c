@@ -137,12 +137,12 @@ omx__handle_ack(struct omx_endpoint *ep,
 }
 
 void
-omx__handle_truc_ack(struct omx_endpoint *ep,
-		     struct omx__partner *partner,
-		     struct omx__truc_ack_data *ack_n)
+omx__handle_liback(struct omx_endpoint *ep,
+		   struct omx__partner *partner,
+		   struct omx_evt_recv_liback *liback)
 {
-  omx__seqnum_t ack = OMX_FROM_PKT_FIELD(ack_n->lib_seqnum);
-  uint32_t acknum = OMX_FROM_PKT_FIELD(ack_n->acknum);
+  omx__seqnum_t ack = liback->lib_seqnum;
+  uint32_t acknum = liback->acknum;
 
   if (unlikely(OMX__SESNUM(ack ^ partner->next_send_seq)) != 0) {
     omx__verbose_printf(ep, "Obsolete session truc ack received (session %d seqnum %d instead of session %d)\n",
@@ -220,26 +220,23 @@ static omx_return_t
 omx__submit_send_liback(struct omx_endpoint *ep,
 			struct omx__partner * partner)
 {
-  struct omx_cmd_send_truc truc_param;
-  union omx__truc_data *data_n = (void *) &truc_param.data;
+  struct omx_cmd_send_liback liback_param;
   omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   int err;
 
   partner->last_send_acknum++;
 
-  truc_param.hdr.peer_index = partner->peer_index;
-  truc_param.hdr.dest_endpoint = partner->endpoint_index;
-  truc_param.hdr.shared = omx__partner_localization_shared(partner);
-  truc_param.hdr.length = sizeof(union omx__truc_data);
-  truc_param.hdr.session_id = partner->back_session_id;
-  OMX_PKT_FIELD_FROM(data_n->type, OMX__TRUC_DATA_TYPE_ACK);
-  OMX_PKT_FIELD_FROM(data_n->ack.acknum, partner->last_send_acknum);
-  OMX_PKT_FIELD_FROM(data_n->ack.session_id, partner->back_session_id);
-  OMX_PKT_FIELD_FROM(data_n->ack.lib_seqnum, ack_upto);
-  OMX_PKT_FIELD_FROM(data_n->ack.send_seq, ack_upto); /* FIXME? partner->send_seq */
-  OMX_PKT_FIELD_FROM(data_n->ack.resent, 0); /* FIXME? partner->requeued */
+  liback_param.peer_index = partner->peer_index;
+  liback_param.dest_endpoint = partner->endpoint_index;
+  liback_param.shared = omx__partner_localization_shared(partner);
+  liback_param.session_id = partner->back_session_id;
+  liback_param.acknum = partner->last_send_acknum;
+  liback_param.session_id = partner->back_session_id;
+  liback_param.lib_seqnum = ack_upto;
+  liback_param.send_seq = ack_upto; /* FIXME? partner->send_seq */
+  liback_param.resent = 0; /* FIXME? partner->requeued */
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_TRUC, &truc_param);
+  err = ioctl(ep->fd, OMX_CMD_SEND_LIBACK, &liback_param);
   if (unlikely(err < 0)) {
     omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
 							  OMX_SUCCESS,

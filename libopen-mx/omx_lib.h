@@ -449,8 +449,8 @@ omx__process_pull_done(struct omx_endpoint * ep,
 		       struct omx_evt_pull_done * event);
 
 extern void
-omx__process_recv_truc(struct omx_endpoint *ep,
-		       struct omx_evt_recv_truc *truc);
+omx__process_recv_liback(struct omx_endpoint *ep,
+			 struct omx_evt_recv_liback *liback);
 
 extern void
 omx__process_recv_nack_lib(struct omx_endpoint *ep,
@@ -500,9 +500,9 @@ omx__handle_ack(struct omx_endpoint *ep,
 		struct omx__partner *partner, omx__seqnum_t ack);
 
 extern void
-omx__handle_truc_ack(struct omx_endpoint *ep,
-		     struct omx__partner *partner,
-		     struct omx__truc_ack_data *ack_n);
+omx__handle_liback(struct omx_endpoint *ep,
+		   struct omx__partner *partner,
+		   struct omx_evt_recv_liback *liback);
 
 extern void
 omx__handle_nack(struct omx_endpoint *ep,

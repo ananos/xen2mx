@@ -710,32 +710,12 @@ omx_recv_truc(struct omx_iface * iface,
 	struct omx_endpoint * endpoint;
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
 	struct omx_pkt_truc *truc_n = &mh->body.truc;
-	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_truc);
-	uint8_t length = OMX_FROM_PKT_FIELD(truc_n->length);
+	uint8_t data_length = OMX_FROM_PKT_FIELD(truc_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(truc_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(truc_n->src_endpoint);
 	uint32_t session_id = OMX_FROM_PKT_FIELD(truc_n->session);
-	struct omx_evt_recv_truc event;
+	uint8_t truc_type = OMX_FROM_PKT_FIELD(truc_n->type);
 	int err = 0;
-
-	/* check packet length */
-	if (unlikely(length > OMX_TRUC_DATA_LENGTH_MAX)) {
-		omx_counter_inc(iface, DROP_BAD_DATALEN);
-		omx_drop_dprintk(&mh->head.eth, "TRUC packet too long (length %d)",
-				 (unsigned) length);
-		err = -EINVAL;
-		goto out;
-	}
-
-	/* check actual data length */
-	if (unlikely(length > skb->len - hdr_len)) {
-		omx_counter_inc(iface, DROP_BAD_SKBLEN);
-		omx_drop_dprintk(&mh->head.eth, "TRUC packet with %ld bytes instead of %d",
-				 (unsigned long) skb->len - hdr_len,
-				 (unsigned) length);
-		err = -EINVAL;
-		goto out;
-	}
 
 	/* check the peer index */
 	err = omx_check_recv_peer_index(peer_index);
@@ -766,27 +746,50 @@ omx_recv_truc(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_recv_dprintk(&mh->head.eth, "TRUC length %ld", (unsigned long) length);
+	switch (truc_type) {
+	case OMX_PKT_TRUC_DATA_TYPE_ACK: {
+		struct omx_evt_recv_liback liback_event;
 
-	/* fill event */
-	event.peer_index = peer_index;
-	event.src_endpoint = src_endpoint;
-	event.length = length;
+		if (unlikely(data_length < OMX_PKT_TRUC_LIBACK_DATA_LENGTH)) {
+			omx_counter_inc(iface, DROP_BAD_DATALEN);
+			omx_drop_dprintk(&mh->head.eth, "TRUC LIBACK packet too short (data length %d)",
+					 (unsigned) data_length);
+			err = -EINVAL;
+			goto out_with_endpoint;
+		}
 
-	/* copy data in event data */
-	err = skb_copy_bits(skb, hdr_len, event.data, length);
-	/* cannot fail since pages are allocated by us */
-	BUG_ON(err < 0);
+		if (unlikely(session_id != OMX_FROM_PKT_FIELD(truc_n->liback.session_id))) {
+			omx_counter_inc(iface, DROP_BAD_SESSION);
+			omx_drop_dprintk(&mh->head.eth, "TRUC LIBACK packet with bad session");
+			/* no nack for truc messages, just drop */
+			err = -EINVAL;
+			goto out_with_endpoint;
+		}
 
-	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_TRUC, &event, sizeof(event));
+		/* fill event */
+		liback_event.peer_index = peer_index;
+		liback_event.src_endpoint = src_endpoint;
+		liback_event.lib_seqnum = OMX_FROM_PKT_FIELD(truc_n->liback.lib_seqnum);
+		liback_event.acknum = OMX_FROM_PKT_FIELD(truc_n->liback.acknum);
+		liback_event.send_seq = OMX_FROM_PKT_FIELD(truc_n->liback.send_seq);
+		liback_event.resent = OMX_FROM_PKT_FIELD(truc_n->liback.resent);
+		/* notify the event */
+		err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_LIBACK, &liback_event, sizeof(liback_event));
+		break;
+	}
+	default:
+		omx_drop_dprintk(&mh->head.eth, "TRUC packet because of unknown truc type %d",
+				 truc_type);
+		goto out_with_endpoint;
+	}
+
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(&mh->head.eth, "TRUC packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
 
-	omx_counter_inc(iface, RECV_TRUC);
+	omx_counter_inc(iface, RECV_LIBACK);
 	omx_endpoint_release(endpoint);
 	dev_kfree_skb(skb);
 	return 0;

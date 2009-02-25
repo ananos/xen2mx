@@ -270,6 +270,27 @@ struct omx_pkt_truc {
 	/* 8 */
 	uint32_t session;
 	/* 12 */
+	union {
+		uint8_t type;
+		struct omx_pkt_truc_liback_data {
+			uint8_t type;
+			uint8_t pad;
+			uint16_t lib_seqnum;
+			/* 16 */
+			uint32_t session_id;
+			uint32_t acknum;
+			/* 24 */
+			uint16_t send_seq;
+			uint8_t resent;
+			uint8_t pad1;
+			/* 28 */
+		} liback;
+	};
+};
+#define OMX_PKT_TRUC_LIBACK_DATA_LENGTH sizeof(struct omx_pkt_truc_liback_data)
+
+enum omx_pkt_truc_data_type {
+	OMX_PKT_TRUC_DATA_TYPE_ACK = 0x55,
 };
 
 struct omx_pkt_connect { /* MX's pkt_connect + MX's lib connect_data */

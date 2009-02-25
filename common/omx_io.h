@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x206
+#define OMX_DRIVER_ABI_VERSION		0x207
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -64,7 +64,6 @@
 #define OMX_TINY_MSG_LENGTH_MAX		32
 #define OMX_SMALL_MSG_LENGTH_MAX	128
 #define OMX_MEDIUM_MSG_LENGTH_MAX	32768
-#define OMX_TRUC_DATA_LENGTH_MAX	48
 
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16
@@ -440,20 +439,19 @@ struct omx_cmd_send_notify {
 	/* 24 */
 };
 
-struct omx_cmd_send_truc {
-	struct omx_cmd_send_truc_hdr {
-		uint16_t peer_index;
-		uint8_t dest_endpoint;
-		uint8_t shared;
-		uint32_t session_id;
-		/* 8 */
-		uint8_t length;
-		uint8_t pad[7];
-		/* 16 */
-	} hdr;
+struct omx_cmd_send_liback {
+	uint16_t peer_index;
+	uint8_t dest_endpoint;
+	uint8_t shared;
+	uint32_t session_id;
+	/* 8 */
+	uint32_t acknum;
+	uint16_t lib_seqnum;
+	uint16_t send_seq;
 	/* 16 */
-	char data[OMX_TRUC_DATA_LENGTH_MAX];
-	/* 48 */
+	uint8_t resent;
+	uint8_t pad[7];
+	/* 24 */
 };
 
 struct omx_cmd_create_user_region {
@@ -558,7 +556,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x87, struct omx_cmd_send_notify)
 #define OMX_CMD_SEND_CONNECT_REQUEST	_IOR(OMX_CMD_MAGIC, 0x88, struct omx_cmd_send_connect_request)
 #define OMX_CMD_SEND_CONNECT_REPLY	_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_send_connect_reply)
-#define OMX_CMD_SEND_TRUC		_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_send_truc)
+#define OMX_CMD_SEND_LIBACK		_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_send_liback)
 #define OMX_CMD_CREATE_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8b, struct omx_cmd_create_user_region)
 #define OMX_CMD_DESTROY_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_destroy_user_region)
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_wait_event)
@@ -620,8 +618,8 @@ omx_strcmd(unsigned cmd)
 		return "Send Connect Request";
 	case OMX_CMD_SEND_CONNECT_REPLY:
 		return "Send Connect Reply";
-	case OMX_CMD_SEND_TRUC:
-		return "Send Truc";
+	case OMX_CMD_SEND_LIBACK:
+		return "Send LibAck";
 	case OMX_CMD_CREATE_USER_REGION:
 		return "Create User Region";
 	case OMX_CMD_DESTROY_USER_REGION:
@@ -648,7 +646,7 @@ omx_strcmd(unsigned cmd)
 #define OMX_EVT_RECV_MEDIUM_FRAG	0x15
 #define OMX_EVT_RECV_RNDV		0x16
 #define OMX_EVT_RECV_NOTIFY		0x17
-#define OMX_EVT_RECV_TRUC		0x18
+#define OMX_EVT_RECV_LIBACK		0x18
 #define OMX_EVT_RECV_NACK_LIB		0x19
 #define OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE	0x20
 #define OMX_EVT_PULL_DONE		0x21
@@ -690,8 +688,8 @@ omx_strevt(unsigned type)
 		return "Receive Rendez-vous";
 	case OMX_EVT_RECV_NOTIFY:
 		return "Receive Notify";
-	case OMX_EVT_RECV_TRUC:
-		return "Receive Truc";
+	case OMX_EVT_RECV_LIBACK:
+		return "Receive LibAck";
 	case OMX_EVT_RECV_NACK_LIB:
 		return "Receive Nack Lib";
 	case OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE:
@@ -774,18 +772,20 @@ union omx_evt {
 		/* 64 */
 	} recv_connect_reply;
 
-	struct omx_evt_recv_truc {
+	struct omx_evt_recv_liback {
 		uint16_t peer_index;
 		uint8_t src_endpoint;
-		uint8_t length;
-		uint8_t pad2[4];
+		uint8_t pad1[5];
 		/* 8 */
-		char data[OMX_TRUC_DATA_LENGTH_MAX];
-		/* 56 */
-		uint8_t pad3[7];
+		uint32_t acknum;
+		uint16_t lib_seqnum;
+		uint16_t send_seq;
+		/* 16 */
+		uint8_t resent;
+		uint8_t pad2[46];
 		uint8_t type;
 		/* 64 */
-	} recv_truc;
+	} recv_liback;
 
 	struct omx_evt_recv_nack_lib {
 		uint16_t peer_index;
@@ -879,7 +879,7 @@ enum omx_counter_index {
 	OMX_COUNTER_SEND_NOTIFY,
 	OMX_COUNTER_SEND_CONNECT_REQUEST,
 	OMX_COUNTER_SEND_CONNECT_REPLY,
-	OMX_COUNTER_SEND_TRUC,
+	OMX_COUNTER_SEND_LIBACK,
 	OMX_COUNTER_SEND_NACK_LIB,
 	OMX_COUNTER_SEND_NACK_MCP,
 	OMX_COUNTER_SEND_PULL_REQ,
@@ -895,7 +895,7 @@ enum omx_counter_index {
 	OMX_COUNTER_RECV_NOTIFY,
 	OMX_COUNTER_RECV_CONNECT_REQUEST,
 	OMX_COUNTER_RECV_CONNECT_REPLY,
-	OMX_COUNTER_RECV_TRUC,
+	OMX_COUNTER_RECV_LIBACK,
 	OMX_COUNTER_RECV_NACK_LIB,
 	OMX_COUNTER_RECV_NACK_MCP,
 	OMX_COUNTER_RECV_PULL_REQ,
@@ -956,7 +956,7 @@ enum omx_counter_index {
 	OMX_COUNTER_SHARED_NOTIFY,
 	OMX_COUNTER_SHARED_CONNECT_REQUEST,
 	OMX_COUNTER_SHARED_CONNECT_REPLY,
-	OMX_COUNTER_SHARED_TRUC,
+	OMX_COUNTER_SHARED_LIBACK,
 	OMX_COUNTER_SHARED_PULL,
 
 	OMX_COUNTER_SHARED_DMA_MEDIUM_FRAG,
@@ -986,8 +986,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Connect Request";
 	case OMX_COUNTER_SEND_CONNECT_REPLY:
 		return "Send Connect Reply";
-	case OMX_COUNTER_SEND_TRUC:
-		return "Send Truc";
+	case OMX_COUNTER_SEND_LIBACK:
+		return "Send LibAck";
 	case OMX_COUNTER_SEND_NACK_LIB:
 		return "Send Nack Lib";
 	case OMX_COUNTER_SEND_NACK_MCP:
@@ -1016,8 +1016,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Recv Connect Request";
 	case OMX_COUNTER_RECV_CONNECT_REPLY:
 		return "Recv Connect Reply";
-	case OMX_COUNTER_RECV_TRUC:
-		return "Recv Truc";
+	case OMX_COUNTER_RECV_LIBACK:
+		return "Recv LibAck";
 	case OMX_COUNTER_RECV_NACK_LIB:
 		return "Recv Nack Lib";
 	case OMX_COUNTER_RECV_NACK_MCP:
@@ -1130,8 +1130,8 @@ omx_strcounter(enum omx_counter_index index)
 		return "Shared Connect Request";
 	case OMX_COUNTER_SHARED_CONNECT_REPLY:
 		return "Shared Connect Reply";
-	case OMX_COUNTER_SHARED_TRUC:
-		return "Shared Truc";
+	case OMX_COUNTER_SHARED_LIBACK:
+		return "Shared LibAck";
 	case OMX_COUNTER_SHARED_PULL:
 		return "Shared Pull";
 	case OMX_COUNTER_SHARED_DMA_MEDIUM_FRAG:

@@ -42,7 +42,7 @@ extern unsigned long omx_RNDV_packet_loss;
 extern unsigned long omx_NOTIFY_packet_loss;
 extern unsigned long omx_CONNECT_REQUEST_packet_loss;
 extern unsigned long omx_CONNECT_REPLY_packet_loss;
-extern unsigned long omx_TRUC_packet_loss;
+extern unsigned long omx_LIBACK_packet_loss;
 extern unsigned long omx_NACK_LIB_packet_loss;
 extern unsigned long omx_NACK_MCP_packet_loss;
 /* index between 0 and the above limit */
@@ -54,7 +54,7 @@ static unsigned long omx_RNDV_packet_loss_index = 0;
 static unsigned long omx_NOTIFY_packet_loss_index = 0;
 static unsigned long omx_CONNECT_REQUEST_packet_loss_index = 0;
 static unsigned long omx_CONNECT_REPLY_packet_loss_index = 0;
-static unsigned long omx_TRUC_packet_loss_index = 0;
+static unsigned long omx_LIBACK_packet_loss_index = 0;
 static unsigned long omx_NACK_LIB_packet_loss_index = 0;
 static unsigned long omx_NACK_MCP_packet_loss_index = 0;
 #endif /* OMX_DRIVER_DEBUG */
@@ -986,20 +986,18 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 }
 
 int
-omx_ioctl_send_truc(struct omx_endpoint * endpoint,
-		    void __user * uparam)
+omx_ioctl_send_liback(struct omx_endpoint * endpoint,
+		      void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
 	struct omx_pkt_truc *truc_n;
-	struct omx_cmd_send_truc_hdr cmd;
+	struct omx_cmd_send_liback cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_truc);
-	char * data;
-	uint8_t length;
 	int ret;
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
@@ -1009,21 +1007,13 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-	length = cmd.length;
-	if (unlikely(length > OMX_TRUC_DATA_LENGTH_MAX)) {
-		printk(KERN_ERR "Open-MX: Cannot send more than %d as truc data (tried %d)\n",
-		       OMX_TRUC_DATA_LENGTH_MAX, length);
-		ret = -EINVAL;
-		goto out;
-	}
-
 #ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
-		return omx_shared_send_truc(endpoint, &cmd, &((struct omx_cmd_send_truc __user *) uparam)->data);
+		return omx_shared_send_liback(endpoint, &cmd);
 #endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
-			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
+			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create truc skb\n");
@@ -1036,7 +1026,6 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 	ph = &mh->head;
 	eh = &ph->eth;
 	truc_n = (struct omx_pkt_truc *) (ph + 1);
-	data = (char*) (truc_n + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -1053,20 +1042,16 @@ omx_ioctl_send_truc(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(truc_n->src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(truc_n->dst_endpoint, cmd.dest_endpoint);
 	OMX_PKT_FIELD_FROM(truc_n->ptype, OMX_PKT_TYPE_TRUC);
-	OMX_PKT_FIELD_FROM(truc_n->length, length);
+	OMX_PKT_FIELD_FROM(truc_n->length, OMX_PKT_TRUC_LIBACK_DATA_LENGTH);
 	OMX_PKT_FIELD_FROM(truc_n->session, cmd.session_id);
+	OMX_PKT_FIELD_FROM(truc_n->type, OMX_PKT_TRUC_DATA_TYPE_ACK);
+	OMX_PKT_FIELD_FROM(truc_n->liback.lib_seqnum, cmd.lib_seqnum);
+	OMX_PKT_FIELD_FROM(truc_n->liback.session_id, cmd.session_id);
+	OMX_PKT_FIELD_FROM(truc_n->liback.acknum, cmd.acknum);
+	OMX_PKT_FIELD_FROM(truc_n->liback.send_seq, cmd.send_seq);
+	OMX_PKT_FIELD_FROM(truc_n->liback.resent, cmd.resent);
 
-	omx_send_dprintk(eh, "TRUC length %ld", (unsigned long) length);
-
-	/* copy the data right after the header */
-	ret = copy_from_user(data, &((struct omx_cmd_send_truc __user *) uparam)->data, length);
-	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read send truc cmd data\n");
-		ret = -EFAULT;
-		goto out_with_skb;
-	}
-
-	omx_queue_xmit(iface, skb, TRUC);
+	omx_queue_xmit(iface, skb, LIBACK);
 
 	return 0;
 
