@@ -903,8 +903,8 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(notify_n->lib_seqnum, cmd.seqnum);
 	OMX_PKT_FIELD_FROM(notify_n->lib_piggyack, cmd.piggyack);
 	OMX_PKT_FIELD_FROM(notify_n->session, cmd.session_id);
-	OMX_PKT_FIELD_FROM(notify_n->puller_rdma_id, cmd.puller_rdma_id);
-	OMX_PKT_FIELD_FROM(notify_n->puller_rdma_seqnum, cmd.puller_rdma_seqnum);
+	OMX_PKT_FIELD_FROM(notify_n->pulled_rdma_id, cmd.pulled_rdma_id);
+	OMX_PKT_FIELD_FROM(notify_n->pulled_rdma_seqnum, cmd.pulled_rdma_seqnum);
 
 	omx_send_dprintk(eh, "NOTIFY");
 

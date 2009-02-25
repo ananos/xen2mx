@@ -666,8 +666,8 @@ omx_recv_notify(struct omx_iface * iface,
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
 	event.specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
-	event.specific.notify.puller_rdma_id = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_id);
-	event.specific.notify.puller_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->puller_rdma_seqnum);
+	event.specific.notify.pulled_rdma_id = OMX_FROM_PKT_FIELD(notify_n->pulled_rdma_id);
+	event.specific.notify.pulled_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->pulled_rdma_seqnum);
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));

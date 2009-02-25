@@ -599,8 +599,8 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
 			 void *data /* unused */, uint32_t msg_length /* unused */)
 {
   uint32_t xfer_length = msg->specific.notify.length;
-  uint8_t region_id = msg->specific.notify.puller_rdma_id;
-  uint8_t region_seqnum = msg->specific.notify.puller_rdma_seqnum;
+  uint8_t region_id = msg->specific.notify.pulled_rdma_id;
+  uint8_t region_seqnum = msg->specific.notify.pulled_rdma_seqnum;
   struct omx__large_region * region;
 
   /* FIXME: check region id */

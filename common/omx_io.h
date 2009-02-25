@@ -415,8 +415,8 @@ struct omx_cmd_send_notify {
 	uint16_t seqnum;
 	uint16_t piggyack;
 	/* 16 */
-	uint8_t puller_rdma_id;
-	uint8_t puller_rdma_seqnum;
+	uint8_t pulled_rdma_id;
+	uint8_t pulled_rdma_seqnum;
 	uint8_t pad2[6];
 	/* 24 */
 };
@@ -796,8 +796,8 @@ union omx_evt {
 
 			struct {
 				uint32_t length;
-				uint8_t puller_rdma_id;
-				uint8_t puller_rdma_seqnum;
+				uint8_t pulled_rdma_id;
+				uint8_t pulled_rdma_seqnum;
 				uint16_t pad1;
 				/* 8 */
 				uint64_t pad2[4];

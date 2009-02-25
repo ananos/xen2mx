@@ -711,8 +711,8 @@ omx_shared_send_notify(struct omx_endpoint *src_endpoint,
 	event.seqnum = hdr->seqnum;
 	event.piggyack = hdr->piggyack;
 	event.specific.notify.length = hdr->total_length;
-	event.specific.notify.puller_rdma_id = hdr->puller_rdma_id;
-	event.specific.notify.puller_rdma_seqnum = hdr->puller_rdma_seqnum;
+	event.specific.notify.pulled_rdma_id = hdr->pulled_rdma_id;
+	event.specific.notify.pulled_rdma_seqnum = hdr->pulled_rdma_seqnum;
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));

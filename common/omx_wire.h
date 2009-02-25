@@ -404,8 +404,8 @@ struct omx_pkt_notify {
 	uint32_t session;
 	/* 8 */
 	uint32_t total_length;
-	uint8_t puller_rdma_id;
-	uint8_t puller_rdma_seqnum;
+	uint8_t pulled_rdma_id;
+	uint8_t pulled_rdma_seqnum;
 	uint16_t pad1;
 	/* 16 */
 	uint16_t pad2;
