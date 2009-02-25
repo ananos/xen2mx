@@ -292,6 +292,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     /* only the last packet can be less than the max fragment size */
     omx__debug_assert(offset + chunk == msg_length);
   }
+  omx__debug_assert(offset + chunk <= msg_length);
 
   if (unlikely(req->recv.specific.medium.frags_received_mask & (1 << frag_seqnum))) {
     /* already received this frag, requeue back */
@@ -312,9 +313,6 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   }
 
   /* take care of the data chunk */
-  if (unlikely(offset + chunk > msg_length))
-    chunk = msg_length - offset;
-
   if (likely(req->recv.segs.nseg == 1))
     memcpy(OMX_SEG_PTR(&req->recv.segs.single) + offset, data, chunk);
   else
