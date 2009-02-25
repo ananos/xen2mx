@@ -395,11 +395,11 @@ struct omx_cmd_pull {
 	uint32_t length; /* FIXME: 64bits ? */
 	uint32_t resend_timeout_jiffies;
 	/* 16 */
-	uint32_t local_rdma_id;
-	uint32_t remote_offset; /* FIXME: 64bits ? */
+	uint32_t puller_rdma_id;
+	uint32_t pulled_rdma_offset; /* FIXME: 64bits ? */
 	/* 24 */
-	uint32_t remote_rdma_id;
-	uint32_t remote_rdma_seqnum;
+	uint32_t pulled_rdma_id;
+	uint32_t pulled_rdma_seqnum;
 	/* 32 */
 	uint64_t lib_cookie;
 	/* 40 */
@@ -698,7 +698,7 @@ union omx_evt {
 	struct omx_evt_pull_done {
 		uint64_t lib_cookie;
 		/* 8 */
-		uint32_t local_rdma_id;
+		uint32_t puller_rdma_id;
 		uint8_t status;
 		uint8_t pad1[3];
 		/* 16 */

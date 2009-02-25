@@ -630,7 +630,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 	int err;
 
 	/* get our region */
-	src_region = omx_user_region_acquire(src_endpoint, hdr->local_rdma_id);
+	src_region = omx_user_region_acquire(src_endpoint, hdr->puller_rdma_id);
 	if (!src_region) {
 		/* source region is invalid, return an immediate error */
 		err = -EINVAL;
@@ -650,7 +650,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 		goto out_notify_nack;
 	}
 
-	dst_region = omx_user_region_acquire(dst_endpoint, hdr->remote_rdma_id);
+	dst_region = omx_user_region_acquire(dst_endpoint, hdr->pulled_rdma_id);
 	if (unlikely(dst_region == NULL)) {
 		/* dest region invalid, return a pull done status error */
 		event.status = OMX_EVT_PULL_DONE_BAD_RDMAWIN;
@@ -658,7 +658,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 	}
 
 	/* pull from the dst region into the src region */
-	err = omx_copy_between_user_regions(dst_region, hdr->remote_offset,
+	err = omx_copy_between_user_regions(dst_region, hdr->pulled_rdma_offset,
 					    src_region, 0,
 					    hdr->length);
 	event.status = err < 0 ? OMX_EVT_PULL_DONE_ABORTED : OMX_EVT_PULL_DONE_SUCCESS;
@@ -670,7 +670,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 
 	/* fill and notify the event */
 	event.lib_cookie = hdr->lib_cookie;
-	event.local_rdma_id = hdr->local_rdma_id;
+	event.puller_rdma_id = hdr->puller_rdma_id;
 	omx_notify_exp_event(src_endpoint, OMX_EVT_PULL_DONE, &event, sizeof(event));
 
 	omx_counter_inc(omx_shared_fake_iface, SHARED_PULL);
@@ -683,7 +683,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 	omx_user_region_release(src_region);
 
 	event.lib_cookie = hdr->lib_cookie;
-	event.local_rdma_id = hdr->local_rdma_id;
+	event.puller_rdma_id = hdr->puller_rdma_id;
 	omx_notify_exp_event(src_endpoint, OMX_EVT_PULL_DONE, &event, sizeof(event));
 	return 0;
 

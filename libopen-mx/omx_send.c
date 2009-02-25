@@ -902,8 +902,8 @@ omx__alloc_setup_notify(struct omx_endpoint *ep,
   notify_param->shared = omx__partner_localization_shared(partner);
   notify_param->total_length = req->generic.status.xfer_length;
   notify_param->session_id = partner->back_session_id;
-  notify_param->pulled_rdma_id = req->recv.specific.large.target_rdma_id;
-  notify_param->pulled_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
+  notify_param->pulled_rdma_id = req->recv.specific.large.pulled_rdma_id;
+  notify_param->pulled_rdma_seqnum = req->recv.specific.large.pulled_rdma_seqnum;
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */

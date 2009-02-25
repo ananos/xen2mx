@@ -443,10 +443,10 @@ omx__alloc_setup_pull(struct omx_endpoint * ep,
   pull_param.length = xfer_length;
   pull_param.session_id = partner->back_session_id;
   pull_param.lib_cookie = (uintptr_t) req;
-  pull_param.local_rdma_id = region->id;
-  pull_param.remote_rdma_id = req->recv.specific.large.target_rdma_id;
-  pull_param.remote_rdma_seqnum = req->recv.specific.large.target_rdma_seqnum;
-  pull_param.remote_offset = req->recv.specific.large.target_rdma_offset;
+  pull_param.puller_rdma_id = region->id;
+  pull_param.pulled_rdma_id = req->recv.specific.large.pulled_rdma_id;
+  pull_param.pulled_rdma_seqnum = req->recv.specific.large.pulled_rdma_seqnum;
+  pull_param.pulled_rdma_offset = req->recv.specific.large.pulled_rdma_offset;
   pull_param.resend_timeout_jiffies = ep->pull_resend_timeout_jiffies;
 
   err = ioctl(ep->fd, OMX_CMD_PULL, &pull_param);
@@ -505,7 +505,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
 {
   union omx_request * req;
   uintptr_t reqptr = event->lib_cookie;
-  uint32_t region_id = event->local_rdma_id;
+  uint32_t region_id = event->puller_rdma_id;
   struct omx__large_region * region;
   omx_return_t status;
 
@@ -583,9 +583,9 @@ omx__submit_discarded_notify(struct omx_endpoint *ep, struct omx__partner * part
   fakereq->generic.partner = partner;
   fakereq->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
   fakereq->generic.state = OMX_REQUEST_STATE_ZOMBIE;
-  fakereq->recv.specific.large.target_rdma_id = rdma_id;
-  fakereq->recv.specific.large.target_rdma_seqnum = rdma_seqnum;
-  fakereq->recv.specific.large.target_rdma_offset = rdma_offset;
+  fakereq->recv.specific.large.pulled_rdma_id = rdma_id;
+  fakereq->recv.specific.large.pulled_rdma_seqnum = rdma_seqnum;
+  fakereq->recv.specific.large.pulled_rdma_offset = rdma_offset;
   ep->zombies++;
 
   omx__submit_notify(ep, fakereq, 1 /* always delayed */);

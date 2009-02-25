@@ -378,9 +378,9 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
 		    (unsigned) rdma_id, (unsigned) rdma_seqnum, (unsigned) rdma_offset,
 		    (unsigned) msg_length);
 
-  req->recv.specific.large.target_rdma_id = rdma_id;
-  req->recv.specific.large.target_rdma_seqnum = rdma_seqnum;
-  req->recv.specific.large.target_rdma_offset = rdma_offset;
+  req->recv.specific.large.pulled_rdma_id = rdma_id;
+  req->recv.specific.large.pulled_rdma_seqnum = rdma_seqnum;
+  req->recv.specific.large.pulled_rdma_offset = rdma_offset;
 
   req->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
   req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;

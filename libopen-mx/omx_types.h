@@ -497,9 +497,9 @@ union omx_request {
       struct {
 	struct omx_cmd_send_notify send_notify_ioctl_param;
 	struct omx__large_region * local_region;
-	uint8_t target_rdma_id;
-	uint8_t target_rdma_seqnum;
-	uint16_t target_rdma_offset;
+	uint8_t pulled_rdma_id;
+	uint8_t pulled_rdma_seqnum;
+	uint16_t pulled_rdma_offset;
       } large;
       struct {
 	union omx_request *sreq;

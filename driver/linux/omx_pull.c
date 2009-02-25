@@ -551,8 +551,8 @@ omx_pull_handle_pkt_hdr_fill(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(pull_n->dst_endpoint, cmd->dest_endpoint);
 	OMX_PKT_FIELD_FROM(pull_n->session, cmd->session_id);
 	OMX_PKT_FIELD_FROM(pull_n->total_length, handle->total_length);
-	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_id, cmd->remote_rdma_id);
-	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_seqnum, cmd->remote_rdma_seqnum);
+	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_id, cmd->pulled_rdma_id);
+	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_seqnum, cmd->pulled_rdma_seqnum);
 	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_offset, handle->pulled_rdma_offset);
 	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->slot_id);
 	OMX_PKT_FIELD_FROM(pull_n->src_magic, endpoint->endpoint_index ^ OMX_ENDPOINT_PULL_MAGIC_XOR);
@@ -605,7 +605,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->endpoint = endpoint;
 	handle->region = region;
 	handle->total_length = cmd->length;
-	handle->pulled_rdma_offset = cmd->remote_offset;
+	handle->pulled_rdma_offset = cmd->pulled_rdma_offset;
 
 	/* initialize variable stuff */
 	handle->status = OMX_PULL_HANDLE_STATUS_OK;
@@ -632,7 +632,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 #endif
 
 	/* initialize the completion event */
-	handle->done_event.local_rdma_id = cmd->local_rdma_id;
+	handle->done_event.puller_rdma_id = cmd->puller_rdma_id;
 	handle->done_event.lib_cookie = cmd->lib_cookie;
 
 	/* initialize cached header */
@@ -877,7 +877,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 #endif
 
 	/* acquire the region */
-	region = omx_user_region_acquire(endpoint, cmd.local_rdma_id);
+	region = omx_user_region_acquire(endpoint, cmd.puller_rdma_id);
 	if (unlikely(!region)) {
 		err = -EINVAL;
 		goto out;
