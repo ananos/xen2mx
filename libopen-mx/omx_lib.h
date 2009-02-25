@@ -31,7 +31,6 @@
 
 #include "open-mx.h"
 #include "omx_types.h"
-#include "omx_lib_wire.h"
 #include "omx_io.h"
 #include "omx_valgrind.h"
 

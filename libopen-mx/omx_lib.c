@@ -23,8 +23,6 @@
 #include "omx_io.h"
 #include "omx_lib.h"
 #include "omx_request.h"
-#include "omx_lib_wire.h"
-#include "omx_wire_access.h"
 
 /*******************
  * Event processing
