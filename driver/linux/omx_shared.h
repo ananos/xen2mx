@@ -20,8 +20,12 @@
 #define __omx_shared_h__
 
 extern int
-omx_shared_try_send_connect(struct omx_endpoint *src_endpoint,
-			    struct omx_cmd_send_connect_hdr *hdr, void __user * data);
+omx_shared_try_send_connect_request(struct omx_endpoint *src_endpoint,
+				    struct omx_cmd_send_connect_request *hdr);
+
+extern int
+omx_shared_try_send_connect_reply(struct omx_endpoint *src_endpoint,
+				  struct omx_cmd_send_connect_reply *hdr);
 
 extern int
 omx_shared_send_tiny(struct omx_endpoint *src_endpoint,

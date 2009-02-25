@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x205
+#define OMX_DRIVER_ABI_VERSION		0x206
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -64,7 +64,6 @@
 #define OMX_TINY_MSG_LENGTH_MAX		32
 #define OMX_SMALL_MSG_LENGTH_MAX	128
 #define OMX_MEDIUM_MSG_LENGTH_MAX	32768
-#define OMX_CONNECT_DATA_LENGTH_MAX	32
 #define OMX_TRUC_DATA_LENGTH_MAX	48
 
 #define OMX_HOSTNAMELEN_MAX	80
@@ -371,19 +370,39 @@ struct omx_cmd_send_rndv {
 	/* 32 */
 };
 
-struct omx_cmd_send_connect {
-	struct omx_cmd_send_connect_hdr {
-		uint16_t peer_index;
-		uint8_t dest_endpoint;
-		uint8_t shared_disabled;
-		uint16_t seqnum;
-		uint8_t length;
-		uint8_t pad2;
-		/* 8 */
-	} hdr;
+struct omx_cmd_send_connect_request {
+	uint16_t peer_index;
+	uint8_t dest_endpoint;
+	uint8_t shared_disabled;
+	uint16_t seqnum;
+	uint16_t pad1;
 	/* 8 */
-	char data[OMX_CONNECT_DATA_LENGTH_MAX];
-	/* 40 */
+
+	uint32_t src_session_id;
+	uint32_t app_key;
+	/* 16 */
+	uint16_t target_recv_seqnum_start;
+	uint8_t connect_seqnum;
+	uint8_t pad2[5];
+	/* 24 */
+};
+
+struct omx_cmd_send_connect_reply {
+	uint16_t peer_index;
+	uint8_t dest_endpoint;
+	uint8_t shared_disabled;
+	uint16_t seqnum;
+	uint16_t pad1;
+	/* 8 */
+
+	uint32_t src_session_id;
+	uint32_t target_session_id;
+	/* 16 */
+	uint16_t target_recv_seqnum_start;
+	uint8_t connect_seqnum;
+	uint8_t connect_status_code;
+	uint32_t pad2;
+	/* 24 */
 };
 
 struct omx_cmd_pull {
@@ -533,16 +552,17 @@ struct omx_cmd_bench {
 #define OMX_CMD_SEND_TINY		_IOR(OMX_CMD_MAGIC, 0x81, struct omx_cmd_send_tiny)
 #define OMX_CMD_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x82, struct omx_cmd_send_small)
 #define OMX_CMD_SEND_MEDIUMSQ_FRAG	_IOR(OMX_CMD_MAGIC, 0x83, struct omx_cmd_send_mediumsq_frag)
-#define OMX_CMD_SEND_RNDV		_IOR(OMX_CMD_MAGIC, 0x84, struct omx_cmd_send_rndv)
-#define OMX_CMD_PULL			_IOR(OMX_CMD_MAGIC, 0x85, struct omx_cmd_pull)
-#define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x86, struct omx_cmd_send_notify)
-#define OMX_CMD_SEND_CONNECT		_IOR(OMX_CMD_MAGIC, 0x87, struct omx_cmd_send_connect)
-#define OMX_CMD_SEND_TRUC		_IOR(OMX_CMD_MAGIC, 0x88, struct omx_cmd_send_truc)
-#define OMX_CMD_CREATE_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_create_user_region)
-#define OMX_CMD_DESTROY_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_destroy_user_region)
-#define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8b, struct omx_cmd_wait_event)
-#define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_wakeup)
-#define OMX_CMD_SEND_MEDIUMVA		_IOR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_send_mediumva)
+#define OMX_CMD_SEND_MEDIUMVA		_IOR(OMX_CMD_MAGIC, 0x84, struct omx_cmd_send_mediumva)
+#define OMX_CMD_SEND_RNDV		_IOR(OMX_CMD_MAGIC, 0x85, struct omx_cmd_send_rndv)
+#define OMX_CMD_PULL			_IOR(OMX_CMD_MAGIC, 0x86, struct omx_cmd_pull)
+#define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x87, struct omx_cmd_send_notify)
+#define OMX_CMD_SEND_CONNECT_REQUEST	_IOR(OMX_CMD_MAGIC, 0x88, struct omx_cmd_send_connect_request)
+#define OMX_CMD_SEND_CONNECT_REPLY	_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_send_connect_reply)
+#define OMX_CMD_SEND_TRUC		_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_send_truc)
+#define OMX_CMD_CREATE_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8b, struct omx_cmd_create_user_region)
+#define OMX_CMD_DESTROY_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_destroy_user_region)
+#define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_wait_event)
+#define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8e, struct omx_cmd_wakeup)
 
 static inline const char *
 omx_strcmd(unsigned cmd)
@@ -596,8 +616,10 @@ omx_strcmd(unsigned cmd)
 		return "Pull";
 	case OMX_CMD_SEND_NOTIFY:
 		return "Send Notify";
-	case OMX_CMD_SEND_CONNECT:
-		return "Send Connect";
+	case OMX_CMD_SEND_CONNECT_REQUEST:
+		return "Send Connect Request";
+	case OMX_CMD_SEND_CONNECT_REPLY:
+		return "Send Connect Reply";
 	case OMX_CMD_SEND_TRUC:
 		return "Send Truc";
 	case OMX_CMD_CREATE_USER_REGION:
@@ -619,14 +641,15 @@ omx_strcmd(unsigned cmd)
 
 #define OMX_EVT_NONE			0x00
 #define OMX_EVT_IGNORE			0x01
-#define OMX_EVT_RECV_CONNECT		0x11
-#define OMX_EVT_RECV_TINY		0x12
-#define OMX_EVT_RECV_SMALL		0x13
-#define OMX_EVT_RECV_MEDIUM_FRAG	0x14
-#define OMX_EVT_RECV_RNDV		0x15
-#define OMX_EVT_RECV_NOTIFY		0x16
-#define OMX_EVT_RECV_TRUC		0x17
-#define OMX_EVT_RECV_NACK_LIB		0x18
+#define OMX_EVT_RECV_CONNECT_REQUEST	0x11
+#define OMX_EVT_RECV_CONNECT_REPLY	0x12
+#define OMX_EVT_RECV_TINY		0x13
+#define OMX_EVT_RECV_SMALL		0x14
+#define OMX_EVT_RECV_MEDIUM_FRAG	0x15
+#define OMX_EVT_RECV_RNDV		0x16
+#define OMX_EVT_RECV_NOTIFY		0x17
+#define OMX_EVT_RECV_TRUC		0x18
+#define OMX_EVT_RECV_NACK_LIB		0x19
 #define OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE	0x20
 #define OMX_EVT_PULL_DONE		0x21
 
@@ -642,6 +665,9 @@ omx_strcmd(unsigned cmd)
 #define OMX_EVT_PULL_DONE_ABORTED	0x05
 #define OMX_EVT_PULL_DONE_TIMEOUT	0x06
 
+#define OMX_CONNECT_STATUS_SUCCESS	0
+#define OMX_CONNECT_STATUS_BAD_KEY	11
+
 static inline const char *
 omx_strevt(unsigned type)
 {
@@ -650,7 +676,9 @@ omx_strevt(unsigned type)
 		return "None";
 	case OMX_EVT_IGNORE:
 		return "Ignore";
-	case OMX_EVT_RECV_CONNECT:
+	case OMX_EVT_RECV_CONNECT_REQUEST:
+		return "Receive Connect";
+	case OMX_EVT_RECV_CONNECT_REPLY:
 		return "Receive Connect";
 	case OMX_EVT_RECV_TINY:
 		return "Receive Tiny";
@@ -707,20 +735,44 @@ union omx_evt {
 		/* 64 */
 	} pull_done;
 
-	struct omx_evt_recv_connect {
+	struct omx_evt_recv_connect_request {
 		uint16_t peer_index;
 		uint8_t src_endpoint;
 		uint8_t shared;
 		uint16_t seqnum;
-		uint8_t length;
-		uint8_t pad2;
+		uint16_t pad1;
 		/* 8 */
-		uint8_t data[OMX_CONNECT_DATA_LENGTH_MAX];
-		/* 40 */
-		uint8_t pad3[23];
+		uint32_t src_session_id;
+		uint32_t app_key;
+		/* 16 */
+		uint16_t target_recv_seqnum_start;
+		uint8_t connect_seqnum;
+		uint8_t pad2[5];
+		/* 24 */
+		uint8_t pad3[39];
 		uint8_t type;
 		/* 64 */
-	} recv_connect;
+	} recv_connect_request;
+
+	struct omx_evt_recv_connect_reply {
+		uint16_t peer_index;
+		uint8_t src_endpoint;
+		uint8_t shared;
+		uint16_t seqnum;
+		uint16_t pad1;
+		/* 8 */
+		uint32_t src_session_id;
+		uint32_t target_session_id;
+		/* 16 */
+		uint16_t target_recv_seqnum_start;
+		uint8_t connect_seqnum;
+		uint8_t connect_status_code;
+		uint32_t pad2;
+		/* 24 */
+		uint8_t pad3[39];
+		uint8_t type;
+		/* 64 */
+	} recv_connect_reply;
 
 	struct omx_evt_recv_truc {
 		uint16_t peer_index;
@@ -825,7 +877,8 @@ enum omx_counter_index {
 	OMX_COUNTER_SEND_MEDIUMVA_FRAG,
 	OMX_COUNTER_SEND_RNDV,
 	OMX_COUNTER_SEND_NOTIFY,
-	OMX_COUNTER_SEND_CONNECT,
+	OMX_COUNTER_SEND_CONNECT_REQUEST,
+	OMX_COUNTER_SEND_CONNECT_REPLY,
 	OMX_COUNTER_SEND_TRUC,
 	OMX_COUNTER_SEND_NACK_LIB,
 	OMX_COUNTER_SEND_NACK_MCP,
@@ -840,7 +893,8 @@ enum omx_counter_index {
 	OMX_COUNTER_RECV_MEDIUM_FRAG,
 	OMX_COUNTER_RECV_RNDV,
 	OMX_COUNTER_RECV_NOTIFY,
-	OMX_COUNTER_RECV_CONNECT,
+	OMX_COUNTER_RECV_CONNECT_REQUEST,
+	OMX_COUNTER_RECV_CONNECT_REPLY,
 	OMX_COUNTER_RECV_TRUC,
 	OMX_COUNTER_RECV_NACK_LIB,
 	OMX_COUNTER_RECV_NACK_MCP,
@@ -900,7 +954,8 @@ enum omx_counter_index {
 	OMX_COUNTER_SHARED_MEDIUMVA,
 	OMX_COUNTER_SHARED_RNDV,
 	OMX_COUNTER_SHARED_NOTIFY,
-	OMX_COUNTER_SHARED_CONNECT,
+	OMX_COUNTER_SHARED_CONNECT_REQUEST,
+	OMX_COUNTER_SHARED_CONNECT_REPLY,
 	OMX_COUNTER_SHARED_TRUC,
 	OMX_COUNTER_SHARED_PULL,
 
@@ -927,8 +982,10 @@ omx_strcounter(enum omx_counter_index index)
 		return "Send Rndv";
 	case OMX_COUNTER_SEND_NOTIFY:
 		return "Send Notify";
-	case OMX_COUNTER_SEND_CONNECT:
-		return "Send Connect";
+	case OMX_COUNTER_SEND_CONNECT_REQUEST:
+		return "Send Connect Request";
+	case OMX_COUNTER_SEND_CONNECT_REPLY:
+		return "Send Connect Reply";
 	case OMX_COUNTER_SEND_TRUC:
 		return "Send Truc";
 	case OMX_COUNTER_SEND_NACK_LIB:
@@ -955,8 +1012,10 @@ omx_strcounter(enum omx_counter_index index)
 		return "Recv Rndv";
 	case OMX_COUNTER_RECV_NOTIFY:
 		return "Recv Notify";
-	case OMX_COUNTER_RECV_CONNECT:
-		return "Recv Connect";
+	case OMX_COUNTER_RECV_CONNECT_REQUEST:
+		return "Recv Connect Request";
+	case OMX_COUNTER_RECV_CONNECT_REPLY:
+		return "Recv Connect Reply";
 	case OMX_COUNTER_RECV_TRUC:
 		return "Recv Truc";
 	case OMX_COUNTER_RECV_NACK_LIB:
@@ -1067,8 +1126,10 @@ omx_strcounter(enum omx_counter_index index)
 		return "Shared Rndv";
 	case OMX_COUNTER_SHARED_NOTIFY:
 		return "Shared Notify";
-	case OMX_COUNTER_SHARED_CONNECT:
-		return "Shared Connect";
+	case OMX_COUNTER_SHARED_CONNECT_REQUEST:
+		return "Shared Connect Request";
+	case OMX_COUNTER_SHARED_CONNECT_REPLY:
+		return "Shared Connect Reply";
 	case OMX_COUNTER_SHARED_TRUC:
 		return "Shared Truc";
 	case OMX_COUNTER_SHARED_PULL:

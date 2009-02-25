@@ -272,7 +272,7 @@ struct omx_pkt_truc {
 	/* 12 */
 };
 
-struct omx_pkt_connect {
+struct omx_pkt_connect { /* MX's pkt_connect + MX's lib connect_data */
 	omx_packet_type_t ptype;
 	uint8_t dst_endpoint;
 	uint8_t src_endpoint;
@@ -284,6 +284,41 @@ struct omx_pkt_connect {
 	uint16_t src_dst_peer_index; /* MX's dest_peer_index */
 	uint32_t pad2;
 	/* 16 */
+
+	union {
+		struct {
+			uint8_t pad[10];
+			uint8_t is_reply; /* is this a request ot a reply? 0 here */
+		} generic;			
+		struct omx_pkt_connect_request_data {
+			uint32_t src_session_id; /* the sender's session id (so that the connected know when the connect has been sent) */
+			uint32_t app_key; /* the application level key in the request that the connected will check */
+			/* 24 */
+			uint16_t target_recv_seqnum_start; /* the target next recv seqnum (so the connected knows our next send seqnum) */
+			uint8_t is_reply;
+			uint8_t connect_seqnum; /* sequence number of this connect request (in case multiple have been sent/lost) */
+			uint32_t pad;
+			/* 32 */
+		} request;
+		struct omx_pkt_connect_reply_data {
+			uint32_t src_session_id; /* the sender's session id (so that we know when the connect has been sent) */
+			uint32_t target_session_id; /* the target session_id (so that the connecter can send right after this connect) */
+			/* 24 */
+			uint16_t target_recv_seqnum_start; /* the target next recv seqnum (so that the connecter know our next send seqnum) */
+			uint8_t is_reply;
+			uint8_t connect_seqnum; /* sequence number of this connect request (in case multiple have been sent/lost) */
+			uint8_t connect_status_code; /* the status code to return in the connecter request */
+			uint8_t pad[3];
+			/* 32 */
+		} reply;
+	};
+};
+#define OMX_PKT_CONNECT_REQUEST_DATA_LENGTH (sizeof(struct omx_pkt_connect_request_data))
+#define OMX_PKT_CONNECT_REPLY_DATA_LENGTH (sizeof(struct omx_pkt_connect_reply_data))
+
+enum omx_pkt_connect_status_code {
+  OMX_PKT_CONNECT_STATUS_SUCCESS = 0,
+  OMX_PKT_CONNECT_STATUS_BAD_KEY = 11, /* enforced by wire compatibility */
 };
 
 struct omx_pkt_msg {

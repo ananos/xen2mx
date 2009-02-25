@@ -40,7 +40,8 @@ extern unsigned long omx_SMALL_packet_loss;
 extern unsigned long omx_MEDIUM_FRAG_packet_loss;
 extern unsigned long omx_RNDV_packet_loss;
 extern unsigned long omx_NOTIFY_packet_loss;
-extern unsigned long omx_CONNECT_packet_loss;
+extern unsigned long omx_CONNECT_REQUEST_packet_loss;
+extern unsigned long omx_CONNECT_REPLY_packet_loss;
 extern unsigned long omx_TRUC_packet_loss;
 extern unsigned long omx_NACK_LIB_packet_loss;
 extern unsigned long omx_NACK_MCP_packet_loss;
@@ -51,7 +52,8 @@ static unsigned long omx_SMALL_packet_loss_index = 0;
 static unsigned long omx_MEDIUM_FRAG_packet_loss_index = 0;
 static unsigned long omx_RNDV_packet_loss_index = 0;
 static unsigned long omx_NOTIFY_packet_loss_index = 0;
-static unsigned long omx_CONNECT_packet_loss_index = 0;
+static unsigned long omx_CONNECT_REQUEST_packet_loss_index = 0;
+static unsigned long omx_CONNECT_REPLY_packet_loss_index = 0;
 static unsigned long omx_TRUC_packet_loss_index = 0;
 static unsigned long omx_NACK_LIB_packet_loss_index = 0;
 static unsigned long omx_NACK_MCP_packet_loss_index = 0;
@@ -116,40 +118,30 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
  */
 
 int
-omx_ioctl_send_connect(struct omx_endpoint * endpoint,
-		       void __user * uparam)
+omx_ioctl_send_connect_request(struct omx_endpoint * endpoint,
+			       void __user * uparam)
 {
 	struct sk_buff *skb;
 	struct omx_hdr *mh;
 	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
 	struct omx_pkt_connect *connect_n;
-	struct omx_cmd_send_connect_hdr cmd;
+	struct omx_cmd_send_connect_request cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_connect);
-	char * data;
 	int ret;
-	uint8_t length;
 
-	ret = copy_from_user(&cmd, &((struct omx_cmd_send_connect __user *) uparam)->hdr, sizeof(cmd));
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read send connect cmd hdr\n");
+		printk(KERN_ERR "Open-MX: Failed to read send connect request cmd hdr\n");
 		ret = -EFAULT;
-		goto out;
-	}
-
-	length = cmd.length;
-	if (unlikely(length > OMX_CONNECT_DATA_LENGTH_MAX)) {
-		printk(KERN_ERR "Open-MX: Cannot send more than %d as connect data (tried %d)\n",
-		       OMX_CONNECT_DATA_LENGTH_MAX, length);
-		ret = -EINVAL;
 		goto out;
 	}
 
 #ifndef OMX_DISABLE_SHARED
 	if (!cmd.shared_disabled) {
-		ret = omx_shared_try_send_connect(endpoint, &cmd, &((struct omx_cmd_send_connect __user *) uparam)->data);
+		ret = omx_shared_try_send_connect_request(endpoint, &cmd);
 		if (ret <= 0)
 			return ret;
 		/* fallback if ret==1 */
@@ -157,7 +149,7 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 #endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
-			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
+			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create connect skb\n");
@@ -170,7 +162,6 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 	ph = &mh->head;
 	eh = &ph->eth;
 	connect_n = (struct omx_pkt_connect *) (ph + 1);
-	data = (char*) (connect_n + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -187,21 +178,97 @@ omx_ioctl_send_connect(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(connect_n->src_endpoint, endpoint->endpoint_index);
 	OMX_PKT_FIELD_FROM(connect_n->dst_endpoint, cmd.dest_endpoint);
 	OMX_PKT_FIELD_FROM(connect_n->ptype, OMX_PKT_TYPE_CONNECT);
-	OMX_PKT_FIELD_FROM(connect_n->length, length);
+	OMX_PKT_FIELD_FROM(connect_n->length, OMX_PKT_CONNECT_REQUEST_DATA_LENGTH);
 	OMX_PKT_FIELD_FROM(connect_n->lib_seqnum, cmd.seqnum);
 	OMX_PKT_FIELD_FROM(connect_n->src_dst_peer_index, cmd.peer_index);
+	OMX_PKT_FIELD_FROM(connect_n->request.is_reply, 0);
+	OMX_PKT_FIELD_FROM(connect_n->request.src_session_id, cmd.src_session_id);
+	OMX_PKT_FIELD_FROM(connect_n->request.app_key, cmd.app_key);
+	OMX_PKT_FIELD_FROM(connect_n->request.target_recv_seqnum_start, cmd.target_recv_seqnum_start);
+	OMX_PKT_FIELD_FROM(connect_n->request.connect_seqnum, cmd.connect_seqnum);
 
-	omx_send_dprintk(eh, "CONNECT length %ld", (unsigned long) length);
+	omx_queue_xmit(iface, skb, CONNECT_REQUEST);
 
-	/* copy the data right after the header */
-	ret = copy_from_user(data, &((struct omx_cmd_send_connect __user *) uparam)->data, length);
+	return 0;
+
+ out_with_skb:
+	kfree_skb(skb);
+ out:
+	return ret;
+}
+
+int
+omx_ioctl_send_connect_reply(struct omx_endpoint * endpoint,
+			     void __user * uparam)
+{
+	struct sk_buff *skb;
+	struct omx_hdr *mh;
+	struct omx_pkt_head *ph;
+	struct ethhdr *eh;
+	struct omx_pkt_connect *connect_n;
+	struct omx_cmd_send_connect_reply cmd;
+	struct omx_iface * iface = endpoint->iface;
+	struct net_device * ifp = iface->eth_ifp;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_connect);
+	int ret;
+
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read send connect cmd data\n");
+		printk(KERN_ERR "Open-MX: Failed to read send connect reply cmd hdr\n");
 		ret = -EFAULT;
+		goto out;
+	}
+
+#ifndef OMX_DISABLE_SHARED
+	if (!cmd.shared_disabled) {
+		ret = omx_shared_try_send_connect_reply(endpoint, &cmd);
+		if (ret <= 0)
+			return ret;
+		/* fallback if ret==1 */
+	}
+#endif
+
+	skb = omx_new_skb(/* pad to ETH_ZLEN */
+			  max_t(unsigned long, hdr_len, ETH_ZLEN));
+	if (unlikely(skb == NULL)) {
+		omx_counter_inc(iface, SEND_NOMEM_SKB);
+		printk(KERN_INFO "Open-MX: Failed to create connect skb\n");
+		ret = -ENOMEM;
+		goto out;
+	}
+
+	/* locate headers */
+	mh = omx_skb_mac_header(skb);
+	ph = &mh->head;
+	eh = &ph->eth;
+	connect_n = (struct omx_pkt_connect *) (ph + 1);
+
+	/* fill ethernet header */
+	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
+	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
+
+	/* set destination peer */
+	ret = omx_set_target_peer(ph, cmd.peer_index);
+	if (ret < 0) {
+		printk(KERN_INFO "Open-MX: Failed to fill target peer in connect header\n");
 		goto out_with_skb;
 	}
 
-	omx_queue_xmit(iface, skb, CONNECT);
+	/* fill omx header */
+	OMX_PKT_FIELD_FROM(connect_n->src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(connect_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(connect_n->ptype, OMX_PKT_TYPE_CONNECT);
+	OMX_PKT_FIELD_FROM(connect_n->length, OMX_PKT_CONNECT_REPLY_DATA_LENGTH);
+	OMX_PKT_FIELD_FROM(connect_n->lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(connect_n->src_dst_peer_index, cmd.peer_index);
+	OMX_PKT_FIELD_FROM(connect_n->reply.is_reply, 1);
+	OMX_PKT_FIELD_FROM(connect_n->reply.src_session_id, cmd.src_session_id);
+	OMX_PKT_FIELD_FROM(connect_n->reply.target_session_id, cmd.target_session_id);
+	OMX_PKT_FIELD_FROM(connect_n->reply.target_recv_seqnum_start, cmd.target_recv_seqnum_start);
+	OMX_PKT_FIELD_FROM(connect_n->reply.connect_seqnum, cmd.connect_seqnum);
+	OMX_PKT_FIELD_FROM(connect_n->reply.connect_status_code, cmd.connect_status_code);
+
+	omx_queue_xmit(iface, skb, CONNECT_REPLY);
 
 	return 0;
 

@@ -43,30 +43,20 @@ omx_recv_connect(struct omx_iface * iface,
 	struct omx_peer *peer;
 	uint32_t peer_index;
 	struct omx_pkt_connect *connect_n = &mh->body.connect;
-	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_connect);
-	uint8_t length = OMX_FROM_PKT_FIELD(connect_n->length);
+	uint8_t connect_data_length = OMX_FROM_PKT_FIELD(connect_n->length);
 	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(connect_n->dst_endpoint);
 	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(connect_n->src_endpoint);
 	uint16_t reverse_peer_index = OMX_FROM_PKT_FIELD(connect_n->src_dst_peer_index);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(connect_n->lib_seqnum);
-	struct omx_evt_recv_connect event;
+	uint8_t is_reply = OMX_FROM_PKT_FIELD(connect_n->generic.is_reply);
 	int err = 0;
 
-	/* check packet length */
-	if (unlikely(length > OMX_CONNECT_DATA_LENGTH_MAX)) {
+	/* check the connect data length */
+	BUILD_BUG_ON(OMX_PKT_CONNECT_REQUEST_DATA_LENGTH != OMX_PKT_CONNECT_REPLY_DATA_LENGTH);
+	if (connect_data_length < OMX_PKT_CONNECT_REQUEST_DATA_LENGTH) {
 		omx_counter_inc(iface, DROP_BAD_DATALEN);
-		omx_drop_dprintk(eh, "CONNECT packet data too long (length %d)",
-				 (unsigned) length);
-		err = -EINVAL;
-		goto out;
-	}
-
-	/* check actual data length */
-	if (unlikely(length > skb->len - hdr_len)) {
-		omx_counter_inc(iface, DROP_BAD_SKBLEN);
-		omx_drop_dprintk(eh, "CONNECT packet data with %ld bytes instead of %d",
-				 (unsigned long) skb->len - hdr_len,
-				 (unsigned) length);
+		omx_drop_dprintk(&mh->head.eth, "CONNECT packet too short (data length %d)",
+				 (unsigned) connect_data_length);
 		err = -EINVAL;
 		goto out;
 	}
@@ -105,29 +95,52 @@ omx_recv_connect(struct omx_iface * iface,
 		goto out;
 	}
 
-	omx_recv_dprintk(eh, "CONNECT data length %ld", (unsigned long) length);
-
 	/* fill event */
-	event.peer_index = peer_index;
-	event.src_endpoint = src_endpoint;
-	event.shared = 0;
-	event.length = length;
-	event.seqnum = lib_seqnum;
+	if (!is_reply) {
+		struct omx_evt_recv_connect_request request_event;
 
-	/* copy data in event data */
-	err = skb_copy_bits(skb, hdr_len, event.data, length);
-	/* cannot fail since pages are allocated by us */
-	BUG_ON(err < 0);
+		request_event.peer_index = peer_index;
+		request_event.src_endpoint = src_endpoint;
+		request_event.shared = 0;
+		request_event.seqnum = lib_seqnum;
+		request_event.src_session_id = OMX_FROM_PKT_FIELD(connect_n->request.src_session_id);
+		request_event.app_key = OMX_FROM_PKT_FIELD(connect_n->request.app_key);
+		request_event.target_recv_seqnum_start = OMX_FROM_PKT_FIELD(connect_n->request.target_recv_seqnum_start);
+		request_event.connect_seqnum = OMX_FROM_PKT_FIELD(connect_n->request.connect_seqnum);
 
-	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT, &event, sizeof(event));
+		/* notify the event */
+		err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT_REQUEST, &request_event, sizeof(request_event));
+
+	} else {
+		struct omx_evt_recv_connect_reply reply_event;
+
+		reply_event.peer_index = peer_index;
+		reply_event.src_endpoint = src_endpoint;
+		reply_event.shared = 0;
+		reply_event.seqnum = lib_seqnum;
+		reply_event.src_session_id = OMX_FROM_PKT_FIELD(connect_n->reply.src_session_id);
+		reply_event.target_session_id = OMX_FROM_PKT_FIELD(connect_n->reply.target_session_id);
+		reply_event.target_recv_seqnum_start = OMX_FROM_PKT_FIELD(connect_n->reply.target_recv_seqnum_start);
+		reply_event.connect_seqnum = OMX_FROM_PKT_FIELD(connect_n->reply.connect_seqnum);
+		reply_event.connect_status_code = OMX_FROM_PKT_FIELD(connect_n->reply.connect_status_code);
+		BUILD_BUG_ON(OMX_CONNECT_STATUS_SUCCESS != OMX_PKT_CONNECT_STATUS_SUCCESS);
+		BUILD_BUG_ON(OMX_CONNECT_STATUS_BAD_KEY != OMX_PKT_CONNECT_STATUS_BAD_KEY);
+
+		/* notify the event */
+		err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT_REPLY, &reply_event, sizeof(reply_event));
+	}
+
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "CONNECT packet because of unexpected event queue full");
 		goto out_with_endpoint;
 	}
 
-	omx_counter_inc(iface, RECV_CONNECT);
+	if (!is_reply)
+		omx_counter_inc(iface, RECV_CONNECT_REQUEST);
+	else
+		omx_counter_inc(iface, RECV_CONNECT_REPLY);
+
 	omx_endpoint_release(endpoint);
 	dev_kfree_skb(skb);
 	return 0;

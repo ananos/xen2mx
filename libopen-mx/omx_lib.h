@@ -478,8 +478,12 @@ omx__post_connect_request(struct omx_endpoint *ep,
 			  union omx_request * req);
 
 extern void
-omx__process_recv_connect(struct omx_endpoint *ep,
-			  struct omx_evt_recv_connect *event);
+omx__process_recv_connect_request(struct omx_endpoint *ep,
+				  struct omx_evt_recv_connect_request *event);
+
+extern void
+omx__process_recv_connect_reply(struct omx_endpoint *ep,
+				struct omx_evt_recv_connect_reply *event);
 
 extern void
 omx__connect_complete(struct omx_endpoint *ep, union omx_request *req,

@@ -162,9 +162,12 @@ MODULE_PARM_DESC(pull_reply_packet_loss, "Explicit pull reply packet loss freque
 unsigned long omx_NOTIFY_packet_loss = 0;
 module_param_named(notify_packet_loss, omx_NOTIFY_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(notify_packet_loss, "Explicit notify packet loss frequency");
-unsigned long omx_CONNECT_packet_loss = 0;
-module_param_named(connect_packet_loss, omx_CONNECT_packet_loss, ulong, S_IRUGO|S_IWUSR);
-MODULE_PARM_DESC(connect_packet_loss, "Explicit connect packet loss frequency");
+unsigned long omx_CONNECT_REQUEST_packet_loss = 0;
+module_param_named(connreq_packet_loss, omx_CONNECT_REQUEST_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(connreq_packet_loss, "Explicit connect request packet loss frequency");
+unsigned long omx_CONNECT_REPLY_packet_loss = 0;
+module_param_named(connrep_packet_loss, omx_CONNECT_REPLY_packet_loss, ulong, S_IRUGO|S_IWUSR);
+MODULE_PARM_DESC(connrep_packet_loss, "Explicit connect reply packet loss frequency");
 unsigned long omx_TRUC_packet_loss = 0;
 module_param_named(truc_packet_loss, omx_TRUC_packet_loss, ulong, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(truc_packet_loss, "Explicit truc packet loss frequency");
@@ -186,7 +189,8 @@ omx_unavail_module_param(rndv_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(pull_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(pull_reply_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(notify_packet_loss, "--enable-debug was given");
-omx_unavail_module_param(connect_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(connreq_packet_loss, "--enable-debug was given");
+omx_unavail_module_param(connrep_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(truc_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(nack_lib_packet_loss, "--enable-debug was given");
 omx_unavail_module_param(nack_mcp_packet_loss, "--enable-debug was given");
@@ -375,12 +379,16 @@ omx_get_driver_string(unsigned int *lenp)
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		       " Debug: Enabled MessageMask=0x%lx\n"
 		       " DebugLossPacket: All=%ld\n"
-		       " DebugLossPacket: Tiny=%ld Small=%ld MediumFrag=%ld Rndv=%ld Pull=%ld PullReply=%ld\n"
-		       " DebugLossPacket: Notify=%ld Connect=%ld Truc=%ld NackLib=%ld NackMCP=%ld Raw=%ld\n",
+		       " DebugLossPacket: Tiny=%ld Small=%ld MediumFrag=%ld\n"
+		       " DebugLossPacket: Rndv=%ld Pull=%ld PullReply=%ld Notify=%ld\n"
+		       " DebugLossPacket: ConnReq=%ld ConnRep=%ld Truc=%ld\n"
+		       " DebugLossPacket: NackLib=%ld NackMCP=%ld Raw=%ld\n",
 		       (unsigned long) omx_debug,
 		       omx_packet_loss,
-		       omx_TINY_packet_loss, omx_SMALL_packet_loss, omx_MEDIUM_FRAG_packet_loss, omx_RNDV_packet_loss,	omx_PULL_REQ_packet_loss, omx_PULL_REPLY_packet_loss,
-		       omx_NOTIFY_packet_loss, omx_CONNECT_packet_loss, omx_TRUC_packet_loss, omx_NACK_LIB_packet_loss, omx_NACK_MCP_packet_loss, omx_RAW_packet_loss);
+		       omx_TINY_packet_loss, omx_SMALL_packet_loss, omx_MEDIUM_FRAG_packet_loss,
+		       omx_RNDV_packet_loss, omx_PULL_REQ_packet_loss, omx_PULL_REPLY_packet_loss, omx_NOTIFY_packet_loss,
+		       omx_CONNECT_REQUEST_packet_loss, omx_CONNECT_REPLY_packet_loss, omx_TRUC_packet_loss,
+		       omx_NACK_LIB_packet_loss, omx_NACK_MCP_packet_loss, omx_RAW_packet_loss);
 #else
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		       " Debug: Disabled\n");

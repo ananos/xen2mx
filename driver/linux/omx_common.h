@@ -69,7 +69,8 @@ extern int omx_ioctl_send_mediumva(struct omx_endpoint * endpoint, void __user *
 extern int omx_ioctl_send_rndv(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_pull(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_notify(struct omx_endpoint * endpoint, void __user * uparam);
-extern int omx_ioctl_send_connect(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_connect_request(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_send_connect_reply(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_send_truc(struct omx_endpoint * endpoint, void __user * uparam);
 extern void omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type, uint8_t src_endpoint, uint8_t dst_endpoint, uint16_t lib_seqnum);
 extern void omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_type nack_type, uint8_t src_endpoint, uint32_t src_pull_handle, uint32_t src_magic);

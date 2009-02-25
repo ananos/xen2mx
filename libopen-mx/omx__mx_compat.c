@@ -703,13 +703,6 @@ mx_connect(mx_endpoint_t endpoint, uint64_t nic_id, uint32_t endpoint_id,
 	   uint32_t key, uint32_t timeout, mx_endpoint_addr_t *addr)
 {
   omx_return_t omxret;
-
-  /* enforce connect lib data layout and values */
-  BUILD_BUG_ON(sizeof(((struct omx__connect_request_data *) NULL)->is_reply) != sizeof(((struct omx__connect_reply_data *) NULL)->is_reply));
-  BUILD_BUG_ON(offsetof(struct omx__connect_request_data, is_reply) != offsetof(struct omx__connect_reply_data, is_reply));
-  BUILD_BUG_ON(OMX__CONNECT_SUCCESS != 0);
-  BUILD_BUG_ON(OMX__CONNECT_BAD_KEY != 11);
-
   omxret = omx_connect(omx_endpoint_from_mx(endpoint),
 		       nic_id, endpoint_id, key,
 		       omx_timeout_from_mx(timeout),

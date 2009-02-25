@@ -21,41 +21,6 @@
 
 #include <stdint.h>
 
-struct omx__connect_request_data {
-  /* the sender's session id (so that the connected know when the connect has been sent) */
-  uint32_t src_session_id;
-  /* the application level key in the request that the connected will check */
-  uint32_t app_key;
-  /* the target next recv seqnum (so the connected knows our next send seqnum) */
-  uint16_t target_recv_seqnum_start;
-  /* is this a request ot a reply? 0 here */
-  uint8_t is_reply;
-  /* sequence number of this connect request (in case multiple have been sent/lost) */
-  uint8_t connect_seqnum;
-
-  uint8_t pad2;
-};
-
-enum omx__connect_status_code {
-  OMX__CONNECT_SUCCESS = 0,
-  OMX__CONNECT_BAD_KEY = 11, /* enforced by wire compatibility */
-};
-
-struct omx__connect_reply_data {
-  /* the sender's session id (so that we know when the connect has been sent) */
-  uint32_t src_session_id;
-  /* the target session_id (so that the connecter can send right after this connect) */
-  uint32_t target_session_id;
-  /* the target next recv seqnum (so that the connecter know our next send seqnum) */
-  uint16_t target_recv_seqnum_start;
-  /* is this a request ot a reply? 1 here */
-  uint8_t is_reply;
-  /* sequence number of this connect request (in case multiple have been sent/lost) */
-  uint8_t connect_seqnum;
-  /* the status code to return in the connecter request */
-  uint8_t connect_status_code;
-};
-
 union omx__truc_data {
   uint8_t type;
   struct omx__truc_ack_data {

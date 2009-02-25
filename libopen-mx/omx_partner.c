@@ -304,17 +304,16 @@ omx__post_connect_request(struct omx_endpoint *ep,
 			  struct omx__partner *partner,
 			  union omx_request * req)
 {
-  struct omx_cmd_send_connect * connect_param = &req->connect.send_connect_ioctl_param;
-  struct omx__connect_request_data * data_n = (void *) &connect_param->data;
+  struct omx_cmd_send_connect_request * connect_param = &req->connect.send_connect_request_ioctl_param;
   int err;
 
-  OMX_PKT_FIELD_FROM(data_n->target_recv_seqnum_start, partner->next_match_recv_seq);
+  connect_param->target_recv_seqnum_start = partner->next_match_recv_seq;
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, connect_param);
+  err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT_REQUEST, connect_param);
   if (err < 0) {
     omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
 				       OMX_SUCCESS,
-				       "post connect message");
+				       "post connect request message");
     /* if OMX_NO_SYSTEM_RESOURCES, let the retransmission try again later */
   }
 
@@ -331,8 +330,7 @@ omx__connect_common(omx_endpoint_t ep,
 		    union omx_request * req)
 {
   struct omx__partner * partner;
-  struct omx_cmd_send_connect * connect_param = &req->connect.send_connect_ioctl_param;
-  struct omx__connect_request_data * data_n = (void *) &connect_param->data;
+  struct omx_cmd_send_connect_request * connect_param = &req->connect.send_connect_request_ioctl_param;
   uint8_t connect_seqnum;
   omx_return_t ret;
 
@@ -366,19 +364,17 @@ omx__connect_common(omx_endpoint_t ep,
   connect_seqnum = partner->connect_seqnum++;
   req->generic.resends = 0;
 
-  connect_param->hdr.peer_index = partner->peer_index;
-  connect_param->hdr.dest_endpoint = partner->endpoint_index;
+  connect_param->peer_index = partner->peer_index;
+  connect_param->dest_endpoint = partner->endpoint_index;
 #ifdef OMX_DISABLE_SHARED
-  connect_param->hdr.shared_disabled = 1;
+  connect_param->shared_disabled = 1;
 #else
-  connect_param->hdr.shared_disabled = !omx__globals.sharedcomms;
+  connect_param->shared_disabled = !omx__globals.sharedcomms;
 #endif
-  connect_param->hdr.seqnum = 0;
-  connect_param->hdr.length = sizeof(*data_n);
-  OMX_PKT_FIELD_FROM(data_n->src_session_id, ep->desc->session_id);
-  OMX_PKT_FIELD_FROM(data_n->app_key, key);
-  OMX_PKT_FIELD_FROM(data_n->is_reply, 0);
-  OMX_PKT_FIELD_FROM(data_n->connect_seqnum, connect_seqnum);
+  connect_param->seqnum = 0;
+  connect_param->src_session_id = ep->desc->session_id;
+  connect_param->app_key = key;
+  connect_param->connect_seqnum = connect_seqnum;
 
   omx__post_connect_request(ep, partner, req);
 
@@ -540,18 +536,18 @@ static INLINE void
 omx__handle_connect_reply(struct omx_endpoint *ep,
 			  struct omx__partner * partner,
 			  union omx_request * req,
-			  struct omx__connect_reply_data * reply_data_n)
+			  struct omx_evt_recv_connect_reply * event)
 {
-  uint32_t target_session_id = OMX_FROM_PKT_FIELD(reply_data_n->target_session_id);
-  uint16_t target_recv_seqnum_start = OMX_FROM_PKT_FIELD(reply_data_n->target_recv_seqnum_start);
-  enum omx__connect_status_code connect_status_code = OMX_FROM_PKT_FIELD(reply_data_n->connect_status_code);
+  uint32_t target_session_id = event->target_session_id;
+  uint32_t target_recv_seqnum_start = event->target_recv_seqnum_start;
+  uint8_t connect_status_code = event->connect_status_code;
   omx_return_t status_code;
 
   switch (connect_status_code) {
-  case OMX__CONNECT_SUCCESS:
+  case OMX_CONNECT_STATUS_SUCCESS:
     status_code = OMX_SUCCESS;
     break;
-  case OMX__CONNECT_BAD_KEY:
+  case OMX_CONNECT_STATUS_BAD_KEY:
     status_code = OMX_REMOTE_ENDPOINT_BAD_CONNECTION_KEY;
     break;
   default:
@@ -596,14 +592,13 @@ omx__handle_connect_reply(struct omx_endpoint *ep,
 /*
  * Find the connect request corresponding to a reply and call the handler
  */
-static INLINE void
+void
 omx__process_recv_connect_reply(struct omx_endpoint *ep,
-				struct omx_evt_recv_connect *event)
+				struct omx_evt_recv_connect_reply *event)
 {
   struct omx__partner * partner;
-  struct omx__connect_reply_data * reply_data_n = (void *) event->data;
-  uint32_t src_session_id = OMX_FROM_PKT_FIELD(reply_data_n->src_session_id);
-  uint8_t connect_seqnum = OMX_FROM_PKT_FIELD(reply_data_n->connect_seqnum);
+  uint32_t src_session_id = event->src_session_id;
+  uint8_t connect_seqnum = event->connect_seqnum;
   union omx_request * req;
   omx_return_t ret;
 
@@ -622,7 +617,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
      */
     if (src_session_id == ep->desc->session_id
 	&& connect_seqnum == req->connect.connect_seqnum) {
-      omx__handle_connect_reply(ep, partner, req, reply_data_n);
+      omx__handle_connect_reply(ep, partner, req, event);
       break;
     }
   }
@@ -631,19 +626,17 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
 /*
  * Another peer is connecting to us
  */
-static INLINE void
+void
 omx__process_recv_connect_request(struct omx_endpoint *ep,
-				  struct omx_evt_recv_connect *event)
+				  struct omx_evt_recv_connect_request *event)
 {
   struct omx__partner * partner;
-  struct omx_cmd_send_connect reply_param;
-  struct omx__connect_request_data * request_data_n = (void *) event->data;
-  struct omx__connect_reply_data * reply_data_n = (void *) reply_param.data;
-  uint32_t app_key = OMX_FROM_PKT_FIELD(request_data_n->app_key);
-  uint32_t src_session_id = OMX_FROM_PKT_FIELD(request_data_n->src_session_id);
-  uint16_t target_recv_seqnum_start = OMX_FROM_PKT_FIELD(request_data_n->target_recv_seqnum_start);
+  struct omx_cmd_send_connect_reply reply_param;
+  uint32_t app_key = event->app_key;
+  uint32_t src_session_id = event->src_session_id;
+  uint16_t target_recv_seqnum_start = event->target_recv_seqnum_start;
+  uint8_t connect_status_code;
   omx_return_t ret;
-  enum omx__connect_status_code connect_status_code;
   int err;
 
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
@@ -657,9 +650,9 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   omx__partner_check_localization(ep, partner, event->shared);
 
   if (app_key == ep->app_key) {
-    connect_status_code = OMX__CONNECT_SUCCESS;
+    connect_status_code = OMX_CONNECT_STATUS_SUCCESS;
   } else {
-    connect_status_code = OMX__CONNECT_BAD_KEY;
+    connect_status_code = OMX_CONNECT_STATUS_BAD_KEY;
   }
 
   omx__debug_printf(CONNECT, ep, "got a connect request with session id %lx while we have true %lx back %lx\n",
@@ -691,23 +684,21 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   partner->true_session_id  = src_session_id;
   partner->back_session_id  = src_session_id;
 
-  reply_param.hdr.peer_index = partner->peer_index;
-  reply_param.hdr.dest_endpoint = partner->endpoint_index;
+  reply_param.peer_index = partner->peer_index;
+  reply_param.dest_endpoint = partner->endpoint_index;
 #ifdef OMX_DISABLE_SHARED
-  reply_param.hdr.shared_disabled = 1;
+  reply_param.shared_disabled = 1;
 #else
-  reply_param.hdr.shared_disabled = !omx__globals.sharedcomms;
+  reply_param.shared_disabled = !omx__globals.sharedcomms;
 #endif
-  reply_param.hdr.seqnum = 0;
-  reply_param.hdr.length = sizeof(*reply_data_n);
-  reply_data_n->src_session_id = request_data_n->src_session_id;
-  OMX_PKT_FIELD_FROM(reply_data_n->target_session_id, ep->desc->session_id);
-  OMX_PKT_FIELD_FROM(reply_data_n->is_reply, 1);
-  OMX_PKT_FIELD_FROM(reply_data_n->target_recv_seqnum_start, partner->next_match_recv_seq);
-  reply_data_n->connect_seqnum = request_data_n->connect_seqnum;
-  OMX_PKT_FIELD_FROM(reply_data_n->connect_status_code, connect_status_code);
+  reply_param.seqnum = 0;
+  reply_param.src_session_id = event->src_session_id;
+  reply_param.target_session_id = ep->desc->session_id;
+  reply_param.target_recv_seqnum_start = partner->next_match_recv_seq;
+  reply_param.connect_seqnum = event->connect_seqnum;
+  reply_param.connect_status_code = connect_status_code;
 
-  err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT, &reply_param);
+  err = ioctl(ep->fd, OMX_CMD_SEND_CONNECT_REPLY, &reply_param);
   if (err < 0) {
     omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
 				       OMX_SUCCESS,
@@ -715,20 +706,6 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     /* just ignore the error, the peer will resend the connect request */
   }
   /* no need to wait for a done event, connect is synchronous */
-}
-
-/*
- * Incoming connection message
- */
-void
-omx__process_recv_connect(struct omx_endpoint *ep,
-			  struct omx_evt_recv_connect *event)
-{
-  struct omx__connect_request_data * data = (void *) event->data;
-  if (data->is_reply)
-    omx__process_recv_connect_reply(ep, event);
-  else
-    omx__process_recv_connect_request(ep, event);
 }
 
 /***************************
