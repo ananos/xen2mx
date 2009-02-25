@@ -2,9 +2,6 @@
 
 * move the FAQ inside the source tree and copy it to the website on release
 
-* if recv_frag_length != MEDIUM_FRAG_LENGTH_MAX,
-  check that frag_seqnum * MAX + frag_length = msg_length if DEBUG
-
 * stop supporting mtu!=1500/9000 ?
   + go back to mtu/wire-compat indep library, with send
     function pointers initialized at connect
