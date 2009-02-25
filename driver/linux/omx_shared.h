@@ -41,7 +41,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 
 extern int
 omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
-		     struct omx_cmd_send_rndv_hdr *hdr, void __user * data);
+		     struct omx_cmd_send_rndv *hdr);
 
 extern int
 omx_shared_pull(struct omx_endpoint *src_endpoint,

@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x204
+#define OMX_DRIVER_ABI_VERSION		0x205
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -64,7 +64,6 @@
 #define OMX_TINY_MSG_LENGTH_MAX		32
 #define OMX_SMALL_MSG_LENGTH_MAX	128
 #define OMX_MEDIUM_MSG_LENGTH_MAX	32768
-#define OMX_RNDV_DATA_LENGTH_MAX	8
 #define OMX_CONNECT_DATA_LENGTH_MAX	32
 #define OMX_TRUC_DATA_LENGTH_MAX	48
 
@@ -354,27 +353,22 @@ struct omx_cmd_send_mediumva {
 };
 
 struct omx_cmd_send_rndv {
-	struct omx_cmd_send_rndv_hdr {
-		uint16_t peer_index;
-		uint8_t dest_endpoint;
-		uint8_t shared;
-		uint32_t session_id;
-		/* 8 */
-		uint16_t seqnum;
-		uint16_t piggyack;
-		uint8_t length;
-		uint8_t pad1[3];
-		/* 16 */
-		uint8_t user_region_id_needed;
-		uint8_t pad2[3];
-		uint32_t user_region_length_needed;
-		/* 24 */
-		uint64_t match_info;
-		/* 32 */
-	} hdr;
+	uint16_t peer_index;
+	uint8_t dest_endpoint;
+	uint8_t shared;
+	uint32_t session_id;
+	/* 8 */
+	uint16_t seqnum;
+	uint16_t piggyack;
+	uint32_t pad1;
+	/* 16 */
+	uint64_t match_info;
+	/* 24 */
+	uint32_t msg_length;
+	uint8_t pulled_rdma_id;
+	uint8_t pulled_rdma_seqnum;
+	uint16_t pad2;
 	/* 32 */
-	char data[OMX_RNDV_DATA_LENGTH_MAX];
-	/* 40 */
 };
 
 struct omx_cmd_send_connect {
@@ -791,12 +785,12 @@ union omx_evt {
 			} medium_frag;
 
 			struct {
-				uint8_t length;
-				uint8_t pad1[7];
+				uint32_t msg_length;
+				uint8_t pulled_rdma_id;
+				uint8_t pulled_rdma_seqnum;
+				uint16_t pulled_rdma_offset;
 				/* 8 */
-				char data[OMX_RNDV_DATA_LENGTH_MAX];
-				/* 16 */
-				uint64_t pad2[3];
+				uint64_t pad2[4];
 				/* 40 */
 			} rndv;
 

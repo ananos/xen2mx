@@ -200,9 +200,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
   }
 
   case OMX_EVT_RECV_RNDV: {
-    struct omx__rndv_data * data_n = (void *) msg->specific.rndv.data;
-    uint32_t msg_length = OMX_FROM_PKT_FIELD(data_n->msg_length);
-    early->msg_length = msg_length;
+    early->msg_length = msg->specific.rndv.msg_length;
     break;
   }
 
@@ -372,10 +370,9 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
 		       void *data /* unused */, uint32_t msg_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
-  struct omx__rndv_data * data_n = (void *) msg->specific.rndv.data;
-  uint8_t rdma_id = OMX_FROM_PKT_FIELD(data_n->rdma_id);
-  uint8_t rdma_seqnum = OMX_FROM_PKT_FIELD(data_n->rdma_seqnum);
-  uint16_t rdma_offset = OMX_FROM_PKT_FIELD(data_n->rdma_offset);
+  uint8_t rdma_id = msg->specific.rndv.pulled_rdma_id;
+  uint8_t rdma_seqnum = msg->specific.rndv.pulled_rdma_seqnum;
+  uint16_t rdma_offset = msg->specific.rndv.pulled_rdma_offset;
 
   omx__debug_printf(LARGE, ep, "got a rndv req for rdma id %d seqnum %d offset %d length %d\n",
 		    (unsigned) rdma_id, (unsigned) rdma_seqnum, (unsigned) rdma_offset,

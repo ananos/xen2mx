@@ -526,32 +526,21 @@ omx_recv_rndv(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
-	struct omx_pkt_msg *rndv_n = &mh->body.rndv;
-	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
-	uint16_t length = OMX_FROM_PKT_FIELD(rndv_n->length);
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(rndv_n->dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->src_endpoint);
-	uint32_t session_id = OMX_FROM_PKT_FIELD(rndv_n->session);
-	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(rndv_n->lib_seqnum);
-	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(rndv_n->lib_piggyack);
+	struct omx_pkt_rndv *rndv_n = &mh->body.rndv;
+	uint16_t rndv_data_length = OMX_FROM_PKT_FIELD(rndv_n->msg.length);
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(rndv_n->msg.dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->msg.src_endpoint);
+	uint32_t session_id = OMX_FROM_PKT_FIELD(rndv_n->msg.session);
+	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(rndv_n->msg.lib_seqnum);
+	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(rndv_n->msg.lib_piggyack);
 	struct omx_evt_recv_msg event;
 	int err = 0;
 
-	/* check packet length */
-	if (unlikely(length > OMX_RNDV_DATA_LENGTH_MAX)) {
+	/* check the rdnv data length */
+	if (rndv_data_length < OMX_PKT_RNDV_DATA_LENGTH) {
 		omx_counter_inc(iface, DROP_BAD_DATALEN);
-		omx_drop_dprintk(&mh->head.eth, "RNDV packet too long (length %d)",
-				 (unsigned) length);
-		err = -EINVAL;
-		goto out;
-	}
-
-	/* check actual data length */
-	if (unlikely(length > skb->len - hdr_len)) {
-		omx_counter_inc(iface, DROP_BAD_SKBLEN);
-		omx_drop_dprintk(&mh->head.eth, "RNDV packet with %ld bytes instead of %d",
-				 (unsigned long) skb->len - hdr_len,
-				 (unsigned) length);
+		omx_drop_dprintk(&mh->head.eth, "RNDV packet too short (data length %d)",
+				 (unsigned) rndv_data_length);
 		err = -EINVAL;
 		goto out;
 	}
@@ -589,20 +578,16 @@ omx_recv_rndv(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
-	omx_recv_dprintk(&mh->head.eth, "RNDV length %ld", (unsigned long) length);
-
 	/* fill event */
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
-	event.match_info = OMX_FROM_PKT_MATCH_INFO(rndv_n);
+	event.match_info = OMX_FROM_PKT_MATCH_INFO(&rndv_n->msg);
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
-	event.specific.rndv.length = length;
-
-	/* copy data in event data */
-	err = skb_copy_bits(skb, hdr_len, event.specific.rndv.data, length);
-	/* cannot fail since pages are allocated by us */
-	BUG_ON(err < 0);
+	event.specific.rndv.msg_length = OMX_FROM_PKT_FIELD(rndv_n->msg_length);
+	event.specific.rndv.pulled_rdma_id = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_id);
+	event.specific.rndv.pulled_rdma_seqnum = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_seqnum);
+	event.specific.rndv.pulled_rdma_offset = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_offset);
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));

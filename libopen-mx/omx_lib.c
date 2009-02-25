@@ -69,8 +69,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
 
   case OMX_EVT_RECV_RNDV: {
     struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    struct omx__rndv_data * data_n = (void *) msg->specific.rndv.data;
-    uint32_t msg_length = OMX_FROM_PKT_FIELD(data_n->msg_length);
+    uint32_t msg_length = msg->specific.rndv.msg_length;
     omx__process_recv(ep,
 		      msg, NULL, msg_length,
 		      omx__process_recv_rndv);

@@ -537,7 +537,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
-		     struct omx_cmd_send_rndv_hdr *hdr, void __user * data)
+		     struct omx_cmd_send_rndv *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
@@ -557,19 +557,14 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	event.match_info = hdr->match_info;
 	event.seqnum = hdr->seqnum;
 	event.piggyack = hdr->piggyack;
-	event.specific.rndv.length = hdr->length;
-
-	/* copy the data */
-	err = copy_from_user(&event.specific.rndv.data, data, hdr->length);
-	if (unlikely(err != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read shared send rndv cmd data\n");
-		err = -EFAULT;
-		goto out_with_endpoint;
-	}
+	event.specific.rndv.msg_length = hdr->msg_length;
+	event.specific.rndv.pulled_rdma_id = hdr->pulled_rdma_id;
+	event.specific.rndv.pulled_rdma_seqnum = hdr->pulled_rdma_seqnum;
+	event.specific.rndv.pulled_rdma_offset = 0; /* not needed in Open-MX */
 
 	/* make sure the region is marked as pinning before reporting the event */
 	if (!omx_pin_synchronous) {
-		src_region = omx_user_region_acquire(src_endpoint, hdr->user_region_id_needed);
+		src_region = omx_user_region_acquire(src_endpoint, hdr->pulled_rdma_id);
 		if (unlikely(!src_region)) {
 			err = -EINVAL;
 			goto out_with_endpoint;

@@ -752,33 +752,23 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	struct omx_hdr *mh;
 	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
-	struct omx_pkt_msg *rndv_n;
-	struct omx_cmd_send_rndv_hdr cmd;
+	struct omx_pkt_rndv *rndv_n;
+	struct omx_cmd_send_rndv cmd;
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
-	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
-	char * data;
+	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_rndv);
 	int ret;
-	uint8_t length;
 
-	ret = copy_from_user(&cmd, &((struct omx_cmd_send_rndv __user *) uparam)->hdr, sizeof(cmd));
+	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read send rndv cmd hdr\n");
+		printk(KERN_ERR "Open-MX: Failed to read send rndv cmd\n");
 		ret = -EFAULT;
-		goto out;
-	}
-
-	length = cmd.length;
-	if (unlikely(length > OMX_RNDV_DATA_LENGTH_MAX)) {
-		printk(KERN_ERR "Open-MX: Cannot send more than %d as a rndv (tried %d)\n",
-		       OMX_RNDV_DATA_LENGTH_MAX, length);
-		ret = -EINVAL;
 		goto out;
 	}
 
 #ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
-		return omx_shared_send_rndv(endpoint, &cmd, &((struct omx_cmd_send_rndv __user *) uparam)->data);
+		return omx_shared_send_rndv(endpoint, &cmd);
 #endif
 
 	if (!omx_pin_synchronous) {
@@ -786,7 +776,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		struct omx_user_region * region;
 		struct omx_user_region_pin_state pinstate;
 
-		region = omx_user_region_acquire(endpoint, cmd.user_region_id_needed);
+		region = omx_user_region_acquire(endpoint, cmd.pulled_rdma_id);
 		if (unlikely(!region)) {
 			ret = -EINVAL;
 			goto out;
@@ -804,7 +794,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	}
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
-			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
+			  max_t(unsigned long, hdr_len, ETH_ZLEN));
 	if (unlikely(skb == NULL)) {
 		omx_counter_inc(iface, SEND_NOMEM_SKB);
 		printk(KERN_INFO "Open-MX: Failed to create rndv skb\n");
@@ -816,8 +806,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	mh = omx_skb_mac_header(skb);
 	ph = &mh->head;
 	eh = &ph->eth;
-	rndv_n = (struct omx_pkt_msg *) (ph + 1);
-	data = (char*) (rndv_n + 1);
+	rndv_n = (struct omx_pkt_rndv *) (ph + 1);
 
 	/* fill ethernet header */
 	eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -831,24 +820,18 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(rndv_n->src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(rndv_n->dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(rndv_n->ptype, OMX_PKT_TYPE_RNDV);
-	OMX_PKT_FIELD_FROM(rndv_n->length, length);
-	OMX_PKT_FIELD_FROM(rndv_n->lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(rndv_n->lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(rndv_n->session, cmd.session_id);
-	OMX_PKT_MATCH_INFO_FROM(rndv_n, cmd.match_info);
-
-	omx_send_dprintk(eh, "RNDV length %ld", (unsigned long) length);
-
-	/* copy the data right after the header */
-	ret = copy_from_user(data, &((struct omx_cmd_send_rndv __user *) uparam)->data, length);
-	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read send rndv cmd data\n");
-		ret = -EFAULT;
-		goto out_with_skb;
-	}
+	OMX_PKT_FIELD_FROM(rndv_n->msg.src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(rndv_n->msg.dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(rndv_n->msg.ptype, OMX_PKT_TYPE_RNDV);
+	OMX_PKT_FIELD_FROM(rndv_n->msg.length, OMX_PKT_RNDV_DATA_LENGTH);
+	OMX_PKT_FIELD_FROM(rndv_n->msg.lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(rndv_n->msg.lib_piggyack, cmd.piggyack);
+	OMX_PKT_FIELD_FROM(rndv_n->msg.session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(&rndv_n->msg, cmd.match_info);
+	OMX_PKT_FIELD_FROM(rndv_n->msg_length, cmd.msg_length);
+	OMX_PKT_FIELD_FROM(rndv_n->pulled_rdma_id, cmd.pulled_rdma_id);
+	OMX_PKT_FIELD_FROM(rndv_n->pulled_rdma_seqnum, cmd.pulled_rdma_seqnum);
+	OMX_PKT_FIELD_FROM(rndv_n->pulled_rdma_offset, 0); /* not needed for Open-MX */
 
 	omx_queue_xmit(iface, skb, RNDV);
 

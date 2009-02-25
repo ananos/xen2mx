@@ -317,6 +317,16 @@ struct omx_pkt_medium_frag { /* similar to MX's pkt_msg_t + pkt_frame_t */
 	/* 32 */
 };
 
+struct omx_pkt_rndv { /* similar to MX's pkt_msg_t + MX's lib rndv data */
+	struct omx_pkt_msg msg;
+	/* 24 */
+	uint32_t msg_length;
+	uint8_t pulled_rdma_id;
+	uint8_t pulled_rdma_seqnum;
+	uint16_t pulled_rdma_offset;
+};
+#define OMX_PKT_RNDV_DATA_LENGTH (sizeof(struct omx_pkt_rndv) - sizeof(struct omx_pkt_msg))
+
 #ifdef OMX_MX_WIRE_COMPAT
 struct omx_pkt_pull_request {
 	omx_packet_type_t ptype;
@@ -442,7 +452,7 @@ struct omx_hdr {
 		struct omx_pkt_msg tiny;
 		struct omx_pkt_msg small;
 		struct omx_pkt_medium_frag medium;
-		struct omx_pkt_msg rndv;
+		struct omx_pkt_rndv rndv;
 		struct omx_pkt_pull_request pull;
 		struct omx_pkt_pull_reply pull_reply;
 		struct omx_pkt_notify notify;

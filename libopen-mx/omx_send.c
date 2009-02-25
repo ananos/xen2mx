@@ -21,8 +21,6 @@
 #include "omx_lib.h"
 #include "omx_segments.h"
 #include "omx_request.h"
-#include "omx_lib_wire.h"
-#include "omx_wire_access.h"
 
 /**************************
  * Send Request Completion
@@ -698,7 +696,7 @@ omx__post_isend_rndv(struct omx_endpoint *ep,
 		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
 		    (unsigned int) OMX__SESNUM_SHIFTED(ack_upto - 1),
 		    (unsigned long long) omx__driver_desc->jiffies);
-  rndv_param->hdr.piggyack = ack_upto;
+  rndv_param->piggyack = ack_upto;
 
   err = ioctl(ep->fd, OMX_CMD_SEND_RNDV, rndv_param);
   if (unlikely(err < 0)) {
@@ -733,7 +731,7 @@ omx__setup_isend_rndv(struct omx_endpoint *ep,
   req->generic.resends = 0;
   req->generic.resends_max = ep->req_resends_max;
 
-  rndv_param->hdr.seqnum = req->generic.send_seqnum;
+  rndv_param->seqnum = req->generic.send_seqnum;
 
   omx__post_isend_rndv(ep, partner, req);
 
@@ -750,7 +748,6 @@ omx__alloc_setup_isend_large(struct omx_endpoint *ep,
 			     union omx_request *req)
 {
   struct omx_cmd_send_rndv * rndv_param = &req->send.specific.large.send_rndv_ioctl_param;
-  struct omx__rndv_data * data_n = (void *) rndv_param->data;
   struct omx__large_region *region;
   uint32_t length = req->generic.status.msg_length;
   int res = req->generic.missing_resources;
@@ -780,19 +777,14 @@ omx__alloc_setup_isend_large(struct omx_endpoint *ep,
   req->send.specific.large.region = region;
   req->send.specific.large.region_seqnum = region->last_seqnum++;
 
-  rndv_param->hdr.peer_index = partner->peer_index;
-  rndv_param->hdr.dest_endpoint = partner->endpoint_index;
-  rndv_param->hdr.shared = omx__partner_localization_shared(partner);
-  rndv_param->hdr.match_info = req->generic.status.match_info;
-  rndv_param->hdr.length = sizeof(struct omx__rndv_data);
-  rndv_param->hdr.session_id = partner->true_session_id;
-  rndv_param->hdr.user_region_id_needed = region->id;
-  rndv_param->hdr.user_region_length_needed = length;
-
-  OMX_PKT_FIELD_FROM(data_n->msg_length, length);
-  OMX_PKT_FIELD_FROM(data_n->rdma_id, region->id);
-  OMX_PKT_FIELD_FROM(data_n->rdma_seqnum, req->send.specific.large.region_seqnum);
-  OMX_PKT_FIELD_FROM(data_n->rdma_offset, 0); /* Open-MX does not need page-aligned stuff as MX does */
+  rndv_param->peer_index = partner->peer_index;
+  rndv_param->dest_endpoint = partner->endpoint_index;
+  rndv_param->shared = omx__partner_localization_shared(partner);
+  rndv_param->match_info = req->generic.status.match_info;
+  rndv_param->session_id = partner->true_session_id;
+  rndv_param->msg_length = length;
+  rndv_param->pulled_rdma_id = region->id;
+  rndv_param->pulled_rdma_seqnum = req->send.specific.large.region_seqnum;
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
