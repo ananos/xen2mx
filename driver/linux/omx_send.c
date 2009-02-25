@@ -427,7 +427,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 	}
 
 	BUILD_BUG_ON(OMX_MEDIUM_FRAG_LENGTH_MAX > OMX_SENDQ_ENTRY_SIZE);
-	BUILD_BUG_ON(OMX_MEDIUM_FRAG_MTU_OF_PAYLOAD(OMX_MEDIUM_FRAG_LENGTH_MAX) > OMX_MTU);
+	BUILD_BUG_ON(OMX_MEDIUM_FRAG_PACKET_SIZE_OF_PAYLOAD(OMX_MEDIUM_FRAG_LENGTH_MAX) > OMX_MTU);
 
 	frag_length = cmd.frag_length;
 	if (unlikely(frag_length > OMX_SENDQ_ENTRY_SIZE)) {
