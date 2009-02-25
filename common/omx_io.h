@@ -85,7 +85,15 @@ struct omx_cmd_user_segment {
 };
 
 #define OMX_ABI_CONFIG_WIRECOMPAT		(1<<0)
-#define OMX_ABI_CONFIG_ENDIANCOMPAT		(1<<1)
+
+static inline uint32_t
+omx_get_abi_config(void) {
+	uint32_t val = 0;
+#ifdef OMX_MX_WIRE_COMPAT
+	val |= OMX_ABI_CONFIG_WIRECOMPAT;
+#endif
+	return val;
+}
 
 /* driver desc */
 struct omx_driver_desc {
@@ -113,18 +121,6 @@ struct omx_driver_desc {
 	uint64_t peer_table_mapper_id;
 	/* 64 */
 };
-
-static inline uint32_t
-omx_get_abi_config(void) {
-	uint32_t val = 0;
-#ifdef OMX_MX_WIRE_COMPAT
-	val |= OMX_ABI_CONFIG_WIRECOMPAT;
-#endif
-#ifdef OMX_ENDIAN_COMPAT
-	val |= OMX_ABI_CONFIG_ENDIANCOMPAT;
-#endif
-	return val;
-}
 
 #define OMX_DRIVER_DESC_SIZE	sizeof(struct omx_driver_desc)
 
