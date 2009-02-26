@@ -1,0 +1,2065 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+ "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+ <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+ <title>Open-MX - Frequently Asked Questions</title>
+ <link rel="stylesheet" type="text/css" href="../style.css" />
+ <link rel="stylesheet" type="text/css" href="faq.css" />
+</head>
+
+<body>
+
+<!-- TODO: need to relink apps if modified wire-compat or MTU so far in trunk -->
+<!-- TODO: why no crc? -->
+<!-- TODO: can I poll/select on omx? -->
+<!-- TODO: update question about EFAULT while pinning -->
+<!-- TODO: question/section about binding/msix -->
+<!-- TODO: OMX_MEDIUM_SENDQ -->
+<!-- <a href="#debugging-mtu">How can I check that Open-MX MTU is correctly configured?</a> avec cat /dev/open-mx -->
+<!-- TODO: point to hardware.html -->
+<!-- TODO: udev support -->
+<!-- TODO: cross-ctxid probe support -->
+<!-- TODO: pinsync=0,pininvalidate=1,pinprogressive=1 -->
+<!-- TODO: update the lists of configure options, module params and env vars -->
+<!-- TODO: switch to autogen.sh -->
+<!-- TODO: --with-medium-frag-max and --with-pull-reply-max -->
+
+<h6 class="mirrors">
+ <a href="http://open-mx.org/FAQ">Primary website</a>
+ &nbsp;&nbsp;&nbsp;&nbsp;
+ <a href="http://runtime.bordeaux.inria.fr/open-mx/FAQ">Secondary website</a>
+</h6>
+
+
+
+<h1><a href=".." id="top">Open-MX</a></h1>
+<h1 class="sub">Frequently Asked Questions</h1>
+
+
+
+<hr class="main" />
+
+<div><a href="..">Back to the main page</a></div>
+
+<hr class="main" />
+
+<p><em>
+  If you do not find your answer here, feel free to contact the
+  <a href="http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/open-mx-devel">open-mx-devel mailing list</a>.
+</em></p>
+
+<p><a href="#basics">
+    Basics
+</a></p>
+<ul>
+<li><a href="#basics-what-is">
+  What is Open-MX?
+</a></li>
+<li><a href="#basics-like-mx">
+  How does Open-MX compare to MX?
+</a></li>
+<li><a href="#basics-os-support">
+  Which operating system does Open-MX support?
+</a></li>
+<li><a href="#basics-hardware-support">
+  Which hardware does Open-MX support?
+</a></li>
+<li><a href="#basics-mtu">
+  Which MTU should my network support for Open-MX?
+</a></li>
+<li><a href="#basics-ip-compat">
+  Is Open-MX compatible with IP traffic?
+</a></li>
+<li><a href="#basics-endian">
+  Does Open-MX support mixed endianness on the same fabric?
+</a></li>
+<li><a href="#basics-bugs">
+  What if I find a bug?
+</a></li>
+</ul>
+
+<p><a href="#running">
+    Running
+</a></p>
+<ul>
+<li><a href="#running-quick-test">
+  In short, how do I test Open-MX?
+</a></li>
+<li><a href="#running-how-work">
+  How does Open-MX work?
+</a></li>
+<li><a href="#running-thread">
+  Is Open-MX thread-safe?
+</a></li>
+<li><a href="#running-self-shared">
+  Does Open-MX support communication to the same host or endpoint?
+</a></li>
+<li><a href="#running-errors">
+  What happens on error?
+</a></li>
+</ul>
+
+<p><a href="#building">
+    Building and Installing
+</a></p>
+<ul>
+<li><a href="#building-build-install">
+  How do I build and install Open-MX?
+</a></li>
+<li><a href="#building-where-install">
+  Where should I install Open-MX?
+</a></li>
+<li><a href="#building-autostart">
+  How to setup Open-MX to auto-start at boot?
+</a></li>
+<li><a href="#building-install-nfs">
+  How to install over NFS?
+</a></li>
+</ul>
+
+<p><a href="#kernel">
+    Kernel Driver
+</a></p>
+<ul>
+<li><a href="#kernel-compiler">
+  How do I change the compiler for the kernel driver?
+</a></li>
+<li><a href="#kernel-target-kernel">
+  How do I change the target kernel for the driver?
+</a></li>
+<li><a href="#kernel-another-kernel">
+  How to build the kernel for another kernel?
+</a></li>
+<li><a href="#kernel-device-files">
+  Which device files does Open-MX use?
+</a></li>
+</ul>
+
+<p><a href="#ifaces">
+    Managing Interfaces
+</a></p>
+<ul>
+<li><a href="#ifaces-startup">
+  Which interfaces are attached are startup?
+</a></li>
+<li><a href="#ifaces-list">
+  How do I see or modify the list of attached interfaces?
+</a></li>
+<li><a href="#ifaces-requirements">
+  What are the requirements for an interface to work?
+</a></li>
+<li><a href="#ifaces-status">
+  How do I see the interfaces status?
+</a></li>
+<li><a href="#ifaces-local-communication">
+  Do I need to attach an interface if using Open-MX for local communications only?
+</a></li>
+</ul>
+
+<p><a href="#peerdiscovery">
+    Peer Discovery
+</a></p>
+<ul>
+<li><a href="#peerdiscovery-whatis">
+  What is the peer table?
+</a></li>
+<li><a href="#peerdiscovery-how">
+  How can I setup the peer table?
+</a></li>
+<li><a href="#peerdiscovery-static">
+  How do I use a static peer table?
+</a></li>
+<li><a href="#peerdiscovery-fma">
+  What is FMA? How do I use it?
+</a></li>
+<li><a href="#peerdiscovery-fma-version">
+  Which FMA version should I use?
+</a></li>
+<li><a href="#peerdiscovery-which">
+  How do I decide between omxoed, FMA and static peer table?
+</a></li>
+<li><a href="#peerdiscovery-raw">
+  What is the raw interface and how do I use it?
+</a></li>
+</ul>
+
+<p><a href="#perf">
+    Performance Tuning
+</a></p>
+<ul>
+<li><a href="#perf-quick">
+  How-to quickly benchmark Open-MX?
+</a></li>
+<li><a href="#perf-wire-compat">
+  What is the MX wire-compatibility impact on Open-MX performance?
+</a></li>
+<li><a href="#perf-regcache">
+  Is there a registration cache in Open-MX?
+</a></li>
+<li><a href="#perf-intrcoal">
+  What is the interrupt coalescing impact on Open-MX' performance?
+</a></li>
+<li><a href="#perf-shared-self">
+  What if I do not need shared or self communications?
+</a></li>
+<li><a href="#perf-copy-offload">
+  How does I/OAT copy offload help Open-MX?
+</a></li>
+<li><a href="#perf-binding">
+  Is process and interrupt binding important for Open-MX?
+</a></li>
+<li><a href="#perf-old-kernels">
+  Should I avoid some kernels and drivers?
+</a></li>
+</ul>
+
+<p><a href="#compat">
+    Native MX Compatibility
+</a></p>
+<ul>
+<li><a href="#compat-wire">
+  What is MX-wire-compatibility?
+</a></li>
+<li><a href="#compat-peerdiscovery-dynamic">
+  How to use MX-wire-compatibility with a dynamic peer discovery tool?
+</a></li>
+<li><a href="#compat-peerdiscovery-static">
+  How to use MX-wire-compatibility with a static peer table?
+</a></li>
+<li><a href="#compat-api-abi">
+  What MX-API and -ABI compatibility does Open-MX provide?
+</a></li>
+<li><a href="#compat-api-abi-disable">
+  When can I disable the MX-API or -ABI compatibility?
+</a></li>
+<li><a href="#compat-mx-version">
+  Which MX version is MX compatible with?
+</a></li>
+</ul>
+
+<p><a href="#config">
+    Advanced Configuration
+</a></p>
+<ul>
+<li><a href="#config-buildtime">
+  What are Open-MX build-time configuration options?
+</a></li>
+<li><a href="#config-runtime">
+  What are Open-MX runtime configuration options?
+</a></li>
+<li><a href="#config-middleware">
+  What should I know before I build/link my middleware with Open-MX?
+</a></li>
+</ul>
+
+<p><a href="#debug">
+    Debugging
+</a></p>
+<ul>
+<li><a href="#debug-what">
+  What debugging features does Open-MX offer?
+</a></li>
+<li><a href="#debug-enable-default">
+  How-to enable debugging features by default?
+</a></li>
+<li><a href="#debug-abort">
+  How to debug an abort message?
+</a></li>
+<li><a href="#debug-stats">
+  Does Open-MX provide statistics regarding the network traffic?
+</a></li>
+<li><a href="#debug-sigusr">
+  How may I see the status of all requests in the Open-MX library?
+</a></li>
+<li><a href="#debug-checking">
+  How can I see/check the driver configuration?
+</a></li>
+<li><a href="#debug-failed-create-user-region">
+  What does "Failed to create user region" mean?
+</a></li>
+</ul>
+
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<hr class="main" />
+
+<p><em>
+  If you do not find your answer here, feel free to contact the
+  <a href="http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/open-mx-devel">open-mx-devel mailing list</a>.
+</em></p>
+
+
+
+<div class="section">
+<h3><a id="basics" href="#basics">
+    Basics
+</a></h3>
+
+
+<h4><a id="basics-what-is" href="#basics-what-is">
+  What is Open-MX?
+</a></h4>
+<p>
+  Open-MX is a software implementation of Myricom's Myrinet Express
+  protocol.
+  It aims at providing high-performance message passing over any
+  generic Ethernet hardware.
+</p>
+<p>
+  Open-MX implements the capabilities of the MX firmware (running in
+  Myri-10G NICs) as a driver in the Linux kernel.
+  A user-space library exposes the MX interface to legacy applications.
+</p>
+
+
+<h4><a id="basics-like-mx" href="#basics-like-mx">
+  How does Open-MX compare to MX?
+</a></h4>
+<p>
+  Open-MX implements MX programming interface with API and ABI
+  compatibility and it is also wire-compatible with MX-over-Ethernet.
+  See the <a href="#compat">Native MX Compatibility</a> section for details.
+</p>
+<p>
+  There are some tiny differences between MX and Open-MX
+  implementations:
+</p>
+<ul>
+  <li>
+    Open-MX does not provide a progression thread yet,
+    which means no progression occurs in the background unless
+    an Open-MX function is invoked.
+  </li>
+  <li>
+    Open-MX does not support limiting the endpoint unexpected queue
+    with <tt>PARAM_UNEXP_QUEUE_MAX</tt> in <tt>open_endpoint</tt>.
+  </li>
+  <li>
+    Some <tt>getinfo</tt> keys are meaningless in Open-MX, so they
+    will return dummy values such as <tt>"N/A (Open-MX)"</tt>.
+  </li>
+  <li>
+    Open-MX does not support the deprecated <tt>register_unexp_callback()</tt>
+    function. Only the modern <tt>register_unexp_handler()</tt> is supported.
+  </li>
+  <li>
+    Open-MX is able to perform <tt>wait_any()</tt>
+    or <tt>test_any()</tt> on random matching masks
+    even when the matching space has been divided with
+    the endpoint <em>Context Ids</em> parameter.
+  </li>
+</ul>
+<p>
+  There are also some tiny differences between the native MX and Open-MX
+  programming interfaces. These differences are hidden by Open-MX API/ABI
+  compatibility layer. But if you plan to use the Open-MX specific API
+  directly, you might want to know that:
+</p>
+<ul>
+  <li>
+    Open-MX <tt>send/ssend/recv</tt> routines are not vectorial, some other
+    vectorial-specific routines are provided (<tt>sendv/ssend/recvv</tt>).
+  </li>
+  <li>
+    There is no distinction between the routine return type (<tt>mx_return_t</tt>)
+    and a request status code type (<tt>mx_status_code_t</tt>), both of them
+    are identical in Open-MX (<tt>mx_return_t</tt>).
+  </li>
+  <li>
+    MX status address field <tt>source</tt> is renamed into <tt>addr</tt> in Open-MX.
+  </li>
+  <li>
+    <tt>set_error_handler()</tt> can be used to setup
+    the global handler or any specific endpoint handler.
+  </li>
+  <li>
+    Open-MX provides the <tt>cancel_notest()</tt> routine to cancel a request
+    without freeing it, so that it can be completed with the <tt>CANCELLED</tt>
+    status later.
+  </li>
+</ul>
+
+<h4><a id="basics-os-support" href="#basics-os-support">
+  Which operating system does Open-MX support?
+</a></h4>
+<p>
+Open-MX supports Linux on any architecture.
+</p>
+<p>
+The Open-MX driver works at least on Linux kernels >=2.6.17 on i386 and x86_64
+architectures. It also builds fine with kernels up to 2.6.15 on various
+architectures but it has not been tested intensively on these.
+</p>
+<p>
+Kernels older than 2.6.15 are unlikely to be ever supported due to various
+important functions being unavailable (especially vm_insert_page).
+</p>
+<p>
+The Open-MX driver is regularly updated for newer kernels, making it
+likely to work on the latest stable kernel even before it is actually
+released.
+</p>
+
+
+<h4><a id="basics-hardware-support" href="#basics-hardware-support">
+  Which hardware and fabric does Open-MX support?
+</a></h4>
+<p>
+Open-MX works on all Ethernet hardware that the Linux kernel supports.
+The only requirements is that the MTU is large enough
+(<a href="#basics-mtu">details</a>) and that
+all connected peers are on the same LAN, which means there is no
+router between them (switches are OK).
+</p>
+
+
+<h4><a id="basics-mtu" href="#basics-mtu">
+  Which MTU should my network support for Open-MX?
+</a></h4>
+<p>
+Open-MX was designed to be compatible with MX wire-specifications.
+It means that 4 kB frames have to be accepted by the network.
+So all boards and switches on the traffic need to support a 4144
+bytes MTU.
+<!-- 16 head + 32 medium frag head + 4096 medium frag -->
+</p>
+
+<p>
+If Open-MX is configured in non-MX-wire-compatible mode
+(by passing <tt>--disable-mx-wire</tt> to the configure script),
+it uses larger frames to improve performance by reducing the packet
+rate. The required MTU is then 8224.
+<!-- 16 head + 16 pull reply head + 8192 pull frame -->
+</p>
+
+<p>
+It is also possible to force Open-MX to work with MTU 1500
+(by passing <tt>--disable-mx-wire --enable-mtu-1500</tt> to
+the configure script).
+However, this option is not recommended for bandwidth
+intensive applications.
+</p>
+
+
+<h4><a id="basics-ip-compat" href="#basics-ip-compat">
+  Is Open-MX compatible with IP traffic?
+</a></h4>
+<p>
+Yes.
+Open-MX talks to the Ethernet layer as IP does, but it does not use
+the same Ethernet packet type.
+It means that IP and Open-MX can perfectly coexist on the same
+network and drivers, thanks to operating system passing the incoming
+packets to the corresponding receive stack.
+</p>
+
+
+<h4><a id="basics-endian" href="#basics-endian">
+  Does Open-MX support mixed endianness on the same fabric?
+</a></h4>
+<p>
+Yes.
+By default, Open-MX will encode its packet headers in network-order,
+unless --disable-endian has been given to the configure script.
+Open-MX can thus make big-endian architectures talk to little-endian
+ones, or 32bits ones to 64bits, ...
+</p>
+<p>
+However, it is obviously up to the application to make sure that
+its data is passed through the network in the endian-independant
+way.
+</p>
+
+
+<h4><a id="basics-bugs" href="#basics-bugs">
+  What if I find a bug?
+</a></h4>
+<p>
+Bugs should be reported on the
+<a href="http://gforge.inria.fr/tracker/?group_id=889">project tracker</a>
+or sent to the
+<a href="http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/open-mx-devel">open-mx-devel mailing list</a>.
+Questions may be asked there too.
+</p>
+<p>
+Lots of information might be useful when diagnosing a bug,
+see the REPORTING-BUGS file in the source tree for details.
+</p>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="running" href="#running">
+    Running
+</a></h3>
+
+
+<h4><a id="running-quick-test" href="#running-quick-test">
+  In short, how do I test Open-MX?
+</a></h4>
+<p>
+Assuming you want to connect 2 nodes using their 'eth2' interface:
+</p>
+<ol>
+<li>
+Build and install Open-MX in /opt/open-mx
+(see <a href="#building">Building and Installing</a> for details).
+<pre>
+$ ./configure
+$ make
+$ make install
+</pre>
+<p>
+Note that if building from SVN, you will need to generate the
+configure script and common/omx_config.h.in header first.
+autoconf and autoheader are required to do so:
+</p>
+<pre>
+$ autoconf
+$ autoheader
+</pre>
+</li>
+<li>
+Make sure both interfaces are up with a large MTU
+<pre>
+$ ifconfig eth2 up mtu 9000
+</pre>
+</li>
+<li>
+Load the open-mx kernel module and tell it which interface to use
+(see <a href="#kernel">Kernel Driver</a>
+ and <a href="#ifaces">Managing Interfaces</a> for details).
+<pre>
+$ /path/to/open-mx/sbin/omx_init start ifnames=eth2
+</pre>
+</li>
+<li>
+Wait a couple seconds and run /path/to/open-mx/bin/omx_info to
+check that all peers are seeing each other.
+See <a href="#peerdiscovery">Peer Discovery</a> for details.
+<pre>
+$ omx_info
+node1:0 (board #0 name eth2 addr 01:02:03:04:05:06)
+==============================================
+1) 01:02:03:04:05:06 node1:0
+2) a0:b0:c0:d0:e0:f0 node2:0
+</pre>
+</li>
+<li>
+Use omx_perf to test actual communications, on the first node:
+<pre>
+node1 $ omx_perf
+Successfully attached endpoint #0 on board #0 (hostname 'node1:0', name 'eth2', addr 01:02:03:04:05:06)
+Starting receiver...
+</pre>
+<p>
+then on the second node:
+</p>
+<pre>
+node2 $ omx_perf -d node1:0
+Successfully attached endpoint #0 on board #0 (hostname 'node2:0', name 'eth2', addr a0:b0:c0:d0:e0:f0)
+Starting sender to node1:0...
+</pre>
+<p>
+You should get performance numbers such as
+</p>
+<pre>
+length         0:       7.970 us   0.00 MB/s        0.00 MiB/s
+length         1:       7.950 us   0.00 MB/s        0.00 MiB/s
+[...]
+length   4194304:       8388.608 us   500.00 MB/s       476.83 MiB/s
+</pre>
+</li>
+</ol>
+
+
+<h4><a id="running-how-work" href="#running-how-work">
+  How does Open-MX work?
+</a></h4>
+<p>
+Open-MX provides implements the Myrinet Express (MX) protocol and
+application interface on top of regular Ethernet hardware.
+A user-space library manages MPI-like requests and passes them
+to the Open-MX driver which maps them directly onto the software
+Ethernet layer of the Linux kernel.
+Packets are sent/received through the underlying (unmodified)
+driver in a MX-wire-compatible way.
+</p>
+
+
+<h4><a id="running-thread" href="#running-thread">
+  Is Open-MX thread-safe?
+</a></h4>
+<p>
+The Open-MX driver is always thread-safe. The user-space library is
+not thread-safe by default. You should pass --enable-threads to the
+configure script to enable thread safety.
+</p>
+
+
+<h4><a id="running-self-shared" href="#running-self-shared">
+  Does Open-MX support communication to the same host or endpoint?
+</a></h4>
+<p>
+Yes.
+Open-MX may use a software loopback to send messages from one endpoint to
+itself (self communications) or to another endpoint of any interface of the
+same host (shared communications). This loopback is faster than going on the
+network up to a switch and then coming back. And it is guaranteed to work
+(while some switches do not send packets back to their sender).
+</p>
+<p>
+If using a single node, it is possible to only attach the loopback
+interface (lo) to Open-MX and let the stack switch to optimized self
+or shared-memory communication.
+</p>
+
+
+<h4><a id="running-errors" href="#running-errors">
+  What happens on error?
+</a></h4>
+<p>
+If a Open-MX function fails for any reason (resource shortage, invalid
+parameters given by the application, ...),
+or if a request completes with an erroneous status code (remote endpoint
+closed or non-responding, ...),
+Open-MX will by default abort and display an error message.
+See <a href="#debug-abort">How to debug an abort message?</a>
+to find out where the problem comes from.
+</p>
+<p>
+This behavior is caused by the default error handler, which may be changed
+by applications through the <tt>omx_set_error_handler</tt> function.
+It is also possible to change it at runtime by setting <tt>OMX_FATAL_ERRORS=0</tt>
+in the environment.
+All error codes will then be returned to the application instead of aborting
+from within the Open-MX library.
+</p>
+<p>
+The Open-MX library will also abort under some circumstances, even if
+fatal errors have been disabled by the user.
+Apart from internal assertions detecting an implementation bug, the main
+reason for aborting is when the driver closes an endpoint by force.
+Fortunately, it only occurs in rare circumstances such as Ethernet
+hardware failure or the administrator closing an interface.
+</p>
+<p>
+If you think you found a bug, see <a href="#basics-bugs">What if I find a bug?</a>.
+</p>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="building" href="#building">
+    Building and Installing
+</a></h3>
+
+
+<h4><a id="building-build-install" href="#building-build-install">
+  How do I build and install Open-MX?
+</a></h4>
+<pre>
+$ ./configure
+$ make
+$ make install
+</pre>
+<p>
+To display full build command line instead of the default short messages,
+V=1 should be passed to make.
+</p>
+<p>
+By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
+the configure line to change this (or set prefix on the 'make install'
+command line).
+</p>
+<p>
+Open-MX brings the omx_init initialization scripts which takes care of
+loading/unloading the driver and managing the peer table.
+</p>
+<pre>
+$ sbin/omx_init start
+</pre>
+<p>
+To choose which interfaces have to be attached, some module parameters
+may be given on the command line:
+</p>
+<pre>
+$ sbin/omx_init start ifnames=eth1
+</pre>
+
+
+<h4><a id="building-where-install" href="#building-where-install">
+  Where should I install Open-MX?
+</a></h4>
+<p>
+By default, Open-MX will install in /opt/open-mx.
+It is possible to change this path by passing --prefix=&lt;/new/path&gt;
+to the configure script, or by passing prefix=&lt;/new/path&gt; on the
+make install command line.
+</p>
+<p>
+All Open-MX install files should be available to all nodes since the driver
+and some tools are required on startup.
+It is thus recommended that you use a NFS-shared directory as the above
+prefix.
+</p>
+
+
+<h4><a id="building-autostart" href="#building-autostart">
+  How to setup Open-MX to auto-start at boot?
+</a></h4>
+<p>
+To simplify Open-MX startup, you might want to install the omx_init
+script within the startup scripts on each node:
+</p>
+<pre>
+$ sbin/omx_local_install
+</pre>
+<p>
+Then Open-MX may then be started with:
+</p>
+<pre>
+$ /etc/init.d/open-mx start
+</pre>
+<p>
+You might want to configure your system to auto-load this script at
+startup.
+</p>
+<p>
+See <a href="#ifaces">Managing interfaces</a> to configure which
+interfaces have to be attached on startup.
+</p>
+
+
+<h4><a id="building-install-nfs" href="#building-install-nfs">
+  How to install over NFS?
+</a></h4>
+<p>
+Most NFS configurations do not allow root on the client to operate
+as root on the server's files. When running 'make install' as root,
+you might experience problems because some Makefiles (especially
+the kernel driver's one) might modify some files before actually
+installing anything.
+</p>
+<p>
+To work around this, assuming everything has been built as non-root
+before, you may use (as root)
+</p>
+<pre>
+$ make installonly
+</pre>
+<p>
+so that it really only installs things without checking whether the
+build is up-to-date.
+</p>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="kernel" href="#kernel">
+    Kernel Driver
+</a></h3>
+
+
+<h4><a id="kernel-compiler" href="#kernel-compiler">
+  How do I change the compiler for the kernel driver?
+</a></h4>
+<p>
+The kernel module should preferably be compiled with the same compiler
+than the kernel has been. To change the compiler for the kernel module,
+pass KCC=&lt;othercompiler&gt; on the configure or make command line.
+</p>
+
+
+<h4><a id="kernel-target-kernel" href="#kernel-target-kernel">
+  How do I change the target kernel for the driver?
+</a></h4>
+<p>
+During configure, Open-MX checks the running kernel with 'uname -r' and
+builds the open-mx module against it, using its headers and build tree
+in /lib/modules/`uname -r`/{source,build}.
+
+To build for another kernel, use
+</p>
+<pre>
+$ ./configure --with-linux=/path/to/kernel/headers/
+</pre>
+<p>
+To build using another kernel build tree, use
+</p>
+<pre>
+$ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
+</pre>
+
+
+<h4><a id="kernel-another-kernel" href="#kernel-another-kernel">
+  How to build the kernel for another kernel?
+</a></h4>
+<p>
+If for some reason (for instance for multiple kernel support) you need
+to rebuild the driver for a different kernel, it is possible to avoid
+reconfiguring/rebuilding the whole tree. You need to pass the kernel
+build path, kernel headers path and kernel release number:
+</p>
+<pre>
+$ make driver LINUX_BUILD=&lt;/path/to/kernel/build&gt; LINUX_HDR=&lt;/path/to/kernel/headers&gt; LINUX_RELEASE=&lt;version&gt;
+$ make driver-install LINUX_BUILD=&lt;/path/to/kernel/build&gt; LINUX_HDR=&lt;/path/to/kernel/headers&gt; LINUX_RELEASE=&lt;version&gt;
+</pre>
+
+
+<h4><a id="kernel-device-files" href="#kernel-device-files">
+  Which device files does Open-MX use?
+</a></h4>
+<p>
+Once the module is loaded, udev creates a /dev/open-mx file which is
+used by user-space libraries and programs. Additionally, the Open-MX
+init script will create the device node in case udev was not running.
+The --with-device configure option may be used to change the name of
+this device file, its group or mode. Write access to this file is
+required when using Open-MX.
+</p>
+<p>
+There is actually also another /dev/open-mx-raw device file that may
+be used by the peer discovery process to send/recv raw packets. It may
+be configured similarly with --with-raw-device.
+</p>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="ifaces" href="#ifaces">
+    Managing Interfaces
+</a></h3>
+
+
+<h4><a id="ifaces-startup" href="#ifaces-startup">
+  Which interfaces are attached are startup?
+</a></h4>
+<p>
+By default, when loading the Open-MX driver, all existing network
+interfaces in the system will be attached
+(except those above 8 by default), except the ones that are not
+Ethernet, are not up, or have a small MTU.
+</p>
+<p>
+To change the order or select which interfaces to attach, you may
+use the ifnames module parameter when loading:
+</p>
+<pre>
+$ /path/to/open-mx/sbin/omx_init start ifnames=eth2,eth3
+$ insmod lib/modules/.../open-mx.ko ifnames=eth3,eth2
+</pre>
+<p>
+Once Open-MX has been installed with omx_local_install, the
+/etc/open-mx/open-mx.conf may be modified to configure which
+interfaces should be attached at startup.
+</p>
+
+
+<h4><a id="ifaces-list" href="#ifaces-list">
+  How do I see or modify the list of attached interfaces?
+</a></h4>
+<p>
+The current list of attached interfaces may be observed by reading
+the /sys/module/open_mx/parameters/ifnames special file.
+Writing 'foo' or '+foo' in the file will attach interface 'foo'.
+Writing '-bar' will detach interface 'bar', except if some endpoints
+are still using it. To force the removal of an interface even if some
+endpoints are still using it, '--bar' should be written in the special
+file. Multiple commands may be sent at once by separating them with
+commas.
+</p>
+<p>
+Finally, it has to be noted that the dynamic peer discovery cannot
+discover newly attached or detached local interfaces. As soon as the
+list of local interfaces changes, the local discovery process should
+be restarted (see <a href="#peerdiscovery">Peer Discovery</a>):
+</p>
+<pre>
+$ omx_init restart-discovery
+</pre>
+
+
+<h4><a id="ifaces-requirements" href="#ifaces-requirements">
+  What are the requirements for an interface to work?
+</a></h4>
+<p>
+These interfaces must be 'up' in order to work.
+</p>
+<pre>
+$ ifconfig eth2 up
+</pre>
+<p>
+However, having an IP address is not required.
+</p>
+<p>
+Also, the MTU should be large enough for Open-MX packets to transit.
+9000 will always be enough. Look in dmesg for the actual minimal MTU
+size, which may depend on the configuration. A relevant warning will
+be displayed in dmesg if needed.
+</p>
+<pre>
+$ ifconfig eth2 mtu 9000
+</pre>
+<p>
+If one of above requirements is not met, a warning should be printed
+in user-space when opening an endpoint.
+</p>
+
+
+<h4><a id="ifaces-status" href="#ifaces-status">
+  How do I see the interfaces status?
+</a></h4>
+<p>
+The list of currently open endpoints may be seen with:
+</p>
+<pre>
+$ omx_endpoint_info
+</pre>
+<p>
+The interfaces may also be observed with the omx_info user-space
+tool.
+</p>
+
+
+<h4><a id="ifaces-local-communication" href="#ifaces-local-communication">
+  Do I need to attach an interface if using Open-MX for local communications only?
+</a></h4>
+<p>
+Yes.
+Open-MX requires all communication endpoints to be attached to an interface, even if
+it is not used by actual network traffic underneath.
+It is fortunately possible to attach the loopback interface (lo) and either use it
+as a regular interface talking to itself, or bypass it and use the optimized shared
+communicarion.
+</p>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="peerdiscovery" href="#peerdiscovery">
+    Peer Discovery
+</a></h3>
+
+
+<h4><a id="peerdiscovery-whatis" href="#peerdiscovery-whatis">
+  What is the peer table?
+</a></h4>
+<p>
+Each Open-MX node has to be aware of the hostnames and MAC addresses
+of all other peers.
+</p>
+
+
+<h4><a id="peerdiscovery-how" href="#peerdiscovery-how">
+  How can I setup the peer table?
+</a></h4>
+<p>
+By default, a dynamic peer discovery is performed but it is also
+possible to enter a static list of peers manually.
+</p>
+<p>
+The --enable-static-peers option may be used on the configure command
+line to switch from dynamic to static peer table. It is also possible
+to switch later by passing --dynamic-peers or --static-peers to the
+omx_init startup script.
+</p>
+<p>
+It is possible to restart the peer table management process without
+restarting the whole Open-MX driver with:
+    $ omx_init restart-discovery
+This is especially important when attaching or detaching interfaces at
+runtime while using dynamic peer discovery. But it may also for instance
+be used to switch between static and dynamic peer table.
+</p>
+
+
+<h4><a id="peerdiscovery-static" href="#peerdiscovery-static">
+  How do I use a static peer table?
+</a></h4>
+<p>
+Dynamic discovery may sometimes take several seconds before all nodes
+become aware of each others. If the fabric is always the same, it is
+possible to setup a static peer table using a file. To do so, Open-MX
+should be configured with --enable-static-peers.
+</p>
+<p>
+A file listing peers must be provided to store the list of hostnames
+and mac addresses in the driver. The omx_init_peers tool may be used
+to setup this list. The omx_init startup script takes care of running
+omx_init_peers automatically using /etc/open-mx/peers when it exists.
+</p>
+<p>
+The contents of the file is one line per peer, each containing
+2 fields (separated by spaces or tabs):
+* a mac address (6 colon-separated numbers)
+* a board hostname (&lt;hostname&gt;:&lt;ifacenumber&gt;)
+</p>
+<p>
+To change the location of the peers file, it is possible to use the
+--with-peers-file=&lt;path&gt; configure option, or the --static-peers=&lt;path&gt;
+omx_init option.
+</p>
+<p>
+If Open-MX has been configured for dynamic peer discovery by default,
+the --static-peers omx_init option may also be used to switch to static
+peer table.
+</p>
+
+
+<h4><a id="peerdiscovery-fma" href="#peerdiscovery-fma">
+  What is FMA? How do I use it?
+</a></h4>
+<p>
+FMA is Myricom's fabric management system. It is used in MX by
+default. If you plan to make MX and Open-MX operable, or just want
+a scalable and powerful peer discovery tool, you may tell Open-MX
+to use FMA instead of the default omxoed dynamic peer discovery
+program.
+</p>
+<p>
+FMA is available from
+<a href="http://www.myri.com/scs/fms/">Myricom's FMS page</a>
+or may be copied from the MX source tree.
+</p>
+<p>
+To build FMA and use, just unpack the FMA source within the Open-MX
+source directory (as a fma/ subdirectory), and run configure, build
+and install.
+</p>
+
+
+<h4><a id="peerdiscovery-fma-version" href="#peerdiscovery-fma-version">
+  Which FMA version should I use?
+</a></h4>
+<p>
+FMA only correctly supported MX-over-Ethernet (or fabrics mixing MX-o-E
+and MX-over-Myrinet nodes) starting with 1.3.0.
+So, if running FMA as the peer discovery tool for Open-MX, at least
+FMA 1.3.0 is needed.
+</p>
+<p>
+The same FMA version should be running on all nodes. This point is
+especially important if the fabric mixes MX and Open-MX nodes
+(see <a href="#compat-wire">What is MX-wire-compatibility?</a>).
+There are two easy ways to make sure the same FMA is used on MX and
+Open-MX nodes:
+</p>
+<ul>
+<li>
+ Build MX with its own FMA, and copy the FMA source in the Open-MX
+ source dir before building it.
+ This requires at least MX 1.2.3 since this is where FMA 1.3.0 was
+ shipped first.
+</li>
+<li>
+ Or download the latest FMA source from
+ <a href="http://www.myri.com/scs/fms/">Myricom's FMS page</a>
+ and unpack it in both MX and Open-MX before building.
+</li>
+</ul>
+
+
+<h4><a id="peerdiscovery-which" href="#peerdiscovery-which">
+  How do I decide between omxoed, FMA and static peer table?
+</a></h4>
+<p>
+When mixing Open-MX an native MX hosts on the same fabric, it is required
+that the peer discovery processes are compatible. MX uses FMA by default,
+so Open-MX should be configured to use FMA in this case.
+If MX was specifically configured to use mxoed, then Open-MX may keep
+using its default discovery tool, omxoed, which is compatible with mxoed.
+</p>
+<p>
+FMA may also be much slower than omxoed on small networks. Since this
+is Open-MX' main use case, it is recommended to keep using the default
+configuration (i.e. use omxoed) unless the fabric contains some native
+MX hosts.
+</p>
+<p>
+Setting up a static peer table is faster than both FMA and omxoed but
+it obviously only works for statix fabric. Note that  it is possible to
+manually add some peers later using the omx_init_peers tool.
+Dynamic peer discovery
+</p>
+<p>
+By default, Open-MX uses the omxoed program to dynamically discover
+all peers connected to the fabric, including the ones added later.
+The only requirement is that the omxoed program runs on each peer.
+</p>
+<p>
+If Myricom's FMA source directory is unpacked within the Open-MX
+source (as the "fma" subdirectory), Open-MX will automatically switch
+(at configure time) to using FMA instead of omxoed as a peer discovery
+program. Using FMA is especially important when talking to native MX
+hosts since they will use FMA by default as well.
+</p>
+<p>
+The discovery program is started automatically by the omx_init startup
+script. If Open-MX has been configured to use a static peer table
+by default, it is still possible to switch to dynamic discovery
+by passing --dynamic-peers to omx_init.
+</p>
+<p>
+It is also possible to switch from fma to omxoed by passing the option
+--dynamic-peers=omxoed to omx_init.
+</p>
+
+
+<h4><a id="peerdiscovery-raw" href="#peerdiscovery-raw">
+  What is the raw interface and how do I use it?
+</a></h4>
+<p>
+Open-MX exports a message-passing programming interface to applications.
+It also exports another interface called "raw" used by peer discovery programs
+to manage the peer table in the driver.
+</p>
+<p>
+Unless you have a very good reason to not use the existing peer discovery
+programs or a static peer table, you really do not want to look at the raw
+interface.
+The regular message-passing interface should provide everything you need.
+</p>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="perf" href="#perf">
+    Performance Tuning
+</a></h3>
+
+
+<h4><a id="perf-quick" href="#perf-quick">
+  How-to quickly benchmark Open-MX?
+</a></h4>
+<p>
+To get best performance for benchmarking purposes between homogeneous hosts,
+you might want to:
+</p>
+<ul>
+<li>
+Build Open-MX with --disable-endian, --disable-mx-wire, probably --disable-self
+as well, and even --disable-shared if there is a single process per host.
+</li>
+<li>
+Make sure no cores are sleeping since they would be slow to process incoming
+packets. Booting Linux with idle=poll is an easy way to prevent this sleeping.
+Another one is to have a task using 100% on each core as any real-life
+application would do.
+</li>
+<li>
+To reduce cache-effects without sharing a single core power between bottom
+halves and the main process, bind the process on one core (close to the
+network interface, with numactl or taskset), and bind the interrupts of the
+Ethernet interface on a very close core (by writing the corresponding mask
+into /proc/irq/&lt;n&gt;/smp_affinity).
+</li>
+</ul>
+
+
+<h4><a id="perf-wire-compat" href="#perf-wire-compat">
+  What is the MX wire-compatibility impact on Open-MX performance?
+</a></h4>
+<p>
+Open-MX enables 2 types of wire-compatibility by default, native-MX
+compatibility and endian-independent compatibility. Disabling them
+when they are not needed may improve the performance.
+</p>
+<p>
+If native MX compatibility is not required on the wire you might want
+to pass --disable-mx-wire to the configure command line so that larger
+packets are used for large messages. Note that the required MTU will
+jump from roughly 4kB to 8.
+See <a href="#compat">Native MX Compatibility</a> for details about wire
+compatibility, and <a href="#basics-mtu">MTU support</a>.
+</p>
+<p>
+If the machines on the network all use the same endian-ness, you might
+want to pass --disable-endian to the configure command line so that
+Open-MX does not swap header bits into/from network order. It may reduce
+the latency very slightly.
+</p>
+
+
+<h4><a id="perf-regcache" href="#perf-regcache">
+  Is there a registration cache in Open-MX?
+</a></h4>
+<p>
+Achieving optimal performance requires to avoid memory copies as much
+as possible. This is done using memory registration, which pins buffers
+in physical memory. Since this operation is expensive, it is interesting
+to do only once per buffer when the buffer is used multiple times.
+To do so, you should set the OMX_RCACHE environment variable to 1.
+</p>
+<pre>
+$ export OMX_RCACHE=1
+</pre>
+<p>
+However, this configuration may be dangerous if the application frees
+the buffer in the meantime. Since Open-MX has no way to detect this
+for now, this registration cache should be used with caution.
+</p>
+
+
+<h4><a id="perf-intrcoal" href="#perf-intrcoal">
+  What is the interrupt coalescing impact on Open-MX' performance?
+</a></h4>
+<p>
+Most Ethernet drivers use interrupt coalescing to avoid interrupting the
+host once per incoming packet. While this is good for the throughput, it
+increase the latency a lot, up to dozens of milliseconds.
+</p>
+<p>
+To get the best latency for Open-MX, interrupt coalescing should be reduced.
+The easiest way to do so is to disable it completely.
+</p>
+<pre>
+$ ethtool -C eth2 rx-usecs 0
+</pre>
+<p>
+However, it is often better to set it close to the latency so that the
+observed latency is as optimal while there is still a bit of coalescing
+for consecutive packets. So, assuming that you observe a N usecs latency
+with Open-MX when interrupt coalescing is disabled, a nice configuration
+would to set coalescing to N or N-1 usecs:
+</p>
+<pre>
+$ ethtool -C eth2 rx-usecs &lt;N-1&gt;>
+</pre>
+
+
+<h4><a id="perf-shared-self" href="#perf-shared-self">
+  What if I do not need shared or self communications?
+</a></h4>
+<p>
+Open-MX may use a software loopback to send messages from one endpoint to
+itself (self communications) or to another endpoint of any interface of the
+same host (shared communications).
+If these shared/self communication are useless, the library overhead may be
+slightly reduced by disabling them either at build-time with --disable-self
+or --disable-shared, or at runtime by setting OMX_DISABLE_SELF=1 or
+OMX_DISABLE_SHARED=1 in the environment.
+</p>
+<p>
+This is especially the case if there is a single process on each node and
+it does not talk to itself, or if multiple processes of the same do not talk
+to each other.
+</p>
+
+
+<h4><a id="perf-copy-offload" href="#perf-copy-offload">
+  How does I/OAT copy offload help Open-MX?
+</a></h4>
+<p>
+Lots of modern platforms such as Intel I/OAT-enabled servers provide hardware
+DMA engine to offload memory copies. Open-MX performance may increase very
+significantly thanks to this feature.
+</p>
+<p>
+The support for dmaengine is automatically built in Open-MX when supported
+by the kernel and may be configured at runtime through several module
+parameters. See <a href="#config">Advanced configuration</a> for details.
+</p>
+<p>
+Note that DMA engine hardware may still require the administrator to load
+the corresponding driver, for instance the 'ioatdma' kernel module.
+The kernel logs will display the DMA engine status when loading Open-MX
+or modifying some module parameters.
+</p>
+
+
+<h4><a id="perf-binding" href="#perf-binding">
+  Is process and interrupt binding important for Open-MX?
+</a></h4>
+<p>
+Yes.
+The Open-MX receive stack is composed of a kernel routine running in the
+bottom half on any of the machine cores, depending on where the NIC is
+sending its IRQs. Device drivers usually configure IRQs to be sent to all
+cores in a round-robin fashion. This behavior distributes the receive
+workload on all cores, which is good for the vast majority of MPI jobs
+where each core runs exactly one process.
+</p>
+<p>
+If you plan to have less processes than cores, you might experience some
+performance degradation caused by idle cores going to sleep and thus
+taking more time to process incoming IRQs. A dirty way to work around
+this problem is to prevent core from sleeping by booting the kernel
+with the idle=poll parameter.
+</p>
+<p>
+Or you may restrict the IRQs coming from the NIC to the subset of cores
+that run the Open-MX processes. For instance, if your processes are bound
+to core #0-1, the IRQ affinity mask should be set
+to 3 using:
+</p>
+<pre>
+$ echo 3 &gt; /proc/irq/&lt;irq&gt;/smp_affinity
+</pre>
+<p>
+where &lt;irq&gt; is the IRQ line of the NIC.
+</p>
+<p>
+Under extreme circumstances, for instance for benchmarking purpose, you
+may want to use a single process per machine and bind it to a different
+core from the one receiving IRQs. This way, they will not fight for CPU
+time. However, since cache line sharing is critical, the binding should
+be done on the very next core so that cache effect cost is very small.
+For instance, binding IRQs on core #1 and the process on core #0:
+</p>
+<pre>
+$ echo 2 &gt; /proc/irq/&lt;irq&gt;/smp_affinity
+$ numactl --physcpubind 0 myprocess
+</pre>
+<p>
+Another way to bind process is to use the <b>OMX_PROCESS_BINDING</b>
+environment variable
+(see <a href="#config-runtime">What are Open-MX runtime configuration options? </a>).
+</p>
+<p>
+Such a configuration may be the best for benchmarking purpose, especially
+on the latency side. However, under a normal load, having IRQs go to all
+cores is probably a good idea since most applications will use one process
+per core.
+</p>
+<p>
+Note that the core numbering is far from being linear in modern machines.
+It is likely that cores numbered as #0 and #1 by the software are actually
+not close to each other in the actual hardware. The numbering is often a
+round-robin across physical processors to maximize memory bandwidth or so.
+</p>
+
+
+<h4><a id="perf-old-kernels" href="#perf-old-kernels">
+  Should I avoid some kernels and drivers?
+</a></h4>
+<p>
+Some old kernels (&lt;2.6.18) have problems with some drivers that receive
+data in frags (non-linear skbuff). As a workaround, they will linearize
+these skbuffs unless their target protocol stack explicitly supports
+non-linear skbuff. This basically adds a memory copy for all packets
+except IPv4 and IPv6, which would decrease Open-MX performance.
+</p>
+<p>
+To avoid this, if IPv6 is not in use on the network, you might want to
+tell Open-MX to use the IPv6 Ethernet type. This way, its skbuffs will
+not be linearized uselessly. To enable this workardound, you should pass
+--with-ethertype=0x86DD to the configure command line.
+</p>
+<p>
+Note that this solution is only required under very special
+circumstances and should be avoided in most of the cases.
+</p>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="compat" href="#compat">
+    Native MX Compatibility
+</a></h3>
+
+
+<h4><a id="compat-wire" href="#compat-wire">
+  What is MX-wire-compatibility?
+</a></h4>
+<p>
+If you need some Open-MX hosts to talk to some MX hosts, you should
+keep the wire-compatibility enabled (it is enabled by default).
+If you only have Open-MX hosts talking on the network, you can disable
+it to improve performance (see <a href="#perf">Performance Tuning</a>).
+</p>
+<p>
+Once Open-MX is configured in wire compatible mode, you need to make
+sure that the nodes running in native MX mode are using a recent MX
+stack (at least 1.2.5 is recommended) configured in Ethernet mode.
+Once peer table are setup on both MX and Open-MX nodes, the fabric is
+ready.
+</p>
+
+
+<h4><a id="compat-peerdiscovery-dynamic" href="#compat-peerdiscovery-dynamic">
+  How to use MX-wire-compatibility with a dynamic peer discovery tool?
+</a></h4>
+<p>
+You have to make sure that the same peer discovery program (or "mapper")
+is used on both sides. by default, MX uses the FMA by default. So the
+FMA source should be unpacked as a "fma" subdirectory of the Open-MX
+source so that the configure script will enable FMA by default instead
+of omxoed for dynamic peer discovery.
+</p>
+<p>
+Note that all FMA versions are not wire-compatible, even if the underlying
+MX and/or Open-MX stacks are compatible.
+See <a href="#peerdiscovery-fma-version">Which FMA version should I use?</a>
+for details.
+<p>
+Under some circumstances, MX may also rely on mxoed, which is
+compatible with Open-MX' omxoed.
+</p>
+
+
+<h4><a id="compat-peerdiscovery-static" href="#compat-peerdiscovery-static">
+  How to use MX-wire-compatibility with a static peer table?
+</a></h4>
+<p>
+The peer table should be setup on the Open-MX nodes as usual with
+omx_init_peers, with a single entry for each Open-MX peer and each
+MX peer.
+</p>
+<p>
+On the MX nodes, each Open-MX peer with name "myhostname:0" and mac
+address 00:11:22:33:44:55 should be added with:
+</p>
+<pre>
+$ mx_init_ether_peer 00:11:22:33:44:55 00:00:00:00:00:00 myhostname:0
+</pre>
+<p>
+Note that MX 1.2.5 is required for mx_init_ether_peer to be available.
+</p>
+<p>
+Also note that it is possible to let the regular MX dynamic discovery
+map the MX-only fabric and then manually add the Open-MX peers.
+To do so, the regular discovery should first be stopped with:
+</p>
+<pre>
+$ /etc/init.d/mx stop-mapper
+</pre>
+
+
+<h4><a id="compat-api-abi" href="#compat-api-abi">
+  What MX-API and -ABI compatibility does Open-MX provide?
+</a></h4>
+<p>
+The Open-MX API is slightly different from that of MX, but Open-MX provides
+a compatibility layer which enables:
+</p>
+<ul>
+<li>Linking of applications that were compiled against MX</li>
+<li>Building of applications that were written for the MX API</li>
+</ul>
+<p>
+This compatibility is enabled by default and has a very low overhead since
+it only involves going across basic conversion routines.
+</p>
+
+
+<h4><a id="compat-api-abi-disable" href="#compat-api-abi-disable">
+  When can I disable the MX-API or -ABI compatibility?
+</a></h4>
+<p>
+If you do not plan to use any applications that has been written for MX, it
+is possible to disable the API and ABI compatibility alltogether by passing
+--disable-mx-abi to the configure script.
+</p>
+<p>
+If you only use Open-MX and never link your application with MX, you may
+want to hardwire the translation from the MX API into Open-MX calls at
+compile time to avoid going across these conversion routines at runtime.
+To do so, you may pass --enable-mx-translate to the configure script.
+</p>
+<p>
+Note that enabling this automatically API translation does not disable the
+MX ABI support in Open-MX since it may be required by the some sanity checks
+when building external applications. It is thus still possible to link MX
+applications with Open-MX. But any application built against Open-MX will
+not be MX ABI compatible.
+</p>
+
+
+<h4><a id="compat-mx-version" href="#compat-mx-version">
+  Which MX version is MX compatible with?
+</a></h4>
+<p>
+Open-MX provides the binary interface of MX 1.2.x, which is also backward
+compatible with any application built on an older MX (up to 0.9).
+So if you built your application on top of MX (unless it was 10 years ago),
+it will work fine with Open-MX.
+</p>
+<p>
+Open-MX is wire compatible with MX 1.2.x. It means that a host running
+the native MX stack 1.1 or earlier will not be able to talk with an Open-MX
+host.
+</p>
+<p>
+Also, since all MX versions do not bring the same FMA version, if you want
+to use FMA as a peer discovery tool, you might want to look at
+<a href="#peerdiscovery-fma-version">Which FMA version should I use?</a>.
+</p>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="config" href="#config">
+    Advanced Configuration
+</a></h3>
+
+
+<h4><a id="config-buildtime" href="#config-buildtime">
+  What are Open-MX build-time configuration options?
+</a></h4>
+<p>
+The following options may be passed to the configure command line before building:
+</p>
+
+<dl>
+
+<dt>--enable-debug</dt>
+<dd>Only build a debugging library.
+  Both a debug and a non-debug are built by default, and the
+  non-debug one is used to link all tests/tools programs.
+</dd>
+
+<dt>--disable-debug</dt>
+<dd>Only build a non-debugging library.
+</dd>
+
+<dt>--disable-endian</dt>
+<dd>Disable variable endian architectures support on the wire.
+  Endian-ness independent wire protocol is enabled by default.
+</dd>
+
+<dt>--disable-self</dt>
+<dd>Disable software loopback between an endpoint and itself.
+  Self software loopback is enabled by default.
+</dd>
+
+<dt>--disable-shared</dt>
+<dd>Disable software loopback between endpoints of the same node.
+  Shared software loopback is enabled by default.
+</dd>
+
+<dt>--enable-valgrind</dt>
+<dd>Enable Valgrind hooks in the non-debugging library.
+  By default, Valgrind hooks are only enabled in the debugging library.
+  They help Valgrind understanding what is going on in the Open-MX
+  library.
+</dd>
+<dt>--disable-valgrind</dt>
+<dd>Disable Valgrind hooks in the debugging library.
+</dd>
+
+<dt>--disable-mx-abi</dt>
+<dd>Do not support binary (and API) compatibility with MX.
+  Do not build MX symbols inside the Open-MX library and do not export
+  MX API headers in the installation directory.
+</dd>
+
+<dt>--enable-mx-translate</dt>
+<dd>Translate MX calls into the MX API at compile time.
+  Export MX headers that will translate MX calls into the Open-MX API.
+  When an application is built against Open-MX, the overhead will be
+  slightly reduced at compile time. But it will prevent the application
+  from linking with MX. However, any application that was compiled
+  against MX will still link fine with Open-MX.
+</dd>
+
+<dt>--disable-mx-wire</dt>
+<dd>Optimize the wire-protocol by not being compatible with MXoE.
+  The wire protocol is compatible with Myrinet Express over Ethernet by default.
+</dd>
+
+<dt>--enable-mtu-1500</dt>
+<dd>Enable support for 1500-bytes MTU fabric.
+  This may reduce large message throughput.
+</dd>
+
+<dt>--enable-static-peers</dt>
+<dd>Use a static peer table instead of dynamic peer discovery
+</dd>
+<dt>--with-peers-file=&lt;file&gt;</dt>
+<dd>Use &lt;file&gt; as a static peer table instead of the default /etc/open-mx/peers.
+</dd>
+
+</dl>
+
+
+<h4><a id="config-runtime" href="#config-runtime">
+  What are Open-MX runtime configuration options?
+</a></h4>
+<p>
+The following environment variables may be used to change the library
+behavior at runtime:
+</p>
+
+<dl>
+
+<dt>OMX_RCACHE=1</dt>
+<dd>Enable registration cache.
+  The registration cache is disabled by default.
+</dd>
+
+<dt>OMX_PRCACHE=1</dt>
+<dd>Enable parallel registration cache, which caches large windows
+  more aggressively than MX can, by supporting multiple large receive
+  and possibly one large send on the same window at the same time.
+  Parallel registration cache is disabled by default.
+</dd>
+
+<dt>OMX_DISABLE_SELF=1</dt>
+<dd>Disable software loopback between an endpoint and itself.
+  Self software loopback is enabled by default.
+</dd>
+
+<dt>OMX_DISABLE_SHARED=1</dt>
+<dd>Disable software loopback between endpoints of the same node.
+  Shared software loopback is enabled by default.
+</dd>
+
+<dt>OMX_SHARED_RNDV_THRESHOLD=4096</dt>
+<dd>Set the rendezvous threshold for shared communication.
+  Native networking switches from eager to rendezvous at 32kB while
+  shared communication switches at 4kB by default.
+</dd>
+
+<dt>OMX_PROCESS_BINDING=2,0,3,4,1,5,7,6</dt>
+<dd>Defines where each process has to be binded when it opens an
+  endpoint. By default, no binding is done. If a comma-separated
+  binding is given, the n-th value defines the processor where the
+  process opening endpoint n will be binded.
+  If <tt>all:x</tt> is given, then processor x will be used whatever
+  the endpoint index is.
+
+  If <tt>file</tt> is given in the environment variable, bindings
+  will be read from <tt>/tmp/open-mx.bindings.dat</tt>.
+  If <tt>file:&lt;filename&gt;</tt>, they will be read from the
+  specified filename.
+  For more details about process binding, see
+  <a href="#perf-binding">Is process and interrupt binding important for Open-MX?</a>.
+</dd>
+
+<dt>OMX_CTXIDS=3,7</dt>
+<dd>Enable context-ids splitting of the matching space to reduce
+  matching time.
+  Two comma-separated numeric values have to be given.
+  The first one is the number of multiplexing bits, the second
+  one is their offset in the 64bits match space.
+  Note that enabling context-ids requires the application to
+  satisfy some contraints such as not using wildcards in the
+  multiplexed bits when posting receive.
+</dd>
+
+<dt>OMX_ANY_ENDPOINT=n</dt>
+<dd>Force a specific endpoint index to be used when <tt>OMX_ANY_ENDPOINT</tt>
+  is given to <tt>omx_open_endpoint()</tt>.
+</dd>
+
+<dt>OMX_WAITSPIN=1</dt>
+<dd>Busy loop instead of sleeping in blocking functions.
+  Blocking functions sleep by default.
+</dd>
+
+<dt>OMX_WAITINTR=1</dt>
+<dd>Let sleeping functions be interruptible by signals.
+  Blocking functions go back to sleep on signal by default.
+</dd>
+
+<dt>OMX_RESENDS_MAX=1000</dt>
+<dd>Try to resend each send request 1000 times before timeout-ing.
+  By default, each request is resent up to 1000 times before timeout-ing.
+</dd>
+
+<dt>OMX_NOTACKED_MAX=4</dt>
+<dd>Allow a maximum of 4 messages not acked per partner. When passing
+  this threshold, an explicit ack is sent immediatly if needed.
+</dd>
+
+<dt>OMX_ZOMBIE_SEND=512</dt>
+<dd>Tolerate the completion of 512 sends before their actual ack.
+  At most 512 zombies are completed before being acked by default.
+</dd>
+
+<dt>OMX_FATAL_ERRORS=0</dt>
+<dd>Disable fatal errors.
+  Instead of having the Open-MX fail as soon as a request or function
+  gets an error, let the error be reported to the application.
+</dd>
+
+<dt>OMX_ABORT_SLEEPS=0</dt>
+<dd>Sleep before actually aborting on fatal errors.
+  If set to non 0, the Open-MX library will may as many seconds and
+  print the process pid before actually aborting.
+</dd>
+
+<dt>OMX_DEBUG_REQUESTS=1</dt>
+<dd>Enable checking request queues.
+  Everytime the progression loop runs, check that the amount of allocated
+  requests is equal to the amount of currently queued requests.
+  If set to 2, some debugging messages about the number of requests will
+  be displayed. If set to 3, more details about each queue will be added.
+  This feature is disabled by default since it may be time consuming for
+  request-intensive applications.
+</dd>
+
+<dt>OMX_DEBUG_SIGNAL=1</dt>
+<dd>Enable dumping of the library state when receiving a signal.
+  This feature is only enabled by default in the debug library.
+  It may be disabled all the time by setting the variable to <tt>0</tt>.
+  Setting the variable to a positive number else will enable the
+  dumping even if the non-debug library.
+  If bigger than 1, the dumping will be more detailed.
+</dd>
+
+<dt>OMX_DEBUG_SIGNAL_NUM=&lt;SIGUSR1&gt;</dt>
+<dd>Change the signal to be use to dump the library state.
+  By default, SIGUSR1 is used. The given value has to be numeric.
+</dd>
+
+<dt>OMX_VERBOSE=1</dt>
+<dd>Display verbose messages.
+  No verbose messages are displayed by default, except in the debugging
+  library.
+</dd>
+
+<dt>OMX_VERBDEBUG=&lt;mask&gt;</dt>
+<dd>Display verbose debugging messages in the debugging library.
+  No verbose debugging messages are displayed by default (mask=0).
+</dd>
+
+<dt>OMX_VERBOSE_PREFIX=1</dt>
+<dd>Display the endpoint index and process pid in the prefix of
+  all Open-MX messages. The default prefix is <tt>Open-MX:</tt>.
+  If 1 is given, <tt>Open-MX:p%P-e%E:</tt> with %P the process pid
+  and %E the endpoint index (or X if no endpoint is involved).
+  If another string is given, it is used as a prefix after replacing
+  %P and %E if necessary.
+</dd>
+
+</dl>
+
+<p>
+The following module parameters may be passed to the driver module when loading,
+either as a parameter to the modprobe command, or through the OMX_MODULE_PARAMS
+variable for the omx_init or /etc/init.d/open-mx startup script.
+Some of them may also be modified later by writing into
+/sys/module/open_mx/parameters/&lt;parameter&gt;.
+</p>
+
+<dl>
+
+<dt>ifnames="eth2 eth3"</dt>
+<dd>Attach interfaces eth2 and eth3 at startup instead of all interfaces.
+  See <a href="#ifaces">Managing Interfaces</a> for details.
+</dd>
+
+<dt>ifaces=32</dt>
+<dd>Allow a maximum of 32 interfaces to be attached at the same time.
+  Default is 32.
+</dd>
+
+<dt>endpoints=32</dt>
+<dd>Allow a maximum of 32 endpoints to be open by interfaces.
+  Default is 32.
+</dd>
+
+<dt>peers=1024</dt>
+<dd>Allow a maximum of 1024 peers to be connected on the network.
+  Default is 1024.
+</dd>
+
+<dt>demandpin=1</dt>
+<dd>Defer memory pinning of large region until really needed to enable
+  overlap of pinning with communication (only shared-memory for now).
+  Default is 0 (disabled).
+</dd>
+
+<dt>dmaengine=1</dt>
+<dd>Enable DMA engine to offload memory copies, when supported in hardware
+  and in the kernel. Modifying this value will display the DMA engine
+  status in the kernel logs.
+  Default is 0 (disabled).
+</dd>
+
+<dt>dmaasyncmin=65536</dt>
+<dd>Offload asynchronous copy on DMA engine hardware only if the whole
+  message length is above this threshold. This is used for large message
+  receive. Even if fragments are large, offloading their copy does not
+  make much sense if there are very few of them.
+  Default is 64 kbytes.
+</dd>
+
+<dt>dmaasyncfragmin=1024</dt>
+<dd>Offload asynchronous copy on DMA engine hardware only if the current
+  fragment length is above this threshold. This is used for large
+  message receive. Even if the whole message is big, offloading very
+  small fragment copy does not make much sense if submitting the copy
+  offload request is slower than copying directly.
+  Default is 1024 bytes.
+</dd>
+
+<dt>dmasyncmin=2097152</dt>
+<dd>Offload synchronous copy on DMA engine hardware only if the length
+  is above this threshold. This is used for medium message receive,
+  and shared memory communication. Offloading small synchronous copies
+  is not faster than a regular copy when the data is smaller than the
+  cache.
+  Default is 2 Mbytes.
+</dd>
+
+<dt>skbfrags=16</dt>
+<dd>Allow a maximum of 16 frags to be attached to socket buffer on the
+  send side. If the underlying driver does not support frags, 0 should
+  be used.
+  The default and maximal value is MAX_SKB_FRAGS (16 on common archs).
+</dd>
+
+<dt>skbcopy=0</dt>
+<dd>Copy buffers small buffers into a linear skb instead of attaching
+  pages. If the underlying driver is slow sending frags, increasing
+  this parameter to copy small frags into linear skb may be faster
+  than using frags as usual.
+  Default is 0 (never copy, always attach).
+</dd>
+
+<dt>copybench=1</dt>
+<dd>Enable a memory copy benchmark at startup.
+  Default is disabled (0).
+</dd>
+
+</dl>
+
+
+<h4><a id="config-middleware" href="#config-middleware">
+  What should I know before I build/link my middleware with Open-MX?
+</a></h4>
+<p>
+If you plan to use Open-MX within a middleware such as a MPI layer,
+you should read the following configuration advices:
+</p>
+<dl>
+<dt>MX ABI/API compatibility</dt>
+<dd>
+  Passing --disable-mx to the Open-MX configure line is only possible if all
+  middleware involved use the native Open-MX API. In most cases, keeping the
+  MX ABI/API compatibility enabled should cause no harm and a very small
+  overhead. It thus is recommended.
+  Passing --enable-mx-translate may however reduce the overhead a bit.
+  Once Open-MX is installed, passing its installation path to the middleware
+  configuration system as the MX installation path should do the trick.
+</dd>
+<dt>Thread-safety</dt>
+<dd>
+  A thread-safe middleware should generally rely on a thread safe Open-MX.
+  Building Open-MX without --enable-threads may only work if caller uses
+  neither any blocking Open-MX functions nor the unexpected handler, and
+  obviously serializes Open-MX calls.
+</dd>
+</dl>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="debug" href="#debug">
+    Debugging
+</a></h3>
+
+
+<h4><a id="debug-what" href="#debug-what">
+  What debugging features does Open-MX offer?
+</a></h4>
+<p>
+Open-MX provides several debugging features such as verbose messages,
+additional checks, non-optimized building, valgrind hooks, ... For
+performance reasons, they are not enabled by default.
+</p>
+<p>
+By default, Open-MX will build a non-debug library and an optional debug
+library. The former is installed in $prefix/lib while the latter goes in
+$prefix/lib/debug. The driver is built without debug by default.
+</p>
+<p>
+If you think you found a bug, see <a href="#basics-bugs">What if I find a bug?</a>.
+</p>
+
+
+<h4><a id="debug-enable-default" href="#debug-enable-default">
+  How-to enable debugging features by default?
+</a></h4>
+<p>
+Passing --disable-debug to the configure command line will only disable
+the build of the debug library. Passing --enable-debug will make only
+the debug library be built and installed in $prefix/lib as usual, and the
+driver will be debug enabled.
+</p>
+<p>
+The build flags may be configured by passing CFLAGS on the configure
+command line. Additional flags may be passed for the debugging library
+build with DBGCFLAGS.
+</p>
+
+
+<h4><a id="debug-abort" href="#debug-abort">
+  How to debug an abort message?
+</a></h4>
+<p>
+Open-MX may abort the application under many circumstances.
+If you wish to attach a gdb to debug the process before it actually
+aborts, you may pass OMX_ABORT_SLEEPS=30 in the environment so that
+the actual abort is deferred by 30 seconds.
+The pid of the process will be displayed in the meantime.
+See also <a href="#running-errors">What happens on error?</a>.
+</p>
+
+
+<h4><a id="debug-stats" href="#debug-stats">
+  Does Open-MX provide statistics regarding the network traffic?
+</a></h4>
+<p>
+Yes. Open-MX maintains per-interface statistics at the driver level
+(even if debugging is disabled).
+They may be observed with
+</p>
+<pre>
+$ omx_counters
+</pre>
+<p>
+This defaults to the first interface.
+You may pass the -b option to select another interface.
+Only the non-null counters at displayed, unless -v is given.
+These counters may also be cleared with -c.
+</p>
+<p>
+Open-MX also maintains statistics regarding local communication
+(shared-memory).
+They may be observed with
+</p>
+<pre>
+$ omx_counters -s
+</pre>
+
+
+<h4><a id="debug-sigusr" href="#debug-sigusr">
+  How may I see the status of all requests in the Open-MX library?
+</a></h4>
+<p>
+When the SIGUSR1 signal is sent to an Open-MX program, the library
+will dump its status on the standard output, including all known peers
+and pending requests.
+</p>
+<p>
+This feature is enabled by default in the debug library only.
+It may be enabled at runtime by setting the OMX_DEBUG_SIGNAL environment
+variable to 1 or more (more means more status details will be displayed).
+This feature may also be disabled in the debug library if the variable
+is set to <tt>0</tt>.
+If a numeric value is given in the OMX_DEBUG_SIGNAL_NUM environment
+variable, it will replace the default signal number (SIGUSR1).
+</p>
+
+
+<h4><a id="debug-checking" href="#debug-checking">
+  How can I see/check the driver configuration?
+</a></h4>
+<p>
+The driver configuration depends on many static/dynamic configuration
+parameters (See <a href="#config">Advanced Configuration</a>).
+To dump this configuration, you may read from the device file:
+</p>
+<pre>
+$ cat /dev/open-mx
+Open-MX 0.9.2 (git-svn r2053)
+ Driver ABI=0x151
+ Configured for 32 endpoints on 32 interfaces with 1024 peers
+[...]
+</pre>
+<p>
+This output may also be reported by the startup script:
+</p>
+<pre>
+$ omx_init status
+</pre>
+
+
+<h4><a id="debug-failed-create-user-region" href="#debug-failed-create-user-region">
+  What does "Failed to create user region" mean?
+</a></h4>
+<pre>
+ Open-MX: FatalError: Failed to create user region 4, driver replied Bad address
+ omx_misc.c:86: omx__ioctl_errno_to_return_checked: Assertion `0' failed.
+</pre>
+<p>
+ This fatal error means that the application passed an invalid buffer to
+ Open-MX. So the Open-MX driver failed to pin the buffer in physical memory
+ when starting a large message.
+</p>
+<p>
+ It is very similar to a segmentation fault (an actual access to the buffer
+ would have caused a fault).
+ The application needs to be fixed, and returning an error would not help
+ much, so Open-MX just aborts.
+</p>
+
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<p><em>
+  If you do not find your answer here, feel free to contact the
+  <a href="http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/open-mx-devel">open-mx-devel mailing list</a>.
+</em></p>
+
+<hr class="main" />
+
+<div><a href="..">Back to the main page</a></div>
+
+<hr class="main" />
+
+
+
+<p style="text-align: right; font-size: 12px; font-style: italic;">
+  Last updated on 2008/09/23.
+</p>
+
+<script type="text/javascript">
+ var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+ document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+ var pageTracker = _gat._getTracker("UA-3566887-1");
+ pageTracker._initData();
+ pageTracker._trackPageview('/FAQ/');
+</script>
+
+</body>
+</html>
