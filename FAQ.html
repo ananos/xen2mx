@@ -15,14 +15,11 @@
 <!-- TODO: update question about EFAULT while pinning -->
 <!-- TODO: question/section about binding/msix -->
 <!-- TODO: OMX_MEDIUM_SENDQ -->
-<!-- <a href="#debugging-mtu">How can I check that Open-MX MTU is correctly configured?</a> avec cat /dev/open-mx -->
 <!-- TODO: point to hardware.html -->
 <!-- TODO: udev support -->
-<!-- TODO: cross-ctxid probe support -->
 <!-- TODO: pinsync=0,pininvalidate=1,pinprogressive=1 -->
 <!-- TODO: update the lists of configure options, module params and env vars -->
 <!-- TODO: switch to autogen.sh -->
-<!-- TODO: --with-medium-frag-max and --with-pull-reply-max -->
 
 <h6 class="mirrors">
  <a href="http://open-mx.org/FAQ">Primary website</a>
@@ -196,6 +193,9 @@
 <li><a href="#perf-wire-compat">
   What is the MX wire-compatibility impact on Open-MX performance?
 </a></li>
+<li><a href="#perf-packet-sizes">
+  How should I tune Open-MX MTU and packet sizes?
+</a></li>
 <li><a href="#perf-regcache">
   Is there a registration cache in Open-MX?
 </a></li>
@@ -348,8 +348,9 @@
     function. Only the modern <tt>register_unexp_handler()</tt> is supported.
   </li>
   <li>
-    Open-MX is able to perform <tt>wait_any()</tt>
-    or <tt>test_any()</tt> on random matching masks
+    Open-MX is able to perform <tt>wait_any()</tt>,
+    <tt>test_any()</tt>, <tt>probe</tt> or <tt>iprobe</tt>
+    on random matching masks
     even when the matching space has been divided with
     the endpoint <em>Context Ids</em> parameter.
   </li>
@@ -422,27 +423,39 @@ router between them (switches are OK).
   Which MTU should my network support for Open-MX?
 </a></h4>
 <p>
+The Open-MX MTU requirements may be obtained by reading the
+driver status:
+<pre>
+  $ cat /dev/open-mx
+  Open-MX 1.0.90 (git-svn r2405)
+   Driver ABI=0x208
+   Configured for 32 endpoints on 32 interfaces with 1024 peers
+   WireSpecs: NoWireCompat EtherType=0x86df MTU>=0x9000
+</pre>
+</p>
+
+<p>
+The minimal MTU actually depends on the configuration.
 Open-MX was designed to be compatible with MX wire-specifications.
-It means that 4 kB frames have to be accepted by the network.
-So all boards and switches on the traffic need to support a 4144
-bytes MTU.
-<!-- 16 head + 32 medium frag head + 4096 medium frag -->
+It means that 4 kB frames (plus at most 64 bytes of headers)
+have to be accepted by the network.
 </p>
 
 <p>
 If Open-MX is configured in non-MX-wire-compatible mode
 (by passing <tt>--disable-mx-wire</tt> to the configure script),
-it uses larger frames to improve performance by reducing the packet
-rate. The required MTU is then 8224.
-<!-- 16 head + 16 pull reply head + 8192 pull frame -->
-</p>
-
-<p>
-It is also possible to force Open-MX to work with MTU 1500
-(by passing <tt>--disable-mx-wire --enable-mtu-1500</tt> to
-the configure script).
-However, this option is not recommended for bandwidth
-intensive applications.
+the minimal required MTU is 9000, but another value may be enforced
+by passing <tt>--with-mtu=1500</tt> or so.
+Packet sizes will be updated accordingly, as shown in driver status.
+See also <a href="#perf-packet-sizes">How should I tune Open-MX MTU
+    and packet sizes?</a>.
+<pre>
+  $ cat /dev/open-mx
+  Open-MX 1.0.90 (git-svn r2405)
+   WireSpecs: NoWireCompat EtherType=0x86df MTU>=0x9000
+   MediumMessages: 8952B per fragment
+   LargeMessages: 4 requests in parallel, 32 x 8968B pull replies per request
+</pre>
 </p>
 
 
@@ -1229,6 +1242,30 @@ the latency very slightly.
 </p>
 
 
+<h4><a id="perf-packet-sizes" href="#perf-packet-sizes">
+  How should I tune Open-MX MTU and packet sizes?
+</a></h4>
+<p>
+  Open-MX performance increases with packet sizes, so a large
+  minimum MTU is recommended.
+  For this reason, MX-wire-compat should not enabled unless needed
+  (see also <a href="#perf-wire-compat">What is the MX wire-compatibility impact on Open-MX performance?</a>).
+  Similarly, if running on regular Ethernet fabrics, MTU 9000 should
+  be preferred to 1500.
+</p>
+<p>
+  Open-MX uses packets as large as possible to fully benefit from
+  large MTU.
+  If for some reason (for instance hardware-related preferences)
+  some larger packets decrease performance, it is possible to
+  reduce their size with <tt>--with-medium-frag-max</tt> (for medium
+  message fragments) and <tt>--with-pull-reply-max</tt> (for large
+  message frames).
+  The corresponding values may be check in the driver status
+  as explained in <a href="#basics-mtu">Which MTU should my network support for Open-MX?</a></li>
+</p>
+
+
 <h4><a id="perf-regcache" href="#perf-regcache">
   Is there a registration cache in Open-MX?
 </a></h4>
@@ -1614,9 +1651,15 @@ The following options may be passed to the configure command line before buildin
   The wire protocol is compatible with Myrinet Express over Ethernet by default.
 </dd>
 
-<dt>--enable-mtu-1500</dt>
+<dt>--with-mtu=1500</dt>
 <dd>Enable support for 1500-bytes MTU fabric.
   This may reduce large message throughput.
+</dd>
+
+<dt>--with-medium-frag-max=8952</dt>
+<dt>--with-pull-reply-max=8192</dt>
+<dd>Enforce the maximum size of medium message fragments
+  instead of relying on the MTU and wire-compatibility configuration.
 </dd>
 
 <dt>--enable-static-peers</dt>
