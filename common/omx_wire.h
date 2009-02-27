@@ -105,7 +105,9 @@
       ? 11					\
       : OMX_MEDIUM_FRAG_LENGTH_MAX <= 4096	\
 	? 12					\
-	: 13					\
+	: OMX_MEDIUM_FRAG_LENGTH_MAX <= 8192	\
+	  ? 13					\
+	  : 14					\
 )
 
 #endif /* !OMX_MX_WIRE_COMPAT */
