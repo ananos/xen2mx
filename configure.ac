@@ -432,15 +432,12 @@ fi
 AC_ARG_WITH(medium-frag-max,
 	[AS_HELP_STRING([--with-medium-frag-max=<n>], [change medium fragment maximum payload size (depends on the MTU)])],
 	with_medium_frag_max=$withval)
-if test x$enable_mx_wire = xno; then
-  AC_MSG_CHECKING(medium frag max)
-  if test x$with_mtu != x; then
+if test x$with_medium_frag_max != x; then
+  if test x$enable_mx_wire = xno; then
+    AC_MSG_CHECKING(medium frag max)
     AC_MSG_RESULT($with_medium_frag_max)
-  else
     AC_DEFINE_UNQUOTED(OMX_MEDIUM_FRAG_LENGTH_MAX, $with_medium_frag_max, [Define to change the medium frag length max])
-  fi
-else
-  if test x$with_medium_frag_max != x; then
+  else
     AC_MSG_ERROR([Changing the packet size requires MX-wire compatibility to be disabled (--disable-mx-wire)])
   fi
 fi
@@ -448,15 +445,12 @@ fi
 AC_ARG_WITH(pull-reply-max,
 	[AS_HELP_STRING([--with-pull-reply-max=<n>], [change pull reply maximum payload size (depends on the MTU)])],
 	with_pull_reply_max=$withval)
-if test x$enable_mx_wire = xno; then
-  AC_MSG_CHECKING(pull reply max)
-  if test x$with_mtu != x; then
+if test x$with_pull_reply_max != x; then
+  if test x$enable_mx_wire = xno; then
+    AC_MSG_CHECKING(pull reply max)
     AC_MSG_RESULT($with_pull_reply_max)
-  else
     AC_DEFINE_UNQUOTED(OMX_PULL_REPLY_LENGTH_MAX, $with_pull_reply_max, [Define to change the pull reply length max])
-  fi
-else
-  if test x$with_pull_reply_max != x; then
+  else
     AC_MSG_ERROR([Changing the packet size requires MX-wire compatibility to be disabled (--disable-mx-wire)])
   fi
 fi
