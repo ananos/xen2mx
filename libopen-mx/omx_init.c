@@ -183,6 +183,12 @@ omx__init_api(int app_api)
 		     OMX_MTU, omx__driver_desc->mtu);
     goto out_with_fd;
   }
+  if (omx__driver_desc->medium_frag_length_max != OMX_MEDIUM_FRAG_LENGTH_MAX) {
+    ret = omx__error(OMX_BAD_LIB_ABI,
+		     "Comparing library (MediumFragMax %d) with driver (MediumFragMax %d)",
+		     OMX_MEDIUM_FRAG_LENGTH_MAX, omx__driver_desc->medium_frag_length_max);
+    goto out_with_fd;
+  }
 
   /*************************
    * Error Handler Behavior

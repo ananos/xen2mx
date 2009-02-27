@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x207
+#define OMX_DRIVER_ABI_VERSION		0x208
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -107,7 +107,7 @@ struct omx_driver_desc {
 	/* 24 */
 	uint32_t hz;
 	uint16_t mtu;
-	uint16_t pad1;
+	uint16_t medium_frag_length_max;
 	/* 32 */
 	uint32_t board_max;
 	uint32_t endpoint_max;

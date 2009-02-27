@@ -450,6 +450,7 @@ omx_init(void)
 		omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PIN_INVALIDATE;
 #endif
 	omx_driver_userdesc->mtu = OMX_MTU;
+	omx_driver_userdesc->medium_frag_length_max = OMX_MEDIUM_FRAG_LENGTH_MAX;
 
 	if (omx_endpoint_max > OMX_ENDPOINT_INDEX_MAX) {
 		printk(KERN_INFO "Open-MX: Cannot use more than %d endpoints per board\n",
