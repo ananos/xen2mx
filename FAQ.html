@@ -10,7 +10,6 @@
 
 <body>
 
-<!-- TODO: need to relink apps if modified wire-compat or MTU so far in trunk -->
 <!-- TODO: why no crc? -->
 <!-- TODO: can I poll/select on omx? -->
 <!-- TODO: update question about EFAULT while pinning -->
@@ -115,6 +114,9 @@
 </a></li>
 <li><a href="#building-install-nfs">
   How to install over NFS?
+</a></li>
+<li><a href="#building-install-relink">
+  I changed my Open-MX configuration, should I relink my application?
 </a></li>
 </ul>
 
@@ -762,6 +764,25 @@ $ make installonly
 <p>
 so that it really only installs things without checking whether the
 build is up-to-date.
+</p>
+
+
+<h4><a id="building-install-relink" href="#building-install-relink">
+  I changed my Open-MX configuration, should I relink my application?
+</a></h4>
+<p>
+If the application or the MPI implementation is dynamically linked against
+Open-MX, there is nothing to do since the Open-MX library ABI (binary interface)
+is stable and will not change when reconfiguring/recompiling.
+</p>
+<p>
+However, there is also an internal binary interface between the library
+and the kernel driver. If you reconfigure Open-MX in a different way,
+and load the new kernel module, the corresponding new library should be
+used as well. In case of dynamic linking, it should be transparent
+assuming the new library replaced the old file. In case of static linking,
+the above application or MPI implementation should be relinked against
+the new Open-MX static library.
 </p>
 
 
@@ -2058,7 +2079,7 @@ $ omx_init status
 <script type="text/javascript">
  var pageTracker = _gat._getTracker("UA-3566887-1");
  pageTracker._initData();
- pageTracker._trackPageview('/FAQ/');
+ pageTracker._trackPageview('/FAQ/trunk');
 </script>
 
 </body>
