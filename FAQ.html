@@ -13,11 +13,9 @@
 <!-- TODO: why no crc? -->
 <!-- TODO: can I poll/select on omx? -->
 <!-- TODO: update question about EFAULT while pinning -->
-<!-- TODO: question/section about binding/msix -->
-<!-- TODO: OMX_MEDIUM_SENDQ -->
-<!-- TODO: point to hardware.html -->
+<!-- TODO: question/section about binding/msix and point to hardware.html -->
 <!-- TODO: pinsync=0,pininvalidate=1,pinprogressive=1 -->
-<!-- TODO: update the lists of configure options, module params and env vars -->
+<!-- TODO: update the lists of configure options, module params -->
 
 <h6 class="mirrors">
  <a href="http://open-mx.org/FAQ">Primary website</a>
@@ -1798,6 +1796,17 @@ behavior at runtime:
 <dt>OMX_ANY_ENDPOINT=n</dt>
 <dd>Force a specific endpoint index to be used when <tt>OMX_ANY_ENDPOINT</tt>
   is given to <tt>omx_open_endpoint()</tt>.
+</dd>
+
+<dt>OMX_MEDIUM_SENDQ=1</dt>
+<dd>Use the send queue or not for sending medium messages.
+  If using the send queue (default), data is copied in a static buffer
+  by the user-space library and the driver will attach the corresponding
+  static pages to outgoing socket buffers.
+  If this strategy is slow on your NIC, for instance because it does not
+  like fragmented DMA on the send side, you may want to try setting this
+  variable to 0. It will force the library and driver to use a linear
+  socket buffer where the data is directly copied in.
 </dd>
 
 <dt>OMX_WAITSPIN=1</dt>
