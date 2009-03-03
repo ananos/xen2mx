@@ -117,7 +117,6 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Cannot find peer name %s\n", dest_hostname);
       goto out;
     }
-    free(dest_hostname);
   }
 
   ret = omx_open_endpoint(bid, eid, 0x12345678, NULL, 0, &ep);
@@ -217,10 +216,12 @@ int main(int argc, char *argv[])
   }
 
   omx_close_endpoint(ep);
+  free(dest_hostname);
   return 0;
 
  out_with_ep:
   omx_close_endpoint(ep);
  out:
+  free(dest_hostname);
   return -1;
 }

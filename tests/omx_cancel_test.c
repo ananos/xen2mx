@@ -86,9 +86,8 @@ int main(int argc, char *argv[])
     ret = omx_hostname_to_nic_id(dest_hostname, &nic_id);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Cannot find peer name %s\n", argv[1]);
-      goto out_with_ep;
+      goto out_with_init;
     }
-    free(dest_hostname);
   }
 
   ret = omx_open_endpoint(bid, eid, 0x12345678, NULL, 0, &ep);
@@ -102,7 +101,7 @@ int main(int argc, char *argv[])
   if (dest_hostname == NULL) {
     printf("Starting omx_cancel_test dummy receiver, please ^Z me to test connect on the sender's side\n");
     sleep(10000);
-    exit(0);
+    goto done;
   }
 
   ret = omx_iconnect(ep, nic_id, rid, 0x12345678, 0, NULL, &req);
@@ -191,8 +190,10 @@ int main(int argc, char *argv[])
   assert(result);
   assert(status.code == OMX_CANCELLED);
 
+ done:
   omx_close_endpoint(ep);
   omx_finalize();
+  free(dest_hostname);
   return 0;
 
  out_with_ep:
@@ -200,5 +201,6 @@ int main(int argc, char *argv[])
  out_with_init:
   omx_finalize();
  out:
+  free(dest_hostname);
   return -1;
 }
