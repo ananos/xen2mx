@@ -25,5 +25,5 @@ When reporting a problem, make sure you include:
   + through what switch(es)? is the MTU configured there too?
 * the whole output of the program if a program did not work
   as expected
-* the whole output of configure, config.log and omx_check.h,
+* the whole output of configure, config.log and omx_checks.h,
   and of the compilation if reporting a build problem
