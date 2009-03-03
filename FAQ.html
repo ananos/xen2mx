@@ -10,7 +10,6 @@
 
 <body>
 
-<!-- TODO: local testing with omx_check.sh and lo -->
 <!-- TODO: why no crc? -->
 <!-- TODO: can I poll/select on omx? -->
 <!-- TODO: update question about EFAULT while pinning -->
@@ -82,6 +81,9 @@
 <ul>
 <li><a href="#running-quick-test">
   In short, how do I test Open-MX?
+</a></li>
+<li><a href="#running-local-test">
+  How may I test Open-MX on a single node?
 </a></li>
 <li><a href="#running-how-work">
   How does Open-MX work?
@@ -594,6 +596,41 @@ length   4194304:       8388.608 us   500.00 MB/s       476.83 MiB/s
 </pre>
 </li>
 </ol>
+
+
+<h4><a id="running-local-test" href="#running-local-test">
+  How may I test Open-MX on a single node?
+</a></h4>
+<p>
+If Open-MX is installed on a node and you want to check
+that everything looks good without running intensive
+benchmarks on the network, you may run some local tests.
+</p>
+<p>
+Load the open-mx kernel module and tell it to use the loopback
+interface (see <a href="#kernel">Kernel Driver</a> and
+ <a href="#ifaces">Managing Interfaces</a> for details).
+<pre>
+$ /path/to/open-mx/sbin/omx_init start ifnames=lo
+</pre>
+</p>
+<p>
+You should now see localhost appear in the peer table.
+<pre>
+  $ tools/omx_info 
+  [...]
+  localhost (board #0 name lo addr 00:00:00:00:00:00)
+  ==============================================
+    0) 00:00:00:00:00:00 localhost
+</pre>
+</p>
+<p>
+You may then run the local testing suite (which requires
+that the first attached board is the above localhost peer).
+<pre>
+  $ tools/omx_check.sh
+</pre>
+</p>
 
 
 <h4><a id="running-how-work" href="#running-how-work">
