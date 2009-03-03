@@ -44,13 +44,6 @@ int main(int argc, char *argv[])
   printf(" build: " OMX_BUILD_STR "\n");
   printf("\n");
 
-  ret = omx_init();
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to initialize (%s)\n",
-            omx_strerror(ret));
-    goto out;
-  }
-
   while ((c = getopt(argc, argv, "h")) != -1)
     switch (c) {
     default:
@@ -60,6 +53,13 @@ int main(int argc, char *argv[])
       exit(-1);
       break;
     }
+
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+            omx_strerror(ret));
+    goto out;
+  }
 
   /* get board and endpoint max */
   max = omx__driver_desc->board_max;

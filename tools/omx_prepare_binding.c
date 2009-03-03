@@ -219,13 +219,6 @@ int main(int argc, char *argv[])
   int found, i;
   int c;
 
-  ret = omx_init();
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to initialize (%s)\n",
-            omx_strerror(ret));
-    goto out;
-  }
-
   while ((c = getopt(argc, argv, "vh")) != -1)
     switch (c) {
     case 'v':
@@ -238,6 +231,13 @@ int main(int argc, char *argv[])
       exit(-1);
       break;
     }
+
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+            omx_strerror(ret));
+    goto out;
+  }
 
   if (optind < argc)
     file = argv[optind];

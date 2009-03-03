@@ -46,16 +46,6 @@ int main(int argc, char *argv[])
   int i, count, err;
   int c;
 
-  ret = omx_init();
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to initialize (%s)\n",
-            omx_strerror(ret));
-    goto out;
-  }
-
-  /* get endpoint max */
-  emax = omx__driver_desc->endpoint_max;
-
   while ((c = getopt(argc, argv, "b:vh")) != -1)
     switch (c) {
     case 'b':
@@ -71,6 +61,16 @@ int main(int argc, char *argv[])
       exit(-1);
       break;
     }
+
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+            omx_strerror(ret));
+    goto out;
+  }
+
+  /* get endpoint max */
+  emax = omx__driver_desc->endpoint_max;
 
   /* get the board id */
   ret = omx__get_board_info(NULL, board_index, &board_info);

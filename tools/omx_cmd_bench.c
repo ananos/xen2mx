@@ -43,9 +43,6 @@ main(int argc, char *argv[])
   int i, err;
   int c;
 
-  ret = omx_init();
-  assert(ret == OMX_SUCCESS);
-
   while ((c = getopt(argc, argv, "h")) != -1)
     switch (c) {
     default:
@@ -55,6 +52,9 @@ main(int argc, char *argv[])
       exit(-1);
       break;
     }
+
+  ret = omx_init();
+  assert(ret == OMX_SUCCESS);
 
   ret = omx_open_endpoint(0, 0, 0, NULL, 0, &ep);
   assert(ret == OMX_SUCCESS);

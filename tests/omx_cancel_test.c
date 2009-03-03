@@ -56,21 +56,9 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   int c;
 
-  ret = omx_init();
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to initialize (%s)\n",
-	    omx_strerror(ret));
-    goto out;
-  }
-
   while ((c = getopt(argc, argv, "hd:b:e:r:")) != EOF) switch(c) {
   case 'd':
-    dest_hostname = optarg;
-    ret = omx_hostname_to_nic_id(dest_hostname, &nic_id);
-    if (ret != OMX_SUCCESS) {
-      fprintf(stderr, "Cannot find peer name %s\n", argv[1]);
-      goto out_with_ep;
-    }
+    dest_hostname = strdup(optarg);
     break;
   case 'b':
     bid = atoi(optarg);
@@ -85,6 +73,22 @@ int main(int argc, char *argv[])
   default:
     usage(argc, argv);
     exit(1);
+  }
+
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+	    omx_strerror(ret));
+    goto out;
+  }
+
+  if (dest_hostname) {
+    ret = omx_hostname_to_nic_id(dest_hostname, &nic_id);
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Cannot find peer name %s\n", argv[1]);
+      goto out_with_ep;
+    }
+    free(dest_hostname);
   }
 
   ret = omx_open_endpoint(bid, eid, 0x12345678, NULL, 0, &ep);

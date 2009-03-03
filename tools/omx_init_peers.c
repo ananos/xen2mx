@@ -135,13 +135,6 @@ main(int argc, char *argv[])
   omx_return_t ret;
   int c;
 
-  ret = omx_init();
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to initialize (%s)\n",
-            omx_strerror(ret));
-    exit(-1);
-  }
-
   while ((c = getopt(argc, argv, "cadvh")) != -1)
     switch (c) {
     case 'c':
@@ -163,6 +156,13 @@ main(int argc, char *argv[])
       exit(-1);
       break;
     }
+
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+            omx_strerror(ret));
+    exit(-1);
+  }
 
   if (clear) {
     printf("Clearing peers...\n");

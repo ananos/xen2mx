@@ -43,13 +43,6 @@ int main(int argc, char *argv[])
   int clear = 0;
   int c;
 
-  ret = omx_init();
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to initialize (%s)\n",
-            omx_strerror(ret));
-    goto out;
-  }
-
   while ((c = getopt(argc, argv, "b:n:ch")) != -1)
     switch (c) {
     case 'b':
@@ -68,6 +61,13 @@ int main(int argc, char *argv[])
       exit(-1);
       break;
     }
+
+  ret = omx_init();
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to initialize (%s)\n",
+            omx_strerror(ret));
+    goto out;
+  }
 
   if (hostname) {
     ret = omx__driver_set_hostname(board_index, hostname);
