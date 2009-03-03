@@ -16,7 +16,6 @@
 <!-- TODO: question/section about binding/msix -->
 <!-- TODO: OMX_MEDIUM_SENDQ -->
 <!-- TODO: point to hardware.html -->
-<!-- TODO: udev support -->
 <!-- TODO: pinsync=0,pininvalidate=1,pinprogressive=1 -->
 <!-- TODO: update the lists of configure options, module params and env vars -->
 
@@ -110,6 +109,9 @@
 </a></li>
 <li><a href="#building-autostart">
   How to setup Open-MX to auto-start at boot?
+</a></li>
+<li><a href="#building-udev">
+  How to configure udev for Open-MX?
 </a></li>
 <li><a href="#building-install-nfs">
   How to install over NFS?
@@ -798,6 +800,28 @@ interfaces have to be attached on startup.
 </p>
 
 
+<h4><a id="building-udev" href="#building-udev">
+  How to configure udev for Open-MX?
+</a></h4>
+<p>
+Open-MX uses some special device files in /dev for talking to the kernel module
+(see <a href="#kernel-device-files">Which device files does Open-MX use?</a>).
+On modern installations, udev will take care of creating these device files
+automatically when the kernel module is loaded.
+</p>
+<p>
+When installing the Open-MX startup script with <tt>omx_local_install</tt>
+(see <a href="#building-autostart">How to setup Open-MX to auto-start at boot?</a>),
+the udev installation is checked.
+An Open-MX-specific udev rule file is installed
+(usually in /etc/udev/rules.d/45-open-mx.rules unless --with-udev-rules-dir
+or --with-udev-rules-file was used on the configure line).
+The administrator may either tune this file or the Open-MX configure line
+to change device file names or access permissions
+(see <a href="#kernel-device-files">Which device files does Open-MX use?</a>).
+</p>
+
+
 <h4><a id="building-install-nfs" href="#building-install-nfs">
   How to install over NFS?
 </a></h4>
@@ -903,7 +927,8 @@ $ make driver-install LINUX_BUILD=&lt;/path/to/kernel/build&gt; LINUX_HDR=&lt;/p
 <p>
 Once the module is loaded, udev creates a /dev/open-mx file which is
 used by user-space libraries and programs. Additionally, the Open-MX
-init script will create the device node in case udev was not running.
+init script will create the device node in case udev was not running
+(see also <a href="#building-udev">How to configure udev for Open-MX?</a>).
 The --with-device configure option may be used to change the name of
 this device file, its group or mode. Write access to this file is
 required when using Open-MX.
