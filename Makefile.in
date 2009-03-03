@@ -97,10 +97,10 @@ other-installonly:
 	$(CMDPREFIX) $(INSTALL) -m 0644 $(srcdir)/common/open-mx.h $(DESTDIR)$(includedir)
 
 	$(CMDPREFIX) if test @OMX_MX_ABI_COMPAT@ -eq 1; then \
-		if test @OMX_MX_API_TRANSLATE@ -eq 1; then \
-			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/myriexpress.h" ; \
+		if test x$(mx-trans) = x1 -o x$(mxtrans) = x1 ; then \
+			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/myriexpress.h (translating API)" ; \
 			$(INSTALL) -m 0644 $(srcdir)/common/mx/translate/myriexpress.h $(DESTDIR)$(includedir) ; \
-			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_extensions.h" ; \
+			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_extensions.h (translating API)" ; \
 			$(INSTALL) -m 0644 $(srcdir)/common/mx/translate/mx_extensions.h $(DESTDIR)$(includedir) ; \
 		else \
 			$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/myriexpress.h" ; \

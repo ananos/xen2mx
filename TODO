@@ -1,5 +1,3 @@
-* add omx_check.sh to the main FAQ (after starting with lo)
-
 * stop supporting mtu!=1500/9000 ?
   + go back to mtu/wire-compat indep library, with send
     function pointers initialized at connect
