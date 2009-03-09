@@ -7,6 +7,8 @@ Improvements from previous release:
 * Improve non-wire-compatible medium and large message performance by
   using the full MTU packet in most cases instead of a power-of-two
   payload size.
+  + Open-MX 1.1.x is not wire compatible with earlier releases
+    if MX wire compatibility is disabled.
 * Add a new optional medium send path relying on page pinning and
   fragmented DMAs instead of page copy and large contigous socket
   buffers.
