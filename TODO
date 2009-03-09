@@ -1,3 +1,9 @@
+* disable wire compat by default
+  + error if no fma and --disable-fma not passed in wire-compat mode
+* changelog says that 1.0 non-wire-compat with 1.1 in non-mx-wire-compat mode
+
+* make udev configs make install options
+
 * stop supporting mtu!=1500/9000 ?
   + go back to mtu/wire-compat indep library, with send
     function pointers initialized at connect

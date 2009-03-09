@@ -249,6 +249,9 @@
 <li><a href="#config-buildtime">
   What are Open-MX build-time configuration options?
 </a></li>
+<li><a href="#config-installtime">
+    What are Open-MX install-time configuration options?
+</a></li>
 <li><a href="#config-runtime">
   What are Open-MX runtime configuration options?
 </a></li>
@@ -1609,7 +1612,8 @@ If you only use Open-MX and never link your application with MX, you may
 want to hardwire the translation from the MX API into Open-MX calls at
 compile time to avoid going across these conversion routines at runtime.
 To do so, you may pass <tt>mx-trans=1</tt> on the <tt>make install</tt>
-command line.
+command line
+(see also <a href="#config-installtime">What are Open-MX install-time configuration options?</a>).
 </p>
 <p>
 Note that enabling this automatically API translation does not disable the
@@ -1723,6 +1727,39 @@ The following options may be passed to the configure command line before buildin
 </dd>
 <dt>--with-peers-file=&lt;file&gt;</dt>
 <dd>Use &lt;file&gt; as a static peer table instead of the default /etc/open-mx/peers.
+</dd>
+
+</dl>
+
+
+<h4><a id="config-installtime" href="#config-installtime">
+  What are Open-MX install-time configuration options?
+</a></h4>
+<p>
+The following options may be passed to the make install command line
+to tune the installation:
+</p>
+
+<dl>
+
+<dt>prefix=/opt/open-mx/</dt>
+<dd>
+  Override the installation prefix that was given to the configure
+  line with --prefix.
+  See also <a href="#building-where-install">Where should I install
+  Open-MX?</a>).
+  Since multiple Makefiles from subdirectories are involved,
+  an absolute path should be given.
+</dd>
+
+<dt>mx-trans=1</dt>
+<dd>
+  When set, this option requests that the translating
+  MX API headers are installed.
+  This way, any MX application built against Open-MX headers
+  will automatically be converted into the Open-MX API
+  (inserted of being converted at runtime as usual).
+  See also <a href="#compat-api-abi-disable">When can I disable the MX-API or -ABI compatibility?</a>.
 </dd>
 
 </dl>
