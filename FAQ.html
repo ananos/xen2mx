@@ -815,8 +815,8 @@ When installing the Open-MX startup script with <tt>omx_local_install</tt>
 (see <a href="#building-autostart">How to setup Open-MX to auto-start at boot?</a>),
 the udev installation is checked.
 An Open-MX-specific udev rule file is installed
-(usually in /etc/udev/rules.d/45-open-mx.rules unless --with-udev-rules-dir
-or --with-udev-rules-file was used on the configure line).
+(usually in /etc/udev/rules.d/45-open-mx.rules, see
+ <a href="#config-installtime">What are Open-MX install-time configuration options?</a>).
 The administrator may either tune this file or the Open-MX configure line
 to change device file names or access permissions
 (see <a href="#kernel-device-files">Which device files does Open-MX use?</a>).
@@ -1760,6 +1760,13 @@ to tune the installation:
   will automatically be converted into the Open-MX API
   (inserted of being converted at runtime as usual).
   See also <a href="#compat-api-abi-disable">When can I disable the MX-API or -ABI compatibility?</a>.
+</dd>
+<dt>UDEV_RULES_DIR=/etc/udev/rules.d/</dt>
+<dt>UDEV_RULES_FILE=45-open-mx.rules</dt>
+<dd>
+  Change the udev rules directory path and the Open-MX rules file to add.
+  See also
+  <a href="#building-udev">How to configure udev for Open-MX?</a>.
 </dd>
 
 </dl>
