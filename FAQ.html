@@ -1755,6 +1755,13 @@ The following options may be passed to the configure command line before buildin
   instead of relying on the MTU and wire-compatibility configuration.
 </dd>
 
+<dt>--disable-fma</dt>
+<dd>
+  Enforce disabling of FMA peer discovery even when MX wire compatibility is enabled.
+  By default, if wire compatibility is enabled, FMA should be used.
+  See also <a href="#peerdiscovery-which">How do I decide between omxoed, FMA and static peer table?</a>.
+</dd>
+
 <dt>--enable-static-peers</dt>
 <dd>Use a static peer table instead of dynamic peer discovery
 </dd>

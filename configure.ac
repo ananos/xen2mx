@@ -501,17 +501,27 @@ fi
 
 OMX_PEER_DISCOVERY=omxoed
 
-AC_MSG_CHECKING([whether the FMA source is available])
-if test -d "$srcdir/fma/" ; then
-  AC_MSG_RESULT([yes])
-  AC_MSG_NOTICE([using FMA for dynamic peer discovery])
-  if test "$enable_mx_abi" = yes ; then
-    OMX_PEER_DISCOVERY=fma
-  else
-    AC_MSG_WARN([Building FMA requires the MX API compatibility])
-  fi
-else
+AC_ARG_ENABLE(fma,
+	[AS_HELP_STRING([--disable-fma], [never use FMA])],
+	enable_fma=$enableval, enable_fma=yes)
+
+AC_MSG_CHECKING([whether FMA is enabled])
+if test "$enable_fma" = no ; then
   AC_MSG_RESULT([no])
+else
+  AC_MSG_RESULT([yes])
+  AC_MSG_CHECKING([whether the FMA source is available])
+  if test -d "$srcdir/fma/" ; then
+    AC_MSG_RESULT([yes])
+    if test "$enable_mx_abi" = yes ; then
+      AC_MSG_NOTICE([using FMA for dynamic peer discovery])
+      OMX_PEER_DISCOVERY=fma
+    else
+      AC_MSG_WARN([Building FMA requires the MX API compatibility])
+    fi
+  else
+    AC_MSG_RESULT([no])
+  fi
 fi
 
 if test $OMX_PEER_DISCOVERY = fma ; then
@@ -520,8 +530,8 @@ if test $OMX_PEER_DISCOVERY = fma ; then
 else
   AC_SUBST(OMX_PEER_DISCOVERY, omxoed)
   AC_MSG_NOTICE([using omxoed for dynamic peer discovery])
-  if test "$enable_mx_wire" = yes ; then
-    AC_MSG_WARN([FMA is recommended for dynamic discovery of native MX peers])
+  if test "$enable_mx_wire" = yes -a "$enable_fma" = yes ; then
+    AC_MSG_ERROR([FMA is recommended for dynamic discovery of native MX peers, use --disable-fma to force])
   fi
 fi
 
