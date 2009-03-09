@@ -45,19 +45,59 @@ cmp_mv_old_and_install_new() {
     cp -f "$src" "$dest"
 }
 
-echo "Installing startup script..."
-cmp_mv_old_and_install_new "${OMX_INIT_SCRIPT}" "${OMX_INIT_SCRIPT_DEST}" "startup script"
+cmp_mv_old_and_remove() {
+    src="$1" ; shift
+    dest="$1"; shift
+    installname="$1" ; shift
 
-echo "Installing config file..."
-if test ! -d ${OMX_CONFIG_DIR} ; then
+    if test ! -f "$dest" ; then
+	echo "  File $dest not found"
+	return
+    fi
+
+    # if no difference, just remove
+    if cmp -s "$dest" "$src" ; then
+	echo "  File $dest is unchanged, removing..."
+	rm -f "$dest"
+	return
+    fi
+
+    # move the old file away
+    echo "  Saving the old $dest into ${dest}.${DATE}..."
+    mv -f "$dest" "${dest}.${DATE}"
+}
+
+if test x"$1" != "x--uninstall"; then
+    # installing
+
+    echo "Installing startup script..."
+    cmp_mv_old_and_install_new "${OMX_INIT_SCRIPT}" "${OMX_INIT_SCRIPT_DEST}" "startup script"
+
+    echo "Installing config file..."
+    if test ! -d ${OMX_CONFIG_DIR} ; then
 	echo "  Creating ${OMX_CONFIG_DIR} directory..."
 	mkdir ${OMX_CONFIG_DIR}
-fi
-cmp_mv_old_and_install_new "${OMX_CONFIG_STUB}" "${OMX_CONFIG_DEST}" "stub config"
+    fi
+    cmp_mv_old_and_install_new "${OMX_CONFIG_STUB}" "${OMX_CONFIG_DEST}" "stub config"
 
-echo "Installing udev rules file..."
-if test -d ${UDEV_RULES_DIR} ; then
+    echo "Installing udev rules file..."
+    if test -d ${UDEV_RULES_DIR} ; then
 	cmp_mv_old_and_install_new "${UDEV_RULES_FILE}" "${UDEV_RULES_DEST}" "udev rules"
-else
+    else
 	echo "  udev rules directory not found (UDEV_RULES_DIR=$UDEV_RULES_DIR)."
+    fi
+
+else
+    # uninstalling
+
+    echo "Uninstalling startup script..."
+    cmp_mv_old_and_remove "${OMX_INIT_SCRIPT}" "${OMX_INIT_SCRIPT_DEST}" "startup script"
+
+    echo "Uninstalling config file..."
+    cmp_mv_old_and_remove "${OMX_CONFIG_STUB}" "${OMX_CONFIG_DEST}" "config"
+    test -d "${OMX_CONFIG_DIR}" && ( rmdir "${OMX_CONFIG_DIR}" 2> /dev/null || echo "  ${OMX_CONFIG_DIR} not empty, not removing" )
+
+    echo "Uninstalling udev rules file..."
+    cmp_mv_old_and_remove "${UDEV_RULES_FILE}" "${UDEV_RULES_DEST}" "udev rules"
+
 fi

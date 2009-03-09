@@ -111,6 +111,9 @@
 <li><a href="#building-udev">
   How to configure udev for Open-MX?
 </a></li>
+<li><a href="#building-uninstall">
+  How to uninstall Open-MX?
+</a></li>
 <li><a href="#building-install-nfs">
   How to install over NFS?
 </a></li>
@@ -821,6 +824,29 @@ The administrator may either tune this file or the Open-MX configure line
 to change device file names or access permissions
 (see <a href="#kernel-device-files">Which device files does Open-MX use?</a>).
 </p>
+
+
+<h4><a id="building-uninstall" href="#building-uninstall">
+  How to uninstall Open-MX?
+</a></h4>
+<p>
+Uninstalling Open-MX files is mainly a matter of removing the
+entire directory pointed by the prefix of the installation
+(either given with --prefix on the configure line or by the
+ prefix variable on the make install command line, see
+<a href="#building-where-install">Where should I install Open-MX?</a>).
+</p>
+<p>
+ If <tt>omx_local_install</tt> was used, some system files have been
+ installed outside of the installation prefix directory (see
+ <a href="#building-autostart">How to setup Open-MX to auto-start at
+ boot?</a>).
+ To erase these files (except those that were modified), you may run:
+<pre>
+$ sbin/omx_local_install --uninstall
+</pre>
+</p>
+
 
 
 <h4><a id="building-install-nfs" href="#building-install-nfs">
