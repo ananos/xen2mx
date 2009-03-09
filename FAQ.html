@@ -1329,7 +1329,7 @@ when they are not needed may improve the performance.
 If native MX compatibility is not required on the wire you might want
 to pass --disable-mx-wire to the configure command line so that larger
 packets are used for large messages. Note that the required MTU will
-jump from roughly 4kB to 8.
+jump from roughly 4kB to 9000 by default.
 See <a href="#compat">Native MX Compatibility</a> for details about wire
 compatibility, and <a href="#basics-mtu">MTU support</a>.
 </p>
@@ -1570,7 +1570,7 @@ ready.
 </a></h4>
 <p>
 You have to make sure that the same peer discovery program (or "mapper")
-is used on both sides. by default, MX uses the FMA by default. So the
+is used on both sides. By default, MX uses the FMA by default. So the
 FMA source should be unpacked as a "fma" subdirectory of the Open-MX
 source so that the configure script will enable FMA by default instead
 of omxoed for dynamic peer discovery.
