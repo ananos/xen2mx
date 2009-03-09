@@ -3,6 +3,7 @@ Open-MX 1.1.0
 
 Improvements from previous release:
 * Add support for architectures with page size different from 4kB.
+* Disable MX-wire-compatibility and configure for MTU=9000 by default.
 * Improve non-wire-compatible medium and large message performance by
   using the full MTU packet in most cases instead of a power-of-two
   payload size.

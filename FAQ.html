@@ -451,13 +451,13 @@ driver status:
 <p>
 The minimal MTU actually depends on the configuration.
 Open-MX was designed to be compatible with MX wire-specifications.
-It means that 4 kB frames (plus at most 64 bytes of headers)
+If this compatibility is enabled (by passing <tt>--enable-mx-wire</tt>
+to the configure script), 4 kB frames (plus at most 64 bytes of headers)
 have to be accepted by the network.
 </p>
 
 <p>
-If Open-MX is configured in non-MX-wire-compatible mode
-(by passing <tt>--disable-mx-wire</tt> to the configure script),
+If Open-MX is configured in non-MX-wire-compatible mode (default),
 the minimal required MTU is 9000, but another value may be enforced
 by passing <tt>--with-mtu=1500</tt> or so.
 Packet sizes will be updated accordingly, as shown in driver status.
@@ -645,7 +645,7 @@ A user-space library manages MPI-like requests and passes them
 to the Open-MX driver which maps them directly onto the software
 Ethernet layer of the Linux kernel.
 Packets are sent/received through the underlying (unmodified)
-driver in a MX-wire-compatible way.
+driver in a MX-similar way.
 </p>
 
 
@@ -1298,7 +1298,7 @@ you might want to:
 </p>
 <ul>
 <li>
-Build Open-MX with --disable-endian, --disable-mx-wire, probably --disable-self
+Build Open-MX with --disable-endian, --disable-mx-wire (default), probably --disable-self
 as well, and even --disable-shared if there is a single process per host.
 </li>
 <li>
@@ -1326,10 +1326,9 @@ compatibility and endian-independent compatibility. Disabling them
 when they are not needed may improve the performance.
 </p>
 <p>
-If native MX compatibility is not required on the wire you might want
-to pass --disable-mx-wire to the configure command line so that larger
-packets are used for large messages. Note that the required MTU will
-jump from roughly 4kB to 9000 by default.
+If native MX compatibility is not required on the wire, you might want
+to avoid --enable-mx-wire on the configure command line so that larger
+packets are used for large messages.
 See <a href="#compat">Native MX Compatibility</a> for details about wire
 compatibility, and <a href="#basics-mtu">MTU support</a>.
 </p>
@@ -1551,10 +1550,10 @@ circumstances and should be avoided in most of the cases.
   What is MX-wire-compatibility?
 </a></h4>
 <p>
-If you need some Open-MX hosts to talk to some MX hosts, you should
-keep the wire-compatibility enabled (it is enabled by default).
-If you only have Open-MX hosts talking on the network, you can disable
-it to improve performance (see <a href="#perf">Performance Tuning</a>).
+If you need some Open-MX hosts to talk to some MX hosts, you should enable
+wire-compatibility (by passing <tt>--enable-mx-wire</tt> to the configure script).
+If you only have Open-MX hosts talking on the network, you should keep it
+disabled to improve performance (see <a href="#perf">Performance Tuning</a>).
 </p>
 <p>
 Once Open-MX is configured in wire compatible mode, you need to make
@@ -1666,6 +1665,7 @@ So if you built your application on top of MX (unless it was 10 years ago),
 it will work fine with Open-MX.
 </p>
 <p>
+When passing <tt>--enable-mx-wire</tt> to the configure script,
 Open-MX is wire compatible with MX 1.2.x. It means that a host running
 the native MX stack 1.1 or earlier will not be able to talk with an Open-MX
 host.
@@ -1738,9 +1738,10 @@ The following options may be passed to the configure command line before buildin
   MX API headers in the installation directory.
 </dd>
 
-<dt>--disable-mx-wire</dt>
-<dd>Optimize the wire-protocol by not being compatible with MXoE.
-  The wire protocol is compatible with Myrinet Express over Ethernet by default.
+<dt>--enable-mx-wire</dt>
+<dd>
+  Do not optimize the wire-protocol, maintain wire compatibility
+  with Myrinet Express over Ethernet instead.
 </dd>
 
 <dt>--with-mtu=1500</dt>

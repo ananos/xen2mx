@@ -230,9 +230,9 @@ Open-MX provides API, ABI and wire-compatibility with the native MX stack.
 | V.a. Wire-compatibility
 
 If you need some Open-MX hosts to talk to some MX hosts, you should
-keep the wire-compatibility enabled (it is enabled by default).
-If you only have Open-MX hosts talking on the network, you can disable
-it to improve performance.
+enable wire-compatibility (it is disabled by default).
+If you only have Open-MX hosts talking on the network, you can keep it
+disabled to improve performance.
 
 Once Open-MX is configured in wire compatible mode, you need to make
 sure that the nodes running in native MX mode are using MX >= 1.2.5
