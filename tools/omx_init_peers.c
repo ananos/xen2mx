@@ -123,8 +123,8 @@ usage(int argc, char *argv[])
   fprintf(stderr, "%s [options] address hostname\n", argv[0]);
   fprintf(stderr, "  => adds a new single peer from the command line arguments\n");
   fprintf(stderr, "Options\n");
-  fprintf(stderr, " -c <n>\treplace existing peers with the new ones\n");
-  fprintf(stderr, " -a <n>\tappend new peers to existing ones (default)\n");
+  fprintf(stderr, " -c\treplace existing peers with the new ones\n");
+  fprintf(stderr, " -a\tappend new peers to existing ones (default)\n");
   fprintf(stderr, " -d\tmark the peer table configuration as done\n");
   fprintf(stderr, " -v\tverbose messages\n");
 }
