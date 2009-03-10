@@ -1,4 +1,4 @@
-* print attached ifaces and stuff in cat /dev/open-mx
+* add manpages for omx_* programs, at least in tools
 
 * stop supporting mtu!=1500/9000 ?
   + go back to mtu/wire-compat indep library, with send

@@ -281,6 +281,14 @@ omx_get_driver_string(unsigned int *lenp)
 	tmp += len;
 	buflen += len;
 
+	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen, " Interfaces: ");
+	tmp += len;
+	buflen += len;
+	len = omx_ifnames_get(tmp, OMX_DRIVER_STRING_LEN-buflen, ' ');
+	tmp += len;
+	buflen += len;
+	*(tmp-1) = '\n'; /* change the ending space into a linebreak */
+
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
 		       " WireSpecs: %s EtherType=0x%lx MTU>=0x%ld\n",
 		       omx_driver_userdesc->abi_config & OMX_ABI_CONFIG_WIRECOMPAT

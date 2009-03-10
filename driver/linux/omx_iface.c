@@ -608,7 +608,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
 /*
  * Format a buffer containing the list of attached ifaces.
  */
-static int
+int
 omx_ifnames_get(char *buf, size_t buflen, char sep)
 {
 	int total = 0;
