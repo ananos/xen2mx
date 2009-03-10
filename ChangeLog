@@ -1,14 +1,16 @@
-Open-MX 1.1.0
-=========================================================
+Open-MX 1.0.901 aka 1.1-rc1 (March 10th 2009, svn r24xy)
+========================================================
 
-Improvements from previous release:
-* Add support for architectures with page size different from 4kB.
-* Disable MX-wire-compatibility and configure for MTU=9000 by default.
-* Improve non-wire-compatible medium and large message performance by
-  using the full MTU packet in most cases instead of a power-of-two
+Major improvements from previous release:
+* Improve non-MX-wire-compatible medium and large message performance
+  by using full MTU packets in most cases instead of a power-of-two
   payload size.
-  + Open-MX 1.1.x is not wire compatible with earlier releases
-    if MX wire compatibility is disabled.
+  + Open-MX 1.1.x is not wire compatible with earlier releases if
+    MX wire compatibility is disabled.
+* Disable MX-wire-compatibility by default, configure for MTU=9000.
+* Add support for architectures with page size different from 4kB.
+
+Other improvements:
 * Add a new optional medium send path relying on page pinning and
   fragmented DMAs instead of page copy and large contigous socket
   buffers.
@@ -19,8 +21,6 @@ Improvements from previous release:
   and not overriding udev work when the environment looks sane.
 * The loopback interface hostname is now automatically set to
   'localhost'.
-* Enable driver status retrieval by reading /dev/open-mx.
-* Allow probing across multiple ctxids.
 * Miscellaneous small improvements and cleanups all over the place.
 
 Caveats:
