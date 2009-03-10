@@ -608,8 +608,8 @@ omx_iface_detach(struct omx_iface * iface, int force)
 /*
  * Format a buffer containing the list of attached ifaces.
  */
-int
-omx_ifnames_get(char *buf, struct kernel_param *kp)
+static int
+omx_ifnames_get(char *buf, size_t buflen, char sep)
 {
 	int total = 0;
 	int i;
@@ -621,21 +621,28 @@ omx_ifnames_get(char *buf, struct kernel_param *kp)
 		if (iface) {
 			char * ifname = iface->eth_ifp->name;
 			int length = strlen(ifname);
-			if (total + length + 2 > PAGE_SIZE) {
-				printk(KERN_ERR "Open-MX: Failed to get all interface names within a single page, ignoring the last ones\n");
+			if (total + length + 2 > buflen) {
+				printk(KERN_ERR "Open-MX: Failed to get all interface names within %ld bytes, ignoring the last ones\n",
+				       (unsigned long) buflen);
 				break;
 			}
 			strcpy(buf, ifname);
 			buf += length;
-			strcpy(buf, "\n");
-			buf += 1;
+			*(buf++) = sep;
+			*buf = '\0';
 			total += length+1;
 		}
 	}
 
 	rcu_read_unlock();
 
-	return total + 1;
+	return total;
+}
+
+int
+omx_ifnames_get_kp(char *buf, struct kernel_param *kp)
+{
+	return omx_ifnames_get(buf, PAGE_SIZE, '\n') + 1 /* ending '\0' */;
 }
 
 /*
@@ -758,7 +765,7 @@ omx_ifaces_store(const char *buf)
 static char *omx_delayed_ifnames = NULL;
 
 int
-omx_ifnames_set(const char *buf, struct kernel_param *kp)
+omx_ifnames_set_kp(const char *buf, struct kernel_param *kp)
 {
 	if (omx_ifaces) {
 		/* module parameter values are guaranteed to be \0-terminated */

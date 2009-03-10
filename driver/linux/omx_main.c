@@ -58,7 +58,7 @@ MODULE_PARM_DESC(name, "Unavailable unless " reason)
 
 /* actual module parameters */
 
-module_param_call(ifnames, omx_ifnames_set, omx_ifnames_get, NULL, S_IRUGO|S_IWUSR);
+module_param_call(ifnames, omx_ifnames_set_kp, omx_ifnames_get_kp, NULL, S_IRUGO|S_IWUSR);
 MODULE_PARM_DESC(ifnames, "Interfaces to attach on startup, comma-separated");
 
 int omx_iface_max = 32;
