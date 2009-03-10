@@ -21,6 +21,7 @@ Other improvements:
   and not overriding udev work when the environment looks sane.
 * The loopback interface hostname is now automatically set to
   'localhost'.
+* Add manpages for tools programs.
 * Miscellaneous small improvements and cleanups all over the place.
 
 Caveats:

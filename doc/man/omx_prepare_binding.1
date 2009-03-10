@@ -1,0 +1,72 @@
+.TH OMX_PREPARE_BINDING 1 "MARCH 2009"
+
+.SH NAME
+omx_prepare_binding \- generate a binding file from interrupt and interface affinities
+to be used by Open-MX processes when multiqueue Ethernet drivers are used
+
+.SH SYNOPSIS
+.B omx_prepare_binding [ options ] [ filename ]
+
+.SH DESCRIPTION
+.B omx_prepare_binding
+tries to gather interface and interrupt affinities from multiqueue
+Ethernet drivers, and generate a binding file.
+When OMX_PROCESS_BINDING is set in the environment, each Open-MX
+process opening an endpoint will read this file and bind onto the best
+cores according to these affinities.
+
+If the optional
+.B <filename>
+is given, bindings are generated in the corresponding file instead of
+the default
+.BR /tmp/open-mx.bindings.dat .
+It is then possible to use this custom file by passing
+.B OMX_PROCESS_BINDING=<filename>
+in the environment of the communicating processes.
+
+Binding information is gathered from multiqueue drivers
+by parsing the names of their interrupt lines.
+If multiple interrupts
+.RI ( slices )
+are discovered, the program tries to recognize their number
+and find the corresponding core affinities.
+It then generates a binding line associating some Open-MX
+endpoint numbers to an interrupt and its affinity mask.
+For instance, to bind endpoint number
+.B 10
+of local board with MAC address
+.B 01:23:45:67:89:ab
+to cores
+.BR #6 " or " #7 :
+.RS
+  board 01:23:45:67:89:ab ep 10 irq 1265 mask 000000c0
+.RE
+
+If
+.B omx_prepare_binding
+does not recognize slice numbers or cannot find information reliably,
+it outputs an empty binding file.
+It is still possible to manually fill the binding file.
+But it is recommended to contact the Open-MX development team in case
+some custom support for recognizing interrupt information for your driver
+is needed.
+
+.B omx_prepare_binding
+should run with privileged access since it must read
+interrupt affinities from
+.BR /proc/irq/*/smp_affinity .
+
+.SH OPTIONS
+.TP
+.B -v
+Display verbose messages.
+
+.TP
+.B -h
+Display a brief help message.
+
+.SH SEE ALSO
+omx_info(1)
+
+.SH AUTHOR
+Brice Goglin

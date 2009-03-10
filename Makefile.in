@@ -20,7 +20,7 @@ ifeq (@OMX_BUILD_DRIVER@,1)
   COMPONENTS	+=	driver
 endif
 ifeq (@OMX_BUILD_LIB@,1)
-  COMPONENTS	+=	lib tools tests
+  COMPONENTS	+=	lib tools tests man
   ifeq (@OMX_MX_ABI_COMPAT@,1)
     COMPONENTS	+=	mxtests
   endif
@@ -36,6 +36,7 @@ endif
 .PHONY: tools tools-installonly tools-install tools-clean tools-distclean
 .PHONY: tests tests-installonly tests-install tests-clean tests-distclean
 .PHONY: mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean
+.PHONY: man man-installonly man-install man-clean man-distclean
 .PHONY: other other-installonly other-install other-clean other-distclean
 .PHONY: fma fma-installonly fma-install fma-clean fma-distclean
 
@@ -75,6 +76,12 @@ tests tests-installonly tests-install tests-clean tests-distclean:
 
 mxtests mxtests-installonly mxtests-install mxtests-clean mxtests-distclean:
 	$(CMDPREFIX) $(MAKE) -C tests/mx bindir=$(bindir)/tests $(shell echo $@ | cut -s -d- -f2)
+
+#################
+# man targets
+
+man man-installonly man-install man-clean man-distclean:
+	$(CMDPREFIX) $(MAKE) -C doc/man $(shell echo $@ | cut -s -d- -f2)
 
 #################
 # fma targets

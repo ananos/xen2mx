@@ -1,0 +1,41 @@
+.TH OMX_HOSTNAME 1 "MARCH 2009"
+
+.SH NAME
+omx_hostname \- manipulate host names in the driver
+
+.SH SYNOPSIS
+.B omx_hostname [ options ]
+
+.SH DESCRIPTION
+.B omx_counters
+change the hostname associated with a local interface
+(the first interface by default),
+or clears all known peer names.
+
+.SH OPTIONS
+.TP
+.B -b <board number>
+Use the interface given by
+.B <board number>
+instead of the first interface (number 0).
+
+.TP
+.B -n <hostname>
+Set the hostname of the given local interface.
+This option requires privileged access.
+
+.TP
+.B -c
+Clear all known remote peer names in the driver table
+to force their rediscovery.
+This option requires privileged access.
+
+.TP
+.B -h
+Display a brief help message.
+
+.SH SEE ALSO
+omx_info(1), omx_init_peers(1)
+
+.SH AUTHOR
+Brice Goglin

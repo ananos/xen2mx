@@ -1,0 +1,50 @@
+.TH OMX_COUNTERS 1 "MARCH 2009"
+
+.SH NAME
+omx_counters \- display and clear Open-MX counters
+
+.SH SYNOPSIS
+.B omx_counters [ options ]
+
+.SH DESCRIPTION
+.B omx_counters
+displays counters about the currently running Open-MX driver.
+It lists all counter values on the given interface
+(the first interface by default).
+
+.SH OPTIONS
+.TP
+.B -b <board number>
+Use the interface given by
+.B <board number>
+instead of the first interface (number 0).
+
+.TP
+.B -s
+Use the virtual shared communication interface
+(used for communication between local processes)
+instead of a regular network interface.
+
+.TP
+.B -c
+Clear counter values for the given interface
+in the driver after displaying them.
+This option requires privileged access.
+
+.TP
+.B -q
+Only display counters whose value is non-null (default).
+
+.TP
+.B -v
+Display all counters, even those whose value is null.
+
+.TP
+.B -h
+Display a brief help message.
+
+.SH SEE ALSO
+omx_info(1)
+
+.SH AUTHOR
+Brice Goglin

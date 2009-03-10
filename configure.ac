@@ -105,7 +105,7 @@ AC_ARG_ENABLE(library-build,
 AC_MSG_RESULT($build_lib)
 
 if test x$build_lib = xyes ; then
-	lib_ac_output="libopen-mx/Makefile libopen-mx/Makefile.build tools/Makefile tests/Makefile tests/mx/Makefile"
+	lib_ac_output="libopen-mx/Makefile libopen-mx/Makefile.build tools/Makefile tests/Makefile tests/mx/Makefile doc/man/Makefile"
 	AC_SUBST(OMX_BUILD_LIB, 1)
 else
 	AC_SUBST(OMX_BUILD_LIB, 0)

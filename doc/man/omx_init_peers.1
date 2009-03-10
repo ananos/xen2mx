@@ -1,0 +1,63 @@
+.TH OMX_INIT_PEERS 1 "MARCH 2009"
+
+.SH NAME
+omx_init_peers \- manipulate the peer table in the driver
+
+.SH SYNOPSIS
+.B omx_init_peers [ options ]
+
+.B omx_init_peers [ options ] filename
+
+.B omx_init_peers [ options ] address hostname
+
+.SH DESCRIPTION
+.B omx_init_peers
+modifies the table of known peers in the driver by adding,
+replacing or clearing entries.
+
+The first form (without argument) applies options without adding any
+peer. The second form adds peers from the given
+.B filename
+into the driver.
+The third form adds a single peer using the given
+.BR address " and " hostname .
+
+When using the second form, the given file should contain
+one line per peer, with a MAC address followed by a hostname.
+For instance:
+.RS
+01:23:45:67:89:AB mypeername
+.RE
+
+.SH OPTIONS
+
+.TP
+.B -c
+Clear all existing peers before adding the new ones if given.
+This option requires privileged access.
+
+.TP
+.B -a
+Append peers to the existing ones if given (default).
+This option requires privileged access.
+
+.TP
+.B -d
+Mark the peer table configuration as done, as reported
+by
+.BR omx_info .
+This option requires privileged access.
+
+.TP
+.B -v
+Enable verbose messages.
+
+.TP
+.B -h
+Display a brief help message.
+
+.SH SEE ALSO
+omx_info(1), omx_hostname(1)
+
+.SH AUTHOR
+Brice Goglin

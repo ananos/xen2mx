@@ -1,0 +1,34 @@
+.TH OMX_ENDPOINT_INFO 1 "MARCH 2009"
+
+.SH NAME
+omx_endpoint_info \- display information about Open-MX endpoints
+
+.SH SYNOPSIS
+.B omx_endpoint_info [ options ]
+
+.SH DESCRIPTION
+.B omx_endpoint_info
+displays information about the currently running
+Open-MX endpoints.
+It lists all open endpoint on the given interface
+(the first interface by default),
+including information about the owner process.
+The raw interface is also listed if a peer discovery
+tool is running.
+
+.SH OPTIONS
+.TP
+.B -b <board number>
+Use the interface given by
+.B <board number>
+instead of the first interface (number 0).
+
+.TP
+.B -h
+Display a brief help message.
+
+.SH SEE ALSO
+omx_info(1)
+
+.SH AUTHOR
+Brice Goglin

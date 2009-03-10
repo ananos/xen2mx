@@ -1,0 +1,32 @@
+exec_prefix	=	@exec_prefix@
+prefix		=	@prefix@
+datarootdir	=	@datarootdir@
+mandir		=	@mandir@
+
+include @abs_top_srcdir@/common.mk
+
+MKDIR_P	=	@MKDIR_P@
+SED	=	@SED@
+INSTALL	=	@INSTALL@
+
+MANPAGES	=	$(wildcard @srcdir@/*.1)
+
+.PHONY: all installonly install clean distclean
+
+all:
+
+install.1:
+	$(CMDECHO) "  MKDIR   $(DESTDIR)$(mandir)/man1"
+	$(CMDPREFIX) if test ! -d $(DESTDIR)$(mandir)/man1; then \
+		$(MKDIR_P) $(DESTDIR)$(mandir)/man1 ; \
+	fi
+	$(CMDECHO) "  INSTALL $(patsubst %,$(DESTDIR)$(mandir)/man1/%,$(MANPAGES))"
+	$(CMDPREFIX) $(INSTALL) -m 0644 $(MANPAGES) $(DESTDIR)$(mandir)/man1/
+
+installonly: install.1
+
+install: install-only
+
+clean:
+
+distclean:
