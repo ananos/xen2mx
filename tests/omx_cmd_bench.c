@@ -21,8 +21,8 @@
 #include <getopt.h>
 #include <stdlib.h>
 
+#include "omx_config.h"
 #include "omx_lib.h"
-#include "omx_io.h"
 
 #define ITER 1000000
 
