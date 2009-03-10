@@ -25,7 +25,7 @@ install.1:
 
 installonly: install.1
 
-install: install-only
+install: installonly
 
 clean:
 
