@@ -418,27 +418,27 @@ else
   fi
 fi
 
-AC_ARG_WITH(medium-frag-max,
-	[AS_HELP_STRING([--with-medium-frag-max=<n>], [change medium fragment maximum payload size (depends on the MTU)])],
-	with_medium_frag_max=$withval)
-if test x$with_medium_frag_max != x; then
+AC_ARG_WITH(medium-frag-length,
+	[AS_HELP_STRING([--with-medium-frag-length=<n>], [change medium fragment maximum payload size (default depends on the MTU and wire compatibility)])],
+	with_medium_frag_length=$withval)
+if test x$with_medium_frag_length != x; then
   if test x$enable_mx_wire = xno; then
-    AC_MSG_CHECKING(medium frag max)
-    AC_MSG_RESULT($with_medium_frag_max)
-    AC_DEFINE_UNQUOTED(OMX_MEDIUM_FRAG_LENGTH_MAX, $with_medium_frag_max, [Define to change the medium frag length max])
+    AC_MSG_CHECKING(medium frag length)
+    AC_MSG_RESULT($with_medium_frag_length)
+    AC_DEFINE_UNQUOTED(OMX_MEDIUM_FRAG_LENGTH_MAX, $with_medium_frag_length, [Define to change the medium frag length max])
   else
     AC_MSG_ERROR([Changing the packet size requires MX-wire compatibility to be disabled (--disable-mx-wire)])
   fi
 fi
 
-AC_ARG_WITH(pull-reply-max,
-	[AS_HELP_STRING([--with-pull-reply-max=<n>], [change pull reply maximum payload size (depends on the MTU)])],
-	with_pull_reply_max=$withval)
-if test x$with_pull_reply_max != x; then
+AC_ARG_WITH(pull-reply-length,
+	[AS_HELP_STRING([--with-pull-reply-length=<n>], [change pull reply maximum payload size (default depends on the MTU and wire compatibility)])],
+	with_pull_reply_length=$withval)
+if test x$with_pull_reply_length != x; then
   if test x$enable_mx_wire = xno; then
-    AC_MSG_CHECKING(pull reply max)
-    AC_MSG_RESULT($with_pull_reply_max)
-    AC_DEFINE_UNQUOTED(OMX_PULL_REPLY_LENGTH_MAX, $with_pull_reply_max, [Define to change the pull reply length max])
+    AC_MSG_CHECKING(pull reply length)
+    AC_MSG_RESULT($with_pull_reply_length)
+    AC_DEFINE_UNQUOTED(OMX_PULL_REPLY_LENGTH_MAX, $with_pull_reply_length, [Define to change the pull reply length max])
   else
     AC_MSG_ERROR([Changing the packet size requires MX-wire compatibility to be disabled (--disable-mx-wire)])
   fi

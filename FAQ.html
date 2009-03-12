@@ -1356,8 +1356,8 @@ the latency very slightly.
   large MTU.
   If for some reason (for instance hardware-related preferences)
   some larger packets decrease performance, it is possible to
-  reduce their size with <tt>--with-medium-frag-max</tt> (for medium
-  message fragments) and <tt>--with-pull-reply-max</tt> (for large
+  reduce their size with <tt>--with-medium-frag-length</tt> (for medium
+  message fragments) and <tt>--with-pull-reply-length</tt> (for large
   message frames).
   The corresponding values may be check in the driver status
   as explained in <a href="#basics-mtu">Which MTU should my network support for Open-MX?</a></li>
@@ -1749,8 +1749,8 @@ The following options may be passed to the configure command line before buildin
   This may reduce large message throughput.
 </dd>
 
-<dt>--with-medium-frag-max=8952</dt>
-<dt>--with-pull-reply-max=8192</dt>
+<dt>--with-medium-frag-length=8952</dt>
+<dt>--with-pull-reply-length=8192</dt>
 <dd>Enforce the maximum size of medium message fragments
   instead of relying on the MTU and wire-compatibility configuration.
 </dd>
