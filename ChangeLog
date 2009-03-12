@@ -1,5 +1,6 @@
-Open-MX 1.0.901 aka 1.1-rc1 (March 10th 2009, svn r24xy)
+Open-MX 1.0.901 aka 1.1-rc1 (March 13th 2009, svn r24xy)
 ========================================================
+The non-MX-wire-compatible release.
 
 Major improvements from previous release:
 * Improve non-MX-wire-compatible medium and large message performance
@@ -22,6 +23,7 @@ Other improvements:
 * The loopback interface hostname is now automatically set to
   'localhost'.
 * Add manpages for tools programs.
+* Add the ability to iprobe/probe across multiple context ids.
 * Miscellaneous small improvements and cleanups all over the place.
 
 Caveats:
@@ -83,18 +85,12 @@ Improvements from previous release:
 
 Open-MX 0.9.3 aka 1.0-rc3 (September 22th 2008, svn r2061)
 ==========================================================
-
 Improvements from previous release:
 * Fix driver build on Centos 5.2 kernel.
 * Fix a small memory leak in the driver.
 * Make headers C++ compliant.
 * Dump the driver status when reading /dev/open-mx,
   added to omx_init status.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
-* Architectures with page size != 4kB are not supported yet.
 
 Open-MX 0.9.2 aka 1.0-rc2 (September 8th 2008, svn r2040)
 =========================================================
@@ -143,7 +139,7 @@ Other improvements from previous release:
 * Fix the management of pinning errors in case of invalid memory segments.
 * Fix invalid memory free in case of early-received large message notify.
 * Fix omx_init start/stop timeout to better deal with peer discovery
-  start/stop delay better.
+  start/stop delay.
 * Fix cross-compilation when the cross-compiler is given at build and not
   at configure time.
 * Fix modinfo and modprobe usage in the startup script, they are supposed
@@ -248,7 +244,7 @@ The Many-new-Features release.
 
 Major enhancements:
 * Add vectorial communication support through omx_isendv, omx_issendv
-  and omx_irecv.
+  and omx_irecvv.
 * Add shared communication between endpoints on the same nodes, even if
   they are attached to different interfaces.
 * Add safe partner disconnection detection and recovery, either when
