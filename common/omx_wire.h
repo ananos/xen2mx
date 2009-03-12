@@ -433,10 +433,19 @@ struct omx_pkt_pull_request {
 #endif /* !OMX_MX_WIRE_COMPAT */
 
 #ifdef OMX_MX_WIRE_COMPAT
-#define OMX_PULL_REPLY_PER_BLOCK 8
-#else
-#define OMX_PULL_REPLY_PER_BLOCK 32
-#endif
+
+# ifdef OMX_PULL_REPLY_PER_BLOCK
+#  error OMX_PULL_REPLY_PER_BLOCK should not be defined in wire-compatible mode
+# endif
+# define OMX_PULL_REPLY_PER_BLOCK 8
+
+#else /* !OMX_MX_WIRE_COMPAT */
+
+# ifndef OMX_PULL_REPLY_PER_BLOCK
+#  define OMX_PULL_REPLY_PER_BLOCK 32
+# endif
+
+#endif /* !OMX_MX_WIRE_COMPAT */
 
 #define OMX_PULL_BLOCK_LENGTH_MAX (OMX_PULL_REPLY_LENGTH_MAX*OMX_PULL_REPLY_PER_BLOCK)
 

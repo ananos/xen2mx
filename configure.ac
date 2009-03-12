@@ -444,6 +444,19 @@ if test x$with_pull_reply_length != x; then
   fi
 fi
 
+AC_ARG_WITH(pull-block-replies,
+	[AS_HELP_STRING([--with-pull-block-replies=<n>], [change the number of pull replies per block (default is 32 in non-MX-wire-compatible mode)])],
+	with_pull_block_replies=$withval)
+if test x$with_pull_block_replies != x; then
+  if test x$enable_mx_wire = xno; then
+    AC_MSG_CHECKING(pull block replies)
+    AC_MSG_RESULT($with_pull_block_replies)
+    AC_DEFINE_UNQUOTED(OMX_PULL_REPLY_PER_BLOCK, $with_pull_block_replies, [Define to change the number of pull replies per block])
+  else
+    AC_MSG_ERROR([Changing the number of pull replies per block requires MX-wire compatibility to be disabled (--disable-mx-wire)])
+  fi
+fi
+
 AC_ARG_WITH(ethertype,
 	[AS_HELP_STRING([--with-ethertype=<value>], [change Ethertype (default is 0x86DF)])],
 	ethertype=$withval, ethertype=default)
