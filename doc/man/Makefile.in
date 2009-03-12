@@ -20,7 +20,7 @@ install.1:
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(mandir)/man1; then \
 		$(MKDIR_P) $(DESTDIR)$(mandir)/man1 ; \
 	fi
-	$(CMDECHO) "  INSTALL $(patsubst %,$(DESTDIR)$(mandir)/man1/%,$(MANPAGES))"
+	$(CMDECHO) "  INSTALL $(patsubst @srcdir@/%,$(DESTDIR)$(mandir)/man1/%,$(MANPAGES))"
 	$(CMDPREFIX) $(INSTALL) -m 0644 $(MANPAGES) $(DESTDIR)$(mandir)/man1/
 
 installonly: install.1
