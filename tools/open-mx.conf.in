@@ -14,3 +14,6 @@ OMX_MODULE_DEPENDS=
 
 # Additional fma command-line parameters (-D for debug, ...)
 OMX_FMA_PARAMS=
+
+# Additional fma startup timeout
+OMX_FMA_START_TIMEOUT=5
