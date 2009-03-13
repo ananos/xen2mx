@@ -1,6 +1,6 @@
-Open-MX 1.0.901 aka 1.1-rc1 (March 13th 2009, svn r24xy)
+Open-MX 1.0.901 aka 1.1-rc1 (March 13th 2009, svn r2466)
 ========================================================
-The non-MX-wire-compatible release.
+The improved non-MX-wire-compatibility release.
 
 Major improvements from previous release:
 * Improve non-MX-wire-compatible medium and large message performance
