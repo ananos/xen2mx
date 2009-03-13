@@ -226,10 +226,12 @@ start_peer_discovery() {
 	pid=$!
 
 	# wait a bit for the process to start (and maybe fail)
-	# FMA can take up to 5 seconds
 	sleep 5
 
 	if [ "${OMX_PEER_DISCOVERY}" = "fma" ] ; then
+	    # FMA can take up to 10 seconds
+	    echo "Waiting for FMA to start..."
+	    sleep 5
 	    # fma -d will daemonize, so the $pid child is gone.
 	    # look in fma.pid and use it if it changed
 	    newfmapid=$(cat "$FMS_RUN/fma.pid" 2>/dev/null || true)
