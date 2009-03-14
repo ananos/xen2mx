@@ -1,5 +1,3 @@
-* document omx_init config file options
-
 * stop supporting mtu!=1500/9000 ?
   + go back to mtu/wire-compat indep library, with send
     function pointers initialized at connect

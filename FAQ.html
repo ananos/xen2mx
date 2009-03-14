@@ -1007,7 +1007,8 @@ $ insmod lib/modules/.../open-mx.ko ifnames=eth3,eth2
 <p>
 Once Open-MX has been installed with omx_local_install, the
 /etc/open-mx/open-mx.conf may be modified to configure which
-interfaces should be attached at startup.
+interfaces should be attached at startup
+(see also <a href="#startup-config">What are Open-MX startup-time configuration options?</a>).
 </p>
 
 
@@ -1910,6 +1911,50 @@ Some of them may also be modified later by writing into
 <dt>copybench=1</dt>
 <dd>Enable a memory copy benchmark at startup.
   Default is disabled (0).
+</dd>
+
+</dl>
+
+<p>
+  When starting Open-MX with the <tt>omx_init</tt> script
+  (or <tt>/etc/init.d/open-mx</tt> if installed by <tt>omx_local_install</tt>),
+  it is also possible to tune its startup by modifying the
+  <tt>/etc/open-mx/open-mx.conf</tt> configuration file with the
+  following variables.
+  It is also possible to overwrite these variables by passing them
+  in the environment when running the startup script.
+</p>
+
+<dl>
+
+<dt>OMX_IFACES="all"</dt>
+<dd>
+ Defines which interface to acquire for Open-MX at startup.
+ "all" attaches all available interfaces (default).
+ "eth1,eth3" attaches eth1 and eth3.
+ " " attaches none of them.
+ See also <a href="#ifaces-startup">Which interfaces are attached are startup?</a>.
+
+</dd>
+
+<dt>OMX_MODULE_PARAMS=</dt>
+<dd>
+  Pass some parameter to Open-MX kernel module on load.
+</dd>
+
+<dt>OMX_MODULE_DEPENDS=</dt>
+<dd>
+  Define some kernel module dependencies (useful if modinfo is missing).
+</dd>
+
+<dt>OMX_FMA_PARAMS=</dt>
+<dd>
+  Pass additional FMA command-line parameters (-D for debug, ...).
+</dd>
+
+<dt>OMX_FMA_START_TIMEOUT=5</dt>
+<dd>
+  Define the additional FMA startup timeout in seconds (5 by default).
 </dd>
 
 </dl>
