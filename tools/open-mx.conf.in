@@ -1,7 +1,10 @@
 # Open-MX configuration
+# This file is sourced by the omx_init startup script
+# (or by /etc/init.d/open-mx once installed with omx_local_install)
 
-# If unset or null, the following variables will be overwritten
-# by default values
+# The following variables may be overwritten by passing them
+# in the environment when running the omx_init startup script.
+# If unset or null, they will be overwritten by default values.
 
 # Which interface to acquire for Open-MX at startup?
 # "all" loads all available interfaces (default)
