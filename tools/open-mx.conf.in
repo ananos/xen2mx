@@ -1,10 +1,13 @@
 # Open-MX configuration
 
+# If unset or null, the following variables will be overwritten
+# by default values
+
 # Which interface to acquire for Open-MX at startup?
-# "all" loads all available interfaces, up to a 8 max by default
+# "all" loads all available interfaces (default)
 # "eth1,eth3" loads eth1 and eth3
-# "" loads none of them
-IFACES="all"
+# " " loads none of them
+IFACES=
 
 # Additional open-mx module parameters
 OMX_MODULE_PARAMS=
@@ -15,5 +18,5 @@ OMX_MODULE_DEPENDS=
 # Additional fma command-line parameters (-D for debug, ...)
 OMX_FMA_PARAMS=
 
-# Additional fma startup timeout
-OMX_FMA_START_TIMEOUT=5
+# Additional fma startup timeout in seconds (5 by default)
+OMX_FMA_START_TIMEOUT=

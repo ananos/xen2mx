@@ -36,7 +36,6 @@ FMS_SERVER=@fms_server@
 
 UDEV_RULES_DIR=@omx_udev_rules_dir@
 UDEV_RULES_FILE=${UDEV_RULES_DIR}/@omx_udev_rules_file@
-OMX_FMA_START_TIMEOUT=5
 
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
@@ -51,9 +50,13 @@ if test ! -d ${OMX_PREFIX}; then
     exit 1
 fi
 
+# read values from the config file
 if test -r ${OMX_CONFIG}; then
     . ${OMX_CONFIG}
 fi
+# add defaults
+[ -z "$OMX_FMA_START_TIMEOUT" ] && OMX_FMA_START_TIMEOUT=5
+[ -z "$IFACES" ] && IFACES="all"
 
 usage () {
 	echo "Usage: $0 [options] <command> [module load params]"
