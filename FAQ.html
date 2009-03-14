@@ -259,7 +259,10 @@
   What are Open-MX build-time configuration options?
 </a></li>
 <li><a href="#config-installtime">
-    What are Open-MX install-time configuration options?
+  What are Open-MX install-time configuration options?
+</a></li>
+<li><a href="#config-startup">
+  What are Open-MX startup-time configuration options?
 </a></li>
 <li><a href="#config-runtime">
   What are Open-MX runtime configuration options?
@@ -1817,12 +1820,107 @@ to tune the installation:
 </dl>
 
 
+<h4><a id="config-startup" href="#config-startup">
+  What are Open-MX startup-time configuration options?
+</a></h4>
+<p>
+The following module parameters may be passed to the driver module when loading,
+either as a parameter to the modprobe command, or through the OMX_MODULE_PARAMS
+variable for the omx_init or /etc/init.d/open-mx startup script.
+Some of them may also be modified later by writing into
+/sys/module/open_mx/parameters/&lt;parameter&gt;.
+</p>
+
+<dl>
+
+<dt>ifnames="eth2 eth3"</dt>
+<dd>Attach interfaces eth2 and eth3 at startup instead of all interfaces.
+  See <a href="#ifaces">Managing Interfaces</a> for details.
+</dd>
+
+<dt>ifaces=32</dt>
+<dd>Allow a maximum of 32 interfaces to be attached at the same time.
+  Default is 32.
+</dd>
+
+<dt>endpoints=32</dt>
+<dd>Allow a maximum of 32 endpoints to be open by interfaces.
+  Default is 32.
+</dd>
+
+<dt>peers=1024</dt>
+<dd>Allow a maximum of 1024 peers to be connected on the network.
+  Default is 1024.
+</dd>
+
+<dt>demandpin=1</dt>
+<dd>Defer memory pinning of large region until really needed to enable
+  overlap of pinning with communication (only shared-memory for now).
+  Default is 0 (disabled).
+</dd>
+
+<dt>dmaengine=1</dt>
+<dd>Enable DMA engine to offload memory copies, when supported in hardware
+  and in the kernel. Modifying this value will display the DMA engine
+  status in the kernel logs.
+  Default is 0 (disabled).
+</dd>
+
+<dt>dmaasyncmin=65536</dt>
+<dd>Offload asynchronous copy on DMA engine hardware only if the whole
+  message length is above this threshold. This is used for large message
+  receive. Even if fragments are large, offloading their copy does not
+  make much sense if there are very few of them.
+  Default is 64 kbytes.
+</dd>
+
+<dt>dmaasyncfragmin=1024</dt>
+<dd>Offload asynchronous copy on DMA engine hardware only if the current
+  fragment length is above this threshold. This is used for large
+  message receive. Even if the whole message is big, offloading very
+  small fragment copy does not make much sense if submitting the copy
+  offload request is slower than copying directly.
+  Default is 1024 bytes.
+</dd>
+
+<dt>dmasyncmin=2097152</dt>
+<dd>Offload synchronous copy on DMA engine hardware only if the length
+  is above this threshold. This is used for medium message receive,
+  and shared memory communication. Offloading small synchronous copies
+  is not faster than a regular copy when the data is smaller than the
+  cache.
+  Default is 2 Mbytes.
+</dd>
+
+<dt>skbfrags=16</dt>
+<dd>Allow a maximum of 16 frags to be attached to socket buffer on the
+  send side. If the underlying driver does not support frags, 0 should
+  be used.
+  The default and maximal value is MAX_SKB_FRAGS (16 on common archs).
+</dd>
+
+<dt>skbcopy=0</dt>
+<dd>Copy buffers small buffers into a linear skb instead of attaching
+  pages. If the underlying driver is slow sending frags, increasing
+  this parameter to copy small frags into linear skb may be faster
+  than using frags as usual.
+  Default is 0 (never copy, always attach).
+</dd>
+
+<dt>copybench=1</dt>
+<dd>Enable a memory copy benchmark at startup.
+  Default is disabled (0).
+</dd>
+
+</dl>
+
+
 <h4><a id="config-runtime" href="#config-runtime">
   What are Open-MX runtime configuration options?
 </a></h4>
 <p>
 The following environment variables may be used to change the library
-behavior at runtime:
+behavior at runtime, when starting a process:
 </p>
 
 <dl>
@@ -1977,97 +2075,6 @@ behavior at runtime:
   and %E the endpoint index (or X if no endpoint is involved).
   If another string is given, it is used as a prefix after replacing
   %P and %E if necessary.
-</dd>
-
-</dl>
-
-<p>
-The following module parameters may be passed to the driver module when loading,
-either as a parameter to the modprobe command, or through the OMX_MODULE_PARAMS
-variable for the omx_init or /etc/init.d/open-mx startup script.
-Some of them may also be modified later by writing into
-/sys/module/open_mx/parameters/&lt;parameter&gt;.
-</p>
-
-<dl>
-
-<dt>ifnames="eth2 eth3"</dt>
-<dd>Attach interfaces eth2 and eth3 at startup instead of all interfaces.
-  See <a href="#ifaces">Managing Interfaces</a> for details.
-</dd>
-
-<dt>ifaces=32</dt>
-<dd>Allow a maximum of 32 interfaces to be attached at the same time.
-  Default is 32.
-</dd>
-
-<dt>endpoints=32</dt>
-<dd>Allow a maximum of 32 endpoints to be open by interfaces.
-  Default is 32.
-</dd>
-
-<dt>peers=1024</dt>
-<dd>Allow a maximum of 1024 peers to be connected on the network.
-  Default is 1024.
-</dd>
-
-<dt>demandpin=1</dt>
-<dd>Defer memory pinning of large region until really needed to enable
-  overlap of pinning with communication (only shared-memory for now).
-  Default is 0 (disabled).
-</dd>
-
-<dt>dmaengine=1</dt>
-<dd>Enable DMA engine to offload memory copies, when supported in hardware
-  and in the kernel. Modifying this value will display the DMA engine
-  status in the kernel logs.
-  Default is 0 (disabled).
-</dd>
-
-<dt>dmaasyncmin=65536</dt>
-<dd>Offload asynchronous copy on DMA engine hardware only if the whole
-  message length is above this threshold. This is used for large message
-  receive. Even if fragments are large, offloading their copy does not
-  make much sense if there are very few of them.
-  Default is 64 kbytes.
-</dd>
-
-<dt>dmaasyncfragmin=1024</dt>
-<dd>Offload asynchronous copy on DMA engine hardware only if the current
-  fragment length is above this threshold. This is used for large
-  message receive. Even if the whole message is big, offloading very
-  small fragment copy does not make much sense if submitting the copy
-  offload request is slower than copying directly.
-  Default is 1024 bytes.
-</dd>
-
-<dt>dmasyncmin=2097152</dt>
-<dd>Offload synchronous copy on DMA engine hardware only if the length
-  is above this threshold. This is used for medium message receive,
-  and shared memory communication. Offloading small synchronous copies
-  is not faster than a regular copy when the data is smaller than the
-  cache.
-  Default is 2 Mbytes.
-</dd>
-
-<dt>skbfrags=16</dt>
-<dd>Allow a maximum of 16 frags to be attached to socket buffer on the
-  send side. If the underlying driver does not support frags, 0 should
-  be used.
-  The default and maximal value is MAX_SKB_FRAGS (16 on common archs).
-</dd>
-
-<dt>skbcopy=0</dt>
-<dd>Copy buffers small buffers into a linear skb instead of attaching
-  pages. If the underlying driver is slow sending frags, increasing
-  this parameter to copy small frags into linear skb may be faster
-  than using frags as usual.
-  Default is 0 (never copy, always attach).
-</dd>
-
-<dt>copybench=1</dt>
-<dd>Enable a memory copy benchmark at startup.
-  Default is disabled (0).
 </dd>
 
 </dl>
