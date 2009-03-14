@@ -1,3 +1,13 @@
+Open-MX 1.0.902 aka 1.1-rc2
+========================================================
+
+Changes:
+* The OMX_IFACES variable in open-mx.conf replaces the old IFACES.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.0.901 aka 1.1-rc1 (March 13th 2009, svn r2466)
 ========================================================
 The improved non-MX-wire-compatibility release.
@@ -25,10 +35,6 @@ Other improvements:
 * Add manpages for tools programs.
 * Add the ability to iprobe/probe across multiple context ids.
 * Miscellaneous small improvements and cleanups all over the place.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.0.5 (January 29th 2009, svn/open-mx-1.0.x r2301)
 ==========================================================

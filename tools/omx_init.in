@@ -56,7 +56,10 @@ if test -r ${OMX_CONFIG}; then
 fi
 # add defaults
 [ -z "$OMX_FMA_START_TIMEOUT" ] && OMX_FMA_START_TIMEOUT=5
-[ -z "$IFACES" ] && IFACES="all"
+[ -z "$OMX_IFACES" ] && OMX_IFACES="all"
+
+# drop from Open-MX 1.2
+[ -n "$IFACES" ] && echo "WARNING: IFACES deprecated, use OMX_IFACES instead."
 
 usage () {
 	echo "Usage: $0 [options] <command> [module load params]"
@@ -99,7 +102,7 @@ done
 
 [ -z "$cmd" ] && usage
 
-OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${IFACES}"
+OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${OMX_IFACES}"
 
 # Remove the Open-MX module if loaded
 unload_omx() {
