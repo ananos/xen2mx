@@ -1,5 +1,3 @@
-* check low-rate adaptive_rx coalescing delay in omx_iface_get_rx_coalesce()
-
 * stop supporting mtu!=1500/9000 ?
   + go back to mtu/wire-compat indep library, with send
     function pointers initialized at connect

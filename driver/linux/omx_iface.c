@@ -301,7 +301,10 @@ omx_iface_get_rx_coalesce(struct net_device * ifp, unsigned *usecs)
 	if (ifp->ethtool_ops && ifp->ethtool_ops->get_coalesce) {
 		struct ethtool_coalesce coal;
 		ifp->ethtool_ops->get_coalesce(ifp, &coal);
-		*usecs = coal.rx_coalesce_usecs;
+		if (coal.use_adaptive_rx_coalesce)
+			*usecs = coal.rx_coalesce_usecs_low;
+		else
+			*usecs = coal.rx_coalesce_usecs;
 		return 0;
 	}
 	return -ENOSYS;
