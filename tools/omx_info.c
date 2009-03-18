@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "Failed to read board count, %s\n", omx_strerror(ret));
     goto out;
   }
-  printf("Found %ld boards (%ld max) supporting %ld endpoints each\n",
+  printf("Found %ld boards (%ld max) supporting %ld endpoints each:\n",
 	 (unsigned long) count, (unsigned long) max, (unsigned long) emax);
 
   for(i=0, found=0; i<max && found<count; i++) {
@@ -91,21 +91,19 @@ int main(int argc, char *argv[])
 
     omx__board_addr_sprintf(board_addr_str, board_info.addr);
 
-    printf("%s (board #%d name %s addr %s)\n",
+    printf(" %s (board #%d name %s addr %s)\n",
 	   board_info.hostname, i, board_info.ifacename, board_addr_str);
 
     if (board_info.drivername[0] != '\0')
-      printf("  managed by driver '%s'\n", board_info.drivername);
+      printf("   managed by driver '%s'\n", board_info.drivername);
     if (board_info.numa_node != -1)
-      printf("  attached to numa node %d\n", board_info.numa_node);
+      printf("   attached to numa node %d\n", board_info.numa_node);
     if (board_info.status & OMX_BOARD_INFO_STATUS_DOWN)
-      printf("  WARNING: interface is currently DOWN.\n");
+      printf("   WARNING: interface is currently DOWN.\n");
     if (board_info.status & OMX_BOARD_INFO_STATUS_BAD_MTU)
-      printf("  WARNING: MTU=%ld invalid\n", (unsigned long)board_info.mtu);
+      printf("   WARNING: MTU=%ld invalid\n", (unsigned long)board_info.mtu);
     if (board_info.status & OMX_BOARD_INFO_STATUS_HIGH_INTRCOAL)
-      printf("  WARNING: high interrupt-coalescing\n");
-
-    printf("\n");
+      printf("   WARNING: high interrupt-coalescing\n");
   }
 
   /* print the common peer table */
