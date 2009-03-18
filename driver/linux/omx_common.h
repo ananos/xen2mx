@@ -29,7 +29,7 @@ struct sk_buff;
 
 /* constants */
 #define OMX_PULL_BLOCK_DESCS_NR 4
-#define OMX_IFACE_RX_USECS_WARN_MIN 10
+#define OMX_IFACE_RX_USECS_WARN_MIN 13
 
 /* globals */
 extern struct omx_driver_desc * omx_driver_userdesc; /* exported read-only to user-space */
