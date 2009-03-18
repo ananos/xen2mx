@@ -24,11 +24,15 @@
 
 #include "omx_lib.h"
 
+static int verbose = 1;
+
 static void
 usage(int argc, char *argv[])
 {
   fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tonly display board id <n>\n");
+  fprintf(stderr, " -q\tdo not display verbose messages\n");
+  fprintf(stderr, " -v\tdisplay verbose messages\n");
 }
 
 static int
@@ -52,15 +56,15 @@ handle_one_board(int index)
   printf(" %s (board #%d name %s addr %s)\n",
 	 board_info.hostname, index, board_info.ifacename, board_addr_str);
 
-  if (board_info.drivername[0] != '\0')
+  if (verbose && board_info.drivername[0] != '\0')
     printf("   managed by driver '%s'\n", board_info.drivername);
-  if (board_info.numa_node != -1)
+  if (verbose && board_info.numa_node != -1)
     printf("   attached to numa node %d\n", board_info.numa_node);
   if (board_info.status & OMX_BOARD_INFO_STATUS_DOWN)
     printf("   WARNING: interface is currently DOWN.\n");
   if (board_info.status & OMX_BOARD_INFO_STATUS_BAD_MTU)
     printf("   WARNING: MTU=%ld invalid\n", (unsigned long)board_info.mtu);
-  if (board_info.status & OMX_BOARD_INFO_STATUS_HIGH_INTRCOAL)
+  if (verbose && board_info.status & OMX_BOARD_INFO_STATUS_HIGH_INTRCOAL)
     printf("   WARNING: high interrupt-coalescing\n");
 
   return 0;
@@ -77,14 +81,16 @@ int main(int argc, char *argv[])
   int i;
   int c;
 
-  printf("Open-MX version " PACKAGE_VERSION "\n");
-  printf(" build: " OMX_BUILD_STR "\n");
-  printf("\n");
-
-  while ((c = getopt(argc, argv, "b:h")) != -1)
+  while ((c = getopt(argc, argv, "b:qvh")) != -1)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
+      break;
+    case 'q':
+      verbose = 0;
+      break;
+    case 'v':
+      verbose = 1;
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
@@ -93,6 +99,12 @@ int main(int argc, char *argv[])
       exit(-1);
       break;
     }
+
+  if (verbose) {
+    printf("Open-MX version " PACKAGE_VERSION "\n");
+    printf(" build: " OMX_BUILD_STR "\n");
+    printf("\n");
+  }
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -121,22 +133,24 @@ int main(int argc, char *argv[])
   else
     handle_one_board(bid);
 
-  /* print the common peer table */
-  printf("\n");
-  /* get peer table state */
-  ret = omx__driver_get_peer_table_state(&configured, NULL, NULL, &mapper_id);
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to get peer table status, %s\n", omx_strerror(ret));
-    goto out;
+  if (verbose) {
+    /* print the common peer table */
+    printf("\n");
+    /* get peer table state */
+    ret = omx__driver_get_peer_table_state(&configured, NULL, NULL, &mapper_id);
+    if (ret != OMX_SUCCESS) {
+      fprintf(stderr, "Failed to get peer table status, %s\n", omx_strerror(ret));
+      goto out;
+    }
+    if (configured) {
+      omx__board_addr_sprintf(board_addr_str, mapper_id);
+      printf("Peer table is ready, mapper is %s\n", board_addr_str);
+    } else {
+      printf("Peer table is not configured yet\n");
+    }
+    printf("================================================\n");
+    omx__peers_dump("  %d) %s %s\n");
   }
-  if (configured) {
-    omx__board_addr_sprintf(board_addr_str, mapper_id);
-    printf("Peer table is ready, mapper is %s\n", board_addr_str);
-  } else {
-    printf("Peer table is not configured yet\n");
-  }
-  printf("================================================\n");
-  omx__peers_dump("  %d) %s %s\n");
 
 
   return 0;
