@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x208
+#define OMX_DRIVER_ABI_VERSION		0x209
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -157,6 +157,10 @@ struct omx_endpoint_desc {
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED (1ULL << 4)
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_HIGH_INTRCOAL (1ULL << 5)
 
+#define OMX_BOARD_INFO_STATUS_DOWN (1ULL << 0)
+#define OMX_BOARD_INFO_STATUS_BAD_MTU (1ULL << 1)
+#define OMX_BOARD_INFO_STATUS_HIGH_INTRCOAL (1ULL << 2)
+
 /* only valid for get_info and get_counters */
 #define OMX_SHARED_FAKE_IFACE_INDEX 0xfffffffe
 
@@ -171,17 +175,20 @@ struct omx_cmd_get_board_info {
 	struct omx_board_info {
 		uint64_t addr;
 		/* 8 */
+		uint32_t mtu;
 		uint32_t numa_node;
-		uint32_t pad;
 		/* 16 */
+		uint32_t status;
+		uint32_t pad;
+		/* 24 */
 		char hostname[OMX_HOSTNAMELEN_MAX];
-		/* 96 */
+		/* 104 */
 		char ifacename[OMX_IF_NAMESIZE];
-		/* 112 */
+		/* 120 */
 		char drivername[OMX_DRIVER_NAMESIZE];
-		/* 128 */
+		/* 136 */
 	} info;
-	/* 136 */
+	/* 144 */
 };
 
 struct omx_cmd_get_endpoint_info {

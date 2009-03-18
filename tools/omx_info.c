@@ -111,6 +111,13 @@ int main(int argc, char *argv[])
       printf("  managed by driver '%s'\n", board_info.drivername);
     if (board_info.numa_node != -1)
       printf("  attached to numa node %d\n", board_info.numa_node);
+    if (board_info.status & OMX_BOARD_INFO_STATUS_DOWN)
+      printf("  WARNING: interface is currently DOWN.\n");
+    if (board_info.status & OMX_BOARD_INFO_STATUS_BAD_MTU)
+      printf("  WARNING: MTU=%ld invalid\n", (unsigned long)board_info.mtu);
+    if (board_info.status & OMX_BOARD_INFO_STATUS_HIGH_INTRCOAL)
+      printf("  WARNING: high interrupt-coalescing\n");
+
     printf("==============================================\n");
 
     omx__peers_dump("  %d) %s %s\n");

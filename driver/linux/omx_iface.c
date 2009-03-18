@@ -157,6 +157,7 @@ omx_iface_get_info(uint32_t board_index, struct omx_board_info *info)
 {
 	struct omx_iface * iface;
 	struct net_device * ifp;
+	unsigned rx_coalesce;
 	int ret;
 
 	BUILD_BUG_ON(OMX_IF_NAMESIZE != IFNAMSIZ);
@@ -194,6 +195,16 @@ omx_iface_get_info(uint32_t board_index, struct omx_board_info *info)
 		info->ifacename[OMX_IF_NAMESIZE-1] = '\0';
 		strncpy(info->hostname, iface->peer.hostname, OMX_HOSTNAMELEN_MAX);
 		info->hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
+
+		info->mtu = ifp->mtu;
+		info->status = 0;
+		if (!(dev_get_flags(ifp) & IFF_UP))
+			info->status |= OMX_BOARD_INFO_STATUS_DOWN;
+		if (ifp->mtu < OMX_MTU)
+                	info->status |= OMX_BOARD_INFO_STATUS_BAD_MTU;
+		if (!omx_iface_get_rx_coalesce(ifp, &rx_coalesce)
+		    && rx_coalesce >= OMX_IFACE_RX_USECS_WARN_MIN)
+			info->status |= OMX_BOARD_INFO_STATUS_HIGH_INTRCOAL;
 
 #ifdef CONFIG_PCI
 		dev = omx_ifp_to_dev(ifp);
