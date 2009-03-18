@@ -214,6 +214,11 @@ load_omx() {
     check_or_create_device "/dev/$RAW_DEVICE_NAME" "$RAW_DEVICE_GROUP" "$RAW_DEVICE_MODE" "open-mx-raw" "raw"
 }
 
+# Check the driver status
+check_omx() {
+    ${OMX_PREFIX}/bin/omx_info -q
+}
+
 # Start the peer discovery
 start_peer_discovery() {
     if test ${OMX_STATIC_MAPPING} -eq 1 ; then
@@ -298,6 +303,7 @@ case "$cmd" in
     start)
 	load_omx
 	start_peer_discovery
+	check_omx
 	;;
     stop)
 	stop_peer_discovery
@@ -313,6 +319,7 @@ case "$cmd" in
 	unload_omx
 	load_omx
 	start_peer_discovery
+	check_omx
         ;;
     start-discovery)
 	start_peer_discovery
@@ -332,6 +339,7 @@ case "$cmd" in
 	if grep -E 'open(-|_)mx' /proc/modules > /dev/null; then
 	    echo "Open-MX driver is loaded"
 	    cat "/dev/$MAIN_DEVICE_NAME"
+	    check_omx
 	else
 	    echo "Open-MX driver is not loaded"
 	fi
