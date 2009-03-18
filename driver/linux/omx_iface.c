@@ -295,6 +295,18 @@ omx_iface_set_hostname(uint32_t board_index, char * hostname)
 	return ret;
 }
 
+int
+omx_iface_get_rx_coalesce(struct net_device * ifp, unsigned *usecs)
+{
+	if (ifp->ethtool_ops && ifp->ethtool_ops->get_coalesce) {
+		struct ethtool_coalesce coal;
+		ifp->ethtool_ops->get_coalesce(ifp, &coal);
+		*usecs = coal.rx_coalesce_usecs;
+		return 0;
+	}
+	return -ENOSYS;
+}
+
 void
 omx_iface_release(struct omx_iface * iface)
 {
@@ -394,6 +406,7 @@ omx_iface_attach(struct net_device * ifp)
 	struct device *dev;
 	char *hostname;
 	unsigned mtu = ifp->mtu;
+	unsigned rx_coalesce;
 	int ret;
 	int i;
 
@@ -440,14 +453,10 @@ omx_iface_attach(struct net_device * ifp)
 	if (mtu < OMX_MTU)
 		printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' MTU should be at least %d, current value %d might cause problems\n",
 		       ifp->name, OMX_MTU, mtu);
-
-	if (ifp->ethtool_ops && ifp->ethtool_ops->get_coalesce) {
-		struct ethtool_coalesce coal;
-		ifp->ethtool_ops->get_coalesce(ifp, &coal);
-		if (coal.rx_coalesce_usecs >= OMX_IFACE_RX_USECS_WARN_MIN)
-			printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' interrupt coalescing very high (%ldus)\n",
-			       ifp->name, (unsigned long) coal.rx_coalesce_usecs);
-	}
+	if (!omx_iface_get_rx_coalesce(ifp, &rx_coalesce)
+	    && rx_coalesce >= OMX_IFACE_RX_USECS_WARN_MIN)
+		printk(KERN_WARNING "Open-MX:   WARNING: Interface '%s' interrupt coalescing very high (%ldus)\n",
+		       ifp->name, (unsigned long) rx_coalesce);
 
 	hostname = kmalloc(OMX_HOSTNAMELEN_MAX, GFP_KERNEL);
 	if (!hostname) {
