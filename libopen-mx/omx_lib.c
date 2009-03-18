@@ -181,8 +181,8 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     /* FIXME: find a nice way to exit here? */
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_HIGH_INTRCOAL) {
-    omx__warning(ep, "Driver reporting very high interrupt coalescing for interface %s (%s) for endpoint %d, check dmesg\n",
-		 ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
+    omx__verbose_printf(ep, "Driver reporting very high interrupt coalescing for interface %s (%s) for endpoint %d, check dmesg\n",
+			ep->board_info.ifacename, ep->board_info.hostname, ep->endpoint_index);
   }
 
   list_for_each_entry(partner, &ep->throttling_partners_list, endpoint_throttling_partners_elt)
