@@ -73,18 +73,6 @@ int main(int argc, char *argv[])
   }
   printf("Found %ld boards (%ld max) supporting %ld endpoints each\n",
 	 (unsigned long) count, (unsigned long) max, (unsigned long) emax);
-  /* get peer table state */
-  ret = omx__driver_get_peer_table_state(&configured, NULL, NULL, &mapper_id);
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to get peer table status, %s\n", omx_strerror(ret));
-    goto out;
-  }
-  if (configured) {
-    omx__board_addr_sprintf(board_addr_str, mapper_id);
-    printf("Peer table is ready, mapper is %s.\n", board_addr_str);
-  } else {
-    printf("Peer table is not configured yet.\n");
-  }
 
   for(i=0, found=0; i<max && found<count; i++) {
     uint32_t board_index = i;
@@ -101,7 +89,6 @@ int main(int argc, char *argv[])
     assert(i == board_index);
     found++;
 
-    printf("\n");
     omx__board_addr_sprintf(board_addr_str, board_info.addr);
 
     printf("%s (board #%d name %s addr %s)\n",
@@ -118,10 +105,26 @@ int main(int argc, char *argv[])
     if (board_info.status & OMX_BOARD_INFO_STATUS_HIGH_INTRCOAL)
       printf("  WARNING: high interrupt-coalescing\n");
 
-    printf("==============================================\n");
-
-    omx__peers_dump("  %d) %s %s\n");
+    printf("\n");
   }
+
+  /* print the common peer table */
+  printf("\n");
+  /* get peer table state */
+  ret = omx__driver_get_peer_table_state(&configured, NULL, NULL, &mapper_id);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to get peer table status, %s\n", omx_strerror(ret));
+    goto out;
+  }
+  if (configured) {
+    omx__board_addr_sprintf(board_addr_str, mapper_id);
+    printf("Peer table is ready, mapper is %s\n", board_addr_str);
+  } else {
+    printf("Peer table is not configured yet\n");
+  }
+  printf("================================================\n");
+  omx__peers_dump("  %d) %s %s\n");
+
 
   return 0;
 
