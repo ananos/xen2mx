@@ -49,9 +49,9 @@ $(TESTS): %: %.o
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
 	$(CMDPREFIX) $(LD) $^ -L $(DYNAMIC_LIB_DIR) $(DYNAMIC_LIB_OPT) -o $@
 else
-$(TESTS): %: %.o $(STATIC_LIB)
+$(TESTS): %: %.o
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
-	$(CMDPREFIX) $(LD) $^ -o $@
+	$(CMDPREFIX) $(LD) $^ $(STATIC_LIB) -o $@
 endif
 
 # build and create dependency file
