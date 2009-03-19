@@ -38,10 +38,12 @@ endif
 STATIC_OBJS	=	$(patsubst @abs_srcdir@/%.c,%.o,$(SRCS))
 STATIC_LIB_OBJS	=	$(STATIC_OBJS)
 STATIC_LIB	=	@OPEN_MX_LIB_STATIC@
+STATIC_MX_LIB	=	libmyriexpress.a
 
 DYNAMIC_OBJS	=	$(subst .o,.lo,$(STATIC_OBJS))
 DYNAMIC_LIB_OBJS	=	$(DYNAMIC_OBJS)
 DYNAMIC_LIB	=	@OPEN_MX_LIB_DYNAMIC@
+DYNAMIC_MX_LIB	=	libmyriexpress.so
 
 .PHONY: all installonly install depend clean distclean
 
@@ -66,18 +68,18 @@ $(STATIC_LIB): $(STATIC_LIB_OBJS)
 	$(CMDECHO) "  AR      $(REL_DIR)$@"
 	$(CMDPREFIX) $(AR) cr $@ $^
 	$(CMDPREFIX) if test @OMX_MX_ABI_COMPAT@ -eq 1; then \
-		$(CMDECHOAFTERPREFIX) "  LN      $(REL_DIR)libmyriexpress.a" ; \
-		$(RM) libmyriexpress.a ; \
-		$(LN_S) $(STATIC_LIB) libmyriexpress.a ; \
+		$(CMDECHOAFTERPREFIX) "  LN      $(REL_DIR)$(STATIC_MX_LIB)" ; \
+		$(RM) $(STATIC_MX_LIB) ; \
+		$(LN_S) $(STATIC_LIB) $(STATIC_MX_LIB) ; \
 	fi
 
 $(DYNAMIC_LIB): $(DYNAMIC_LIB_OBJS)
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
 	$(CMDPREFIX) $(SHARED_LD) $(DYNAMIC_LDFLAGS) -o $@ $^
 	$(CMDPREFIX) if test @OMX_MX_ABI_COMPAT@ -eq 1; then \
-		$(CMDECHOAFTERPREFIX) "  LN      $(REL_DIR)libmyriexpress.so" ; \
-		$(RM) libmyriexpress.so ; \
-		$(LN_S) $(DYNAMIC_LIB) libmyriexpress.so ; \
+		$(CMDECHOAFTERPREFIX) "  LN      $(REL_DIR)$(DYNAMIC_MX_LIB)" ; \
+		$(RM) $(DYNAMIC_MX_LIB) ; \
+		$(LN_S) $(DYNAMIC_LIB) $(DYNAMIC_MX_LIB) ; \
 	fi
 
 # build and create dependency file
@@ -103,11 +105,11 @@ installonly:
 	$(CMDPREFIX) $(INSTALL) -m 0644 $(STATIC_LIB) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/
 
 	$(CMDPREFIX) if test @OMX_MX_ABI_COMPAT@ -eq 1; then \
-		$(CMDECHOAFTERPREFIX) "  LN      $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.a" ; \
-		$(CMDECHOAFTERPREFIX) "  LN      $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.so" ; \
-		$(RM) $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.a $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.so ; \
-		$(LN_S) $(STATIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.a ; \
-		$(LN_S) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/libmyriexpress.so ; \
+		$(CMDECHOAFTERPREFIX) "  LN      $(DESTDIR)$(libdir)$(libdirsuffix)/$(STATIC_MX_LIB)" ; \
+		$(CMDECHOAFTERPREFIX) "  LN      $(DESTDIR)$(libdir)$(libdirsuffix)/$(DYNAMIC_MX_LIB)" ; \
+		$(RM) $(DESTDIR)$(libdir)$(libdirsuffix)/$(STATIC_MX_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/$(DYNAMIC_MX_LIB) ; \
+		$(LN_S) $(STATIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/$(STATIC_MX_LIB) ; \
+		$(LN_S) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/$(DYNAMIC_MX_LIB) ; \
 	fi
 
 install: all installonly
