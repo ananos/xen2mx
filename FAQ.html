@@ -845,6 +845,8 @@ When it happens, you may try changing this rules filename into <tt>55-open-mx.ru
 in case it does not get overridden by the default <tt>50-udev.rules</tt> anymore.
 To do so, use the <tt>UDEV_RULES_FILE</tt> option at install-time
 at <a href="#config-installtime">What are Open-MX install-time configuration options?</a>.
+In extreme circumstances, it is also possible to disable udev support entirely
+in Open-MX by passing <tt>udev=0</tt> at install-time.
 </p>
 
 
@@ -1819,6 +1821,12 @@ to tune the installation:
   will automatically be converted into the Open-MX API
   (inserted of being converted at runtime as usual).
   See also <a href="#compat-api-abi-disable">When can I disable the MX-API or -ABI compatibility?</a>.
+</dd>
+<dt>udev=1</dt>
+<dd>
+  If set to 0, disable udev support, which means no udev rules file
+  will be installed, and device files will be created by the Open-MX
+  startup script.
 </dd>
 <dt>UDEV_RULES_DIR=/etc/udev/rules.d/</dt>
 <dt>UDEV_RULES_FILE=45-open-mx.rules</dt>

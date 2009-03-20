@@ -27,6 +27,7 @@ STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
 DYNAMIC_LIB_DIR	=	$(dir @top_builddir@/@OPEN_MX_LIB_DYNAMIC_PATH@)
 DYNAMIC_LIB_OPT	=	@OPEN_MX_LIB_DYNAMIC_LINK_OPT@
 
+udev	=	1
 UDEV_RULES_DIR	=	/etc/udev/rules.d/
 UDEV_RULES_FILE	=	45-open-mx.rules
 
@@ -93,6 +94,7 @@ install installonly:
 		-e 's£@omx_static_peers@£@OMX_STATIC_PEERS@£' \
 		-e 's£@omx_peer_discovery@£@OMX_PEER_DISCOVERY@£' \
 		-e 's£@omx_peers_file@£@OMX_PEERS_FILE@£' \
+		-e 's£@omx_udev@£$(udev)£' \
 		-e 's£@omx_udev_rules_dir@£$(UDEV_RULES_DIR)£' \
 		-e 's£@omx_udev_rules_file@£$(UDEV_RULES_FILE)£' \
 		-e 's£@fms_run@£@FMS_RUN@£' \
@@ -109,6 +111,7 @@ install installonly:
 
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/omx_local_install"
 	$(CMDPREFIX) $(SED)	-e 's£@omx_install_prefix@£$(prefix)£' \
+		-e 's£@omx_udev@£$(udev)£' \
 		-e 's£@omx_udev_rules_dir@£$(UDEV_RULES_DIR)£' \
 		-e 's£@omx_udev_rules_file@£$(UDEV_RULES_FILE)£' \
 		< @srcdir@/omx_local_install.in > omx_local_install

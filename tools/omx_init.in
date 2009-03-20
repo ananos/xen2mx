@@ -34,6 +34,7 @@ OMX_PEERS_FILE=@omx_peers_file@
 FMS_RUN=@fms_run@
 FMS_SERVER=@fms_server@
 
+UDEV=@omx_udev@
 UDEV_RULES_DIR=@omx_udev_rules_dir@
 UDEV_RULES_FILE=${UDEV_RULES_DIR}/@omx_udev_rules_file@
 
@@ -131,7 +132,7 @@ unload_omx() {
 
 # Check whether udev is running
 udev_is_active() {
-    test -d /dev/.udev || test -e /dev/.udev.tdb || test -d /dev/.udevdb
+    test x$UDEV = x1 && ( test -d /dev/.udev || test -e /dev/.udev.tdb || test -d /dev/.udevdb )
 }
 
 # Create device node file if necessary
