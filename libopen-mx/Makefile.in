@@ -7,9 +7,7 @@ TARGETS	=	@LIB_TARGETS@
 all depend clean:
 	$(CMDPREFIX) +for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
 
-install: all installonly
-
-installonly:
+install installonly:
 	$(CMDPREFIX) +for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
 
 distclean:

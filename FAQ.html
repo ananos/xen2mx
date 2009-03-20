@@ -733,7 +733,12 @@ $ make
 $ make install
 </pre>
 <p>
-Note that if building from SVN, you will need to generate the
+Note that <tt>make install</tt> does not build automatically if needed.
+<tt>make</tt> must be used first. Both steps may be independently
+parallelized with <tt>-j</tt>.
+</p>
+<p>
+Also note that if building from SVN, you will need to generate the
 configure script and common/omx_config.h.in header first.
 autoconf and autoheader are required to do so.
 A straightforward way is to pass configure options to the autogen.sh
@@ -863,21 +868,18 @@ $ sbin/omx_local_install --uninstall
 </a></h4>
 <p>
 Most NFS configurations do not allow root on the client to operate
-as root on the server's files. When running 'make install' as root,
-you might experience problems because some Makefiles (especially
-the kernel driver's one) might modify some files before actually
-installing anything.
+as root on the server's files.
+When running <tt>make install</tt> as root, you might experience
+problems because some Makefiles (especially the kernel driver's one)
+might modify some files before actually installing anything.
 </p>
 <p>
-To work around this, assuming everything has been built as non-root
-before, you may use (as root)
-</p>
-<pre>
-$ make installonly
-</pre>
-<p>
-so that it really only installs things without checking whether the
-build is up-to-date.
+To avoid this problem, <tt>make install</tt> does not try to build
+what may be missing (it is equivalent to <tt>make installonly</tt>).
+You should thus build as a normal user and then run <tt>make install</tt>
+as root.
+This way, it really only installs things without ever trying
+to modify the build tree as root over NFS.
 </p>
 
 

@@ -69,7 +69,7 @@ $(OBJS): %.o: @srcdir@/%.c
 ##########
 # install
 
-installonly:
+install installonly:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(bindir)/"
 	$(CMDPREFIX)  if test ! -d $(DESTDIR)$(bindir); then \
 		$(MKDIR_P) $(DESTDIR)$(bindir) ; \
@@ -77,8 +77,6 @@ installonly:
 
 	$(CMDECHO) "  INSTALL $(patsubst %,$(DESTDIR)$(bindir)/%,$(TESTS))"
 	$(CMDPREFIX) $(INSTALL) -m 0755 $(TESTS) $(DESTDIR)$(bindir)/
-
-install: all installonly
 
 ########
 # clean

@@ -94,7 +94,7 @@ fma fma-installonly fma-install fma-clean fma-distclean:
 
 other other-clean other-distclean:
 
-other-installonly:
+other-install other-installonly:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(includedir)"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(includedir); then \
 		$(MKDIR_P) $(DESTDIR)$(includedir) ; \
@@ -118,8 +118,6 @@ other-installonly:
 		$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_raw.h" ; \
 		$(INSTALL) -m 0644 $(srcdir)/common/mx/mx_raw.h $(DESTDIR)$(includedir) ; \
 	fi
-
-other-install: other-installonly
 
 ##############
 # tags

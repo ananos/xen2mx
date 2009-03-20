@@ -95,7 +95,7 @@ $(DYNAMIC_OBJS): %.lo: @abs_srcdir@/%.c
 ##########
 # install
 
-installonly:
+install installonly:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(libdir)$(libdirsuffix)/"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(libdir)$(libdirsuffix); then \
 		$(MKDIR_P) $(DESTDIR)$(libdir)$(libdirsuffix) ; \
@@ -111,8 +111,6 @@ installonly:
 		$(LN_S) $(STATIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/$(STATIC_MX_LIB) ; \
 		$(LN_S) $(DYNAMIC_LIB) $(DESTDIR)$(libdir)$(libdirsuffix)/$(DYNAMIC_MX_LIB) ; \
 	fi
-
-install: all installonly
 
 ########
 # clean

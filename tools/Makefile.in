@@ -68,7 +68,7 @@ $(OBJS): %.o: @srcdir@/%.c
 ##########
 # install
 
-installonly:
+install installonly:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(bindir)"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(bindir); then \
 		$(MKDIR_P) $(DESTDIR)$(bindir) ; \
@@ -117,8 +117,6 @@ installonly:
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/open-mx.conf"
 	$(CMDPREFIX) cp @srcdir@/open-mx.conf.in open-mx.conf
 	$(CMDPREFIX) $(INSTALL) -m 0644 open-mx.conf $(DESTDIR)$(sbindir)/
-
-install: all installonly
 
 ########
 # clean

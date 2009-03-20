@@ -39,7 +39,7 @@ $(HDRCHECKFILE):
 	$(CMDECHO) "  CHECK   KERNEL HEADERS"
 	$(CMDPREFIX) @srcdir@/check_kernel_headers.sh $(HDRCHECKFILE) "$(LINUX_BUILD)" "$(LINUX_HDR)" "$(LINUX_RELEASE)"
 
-installonly:
+install installonly:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(INSTALL_MOD_PATH)"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(INSTALL_MOD_PATH); then \
 		$(MKDIR_P) $(DESTDIR)$(INSTALL_MOD_PATH) ; \
@@ -47,8 +47,6 @@ installonly:
 
 	$(CMDECHO) "  INSTALL DRIVER"
 	$(CMDPREFIX) $(INSTALL) -m 0644 $(MODULE_OBJS) $(DESTDIR)$(INSTALL_MOD_PATH)/
-
-install: all installonly
 
 clean:
 	$(CMDECHO) "  CLEAN   DRIVER"

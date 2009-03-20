@@ -23,9 +23,7 @@ install.1:
 	$(CMDECHO) "  INSTALL $(patsubst @srcdir@/%,$(DESTDIR)$(mandir)/man1/%,$(MANPAGES))"
 	$(CMDPREFIX) $(INSTALL) -m 0644 $(MANPAGES) $(DESTDIR)$(mandir)/man1/
 
-installonly: install.1
-
-install: installonly
+install installonly: install.1
 
 clean:
 
