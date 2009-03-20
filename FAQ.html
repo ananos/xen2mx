@@ -940,17 +940,25 @@ pass KCC=&lt;othercompiler&gt; on the configure or make command line.
 During configure, Open-MX checks the running kernel with 'uname -r' and
 builds the open-mx module against it, using its headers and build tree
 in /lib/modules/`uname -r`/{source,build}.
-
-To build for another kernel, use
 </p>
+<p>
+To build for another kernel, you may pass its release name so that Open-MX
+finds the corresponding header directories from <tt>/lib/modules/<name>/</tt>:
+</p>
+<pre>
+$ ./configure --with-linux-release=2.6.x-y
+</pre>
+It is also possible to directly define the kernel header directory:
 <pre>
 $ ./configure --with-linux=/path/to/kernel/headers/
 </pre>
 <p>
-To build using another kernel build tree, use
+If using a distribution such as Suse where kernel headers and build tools are
+split into multiple directories, you may also need to define the build directory:
 </p>
 <pre>
-$ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
+$ ./configure --with-linux=/usr/src/linux-2.6.16.60-0.34 \
+              --with-linux-build=/usr/src/linux-2.6.16.60-0.34-obj/x86_64/smp/
 </pre>
 
 

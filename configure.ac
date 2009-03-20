@@ -129,9 +129,14 @@ if test x$build_driver = xyes ; then
 	KCC_VERSION=`$CC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
     fi
 
-    LINUX_SRC="/lib/modules/"`uname -r`"/source"
-    LINUX_BUILD="/lib/modules/"`uname -r`"/build"
     LINUX_GCC_VERSION=`sed -e 's/.*gcc version \(.\..\).*/\1/' /proc/version`
+
+    AC_ARG_WITH(linux-release,
+	[AS_HELP_STRING([--with-linux-release=<version>], [release number of the target kernel])],
+	LINUX_RELEASE="$withval"; LINUX_GCC_VERSION="",
+	LINUX_RELEASE=`uname -r`)
+    LINUX_SRC="/lib/modules/$LINUX_RELEASE/source"
+    LINUX_BUILD="/lib/modules/$LINUX_RELEASE/build"
     # If the user changes the source, use it as build by default
     # If it changes the build, do not use it as the source by default
     AC_ARG_WITH(linux,
@@ -140,10 +145,6 @@ if test x$build_driver = xyes ; then
     AC_ARG_WITH(linux-build,
 	[AS_HELP_STRING([--with-linux-build=<dir>], [location of the Linux kernel build tree])],
 	LINUX_BUILD="$withval"; LINUX_GCC_VERSION="")
-    AC_ARG_WITH(linux-release,
-	[AS_HELP_STRING([--with-linux-release=<version>], [release number of the target kernel])],
-	LINUX_RELEASE="$withval",
-	LINUX_RELEASE=$(make kernelrelease -C ${LINUX_BUILD} | grep ^2.6.))
     AC_SUBST(LINUX_SRC)
     AC_SUBST(LINUX_BUILD)
     AC_SUBST(LINUX_RELEASE)
@@ -200,12 +201,16 @@ if test x$build_driver = xyes ; then
     fi
     AC_MSG_RESULT(found in ${LINUX_BUILD})
 
-    # Find the kernel release
+    # Check the kernel release
+    REAL_LINUX_RELEASE=$(make kernelrelease -C ${LINUX_BUILD} | grep ^2.6.)
     AC_MSG_CHECKING(kernel release)
-    if test x${LINUX_RELEASE} = x; then
+    if test x${REAL_LINUX_RELEASE} = x; then
       AC_MSG_ERROR(not found)
     fi
-    AC_MSG_RESULT(${LINUX_RELEASE})
+    AC_MSG_RESULT(${REAL_LINUX_RELEASE})
+    if test "x$LINUX_RELEASE" != "x$REAL_LINUX_RELEASE" ; then
+	AC_MSG_WARN(kernel build reports $REAL_LINUX_RELEASE instead of $LINUX_RELEASE)
+    fi
 
 fi # end of $build_driver = yes
 

@@ -5,6 +5,8 @@ Changes:
 * The OMX_IFACES variable in open-mx.conf replaces the old IFACES.
 * make install does not build anymore, make should be invoked first.
 * Allow disabling udev support at make install with udev=0.
+* Allow changing the target kernel with --with-linux-release
+  instead of only enforcing its release name within Open-MX.
 
 Caveats:
 * No background progression or retransmission is done if the application
