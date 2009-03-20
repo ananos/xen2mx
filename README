@@ -124,9 +124,7 @@ usage of Open-MX. If not loaded, a "No device" error will be returned.
 The omx_init script takes care of loading the module
 $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
 
-This module works at least on Linux kernels >=2.6.17 on i386 and x86_64
-architectures. It also builds correctly with kernels up to 2.6.15 on various
-architectures but it has not been tested intensively on these.
+This module works at least on Linux kernels >=2.6.15.
 
 
 ++===========================++
