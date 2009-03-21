@@ -13,7 +13,6 @@ endif
 CC	=	@CC@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
-SED	=	@SED@
 
 COMPONENTS	=
 ifeq (@OMX_BUILD_DRIVER@,1)

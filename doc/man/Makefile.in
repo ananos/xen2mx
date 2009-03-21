@@ -6,7 +6,6 @@ mandir		=	@mandir@
 include @abs_top_srcdir@/common.mk
 
 MKDIR_P	=	@MKDIR_P@
-SED	=	@SED@
 INSTALL	=	@INSTALL@
 
 MANPAGES	=	$(wildcard @srcdir@/*.1)
