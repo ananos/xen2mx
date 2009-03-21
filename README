@@ -42,10 +42,11 @@ d. Wait a couple of seconds and run /path/to/open-mx/bin/omx_info to
    check that all peers are seeing each other.
    See Section IV (Peer Discovery) for details.
      $ omx_info
-     node1:0 (board #0 name eth2 addr 01:02:03:04:05:06)
-     ==============================================
-     1) 01:02:03:04:05:06 node1:0
-     2) a0:b0:c0:d0:e0:f0 node2:0
+     [...]
+     Peer table is ready, mapper is 01:02:03:04:05:06
+     ================================================
+       0) 01:02:03:04:05:06 node1:0
+       1) a0:b0:c0:d0:e0:f0 node2:0
 
 e. Use omx_perf to test actual communications, on the first node:
      node1 $ omx_perf
