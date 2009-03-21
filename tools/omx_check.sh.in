@@ -1,28 +1,18 @@
 #!/bin/sh
 
-path=$(dirname $0)
-case $(basename $path) in
-bin)
-	# running inside installdir
-	TOOLS_DIR="${path}/"
-	TESTS_DIR="${path}/tests/"
-	MXTESTS_DIR="${path}/tests/"
-	;;
-tools)
-	if [ ! -e "${path}/../config.log" ]; then
-		echo "Cannot run from source tree"
-		exit -1
-	fi
-	# running inside builddir
-	TOOLS_DIR="${path}/"
-	TESTS_DIR="${path}/../tests/"
-	MXTESTS_DIR="${path}/../tests/mx/"
-	;;
-*)
-	echo "Unrecognized path '$path'"
-	exit -1
-	;;
-esac
+OMX_PREFIX=@omx_install_prefix@
+
+if [ -n "$OMX_PATH" ] ; then
+    # use binaries from tools/tests directories in the given build tree
+    TOOLS_DIR="${OMX_PATH}/tools/"
+    TESTS_DIR="${OMX_PATH}/tests/"
+    MXTESTS_DIR="${OMX_PATH}/tests/mx/"
+else
+    # use binaries in the install tree
+    TOOLS_DIR="${OMX_PREFIX}/bin/"
+    TESTS_DIR="${OMX_PREFIX}/bin/tests/"
+    MXTESTS_DIR="${OMX_PREFIX}/bin/tests/"
+fi
 echo "Running tools from '$TOOLS_DIR' and tests from '$TESTS_DIR'"
 
 dobase=0

@@ -120,6 +120,11 @@ install installonly:
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/open-mx.conf"
 	$(CMDPREFIX) $(INSTALL) -m 0644 @srcdir@/open-mx.conf.in $(DESTDIR)$(sbindir)/open-mx.conf
 
+	$(CMDECHO) "  INSTALL $(DESTDIR)$(bindir)/omx_check.sh"
+	$(CMDPREFIX) $(INSTALL) -m 0755 @srcdir@/omx_check.sh.in $(DESTDIR)$(bindir)/omx_check.sh
+	$(CMDPREFIX) $(SED) -i $(DESTDIR)$(bindir)/omx_check.sh \
+		-e 's£@omx_install_prefix@£$(prefix)£' \
+
 ########
 # clean
 
