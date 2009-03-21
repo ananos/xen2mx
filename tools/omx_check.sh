@@ -6,6 +6,7 @@ bin)
 	# running inside installdir
 	TOOLS_DIR="${path}/"
 	TESTS_DIR="${path}/tests/"
+	MXTESTS_DIR="${path}/tests/"
 	;;
 tools)
 	if [ ! -e "${path}/../config.log" ]; then
@@ -15,6 +16,7 @@ tools)
 	# running inside builddir
 	TOOLS_DIR="${path}/"
 	TESTS_DIR="${path}/../tests/"
+	MXTESTS_DIR="${path}/../tests/mx/"
 	;;
 *)
 	echo "Unrecognized path '$path'"
@@ -188,7 +190,7 @@ if [ $domisc -eq 1 ] ; then
 	echo "*************"
 	echo "TEST wait_any"
 	echo "*************"
-	start_double_application ${TESTS_DIR}/mx/mx_wait_any_test 1
+	start_double_application ${MXTESTS_DIR}/mx_wait_any_test 1
 
 	echo
 	echo "***********"
@@ -200,8 +202,8 @@ if [ $domisc -eq 1 ] ; then
 	echo "***********"
 	echo "TEST wakeup"
 	echo "***********"
-	if [ -e ${TESTS_DIR}/mx/mx_wakeup_test ] ; then
-		start_double_application_with_stop ${TESTS_DIR}/mx/mx_wakeup_test 0
+	if [ -e ${MXTESTS_DIR}/mx_wakeup_test ] ; then
+		start_double_application_with_stop ${MXTESTS_DIR}/mx_wakeup_test 0
 	else
 		echo "Not built"
 	fi
@@ -258,6 +260,6 @@ if [ $dorandomloop -eq 1 ] ; then
 	echo "******************************************************"
 	echo "TEST random msg loop with native networking during 20s"
 	echo "******************************************************"
-	${TESTS_DIR}/mx/mx_msg_loop -R -P 11 & _pid=$! ; sleep 20
+	${MXTESTS_DIR}/mx_msg_loop -R -P 11 & _pid=$! ; sleep 20
 	kill -9 $_pid 2>/dev/null ; sleep 1
 fi
