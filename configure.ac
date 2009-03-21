@@ -491,8 +491,8 @@ fi
 # misc config
 
 AC_ARG_ENABLE(threads,
-	[AS_HELP_STRING([--enable-threads], [enable thread safety in the library])],
-	enable_lib_threads=$enableval, enable_lib_threads=no)
+	[AS_HELP_STRING([--disable-threads], [disable thread safety in the library])],
+	enable_lib_threads=$enableval, enable_lib_threads=yes)
 AC_MSG_CHECKING(if thread safety is enabled in the library)
 if test x$enable_lib_threads = xyes; then
   AC_MSG_RESULT(yes)

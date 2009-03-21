@@ -654,8 +654,11 @@ driver in a MX-similar way.
 </a></h4>
 <p>
 The Open-MX driver is always thread-safe. The user-space library is
-not thread-safe by default. You should pass --enable-threads to the
-configure script to enable thread safety.
+thread-safe by default, but you may pass --disable-threads to the
+configure script to disable thread safety if needed.
+Disabling thread safety is only useful for reducing the latency
+a little bit when all applications either ensure thread safety above
+Open-MX or never use any thread.
 </p>
 
 
@@ -1767,6 +1770,11 @@ The following options may be passed to the configure command line before buildin
   Shared software loopback is enabled by default.
 </dd>
 
+<dt>--disable-threads</dt>
+<dd>Disable thread safety in the user-space library.
+  See also <a href="#running-thread">Is Open-MX thread-safe?</a>.
+</dd>
+
 <dt>--enable-valgrind</dt>
 <dd>Enable Valgrind hooks in the non-debugging library.
   By default, Valgrind hooks are only enabled in the debugging library.
@@ -2204,7 +2212,7 @@ you should read the following configuration advices:
 <dt>Thread-safety</dt>
 <dd>
   A thread-safe middleware should generally rely on a thread safe Open-MX.
-  Building Open-MX without --enable-threads may only work if caller uses
+  Building Open-MX with --disable-threads may only work if caller uses
   neither any blocking Open-MX functions nor the unexpected handler, and
   obviously serializes Open-MX calls.
 </dd>
