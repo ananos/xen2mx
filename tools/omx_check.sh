@@ -150,7 +150,9 @@ start_double_application_with_stop() {
 	if [ $(is_process_running $_pid) -eq 0 ] ; then
 		echo "Failed" && exit 1
 	fi
+	echo "Started and suspended the target program"
 	OMX_DISABLE_SHARED=$disable_shared $application -e 3 -d localhost ; err=$? ; sleep 1
+	echo "Now killing the suspended program..."
 	kill -9 $_pid ; kill -CONT $_pid ; sleep 1
 	if [ $err -ne 0 ] ; then
 		echo "Failed" && exit 1
@@ -261,5 +263,6 @@ if [ $dorandomloop -eq 1 ] ; then
 	echo "TEST random msg loop with native networking during 20s"
 	echo "******************************************************"
 	${MXTESTS_DIR}/mx_msg_loop -R -P 11 & _pid=$! ; sleep 20
+	echo "Killing the program now that it ran for 20s..."
 	kill -9 $_pid 2>/dev/null ; sleep 1
 fi
