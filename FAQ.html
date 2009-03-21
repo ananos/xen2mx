@@ -1411,7 +1411,7 @@ for now, this registration cache should be used with caution.
 <p>
 Most Ethernet drivers use interrupt coalescing to avoid interrupting the
 host once per incoming packet. While this is good for the throughput, it
-increase the latency a lot, up to dozens of milliseconds.
+increase the latency a lot, up to several dozens of microseconds.
 </p>
 <p>
 To get the best latency for Open-MX, interrupt coalescing should be reduced.
@@ -1428,7 +1428,31 @@ with Open-MX when interrupt coalescing is disabled, a nice configuration
 would to set coalescing to N or N-1 usecs:
 </p>
 <pre>
-$ ethtool -C eth2 rx-usecs &lt;N-1&gt;>
+$ ethtool -C eth2 rx-usecs &lt;N-1&gt;
+</pre>
+<p>
+If your driver supports <em>Adaptive interrupt coalescing</em>, it
+may well help Open-MX performance significantly.
+Indeed, it basically automatically disables coalescing (and thus improves latency)
+when the amount of packets is low, and reenables a high coalescing
+delay (and thus improve the overall performance) when the amount of
+packets is high.
+Thus, when it is supported, you probably want to enable adaptive interrupt
+coalescing on the receive side:
+</p>
+<pre>
+$ ethtool -C eth2 adaptive-rx on
+</pre>
+<p>
+Then, if you do not observe optimal performance yet, you may want to tune adaptive
+coalescing so that for instance a pingpong-like pattern gets the best latency.
+Since a 6-microseconds pingpong generates 83 thousands of packets per second,
+you may for instance tell the driver to disable coalescing entirely when less
+than 150 thousands packets are received per seconds:
+</p>
+<pre>
+$ ethtool -C eth2 pkt-rate-low 150000
+$ ethtool -C eth2 rx-usecs-low 0
 </pre>
 
 
