@@ -41,7 +41,7 @@ UDEV_RULES_FILE=${UDEV_RULES_DIR}/@omx_udev_rules_file@
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
 LINUX_RELEASE=$(uname -r)
-OMX_MODULE="${OMX_PREFIX}/lib/modules/${LINUX_RELEASE}/open-mx.ko"
+OMX_MODULE="${OMX_PREFIX}/modules/${LINUX_RELEASE}/open-mx.ko"
 
 set -e
 

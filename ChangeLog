@@ -8,6 +8,8 @@ Changes:
 * Allow disabling udev support at make install with udev=0.
 * Allow changing the target kernel with --with-linux-release
   instead of only enforcing its release name within Open-MX.
+* Move kernel modules from lib/modules/ into modules/ with the
+  install directory.
 * Some fixes in the omx_check.sh testing script.
 
 Caveats:

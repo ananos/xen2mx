@@ -1,6 +1,4 @@
-exec_prefix	=	@exec_prefix@
 prefix  =       @prefix@
-libdir	=	@libdir@
 
 include @abs_top_srcdir@/common.mk
 
@@ -22,7 +20,7 @@ LINUX_BUILD	=	@LINUX_BUILD@
 LINUX_HDR	=	@LINUX_HDR@
 LINUX_RELEASE	=	@LINUX_RELEASE@
 OPEN_MX_DIR	=	@abs_builddir@
-INSTALL_MOD_PATH	=	$(libdir)/modules/$(LINUX_RELEASE)
+INSTALL_MOD_PATH	=	$(prefix)/modules/$(LINUX_RELEASE)
 MODULE_OBJS	=	open-mx.ko
 
 .PHONY: all $(HDRCHECKFILE) installonly install clean distclean wc
