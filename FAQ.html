@@ -108,6 +108,9 @@
 <li><a href="#building-build-install">
   How do I build and install Open-MX?
 </a></li>
+<li><a href="#building-multilib">
+  May I build a 32bit library? or a 64bit? or both?
+</a></lib>
 <li><a href="#building-where-install">
   Where should I install Open-MX?
 </a></li>
@@ -773,6 +776,37 @@ may be given on the command line:
 <pre>
 $ sbin/omx_init start ifnames=eth1
 </pre>
+
+
+<h4><a id="building-multilib" href="#building-multilib">
+  May I build a 32bit library? or a 64bit? or both?
+</a></h4>
+<p>
+  By default, Open-MX builds user-space libraries andtools with the default
+  compiler options.
+  You may for instance enforce a 32bit build by passing <tt>CC="gcc -m32"</tt>
+  on the configure command-line.
+</p>
+<p>
+  It is also possible to build both 32bit and 64bit libraries by passing
+  <tt>--enable-multilib</tt> to the configure script.
+  The resulting libraries will be installed in <tt>lib32/</tt> and <tt>lib64/</tt>
+  directories respectively.
+  A <tt>lib</tt> symbolic link will also point to the library directory that was built
+  with the default compiler pointer size.
+  Note that Open-MX internal tools and tests program will be linked will this
+  default library.
+</p>
+<p>
+  When building a MPI layer, it will usually look for the <tt>lib</tt> directory
+  within the Open-MX install tree.
+  If the <tt>lib</tt> symbolic link points to <tt>lib64</tt>
+  (because the compiler defaults to 64bits pointers), the MPI build will
+  use 64bits libraries by default.
+  To enforce 32bits libraries, you may want to tell the MPI configure
+  script to look in lib32 instead of lib, for instance by using
+  <tt>--with-mx=/path/to/open-mx/install --with-mx-libdir=/path/to/open-mx/install/lib32</tt>.
+</p>
 
 
 <h4><a id="building-where-install" href="#building-where-install">
@@ -1744,6 +1778,12 @@ The following options may be passed to the configure command line before buildin
 </p>
 
 <dl>
+
+<dt>--enable-multilib</dt>
+<dd>Build both 32bit and 64bit library instead of only
+  the compiler's default one.
+  See also <a href="#building-multilib">May I build a 32bit library? or a 64bit? or both?</a>.
+</dd>
 
 <dt>--enable-debug</dt>
 <dd>Only build a debugging library.

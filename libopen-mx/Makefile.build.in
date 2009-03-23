@@ -8,6 +8,11 @@ REL_DIR	=	$(omx_build_lib_dir)/
 
 CC	=	@CC@
 SHARED_LD	=	$(CC) --shared #FIXME?
+ifneq ($(omx_build_lib_ptrsize),)
+	CC	+=	-m$(omx_build_lib_ptrsize)
+	SHARED_LD	+=	-m$(omx_build_lib_ptrsize)
+endif
+
 AR	=	@AR@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@

@@ -109,7 +109,6 @@
 * 64bit internals by default
 * 64bit API by default, unless OMX_32BITS_LENGTH is defined
   + how to force the #define OMX_32BITS_LENGTH once compiled and installed?
-* --enable-32b/64b
 
 * look at vringfd (http://lwn.net/Articles/276364/) to replace event ring
 

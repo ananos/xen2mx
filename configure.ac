@@ -223,6 +223,12 @@ AC_ARG_ENABLE(debug,
 AC_MSG_CHECKING(if debug is enabled in the driver and main library)
 AC_MSG_RESULT($enable_debug)
 
+AC_ARG_ENABLE(multilib,
+	[AS_HELP_STRING([--enable-multilib], [build both 32bits and 64bits libraries])],
+	enable_multilib=$enableval, enable_multilib=no)
+AC_MSG_CHECKING(if multilib is enabled)
+AC_MSG_RESULT($enable_multilib)
+
 ##################
 # multilib builds
 
@@ -239,13 +245,18 @@ if test x$build_lib = xyes ; then
 fi
 AC_SUBST(INSTALL_LIB_LINKTARGET)
 
-libopen_mx_default_builddir="${libopen_mx_dir}build/"
+if test x$enable_multilib = xyes; then
+  libopen_mx_default_builddir="${libopen_mx_dir}build${defaultptrsize}/"
+else
+  libopen_mx_default_builddir="${libopen_mx_dir}build/"
+fi
 libopen_mx_name="libopen-mx"
 LIB_TARGETS=""
 
 generate_lib_build() {
 	dir=$1; shift
 	name=$1; shift
+	ptrsize=$1; shift
 	debug=$1; shift
 	installsuffix=$1; shift
 
@@ -255,6 +266,7 @@ generate_lib_build() {
 
 	cat >${libopen_mx_dir}${dir}/Makefile <<EOF
 omx_build_lib_debug = $debug
+omx_build_lib_ptrsize = $ptrsize
 omx_build_lib_name = $name
 omx_build_lib_dir = ${libopen_mx_dir}${dir}
 libdirsuffix = ${installsuffix}
@@ -270,15 +282,32 @@ if test x$enable_debug = xyes; then
   # only build the debug lib lib
   AC_DEFINE(OMX_DRIVER_DEBUG, [1], [Define to enable debug features in the driver])
   AC_SUBST(omx_debug_tests, 1)
-  generate_lib_build build debug-only 1 "${defaultptrsize}"
+  if test x$enable_multilib = xyes; then
+    generate_lib_build build32 32bits-debug-only 32 1 32
+    generate_lib_build build64 64bits-debug-only 64 1 64
+  else
+    generate_lib_build build debug-only "" 1 "${defaultptrsize}"
+  fi
 else if test x$enable_debug = xno; then
   # only build the non-debug lib
   AC_SUBST(omx_debug_tests, 0)
-  generate_lib_build build normal 0 "${defaultptrsize}"
+  if test x$enable_multilib = xyes; then
+    generate_lib_build build32 32bits-normal 32 0 32
+    generate_lib_build build64 64bits-normal 64 0 64
+  else
+    generate_lib_build build normal "" 0 "${defaultptrsize}"
+  fi
 else
   # build both by default
-  generate_lib_build build normal 0 "${defaultptrsize}"
-  generate_lib_build build-dbg debug 1 "${defaultptrsize}/debug"
+  if test x$enable_multilib = xyes; then
+    generate_lib_build build32 32bits-normal 32 0 32
+    generate_lib_build build64 64bits-normal 64 0 64
+    generate_lib_build build32-dbg 32bits-debug 32 1 "32/debug"
+    generate_lib_build build64-dbg 64bits-debug 64 1 "64/debug"
+  else
+    generate_lib_build build normal "" 0 "${defaultptrsize}"
+    generate_lib_build build-dbg debug "" 1 "${defaultptrsize}/debug"
+  fi
   AC_SUBST(omx_debug_tests, 0)
 fi fi
 
