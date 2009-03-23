@@ -215,7 +215,16 @@ if test x$build_driver = xyes ; then
 fi # end of $build_driver = yes
 
 #######################################
-# debug, profiling and valgrind config
+# options that change multilib configs
+
+AC_ARG_ENABLE(debug,
+	[AS_HELP_STRING([--enable-debug], [enable debugging features in the driver and main library])],
+	enable_debug=$enableval, enable_debug=optional)
+AC_MSG_CHECKING(if debug is enabled in the driver and main library)
+AC_MSG_RESULT($enable_debug)
+
+##################
+# multilib builds
 
 libopen_mx_default_builddir="${libopen_mx_dir}build/"
 libopen_mx_name="libopen-mx"
@@ -244,11 +253,6 @@ EOF
 	LIB_TARGETS="$LIB_TARGETS $dir"
 }
 
-AC_ARG_ENABLE(debug,
-	[AS_HELP_STRING([--enable-debug], [enable debugging features in the driver and main library])],
-	enable_debug=$enableval, enable_debug=optional)
-AC_MSG_CHECKING(if debug is enabled in the driver and main library)
-AC_MSG_RESULT($enable_debug)
 if test x$enable_debug = xyes; then
   # only build the debug lib lib
   AC_DEFINE(OMX_DRIVER_DEBUG, [1], [Define to enable debug features in the driver])
@@ -264,7 +268,11 @@ else
   generate_lib_build build-dbg debug 1 /debug
   AC_SUBST(omx_debug_tests, 0)
 fi fi
+
 AC_SUBST(LIB_TARGETS)
+
+#######################################
+# debug, profiling and valgrind config
 
 AC_ARG_ENABLE(debug-requests,
 	[AS_HELP_STRING([--enable-debug-requests], [enable request debugging in the library])],
