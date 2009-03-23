@@ -217,7 +217,7 @@ fi # end of $build_driver = yes
 #######################################
 # debug, profiling and valgrind config
 
-libopen_mx_builddir="${libopen_mx_dir}build/"
+libopen_mx_default_builddir="${libopen_mx_dir}build/"
 libopen_mx_name="libopen-mx"
 LIB_TARGETS=""
 
@@ -661,11 +661,11 @@ AC_SUBST(OMX_RAW_DEVICE_MODE)
 
 AC_SUBST(OPEN_MX_LIB_STATIC, ${libopen_mx_name}.a)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC, ${libopen_mx_name}.so)
-AC_SUBST(OPEN_MX_LIB_DIR, ${libopen_mx_builddir})
-AC_SUBST(OPEN_MX_LIB_STATIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.a)
-AC_SUBST(OPEN_MX_LIB_DYNAMIC_PATH, ${libopen_mx_builddir}/${libopen_mx_name}.so)
 AC_SUBST(OPEN_MX_LIB_DYNAMIC_LINK_OPT, ${libopen_mx_name/lib/-l})
 AC_SUBST(MX_LIB_DYNAMIC_LINK_OPT, -lmyriexpress)
+AC_SUBST(OPEN_MX_DEFAULT_LIB_DIR, ${libopen_mx_default_builddir})
+AC_SUBST(OPEN_MX_DEFAULT_LIB_STATIC_PATH, ${libopen_mx_default_builddir}/${libopen_mx_name}.a)
+AC_SUBST(OPEN_MX_DEFAULT_LIB_DYNAMIC_PATH, ${libopen_mx_default_builddir}/${libopen_mx_name}.so)
 
 if test x$build_driver = xyes ; then
     orig_builddir=$(pwd)

@@ -23,8 +23,8 @@ CPPFLAGS	+=	-I@top_srcdir@/common -I@top_srcdir@/libopen-mx
 CFLAGS	+=	-Wall
 CFLAGS	+=	-g -O2
 
-STATIC_LIB	=	@top_builddir@/@OPEN_MX_LIB_STATIC_PATH@
-DYNAMIC_LIB_DIR	=	$(dir @top_builddir@/@OPEN_MX_LIB_DYNAMIC_PATH@)
+STATIC_LIB	=	@top_builddir@/@OPEN_MX_DEFAULT_LIB_STATIC_PATH@
+DYNAMIC_LIB_DIR	=	$(dir @top_builddir@/@OPEN_MX_DEFAULT_LIB_DYNAMIC_PATH@)
 DYNAMIC_LIB_OPT	=	@OPEN_MX_LIB_DYNAMIC_LINK_OPT@
 
 udev	=	1
