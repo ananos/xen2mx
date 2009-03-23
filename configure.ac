@@ -226,6 +226,19 @@ AC_MSG_RESULT($enable_debug)
 ##################
 # multilib builds
 
+if test x$build_lib = xyes ; then
+    # find the default pointer size of the compiler
+    AC_MSG_CHECKING(checking compiler default pointer size)
+    AC_COMPILE_IFELSE([int a[[sizeof(void *)-7]];], defaultptrsize=64, defaultptrsize=32)
+    AC_MSG_RESULT($defaultptrsize)
+
+    # setup the creation of a lib symlink to compiler-default-pointer-size library
+    AC_MSG_CHECKING(default lib symlink)
+    INSTALL_LIB_LINKTARGET=lib${defaultptrsize}
+    AC_MSG_RESULT(lib${defaultptrsize})
+fi
+AC_SUBST(INSTALL_LIB_LINKTARGET)
+
 libopen_mx_default_builddir="${libopen_mx_dir}build/"
 libopen_mx_name="libopen-mx"
 LIB_TARGETS=""
@@ -257,15 +270,15 @@ if test x$enable_debug = xyes; then
   # only build the debug lib lib
   AC_DEFINE(OMX_DRIVER_DEBUG, [1], [Define to enable debug features in the driver])
   AC_SUBST(omx_debug_tests, 1)
-  generate_lib_build build debug-only 1 ""
+  generate_lib_build build debug-only 1 "${defaultptrsize}"
 else if test x$enable_debug = xno; then
   # only build the non-debug lib
   AC_SUBST(omx_debug_tests, 0)
-  generate_lib_build build normal 0 ""
+  generate_lib_build build normal 0 "${defaultptrsize}"
 else
   # build both by default
-  generate_lib_build build normal 0 ""
-  generate_lib_build build-dbg debug 1 /debug
+  generate_lib_build build normal 0 "${defaultptrsize}"
+  generate_lib_build build-dbg debug 1 "${defaultptrsize}/debug"
   AC_SUBST(omx_debug_tests, 0)
 fi fi
 
