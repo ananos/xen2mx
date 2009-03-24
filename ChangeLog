@@ -51,6 +51,17 @@ Other improvements:
 * Add the ability to iprobe/probe across multiple context ids.
 * Miscellaneous small improvements and cleanups all over the place.
 
+Open-MX 1.0.6 (March 24th 2009, svn/open-mx-1.0.x r2525)
+========================================================
+The Linux kernel 2.6.29 (and 2.6.18-is-broken) release.
+
+Bug fixes:
+* Workaround a kernel panic that may occur on 2.6.18 kernels because
+  of the broken vmalloc_user() implementation.
+* Fix dmaengine support for Linux kernel 2.6.29.
+* Fix 'make installonly' to not modify anything in the build tree.
+* Several minor fixes and cleanups.
+
 Open-MX 1.0.5 (January 29th 2009, svn/open-mx-1.0.x r2301)
 ==========================================================
 The OpenMPI 1.3 release.
