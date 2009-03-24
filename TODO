@@ -1,3 +1,8 @@
+* add some __attribute__((malloc)), pure, const, restrict everywhere
+
+* switch to automake once it supports CC foo.c
+  + link tools/tests dynamically and let libtool add rpath
+
 * stop supporting mtu!=1500/9000 ?
   + go back to mtu/wire-compat indep library, with send
     function pointers initialized at connect
@@ -170,6 +175,10 @@
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
+=== things to drop in 1.2
+* IFACES in the config file instead of OMX_IFACES
+* make installonly
+
 === obsolete ideas
 * why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
 * change --iface into ---iface, and use --iface as a "close when no more endpoint"
@@ -181,3 +190,5 @@
 * make shared comms runtime-configurable in the driver
 * use mediumva for shared medium? seems slower
   + and mediums are not that useful for shared anyway (lower rndv threshold)
+* fix make install -j
+  + just support make -j followed by make install -j, otherwise it's a useless mess
