@@ -5,6 +5,8 @@ To use a specific SVN branch instead of trunk, add:
 
 To use a GIT-SVN repository instead, do:
 	make dist -f Makefile.in TARBALL=open-mx-x.y.z GITSVN_BRANCH=master
+To use a specific branch of a GIT-SVN repository instead, do:
+	... GITSVN_BRANCH=mybranch
 
 To apply a quilt patch serie from a local subdirectory before releasing, add:
 	... PATCHES=foobar/

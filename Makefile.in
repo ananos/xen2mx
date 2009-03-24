@@ -163,7 +163,7 @@ dist:
 	@newdir=$(TARBALL) \
 	 && (if [ -n "$(GITSVN_BRANCH)" ] ; then \
 			echo "Exporting local GIT-SVN branch $(GITSVN_BRANCH)..." ; \
-			mkdir $$newdir ; cd $$newdir ; GIT_DIR=../.git git checkout -f $$GIT_BRANCH ; cd - ; \
+			git archive --format=tar --prefix=$$newdir/ $(GITSVN_BRANCH) | tar xf - ; \
 		else \
 			echo "Exporting current SVN branch $(SVN_BRANCH)..." ; \
 			svn export $(SVN_URL)/$(SVN_BRANCH) $$newdir ; \
