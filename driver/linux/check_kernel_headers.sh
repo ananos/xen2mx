@@ -92,7 +92,20 @@ fi
 
 # API WORKAROUNDS
 
-# remap_vmalloc_range and vmalloc_user appeared in 2.6.18
+# vmalloc_user appeared in 2.6.18 but was broken until 2.6.19
+echo -n "  checking (in kernel headers) vmalloc_user availability... "
+if grep "vmalloc_user *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null ; then
+  if grep "LINUX_VERSION_CODE 132626" ${LINUX_HDR}/include/linux/version.h > /dev/null ; then
+    echo broken, ignoring
+  else
+    echo "#define OMX_HAVE_VMALLOC_USER 1" >> ${TMP_CHECKS_NAME}
+    echo yes
+  fi
+else
+  echo no
+fi
+
+# remap_vmalloc_range appeared in 2.6.18
 echo -n "  checking (in kernel headers) remap_vmalloc_range availability ... "
 if grep "remap_vmalloc_range *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null ; then
   echo "#define OMX_HAVE_REMAP_VMALLOC_RANGE 1" >> ${TMP_CHECKS_NAME}

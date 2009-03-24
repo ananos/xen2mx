@@ -24,16 +24,40 @@
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
 
-#ifdef OMX_HAVE_REMAP_VMALLOC_RANGE
+#ifdef OMX_HAVE_VMALLOC_USER
 #define omx_vmalloc_user vmalloc_user
-#define omx_remap_vmalloc_range remap_vmalloc_range
-#else /* !OMX_HAVE_REMAP_VMALLOC_RANGE */
+#else /* !OMX_HAVE_VMALLOC_USER */
+#include <asm/pgtable.h>
 static inline void *
 omx_vmalloc_user(unsigned long size)
 {
-	return __vmalloc(size, GFP_KERNEL | __GFP_HIGHMEM | __GFP_ZERO, PAGE_KERNEL);
-}
+	/* don't pass __GFP_ZERO since cache_grow() would BUG() in <=2.6.18 */
+	void * buf = __vmalloc(size, GFP_KERNEL | __GFP_HIGHMEM, PAGE_KERNEL);
+	if (buf) {
+		/*
+		 * We cannot set VM_USERMAP since __find_vm_area() is not exported.
+		 * But remap_vmalloc_range() requires it, see below
+		 */
 
+		/* memset since we didn't pass __GFP_ZERO above */
+		memset(buf, 0, size);
+	}
+
+	return buf;
+}
+#endif /* !OMX_HAVE_VMALLOC_USER */
+
+#if (defined OMX_HAVE_REMAP_VMALLOC_RANGE) && !(defined OMX_HAVE_VMALLOC_USER)
+/*
+ * Do not use the official remap_vmalloc_range() since it requires VM_USERMAP
+ * in the area flags but our omx_vmalloc_user() above could not set it.
+ */
+#undef OMX_HAVE_REMAP_VMALLOC_RANGE
+#endif
+
+#ifdef OMX_HAVE_REMAP_VMALLOC_RANGE
+#define omx_remap_vmalloc_range remap_vmalloc_range
+#else /* !OMX_HAVE_REMAP_VMALLOC_RANGE */
 static inline int
 omx_remap_vmalloc_range(struct vm_area_struct *vma, void *addr, unsigned long pgoff)
 {

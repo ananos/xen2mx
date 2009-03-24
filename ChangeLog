@@ -1,6 +1,10 @@
 Open-MX 1.0.902 aka 1.1-rc2
 ========================================================
 
+Bug fixes:
+* Workaround a kernel panic that may occur on 2.6.18 kernels because
+  of the broken vmalloc_user() implementation.
+
 Changes:
 * Add --enable-multilib to build both 32bit and 64bit libraries,
   + Install them in lib32/ and lib64/ and symlink lib to the one
