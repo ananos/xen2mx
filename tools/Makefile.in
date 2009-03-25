@@ -52,9 +52,9 @@ $(TOOLS): %: %.o
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
 	$(CMDPREFIX) $(LD) $^ -L $(DYNAMIC_LIB_DIR) $(DYNAMIC_LIB_OPT) $($(@)_LIBS) -o $@
 else
-$(TOOLS): %: %.o
+$(TOOLS): %: %.o $(STATIC_LIB)
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
-	$(CMDPREFIX) $(LD) $^ $(STATIC_LIB) $($(@)_LIBS) -o $@
+	$(CMDPREFIX) $(LD) $^ $($(@)_LIBS) -o $@
 endif
 
 $(SCRIPTS): %.sh: @srcdir@/%.sh
