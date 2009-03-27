@@ -192,6 +192,9 @@
 <li><a href="#peerdiscovery-which">
   How do I decide between omxoed, FMA and static peer table?
 </a></li>
+<li><a href="#peerdiscovery-size">
+  How many peers may Open-MX talk to?
+</a></li>
 <li><a href="#peerdiscovery-raw">
   What is the raw interface and how do I use it?
 </a></li>
@@ -1320,6 +1323,23 @@ It is also possible to switch from fma to omxoed by passing the option
 </p>
 
 
+<h4><a id="peerdiscovery-size" href="#peerdiscovery-size">
+  How many peers may Open-MX talk to?
+</a></h4>
+<p>
+Open-MX may manage up to 65536 peers on the fabric.
+However, since such big fabrics are quite unusual, the Open-MX driver
+only supports 1024 peers by default.
+This threshold may be increased when loading the driver by passing
+the module parameter <tt>peers=N</tt>.
+</p>
+<p>
+If too many peers are connected and the driver fails to add all
+of them to the peer table because it is full, a warning will be
+displayed in the kernel log and in the output of <tt>omx_info</tt>.
+</p>
+
+
 <h4><a id="peerdiscovery-raw" href="#peerdiscovery-raw">
   What is the raw interface and how do I use it?
 </a></h4>
@@ -2426,7 +2446,7 @@ $ omx_init status
 
 
 <p style="text-align: right; font-size: 12px; font-style: italic;">
-  Last updated on 2009/03/14.
+  Last updated on 2009/03/27.
 </p>
 
 <script type="text/javascript">
