@@ -1,3 +1,8 @@
+
+* Report when the peer table is full and some peers failed
+  to be added.
+
+
 Open-MX 1.0.902 aka 1.1-rc2 (March 25th 2009, svn r2528)
 ========================================================
 The 32bit/64bit Multi-Lib release.

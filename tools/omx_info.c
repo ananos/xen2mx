@@ -133,15 +133,15 @@ int main(int argc, char *argv[])
   else
     handle_one_board(bid);
 
+  /* get peer table state */
+  ret = omx__driver_get_peer_table_state(&status, NULL, NULL, &mapper_id);
+  if (ret != OMX_SUCCESS) {
+    fprintf(stderr, "Failed to get peer table status, %s\n", omx_strerror(ret));
+    goto out;
+  }
   if (verbose) {
     /* print the common peer table */
     printf("\n");
-    /* get peer table state */
-    ret = omx__driver_get_peer_table_state(&status, NULL, NULL, &mapper_id);
-    if (ret != OMX_SUCCESS) {
-      fprintf(stderr, "Failed to get peer table status, %s\n", omx_strerror(ret));
-      goto out;
-    }
     if (status & OMX_PEER_TABLE_STATUS_CONFIGURED) {
       omx__board_addr_sprintf(board_addr_str, mapper_id);
       printf("Peer table is ready, mapper is %s\n", board_addr_str);
@@ -151,7 +151,9 @@ int main(int argc, char *argv[])
     printf("================================================\n");
     omx__peers_dump("  %d) %s %s\n");
   }
-
+  if (status & OMX_PEER_TABLE_STATUS_FULL) {
+    printf("WARNING: peer table is full, some peers could not be added.\n");
+  }
 
   return 0;
 

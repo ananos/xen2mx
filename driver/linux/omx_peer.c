@@ -139,6 +139,7 @@ omx_peers_clear(int local)
 	}
 	omx_peer_next_nr = 0;
 	omx_peer_table_full = 0;
+	omx_peer_table_state.status &= ~OMX_PEER_TABLE_STATUS_FULL;
 
 	mutex_unlock(&omx_peers_mutex);
 }
@@ -182,6 +183,7 @@ omx_peer_add(uint64_t board_addr, char *hostname)
 				       (unsigned long long) board_addr, hostname ? hostname : "<unknown>");
 			}
 			omx_peer_table_full = 1;
+			omx_peer_table_state.status |= OMX_PEER_TABLE_STATUS_FULL;
 			goto out_with_mutex;
 		}
 		peer = NULL;
@@ -358,6 +360,7 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 		printk(KERN_INFO "Failed to attach local iface %s (%s) with address %012llx, peer table is full\n",
 		       iface->eth_ifp->name, ifacepeer->hostname, (unsigned long long) board_addr);
 		omx_peer_table_full = 1;
+		omx_peer_table_state.status |= OMX_PEER_TABLE_STATUS_FULL;
 		goto out_with_mutex;
 	}
 
@@ -1039,6 +1042,7 @@ omx_peers_init(void)
 
 	omx_peer_next_nr = 0;
 	omx_peer_table_full = 0;
+	omx_peer_table_state.status &= ~OMX_PEER_TABLE_STATUS_FULL;
 
 	omx_peer_array = vmalloc(omx_peer_max * sizeof(*omx_peer_array));
 	if (!omx_peer_array) {
