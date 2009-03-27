@@ -41,6 +41,13 @@ static int omx_peer_next_nr;
 static int omx_peer_table_full;
 static struct list_head omx_host_query_peer_list;
 
+static struct omx_cmd_peer_table_state omx_peer_table_state = {
+	.configured = 0,
+	.version = 0,
+	.size = 0,
+	.mapper_id = -1,
+};
+
  /*
   * Big mutex protecting concurrent modifications of the peer table:
   *  - per-index array of peers
@@ -987,6 +994,26 @@ omx_peers_clear_names(void)
 	omx_host_query_magic++;
 
 	mutex_unlock(&omx_peers_mutex);
+}
+
+/***************************
+ * Peer Table Set/Get State
+ */
+
+void
+omx_peer_table_get_state(struct omx_cmd_peer_table_state *state)
+{
+	memcpy(state, &omx_peer_table_state, sizeof(omx_peer_table_state));
+}
+
+int
+omx_peer_table_set_state(struct omx_cmd_peer_table_state *state)
+{
+	if (!OMX_HAS_USER_RIGHT(PEERTABLE))
+		return -EPERM;
+
+	memcpy(&omx_peer_table_state, state, sizeof(omx_peer_table_state));
+	return 0;
 }
 
 /***********************

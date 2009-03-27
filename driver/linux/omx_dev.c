@@ -594,12 +594,22 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		break;
 	}
 
-	case OMX_CMD_PEER_TABLE_SET_STATE: {
+	case OMX_CMD_PEER_TABLE_GET_STATE: {
 		struct omx_cmd_peer_table_state state;
 
-		ret = -EPERM;
-		if (!OMX_HAS_USER_RIGHT(PEERTABLE))
-			goto out;
+		omx_peer_table_get_state(&state);
+
+		ret = copy_to_user((void __user *) arg, &state,
+				   sizeof(state));
+		if (unlikely(ret != 0)) {
+			ret = -EFAULT;
+			printk(KERN_ERR "Open-MX: Failed to write get peer table state command result, error %d\n", ret);
+		}
+		break;
+	}
+
+	case OMX_CMD_PEER_TABLE_SET_STATE: {
+		struct omx_cmd_peer_table_state state;
 
 		ret = copy_from_user(&state, (void __user *) arg,
 				     sizeof(state));
@@ -609,10 +619,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			goto out;
 		}
 
-		omx_driver_userdesc->peer_table_configured = state.configured;
-		omx_driver_userdesc->peer_table_version = state.version;
-		omx_driver_userdesc->peer_table_size = state.size;
-		omx_driver_userdesc->peer_table_mapper_id = state.mapper_id;
+		ret = omx_peer_table_set_state(&state);
 		break;
 	}
 

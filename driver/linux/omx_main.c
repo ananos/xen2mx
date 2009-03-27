@@ -436,10 +436,6 @@ omx_init(void)
 	omx_driver_userdesc->peer_max = omx_peer_max;
 	omx_driver_userdesc->hz = HZ;
 	omx_driver_userdesc->jiffies = get_jiffies_64();
-	omx_driver_userdesc->peer_table_configured = 0;
-	omx_driver_userdesc->peer_table_version = 0;
-	omx_driver_userdesc->peer_table_size = 0;
-	omx_driver_userdesc->peer_table_mapper_id = -1;
 
 	/* check some module parameters */
 	if (omx_pin_synchronous && omx_pin_progressive) {

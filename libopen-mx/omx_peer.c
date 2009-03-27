@@ -116,14 +116,25 @@ omx_return_t
 omx__driver_get_peer_table_state(uint32_t *configured, uint32_t *version,
 				 uint32_t *size, uint64_t *mapper_id)
 {
+  struct omx_cmd_peer_table_state state;
+  int err;
+
+  err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_TABLE_GET_STATE, &state);
+  if (err < 0) {
+    omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
+							  "get peer table state");
+    /* let the caller handle errors */
+    return ret;
+  }
+
   if (configured)
-    *configured = omx__driver_desc->peer_table_configured;
+    *configured = state.configured;
   if (version)
-    *version = omx__driver_desc->peer_table_version;
+    *version = state.version;
   if (size)
-    *size = omx__driver_desc->peer_table_size;
+    *size = state.size;
   if (mapper_id)
-    *mapper_id = omx__driver_desc->peer_table_mapper_id;
+    *mapper_id = state.mapper_id;
   return OMX_SUCCESS;
 }
 

@@ -24,9 +24,12 @@
 struct omx_iface;
 struct omx_pkt_head;
 struct omx_peer;
+struct omx_cmd_peer_table_state;
 
 extern int omx_peers_init(void);
 extern void omx_peers_exit(void);
+extern void omx_peer_table_get_state(struct omx_cmd_peer_table_state *state);
+extern int omx_peer_table_set_state(struct omx_cmd_peer_table_state *state);
 extern void omx_peers_clear(int local);
 extern void omx_peers_clear_names(void);
 extern int omx_peers_notify_iface_attach(struct omx_iface * iface);
