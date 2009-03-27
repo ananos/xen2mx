@@ -24,6 +24,11 @@
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
 
+/* __maybe_unused appeared in 2.6.22 */
+#ifndef __maybe_unused
+#define __maybe_unused /* not implemented */
+#endif
+
 #ifdef OMX_HAVE_VMALLOC_USER
 #define omx_vmalloc_user vmalloc_user
 #else /* !OMX_HAVE_VMALLOC_USER */
