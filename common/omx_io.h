@@ -34,7 +34,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x20a
+#define OMX_DRIVER_ABI_VERSION		0x20b
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -227,8 +227,12 @@ struct omx_cmd_misc_peer_info {
 	/* 96 */
 };
 
+#define OMX_PEER_TABLE_STATUS_CONFIGURED	(1<<0)
+/* bits that are changed by the set ioctl */
+#define OMX_PEER_TABLE_STATUS_SETMASK		(OMX_PEER_TABLE_STATUS_CONFIGURED)
+
 struct omx_cmd_peer_table_state {
-	uint32_t configured;
+	uint32_t status;
 	uint32_t version;
 	/* 8 */
 	uint32_t size;

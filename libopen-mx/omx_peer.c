@@ -113,7 +113,7 @@ omx__driver_peers_clear()
 }
 
 omx_return_t
-omx__driver_get_peer_table_state(uint32_t *configured, uint32_t *version,
+omx__driver_get_peer_table_state(uint32_t *status, uint32_t *version,
 				 uint32_t *size, uint64_t *mapper_id)
 {
   struct omx_cmd_peer_table_state state;
@@ -127,8 +127,8 @@ omx__driver_get_peer_table_state(uint32_t *configured, uint32_t *version,
     return ret;
   }
 
-  if (configured)
-    *configured = state.configured;
+  if (status)
+    *status = state.status;
   if (version)
     *version = state.version;
   if (size)
@@ -145,7 +145,7 @@ omx__driver_set_peer_table_state(uint32_t configured, uint32_t version,
   struct omx_cmd_peer_table_state state;
   int err;
 
-  state.configured = configured;
+  state.status = configured ? OMX_PEER_TABLE_STATUS_CONFIGURED : 0;
   state.version = version;
   state.size = size;
   state.mapper_id = mapper_id;

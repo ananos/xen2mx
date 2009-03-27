@@ -580,7 +580,7 @@ omx_return_t
 omx__driver_clear_peer_names(void);
 
 omx_return_t
-omx__driver_get_peer_table_state(uint32_t *configured, uint32_t *version,
+omx__driver_get_peer_table_state(uint32_t *status, uint32_t *version,
 				 uint32_t *size, uint64_t *mapper_id);
 
 omx_return_t

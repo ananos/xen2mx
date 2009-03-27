@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   uint32_t bid = OMX_ANY_NIC;
   uint32_t max, emax, count;
-  uint32_t configured;
+  uint32_t status;
   uint64_t mapper_id;
   int i;
   int c;
@@ -137,12 +137,12 @@ int main(int argc, char *argv[])
     /* print the common peer table */
     printf("\n");
     /* get peer table state */
-    ret = omx__driver_get_peer_table_state(&configured, NULL, NULL, &mapper_id);
+    ret = omx__driver_get_peer_table_state(&status, NULL, NULL, &mapper_id);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to get peer table status, %s\n", omx_strerror(ret));
       goto out;
     }
-    if (configured) {
+    if (status & OMX_PEER_TABLE_STATUS_CONFIGURED) {
       omx__board_addr_sprintf(board_addr_str, mapper_id);
       printf("Peer table is ready, mapper is %s\n", board_addr_str);
     } else {

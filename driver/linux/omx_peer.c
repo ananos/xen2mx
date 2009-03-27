@@ -42,7 +42,7 @@ static int omx_peer_table_full;
 static struct list_head omx_host_query_peer_list;
 
 static struct omx_cmd_peer_table_state omx_peer_table_state = {
-	.configured = 0,
+	.status = 0,
 	.version = 0,
 	.size = 0,
 	.mapper_id = -1,
@@ -1012,7 +1012,13 @@ omx_peer_table_set_state(struct omx_cmd_peer_table_state *state)
 	if (!OMX_HAS_USER_RIGHT(PEERTABLE))
 		return -EPERM;
 
-	memcpy(&omx_peer_table_state, state, sizeof(omx_peer_table_state));
+	/* replace setmask bits with the given ones */
+	omx_peer_table_state.status &= ~OMX_PEER_TABLE_STATUS_SETMASK;
+	omx_peer_table_state.status |= (state->status & OMX_PEER_TABLE_STATUS_SETMASK);
+
+	omx_peer_table_state.version = state->version;
+	omx_peer_table_state.size = state->size;
+	omx_peer_table_state.mapper_id = state->mapper_id;
 	return 0;
 }
 
