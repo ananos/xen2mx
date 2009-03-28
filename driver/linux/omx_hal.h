@@ -219,6 +219,12 @@ typedef struct work_struct * omx_work_struct_data_t;
 
 #endif /* !OMX_HAVE_{OLD_,}DMA_ENGINE_API */
 
+#ifdef OMX_HAVE_DEV_NAME
+#define omx_dev_name dev_name
+#else
+#define omx_dev_name(dev) ((dev)->bus_id)
+#endif
+
 #endif /* __omx_hal_h__ */
 
 /*

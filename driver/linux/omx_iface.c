@@ -457,7 +457,7 @@ omx_iface_attach(struct net_device * ifp)
 
 		BUG_ON(!pdev->driver);
 		printk(KERN_INFO "Open-MX:   Interface '%s' is PCI device '%s' managed by driver '%s'\n",
-		       ifp->name, dev->bus_id, pdev->driver->name);
+		       ifp->name, omx_dev_name(dev), pdev->driver->name);
 	}
 #endif
 

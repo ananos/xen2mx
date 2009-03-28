@@ -209,6 +209,15 @@ else
   echo no
 fi
 
+# dev_name added in 2.6.26 and bus_id removed in 2.6.23
+echo -n "  checking (in kernel headers) whether dev_name is available ..."
+if grep -w "dev_name" ${LINUX_HDR}/include/linux/device.h > /dev/null ; then
+  echo "#define OMX_HAVE_DEV_NAME 1" >> ${TMP_CHECKS_NAME}
+  echo yes
+else
+  echo no
+fi
+
 # add the footer
 echo "" >> ${TMP_CHECKS_NAME}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_NAME}
