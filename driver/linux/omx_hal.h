@@ -225,6 +225,12 @@ typedef struct work_struct * omx_work_struct_data_t;
 #define omx_dev_name(dev) ((dev)->bus_id)
 #endif
 
+#ifdef OMX_HAVE_MOD_TIMER_PENDING
+#define omx_mod_timer_pending mod_timer_pending
+#else
+#define omx_mod_timer_pending __mod_timer
+#endif
+
 #endif /* __omx_hal_h__ */
 
 /*

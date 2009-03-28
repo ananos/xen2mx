@@ -217,7 +217,8 @@ omx_driver_userdesc_update_handler(unsigned long data)
 	u64 current_jiffies = get_jiffies_64();
 	omx_driver_userdesc->jiffies = current_jiffies;
 	wmb();
-	__mod_timer(&omx_driver_userdesc_update_timer, current_jiffies + 1);
+	/* timer already expired, use the regular mod_timer() */
+	mod_timer(&omx_driver_userdesc_update_timer, current_jiffies + 1);
 }
 
 static int
@@ -477,7 +478,8 @@ omx_init(void)
 
 	/* setup a timer to update jiffies in the driver user descriptor */
 	setup_timer(&omx_driver_userdesc_update_timer, omx_driver_userdesc_update_handler, 0);
-	__mod_timer(&omx_driver_userdesc_update_timer, get_jiffies_64() + 1);
+	/* timer not pending yet, use the regular mod_timer() */
+	mod_timer(&omx_driver_userdesc_update_timer, get_jiffies_64() + 1);
 
 	ret = omx_dma_init();
 	if (ret < 0)

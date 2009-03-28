@@ -218,6 +218,15 @@ else
   echo no
 fi
 
+# __mod_timer removed and __mod_timer_pending added in 2.6.30
+echo -n "  checking (in kernel headers) whether mod_timer_pending is available ..."
+if grep -w "mod_timer_pending" ${LINUX_HDR}/include/linux/timer.h > /dev/null ; then
+  echo "#define OMX_HAVE_MOD_TIMER_PENDING 1" >> ${TMP_CHECKS_NAME}
+  echo yes
+else
+  echo no
+fi
+
 # add the footer
 echo "" >> ${TMP_CHECKS_NAME}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_NAME}

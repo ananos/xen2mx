@@ -948,8 +948,9 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 
  skbs_ready:
 	/* schedule the timeout handler now that we are ready to send the requests */
-	__mod_timer(&handle->retransmit_timer,
-		    get_jiffies_64() + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+	/* timer not pending yet, use the regular mod_timer() */
+	mod_timer(&handle->retransmit_timer,
+		  get_jiffies_64() + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	/*
 	 * do not keep the lock while sending
@@ -1020,6 +1021,7 @@ omx_progress_pull_on_handle_timeout_handle_locked(struct omx_iface * iface,
 	omx_pull_handle_poll_dma_completions(handle);
 
 	/* reschedule another timeout handler */
+	/* timer already expired, use the regular mod_timer() */
 	mod_timer(&handle->retransmit_timer,
 		  get_jiffies_64() + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
@@ -1639,8 +1641,9 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 	}
 
 	/* reschedule the timeout handler now that we are ready to send the requests */
-	mod_timer(&handle->retransmit_timer,
-		  get_jiffies_64() + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+	/* timer still pending, use the mod_timer_pending() */
+	omx_mod_timer_pending(&handle->retransmit_timer,
+			      get_jiffies_64() + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
 
 	/*
 	 * do not keep the lock while sending
