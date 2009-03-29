@@ -437,22 +437,6 @@ static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAKEUP)]		= omx_ioctl_wakeup,
 };
 
-/* call the ioctl handler assuming the caller checked the index */
-static INLINE long
-omx_handle_ioctl_with_endpoint(struct file *file, unsigned handler_offset, void __user * uparam)
-{
-	struct omx_endpoint * endpoint = file->private_data;
-
-	/*
-	 * the endpoint is already acquired by the file,
-	 * just check its status
-	 */
-	if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
-		return -EINVAL;
-
-	return omx_ioctl_with_endpoint_handlers[(unsigned char) handler_offset](endpoint, uparam);
-}
-
 /*
  * Main ioctl switch where all application ioctls arrive
  */
@@ -463,11 +447,20 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	unsigned handler_offset = OMX_CMD_HANDLER_SHIFT(cmd_index); /* unsigned, so that we don't have to check >= 0 */
 	int ret = 0;
 
-#ifndef OMX_DRIVER_DEBUG
-	/* optimize the send case */
-	if (likely(handler_offset < ARRAY_SIZE(omx_ioctl_with_endpoint_handlers)))
-		return omx_handle_ioctl_with_endpoint(file, handler_offset, (void __user *) arg);
-#endif
+	/* optimize the critical path case */
+	if (likely(handler_offset < ARRAY_SIZE(omx_ioctl_with_endpoint_handlers))) {
+		struct omx_endpoint * endpoint = file->private_data;
+
+		/*
+		 * the endpoint is already acquired by the file,
+		 * just check its status
+		 */
+		if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK))
+			return -EINVAL;
+
+		/* omx_dev_init() takes care fo checking that the handler isn't NULL */
+		return omx_ioctl_with_endpoint_handlers[(unsigned char) handler_offset](endpoint, (void __user *) arg);
+	}
 
 	switch (cmd) {
 
@@ -735,13 +728,8 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_DESTROY_USER_REGION:
 	case OMX_CMD_WAIT_EVENT:
 	case OMX_CMD_WAKEUP:
-	{
-		BUG_ON(handler_offset >= ARRAY_SIZE(omx_ioctl_with_endpoint_handlers));
-		BUG_ON(omx_ioctl_with_endpoint_handlers[(unsigned char) handler_offset] == NULL);
-
-		ret = omx_handle_ioctl_with_endpoint(file, handler_offset, (void __user *) arg);
-		break;
-	}
+		/* this should be handled in the fast path */
+		BUG();
 
 	default:
 		ret = -ENOSYS;
