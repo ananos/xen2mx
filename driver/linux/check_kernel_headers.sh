@@ -95,7 +95,7 @@ fi
 # vmalloc_user appeared in 2.6.18 but was broken until 2.6.19
 echo -n "  checking (in kernel headers) vmalloc_user availability... "
 if grep "vmalloc_user *(" ${LINUX_HDR}/include/linux/vmalloc.h > /dev/null ; then
-  if grep "LINUX_VERSION_CODE 132626" ${LINUX_HDR}/include/linux/version.h > /dev/null ; then
+  if grep "LINUX_VERSION_CODE 132626" ${LINUX_BUILD}/include/linux/version.h > /dev/null ; then
     echo broken, ignoring
   else
     echo "#define OMX_HAVE_VMALLOC_USER 1" >> ${TMP_CHECKS_NAME}
