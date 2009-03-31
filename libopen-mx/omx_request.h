@@ -45,7 +45,7 @@ omx__request_alloc_exit(struct omx_endpoint *ep)
 #endif
 }
 
-static inline union omx_request *
+static inline __malloc union omx_request *
 omx__request_alloc(struct omx_endpoint *ep)
 {
   union omx_request * req;

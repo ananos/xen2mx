@@ -24,6 +24,7 @@
 #endif
 
 #define __pure __attribute__((pure))
+#define __malloc  __attribute__((malloc))
 
 #include <stdio.h>
 #include <unistd.h>
@@ -642,7 +643,7 @@ omx__strreqtype(enum omx__request_type type);
 extern void
 omx__sprintf_reqstate(uint16_t state, char *str);
 
-extern char *
+extern __malloc char *
 omx__create_message_prefix(const struct omx_endpoint *ep);
 
 extern void

@@ -1,6 +1,8 @@
 * add pure attributes in the common directory as well
 
-* add some __attribute__((malloc)), const, restrict everywhere
+* add some __attribute__((malloc)), const in the driver
+
+* add restrict when c99 is enabled?
 
 * switch to automake once it supports CC foo.c
   + link tools/tests dynamically and let libtool add rpath
