@@ -32,7 +32,7 @@
  * The whole functions supporting success are inlined in the header.
  */
 
-mx_return_t
+__pure mx_return_t
 omx_unlikely_return_to_mx(omx_return_t omxret)
 {
   switch (omxret) {
@@ -99,7 +99,7 @@ omx_unlikely_return_to_mx(omx_return_t omxret)
   }
 }
 
-omx_return_t
+__pure omx_return_t
 omx_unlikely_return_from_mx(mx_return_t mxret)
 {
   switch (mxret) {
@@ -168,7 +168,7 @@ omx_unlikely_return_from_mx(mx_return_t mxret)
   }
 }
 
-mx_status_code_t
+__pure mx_status_code_t
 omx_unlikely_status_code_to_mx(omx_return_t omxret)
 {
   switch (omxret) {
@@ -199,7 +199,7 @@ omx_unlikely_status_code_to_mx(omx_return_t omxret)
   }
 }
 
-omx_return_t
+__pure omx_return_t
 omx_unlikely_status_code_from_mx(mx_status_code_t mxcode)
 {
   switch (mxcode) {

@@ -70,7 +70,7 @@ static int omx_host_query_magic = 0x13052008;
  * Peer Table Management
  */
 
-static INLINE uint8_t
+static INLINE __pure uint8_t
 omx_peer_addr_hash(uint64_t board_addr)
 {
 	uint32_t tmp24;

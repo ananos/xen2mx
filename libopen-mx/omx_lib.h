@@ -23,6 +23,8 @@
 #define MALLOC_CHECK_ 3
 #endif
 
+#define __pure __attribute__((pure))
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -125,7 +127,7 @@ extern volatile struct omx_driver_desc * omx__driver_desc;
 
 #define omx__timeout_ms_to_resends(ms) ((ms * RESEND_PER_SECOND + 1023) / 1024)
 
-static inline uint64_t
+static inline __pure uint64_t
 omx__timeout_ms_to_relative_jiffies(uint32_t ms)
 {
 	uint32_t hz = omx__driver_desc->hz;
@@ -134,7 +136,7 @@ omx__timeout_ms_to_relative_jiffies(uint32_t ms)
 		: (ms * hz + 1023)/1024;
 }
 
-static inline uint64_t
+static inline __pure uint64_t
 omx__timeout_ms_to_absolute_jiffies(uint32_t ms)
 {
 	uint32_t hz = omx__driver_desc->hz;
@@ -148,7 +150,7 @@ omx__timeout_ms_to_absolute_jiffies(uint32_t ms)
  * Partner-related helpers
  */
 
-static inline struct omx__partner *
+static inline __pure struct omx__partner *
 omx__partner_from_addr(omx_endpoint_addr_t * addr)
 {
   BUILD_BUG_ON(sizeof(struct omx__endpoint_addr) != sizeof(struct omx_endpoint_addr));
@@ -170,7 +172,7 @@ omx__partner_recv_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * a
   omx__partner_session_to_addr(partner, partner->back_session_id, addr);
 }
 
-static inline int
+static inline __pure int
 omx__partner_localization_shared(struct omx__partner *partner)
 {
   omx__debug_assert(partner->localization != OMX__PARTNER_LOCALIZATION_UNKNOWN);
@@ -625,7 +627,7 @@ omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
 extern void
 omx__init_comms(void);
 
-extern omx_return_t
+extern __pure omx_return_t
 omx__errno_to_return(void);
 
 extern omx_return_t
@@ -634,7 +636,7 @@ omx__ioctl_errno_to_return_checked(omx_return_t ok, ...);
 extern void
 omx__check_driver_pinning_error(struct omx_endpoint *ep, omx_return_t ret);
 
-extern const char *
+extern __pure const char *
 omx__strreqtype(enum omx__request_type type);
 
 extern void

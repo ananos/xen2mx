@@ -37,10 +37,10 @@
 #include "open-mx.h"
 #include "omx_lib.h"
 
-extern mx_return_t
+extern __pure mx_return_t
 omx_unlikely_return_to_mx(omx_return_t omxret);
 
-static inline mx_return_t
+static inline __pure mx_return_t
 omx_return_to_mx(omx_return_t omxret)
 {
   /* check the size of enums */
@@ -52,10 +52,10 @@ omx_return_to_mx(omx_return_t omxret)
     return omx_unlikely_return_to_mx(omxret);
 }
 
-extern omx_return_t
+extern __pure omx_return_t
 omx_unlikely_return_from_mx(mx_return_t mxret);
 
-static inline omx_return_t
+static inline __pure omx_return_t
 omx_return_from_mx(mx_return_t mxret)
 {
   if (likely(mxret == MX_SUCCESS))
@@ -64,10 +64,10 @@ omx_return_from_mx(mx_return_t mxret)
     return omx_unlikely_return_from_mx(mxret);
 }
 
-extern mx_status_code_t
+extern __pure mx_status_code_t
 omx_unlikely_status_code_to_mx(omx_return_t omxret);
 
-static inline mx_status_code_t
+static inline __pure mx_status_code_t
 omx_status_code_to_mx(omx_return_t omxret)
 {
   /* check the size of enums */
@@ -79,10 +79,10 @@ omx_status_code_to_mx(omx_return_t omxret)
     return omx_unlikely_status_code_to_mx(omxret);
 }
 
-extern omx_return_t
+extern __pure omx_return_t
 omx_unlikely_status_code_from_mx(mx_status_code_t mxcode);
 
-static inline omx_return_t
+static inline __pure omx_return_t
 omx_status_code_from_mx(mx_status_code_t mxcode)
 {
   if (likely(mxcode == MX_STATUS_SUCCESS))
@@ -109,7 +109,7 @@ omx_status_code_from_mx(mx_status_code_t mxcode)
 #define omx_request_ptr_from_mx(reqp) ((omx_request_t *) (void *) (reqp))
 #define omx_request_from_mx(req) ((omx_request_t) (req))
 
-static inline uint32_t
+static inline __pure uint32_t
 omx_timeout_from_mx(uint32_t mx_timeout)
 {
   if (mx_timeout == MX_INFINITE)

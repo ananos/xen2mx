@@ -29,6 +29,16 @@
 #define __maybe_unused /* not implemented */
 #endif
 
+/* __pure appeared in 2.6.21 */
+#ifndef __pure
+/* __attribute_pure__ disappeared in 2.6.23 */
+#ifdef __attribute_pure__
+#define __pure __attribute_pure__
+#else
+#define __pure /* not implemented */
+#endif
+#endif
+
 #ifdef OMX_HAVE_VMALLOC_USER
 #define omx_vmalloc_user vmalloc_user
 #else /* !OMX_HAVE_VMALLOC_USER */
@@ -144,7 +154,7 @@ list_entry((ptr)->next, type, member)
 
 /* dev_to_node appeared in 2.6.20 */
 #ifdef OMX_HAVE_DEV_TO_NODE
-static inline int
+static inline __pure int
 omx_ifp_node(struct net_device *ifp)
 {
   struct device *dev = omx_ifp_to_dev(ifp);
