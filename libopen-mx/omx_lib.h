@@ -151,29 +151,29 @@ omx__timeout_ms_to_absolute_jiffies(uint32_t ms)
  */
 
 static inline __pure struct omx__partner *
-omx__partner_from_addr(omx_endpoint_addr_t * addr)
+omx__partner_from_addr(const omx_endpoint_addr_t * addr)
 {
   BUILD_BUG_ON(sizeof(struct omx__endpoint_addr) != sizeof(struct omx_endpoint_addr));
   return ((struct omx__endpoint_addr *) addr)->partner;
 }
 
 static inline void
-omx__partner_session_to_addr(struct omx__partner * partner, uint32_t session_id,
+omx__partner_session_to_addr(const struct omx__partner * partner, uint32_t session_id,
 			     omx_endpoint_addr_t * addr)
 {
-  ((struct omx__endpoint_addr *) addr)->partner = partner;
+  ((struct omx__endpoint_addr *) addr)->partner = (struct omx__partner *) partner;
   ((struct omx__endpoint_addr *) addr)->session_id = session_id;
   OMX_VALGRIND_MEMORY_MAKE_READABLE(addr, sizeof(*addr));
 }
 
 static inline void
-omx__partner_recv_to_addr(struct omx__partner * partner, omx_endpoint_addr_t * addr)
+omx__partner_recv_to_addr(const struct omx__partner * partner, omx_endpoint_addr_t * addr)
 {
   omx__partner_session_to_addr(partner, partner->back_session_id, addr);
 }
 
 static inline __pure int
-omx__partner_localization_shared(struct omx__partner *partner)
+omx__partner_localization_shared(const struct omx__partner *partner)
 {
   omx__debug_assert(partner->localization != OMX__PARTNER_LOCALIZATION_UNKNOWN);
 #ifdef OMX_DISABLE_SHARED
@@ -184,7 +184,7 @@ omx__partner_localization_shared(struct omx__partner *partner)
 }
 
 static inline void
-omx__partner_recv_lookup(struct omx_endpoint *ep,
+omx__partner_recv_lookup(const struct omx_endpoint *ep,
 			 uint16_t peer_index, uint8_t endpoint_index,
 			 struct omx__partner ** partnerp)
 {
@@ -225,8 +225,8 @@ omx__mark_partner_need_ack_immediate(struct omx_endpoint *ep,
 }
 
 static inline omx__seqnum_t
-omx__get_partner_needed_ack(struct omx_endpoint *ep,
-			    struct omx__partner *partner)
+omx__get_partner_needed_ack(const struct omx_endpoint *ep,
+			    const struct omx__partner *partner)
 {
   return partner->next_frag_recv_seq;
 }
@@ -275,7 +275,7 @@ omx__board_addr_sprintf(char * buffer, uint64_t addr)
 }
 
 static inline int
-omx__board_addr_sscanf(char * buffer, uint64_t * addr)
+omx__board_addr_sscanf(const char * buffer, uint64_t * addr)
 {
 	uint8_t bytes[6];
 	int err;
@@ -301,7 +301,7 @@ omx__board_addr_sscanf(char * buffer, uint64_t * addr)
 
 static inline int
 omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
-			    int nr, void * user, int * founds)
+			    int nr, const void * user, int * founds)
 {
   struct omx__sendq_entry * array = ep->sendq_map.array;
   int index, i;
@@ -322,7 +322,7 @@ omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
     omx__debug_assert(array[index].user == NULL);
     omx__debug_instr(array[index].next_free = -1);
 
-    array[index].user = user;
+    array[index].user = (void *) user;
     founds[i] = index;
     index = next_free;
   }
@@ -334,7 +334,7 @@ omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
 
 static inline void
 omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
-			    int nr, int *indexes)
+			    int nr, const int *indexes)
 {
   struct omx__sendq_entry * array = ep->sendq_map.array;
   void * user;
@@ -361,7 +361,7 @@ omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
 }
 
 static inline void *
-omx__endpoint_sendq_map_user(struct omx_endpoint * ep,
+omx__endpoint_sendq_map_user(const struct omx_endpoint * ep,
 			     int index)
 {
   struct omx__sendq_entry * array = ep->sendq_map.array;
@@ -385,8 +385,8 @@ omx__submit_notify(struct omx_endpoint *ep,
 		   int delayed);
 
 extern omx_return_t
-omx__submit_discarded_notify(struct omx_endpoint *ep, struct omx__partner * partner,
-			     struct omx_evt_recv_msg *msg);
+omx__submit_discarded_notify(struct omx_endpoint *ep, const struct omx__partner * partner,
+			     const struct omx_evt_recv_msg *msg);
 
 extern omx_return_t
 omx__alloc_setup_pull(struct omx_endpoint * ep,
@@ -412,50 +412,50 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
 
 extern void
 omx__process_recv(struct omx_endpoint *ep,
-		  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
+		  const struct omx_evt_recv_msg *msg, const void *data, uint32_t msg_length,
 		  omx__process_recv_func_t recv_func);
 
 extern void
 omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
-		       struct omx_evt_recv_msg *msg,
-		       void *data /* unused */, uint32_t msg_length);
+		       const struct omx_evt_recv_msg *msg,
+		       const void *data /* unused */, uint32_t msg_length);
 
 extern void
 omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 			union omx_request *req,
-			struct omx_evt_recv_msg *msg,
-			void *data, uint32_t msg_length);
+			const struct omx_evt_recv_msg *msg,
+			const void *data, uint32_t msg_length);
 
 extern void
 omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *partner,
 			      union omx_request *req,
-			      struct omx_evt_recv_msg *msg,
-			      void *data, uint32_t msg_length);
+			      const struct omx_evt_recv_msg *msg,
+			      const void *data, uint32_t msg_length);
 
 extern void
 omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
-		       struct omx_evt_recv_msg *msg,
-		       void *data /* unused */, uint32_t msg_length);
+		       const struct omx_evt_recv_msg *msg,
+		       const void *data /* unused */, uint32_t msg_length);
 
 extern void
 omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
 			 union omx_request *req,
-			 struct omx_evt_recv_msg *msg,
-			 void *data /* unused */, uint32_t msg_length /* unused */);
+			 const struct omx_evt_recv_msg *msg,
+			 const void *data /* unused */, uint32_t msg_length /* unused */);
 
 extern void
 omx__process_pull_done(struct omx_endpoint * ep,
-		       struct omx_evt_pull_done * event);
+		       const struct omx_evt_pull_done * event);
 
 extern void
 omx__process_recv_liback(struct omx_endpoint *ep,
-			 struct omx_evt_recv_liback *liback);
+			 const struct omx_evt_recv_liback *liback);
 
 extern void
 omx__process_recv_nack_lib(struct omx_endpoint *ep,
-			   struct omx_evt_recv_nack_lib *nack_lib);
+			   const struct omx_evt_recv_nack_lib *nack_lib);
 
 /* progression */
 
@@ -474,17 +474,17 @@ extern omx_return_t
 omx__connect_myself(struct omx_endpoint *ep);
 
 extern void
-omx__post_connect_request(struct omx_endpoint *ep,
-			  struct omx__partner *partner,
+omx__post_connect_request(const struct omx_endpoint *ep,
+			  const struct omx__partner *partner,
 			  union omx_request * req);
 
 extern void
 omx__process_recv_connect_request(struct omx_endpoint *ep,
-				  struct omx_evt_recv_connect_request *event);
+				  const struct omx_evt_recv_connect_request *event);
 
 extern void
 omx__process_recv_connect_reply(struct omx_endpoint *ep,
-				struct omx_evt_recv_connect_reply *event);
+				const struct omx_evt_recv_connect_reply *event);
 
 extern void
 omx__connect_complete(struct omx_endpoint *ep, union omx_request *req,
@@ -503,7 +503,7 @@ omx__handle_ack(struct omx_endpoint *ep,
 extern void
 omx__handle_liback(struct omx_endpoint *ep,
 		   struct omx__partner *partner,
-		   struct omx_evt_recv_liback *liback);
+		   const struct omx_evt_recv_liback *liback);
 
 extern void
 omx__handle_nack(struct omx_endpoint *ep,
@@ -553,14 +553,14 @@ omx__endpoint_large_region_map_exit(struct omx_endpoint * ep);
 
 extern omx_return_t
 omx__get_region(struct omx_endpoint *ep,
-		struct omx__req_segs *segs,
+		const struct omx__req_segs *segs,
 		struct omx__large_region **regionp,
-		void * reserver);
+		const void * reserver);
 
 extern omx_return_t
 omx__put_region(struct omx_endpoint *ep,
 		struct omx__large_region *region,
-		void * reserver);
+		const void * reserver);
 
 /* board management */
 
@@ -568,7 +568,7 @@ extern omx_return_t
 omx__get_board_count(uint32_t * count);
 
 extern omx_return_t
-omx__get_board_info(struct omx_endpoint * ep, uint32_t index, struct omx_board_info * info);
+omx__get_board_info(const struct omx_endpoint * ep, uint32_t index, struct omx_board_info * info);
 
 extern omx_return_t
 omx__get_board_index_by_name(const char * name, uint32_t * index);
@@ -576,7 +576,7 @@ omx__get_board_index_by_name(const char * name, uint32_t * index);
 /* hostname management */
 
 omx_return_t
-omx__driver_set_hostname(uint32_t board_index, char *hostname);
+omx__driver_set_hostname(uint32_t board_index, const char *hostname);
 
 omx_return_t
 omx__driver_clear_peer_names(void);
@@ -592,7 +592,7 @@ omx__driver_set_peer_table_state(uint32_t configured, uint32_t version,
 /* peer management */
 
 extern omx_return_t
-omx__driver_peer_add(uint64_t board_addr, char *hostname);
+omx__driver_peer_add(uint64_t board_addr, const char *hostname);
 
 extern omx_return_t
 omx__driver_peers_clear(void);
@@ -615,11 +615,11 @@ extern omx_return_t
 omx__error(omx_return_t ret, const char *fmt, ...);
 
 extern omx_return_t
-omx__error_with_ep(struct omx_endpoint *ep,
+omx__error_with_ep(const struct omx_endpoint *ep,
 		   omx_return_t ret, const char *fmt, ...);
 
 extern omx_return_t
-omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
+omx__error_with_req(const struct omx_endpoint *ep, const union omx_request *req,
 		    omx_return_t code, const char *fmt, ...);
 
 /* misc helpers */
@@ -634,7 +634,7 @@ extern omx_return_t
 omx__ioctl_errno_to_return_checked(omx_return_t ok, ...);
 
 extern void
-omx__check_driver_pinning_error(struct omx_endpoint *ep, omx_return_t ret);
+omx__check_driver_pinning_error(const struct omx_endpoint *ep, omx_return_t ret);
 
 extern __pure const char *
 omx__strreqtype(enum omx__request_type type);
@@ -643,7 +643,7 @@ extern void
 omx__sprintf_reqstate(uint16_t state, char *str);
 
 extern char *
-omx__create_message_prefix(struct omx_endpoint *ep);
+omx__create_message_prefix(const struct omx_endpoint *ep);
 
 extern void
 omx__foreach_endpoint(void (*func)(struct omx_endpoint *));

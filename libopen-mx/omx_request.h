@@ -77,7 +77,7 @@ omx__request_free(struct omx_endpoint *ep, union omx_request * req)
 }
 
 extern void
-omx__request_alloc_check(struct omx_endpoint *ep);
+omx__request_alloc_check(const struct omx_endpoint *ep);
 
 /***************************
  * Request queue management
@@ -121,19 +121,19 @@ omx__dequeue_request(struct list_head *head,
 }
 
 static inline union omx_request *
-omx__first_request(struct list_head *head)
+omx__first_request(const struct list_head *head)
 {
   return list_first_entry(head, union omx_request, generic.queue_elt);
 }
 
 static inline int
-omx__empty_queue(struct list_head *head)
+omx__empty_queue(const struct list_head *head)
 {
   return list_empty(head);
 }
 
 static inline int
-omx__queue_count(struct list_head *head)
+omx__queue_count(const struct list_head *head)
 {
   struct list_head *elt;
   int i=0;
@@ -293,19 +293,19 @@ list_for_each_entry(req, &ep->anyctxid.done_req_q, generic.done_elt)
 list_for_each_entry_safe(req, next, &ep->anyctxid.done_req_q, generic.done_elt)
 
 static inline union omx_request *
-omx__first_done_anyctxid_request(struct omx_endpoint *ep)
+omx__first_done_anyctxid_request(const struct omx_endpoint *ep)
 {
   return list_first_entry(&ep->anyctxid.done_req_q, union omx_request, generic.done_elt);
 }
 
 static inline int
-omx__empty_done_ctxid_queue(struct omx_endpoint *ep, uint32_t ctxid)
+omx__empty_done_ctxid_queue(const struct omx_endpoint *ep, uint32_t ctxid)
 {
   return list_empty(&ep->ctxid[ctxid].done_req_q);
 }
 
 static inline int
-omx__empty_done_anyctxid_queue(struct omx_endpoint *ep)
+omx__empty_done_anyctxid_queue(const struct omx_endpoint *ep)
 {
   return list_empty(&ep->anyctxid.done_req_q);
 }
@@ -345,13 +345,13 @@ omx__dequeue_partner_request(struct list_head *head,
 }
 
 static inline int
-omx__empty_partner_queue(struct list_head *head)
+omx__empty_partner_queue(const struct list_head *head)
 {
   return list_empty(head);
 }
 
 static inline union omx_request *
-omx__first_partner_request(struct list_head *head)
+omx__first_partner_request(const struct list_head *head)
 {
   return list_first_entry(head, union omx_request, generic.partner_elt);
 }
@@ -386,19 +386,19 @@ omx___dequeue_partner_early_packet(struct omx__early_packet *early)
 }
 
 static inline struct omx__early_packet *
-omx__first_partner_early_packet(struct omx__partner *partner)
+omx__first_partner_early_packet(const struct omx__partner *partner)
 {
   return list_first_entry(&partner->early_recv_q, struct omx__early_packet, partner_elt);
 }
 
 static inline struct omx__early_packet *
-omx__last_partner_early_packet(struct omx__partner *partner)
+omx__last_partner_early_packet(const struct omx__partner *partner)
 {
   return list_last_entry(&partner->early_recv_q, struct omx__early_packet, partner_elt);
 }
 
 static inline int
-omx__empty_partner_early_packet_queue(struct omx__partner *partner)
+omx__empty_partner_early_packet_queue(const struct omx__partner *partner)
 {
   return list_empty(&partner->early_recv_q);
 }

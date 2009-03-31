@@ -126,7 +126,7 @@ omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
  */
 
 static void
-omx__endpoint_bind_process(struct omx_endpoint *ep, const char *bindstring)
+omx__endpoint_bind_process(const struct omx_endpoint *ep, const char *bindstring)
 {
   cpu_set_t cs;
   CPU_ZERO(&cs);
@@ -231,9 +231,9 @@ omx__open_one_endpoint(int fd,
 static INLINE omx_return_t
 omx__open_endpoint_in_range(int fd,
 			    uint32_t board_start, uint32_t board_end,
-			    uint32_t *board_found_p,
+			    uint32_t * board_found_p,
 			    uint32_t endpoint_start, uint32_t endpoint_end,
-			    uint32_t *endpoint_found_p)
+			    uint32_t * endpoint_found_p)
 {
   uint32_t board, endpoint;
   omx_return_t ret;
@@ -274,7 +274,8 @@ omx__open_endpoint_in_range(int fd,
 
 static INLINE omx_return_t
 omx__open_endpoint(int fd,
-		   uint32_t *board_index_p, uint32_t *endpoint_index_p)
+		   uint32_t * board_index_p,
+		   uint32_t * endpoint_index_p)
 {
   uint32_t board_start, board_end;
   uint32_t endpoint_start, endpoint_end;
@@ -913,7 +914,7 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep)
  * Request Allocation Debug
  */
 void
-omx__request_alloc_check(struct omx_endpoint *ep)
+omx__request_alloc_check(const struct omx_endpoint *ep)
 {
 #ifdef OMX_LIB_DEBUG
   int nr = 0;

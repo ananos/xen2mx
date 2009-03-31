@@ -25,7 +25,7 @@
  */
 
 omx_return_t
-omx__driver_set_hostname(uint32_t board_index, char *hostname)
+omx__driver_set_hostname(uint32_t board_index, const char *hostname)
 {
   struct omx_cmd_set_hostname set_hostname;
   int err;
@@ -68,7 +68,7 @@ omx__driver_clear_peer_names(void)
  */
 
 omx_return_t
-omx__driver_peer_add(uint64_t board_addr, char *hostname)
+omx__driver_peer_add(uint64_t board_addr, const char *hostname)
 {
   struct omx_cmd_misc_peer_info peer_info;
   int err;
@@ -96,7 +96,7 @@ omx__driver_peer_add(uint64_t board_addr, char *hostname)
 }
 
 omx_return_t
-omx__driver_peers_clear()
+omx__driver_peers_clear(void)
 {
   int err;
 
@@ -221,7 +221,7 @@ omx__driver_peer_from_addr(uint64_t board_addr, char *hostname, uint32_t *index)
 }
 
 static INLINE omx_return_t
-omx__driver_peer_from_hostname(char *hostname, uint64_t *board_addr, uint32_t *index)
+omx__driver_peer_from_hostname(const char *hostname, uint64_t *board_addr, uint32_t *index)
 {
   struct omx_cmd_misc_peer_info peer_info;
   int err;

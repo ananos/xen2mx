@@ -518,8 +518,8 @@ union omx_request {
 typedef void (*omx__process_recv_func_t) (struct omx_endpoint *ep,
 					  struct omx__partner *partner,
 					  union omx_request *req,
-					  struct omx_evt_recv_msg *msg,
-					  void *data, uint32_t msg_length);
+					  const struct omx_evt_recv_msg *msg,
+					  const void *data, uint32_t msg_length);
 
 struct omx__early_packet {
   struct list_head partner_elt;

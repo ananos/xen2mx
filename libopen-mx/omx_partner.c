@@ -170,7 +170,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
 }
 
 static INLINE void
-omx__partner_check_localization(struct omx_endpoint * ep, struct omx__partner * partner, int shared)
+omx__partner_check_localization(const struct omx_endpoint * ep, struct omx__partner * partner, int shared)
 {
   enum omx__partner_localization localization;
 
@@ -298,8 +298,8 @@ omx__connect_myself(struct omx_endpoint *ep)
  */
 
 void
-omx__post_connect_request(struct omx_endpoint *ep,
-			  struct omx__partner *partner,
+omx__post_connect_request(const struct omx_endpoint *ep,
+			  const struct omx__partner *partner,
 			  union omx_request * req)
 {
   struct omx_cmd_send_connect_request * connect_param = &req->connect.send_connect_request_ioctl_param;
@@ -534,7 +534,7 @@ static INLINE void
 omx__handle_connect_reply(struct omx_endpoint *ep,
 			  struct omx__partner * partner,
 			  union omx_request * req,
-			  struct omx_evt_recv_connect_reply * event)
+			  const struct omx_evt_recv_connect_reply * event)
 {
   uint32_t target_session_id = event->target_session_id;
   uint32_t target_recv_seqnum_start = event->target_recv_seqnum_start;
@@ -592,7 +592,7 @@ omx__handle_connect_reply(struct omx_endpoint *ep,
  */
 void
 omx__process_recv_connect_reply(struct omx_endpoint *ep,
-				struct omx_evt_recv_connect_reply *event)
+				const struct omx_evt_recv_connect_reply *event)
 {
   struct omx__partner * partner;
   uint32_t src_session_id = event->src_session_id;
@@ -626,7 +626,7 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
  */
 void
 omx__process_recv_connect_request(struct omx_endpoint *ep,
-				  struct omx_evt_recv_connect_request *event)
+				  const struct omx_evt_recv_connect_request *event)
 {
   struct omx__partner * partner;
   struct omx_cmd_send_connect_reply reply_param;

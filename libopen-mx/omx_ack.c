@@ -137,7 +137,7 @@ omx__handle_ack(struct omx_endpoint *ep,
 void
 omx__handle_liback(struct omx_endpoint *ep,
 		   struct omx__partner *partner,
-		   struct omx_evt_recv_liback *liback)
+		   const struct omx_evt_recv_liback *liback)
 {
   omx__seqnum_t ack = liback->lib_seqnum;
   uint32_t acknum = liback->acknum;
@@ -215,7 +215,7 @@ omx__handle_nack(struct omx_endpoint *ep,
  */
 
 static omx_return_t
-omx__submit_send_liback(struct omx_endpoint *ep,
+omx__submit_send_liback(const struct omx_endpoint *ep,
 			struct omx__partner * partner)
 {
   struct omx_cmd_send_liback liback_param;

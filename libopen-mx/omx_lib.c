@@ -29,7 +29,7 @@
  */
 
 static void
-omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
+omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
 {
   omx__debug_printf(EVENT, ep, "received type %d\n", evt->generic.type);
   switch (evt->generic.type) {
@@ -45,7 +45,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_TINY: {
-    struct omx_evt_recv_msg * msg = &evt->recv_msg;
+    const struct omx_evt_recv_msg * msg = &evt->recv_msg;
     omx__process_recv(ep,
 		      msg, msg->specific.tiny.data, msg->specific.tiny.length,
 		      omx__process_recv_tiny);
@@ -53,7 +53,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_SMALL: {
-    struct omx_evt_recv_msg * msg = &evt->recv_msg;
+    const struct omx_evt_recv_msg * msg = &evt->recv_msg;
     char * recvq_buffer = ep->recvq + msg->specific.small.recvq_offset;
     omx__process_recv(ep,
 		      msg, recvq_buffer, msg->specific.small.length,
@@ -62,7 +62,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_MEDIUM_FRAG: {
-    struct omx_evt_recv_msg * msg = &evt->recv_msg;
+    const struct omx_evt_recv_msg * msg = &evt->recv_msg;
     char * recvq_buffer = ep->recvq + msg->specific.medium_frag.recvq_offset;
     omx__process_recv(ep,
 		      msg, recvq_buffer, msg->specific.medium_frag.msg_length,
@@ -71,7 +71,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_RNDV: {
-    struct omx_evt_recv_msg * msg = &evt->recv_msg;
+    const struct omx_evt_recv_msg * msg = &evt->recv_msg;
     uint32_t msg_length = msg->specific.rndv.msg_length;
     omx__process_recv(ep,
 		      msg, NULL, msg_length,
@@ -80,7 +80,7 @@ omx__process_event(struct omx_endpoint * ep, union omx_evt * evt)
   }
 
   case OMX_EVT_RECV_NOTIFY: {
-    struct omx_evt_recv_msg * msg = &evt->recv_msg;
+    const struct omx_evt_recv_msg * msg = &evt->recv_msg;
     omx__process_recv(ep,
 		      msg, NULL, 0,
 		      omx__process_recv_notify);
@@ -192,7 +192,7 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
 }
 
 static INLINE void
-omx__check_enough_progression(struct omx_endpoint * ep)
+omx__check_enough_progression(const struct omx_endpoint * ep)
 {
 #ifdef OMX_LIB_DEBUG
   static unsigned long long last_progress = 0;

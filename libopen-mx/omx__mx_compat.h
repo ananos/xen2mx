@@ -119,7 +119,7 @@ omx_timeout_from_mx(uint32_t mx_timeout)
 }
 
 static inline void
-omx_status_to_mx(struct mx_status *mxst, struct omx_status *omxst)
+omx_status_to_mx(struct mx_status *mxst, const struct omx_status *omxst)
 {
   /* check the contents of status types, since their fields are different */
   BUILD_BUG_ON(sizeof(mx_status_t) != sizeof(omx_status_t));

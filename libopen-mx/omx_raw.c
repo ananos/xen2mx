@@ -33,7 +33,7 @@
 
 omx_return_t
 omx_raw_open_endpoint(uint32_t board_number,
-		      omx_endpoint_param_t *params_array, uint32_t params_count,
+		      const omx_endpoint_param_t *params_array, uint32_t params_count,
 		      struct omx_raw_endpoint ** endpoint)
 {
   struct omx_cmd_raw_open_endpoint raw_open;
@@ -81,8 +81,8 @@ omx_raw_close_endpoint(struct omx_raw_endpoint * endpoint)
 
 omx_return_t
 omx__raw_send(struct omx_raw_endpoint * endpoint,
-	      void *send_buffer, uint32_t buffer_length,
-	      int need_event, void *event_context)
+	      const void *send_buffer, uint32_t buffer_length,
+	      int need_event, const void *event_context)
 {
   struct omx_cmd_raw_send raw_send;
   int err;

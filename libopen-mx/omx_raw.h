@@ -41,7 +41,7 @@ typedef int omx_raw_status_t;
 
 omx_return_t
 omx_raw_open_endpoint(uint32_t board_number,
-		      omx_endpoint_param_t *params_array, uint32_t params_count,
+		      const omx_endpoint_param_t *params_array, uint32_t params_count,
 		      omx_raw_endpoint_t * endpoint);
 
 omx_return_t
@@ -49,12 +49,12 @@ omx_raw_close_endpoint(omx_raw_endpoint_t endpoint);
 
 omx_return_t
 omx__raw_send(omx_raw_endpoint_t endpoint,
-	      void *send_buffer, uint32_t buffer_length,
-	      int need_event, void *event_context);
+	      const void *send_buffer, uint32_t buffer_length,
+	      int need_event, const void *event_context);
 
 static inline omx_return_t
 omx_raw_send(omx_raw_endpoint_t endpoint,
-	     void *send_buffer, uint32_t buffer_length)
+	     const void *send_buffer, uint32_t buffer_length)
 {
   return omx__raw_send(endpoint, send_buffer, buffer_length, 0, NULL);
 }

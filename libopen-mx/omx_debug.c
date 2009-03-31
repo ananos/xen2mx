@@ -22,7 +22,7 @@
 #include "omx_request.h"
 
 static void
-omx__dump_request(const char *prefix, union omx_request *req)
+omx__dump_request(const char *prefix, const union omx_request *req)
 {
   struct omx__partner *partner = req->generic.partner;
   enum omx__request_type type = req->generic.type;
@@ -72,7 +72,7 @@ omx__dump_request(const char *prefix, union omx_request *req)
 }
 
 static void
-omx__dump_req_q(const char * name, struct list_head *head)
+omx__dump_req_q(const char * name, const struct list_head *head)
 {
   union omx_request *req;
   int count;
@@ -91,7 +91,7 @@ omx__dump_req_q(const char * name, struct list_head *head)
 }
 
 static void
-omx__dump_req_ctxidq(const char * name, struct list_head *head, int max, int offset)
+omx__dump_req_ctxidq(const char * name, const struct list_head *head, int max, int offset)
 {
   union omx_request *req;
   int i, count;
@@ -112,7 +112,7 @@ omx__dump_req_ctxidq(const char * name, struct list_head *head, int max, int off
 }
 
 static void
-omx__dump_partner_req_q(const char * name, struct list_head *head)
+omx__dump_partner_req_q(const char * name, const struct list_head *head)
 {
   union omx_request *req;
   int count;
@@ -131,7 +131,7 @@ omx__dump_partner_req_q(const char * name, struct list_head *head)
 }
 
 static void
-omx__dump_partner_early_q(struct omx__partner *partner)
+omx__dump_partner_early_q(const struct omx__partner *partner)
 {
   struct omx__early_packet *early;
   int count;

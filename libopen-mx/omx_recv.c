@@ -57,8 +57,8 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
  * or drop if duplicate
  */
 static INLINE struct list_head *
-omx__find_previous_early_packet(struct omx_endpoint *ep, struct omx__partner * partner,
-				struct omx_evt_recv_msg *msg)
+omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx__partner * partner,
+				const struct omx_evt_recv_msg *msg)
 {
   omx__seqnum_t seqnum = msg->seqnum;
   omx__seqnum_t next_match_recv_seq = partner->next_match_recv_seq;
@@ -69,7 +69,7 @@ omx__find_previous_early_packet(struct omx_endpoint *ep, struct omx__partner * p
   /* trivial case, early queue is empty */
   if (omx__empty_partner_early_packet_queue(partner)) {
     omx__debug_printf(EARLY, ep, "insert early in empty queue\n");
-    return &partner->early_recv_q;
+    return (struct list_head *) &partner->early_recv_q;
   }
 
   new_index = OMX__SEQNUM(seqnum - next_match_recv_seq);
@@ -79,7 +79,7 @@ omx__find_previous_early_packet(struct omx_endpoint *ep, struct omx__partner * p
   current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index > current_index) {
     omx__debug_printf(EARLY, ep, "inserting early at the end of queue\n");
-    return partner->early_recv_q.prev;
+    return (struct list_head *) partner->early_recv_q.prev;
   }
 
   /* a little bit less trivial case, append at the beginning */
@@ -87,7 +87,7 @@ omx__find_previous_early_packet(struct omx_endpoint *ep, struct omx__partner * p
   current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index < current_index) {
     omx__debug_printf(EARLY, ep, "inserting early at the beginning of queue\n");
-    return &partner->early_recv_q;
+    return (struct list_head *) &partner->early_recv_q;
   }
 
   /* general case, add at the right position, and drop if duplicate */
@@ -138,7 +138,7 @@ omx__find_previous_early_packet(struct omx_endpoint *ep, struct omx__partner * p
 
 static INLINE void
 omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partner,
-			   struct omx_evt_recv_msg *msg, void *data,
+			   const struct omx_evt_recv_msg *msg, const void *data,
 			   omx__process_recv_func_t recv_func)
 {
   struct omx__early_packet * early;
@@ -226,8 +226,8 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
 void
 omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
-		       struct omx_evt_recv_msg *msg,
-		       void *data /* unused */, uint32_t msg_length)
+		       const struct omx_evt_recv_msg *msg,
+		       const void *data /* unused */, uint32_t msg_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
 
@@ -245,8 +245,8 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 void
 omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 			union omx_request *req,
-			struct omx_evt_recv_msg *msg,
-			void *data, uint32_t msg_length)
+			const struct omx_evt_recv_msg *msg,
+			const void *data, uint32_t msg_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
 
@@ -275,8 +275,8 @@ omx__init_process_recv_medium(union omx_request *req)
 void
 omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *partner,
 			      union omx_request *req,
-			      struct omx_evt_recv_msg *msg,
-			      void *data, uint32_t msg_length)
+			      const struct omx_evt_recv_msg *msg,
+			      const void *data, uint32_t msg_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
   unsigned long chunk = msg->specific.medium_frag.frag_length;
@@ -367,8 +367,8 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 void
 omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
-		       struct omx_evt_recv_msg *msg,
-		       void *data /* unused */, uint32_t msg_length)
+		       const struct omx_evt_recv_msg *msg,
+		       const void *data /* unused */, uint32_t msg_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
   uint8_t rdma_id = msg->specific.rndv.pulled_rdma_id;
@@ -419,7 +419,7 @@ omx__match_recv(struct omx_endpoint *ep,
 static INLINE omx_return_t
 omx__try_match_next_recv(struct omx_endpoint *ep,
 			 struct omx__partner * partner, omx__seqnum_t seqnum,
-			 struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
+			 const struct omx_evt_recv_msg *msg, const void *data, uint32_t msg_length,
 			 omx__process_recv_func_t recv_func)
 {
   union omx_request * req = NULL;
@@ -435,7 +435,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
   if (unlikely(handler && !req)) {
     void * handler_context = ep->unexp_handler_context;
     omx_unexp_handler_action_t ret;
-    void * data_if_available = NULL;
+    const void * data_if_available = NULL;
 #ifdef OMX_LIB_DEBUG
     uint64_t omx_handler_jiffies_start;
 #endif
@@ -454,7 +454,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     OMX__ENDPOINT_UNLOCK(ep);
 
     ret = handler(handler_context, source, msg->match_info,
-		  msg_length, data_if_available);
+		  msg_length, (void *) data_if_available);
 
     OMX__ENDPOINT_LOCK(ep);
     ep->progression_disabled = 0;
@@ -589,7 +589,7 @@ omx__update_partner_next_frag_recv_seq(struct omx_endpoint *ep,
 static INLINE void
 omx__continue_partial_request(struct omx_endpoint *ep,
 			      struct omx__partner * partner, omx__seqnum_t seqnum,
-			      struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length)
+			      const struct omx_evt_recv_msg *msg, const void *data, uint32_t msg_length)
 {
   uint64_t match_info = msg->match_info;
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
@@ -626,7 +626,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
 static INLINE omx_return_t
 omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 				  struct omx__partner *partner, omx__seqnum_t seqnum,
-				  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
+				  const struct omx_evt_recv_msg *msg, const void *data, uint32_t msg_length,
 				  omx__process_recv_func_t recv_func)
 {
   omx_return_t ret = OMX_SUCCESS;
@@ -669,7 +669,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 
 void
 omx__process_recv(struct omx_endpoint *ep,
-		  struct omx_evt_recv_msg *msg, void *data, uint32_t msg_length,
+		  const struct omx_evt_recv_msg *msg, const void *data, uint32_t msg_length,
 		  omx__process_recv_func_t recv_func)
 {
   omx__seqnum_t seqnum = msg->seqnum;
@@ -948,7 +948,7 @@ omx__process_self_send(struct omx_endpoint *ep,
 
 void
 omx__process_recv_liback(struct omx_endpoint *ep,
-			 struct omx_evt_recv_liback *liback)
+			 const struct omx_evt_recv_liback *liback)
 {
   struct omx__partner *partner;
 
@@ -966,7 +966,7 @@ omx__process_recv_liback(struct omx_endpoint *ep,
 
 void
 omx__process_recv_nack_lib(struct omx_endpoint *ep,
-			   struct omx_evt_recv_nack_lib *nack_lib)
+			   const struct omx_evt_recv_nack_lib *nack_lib)
 {
   uint16_t peer_index = nack_lib->peer_index;
   uint16_t seqnum = nack_lib->seqnum;
@@ -1015,7 +1015,7 @@ omx__process_recv_nack_lib(struct omx_endpoint *ep,
 static INLINE void
 omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
 				 union omx_request *req,
-				 struct omx__req_segs * reqsegs,
+				 const struct omx__req_segs * reqsegs,
 				 void *context)
 {
   void * unexp_buffer;
@@ -1092,7 +1092,7 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
 }
 
 static INLINE omx_return_t
-omx__irecv_segs(struct omx_endpoint *ep, struct omx__req_segs * reqsegs,
+omx__irecv_segs(struct omx_endpoint *ep, const struct omx__req_segs * reqsegs,
 		uint64_t match_info, uint64_t match_mask,
 		void *context, union omx_request **requestp)
 {
@@ -1241,4 +1241,3 @@ omx_irecvv(omx_endpoint_t ep,
  out:
   return ret;
 }
-

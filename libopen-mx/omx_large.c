@@ -130,7 +130,7 @@ omx__endpoint_large_region_map_exit(struct omx_endpoint * ep)
  */
 
 void
-omx__check_driver_pinning_error(struct omx_endpoint *ep, omx_return_t ret)
+omx__check_driver_pinning_error(const struct omx_endpoint *ep, omx_return_t ret)
 {
   if (ret == OMX_INTERNAL_MISC_EFAULT) {
     /* Either a fault while reading the ioctl cmd/segs, or get_user_pages failed.
@@ -142,8 +142,8 @@ omx__check_driver_pinning_error(struct omx_endpoint *ep, omx_return_t ret)
 }
 
 static INLINE omx_return_t
-omx__register_region(struct omx_endpoint *ep,
-		     struct omx__large_region *region)
+omx__register_region(const struct omx_endpoint *ep,
+		     const struct omx__large_region *region)
 {
   struct omx_cmd_create_user_region reg;
   omx_return_t ret = OMX_SUCCESS;
@@ -172,8 +172,8 @@ omx__register_region(struct omx_endpoint *ep,
 }
 
 static INLINE void
-omx__deregister_region(struct omx_endpoint *ep,
-		       struct omx__large_region *region)
+omx__deregister_region(const struct omx_endpoint *ep,
+		       const struct omx__large_region *region)
 {
   struct omx_cmd_destroy_user_region dereg;
   int err;
@@ -230,7 +230,7 @@ omx__endpoint_large_region_alloc(struct omx_endpoint *ep, struct omx__large_regi
 
 static omx_return_t
 omx__create_region(struct omx_endpoint *ep,
-		   struct omx__req_segs *reqsegs,
+		   const struct omx__req_segs *reqsegs,
 		   struct omx__large_region **regionp)
 {
   struct omx__large_region *region = NULL;
@@ -268,9 +268,9 @@ omx__create_region(struct omx_endpoint *ep,
 
 static INLINE omx_return_t
 omx__get_contigous_region(struct omx_endpoint *ep,
-			  struct omx__req_segs *reqsegs,
+			  const struct omx__req_segs *reqsegs,
 			  struct omx__large_region **regionp,
-			  void *reserver)
+			  const void *reserver)
 {
   struct omx__large_region *region = NULL;
   omx_return_t ret;
@@ -281,7 +281,7 @@ omx__get_contigous_region(struct omx_endpoint *ep,
     omx__debug_printf(LARGE, ep, "need a region without reserving it\n");
 
   if (omx__globals.regcache) {
-    struct omx_cmd_user_segment *seg = &reqsegs->single;
+    struct omx_cmd_user_segment *seg = &((struct omx__req_segs *)reqsegs)->single;
     list_for_each_entry(region, &ep->reg_list, reg_elt) {
       if ((!reserver || !region->reserver)
 	  && (omx__globals.parallel_regcache || !region->use_count)
@@ -309,7 +309,7 @@ omx__get_contigous_region(struct omx_endpoint *ep,
   if (reserver) {
     omx__debug_assert(!region->reserver);
     omx__debug_printf(LARGE, ep, "reserving region %d for object %p\n", region->id, reserver);
-    region->reserver = reserver;
+    region->reserver = (void *) reserver;
   }
 
   *regionp = region;
@@ -321,9 +321,9 @@ omx__get_contigous_region(struct omx_endpoint *ep,
 
 static INLINE omx_return_t
 omx__get_vect_region(struct omx_endpoint *ep,
-		     struct omx__req_segs *reqsegs,
+		     const struct omx__req_segs *reqsegs,
 		     struct omx__large_region **regionp,
-		     void *reserver)
+		     const void *reserver)
 {
   struct omx__large_region *region = NULL;
   omx_return_t ret;
@@ -347,7 +347,7 @@ omx__get_vect_region(struct omx_endpoint *ep,
   if (reserver) {
     omx__debug_assert(!region->reserver);
     omx__debug_printf(LARGE, ep, "reserving region %d for object %p\n", region->id, reserver);
-    region->reserver = reserver;
+    region->reserver = (void *) reserver;
   }
 
   *regionp = region;
@@ -359,9 +359,9 @@ omx__get_vect_region(struct omx_endpoint *ep,
 
 omx_return_t
 omx__get_region(struct omx_endpoint *ep,
-		struct omx__req_segs *reqsegs,
+		const struct omx__req_segs *reqsegs,
 		struct omx__large_region **regionp,
-		void *reserver)
+		const void *reserver)
 {
   uint32_t nseg = reqsegs->nseg;
   if (nseg > 1) {
@@ -374,7 +374,7 @@ omx__get_region(struct omx_endpoint *ep,
 omx_return_t
 omx__put_region(struct omx_endpoint *ep,
 		struct omx__large_region *region,
-		void *reserver)
+		const void *reserver)
 {
   region->use_count--;
 
@@ -500,7 +500,7 @@ omx__submit_pull(struct omx_endpoint * ep,
 
 void
 omx__process_pull_done(struct omx_endpoint * ep,
-		       struct omx_evt_pull_done * event)
+		       const struct omx_evt_pull_done * event)
 {
   union omx_request * req;
   uintptr_t reqptr = event->lib_cookie;
@@ -564,8 +564,8 @@ omx__process_pull_done(struct omx_endpoint * ep,
 }
 
 omx_return_t
-omx__submit_discarded_notify(struct omx_endpoint *ep, struct omx__partner * partner,
-			     struct omx_evt_recv_msg *msg)
+omx__submit_discarded_notify(struct omx_endpoint *ep, const struct omx__partner * partner,
+			     const struct omx_evt_recv_msg *msg)
 {
   uint8_t rdma_id = msg->specific.rndv.pulled_rdma_id;
   uint8_t rdma_seqnum = msg->specific.rndv.pulled_rdma_seqnum;
@@ -579,7 +579,7 @@ omx__submit_discarded_notify(struct omx_endpoint *ep, struct omx__partner * part
   }
 
   omx_cache_single_segment(&fakereq->recv.segs, NULL, 0);
-  fakereq->generic.partner = partner;
+  fakereq->generic.partner = (struct omx__partner *) partner;
   fakereq->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
   fakereq->generic.state = OMX_REQUEST_STATE_ZOMBIE;
   fakereq->recv.specific.large.pulled_rdma_id = rdma_id;
@@ -594,8 +594,8 @@ omx__submit_discarded_notify(struct omx_endpoint *ep, struct omx__partner * part
 void
 omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
 			 union omx_request *req /* ignored */,
-			 struct omx_evt_recv_msg *msg,
-			 void *data /* unused */, uint32_t msg_length /* unused */)
+			 const struct omx_evt_recv_msg *msg,
+			 const void *data /* unused */, uint32_t msg_length /* unused */)
 {
   uint32_t xfer_length = msg->specific.notify.length;
   uint8_t region_id = msg->specific.notify.pulled_rdma_id;

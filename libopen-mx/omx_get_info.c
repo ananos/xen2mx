@@ -55,7 +55,7 @@ omx__get_board_count(uint32_t * count)
  * index, addr, hostname and ifacename pointers may be NULL is unused.
  */
 omx_return_t
-omx__get_board_info(struct omx_endpoint * ep, uint32_t index, struct omx_board_info * info)
+omx__get_board_info(const struct omx_endpoint * ep, uint32_t index, struct omx_board_info * info)
 {
   struct omx_cmd_get_board_info get_info;
   omx_return_t ret = OMX_SUCCESS;

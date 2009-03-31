@@ -370,7 +370,7 @@ omx_cancel_notest(omx_endpoint_t ep,
 
 #define OMX_MESSAGE_PREFIX_LENGTH_MAX 256
 char *
-omx__create_message_prefix(struct omx_endpoint *ep)
+omx__create_message_prefix(const struct omx_endpoint *ep)
 {
   char * buffer, *src, *dst, *c;
   int len;

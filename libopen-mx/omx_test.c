@@ -398,7 +398,7 @@ omx_wait_any(struct omx_endpoint *ep,
  */
 
 static INLINE uint32_t
-omx__ipeek_common(struct omx_endpoint *ep, union omx_request **requestp)
+omx__ipeek_common(const struct omx_endpoint *ep, union omx_request **requestp)
 {
   if (unlikely(omx__empty_done_anyctxid_queue(ep))) {
     return 0;
@@ -558,7 +558,7 @@ omx_ibuffered(struct omx_endpoint *ep, union omx_request **requestp,
  */
 
 static INLINE uint32_t
-omx__iprobe_common(struct omx_endpoint *ep,
+omx__iprobe_common(const struct omx_endpoint *ep,
 		   uint64_t match_info, uint64_t match_mask,
 		   omx_status_t *status)
 {

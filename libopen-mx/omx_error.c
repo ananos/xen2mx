@@ -87,7 +87,7 @@ omx__error(omx_return_t ret, const char *fmt, ...)
 }
 
 omx_return_t
-omx__error_with_ep(struct omx_endpoint *ep,
+omx__error_with_ep(const struct omx_endpoint *ep,
 		   omx_return_t ret, const char *fmt, ...)
 {
   omx_error_handler_t handler;
@@ -108,7 +108,7 @@ omx__error_with_ep(struct omx_endpoint *ep,
 }
 
 omx_return_t
-omx__error_with_req(struct omx_endpoint *ep, union omx_request *req,
+omx__error_with_req(const struct omx_endpoint *ep, const union omx_request *req,
 		    omx_return_t code, const char *fmt, ...)
 {
   omx_error_handler_t handler;
