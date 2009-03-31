@@ -201,7 +201,7 @@ omx_endpoints_cleanup(void)
  */
 
 static int
-omx_endpoint_open(struct omx_endpoint * endpoint, void __user * uparam)
+omx_endpoint_open(struct omx_endpoint * endpoint, const void __user * uparam)
 {
 	struct omx_cmd_open_endpoint param;
 	struct net_device *ifp;
@@ -331,7 +331,7 @@ omx_endpoint_close(struct omx_endpoint * endpoint,
 
 /* maybe called by the bottom half */
 struct omx_endpoint *
-omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index)
+omx_endpoint_acquire_by_iface_index(const struct omx_iface * iface, uint8_t index)
 {
 	struct omx_endpoint * endpoint;
 	int err;

@@ -39,8 +39,8 @@ omx_dma_exit(void)
 
 int
 omx_dma_skb_copy_datagram_to_pages(struct dma_chan *chan, dma_cookie_t *cookiep,
-				   struct sk_buff *skb, int offset,
-				   struct page **pages, int pgoff,
+				   const struct sk_buff *skb, int offset,
+				   struct page * const *pages, int pgoff,
 				   size_t len)
 {
 	int start = skb_headlen(skb);
@@ -153,7 +153,7 @@ omx_dma_skb_copy_datagram_to_pages(struct dma_chan *chan, dma_cookie_t *cookiep,
 static int
 omx__dma_skb_copy_datagram_to_user_region(struct omx_user_region_offset_cache *regcache,
 					  struct dma_chan *chan, dma_cookie_t *cookiep,
-					  struct sk_buff *skb, int skboff,
+					  const struct sk_buff *skb, int skboff,
 					  size_t len)
 {
 	int start = skb_headlen(skb);
@@ -238,7 +238,7 @@ end:
 
 int
 omx_dma_skb_copy_datagram_to_user_region(struct dma_chan *chan, dma_cookie_t *cookiep,
-					 struct sk_buff *skb,
+					 const struct sk_buff *skb,
 					 struct omx_user_region *region, uint32_t regoff,
 					 size_t len)
 {

@@ -1,8 +1,10 @@
 * add pure attributes in the common directory as well
 
-* add some __attribute__((malloc)), const in the driver
+* constify the open-mx interface (let's also this change for 1.1)?
 
 * add restrict when c99 is enabled?
+
+* try get_user_pages_fast() with 32pages chunks or so
 
 * switch to automake once it supports CC foo.c
   + link tools/tests dynamically and let libtool add rpath

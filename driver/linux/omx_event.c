@@ -115,7 +115,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 
 int
 omx_notify_exp_event(struct omx_endpoint *endpoint,
-		     uint8_t type, void *event, int length)
+		     uint8_t type, const void *event, int length)
 {
 	union omx_evt *slot;
 
@@ -164,7 +164,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 
 int
 omx_notify_unexp_event(struct omx_endpoint *endpoint,
-		       uint8_t type, void *event, int length)
+		       uint8_t type, const void *event, int length)
 {
 	union omx_evt *slot;
 
@@ -314,7 +314,7 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
  */
 void
 omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
-					 uint8_t type, void *event, int length)
+					 uint8_t type, const void *event, int length)
 {
 	union omx_evt *slot;
 

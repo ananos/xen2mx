@@ -127,7 +127,7 @@ omx_shared_get_endpoint_or_notify_nack(struct omx_endpoint *src_endpoint,
  */
 int
 omx_shared_try_send_connect_request(struct omx_endpoint *src_endpoint,
-				    struct omx_cmd_send_connect_request *hdr)
+				    const struct omx_cmd_send_connect_request *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_connect_request event;
@@ -177,7 +177,7 @@ omx_shared_try_send_connect_request(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_try_send_connect_reply(struct omx_endpoint *src_endpoint,
-				  struct omx_cmd_send_connect_reply *hdr)
+				  const struct omx_cmd_send_connect_reply *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_connect_reply event;
@@ -228,7 +228,7 @@ omx_shared_try_send_connect_reply(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
-		     struct omx_cmd_send_tiny_hdr *hdr, void __user * data)
+		     const struct omx_cmd_send_tiny_hdr *hdr, const void __user * data)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
@@ -276,7 +276,7 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_send_small(struct omx_endpoint *src_endpoint,
-		      struct omx_cmd_send_small *hdr)
+		      const struct omx_cmd_send_small *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
@@ -331,7 +331,7 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
-			      struct omx_cmd_send_mediumsq_frag *hdr)
+			      const struct omx_cmd_send_mediumsq_frag *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg dst_event;
@@ -446,7 +446,7 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
-			 struct omx_cmd_send_mediumva *hdr)
+			 const struct omx_cmd_send_mediumva *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg dst_event;
@@ -583,7 +583,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
-		     struct omx_cmd_send_rndv *hdr)
+		     const struct omx_cmd_send_rndv *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
@@ -667,7 +667,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_pull(struct omx_endpoint *src_endpoint,
-		struct omx_cmd_pull *hdr)
+		const struct omx_cmd_pull *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_pull_done event;
@@ -739,7 +739,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_send_notify(struct omx_endpoint *src_endpoint,
-		       struct omx_cmd_send_notify *hdr)
+		       const struct omx_cmd_send_notify *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
@@ -780,7 +780,7 @@ omx_shared_send_notify(struct omx_endpoint *src_endpoint,
 
 int
 omx_shared_send_liback(struct omx_endpoint *src_endpoint,
-		       struct omx_cmd_send_liback *hdr)
+		       const struct omx_cmd_send_liback *hdr)
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_liback event;

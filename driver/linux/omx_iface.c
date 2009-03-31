@@ -90,7 +90,7 @@ omx_iface_find_by_index_lock(int board_index)
  * Should be used when an incoming packets has been received by ifp.
  */
 struct omx_iface *
-omx_iface_find_by_ifp(struct net_device *ifp)
+omx_iface_find_by_ifp(const struct net_device *ifp)
 {
 	int i;
 
@@ -264,7 +264,7 @@ omx_iface_get_counters(uint32_t board_index, int clear,
 }
 
 int
-omx_iface_set_hostname(uint32_t board_index, char * hostname)
+omx_iface_set_hostname(uint32_t board_index, const char * hostname)
 {
 	struct omx_iface * iface;
 	char * new_hostname, * old_hostname;
@@ -992,7 +992,7 @@ omx_remove_endpoint_desc_status_flag_handler(struct omx_endpoint *endpoint, void
  */
 static int
 omx_netdevice_notifier_cb(struct notifier_block *unused,
-			   unsigned long event, void *ptr)
+			  unsigned long event, void *ptr)
 {
 	struct net_device *ifp = (struct net_device *) ptr;
 	struct omx_iface * iface;

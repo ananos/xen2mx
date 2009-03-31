@@ -21,43 +21,43 @@
 
 extern int
 omx_shared_try_send_connect_request(struct omx_endpoint *src_endpoint,
-				    struct omx_cmd_send_connect_request *hdr);
+				    const struct omx_cmd_send_connect_request *hdr);
 
 extern int
 omx_shared_try_send_connect_reply(struct omx_endpoint *src_endpoint,
-				  struct omx_cmd_send_connect_reply *hdr);
+				  const struct omx_cmd_send_connect_reply *hdr);
 
 extern int
 omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
-		     struct omx_cmd_send_tiny_hdr *hdr, void __user * data);
+		     const struct omx_cmd_send_tiny_hdr *hdr, const void __user * data);
 
 extern int
 omx_shared_send_small(struct omx_endpoint *src_endpoint,
-		      struct omx_cmd_send_small *hdr);
+		      const struct omx_cmd_send_small *hdr);
 
 extern int
 omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
-			      struct omx_cmd_send_mediumsq_frag *hdr);
+			      const struct omx_cmd_send_mediumsq_frag *hdr);
 
 extern int
 omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
-			 struct omx_cmd_send_mediumva *hdr);
+			 const struct omx_cmd_send_mediumva *hdr);
 
 extern int
 omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
-		     struct omx_cmd_send_rndv *hdr);
+		     const struct omx_cmd_send_rndv *hdr);
 
 extern int
 omx_shared_pull(struct omx_endpoint *src_endpoint,
-		struct omx_cmd_pull *hdr);
+		const struct omx_cmd_pull *hdr);
 
 extern int
 omx_shared_send_notify(struct omx_endpoint *src_endpoint,
-		       struct omx_cmd_send_notify *hdr);
+		       const struct omx_cmd_send_notify *hdr);
 
 extern int
 omx_shared_send_liback(struct omx_endpoint *src_endpoint,
-		       struct omx_cmd_send_liback *hdr);
+		       const struct omx_cmd_send_liback *hdr);
 
 #endif /* __omx_shared_h__ */
 

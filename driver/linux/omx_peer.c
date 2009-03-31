@@ -145,7 +145,7 @@ omx_peers_clear(int local)
 }
 
 int
-omx_peer_add(uint64_t board_addr, char *hostname)
+omx_peer_add(uint64_t board_addr, const char *hostname)
 {
 	struct omx_peer * peer;
 	struct omx_iface * iface;
@@ -632,7 +632,7 @@ omx_peer_lookup_by_addr(uint64_t board_addr,
  * Cannot be called by BH.
  */
 int
-omx_peer_lookup_by_hostname(char *hostname,
+omx_peer_lookup_by_hostname(const char *hostname,
 			    uint64_t *board_addr, uint32_t *index)
 {
 	int i;
@@ -690,7 +690,7 @@ omx_peer_host_query_send_iface_handler(struct omx_iface * iface, void * data)
 }
 
 static void
-omx_peer_host_query(struct omx_peer *peer)
+omx_peer_host_query(const struct omx_peer *peer)
 {
 	uint64_t peer_addr = peer->board_addr;
 	uint16_t peer_index = peer->index;
@@ -1010,7 +1010,7 @@ omx_peer_table_get_state(struct omx_cmd_peer_table_state *state)
 }
 
 int
-omx_peer_table_set_state(struct omx_cmd_peer_table_state *state)
+omx_peer_table_set_state(const struct omx_cmd_peer_table_state *state)
 {
 	if (!OMX_HAS_USER_RIGHT(PEERTABLE))
 		return -EPERM;

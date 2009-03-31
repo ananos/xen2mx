@@ -101,10 +101,10 @@ extern int omx_ifnames_set_kp(const char *buf, struct kernel_param *kp);
 
 extern int omx_ifaces_get_count(void);
 extern int omx_iface_get_info(uint32_t board_index, struct omx_board_info *info);
-extern struct omx_iface * omx_iface_find_by_ifp(struct net_device *ifp);
+extern struct omx_iface * omx_iface_find_by_ifp(const struct net_device *ifp);
 extern struct omx_iface * omx_iface_find_by_addr(uint64_t addr);
 extern int omx_iface_get_counters(uint32_t board_index, int clear, uint64_t buffer_addr, uint32_t buffer_length);
-extern int omx_iface_set_hostname(uint32_t board_index, char * hostname);
+extern int omx_iface_set_hostname(uint32_t board_index, const char * hostname);
 extern int omx_iface_get_rx_coalesce(struct net_device * ifp, unsigned *usecs);
 
 extern void omx__raw_detach_iface_locked(struct omx_iface *iface);

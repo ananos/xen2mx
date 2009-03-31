@@ -80,7 +80,7 @@ struct omx_user_region_offset_cache {
 	void (*copy_pages_to_buf) (struct omx_user_region_offset_cache * cache, void *buffer, unsigned long length);
 #ifdef OMX_HAVE_DMA_ENGINE
 	int (*dma_memcpy_from_pg) (struct omx_user_region_offset_cache * cache, struct dma_chan *chan, dma_cookie_t *cookiep, struct page *page, int pgoff, unsigned long length);
-	int (*dma_memcpy_from_buf) (struct omx_user_region_offset_cache * cache, struct dma_chan *chan, dma_cookie_t *cookiep, void *buf, unsigned long length);
+	int (*dma_memcpy_from_buf) (struct omx_user_region_offset_cache * cache, struct dma_chan *chan, dma_cookie_t *cookiep, const void *buf, unsigned long length);
 #endif
 
 #ifdef OMX_DRIVER_DEBUG
@@ -95,7 +95,7 @@ extern void omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint);
 extern int omx_ioctl_user_region_create(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint, void __user * uparam);
 
-extern struct omx_user_region * omx_user_region_acquire(struct omx_endpoint * endpoint, uint32_t rdma_id);
+extern struct omx_user_region * omx_user_region_acquire(const struct omx_endpoint * endpoint, uint32_t rdma_id);
 extern void __omx_user_region_last_release(struct kref * kref);
 
 extern void omx_user_regions_cleanup(void);
@@ -112,8 +112,8 @@ omx_user_region_release(struct omx_user_region * region)
 	kref_put(&region->refcount, __omx_user_region_last_release);
 }
 
-extern int omx_user_region_offset_cache_init(struct omx_user_region *region, struct omx_user_region_offset_cache *cache, unsigned long offset, unsigned long length);
-extern int omx_user_region_fill_pages(struct omx_user_region * region, unsigned long region_offset, struct sk_buff * skb, unsigned long length);
+extern int omx_user_region_offset_cache_init(const struct omx_user_region *region, struct omx_user_region_offset_cache *cache, unsigned long offset, unsigned long length);
+extern int omx_user_region_fill_pages(const struct omx_user_region * region, unsigned long region_offset, const struct sk_buff * skb, unsigned long length);
 extern int omx_copy_between_user_regions(struct omx_user_region * src_region, unsigned long src_offset, struct omx_user_region * dst_region, unsigned long dst_offset, unsigned long length);
 
 struct omx_user_region_pin_state {
@@ -130,7 +130,7 @@ struct omx_user_region_pin_state {
 };
 
 /* internal routines */
-extern void omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate, struct omx_user_region *region);
+extern void omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate, const struct omx_user_region *region);
 extern int omx__user_region_pin_continue(struct omx_user_region_pin_state *pinstate, unsigned long *length);
 
 /*

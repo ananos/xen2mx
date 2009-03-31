@@ -44,7 +44,7 @@
 #define OMX_REGION_VMALLOC_NR_PAGES_THRESHOLD 4096
 
 static int
-omx_user_region_add_segment(struct omx_cmd_user_segment * useg,
+omx_user_region_add_segment(const struct omx_cmd_user_segment * useg,
 			    struct omx_user_region_segment * segment)
 {
 	unsigned long usegvaddr = useg->vaddr;
@@ -123,10 +123,10 @@ omx_user_region_destroy_segments(struct omx_user_region * region)
 
 void
 omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate,
-			  struct omx_user_region *region)
+			  const struct omx_user_region *region)
 {
-	pinstate->region = region;
-	pinstate->segment = &region->segments[0];
+	pinstate->region = (struct omx_user_region *) region;
+	pinstate->segment = (struct omx_user_region_segment *) &region->segments[0];
 	pinstate->pages = NULL; /* means that pin_new_segment() will do the init soon */
 	pinstate->aligned_vaddr = 0;
 	pinstate->remaining = 0;
@@ -492,7 +492,7 @@ omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint,
 
 /* maybe be called from bottom halves */
 struct omx_user_region *
-omx_user_region_acquire(struct omx_endpoint * endpoint,
+omx_user_region_acquire(const struct omx_endpoint * endpoint,
 			uint32_t rdma_id)
 {
 	struct omx_user_region * region;
@@ -523,7 +523,7 @@ omx_user_region_acquire(struct omx_endpoint * endpoint,
  */
 
 static void
-omx_invalidate_region(struct omx_endpoint *endpoint,
+omx_invalidate_region(const struct omx_endpoint *endpoint,
 		      struct omx_user_region *region)
 {
 	/* FIXME: we need some locking against concurrent registers/users here:
@@ -966,7 +966,7 @@ omx_user_region_offset_cache_vect_copy_callback(struct omx_user_region_offset_ca
 static int
 omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback(struct omx_user_region_offset_cache *cache,
 								 struct dma_chan *chan, dma_cookie_t *cookiep,
-								 void *buffer,
+								 const void *buffer,
 								 unsigned long length)
 {
 	unsigned long remaining = length;
@@ -989,7 +989,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback(struct omx_user
 		/* append the page */
 		cookie = dma_async_memcpy_buf_to_pg(chan,
 						    *page, pageoff,
-						    buffer,
+						    (void *) buffer,
 						    chunk);
 		if (cookie < 0)
 			goto out;
@@ -1032,7 +1032,7 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback(struct omx_user
 static int
 omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback(struct omx_user_region_offset_cache *cache,
 							       struct dma_chan *chan, dma_cookie_t *cookiep,
-							       void *buffer,
+							       const void *buffer,
 							       unsigned long length)
 {
 	struct omx_user_region *region = cache->region;
@@ -1061,7 +1061,7 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_buf_callback(struct omx_user_r
 		/* append the page */
 		cookie = dma_async_memcpy_buf_to_pg(chan,
 						    *page, pageoff,
-						    buffer,
+						    (void *) buffer,
 						    chunk);
 		if (cookie < 0)
 			goto out;
@@ -1282,7 +1282,7 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback(struct omx_user_re
  */
 
 int
-omx_user_region_offset_cache_init(struct omx_user_region *region,
+omx_user_region_offset_cache_init(const struct omx_user_region *region,
 				  struct omx_user_region_offset_cache *cache,
 				  unsigned long offset, unsigned long length)
 {
@@ -1292,7 +1292,7 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 	if (unlikely(!region->nr_segments || offset + length > region->total_length))
 		return -1;
 
-	cache->region = region;
+	cache->region = (struct omx_user_region *) region;
 
 	if (unlikely(region->nr_segments > 1)) {
 		unsigned long tmp;
@@ -1306,7 +1306,7 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 #endif
 
 		/* find the segment */
-		for(tmp=0, seg = &region->segments[0];
+		for(tmp=0, seg = (struct omx_user_region_segment *) &region->segments[0];
 		    tmp + seg->length <= offset;
 		    tmp += seg->length, seg++);
 
@@ -1323,7 +1323,7 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
 #endif
 
 		/* use the first segment */
-		seg = &region->segments[0];
+		seg = (struct omx_user_region_segment *) &region->segments[0];
 		segoff = offset;
 	}
 
@@ -1352,9 +1352,9 @@ omx_user_region_offset_cache_init(struct omx_user_region *region,
  */
 
 static INLINE void
-omx__user_region_segment_fill_pages(struct omx_user_region_segment * segment,
+omx__user_region_segment_fill_pages(const struct omx_user_region_segment * segment,
 				    unsigned long segment_offset,
-				    struct sk_buff * skb,
+				    const struct sk_buff * skb,
 				    unsigned long skb_offset,
 				    unsigned long length)
 {
@@ -1394,9 +1394,9 @@ omx__user_region_segment_fill_pages(struct omx_user_region_segment * segment,
 }
 
 int
-omx_user_region_fill_pages(struct omx_user_region * region,
+omx_user_region_fill_pages(const struct omx_user_region * region,
 			   unsigned long region_offset,
-			   struct sk_buff * skb,
+			   const struct sk_buff * skb,
 			   unsigned long length)
 {
 	unsigned long segment_offset = region_offset;
@@ -1409,7 +1409,7 @@ omx_user_region_fill_pages(struct omx_user_region * region,
 		return -EINVAL;
 
 	for(iseg=0; iseg<region->nr_segments; iseg++) {
-		struct omx_user_region_segment * segment = &region->segments[iseg];
+		const struct omx_user_region_segment * segment = &region->segments[iseg];
 		dprintk(REG,
 			"looking at segment #%d length %ld for offset %ld length %ld\n",
 			iseg, (unsigned long) segment->length, segment_offset, remaining);
@@ -1464,12 +1464,12 @@ omx_user_region_fill_pages(struct omx_user_region * region,
  */
 static INLINE int
 omx_memcpy_between_user_regions_to_current(struct omx_user_region * src_region, unsigned long src_offset,
-					   struct omx_user_region * dst_region, unsigned long dst_offset,
+					   const struct omx_user_region * dst_region, unsigned long dst_offset,
 					   unsigned long length)
 {
 	unsigned long remaining = length;
 	unsigned long tmp;
-	struct omx_user_region_segment *sseg, *dseg; /* current segment */
+	const struct omx_user_region_segment *sseg, *dseg; /* current segment */
 	unsigned long soff; /* current offset in region */
 	unsigned long sseglen, dseglen; /* length of current segment */
 	unsigned long ssegoff, dsegoff; /* current offset in current segment */
@@ -1590,7 +1590,7 @@ omx_dma_copy_between_user_regions(struct omx_user_region * src_region, unsigned 
 {
 	unsigned long remaining = length;
 	unsigned long tmp;
-	struct omx_user_region_segment *sseg, *dseg; /* current segment */
+	const struct omx_user_region_segment *sseg, *dseg; /* current segment */
 	unsigned long soff, doff; /* current offset in region */
 	unsigned long sseglen, dseglen; /* length of current segment */
 	unsigned long ssegoff, dsegoff; /* current offset in current segment */

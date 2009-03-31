@@ -102,7 +102,7 @@ omx_raw_wakeup(struct omx_iface *iface)
 }
 
 static int
-omx_raw_send(struct omx_iface *iface, void __user * uparam)
+omx_raw_send(struct omx_iface *iface, const void __user * uparam)
 {
 	struct omx_iface_raw *raw = &iface->raw;
 	struct omx_cmd_raw_send raw_send;
@@ -361,7 +361,7 @@ omx_raw_detach_iface(struct file *filp)
  */
 
 static struct omx_iface *
-omx_acquire_iface_from_raw_file(struct file * file)
+omx_acquire_iface_from_raw_file(const struct file * file)
 {
 	struct omx_iface * iface;
 

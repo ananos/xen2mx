@@ -35,8 +35,8 @@ extern int omx_dma_sync_min;
 extern int omx_dma_init(void);
 extern void omx_dma_exit(void);
 
-extern int omx_dma_skb_copy_datagram_to_pages(struct dma_chan *chan, dma_cookie_t *cookiep, struct sk_buff *skb, int offset, struct page **pages, int pgoff, size_t len);
-extern int omx_dma_skb_copy_datagram_to_user_region(struct dma_chan *chan, dma_cookie_t *cookiep, struct sk_buff *skb, struct omx_user_region *region, uint32_t regoff, size_t len);
+extern int omx_dma_skb_copy_datagram_to_pages(struct dma_chan *chan, dma_cookie_t *cookiep, const struct sk_buff *skb, int offset, struct page * const *pages, int pgoff, size_t len);
+extern int omx_dma_skb_copy_datagram_to_user_region(struct dma_chan *chan, dma_cookie_t *cookiep, const struct sk_buff *skb, struct omx_user_region *region, uint32_t regoff, size_t len);
 
 #else /* OMX_HAVE_DMA_ENGINE */
 

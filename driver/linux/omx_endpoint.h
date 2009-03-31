@@ -96,7 +96,7 @@ struct omx_endpoint {
 extern int omx_iface_attach_endpoint(struct omx_endpoint * endpoint);
 extern void omx_iface_detach_endpoint(struct omx_endpoint * endpoint, int ifacelocked);
 extern int omx_endpoint_close(struct omx_endpoint * endpoint, int ifacelocked);
-extern struct omx_endpoint * omx_endpoint_acquire_by_iface_index(struct omx_iface * iface, uint8_t index);
+extern struct omx_endpoint * omx_endpoint_acquire_by_iface_index(const struct omx_iface * iface, uint8_t index);
 extern void __omx_endpoint_last_release(struct kref *kref);
 extern void omx_endpoints_cleanup(void);
 extern int omx_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index, struct omx_endpoint_info *info);
