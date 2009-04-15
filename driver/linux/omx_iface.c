@@ -311,6 +311,14 @@ omx_iface_get_rx_coalesce(struct net_device * ifp, unsigned *usecs)
 {
 	if (ifp->ethtool_ops && ifp->ethtool_ops->get_coalesce) {
 		struct ethtool_coalesce coal;
+
+		/*
+		 * most drivers don't say they don't support adaptive rx coalescing,
+		 * so mark it as unsupported by default
+		 */
+		memset(&coal, 0, sizeof(coal));
+		coal.cmd = ETHTOOL_GCOALESCE;
+
 		ifp->ethtool_ops->get_coalesce(ifp, &coal);
 		if (coal.use_adaptive_rx_coalesce)
 			*usecs = coal.rx_coalesce_usecs_low;
