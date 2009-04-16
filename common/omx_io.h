@@ -27,6 +27,9 @@
 #include <sys/ioctl.h>
 #endif
 
+/* bring __pure and friends */
+#include "omx_hal.h"
+
 #include "omx_wire.h"
 
 /*
@@ -86,7 +89,7 @@ struct omx_cmd_user_segment {
 
 #define OMX_ABI_CONFIG_WIRECOMPAT		(1<<0)
 
-static inline uint32_t
+static inline __pure uint32_t
 omx_get_abi_config(void) {
 	uint32_t val = 0;
 #ifdef OMX_MX_WIRE_COMPAT
@@ -563,7 +566,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_wait_event)
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8e, struct omx_cmd_wakeup)
 
-static inline const char *
+static inline __pure const char *
 omx_strcmd(unsigned cmd)
 {
 	switch (cmd) {
@@ -669,7 +672,7 @@ omx_strcmd(unsigned cmd)
 #define OMX_CONNECT_STATUS_SUCCESS	0
 #define OMX_CONNECT_STATUS_BAD_KEY	11
 
-static inline const char *
+static inline __pure const char *
 omx_strevt(unsigned type)
 {
 	switch (type) {
@@ -969,7 +972,7 @@ enum omx_counter_index {
 	OMX_COUNTER_INDEX_MAX,
 };
 
-static inline const char *
+static inline __pure const char *
 omx_strcounter(enum omx_counter_index index)
 {
 	switch (index) {
