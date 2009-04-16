@@ -9,6 +9,7 @@ endif
 EXTRA_CFLAGS	+=	-include @abs_top_builddir@/common/omx_config.h
 EXTRA_CFLAGS	+=	-include @abs_top_builddir@/driver/linux/omx_checks.h
 EXTRA_CFLAGS	+=	-include @abs_top_builddir@/driver/linux/omx_debug.h
+EXTRA_CFLAGS	+=	-I@abs_srcdir@/
 EXTRA_CFLAGS	+=	-I@abs_top_srcdir@/common/
 ifneq ($(SRC_VERSION),)
   EXTRA_CFLAGS	+=	-DSRC_VERSION="\"$(SRC_VERSION)\""
