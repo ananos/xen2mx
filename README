@@ -11,8 +11,9 @@ Contents:
     a. Wire-compatibility
     b. ABI and API-compatibility
 
-See the online FAQ at http://open-mx.org/FAQ/
-for more details. See also REPORTING-BUGS for problems.
+For more details, see the FAQ in the doc/ directory or online at
+  http://open-mx.org/FAQ/
+See also REPORTING-BUGS for problems.
 
 
 ++================++

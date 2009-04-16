@@ -1,5 +1,7 @@
 * constify the open-mx interface ?
 
+* if failed to add peer of local iface, detach the iface?
+
 * add restrict when c99 is enabled?
 
 * try get_user_pages_fast() with 32pages chunks or so
