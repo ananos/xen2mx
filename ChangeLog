@@ -1,10 +1,18 @@
+Open-MX 1.0.903 aka 1.1-rc3 (April 16th 2009, svn r2569)
+========================================================
 
-* Report when the peer table is full and some peers failed
+Improvements from previous release:
+* Report an error when the peer table is full and some peers failed
   to be added.
 * Add some early support for Linux kernel 2.6.30.
+* Add some annotations in the source code.
+* Fix some minor build-regressions in previous release candidates.
 * Fix the management of linux kernel release string.
 * Move FAQ.html inside the doc directory.
 
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.0.902 aka 1.1-rc2 (March 25th 2009, svn r2528)
 ========================================================
@@ -29,10 +37,6 @@ Other improvements from previous release:
 * Move kernel modules from lib/modules/ into modules/ with the
   install directory.
 * Some fixes in the omx_check.sh testing script.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.0.901 aka 1.1-rc1 (March 13th 2009, svn r2466)
 ========================================================
