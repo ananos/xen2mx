@@ -23,9 +23,6 @@
 #define MALLOC_CHECK_ 3
 #endif
 
-#define __pure __attribute__((pure))
-#define __malloc  __attribute__((malloc))
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
