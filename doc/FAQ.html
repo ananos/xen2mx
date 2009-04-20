@@ -463,8 +463,9 @@ have to be accepted by the network.
 
 <p>
 If Open-MX is configured in non-MX-wire-compatible mode (default),
-the minimal required MTU is 9000, but another value may be enforced
-by passing <tt>--with-mtu=1500</tt> or so.
+the minimal required MTU is 9000.
+But another value may be enforced by configuring Open-MX with
+<tt>--with-mtu=1500</tt> or another non-default value.
 Packet sizes will be updated accordingly, as shown in driver status.
 See also <a href="#perf-packet-sizes">How should I tune Open-MX MTU
     and packet sizes?</a>.
@@ -1434,9 +1435,11 @@ the latency very slightly.
   large MTU.
   If for some reason (for instance hardware-related preferences)
   some larger packets decrease performance, it is possible to
-  reduce their size with <tt>--with-medium-frag-length</tt> (for medium
-  message fragments) and <tt>--with-pull-reply-length</tt> (for large
-  message frames).
+  reduce their size by configuring Open-MX with
+  <tt>--with-medium-frag-length</tt> (for medium message fragments)
+  and <tt>--with-pull-reply-length</tt> (for large message frames).
+  But, in most cases, passing <tt>--with-mtu</tt> according to the NIC
+  and swiches configuration should be enough.
   The corresponding values may be check in the driver status
   as explained in <a href="#basics-mtu">Which MTU should my network support for Open-MX?</a></li>
 </p>
