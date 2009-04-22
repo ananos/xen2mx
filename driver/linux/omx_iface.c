@@ -512,7 +512,9 @@ omx_iface_attach(struct net_device * ifp)
 	mutex_init(&iface->endpoints_mutex);
 
 	/* insert in the peer table */
-	omx_peers_notify_iface_attach(iface);
+	ret = omx_peers_notify_iface_attach(iface);
+	if (ret < 0)
+		goto out_with_raw;
 
 	iface->index = i;
 	omx_iface_nr++;
@@ -520,6 +522,9 @@ omx_iface_attach(struct net_device * ifp)
 
 	return 0;
 
+ out_with_raw:
+	omx_iface_raw_exit(&iface->raw);
+	kfree(iface->endpoints);
  out_with_iface_hostname:
 	kfree(hostname);
  out_with_iface:

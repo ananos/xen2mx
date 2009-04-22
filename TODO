@@ -1,7 +1,5 @@
 * constify the open-mx interface ?
 
-* if failed to add peer of local iface, detach the iface?
-
 * add restrict when c99 is enabled?
 
 * try get_user_pages_fast() with 32pages chunks or so
@@ -39,6 +37,10 @@
   + pass a irq-name/pattern
 * add a tool to auto-tune the interface coalescing and binding?
   + do it within the startup script?
+
+* when removing a peer (for instance a local iface), make the index available again
+  in case of adding another peer/iface
+  + need to add omx_peers_nr since we only have omx_peer_next_nr
 
 * single cmd to send the whole mediumsq message, with single done event ?
   + get_user_pages/dev_queue_xmit, put_pages in the last callback

@@ -1,3 +1,8 @@
+
+Improvements from previous release:
+* Properly fail to attach a local interface in case of full peer table.
+
+
 Open-MX 1.0.903 aka 1.1-rc3 (April 16th 2009, svn r2569)
 ========================================================
 
