@@ -419,7 +419,7 @@ omx_for_each_endpoint_in_mm(struct mm_struct *mm,
 /*
  * Attach a new iface.
  *
- * Must be called with ifaces lock hold.
+ * Must be called with ifaces lock hold and with a reference onto the ifp.
  */
 static int
 omx_iface_attach(struct net_device * ifp)
@@ -435,13 +435,13 @@ omx_iface_attach(struct net_device * ifp)
 	if (omx_iface_nr == omx_iface_max) {
 		printk(KERN_ERR "Open-MX: Too many interfaces already attached\n");
 		ret = -EBUSY;
-		goto out_with_ifp_hold;
+		goto out;
 	}
 
 	if (omx_iface_find_by_ifp(ifp)) {
 		printk(KERN_ERR "Open-MX: Interface '%s' already attached\n", ifp->name);
 		ret = -EBUSY;
-		goto out_with_ifp_hold;
+		goto out;
 	}
 
 	for(i=0; i<omx_iface_max; i++)
@@ -452,7 +452,7 @@ omx_iface_attach(struct net_device * ifp)
 	if (!iface) {
 		printk(KERN_ERR "Open-MX: Failed to allocate interface as board %d\n", i);
 		ret = -ENOMEM;
-		goto out_with_ifp_hold;
+		goto out;
 	}
 
 	printk(KERN_INFO "Open-MX: Attaching %sEthernet interface '%s' as #%i, MTU=%d\n",
@@ -529,7 +529,7 @@ omx_iface_attach(struct net_device * ifp)
 	kfree(hostname);
  out_with_iface:
 	kfree(iface);
- out_with_ifp_hold:
+ out:
 	return ret;
 }
 
