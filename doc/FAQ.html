@@ -13,7 +13,6 @@
 <!-- TODO: why no crc? -->
 <!-- TODO: can I poll/select on omx? -->
 <!-- TODO: update question about EFAULT while pinning -->
-<!-- TODO: question/section about binding/msix and point to hardware.html -->
 <!-- TODO: pinsync=0,pininvalidate=1,pinprogressive=1 -->
 <!-- TODO: update the lists of configure options, module params -->
 
@@ -222,14 +221,35 @@
 <li><a href="#perf-shared-self">
   What if I do not need shared or self communications?
 </a></li>
-<li><a href="#perf-copy-offload">
-  How does I/OAT copy offload help Open-MX?
-</a></li>
 <li><a href="#perf-binding">
   Is process and interrupt binding important for Open-MX?
 </a></li>
 <li><a href="#perf-old-kernels">
   Should I avoid some kernels and drivers?
+</a></li>
+</ul>
+
+<p><a href="#hardware">
+    Hardware-Specific Features
+</a></p>
+<ul>
+<li><a href="#hardware-features">
+  Which hardware features may help Open-MX?
+</a></li>
+<li><a href="#hardware-adaptive-coal">
+  How to use adaptive interrupt coalescing?
+</a></li>
+<li><a href="#hardware-copy-offload">
+  How does I/OAT copy offload help Open-MX?
+</a></li>
+<li><a href="#hardware-multiq">
+    How may multiple receive queues help Open-MX?
+</a></li>
+<li><a href="#hardware-multiq-firmware">
+    How do I add Open-MX multiqueue support to my NIC firmware?
+</a></li>
+<li><a href="#hardware-multiq-bind">
+    How do I bind my processes near Open-MX receive multiqueues?
 </a></li>
 </ul>
 
@@ -1394,6 +1414,9 @@ Ethernet interface on a very close core (by writing the corresponding mask
 into /proc/irq/&lt;n&gt;/smp_affinity).
 </li>
 </ul>
+<p>
+You may also want to enable some hardware-specific <a href="#hardware">features</a>.
+</p>
 
 
 <h4><a id="perf-wire-compat" href="#perf-wire-compat">
@@ -1491,29 +1514,8 @@ would to set coalescing to N or N-1 usecs:
 $ ethtool -C eth2 rx-usecs &lt;N-1&gt;
 </pre>
 <p>
-If your driver supports <em>Adaptive interrupt coalescing</em>, it
-may well help Open-MX performance significantly.
-Indeed, it basically automatically disables coalescing (and thus improves latency)
-when the amount of packets is low, and reenables a high coalescing
-delay (and thus improve the overall performance) when the amount of
-packets is high.
-Thus, when it is supported, you probably want to enable adaptive interrupt
-coalescing on the receive side:
-</p>
-<pre>
-$ ethtool -C eth2 adaptive-rx on
-</pre>
+See also <a href="#hardware-adaptive-coal">How to use adaptive interrupt coalescing?</a>.
 <p>
-Then, if you do not observe optimal performance yet, you may want to tune adaptive
-coalescing so that for instance a pingpong-like pattern gets the best latency.
-Since a 6-microseconds pingpong generates 83 thousands of packets per second,
-you may for instance tell the driver to disable coalescing entirely when less
-than 150 thousands packets are received per seconds:
-</p>
-<pre>
-$ ethtool -C eth2 pkt-rate-low 150000
-$ ethtool -C eth2 rx-usecs-low 0
-</pre>
 
 
 <h4><a id="perf-shared-self" href="#perf-shared-self">
@@ -1532,27 +1534,6 @@ OMX_DISABLE_SHARED=1 in the environment.
 This is especially the case if there is a single process on each node and
 it does not talk to itself, or if multiple processes of the same do not talk
 to each other.
-</p>
-
-
-<h4><a id="perf-copy-offload" href="#perf-copy-offload">
-  How does I/OAT copy offload help Open-MX?
-</a></h4>
-<p>
-Lots of modern platforms such as Intel I/OAT-enabled servers provide hardware
-DMA engine to offload memory copies. Open-MX performance may increase very
-significantly thanks to this feature.
-</p>
-<p>
-The support for dmaengine is automatically built in Open-MX when supported
-by the kernel and may be configured at runtime through several module
-parameters. See <a href="#config">Advanced configuration</a> for details.
-</p>
-<p>
-Note that DMA engine hardware may still require the administrator to load
-the corresponding driver, for instance the 'ioatdma' kernel module.
-The kernel logs will display the DMA engine status when loading Open-MX
-or modifying some module parameters.
 </p>
 
 
@@ -1609,6 +1590,7 @@ Such a configuration may be the best for benchmarking purpose, especially
 on the latency side. However, under a normal load, having IRQs go to all
 cores is probably a good idea since most applications will use one process
 per core.
+See also <a href="#hardware-multiq">How may multiple receive queues help Open-MX?</a>
 </p>
 <p>
 Note that the core numbering is far from being linear in modern machines.
@@ -1637,6 +1619,208 @@ not be linearized uselessly. To enable this workardound, you should pass
 <p>
 Note that this solution is only required under very special
 circumstances and should be avoided in most of the cases.
+</p>
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
+<div class="section">
+<h3><a id="hardware" href="#hardware">
+    Hardware-Specific Features
+</a></h3>
+
+
+<h4><a id="hardware-features" href="#hardware-features">
+  Which hardware features may help Open-MX?
+</a></h4>
+<p>
+  Open-MX works on generic hardware but may be enhanced if some
+  specific hardware features are available.
+  Interrupt coalescing, and especially adaptive coalescing, may help
+  dealing with host interrupt load and latency.
+  See <a href="#hardware-adaptive-coal">How to use adaptive interrupt coalescing?</a>.
+  Hardware copy offload may significantly reduce the receive copy
+  overhead.
+  See <a href="#hardware-copy-offload">How does I/OAT copy offload help Open-MX?</a>.
+  Multiqueue support may also improve the cache-friendliness of the
+  receive stack.
+  See <a href="#hardware-multiq">How may multiple receive queues help Open-MX?</a>.
+</p>
+
+
+<h4><a id="hardware-adaptive-coal" href="#hardware-adaptive-coal">
+  How to use adaptive interrupt coalescing?
+</a></h4>
+<p>
+  If your driver supports <em>Adaptive interrupt coalescing</em>, it
+  may well help Open-MX performance significantly.
+  Indeed, it basically automatically disables coalescing (and thus improves latency)
+  when the amount of packets is low, and reenables a high coalescing
+  delay (and thus improve the overall performance) when the amount of
+  packets is high
+  (see also <a href="#perf-intrcoal">What is the interrupt coalescing impact on Open-MX' performance?</a>).
+  Thus, when it is supported, you probably want to enable adaptive interrupt
+  coalescing on the receive side:
+</p>
+<pre>
+$ ethtool -C eth2 adaptive-rx on
+</pre>
+<p>
+  Then, if you do not observe optimal performance yet, you may want to tune adaptive
+  coalescing so that for instance a pingpong-like pattern gets the best latency.
+  Since a 6-microseconds pingpong generates 83 thousands of packets per second,
+  you may for instance tell the driver to disable coalescing entirely when less
+  than 150 thousands packets are received per seconds:
+</p>
+<pre>
+$ ethtool -C eth2 pkt-rate-low 150000
+$ ethtool -C eth2 rx-usecs-low 0
+</pre>
+
+
+<h4><a id="hardware-copy-offload" href="#hardware-copy-offload">
+  How does I/OAT copy offload help Open-MX?
+</a></h4>
+<p>
+  Lots of modern platforms such as Intel I/OAT-enabled servers provide hardware
+  DMA engine to offload memory copies. Open-MX performance may increase very
+  significantly thanks to this feature.
+</p>
+<p>
+  The support for dmaengine is automatically built in Open-MX when supported
+  by the kernel and may be configured at runtime through several module
+  parameters.
+  See <a href="#config-startup">What are Open-MX startup-time configuration options?</a> for details.
+</p>
+<p>
+  Note that DMA engine hardware may still require the administrator to load
+  the corresponding driver, for instance the 'ioatdma' kernel module.
+  The kernel logs will display the DMA engine status when loading Open-MX
+  or modifying some module parameters.
+</p>
+
+
+<h4><a id="hardware-multiq" href="#hardware-multiq">
+  How may multiple receive queues help Open-MX?
+</a></h4>
+<p>
+  Many modern hardware have the ability to associate one receive queue
+  to each IP connection thanks to packet filtering in the NIC and
+  multiple receive queues.
+  If the NIC supports multiqueues with knowledge of the Open-MX
+  protocol, the Open-MX' performance may increase due to the receive
+  stack becoming more cache-friendly.
+</p>
+<p>
+  The usual optimization consist in having the bottom-half taking care
+  of an endpoint always runs on the same CPU.
+  See <a href="#hardware-multiq-firmware">How do I add Open-MX multiqueue support to my NIC firmware?</a>.
+  The other optimization is to make sure that this bottom half runs on
+  the same CPU than the process that opened this endpoint.
+  See <a href="#hardware-multiq-bind">How do I bind my processes near Open-MX receive multiqueues?</a>.
+</ul>
+
+
+<h4><a id="hardware-multiq-firmware" href="#hardware-multiq-firmware">
+  How do I add Open-MX multiqueue support to my NIC firmware?
+</a></h4>
+<p>
+  As of today, only the <tt>myri10ge</tt> firmware for Myri-10G boards
+  is known to have built-in Open-MX-aware multiqueue support.
+  It is included in <tt>myri10ge</tt> firmware since version 1.4.33.
+</p>
+<p>
+  First, you need to make sure your hardware supports multiple Rx
+  queues (receive queues).
+  Then you need to get your firmware sources and be able to
+  rebuild/reflash it.
+  What you need to change is the code that choose a Rx queue depending
+  on the packet contents.
+  Here's a Open-MX packet description:
+</p>
+<ul>
+ <li>Bytes 1-6 and 7-12: source and destination mac address.</li>
+ <li>Bytes 13-14: Ethernet type. You have to match 0x86DF for Open-MX there.</li>
+ <li>Bytes 17: Open-MX type.</li>
+ <li>Byte 18: Destination endpoint number, except if the Open-MX type is 0x2a (and some control packets we do not care about).</li>
+ <li>Byte 32: Destination endpoint number, only if the Open-MX type is 0x2a.</li>
+</ul>
+<p>
+  So you need to get the endpoint number and just hash it so that
+  all packets from the same endpoint go to the same Rx queue.
+  This ensures there will be no cache effects between bottom halves on
+  different CPUs.
+</p>
+
+
+<h4><a id="hardware-multiq-bind" href="#hardware-multiq-bind">
+  How do I bind my processes near Open-MX receive multiqueues?
+</a></h4>
+<p>
+  As explained in <a href="#config-runtime">What are Open-MX runtime configuration options?</a>,
+  the <tt>OMX_PROCESS_BINDING</tt> environment variable may be used to
+  bind Open-MX processes depending on their endpoint number.
+  If your NIC is capable of filtering Open-MX packets into multiple
+  queues, you may setup this variable manually.
+  You need to know which interrupt line is used for each endpoint
+  number and where these interrupts are sent
+  (see the contents of <tt>/proc/interrupts</tt>
+  and <tt>/proc/irq/.../smp_affinity</tt>).
+</p>
+<p>
+  But an easier solution consists in having Open-MX gather binding
+  information automatically.
+  If the <tt>OMX_PROCESS_BINDING</tt> variable is set to <tt>file</tt>,
+  binding hints will be read from <tt>/tmp/open-mx.bindings.dat</tt>.
+  To generate this file (once Open-MX is loaded and the interface(s)
+  are attached), run the <tt>omx_prepare_binding</tt> tool (as root).
+</p>
+<pre>
+$ sudo omx_prepare_binding
+Generated bindings in /tmp/open-mx.bindings.dat
+$ cat /tmp/open-mx.bindings.dat
+board 00:60:dd:47:c4:75 ep 0 irq 1269 mask 00000001
+board 00:60:dd:47:c4:75 ep 1 irq 1268 mask 00000002
+board 00:60:dd:47:c4:75 ep 2 irq 1267 mask 00000004
+board 00:60:dd:47:c4:75 ep 3 irq 1266 mask 00000008
+[...]
+</pre>
+<p>
+  <tt>omx_prepare_binding</tt> scans <tt>/proc/interrupts</tt>
+  so as to find out which interrupt lines are used for each attached
+  interface.
+  It finds out the corresponding interrupt line numbers and driver
+  queue numbers.
+  It assumes that the driver registered these interrupts in a standard
+  way, as requested by the Linux network stack maintainer
+  <a href="http://marc.info/?l=linux-netdev&m=122179191818469&w=2">here</a>.
+  For instance, if the interface is <i>eth2</i>, the driver should
+  register its queue names as <i>eth2...N...</i> where N is the queue
+  number.
+  If there are different queues for sending and receiving,
+  <tt>omx_prepare_binding</tt> may ignore sending queues if their name
+  contains <i>tx</i>.
+</p>
+<p>
+  There are many endpoints (usually 32 per interface) and only a limited
+  number of Rx queues (usually one per core).
+  Several endpoints may thus actually be bound to the same queue.
+  If the queue numbers are standard (contigous set of integers from 0 to N-1),
+  <tt>omx_prepare_binding</tt> assumes that the NIC will actually compute
+  the queue number by applying a modulo to the endpoint number.
+  Otherwise, <tt>omx_prepare_binding</tt> only assumes that each queue
+  is associated to a single endpoint whose number is the same.
+</p>
+<p>
+  <tt>omx_prepare_binding</tt> may apply hardware quirks if the NIC
+  uses a complex way to associate endpoint numbers with queue numbers,
+  or if  the driver does not use standard interrupt line names.
+  Please report such cases to the
+  <a href="http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/open-mx-devel">open-mx-devel mailing list</a>
+  so that a special case is added.
 </p>
 
 
@@ -2140,6 +2324,8 @@ behavior at runtime, when starting a process:
   specified filename.
   For more details about process binding, see
   <a href="#perf-binding">Is process and interrupt binding important for Open-MX?</a>.
+  See also
+  <a href="#hardware-multiq-bind">How do I bind my processes near Open-MX receive multiqueues?</a>.
 </dd>
 
 <dt>OMX_CTXIDS=3,7</dt>
@@ -2449,7 +2635,7 @@ $ omx_init status
 
 
 <p class="updated">
-  Last updated on 2009/04/27.
+  Last updated on 2009/05/09.
 </p>
 
 <script type="text/javascript">
