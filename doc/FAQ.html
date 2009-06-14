@@ -2635,7 +2635,7 @@ $ omx_init status
 
 
 <p class="updated">
-  Last updated on 2009/05/09.
+  Last updated on 2009/06/14.
 </p>
 
 <script type="text/javascript">
@@ -2643,9 +2643,10 @@ $ omx_init status
  document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
 </script>
 <script type="text/javascript">
- var pageTracker = _gat._getTracker("UA-3566887-1");
- pageTracker._initData();
- pageTracker._trackPageview('/FAQ/trunk');
+ try {
+  var pageTracker = _gat._getTracker("UA-3566887-1");
+  pageTracker._trackPageview('/FAQ/trunk');
+ } catch(err) {}
 </script>
 
 </body>
