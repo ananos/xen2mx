@@ -304,9 +304,9 @@ int main(int argc, char *argv[])
     param.align = align;
     param.unidir = unidir;
     param.sync = sync;
-    ret = omx_isend(ep, &param, sizeof(param),
-		    addr, 0x1234567887654321ULL,
-		    NULL, &req);
+    ret = omx_issend(ep, &param, sizeof(param),
+		     addr, 0x1234567887654321ULL,
+		     NULL, &req);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to isend param message (%s)\n",
 	      omx_strerror(ret));
@@ -524,8 +524,8 @@ int main(int argc, char *argv[])
     addr = status.addr;
 
     /* send param ack message */
-    ret = omx_isend(ep, NULL, 0,
-		    addr, 0, NULL, &req);
+    ret = omx_issend(ep, NULL, 0,
+		     addr, 0, NULL, &req);
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to isend param ack message (%s)\n",
 	      omx_strerror(ret));

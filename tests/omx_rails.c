@@ -193,12 +193,12 @@ int main(int argc, char *argv[])
 		i, rails[i].remote_name, (unsigned long) rails[i].remote_eid);
         goto out;
       }
-      ret = omx_isend(rails[i].ep, buffer, 0, rails[i].remote_addr, 0, NULL, &rails[i].req);
+      ret = omx_issend(rails[i].ep, buffer, MAX, rails[i].remote_addr, 0, NULL, &rails[i].req);
       assert(ret == OMX_SUCCESS);
       ret = omx_wait(rails[i].ep, &rails[i].req, &status, &result, OMX_TIMEOUT_INFINITE);
       assert(ret == OMX_SUCCESS);
       assert(result);
-      ret = omx_irecv(rails[i].ep, buffer, 0, 0, 0, NULL, &rails[i].req);
+      ret = omx_irecv(rails[i].ep, buffer, MAX, 0, 0, NULL, &rails[i].req);
       assert(ret == OMX_SUCCESS);
       ret = omx_wait(rails[i].ep, &rails[i].req, &status, &result, OMX_TIMEOUT_INFINITE);
       assert(ret == OMX_SUCCESS);
@@ -253,7 +253,7 @@ int main(int argc, char *argv[])
     for(i=0; i<nbrails; i++) {
       omx_status_t status;
       uint32_t result;
-      ret = omx_irecv(rails[i].ep, buffer, 0, 0, 0, NULL, &rails[i].req);
+      ret = omx_irecv(rails[i].ep, buffer, MAX, 0, 0, NULL, &rails[i].req);
       assert(ret == OMX_SUCCESS);
       ret = omx_wait(rails[i].ep, &rails[i].req, &status, &result, OMX_TIMEOUT_INFINITE);
       assert(ret == OMX_SUCCESS);
@@ -266,7 +266,7 @@ int main(int argc, char *argv[])
 		i, rails[i].remote_name, (unsigned long) rails[i].remote_eid);
 	goto out;
       }
-      ret = omx_isend(rails[i].ep, buffer, 0, rails[i].remote_addr, 0, NULL, &rails[i].req);
+      ret = omx_issend(rails[i].ep, buffer, MAX, rails[i].remote_addr, 0, NULL, &rails[i].req);
       assert(ret == OMX_SUCCESS);
       ret = omx_wait(rails[i].ep, &rails[i].req, &status, &result, OMX_TIMEOUT_INFINITE);
       assert(ret == OMX_SUCCESS);
