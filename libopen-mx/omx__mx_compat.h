@@ -38,7 +38,7 @@
 #include "omx_lib.h"
 
 extern __pure mx_return_t
-omx_unlikely_return_to_mx(omx_return_t omxret);
+omx_unlikely_return_to_mx(omx_return_t omxret, int strict);
 
 static inline __pure mx_return_t
 omx_return_to_mx(omx_return_t omxret)
@@ -49,11 +49,21 @@ omx_return_to_mx(omx_return_t omxret)
   if (likely(omxret == OMX_SUCCESS))
     return MX_SUCCESS;
   else
-    return omx_unlikely_return_to_mx(omxret);
+    return omx_unlikely_return_to_mx(omxret, 1);
+}
+
+/* convert to hacky MX return that may also be a MX status, used by the error handler */
+static inline __pure mx_return_t
+omx_error_to_mx(omx_return_t omxret)
+{
+  if (likely(omxret == OMX_SUCCESS))
+    return MX_SUCCESS;
+  else
+    return omx_unlikely_return_to_mx(omxret, 0);
 }
 
 extern __pure omx_return_t
-omx_unlikely_return_from_mx(mx_return_t mxret);
+omx_unlikely_return_from_mx(mx_return_t mxret, int strict);
 
 static inline __pure omx_return_t
 omx_return_from_mx(mx_return_t mxret)
@@ -61,7 +71,17 @@ omx_return_from_mx(mx_return_t mxret)
   if (likely(mxret == MX_SUCCESS))
     return OMX_SUCCESS;
   else
-    return omx_unlikely_return_from_mx(mxret);
+    return omx_unlikely_return_from_mx(mxret, 1);
+}
+
+/* convert from hacky MX return that may also be a MX status, used by the error handler */
+static inline __pure omx_return_t
+omx_error_from_mx(mx_return_t mxret)
+{
+  if (likely(mxret == MX_SUCCESS))
+    return OMX_SUCCESS;
+  else
+    return omx_unlikely_return_from_mx(mxret, 0);
 }
 
 extern __pure mx_status_code_t

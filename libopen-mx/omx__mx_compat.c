@@ -33,7 +33,7 @@
  */
 
 __pure mx_return_t
-omx_unlikely_return_to_mx(omx_return_t omxret)
+omx_unlikely_return_to_mx(omx_return_t omxret, int strict)
 {
   switch (omxret) {
   case OMX_BAD_ERROR:
@@ -94,13 +94,27 @@ omx_unlikely_return_to_mx(omx_return_t omxret)
     return MX_CLOSE_IN_HANDLER;
   case OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return MX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
+
+  case OMX_CANCELLED:
+  case OMX_REMOTE_RDMA_WINDOW_BAD_ID:
+  case OMX_REMOTE_ENDPOINT_UNREACHABLE:
+  case OMX_REMOTE_ENDPOINT_BAD_SESSION:
+  case OMX_MESSAGE_ABORTED:
+  case OMX_MESSAGE_TRUNCATED:
+  case OMX_NO_SYSTEM_RESOURCES:
+  case OMX_NOT_IMPLEMENTED:
+    if (!strict)
+      /* just return the original code since the MX error handler code mixes return and status code */
+      return (mx_return_t) omxret;
+    /* fallthrough */
+
   default:
     omx__abort(NULL, "Unexpected Open-MX return code %d to translate into MX\n", omxret);
   }
 }
 
 __pure omx_return_t
-omx_unlikely_return_from_mx(mx_return_t mxret)
+omx_unlikely_return_from_mx(mx_return_t mxret, int strict)
 {
   switch (mxret) {
   case MX_BAD_BAD_BAD:
@@ -163,6 +177,20 @@ omx_unlikely_return_from_mx(mx_return_t mxret)
     return OMX_NOT_SUPPORTED_IN_HANDLER;
   case MX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
+
+  case OMX_CANCELLED:
+  case OMX_REMOTE_RDMA_WINDOW_BAD_ID:
+  case OMX_REMOTE_ENDPOINT_UNREACHABLE:
+  case OMX_REMOTE_ENDPOINT_BAD_SESSION:
+  case OMX_MESSAGE_ABORTED:
+  case OMX_MESSAGE_TRUNCATED:
+  case OMX_NO_SYSTEM_RESOURCES:
+  case OMX_NOT_IMPLEMENTED:
+    if (!strict)
+      /* just return the original code since the MX error handler code mixes return and status code */
+      return (omx_return_t) mxret;
+    /* fallthrough */
+
   default:
     omx__abort(NULL, "Unexpected MX return code %d to translate into Open-MX\n", mxret);
   }
@@ -258,7 +286,7 @@ static omx_return_t
 omx__mx_error_handler_wrapper(char *buffer, omx_return_t ret)
 {
   omx__debug_assert(omx__mx_error_handler != NULL);
-  return omx_return_from_mx(omx__mx_error_handler(buffer, omx_return_to_mx(ret)));
+  return omx_error_from_mx(omx__mx_error_handler(buffer, omx_error_to_mx(ret)));
 }
 
 mx_error_handler_t
@@ -278,14 +306,14 @@ mx_set_error_handler(mx_error_handler_t new_mxhdlr)
 mx_return_t
 mx__errors_are_fatal(char *str, mx_return_t ret)
 {
-  return omx_return_to_mx(OMX_ERRORS_ARE_FATAL(str, omx_return_from_mx(ret)));
+  return omx_error_to_mx(OMX_ERRORS_ARE_FATAL(str, omx_error_from_mx(ret)));
 }
 const mx_error_handler_t MX_ERRORS_ARE_FATAL = mx__errors_are_fatal;
 
 mx_return_t
 mx__errors_return(char *str, mx_return_t ret)
 {
-  return omx_return_to_mx(OMX_ERRORS_RETURN(str, omx_return_from_mx(ret)));
+  return omx_error_to_mx(OMX_ERRORS_RETURN(str, omx_error_from_mx(ret)));
 }
 const mx_error_handler_t MX_ERRORS_RETURN = mx__errors_return;
 
