@@ -603,10 +603,10 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   struct omx__large_region * region;
 
   /* check region id */
-  if (region_id >= OMX_USER_REGION_MAX)
+  if (unlikely(region_id >= OMX_USER_REGION_MAX))
     return;
   region = &ep->large_region_map.array[region_id].region;
-  if (!region)
+  if (unlikely(!region))
     return;
 
   /*
@@ -616,7 +616,7 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
    * since we can't ack the notify yet.
    */
   req = region->reserver;
-  if (!req || region_seqnum != req->send.specific.large.region_seqnum)
+  if (unlikely(!req || region_seqnum != req->send.specific.large.region_seqnum))
     return;
 
   omx__debug_assert(req);
