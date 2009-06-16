@@ -1390,6 +1390,7 @@ omx__process_resend_requests(struct omx_endpoint *ep)
   LIST_HEAD(tmp_req_q);
 
   /* resend the first requests from the non_acked queue */
+ start_resending:
   omx__foreach_request_safe(&ep->non_acked_req_q, req, next) {
     if (now - req->generic.last_send_jiffies < omx__globals.resend_delay_jiffies)
       /* the remaining ones are more recent, no need to resend them yet */
@@ -1403,7 +1404,10 @@ omx__process_resend_requests(struct omx_endpoint *ep)
 		  (unsigned) OMX__SESNUM_SHIFTED(req->generic.send_seqnum),
 		  (unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
-      continue;
+      /* partner_cleanup might have modified the next request, so start from scratch,
+       * all previous requests have been moved away anyway
+       */
+      goto start_resending;
     }
 
     omx___dequeue_request(req);
@@ -1468,6 +1472,7 @@ omx__process_resend_requests(struct omx_endpoint *ep)
   list_splice_init(&tmp_req_q, ep->non_acked_req_q.prev);
 
   /* resend non-replied connect requests */
+ start_reconnecting:
   omx__foreach_request_safe(&ep->connect_req_q, req, next) {
     if (now - req->generic.last_send_jiffies < omx__globals.resend_delay_jiffies)
       /* the remaining ones are more recent, no need to resend them yet */
@@ -1480,7 +1485,10 @@ omx__process_resend_requests(struct omx_endpoint *ep)
 		  (unsigned int) req->connect.connect_seqnum,
 		  (unsigned long) req->generic.resends);
       omx__partner_cleanup(ep, req->generic.partner, 1);
-      continue;
+      /* partner_cleanup might have modified the next request, so start from scratch,
+       * all previous requests have been moved away anyway
+       */
+      goto start_reconnecting;
     }
 
     /* no need to dequeue/requeue */
