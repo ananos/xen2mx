@@ -258,7 +258,7 @@ static omx_return_t
 omx__mx_error_handler_wrapper(char *buffer, omx_return_t ret)
 {
   omx__debug_assert(omx__mx_error_handler != NULL);
-  return omx__mx_error_handler(buffer, ret);
+  return omx_return_from_mx(omx__mx_error_handler(buffer, omx_return_to_mx(ret)));
 }
 
 mx_error_handler_t
@@ -278,18 +278,14 @@ mx_set_error_handler(mx_error_handler_t new_mxhdlr)
 mx_return_t
 mx__errors_are_fatal(char *str, mx_return_t ret)
 {
-  omx_return_t omxret;
-  omxret = omx_return_to_mx(OMX_ERRORS_ARE_FATAL(str, omx_return_from_mx(ret)));
-  return omx_return_to_mx(omxret);
+  return omx_return_to_mx(OMX_ERRORS_ARE_FATAL(str, omx_return_from_mx(ret)));
 }
 const mx_error_handler_t MX_ERRORS_ARE_FATAL = mx__errors_are_fatal;
 
 mx_return_t
 mx__errors_return(char *str, mx_return_t ret)
 {
-  omx_return_t omxret;
-  omxret = omx_return_to_mx(OMX_ERRORS_RETURN(str, omx_return_from_mx(ret)));
-  return omx_return_to_mx(omxret);
+  return omx_return_to_mx(OMX_ERRORS_RETURN(str, omx_return_from_mx(ret)));
 }
 const mx_error_handler_t MX_ERRORS_RETURN = mx__errors_return;
 
