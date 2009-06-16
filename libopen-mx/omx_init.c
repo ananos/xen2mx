@@ -205,7 +205,7 @@ omx__init_api(int app_api)
   if (env) {
     omx__globals.fatal_errors = atoi(env);
     omx__verbose_printf(NULL, "Forcing errors to %s\n",
-			omx__globals.fatal_errors ? "to be fatal" : "to not be fatal");
+			omx__globals.fatal_errors ? "be fatal" : "not be fatal");
   }
 
   /***************************
