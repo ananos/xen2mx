@@ -602,11 +602,21 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   uint8_t region_seqnum = msg->specific.notify.pulled_rdma_seqnum;
   struct omx__large_region * region;
 
-  /* FIXME: check region id */
+  /* check region id */
+  if (region_id >= OMX_USER_REGION_MAX)
+    return;
   region = &ep->large_region_map.array[region_id].region;
-  req = region->reserver;
+  if (!region)
+    return;
 
-  if (region_seqnum != req->send.specific.large.region_seqnum)
+  /*
+   * Check that the region has been reserved and that it has the expected seqnum.
+   * Could be invalid in case of duplicate notify messages,
+   * especially if sending a large message before the remote peer has connected back
+   * since we can't ack the notify yet.
+   */
+  req = region->reserver;
+  if (!req || region_seqnum != req->send.specific.large.region_seqnum)
     return;
 
   omx__debug_assert(req);
