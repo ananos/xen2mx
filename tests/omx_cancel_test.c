@@ -18,11 +18,9 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
 #include <assert.h>
-#include <sys/time.h>
 
 #include "open-mx.h"
 

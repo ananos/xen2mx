@@ -18,16 +18,12 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
 #include <string.h>
-#include <stdlib.h>
 #include <sys/time.h>
 #include <getopt.h>
 #include <assert.h>
 #include <malloc.h>	/* memalign() */
-#include <arpa/inet.h>
+#include <arpa/inet.h>	/* htonl() */
 
 #include "open-mx.h"
 

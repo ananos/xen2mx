@@ -17,9 +17,8 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <fcntl.h>
+#include <getopt.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 

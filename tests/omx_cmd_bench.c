@@ -19,7 +19,6 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <getopt.h>
-#include <stdlib.h>
 
 #include "omx_config.h"
 #include "omx_lib.h"

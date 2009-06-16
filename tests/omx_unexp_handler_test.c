@@ -16,9 +16,10 @@
  * See the GNU General Public License in COPYING.GPL for more details.
  */
 
+#include <stdio.h>
+#include <assert.h>
+
 #include "open-mx.h"
-#include "stdio.h"
-#include "assert.h"
 
 static int discard = 0;
 
