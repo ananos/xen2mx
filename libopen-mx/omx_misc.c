@@ -395,6 +395,13 @@ omx__create_message_prefix(const struct omx_endpoint *ep)
         *dst = 'X'; len = 1;
       }
       src += 2; dst += len;
+    } else if (!strncmp(src, "%B", 2)) {
+      if (ep) {
+        len = sprintf(dst, "%ld", (unsigned long) ep->board_index);
+      } else {
+        *dst = 'X'; len = 1;
+      }
+      src += 2; dst += len;
     } else {
       *dst++ = *src++;
     }

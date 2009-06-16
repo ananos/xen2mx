@@ -2430,10 +2430,11 @@ behavior at runtime, when starting a process:
 <dt>OMX_VERBOSE_PREFIX=1</dt>
 <dd>Display the endpoint index and process pid in the prefix of
   all Open-MX messages. The default prefix is <tt>Open-MX:</tt>.
-  If 1 is given, <tt>Open-MX:p%P-e%E:</tt> with %P the process pid
-  and %E the endpoint index (or X if no endpoint is involved).
+  If 1 is given, <tt>Open-MX:p%P-e%E-b%B:</tt> with %P the process
+  pid while %E and %B are the endpoint and board index
+  (or X if no endpoint is involved).
   If another string is given, it is used as a prefix after replacing
-  %P and %E if necessary.
+  %P, %E and %B if necessary.
 </dd>
 
 </dl>
