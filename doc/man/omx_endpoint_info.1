@@ -11,17 +11,21 @@ omx_endpoint_info \- display information about Open-MX endpoints
 displays information about the currently running
 Open-MX endpoints.
 It lists all open endpoint on the given interface
-(the first interface by default),
+(all interfaces by default)
 including information about the owner process.
 The raw interface is also listed if a peer discovery
 tool is running.
 
 .SH OPTIONS
 .TP
+.B -a
+Report all interfaces (default).
+
+.TP
 .B -b <board number>
-Use the interface given by
+Only report information for the interface given by
 .B <board number>
-instead of the first interface (number 0).
+instead of all interfaces.
 
 .TP
 .B -h
