@@ -106,7 +106,7 @@ omx_peers_clear(int local)
 			continue;
 
 		iface = peer->local_iface;
-		if (iface && !local) {
+		if (iface && local) {
 			dprintk(PEER, "not clearing peer #%d of local iface %s (%s)\n",
 				peer->index, iface->eth_ifp->name, peer->hostname);
 			continue;
