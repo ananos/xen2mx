@@ -291,7 +291,7 @@ omx_get_driver_string(unsigned int *lenp)
 	*(tmp-1) = '\n'; /* change the ending space into a linebreak */
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		       " WireSpecs: %s EtherType=0x%lx MTU>=0x%ld\n",
+		       " WireSpecs: %s EtherType=0x%lx MTU>=%ld\n",
 		       omx_driver_userdesc->abi_config & OMX_ABI_CONFIG_WIRECOMPAT
 		       ? "WireCompatible" : "NoWireCompat",
 		       (unsigned long) ETH_P_OMX, (unsigned long) OMX_MTU);
