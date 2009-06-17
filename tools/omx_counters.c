@@ -24,36 +24,78 @@
 
 #include "omx_lib.h"
 
-#define BID 0
-
 static void
 usage(int argc, char *argv[])
 {
   fprintf(stderr, "%s [options]\n", argv[0]);
-  fprintf(stderr, " -b <n>\tchange board id [%d]\n", BID);
+  fprintf(stderr, " -b <n>\tchange board id\n");
+  fprintf(stderr, " -a\treport counters for all boards (default)\n");
   fprintf(stderr, " -s\treport shared communication counters\n");
   fprintf(stderr, " -c\tclear counters\n");
   fprintf(stderr, " -q\tonly display non-null counters [default]\n");
   fprintf(stderr, " -v\talso display null counters\n");
 }
 
-int main(int argc, char *argv[])
+static void
+do_one_board(uint32_t board_index, int strict, int clear, int verbose)
 {
   struct omx_board_info board_info;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-  uint32_t board_index = BID;
-  omx_return_t ret;
   uint32_t counters[OMX_COUNTER_INDEX_MAX];
+  struct omx_cmd_get_counters get_counters;
+  omx_return_t ret;
+  int i, err;
+
+  /* get the board id */
+  ret = omx__get_board_info(NULL, board_index, &board_info);
+  if (ret != OMX_SUCCESS) {
+    if (strict)
+      fprintf(stderr, "Failed to read board #%d id, %s\n", board_index, omx_strerror(ret));
+    return;
+  }
+  omx__board_addr_sprintf(board_addr_str, board_info.addr);
+  get_counters.board_index = board_index;
+  get_counters.clear = clear;
+  get_counters.buffer_addr = (uintptr_t) counters;
+  get_counters.buffer_length = sizeof(counters);
+  err = ioctl(omx__globals.control_fd, OMX_CMD_GET_COUNTERS, &get_counters);
+  if (err < 0) {
+    if (clear && errno == EPERM)
+      perror("Clearing counters");
+    return;
+  }
+  OMX_VALGRIND_MEMORY_MAKE_READABLE(counters, sizeof(counters));
+
+  if (board_index == OMX_SHARED_FAKE_IFACE_INDEX)
+    printf("%s (addr %s)\n",
+	   board_info.hostname, board_addr_str);
+  else
+    printf("%s (board #%u name %s addr %s)\n",
+	   board_info.hostname, board_index, board_info.ifacename, board_addr_str);
+  printf("=======================================================\n");
+
+  for(i=0; i<OMX_COUNTER_INDEX_MAX; i++)
+    if (counters[i] || verbose)
+      printf("%03d: % 9ld %s\n", i, (unsigned long) counters[i], omx_strcounter(i));
+
+  printf("\n");
+}
+
+int main(int argc, char *argv[])
+{
+  uint32_t board_index = OMX_ANY_NIC;
+  omx_return_t ret;
   int clear = 0;
   int verbose = 0;
-  struct omx_cmd_get_counters get_counters;
-  int i, err;
   int c;
 
-  while ((c = getopt(argc, argv, "b:scqvh")) != -1)
+  while ((c = getopt(argc, argv, "b:ascqvh")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
+      break;
+    case 'a':
+      board_index = OMX_ANY_NIC;
       break;
     case 's':
       board_index = OMX_SHARED_FAKE_IFACE_INDEX;
@@ -82,36 +124,13 @@ int main(int argc, char *argv[])
     goto out;
   }
 
-  /* get the board id */
-  ret = omx__get_board_info(NULL, board_index, &board_info);
-  if (ret != OMX_SUCCESS) {
-    fprintf(stderr, "Failed to read board #%d id, %s\n", board_index, omx_strerror(ret));
-    goto out;
+  if (board_index == OMX_ANY_NIC) {
+    do_one_board(OMX_SHARED_FAKE_IFACE_INDEX, 1, clear, verbose);
+    for(board_index=0; board_index<omx__driver_desc->board_max; board_index++)
+      do_one_board(board_index, 0, clear, verbose);
+  } else {
+    do_one_board(board_index, 1, clear, verbose);
   }
-  omx__board_addr_sprintf(board_addr_str, board_info.addr);
-  get_counters.board_index = board_index;
-  get_counters.clear = clear;
-  get_counters.buffer_addr = (uintptr_t) counters;
-  get_counters.buffer_length = sizeof(counters);
-  err = ioctl(omx__globals.control_fd, OMX_CMD_GET_COUNTERS, &get_counters);
-  if (err < 0) {
-    if (clear && errno == EPERM)
-      perror("Clearing counters");
-    goto out;
-  }
-  OMX_VALGRIND_MEMORY_MAKE_READABLE(counters, sizeof(counters));
-
-  if (board_index == OMX_SHARED_FAKE_IFACE_INDEX)
-    printf("%s (addr %s)\n",
-	   board_info.hostname, board_addr_str);
-  else
-    printf("%s (board #%u name %s addr %s)\n",
-	   board_info.hostname, board_index, board_info.ifacename, board_addr_str);
-  printf("=======================================================\n");
-
-  for(i=0; i<OMX_COUNTER_INDEX_MAX; i++)
-    if (counters[i] || verbose)
-      printf("%03d: % 9ld %s\n", i, (unsigned long) counters[i], omx_strcounter(i));
 
   return 0;
 

@@ -1,4 +1,3 @@
-* omx_counters -a
 * omx_hostname reports the hostname if no option given?
 
 * constify the open-mx interface ?
