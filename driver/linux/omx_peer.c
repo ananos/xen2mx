@@ -106,7 +106,7 @@ omx_peers_clear(int local)
 			continue;
 
 		iface = peer->local_iface;
-		if (iface && local) {
+		if (iface && !local) {
 			dprintk(PEER, "not clearing peer #%d of local iface %s (%s)\n",
 				peer->index, iface->eth_ifp->name, peer->hostname);
 			continue;
@@ -140,6 +140,25 @@ omx_peers_clear(int local)
 	omx_peer_next_nr = 0;
 	omx_peer_table_full = 0;
 	omx_peer_table_state.status &= ~OMX_PEER_TABLE_STATUS_FULL;
+
+	if (!local) {
+		/* move local ifaces back to the beginning */
+		for(i=0; i<omx_peer_max; i++) {
+			struct omx_peer * peer = omx_peer_array[i];
+			if (!peer)
+				continue;
+			if (i != omx_peer_next_nr) {
+				rcu_assign_pointer(omx_peer_array[omx_peer_next_nr], peer);
+				peer->index = omx_peer_next_nr;
+				rcu_assign_pointer(omx_peer_array[i], NULL);
+			}
+			omx_peer_next_nr++;
+		}
+		if (omx_peer_next_nr == omx_peer_max) {
+			omx_peer_table_full = 1;
+			omx_peer_table_state.status |= OMX_PEER_TABLE_STATUS_FULL;
+		}
+	}
 
 	mutex_unlock(&omx_peers_mutex);
 }
