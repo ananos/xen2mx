@@ -152,6 +152,7 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
   /* check once every second */
   if (now - last < ep->check_status_delay_jiffies)
     return;
+  ep->last_check_jiffies = now;
 
   driver_status = ep->desc->status;
   /* could be racy... could be fixed using atomic ops... */
@@ -187,8 +188,6 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
 
   list_for_each_entry(partner, &ep->throttling_partners_list, endpoint_throttling_partners_elt)
     omx__printf(ep, "Partner not acking enough, throttling %d send requests\n", partner->throttling_sends_nr);
-
-  ep->last_check_jiffies = now;
 }
 
 static INLINE void
