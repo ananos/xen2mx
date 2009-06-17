@@ -254,7 +254,6 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
 {
   struct omx__partner *partner, *next;
   uint64_t now = omx__driver_desc->jiffies;
-  static uint64_t last_invokation = 0;
 
   /* look at the immediate list */
   list_for_each_entry_safe(partner, next,
@@ -275,9 +274,9 @@ omx__process_partners_to_ack(struct omx_endpoint *ep)
   }
 
   /* no need to bother looking at the delayed list if the time didn't change */
-  if (now == last_invokation)
+  if (now == ep->last_partners_acking_jiffies)
     return;
-  last_invokation = now;
+  ep->last_partners_acking_jiffies = now;
 
   /* look at the delayed list */
   list_for_each_entry_safe(partner, next,

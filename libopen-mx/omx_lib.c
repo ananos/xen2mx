@@ -144,13 +144,13 @@ omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
 static INLINE void
 omx__check_endpoint_desc(struct omx_endpoint * ep)
 {
-  static uint64_t last_check = 0;
   uint64_t now = omx__driver_desc->jiffies;
+  uint64_t last = ep->last_check_jiffies;
   uint64_t driver_status;
   struct omx__partner *partner;
 
   /* check once every second */
-  if (now - last_check < ep->check_status_delay_jiffies)
+  if (now - last < ep->check_status_delay_jiffies)
     return;
 
   driver_status = ep->desc->status;
@@ -188,22 +188,22 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
   list_for_each_entry(partner, &ep->throttling_partners_list, endpoint_throttling_partners_elt)
     omx__printf(ep, "Partner not acking enough, throttling %d send requests\n", partner->throttling_sends_nr);
 
-  last_check = now;
+  ep->last_check_jiffies = now;
 }
 
 static INLINE void
-omx__check_enough_progression(const struct omx_endpoint * ep)
+omx__check_enough_progression(struct omx_endpoint * ep)
 {
 #ifdef OMX_LIB_DEBUG
-  static unsigned long long last_progress = 0;
   unsigned long long now = omx__driver_desc->jiffies;
-  unsigned long long delay = now - last_progress;
+  unsigned long long last = ep->last_progress_jiffies;
+  unsigned long long delay = now - last;
 
-  if (last_progress && delay > omx__driver_desc->hz)
+  if (last && delay > omx__driver_desc->hz)
     omx__verbose_printf(ep, "No progression occured in the last %lld seconds (%lld jiffies)\n",
 			delay/omx__driver_desc->hz, delay);
 
-  last_progress = now;
+  ep->last_progress_jiffies = now;
 #endif
 }
 

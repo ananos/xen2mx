@@ -501,6 +501,10 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->req_resends_max = omx__globals.req_resends_max;
   ep->pull_resend_timeout_jiffies = omx__globals.resend_delay_jiffies * omx__globals.req_resends_max;
   ep->check_status_delay_jiffies = omx__driver_desc->hz; /* once per second */
+  ep->last_check_jiffies = 0;
+#ifdef OMX_LIB_DEBUG
+  ep->last_progress_jiffies = 0;
+#endif
   ep->zombie_max = omx__globals.zombie_max;
   ep->zombies = 0;
   ep->error_handler = error_handler;
@@ -574,6 +578,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
 #endif
 
   INIT_LIST_HEAD(&ep->partners_to_ack_immediate_list);
+  ep->last_partners_acking_jiffies = 0;
   INIT_LIST_HEAD(&ep->partners_to_ack_delayed_list);
   INIT_LIST_HEAD(&ep->throttling_partners_list);
 

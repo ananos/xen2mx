@@ -241,12 +241,16 @@ struct omx_endpoint {
   omx_unexp_handler_t unexp_handler;
   void * unexp_handler_context;
   struct omx_endpoint_desc * desc;
+  uint32_t check_status_delay_jiffies;
+  uint64_t last_check_jiffies;
+#ifdef OMX_LIB_DEBUG
+  uint64_t last_progress_jiffies;
+#endif
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   void * next_exp_event, * next_unexp_event;
   uint32_t avail_exp_events;
   uint32_t req_resends_max;
   uint32_t pull_resend_timeout_jiffies;
-  uint32_t check_status_delay_jiffies;
   uint32_t zombies, zombie_max;
 
   /* context ids */
@@ -307,6 +311,7 @@ struct omx_endpoint {
   struct omx__partner ** partners;
   struct omx__partner * myself;
 
+  uint64_t last_partners_acking_jiffies;
   struct list_head partners_to_ack_immediate_list;
   struct list_head partners_to_ack_delayed_list;
   struct list_head throttling_partners_list;
