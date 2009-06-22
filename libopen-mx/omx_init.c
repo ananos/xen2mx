@@ -421,6 +421,15 @@ omx__init_comms(void)
 			omx__globals.waitintr ? "exit as timeout" : "go back to sleep");
   }
 
+  /* parallel connect configuration */
+  omx__globals.connect_pollall = 0;
+  env = getenv("OMX_CONNECT_POLLALL");
+  if (env) {
+    omx__globals.connect_pollall = atoi(env);
+    omx__verbose_printf(NULL, "Forcing connect polling all endpoints to %s\n",
+			omx__globals.connect_pollall ? "enabled" : "disabled");
+  }
+
   /*************************
    * Regcache configuration
    */

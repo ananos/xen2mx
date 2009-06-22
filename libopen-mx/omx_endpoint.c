@@ -50,6 +50,9 @@ omx__init_endpoint_list(void)
 static INLINE void
 omx__add_endpoint_to_list(struct omx_endpoint *endpoint)
 {
+  if (!omx__globals.connect_pollall)
+    omx__verbose_printf(NULL, "Multirail might need OMX_CONNECT_POLLALL=1 to work around mx_connect deadlocks.\n");
+
   omx__lock(&omx_endpoints_list_lock);
   list_add_tail(&endpoint->omx_endpoints_list_elt, &omx_endpoints_list);
   omx__unlock(&omx_endpoints_list_lock);

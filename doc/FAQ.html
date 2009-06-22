@@ -2365,6 +2365,12 @@ behavior at runtime, when starting a process:
   Blocking functions go back to sleep on signal by default.
 </dd>
 
+<dt>OMX_CONNECT_POLLALL=1</dt>
+<dd>When blocking in <tt>mx_connect</tt>, poll other endpoints as well.
+  When opening multiple endpoints per process, this may work around some
+  deadlocks that may occur if endpoints are connecting in random order.
+</dd>
+
 <dt>OMX_RESENDS_MAX=1000</dt>
 <dd>Try to resend each send request 1000 times before timeout-ing.
   By default, each request is resent up to 1000 times before timeout-ing.

@@ -542,6 +542,7 @@ struct omx__globals {
   int regcache;
   int parallel_regcache;
   int waitspin;
+  int connect_pollall;
   int zombie_max;
   int waitintr;
   int fatal_errors;

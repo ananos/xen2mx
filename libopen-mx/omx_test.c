@@ -705,6 +705,28 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
   sleeper.need_wakeup = 0;
   list_add_tail(&sleeper.list_elt, &ep->sleepers);
 
+  if (omx__globals.connect_pollall) {
+    /* busy spin and poll other endpoints instead of sleeping */
+    while (!sleeper.need_wakeup) {
+      OMX__ENDPOINT_UNLOCK(ep);
+      omx__foreach_endpoint((void *) omx_progress);
+      OMX__ENDPOINT_LOCK(ep);
+    
+      if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
+	goto out;
+
+      if (ms_timeout != OMX_TIMEOUT_INFINITE && omx__driver_desc->jiffies >= jiffies_expire) {
+	/* let the caller handle errors */
+	ret = OMX_TIMEOUT;
+	goto out;
+      }
+    }
+
+    /* let the caller handle errors */
+    ret = OMX_TIMEOUT;
+    goto out;
+  }
+
   if (omx__globals.waitspin) {
     /* busy spin instead of sleeping */
     while (!sleeper.need_wakeup) {
