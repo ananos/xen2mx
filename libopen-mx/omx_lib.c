@@ -165,8 +165,8 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
     omx__abort(ep, "Driver reporting expected event queue full\n");
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL) {
-    omx__printf(ep, "Driver reporting unexpected event queue full\n");
-    omx__printf(ep, "Some packets are being dropped, they will be resent by the sender\n");
+    omx__verbose_printf(ep, "Driver reporting unexpected event queue full\n");
+    omx__verbose_printf(ep, "Some packets are being dropped, they will be resent by the sender\n");
   }
   if (driver_status & OMX_ENDPOINT_DESC_STATUS_IFACE_DOWN) {
     omx__warning(ep, "Driver reporting that interface %s (%s) for endpoint %d is NOT up, check dmesg\n",
@@ -187,7 +187,7 @@ omx__check_endpoint_desc(struct omx_endpoint * ep)
   }
 
   list_for_each_entry(partner, &ep->throttling_partners_list, endpoint_throttling_partners_elt)
-    omx__printf(ep, "Partner not acking enough, throttling %d send requests\n", partner->throttling_sends_nr);
+    omx__verbose_printf(ep, "Partner not acking enough, throttling %d send requests\n", partner->throttling_sends_nr);
 }
 
 static INLINE void
