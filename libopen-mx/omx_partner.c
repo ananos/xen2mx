@@ -188,7 +188,7 @@ omx__partner_check_localization(const struct omx_endpoint * ep, struct omx__part
     partner->rndv_threshold = shared ? omx__globals.shared_rndv_threshold : omx__globals.rndv_threshold;
     if (shared)
       omx__debug_printf(CONNECT, ep, "Using shared communication for partner %016llx ep %d\n",
-			(unsigned) partner->board_addr, (unsigned) partner->endpoint_index);
+			(unsigned long long) partner->board_addr, (unsigned) partner->endpoint_index);
   } else {
     omx__debug_assert(partner->localization == localization);
   }
