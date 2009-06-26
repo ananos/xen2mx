@@ -428,7 +428,13 @@ omx_connect(omx_endpoint_t ep,
     if (req->generic.status.code == OMX_SUCCESS) {
       *addr = req->generic.status.addr;
     } else {
-      ret = omx__error_with_ep(ep, req->generic.status.code, "Completing connection");
+      ret = req->generic.status.code;
+      /* convert a request status into a proper routine return value,
+       * since omx_connect does not expose its internal request.
+       */
+      if (ret == OMX_REMOTE_ENDPOINT_UNREACHABLE)
+	ret = OMX_TIMEOUT;
+      ret = omx__error_with_ep(ep, ret, "Completing connection");
     }
   } else {
     ret = omx__error_with_ep(ep, ret, "Waiting for connection to complete");
