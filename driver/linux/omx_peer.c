@@ -487,15 +487,16 @@ omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index)
 void
 omx_peer_set_reverse_index_locked(struct omx_peer *peer, uint16_t reverse_index)
 {
-	if (peer->reverse_index != OMX_UNKNOWN_REVERSE_PEER_INDEX
-	    && reverse_index != peer->reverse_index)
-		dprintk(PEER, "changing remote peer #%d reverse index from %d to %d\n",
-			peer->index, peer->reverse_index, reverse_index);
-	else
-		dprintk(PEER, "setting remote peer #%d reverse index to %d\n",
-			peer->index, reverse_index);
+	if (reverse_index != peer->reverse_index) {
+		if (peer->reverse_index != OMX_UNKNOWN_REVERSE_PEER_INDEX)
+			dprintk(PEER, "changing remote peer #%d reverse index from %d to %d\n",
+				peer->index, peer->reverse_index, reverse_index);
+		else
+			dprintk(PEER, "setting remote peer #%d reverse index to %d\n",
+				peer->index, reverse_index);
 
-	peer->reverse_index = reverse_index;
+		peer->reverse_index = reverse_index;
+	}
 }
 
 int
