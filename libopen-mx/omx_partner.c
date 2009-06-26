@@ -292,6 +292,9 @@ omx__connect_myself(struct omx_endpoint *ep)
   ep->myself->localization = (maybe_self || maybe_shared) ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
   ep->myself->rndv_threshold = (maybe_self || maybe_shared) ? omx__globals.shared_rndv_threshold : omx__globals.rndv_threshold;
 
+  omx__debug_printf(CONNECT, ep, "created myself partner %016llx ep %d peer index %d\n",
+		    (unsigned long long) ep->board_info.addr, (unsigned) ep->endpoint_index, (unsigned) peer_index);
+
   return OMX_SUCCESS;
 }
 

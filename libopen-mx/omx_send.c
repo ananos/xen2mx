@@ -945,8 +945,9 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 {
   uint32_t length = req->send.segs.total_length;
 
-  omx__debug_printf(SEND, ep, "sending %ld bytes in %d segments using seqnum %d (#%d)\n",
+  omx__debug_printf(SEND, ep, "sending %ld bytes in %d segments to partner %016llx ep %d using seqnum %d (#%d)\n",
 		    (unsigned long) length, (unsigned) req->send.segs.nseg,
+		    (unsigned long long) partner->board_addr, (unsigned) partner->endpoint_index,
 		    (unsigned) OMX__SEQNUM(partner->next_send_seq),
 		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
 

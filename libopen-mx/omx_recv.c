@@ -684,6 +684,9 @@ omx__process_recv(struct omx_endpoint *ep,
   if (unlikely(!partner))
     return;
 
+  omx__debug_printf(RECV, ep, "got message length %ld from partner %016llx ep %d\n",
+		    (unsigned long) msg_length,
+		    (unsigned long long) partner->board_addr, (unsigned) partner->endpoint_index);
   omx__debug_printf(SEQNUM, ep, "got seqnum %d (#%d), expected match at %d, frag at %d (#%d)\n",
 		    (unsigned) OMX__SEQNUM(seqnum),
 		    (unsigned) OMX__SESNUM_SHIFTED(seqnum),
