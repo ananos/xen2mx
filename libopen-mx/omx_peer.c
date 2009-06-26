@@ -335,7 +335,7 @@ omx_nic_id_to_hostname(uint64_t board_addr,
 
   if (ret != OMX_SUCCESS) {
     omx__debug_assert(ret == OMX_PEER_NOT_FOUND);
-    return omx__error(OMX_PEER_NOT_FOUND, "nic_id_to_hostname %llx",
+    return omx__error(OMX_PEER_NOT_FOUND, "nic_id_to_hostname %016llx",
 		      (unsigned long long) board_addr);
   } else {
     return OMX_SUCCESS;

@@ -164,8 +164,8 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   ep->partners[partner_index] = partner;
 
   *partnerp = partner;
-  omx__debug_printf(CONNECT, ep, "created peer %d (addr %llx) %d\n",
-		    (unsigned) peer_index, (unsigned long long) board_addr, (unsigned) endpoint_index);
+  omx__debug_printf(CONNECT, ep, "created partner %016llx ep %d peer index %d\n",
+		    (unsigned long long) board_addr, (unsigned) endpoint_index, (unsigned) peer_index);
 
   return OMX_SUCCESS;
 }
@@ -187,7 +187,8 @@ omx__partner_check_localization(const struct omx_endpoint * ep, struct omx__part
     partner->localization = localization;
     partner->rndv_threshold = shared ? omx__globals.shared_rndv_threshold : omx__globals.rndv_threshold;
     if (shared)
-      omx__debug_printf(CONNECT, ep, "Using shared communication for partner index %d\n", (unsigned) partner->peer_index);
+      omx__debug_printf(CONNECT, ep, "Using shared communication for partner %016llx ep %d\n",
+			(unsigned) partner->board_addr, (unsigned) partner->endpoint_index);
   } else {
     omx__debug_assert(partner->localization == localization);
   }
@@ -421,10 +422,10 @@ omx_connect(omx_endpoint_t ep,
     goto out_with_req;
   }
 
-  omx__debug_printf(CONNECT, ep, "waiting for connect reply from %llx endpoint %d\n",
+  omx__debug_printf(CONNECT, ep, "waiting for connect reply from partner %016llx ep %d\n",
 		    (unsigned long long) nic_id, (unsigned) endpoint_id);
   ret = omx__connect_wait(ep, req, timeout);
-  omx__debug_printf(CONNECT, ep, "connect done from %llx endpoint %d\n",
+  omx__debug_printf(CONNECT, ep, "connect done from partner %016llx ep %d\n",
 		    (unsigned long long) nic_id, (unsigned) endpoint_id);
 
   if (ret == OMX_SUCCESS) {
@@ -564,8 +565,8 @@ omx__handle_connect_reply(struct omx_endpoint *ep,
     return;
   }
 
-  omx__debug_printf(CONNECT, ep, "waking up on connect reply from peer index %d (addr %llx) endpoint %d\n",
-		    (unsigned) partner->peer_index, (unsigned long long) partner->board_addr, (unsigned) partner->endpoint_index);
+  omx__debug_printf(CONNECT, ep, "waking up on connect reply from partner %016llx ep %d\n",
+		    (unsigned long long) partner->board_addr, (unsigned) partner->endpoint_index);
 
   /* complete the request */
   omx__connect_complete(ep, req, status_code, target_session_id);
@@ -615,7 +616,8 @@ omx__process_recv_connect_reply(struct omx_endpoint *ep,
   ret = omx__partner_lookup(ep, event->peer_index, event->src_endpoint, &partner);
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_PEER_NOT_FOUND)
-      omx__printf(ep, "Received connect from unknown peer\n");
+      omx__printf(ep, "Received connect from unknown peer index %d ep %d\n",
+		  (unsigned) event->peer_index, (unsigned) event->src_endpoint);
     return;
   }
 
@@ -665,7 +667,8 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
     connect_status_code = OMX_CONNECT_STATUS_BAD_KEY;
   }
 
-  omx__debug_printf(CONNECT, ep, "got a connect request with session id %lx while we have true %lx back %lx\n",
+  omx__debug_printf(CONNECT, ep, "got a connect request from partner %016llx ep %d with session id %lx while we have true %lx back %lx\n",
+		    (unsigned long long) partner->board_addr, (unsigned) partner->endpoint_index,
 		    (unsigned long) src_session_id,
 		    (unsigned long) partner->true_session_id, (unsigned long) partner->back_session_id);
   if (partner->back_session_id != src_session_id) {

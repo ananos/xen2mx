@@ -44,7 +44,7 @@ omx__dump_request(const char *prefix, const union omx_request *req)
       || type == OMX_REQUEST_TYPE_SEND_MEDIUMSQ
       || type == OMX_REQUEST_TYPE_SEND_MEDIUMVA
       || type == OMX_REQUEST_TYPE_SEND_LARGE) {
-    printf("%s  matchinfo %llx to addr %llx ep %d peer %d session %d seqnum %d resends %d\n",
+    printf("%s  matchinfo %llx to addr %016llx ep %d peer %d session %d seqnum %d resends %d\n",
 	   prefix,
 	   (unsigned long long) req->generic.status.match_info,
 	   (unsigned long long) partner->board_addr,
@@ -60,7 +60,7 @@ omx__dump_request(const char *prefix, const union omx_request *req)
 	   (unsigned long long) req->recv.match_info,
 	   (unsigned long long) req->recv.match_mask);
     if (type == OMX_REQUEST_TYPE_RECV_LARGE && !(state & OMX_REQUEST_STATE_RECV_PARTIAL))
-      printf("%s  to addr %llx ep %d peer %d session %d seqnum %d resends %d\n",
+      printf("%s  to addr %016llx ep %d peer %d session %d seqnum %d resends %d\n",
 	     prefix,
 	     (unsigned long long) partner->board_addr,
 	     (unsigned) partner->endpoint_index,
@@ -161,7 +161,7 @@ omx__dump_endpoint(struct omx_endpoint *ep)
   for(i=0; i<omx__driver_desc->peer_max * omx__driver_desc->endpoint_max; i++) {
     struct omx__partner *partner = ep->partners[i];
     if (partner && partner != ep->myself) {
-      printf("  Partner addr %llx endpoint %d index %d:\n",
+      printf("  Partner addr %016llx endpoint %d index %d:\n",
 	     (unsigned long long) partner->board_addr,
 	     (unsigned) partner->endpoint_index,
 	     (unsigned) partner->peer_index);

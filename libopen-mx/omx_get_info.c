@@ -412,6 +412,6 @@ omx_nic_id_to_board_number(uint64_t nic_id,
   if (ret == OMX_SUCCESS)
     *board_number = index;
 
-  return omx__error(ret, "nic_id_to_board_number %llx",
+  return omx__error(ret, "nic_id_to_board_number %016llx",
 		    (unsigned long long) nic_id);
 }
