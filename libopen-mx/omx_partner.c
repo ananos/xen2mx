@@ -430,6 +430,8 @@ omx_connect(omx_endpoint_t ep,
     } else {
       ret = omx__error_with_ep(ep, req->generic.status.code, "Completing connection");
     }
+  } else {
+    ret = omx__error_with_ep(ep, ret, "Waiting for connection to complete");
   }
 
   if (unlikely(!(req->generic.state & OMX_REQUEST_STATE_DONE))) {
