@@ -16,6 +16,7 @@
  * See the GNU General Public License in COPYING.GPL for more details.
  */
 
+#define _SVID_SOURCE 1 /* for putenv */
 #include <stdio.h>
 #include <string.h>
 #include <getopt.h>

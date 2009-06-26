@@ -17,9 +17,11 @@
  * See the GNU General Public License in COPYING.GPL for more details.
  */
 
+#define _BSD_SOURCE 1 /* for random, srandom and setlinebuf */
 #include <string.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>

@@ -16,6 +16,7 @@
  * See the GNU General Public License in COPYING.GPL for more details.
  */
 
+#define _BSD_SOURCE 1 /* for strdup */
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
