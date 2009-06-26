@@ -42,6 +42,9 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
 
   ep->large_region_map.array = array;
 
+  /* check region id, uint8_t and max=255 should be ok */
+  BUILD_BUG_ON(1<<(sizeof(array[0].region.id)*8) != OMX_USER_REGION_MAX);
+
   for(i=0; i<OMX_USER_REGION_MAX; i++) {
     array[i].next_free = i+1;
     array[i].region.id = i;
@@ -602,9 +605,9 @@ omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
   uint8_t region_seqnum = msg->specific.notify.pulled_rdma_seqnum;
   struct omx__large_region * region;
 
-  /* check region id */
-  if (unlikely(region_id >= OMX_USER_REGION_MAX))
-    return;
+  /* check region id, uint8_t and max=255 should be ok */
+  BUILD_BUG_ON(1<<(sizeof(msg->specific.notify.pulled_rdma_id)*8) != OMX_USER_REGION_MAX);
+
   region = &ep->large_region_map.array[region_id].region;
   if (unlikely(!region))
     return;
