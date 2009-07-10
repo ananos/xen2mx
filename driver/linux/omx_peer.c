@@ -527,7 +527,7 @@ omx_set_target_peer(struct omx_pkt_head *ph, uint16_t index)
 }
 
 int
-omx_check_recv_peer_index(struct omx_iface *iface, uint16_t index, uint64_t addr)
+omx_check_recv_peer_index(uint16_t index, uint64_t addr)
 {
 	struct omx_peer *peer;
 	int err = -EINVAL;
