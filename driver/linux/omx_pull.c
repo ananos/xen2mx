@@ -1150,10 +1150,11 @@ omx_recv_pull_request(struct omx_iface * iface,
 	omx_counter_inc(iface, RECV_PULL_REQ);
 
         /* check the peer index */
-	err = omx_check_recv_peer_index(peer_index);
+	err = omx_check_recv_peer_index(iface, peer_index,
+					omx_board_addr_from_ethhdr_src(pull_eh));
 	if (unlikely(err < 0)) {
 		omx_counter_inc(iface, DROP_BAD_PEER_INDEX);
-		omx_drop_dprintk(pull_eh, "PULL packet with unknown peer index %d",
+		omx_drop_dprintk(pull_eh, "PULL packet with wrong peer index %d",
 				 (unsigned) peer_index);
 		goto out;
 	}
@@ -1897,7 +1898,8 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 			 omx_strnacktype(nack_type));
 
 	/* check the peer index */
-	err = omx_check_recv_peer_index(peer_index);
+	err = omx_check_recv_peer_index(iface, peer_index,
+					omx_board_addr_from_ethhdr_src(eh));
 	if (unlikely(err < 0)) {
 		/* FIXME: impossible? in non MX-wire compatible only? */
 		struct omx_peer *peer;

@@ -527,14 +527,31 @@ omx_set_target_peer(struct omx_pkt_head *ph, uint16_t index)
 }
 
 int
-omx_check_recv_peer_index(uint16_t index)
+omx_check_recv_peer_index(struct omx_iface *iface, uint16_t index, uint64_t addr)
 {
-	/* the table is never reduced, no need to lock */
-	if (index >= omx_peer_max
-	    || !omx_peer_array[index])
-		return -EINVAL;
+	struct omx_peer *peer;
+	int err = -EINVAL;
 
+	if (index >= omx_peer_max)
+		goto out;
+
+	rcu_read_lock();
+
+	peer = rcu_dereference(omx_peer_array[index]);
+	if (!peer)
+		goto out_with_lock;
+
+
+	if (addr != peer->board_addr)
+		goto out_with_lock;
+
+	rcu_read_unlock();
 	return 0;
+
+ out_with_lock:
+	rcu_read_unlock();
+ out:
+	return err;
 }
 
 /**************
