@@ -541,9 +541,16 @@ omx_check_recv_peer_index(struct omx_iface *iface, uint16_t index, uint64_t addr
 	if (!peer)
 		goto out_with_lock;
 
-
-	if (addr != peer->board_addr)
+#ifdef OMX_DRIVER_DEBUG
+	/* peer index pointing to an invalid peer should not occur
+	 * unless the driver is buggy, so only check when debug is enabled
+	 */
+	if (addr != peer->board_addr) {
+		dprintk(PEER, "found addr %016llx for incoming packet peer index #%d when source addr is %016llx\n",
+			(unsigned long long) peer->board_addr, (unsigned) index, (unsigned long long) addr);
 		goto out_with_lock;
+	}
+#endif /* OMX_DRIVER_DEBUG */
 
 	rcu_read_unlock();
 	return 0;
