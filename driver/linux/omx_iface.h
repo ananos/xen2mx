@@ -59,6 +59,7 @@ struct omx_iface {
 
 	struct net_device * eth_ifp;
 	struct omx_peer peer;
+	uint32_t *reverse_peer_indexes; /* our index in the remote peer tables, or OMX_UNKNOWN_REVERSE_PEER_INDEX (omx_peer_max values) */
 
 	struct mutex endpoints_mutex;
 	enum omx_iface_status status;

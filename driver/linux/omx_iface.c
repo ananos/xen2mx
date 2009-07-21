@@ -439,6 +439,13 @@ omx_iface_attach(struct net_device * ifp)
 		goto out;
 	}
 
+	iface->reverse_peer_indexes = kmalloc(omx_peer_max * sizeof(*iface->reverse_peer_indexes), GFP_KERNEL);
+	if (!iface->reverse_peer_indexes) {
+		printk(KERN_ERR "Open-MX: Failed to allocate interface reverse peer index array\n");
+		ret = -ENOMEM;
+		goto out_with_iface;
+	}
+
 	printk(KERN_INFO "Open-MX: Attaching %sEthernet interface '%s' as #%i, MTU=%d\n",
 	       (ifp->type == ARPHRD_ETHER ? "" : "non-"), ifp->name, i, mtu);
 
@@ -468,7 +475,7 @@ omx_iface_attach(struct net_device * ifp)
 	if (!hostname) {
 		printk(KERN_ERR "Open-MX:   Failed to allocate interface hostname\n");
 		ret = -ENOMEM;
-		goto out_with_iface;
+		goto out_with_iface_reverse_indexes;
 	}
 
 	if (ifp->type == ARPHRD_LOOPBACK)
@@ -478,8 +485,8 @@ omx_iface_attach(struct net_device * ifp)
 	hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 	iface->peer.hostname = hostname;
 	iface->peer.index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
-	iface->peer.reverse_index = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 	iface->peer.board_addr = omx_board_addr_from_netdevice(ifp);
+	/* reverse_peer_indexes will be initialized in omx_peers_notify_iface_attach */
 
 	iface->eth_ifp = ifp;
 	iface->endpoint_nr = 0;
@@ -511,6 +518,8 @@ omx_iface_attach(struct net_device * ifp)
 	kfree(iface->endpoints);
  out_with_iface_hostname:
 	kfree(hostname);
+ out_with_iface_reverse_indexes:
+	kfree(iface->reverse_peer_indexes);
  out_with_iface:
 	kfree(iface);
  out:
@@ -530,6 +539,7 @@ __omx_iface_last_release(struct kref *kref)
 	omx_iface_raw_exit(&iface->raw);
 	kfree(iface->endpoints);
 	kfree(iface->peer.hostname);
+	kfree(iface->reverse_peer_indexes);
 	kfree(iface);
 
 	/* release the interface now, it will wakeup the unregister notifier waiting in rtnl_unlock() */

@@ -58,7 +58,6 @@ struct omx_peer {
 	uint64_t board_addr;
 	char *hostname;
 	uint32_t index; /* this peer index in our table */
-	uint32_t reverse_index; /* our index in this peer table, or OMX_UNKNOWN_REVERSE_PEER_INDEX */
 	struct list_head addr_hash_elt;
 	struct omx_iface * local_iface;
 
