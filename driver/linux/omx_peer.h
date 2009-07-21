@@ -39,9 +39,9 @@ extern void omx_peers_clear_names(void);
 extern int omx_peers_notify_iface_attach(struct omx_iface * iface);
 extern void omx_peers_notify_iface_detach(struct omx_iface * iface);
 extern int omx_peer_add(uint64_t board_addr, const char *hostname);
-extern void omx_peer_set_reverse_index_locked(struct omx_peer *peer, uint16_t reverse_index);
+extern void omx_peer_set_reverse_index_locked(struct omx_peer *peer, struct omx_iface *iface, uint16_t reverse_index);
 extern struct omx_endpoint * omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index);
-extern int omx_set_target_peer(struct omx_pkt_head *ph, uint16_t index);
+extern int omx_set_target_peer(struct omx_pkt_head *ph, struct omx_iface *iface, uint16_t index);
 extern int omx_check_recv_peer_index(uint16_t peer_index, uint64_t src_addr);
 
 extern int omx_peer_lookup_by_index(uint32_t index, uint64_t *board_addr, char *hostname);

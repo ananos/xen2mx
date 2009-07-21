@@ -74,7 +74,7 @@ omx_recv_connect(struct omx_iface * iface,
 	}
 
 	/* store our peer_index in the remote table */
-	omx_peer_set_reverse_index_locked(peer, reverse_peer_index);
+	omx_peer_set_reverse_index_locked(peer, iface, reverse_peer_index);
 
 	peer_index = peer->index;
 

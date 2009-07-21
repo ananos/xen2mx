@@ -539,7 +539,7 @@ omx_pull_handle_pkt_hdr_fill(const struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, cmd->peer_index);
+	ret = omx_set_target_peer(ph, iface, cmd->peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in pull request header\n");
 		goto out;

@@ -168,7 +168,7 @@ omx_ioctl_send_connect_request(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, cmd.peer_index);
+	ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in connect header\n");
 		goto out_with_skb;
@@ -248,7 +248,7 @@ omx_ioctl_send_connect_reply(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, cmd.peer_index);
+	ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in connect header\n");
 		goto out_with_skb;
@@ -336,7 +336,7 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, cmd.peer_index);
+	ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in tiny header\n");
 		goto out_with_skb;
@@ -432,7 +432,7 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, cmd.peer_index);
+	ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in small header\n");
 		goto out_with_skb;
@@ -549,7 +549,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 		medium_n = (struct omx_pkt_medium_frag *) (ph + 1);
 
 		/* set destination peer */
-		ret = omx_set_target_peer(ph, cmd.peer_index);
+		ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 		if (ret < 0) {
 			printk(KERN_INFO "Open-MX: Failed to fill target peer in mediumsq frag header\n");
 			kfree(defevent);
@@ -604,7 +604,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 		data = (char*) (medium_n + 1);
 
 		/* set destination peer */
-		ret = omx_set_target_peer(ph, cmd.peer_index);
+		ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 		if (ret < 0) {
 			printk(KERN_INFO "Open-MX: Failed to fill target peer in mediumsq frag header\n");
 			goto out_with_skb;
@@ -747,7 +747,7 @@ omx_ioctl_send_mediumva(struct omx_endpoint * endpoint,
 		data = (char*) (medium_n + 1);
 
 		/* set destination peer */
-		ret = omx_set_target_peer(ph, cmd.peer_index);
+		ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 		if (ret < 0) {
 			printk(KERN_INFO "Open-MX: Failed to fill target peer in medium sendq frag header\n");
 			goto out_with_skb;
@@ -880,7 +880,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, cmd.peer_index);
+	ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in rndv header\n");
 		goto out_with_skb;
@@ -956,7 +956,7 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, cmd.peer_index);
+	ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in notify header\n");
 		goto out_with_skb;
@@ -1032,7 +1032,7 @@ omx_ioctl_send_liback(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, cmd.peer_index);
+	ret = omx_set_target_peer(ph, iface, cmd.peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in truc header\n");
 		goto out_with_skb;
@@ -1094,7 +1094,7 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, peer_index);
+	ret = omx_set_target_peer(ph, iface, peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in notify header\n");
 		/* FIXME: BUG? */
@@ -1156,7 +1156,7 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* set destination peer */
-	ret = omx_set_target_peer(ph, peer_index);
+	ret = omx_set_target_peer(ph, iface, peer_index);
 	if (ret < 0) {
 		printk(KERN_INFO "Open-MX: Failed to fill target peer in notify header\n");
 		/* FIXME: BUG? */
