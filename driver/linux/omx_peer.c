@@ -993,7 +993,7 @@ omx_process_host_queries_and_replies(void)
 
 		OMX_PKT_FIELD_FROM(reply_n->ptype, OMX_PKT_TYPE_HOST_REPLY);
 		OMX_PKT_FIELD_FROM(reply_n->length, hostnamelen);
-		OMX_PKT_FIELD_FROM(reply_n->src_dst_peer_index, iface->peer.index);
+		OMX_PKT_FIELD_FROM(reply_n->src_dst_peer_index, peer->index);
 		reply_n->magic = query_n->magic;
 		memcpy(out_data, hostname, hostnamelen);
 
