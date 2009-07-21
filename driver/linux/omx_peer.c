@@ -529,7 +529,7 @@ omx_local_peer_acquire_endpoint(uint16_t peer_index, uint8_t endpoint_index)
 
 /* Must be called from mutex or RCU-read locked context */
 void
-omx_peer_set_reverse_index_locked(struct omx_peer *peer, struct omx_iface *iface, uint16_t reverse_index)
+omx_peer_set_reverse_index(struct omx_peer *peer, struct omx_iface *iface, uint16_t reverse_index)
 {
 	if (reverse_index != iface->reverse_peer_indexes[peer->index]) {
 		if (iface->reverse_peer_indexes[peer->index] != OMX_UNKNOWN_REVERSE_PEER_INDEX)
@@ -970,7 +970,7 @@ omx_process_host_queries_and_replies(void)
 
 			/* update the peer reverse index */
 			reverse_peer_index = OMX_FROM_PKT_FIELD(reply_n->src_dst_peer_index);
-			omx_peer_set_reverse_index_locked(peer, iface, reverse_peer_index);
+			omx_peer_set_reverse_index(peer, iface, reverse_peer_index);
 
 		} else {
 			omx_counter_inc(iface, DROP_BAD_PEER_ADDR);
@@ -1021,7 +1021,7 @@ omx_process_host_queries_and_replies(void)
 		}
 
 		/* store our peer_index in the remote table */
-		omx_peer_set_reverse_index_locked(peer, iface, reverse_peer_index);
+		omx_peer_set_reverse_index(peer, iface, reverse_peer_index);
 
 		omx_ifaces_peers_unlock();
 
