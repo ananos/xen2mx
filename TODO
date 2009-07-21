@@ -93,7 +93,6 @@
   + drop the status_lock
 
 * drop the iface endpoint array mutex and use the big ifaces mutex?
-* drop the peer mutex as well since we have rcu everywhere?
 
 * cleanup the idr+BHlock for handles
   + sleep if not enough slot available

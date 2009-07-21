@@ -87,8 +87,6 @@ omx_iface_reacquire(struct omx_iface * iface)
 	kref_get(&iface->refcount);
 }
 
-extern void omx_ifaces_lock(void);
-extern void omx_ifaces_unlock(void);
 extern struct omx_iface * omx_iface_find_by_index_lock(int board_index);
 
 extern void omx_for_each_iface(int (*handler)(struct omx_iface *iface, void *data), void *data);

@@ -305,11 +305,11 @@ omx_raw_attach_iface(uint32_t board_index, struct file * filp)
 	iface->raw.opener_pid = current->pid;
 	strncpy(iface->raw.opener_comm, current->comm, TASK_COMM_LEN);
 
-	omx_ifaces_unlock();
+	omx_ifaces_peers_unlock();
 	return 0;
 
  out_with_lock:
-	omx_ifaces_unlock();
+	omx_ifaces_peers_unlock();
  out:
 	return err;
 }
@@ -338,7 +338,7 @@ omx_raw_detach_iface(struct file *filp)
 	struct omx_iface * iface;
 	int err;
 
-	omx_ifaces_lock();
+	omx_ifaces_peers_lock();
 
 	err = -EINVAL;
 	iface = filp->private_data;
@@ -348,11 +348,11 @@ omx_raw_detach_iface(struct file *filp)
 	BUG_ON(!iface->raw.opener_file);
 	omx__raw_detach_iface_locked(iface);
 
-	omx_ifaces_unlock();
+	omx_ifaces_peers_unlock();
 	return 0;
 
  out_with_lock:
-	omx_ifaces_unlock();
+	omx_ifaces_peers_unlock();
 	return err;
 }
 

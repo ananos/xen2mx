@@ -26,6 +26,10 @@ struct omx_pkt_head;
 struct omx_peer;
 struct omx_cmd_peer_table_state;
 
+extern struct mutex omx_ifaces_peers_mutex; /* mutex protecting peers and ifaces */
+static inline void omx_ifaces_peers_lock(void) { mutex_lock(&omx_ifaces_peers_mutex); }
+static inline void omx_ifaces_peers_unlock(void) { mutex_unlock(&omx_ifaces_peers_mutex); }
+
 extern int omx_peers_init(void);
 extern void omx_peers_exit(void);
 extern void omx_peer_table_get_state(struct omx_cmd_peer_table_state *state);
