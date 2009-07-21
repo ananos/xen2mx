@@ -73,6 +73,8 @@ struct omx_iface {
 extern int omx_net_init(void);
 extern void omx_net_exit(void);
 
+extern struct omx_iface ** omx_ifaces;
+
 extern void omx_iface_release(struct omx_iface * iface);
 
 /*

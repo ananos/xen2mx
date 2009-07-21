@@ -43,7 +43,7 @@ static void __omx_iface_last_release(struct kref *kref);
 /*
  * Array, number and lock for the list of ifaces
  */
-static struct omx_iface ** omx_ifaces = NULL; /* must be NULL during init so that module param are delayed */
+struct omx_iface ** omx_ifaces = NULL; /* must be NULL during init so that module param are delayed */
 static unsigned omx_iface_nr = 0;
 struct omx_iface * omx_shared_fake_iface = NULL; /* only used for shared communication counters */
 
