@@ -1319,7 +1319,7 @@ omx__release_unsent_send_resources(struct omx_endpoint *ep, union omx_request *r
       ep->large_sends_avail_nr++;
 
     if (!(res & OMX_REQUEST_RESOURCE_LARGE_REGION))
-      omx__put_region(ep, req->send.specific.large.region, NULL);
+      omx__put_region(ep, req->send.specific.large.region, req);
 
     break;
 
