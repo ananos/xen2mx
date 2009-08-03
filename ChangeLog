@@ -1,12 +1,36 @@
+Open-MX 1.1.1 (August 3rd 2009, svn r2693)
+==========================================
+The multirail release.
+
+Bug fixes:
+* Change the reverse peer index table into a per-interface table to
+  prevent messages from being delivered to the wrong boards in some
+  multirail configurations.
+* Add the OMX_CONNECT_POLLALL environment variable to enforce polling
+  on all endpoints while waiting for a connect request to complete,
+  work around for connection deadlocks in multirail configurations.
+* Change some globals to endpoint-specific variables so that multiple 
+  endpoints within a single endpoint actually get their progression.
+* Fix the management of local peers when clearing the peer table.
+* Fix completion of requests in case of timeout.
+* Fix destroying of incomplete large send requests.
+* Fix management of return and status codes in the MX ABI compatibility
+  wrappers.
+* Improve sanity checks for notify messages so as to prevent buggy
+  duplicate completion of large send requests.
+* Fix the periodical checking of the driver status in the library.
+* Fix MTU reporting in the driver status.
+* A couple other minor improvements.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.1.0 (April 27th 2009, svn r2576)
 ==========================================
 
 Improvements from previous release:
 * Properly fail to attach a local interface in case of full peer table.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.0.903 aka 1.1-rc3 (April 16th 2009, svn r2569)
 ========================================================
