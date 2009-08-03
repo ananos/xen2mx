@@ -734,7 +734,7 @@ if test x$build_driver = xyes ; then
     AC_MSG_NOTICE([checking kernel headers ...])
     ${orig_builddir}/${srcdir}/driver/linux/check_kernel_headers.sh --force omx_checks.h "$LINUX_BUILD" "$LINUX_HDR" "$LINUX_RELEASE"
 
-    if test ! "$srcdir" -ef "." ; then
+    if ( cd ${orig_builddir} && test ! "$srcdir" -ef . ) then
 	# Symlink kernel sources into the build tree if needed
 	AC_MSG_NOTICE([creating symlinks to kernel sources in driver/linux/ ...])
 	for file in ${orig_builddir}/${srcdir}/driver/linux/*.[[ch]] ; do
