@@ -325,6 +325,15 @@
 </a></li>
 </ul>
 
+<p><a href="#misc">
+    Miscellaneous
+</a></p>
+<ul>
+<li><a href="#misc-hpmpi">
+  How do I run HP-MPI over Open-MX?
+</a></li>
+</ul>
+
 <p style="text-align: right"><a href="#top">Back to top</a></p>
 
 
@@ -2627,6 +2636,45 @@ $ omx_init status
 
 
 
+<div class="section">
+<h3><a id="misc" href="#misc">
+    Miscellaneous
+</a></h3>
+
+
+<h4><a id="misc-hpmpi" href="#misc-hpmpi">
+  How do I run HP-MPI over Open-MX?
+</a></h4>
+<p>
+HP-MPI was successfully used on top of Open-MX thanks to the
+following changes in the HP-MPI configuration file:
+</p>
+<pre>
+--- /opt/hpmpi/etc/hpmpi.conf.orig    2009-08-06 11:17:59.000000000 +0200
++++ /opt/hpmpi/etc/hpmpi.conf    2009-08-06 11:18:08.000000000 +0200
+@@ -105,11 +105,11 @@
+ 
+ # the expected way to get MX
+ MPI_ICLIB_MX__MX_MAIN = libmyriexpress.so
+-MPI_ICMOD_MX__MX_MAIN = "^mx_driver "
++MPI_ICMOD_MX__MX_MAIN = "^open_mx "
+ 
+ # full path to mx in case ld.so.conf isn't set up
+-MPI_ICLIB_MX__MX_PATH = /opt/mx/lib/libmyriexpress.so
+-MPI_ICMOD_MX__MX_PATH = "^mx_driver "
++MPI_ICLIB_MX__MX_PATH = /opt/open-mx/lib/libmyriexpress.so
++MPI_ICMOD_MX__MX_PATH = "^open_mx "
+ 
+ # -------- GM ------------------------
+</pre>
+
+
+
+</div>
+<p style="text-align: right"><a href="#top">Back to top</a></p>
+
+
+
 <p><em>
   If you do not find your answer here, feel free to contact the
   <a href="http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/open-mx-devel">open-mx-devel mailing list</a>.
@@ -2641,7 +2689,7 @@ $ omx_init status
 
 
 <p class="updated">
-  Last updated on 2009/06/14.
+  Last updated on 2009/08/06.
 </p>
 
 <script type="text/javascript">
