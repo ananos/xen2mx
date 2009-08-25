@@ -175,11 +175,12 @@ if test x$build_driver = xyes ; then
     else if test -f ${LINUX_BUILD}/include/linux/kernel.h ; then
       LINUX_HDR=$LINUX_BUILD
     fi fi
-    if test -z ${LINUX_HDR} ; then
-      AC_MSG_ERROR(not found)
+    if test -z "${LINUX_HDR}" ; then
+      AC_MSG_RESULT([not found])
+    else
+      AC_MSG_RESULT([found in ${LINUX_HDR}])
+      AC_SUBST(LINUX_HDR)
     fi
-    AC_MSG_RESULT(found in ${LINUX_HDR})
-    AC_SUBST(LINUX_HDR)
 
     # Find where the autoconf header is (to avoid grepping at both places).
     # The one in the build dir is preferred since this is where the configured
@@ -191,18 +192,28 @@ if test x$build_driver = xyes ; then
     else if test -f ${LINUX_SRC}/include/linux/autoconf.h ; then
       LINUX_AUTOCONF_DIR=${LINUX_SRC}
     fi fi
-    if test -z ${LINUX_AUTOCONF_DIR} ; then
-      AC_MSG_ERROR(not found)
+    if test -z "${LINUX_AUTOCONF_DIR}" ; then
+      AC_MSG_RESULT([not found])
+    else
+      AC_MSG_RESULT([found in ${LINUX_AUTOCONF_DIR}])
     fi
-    LINUX_AUTOCONF_H=${LINUX_AUTOCONF_DIR}/include/linux/autoconf.h
-    AC_MSG_RESULT(found in ${LINUX_AUTOCONF_DIR})
 
     # Find where the kbuild Makefile is
     AC_MSG_CHECKING(kernel Makefile)
-    if ! test -f ${LINUX_BUILD}/Makefile ; then
-      AC_MSG_ERROR(not found in ${LINUX_BUILD})
+    if test -f ${LINUX_BUILD}/Makefile ; then
+      AC_MSG_RESULT([found in ${LINUX_BUILD}])
+    else
+      AC_MSG_RESULT([not found])
     fi
-    AC_MSG_RESULT(found in ${LINUX_BUILD})
+
+    # Error out if we fail to find everything
+    if test -z "${LINUX_HDR}" -o -z "${LINUX_AUTOCONF_DIR}" -o ! -f ${LINUX_BUILD}/Makefile  ; then
+      AC_MSG_NOTICE([looked for kernel headers and build system using:])
+      AC_MSG_NOTICE([  kernel headers in ${LINUX_SRC}])
+      AC_MSG_NOTICE([  kernel build in ${LINUX_BUILD}])
+      AC_MSG_NOTICE([might need --with-linux-release, --with-linux, or --with-linux-build])
+      AC_MSG_ERROR([could not find kernel headers and build system])
+    fi
 
     # Check the kernel release
     REAL_LINUX_RELEASE=$(make kernelrelease -C ${LINUX_BUILD} | grep ^2.6.)
