@@ -138,17 +138,25 @@ if test x$build_driver = xyes ; then
 	LINUX_SRC="/lib/modules/"`uname -r`"/source"
 	LINUX_BUILD="/lib/modules/"`uname -r`"/build"
     else
+	AC_MSG_NOTICE([overriding kernel release uname -r with $FORCE_LINUX_RELEASE])
 	LINUX_SRC="/lib/modules/$FORCE_LINUX_RELEASE/source"
 	LINUX_BUILD="/lib/modules/$FORCE_LINUX_RELEASE/build"
+	if ! test -d "/lib/modules/$FORCE_LINUX_RELEASE/" ; then
+	    AC_MSG_WARN([kernel module directory /lib/modules/$FORCE_LINUX_RELEASE/ does not exist])
+	fi
     fi
     # If the user changes the source, use it as build by default
     # If it changes the build, do not use it as the source by default
     AC_ARG_WITH(linux,
-	[AS_HELP_STRING([--with-linux=<dir>], [location of the Linux kernel source])],
-	LINUX_SRC="$withval"; LINUX_BUILD="$withval"; LINUX_GCC_VERSION="")
+	[AS_HELP_STRING([--with-linux=<dir>],
+	[location of the Linux kernel source])],
+	[LINUX_SRC="$withval"; LINUX_BUILD="$withval"; LINUX_GCC_VERSION="";
+	 AC_MSG_NOTICE([overrifing kernel source and build dirs with $withval])])
     AC_ARG_WITH(linux-build,
-	[AS_HELP_STRING([--with-linux-build=<dir>], [location of the Linux kernel build tree])],
-	LINUX_BUILD="$withval"; LINUX_GCC_VERSION="")
+	[AS_HELP_STRING([--with-linux-build=<dir>],
+	 [location of the Linux kernel build tree])],
+	[LINUX_BUILD="$withval"; LINUX_GCC_VERSION="";
+	 AC_MSG_NOTICE([overrifing kernel build dir with $withval])])
     AC_SUBST(LINUX_SRC)
     AC_SUBST(LINUX_BUILD)
 
