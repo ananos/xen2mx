@@ -27,7 +27,7 @@
 
 #define OMX_ZOMBIE_MAX_DEFAULT 512
 
-struct omx__globals omx__globals = { 0 };
+struct omx__globals omx__globals;
 volatile struct omx_driver_desc * omx__driver_desc = NULL;
 
 static int omx__lib_api = OMX_API;
@@ -39,6 +39,9 @@ omx__init_api(int app_api)
   omx_return_t ret;
   char *env;
   int err;
+
+  /* initialize all globals to 0 */
+  memset(&omx__globals, 0, sizeof(omx__globals));
 
   /**************************
    * Messaging configuration
