@@ -123,7 +123,12 @@ omx_status_code_from_mx(mx_status_code_t mxcode)
 
 #define omx_seg_ptr_from_mx(segp) ((struct omx_seg *) (void *) (segp))
 
-#define omx_endpoint_addr_from_mx(addr) (* (omx_endpoint_addr_t *) (void *) &(addr))
+union compat_endpoint_addr {
+  omx_endpoint_addr_t omx;
+  mx_endpoint_addr_t mx;
+} __attribute((may_alias));
+#define omx_endpoint_addr_from_mx(addr) (((union compat_endpoint_addr *) &(addr))->omx)
+
 #define omx_endpoint_addr_ptr_from_mx(addr) ((omx_endpoint_addr_t *) (void *) (addr))
 
 #define omx_request_ptr_from_mx(reqp) ((omx_request_t *) (void *) (reqp))
