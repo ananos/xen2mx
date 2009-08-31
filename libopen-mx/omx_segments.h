@@ -49,7 +49,7 @@ omx_cache_segments(struct omx__req_segs * reqsegs, const omx_seg_t * segs, uint3
     omx_cache_single_segment(reqsegs, segs[0].ptr, segs[0].len);
 
   } else {
-    int i;
+    unsigned i;
 
     if (nseg > OMX_MAX_SEGMENTS)
       /* the caller checks error codes */
@@ -139,9 +139,9 @@ omx_copy_from_to_segments(const struct omx__req_segs *dstsegs, const struct omx_
 
   } else {
     struct omx_cmd_user_segment * csseg = &srcsegs->segs[0];
-    int cssegoff = 0;
+    unsigned cssegoff = 0;
     struct omx_cmd_user_segment * cdseg = &dstsegs->segs[0];
-    int cdsegoff = 0;
+    unsigned cdsegoff = 0;
 
     while (length) {
       uint32_t chunk = length;

@@ -216,7 +216,7 @@ int main(int argc, char *argv[])
   int outfd;
   FILE *output;
   uint32_t max, count;
-  int found, i;
+  unsigned found, i;
   int c;
 
   while ((c = getopt(argc, argv, "vh")) != -1)

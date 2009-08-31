@@ -139,8 +139,8 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   int c;
 
-  int bid = BID;
-  int eid = EID;
+  unsigned bid = BID;
+  unsigned eid = EID;
   int rid = RID;
   int iter = ITER;
   int warmup = WARMUP;

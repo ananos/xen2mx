@@ -36,7 +36,7 @@ usage(int argc, char *argv[])
 }
 
 static int
-handle_one_board(int index)
+handle_one_board(unsigned index)
 {
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   uint32_t board_index = index;
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
   uint32_t max, emax, count;
   uint32_t status;
   uint64_t mapper_id;
-  int i;
+  unsigned i;
   int c;
 
   while ((c = getopt(argc, argv, "b:qvh")) != -1)

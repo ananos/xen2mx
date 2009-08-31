@@ -255,7 +255,7 @@ omx_return_t
 omx__peers_dump(const char * format)
 {
   omx_return_t ret;
-  int i;
+  unsigned i;
 
   for(i=0; i<omx__driver_desc->peer_max; i++) {
     char raw_hostname[OMX_HOSTNAMELEN_MAX];

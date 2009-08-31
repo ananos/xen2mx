@@ -150,7 +150,7 @@ omx__dump_partner_early_q(const struct omx__partner *partner)
 static void
 omx__dump_endpoint(struct omx_endpoint *ep)
 {
-  int i, count;
+  unsigned i, count;
 
   OMX__ENDPOINT_LOCK(ep);
 

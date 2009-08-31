@@ -427,8 +427,8 @@ omx__post_isend_mediumsq(struct omx_endpoint *ep,
   int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
   int frags_nr = req->send.specific.mediumsq.frags_nr;
   int frag_max = OMX_MEDIUM_FRAG_LENGTH_MAX;
+  unsigned i;
   int err;
-  int i;
 
   omx__debug_printf(ACK, ep, "piggy acking back to partner up to %d (#%d) at jiffies %lld\n",
 		    (unsigned int) OMX__SEQNUM(ack_upto - 1),
@@ -584,7 +584,7 @@ omx__alloc_setup_isend_mediumsq(struct omx_endpoint *ep,
   uint32_t length = req->generic.status.msg_length;
   int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
   int res = req->generic.missing_resources;
-  int frags_nr = req->send.specific.mediumsq.frags_nr;
+  unsigned frags_nr = req->send.specific.mediumsq.frags_nr;
 
   if (likely(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
     goto need_exp_events;

@@ -110,7 +110,8 @@ omx__get_board_index_by_name(const char * name, uint32_t * index)
 {
   omx_return_t ret = OMX_SUCCESS;
   uint32_t max = omx__driver_desc->board_max;
-  int err, i;
+  unsigned i;
+  int err;
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;
@@ -150,7 +151,8 @@ omx__get_board_index_by_addr(uint64_t addr, uint32_t * index)
 {
   omx_return_t ret = OMX_SUCCESS;
   uint32_t max = omx__driver_desc->board_max;
-  int err, i;
+  unsigned i;
+  int err;
 
   if (!omx__globals.initialized) {
     ret = OMX_NOT_INITIALIZED;

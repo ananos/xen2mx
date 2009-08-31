@@ -40,7 +40,8 @@ do_one_board(uint32_t board_index, uint32_t emax, int strict, int verbose)
   struct omx_cmd_get_endpoint_info get_endpoint_info;
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   omx_return_t ret;
-  int i, count, err;
+  int count, err;
+  unsigned i;
 
   /* get the board id */
   ret = omx__get_board_info(NULL, board_index, &board_info);
