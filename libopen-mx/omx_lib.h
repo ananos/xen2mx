@@ -82,9 +82,9 @@
 #else /* !OMX_LIB_DEBUG */
 
 #define INLINE inline
-#define omx__debug_assert(x) /* nothing */
-#define omx__debug_instr(x) /* nothing */
-#define omx__debug_printf(type, format, ...) /* nothing */
+#define omx__debug_assert(x) do { /* nothing */ } while (0)
+#define omx__debug_instr(x) do { /* nothing */ } while (0)
+#define omx__debug_printf(type, format, ...) do { /* nothing */ } while (0)
 
 #endif /* !OMX_LIB_DEBUG */
 
