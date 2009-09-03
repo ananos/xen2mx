@@ -1538,6 +1538,8 @@ If these shared/self communication are useless, the library overhead may be
 slightly reduced by disabling them either at build-time with --disable-self
 or --disable-shared, or at runtime by setting OMX_DISABLE_SELF=1 or
 OMX_DISABLE_SHARED=1 in the environment.
+Note that some MPI layers such as OpenMPI already set these environment
+variables by default.
 </p>
 <p>
 This is especially the case if there is a single process on each node and

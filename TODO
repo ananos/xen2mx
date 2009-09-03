@@ -1,6 +1,5 @@
-* clarify the FAQ about what you need in the env if using OpenMPI and friends
-  + OpenMPI enforces MX_DISABLE_SELF/SHMEM=1 and RCACHE=2
 * try to detect/prevent when OpenMPI is forcing MX_RCACHE to 2 while it should not for Open-MX?
+  + clarify the FAQ about RCACHE being forced even if unsafe
   + --mca mpi_leave_pinned 0 may help in the meantime
 * implement mx__regclean_clean for real so that ompi may use RCACHE=2
   + the regcache branch should make it point to the omx_regcache_clean routine
