@@ -537,6 +537,7 @@ struct omx__early_packet {
 struct omx__globals {
   int initialized;
   int control_fd;
+  int ignore_mx_env;
   int verbose;
   int verbdebug;
   int regcache;

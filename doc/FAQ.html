@@ -1926,6 +1926,10 @@ a compatibility layer which enables:
 This compatibility is enabled by default and has a very low overhead since
 it only involves going across basic conversion routines.
 </p>
+<p>
+Additionally, Open-MX also understands the MX-specific environment
+variables that matter here (unless <tt>OMX_IGNORE_MX_ENV=1</tt> is set).
+</p>
 
 
 <h4><a id="compat-api-abi-disable" href="#compat-api-abi-disable">
@@ -2450,6 +2454,14 @@ behavior at runtime, when starting a process:
   (or X if no endpoint is involved).
   If another string is given, it is used as a prefix after replacing
   %P, %E and %B if necessary.
+</dd>
+
+<dt>OMX_IGNORE_MX_ENV=1</dt>
+<dd>Ignore the environment variables of the native MX stack.
+  By default, several MX-specific variables such as <tt>MX_RCACHE</tt>
+  or <tt>MX_DISABLE_SELF</tt> are translated into Open-MX-specific
+  environment variables.
+  See <a href="#compat-api-abi">What MX-API and -ABI compatibility does Open-MX provide?</a>.
 </dd>
 
 </dl>

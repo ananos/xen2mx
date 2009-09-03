@@ -43,6 +43,14 @@ omx__init_api(int app_api)
   /* initialize all globals to 0 */
   memset(&omx__globals, 0, sizeof(omx__globals));
 
+  /******************************************
+   * First, do we want MX-env compatibility?
+   */
+
+  env = getenv("OMX_IGNORE_MX_ENV");
+  if (env)
+    omx__globals.ignore_mx_env = atoi(env);
+
   /**************************
    * Messaging configuration
    */
@@ -66,7 +74,7 @@ omx__init_api(int app_api)
 #endif
   env = getenv("OMX_VERBOSE");
 #ifdef OMX_MX_ABI_COMPAT
-  if (!env) {
+  if (!omx__globals.ignore_mx_env && !env) {
     env = getenv("MX_VERBOSE");
     if (env) {
       omx__printf(NULL, "Emulating MX_VERBOSE as OMX_VERBOSE\n");
@@ -199,7 +207,7 @@ omx__init_api(int app_api)
   omx__globals.fatal_errors = 1;
   env = getenv("OMX_FATAL_ERRORS");
 #ifdef OMX_MX_ABI_COMPAT
-  if (!env) {
+  if (!omx__globals.ignore_mx_env && !env) {
     env = getenv("MX_ERRORS_ARE_FATAL");
     if (env)
       omx__verbose_printf(NULL, "Emulating MX_ERRORS_ARE_FATAL as OMX_FATAL_ERRORS\n");
@@ -287,7 +295,7 @@ omx__init_comms(void)
   omx__globals.selfcomms = 1;
   env = getenv("OMX_DISABLE_SELF");
 #ifdef OMX_MX_ABI_COMPAT
-  if (!env) {
+  if (!omx__globals.ignore_mx_env && !env) {
     env = getenv("MX_DISABLE_SELF");
     if (env)
       omx__verbose_printf(NULL, "Emulating MX_DISABLE_SELF as OMX_DISABLE_SELF\n");
@@ -308,7 +316,7 @@ omx__init_comms(void)
   } else {
     env = getenv("OMX_DISABLE_SHARED");
 #ifdef OMX_MX_ABI_COMPAT
-    if (!env) {
+    if (!omx__globals.ignore_mx_env && !env) {
       env = getenv("MX_DISABLE_SHMEM");
       if (env)
 	omx__verbose_printf(NULL, "Emulating MX_DISABLE_SHMEM as OMX_DISABLE_SHARED\n");
@@ -358,7 +366,7 @@ omx__init_comms(void)
   omx__globals.req_resends_max = 1000;
   env = getenv("OMX_RESENDS_MAX");
 #ifdef OMX_MX_ABI_COMPAT
-  if (!env) {
+  if (!omx__globals.ignore_mx_env && !env) {
     env = getenv("MX_MAX_RETRIES");
     if (env)
       omx__verbose_printf(NULL, "Emulating MX_MAX_RETRIES as OMX_RESENDS_MAX\n");
@@ -373,7 +381,7 @@ omx__init_comms(void)
   omx__globals.zombie_max = OMX_ZOMBIE_MAX_DEFAULT;
   env = getenv("OMX_ZOMBIE_SEND");
 #ifdef OMX_MX_ABI_COMPAT
-  if (!env) {
+  if (!omx__globals.ignore_mx_env && !env) {
     env = getenv("MX_ZOMBIE_SEND");
     if (env)
       omx__verbose_printf(NULL, "Emulating MX_ZOMBIE_SEND as OMX_ZOMBIE_SEND\n");
@@ -389,7 +397,7 @@ omx__init_comms(void)
   omx__globals.not_acked_max = 4;
   env = getenv("OMX_NOTACKED_MAX");
 #ifdef OMX_MX_ABI_COMPAT
-  if (!env) {
+  if (!omx__globals.ignore_mx_env && !env) {
     env = getenv("MX_IMM_ACK");
     if (env)
       omx__verbose_printf(NULL, "Emulating MX_IMM_ACK as OMX_NOTACKED_MAX\n");
@@ -451,7 +459,7 @@ omx__init_comms(void)
   }
   env = getenv("OMX_RCACHE");
 #ifdef OMX_MX_ABI_COMPAT
-  if (!env) {
+  if (!omx__globals.ignore_mx_env && !env) {
     env = getenv("MX_RCACHE");
     if (env)
       omx__verbose_printf(NULL, "Emulating MX_RCACHE as OMX_RCACHE\n");
