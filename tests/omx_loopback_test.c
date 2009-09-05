@@ -80,27 +80,37 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 	      omx_strerror(ret));
       goto out;
     }
+   if (status.code != OMX_SUCCESS) {
+     fprintf(stderr, "Got invalid request status code (%s)\n",
+	     omx_strerror(status.code));
+     goto out;
+   }
   }
 
   /* wait for the first send to complete */
   ret = omx_wait(ep, &sreq[0], &status, &result, OMX_TIMEOUT_INFINITE);
   if (ret != OMX_SUCCESS || !result) {
     fprintf(stderr, "Failed to wait for completion (%s)\n",
-            omx_strerror(ret));
+	    omx_strerror(ret));
     goto out;
   }
+ if (status.code != OMX_SUCCESS) {
+   fprintf(stderr, "Got invalid request status code (%s)\n",
+	   omx_strerror(status.code));
+   goto out;
+ }
 
   /* use peek to wait for the sends to complete */
   for(i=1; i<parallel; i++) {
     ret = omx_peek(ep, &req, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to peek (%s)\n",
-              omx_strerror(ret));
+	      omx_strerror(ret));
       goto out;
     }
     if (req != sreq[i]) {
       fprintf(stderr, "Peek got request %p instead of %p\n",
-              req, sreq[i]);
+	      req, sreq[i]);
       ret = OMX_BAD_ERROR;
       goto out;
     }
@@ -108,7 +118,12 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     ret = omx_test(ep, &sreq[i], &status, &result);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait for completion (%s)\n",
-              omx_strerror(ret));
+	      omx_strerror(ret));
+      goto out;
+    }
+    if (status.code != OMX_SUCCESS) {
+      fprintf(stderr, "Got invalid request status code (%s)\n",
+	      omx_strerror(status.code));
       goto out;
     }
   }
@@ -267,7 +282,7 @@ int main(int argc, char *argv[])
       /* send a tiny message */
       ret = one_iteration(ep, addr, buffer, buffer2, LENGTH1, parallel, i);
       if (ret != OMX_SUCCESS)
-        goto out_with_ep;
+	goto out_with_ep;
     }
     gettimeofday(&tv2, NULL);
     printf("tiny (%d bytes) latency %lld us\n", 13,
@@ -278,7 +293,7 @@ int main(int argc, char *argv[])
       /* send a small message */
       ret = one_iteration(ep, addr, buffer, buffer2, LENGTH2, parallel, i);
       if (ret != OMX_SUCCESS)
-        goto out_with_ep;
+	goto out_with_ep;
     }
     gettimeofday(&tv2, NULL);
     printf("small (%d bytes) latency %lld us\n", 95,
@@ -289,7 +304,7 @@ int main(int argc, char *argv[])
       /* send a medium message */
       ret = one_iteration(ep, addr, buffer, buffer2, LENGTH3, parallel, i);
       if (ret != OMX_SUCCESS)
-        goto out_with_ep;
+	goto out_with_ep;
     }
     gettimeofday(&tv2, NULL);
     printf("medium (%d bytes) latency %lld us\n", 13274,
@@ -300,7 +315,7 @@ int main(int argc, char *argv[])
       /* send a large message */
       ret = one_iteration(ep, addr, buffer, buffer2, LENGTH4, parallel, i);
       if (ret != OMX_SUCCESS)
-        goto out_with_ep;
+	goto out_with_ep;
     }
     gettimeofday(&tv2, NULL);
     printf("large (%d bytes) latency %lld us\n", 9327485,
@@ -325,7 +340,7 @@ int main(int argc, char *argv[])
       /* send a large message */
       ret = one_iteration(ep, addr, buffer, buffer2, length, parallel, i);
       if (ret != OMX_SUCCESS)
-        goto out_with_ep;
+	goto out_with_ep;
     }
     gettimeofday(&tv2, NULL);
     printf("message (%d bytes) latency %lld us\n", length,
