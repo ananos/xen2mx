@@ -350,8 +350,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   }
 
   if (!omx_comms_initialized) {
-    omx__init_comms();
     omx__init_endpoint_list();
+    omx__init_comms();
     omx_comms_initialized = 1;
   }
 
