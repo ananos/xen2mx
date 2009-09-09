@@ -1495,6 +1495,14 @@ However, this configuration may be dangerous if the application frees
 the buffer in the meantime. Since Open-MX has no way to detect this
 for now, this registration cache should be used with caution.
 </p>
+<p>
+OpenMPI forces the registration cache to enabled by default
+because it is able to detect and support such dangerous events.
+If for some reason, you need to force the disabling of the Open-MX
+registration cache anyway, you may set <tt>OMX_RCACHE</tt> to 0
+in the environment, or pass <tt>--mca mpi_leave_pinned 0</tt>
+to the OpenMPI process launcher.
+</p>
 
 
 <h4><a id="perf-intrcoal" href="#perf-intrcoal">
