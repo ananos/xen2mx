@@ -896,5 +896,6 @@ mx__get_mapper_state(mx_endpt_handle_t handle, mx_mapper_state_t *p)
 int
 mx__regcache_clean(void *ptr, size_t len)
 {
+  omx__regcache_clean(ptr, len);
   return 0;
 }
