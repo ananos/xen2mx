@@ -444,6 +444,9 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       data_if_available = msg->specific.tiny.data;
     else if (msg->type == OMX_EVT_RECV_SMALL)
       data_if_available = data;
+    else if (msg->type == OMX_EVT_RECV_MEDIUM_FRAG
+	     && msg_length == msg->specific.medium_frag.frag_length)
+      data_if_available = data;
 
     omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_BY_API));
     omx__debug_assert(!(ep->progression_disabled & OMX_PROGRESSION_DISABLED_IN_HANDLER));
