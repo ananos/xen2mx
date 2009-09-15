@@ -495,7 +495,7 @@ union omx_request {
     union {
       struct {
 	uint32_t frags_received_mask;
-	uint32_t accumulated_length;
+	uint32_t accumulated_length; /* the actual received length, not the transfered one */
 	uint32_t scan_offset;
 	struct omx_segscan_state scan_state;
       } medium;
@@ -524,7 +524,7 @@ typedef void (*omx__process_recv_func_t) (struct omx_endpoint *ep,
 					  struct omx__partner *partner,
 					  union omx_request *req,
 					  const struct omx_evt_recv_msg *msg,
-					  const void *data, uint32_t msg_length);
+					  const void *data, uint32_t xfer_length);
 
 struct omx__early_packet {
   struct list_head partner_elt;

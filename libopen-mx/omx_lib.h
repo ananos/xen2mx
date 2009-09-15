@@ -417,31 +417,31 @@ extern void
 omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
 		       const struct omx_evt_recv_msg *msg,
-		       const void *data /* unused */, uint32_t msg_length);
+		       const void *data /* unused */, uint32_t xfer_length);
 
 extern void
 omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 			union omx_request *req,
 			const struct omx_evt_recv_msg *msg,
-			const void *data, uint32_t msg_length);
+			const void *data, uint32_t xfer_length);
 
 extern void
 omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *partner,
 			      union omx_request *req,
 			      const struct omx_evt_recv_msg *msg,
-			      const void *data, uint32_t msg_length);
+			      const void *data, uint32_t xfer_length);
 
 extern void
 omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
 		       const struct omx_evt_recv_msg *msg,
-		       const void *data /* unused */, uint32_t msg_length);
+		       const void *data /* unused */, uint32_t xfer_length);
 
 extern void
 omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
 			 union omx_request *req,
 			 const struct omx_evt_recv_msg *msg,
-			 const void *data /* unused */, uint32_t msg_length /* unused */);
+			 const void *data /* unused */, uint32_t xfer_length);
 
 extern void
 omx__process_pull_done(struct omx_endpoint * ep,

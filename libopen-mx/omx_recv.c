@@ -227,11 +227,11 @@ void
 omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
 		       const struct omx_evt_recv_msg *msg,
-		       const void *data /* unused */, uint32_t msg_length)
+		       const void *data /* unused */, uint32_t xfer_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
 
-  omx_copy_to_segments(&req->recv.segs, msg->specific.tiny.data, msg_length);
+  omx_copy_to_segments(&req->recv.segs, msg->specific.tiny.data, xfer_length);
 
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
     omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
@@ -246,11 +246,11 @@ void
 omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
 			union omx_request *req,
 			const struct omx_evt_recv_msg *msg,
-			const void *data, uint32_t msg_length)
+			const void *data, uint32_t xfer_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
 
-  omx_copy_to_segments(&req->recv.segs, data, msg_length);
+  omx_copy_to_segments(&req->recv.segs, data, xfer_length);
 
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
     omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
@@ -276,12 +276,14 @@ void
 omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *partner,
 			      union omx_request *req,
 			      const struct omx_evt_recv_msg *msg,
-			      const void *data, uint32_t msg_length)
+			      const void *data, uint32_t xfer_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
+  unsigned long msg_length = msg->specific.medium_frag.msg_length;
   unsigned long chunk = msg->specific.medium_frag.frag_length;
   unsigned long frag_seqnum = msg->specific.medium_frag.frag_seqnum;
   unsigned long offset = frag_seqnum * OMX_MEDIUM_FRAG_LENGTH_MAX;
+  unsigned long xfer_chunk;
   int new = (req->recv.specific.medium.frags_received_mask == 0);
 
   omx__debug_printf(MEDIUM, ep, "got a medium frag seqnum %d length %d offset %d of total %d\n",
@@ -312,16 +314,25 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     return;
   }
 
+  /* compute the actual chunk to copy */
+  if (likely(offset + chunk <= xfer_length))
+    xfer_chunk = chunk;
+  else if (offset <= xfer_length)
+    xfer_chunk = xfer_length - offset;
+  else
+    xfer_chunk = 0;
+
   /* take care of the data chunk */
   if (likely(req->recv.segs.nseg == 1))
-    memcpy(OMX_SEG_PTR(&req->recv.segs.single) + offset, data, chunk);
+    memcpy(OMX_SEG_PTR(&req->recv.segs.single) + offset, data, xfer_chunk);
   else
-    omx_partial_copy_to_segments(ep, &req->recv.segs, data, chunk,
+    omx_partial_copy_to_segments(ep, &req->recv.segs, data, xfer_chunk,
 				 offset, &req->recv.specific.medium.scan_state,
 				 &req->recv.specific.medium.scan_offset);
+
+  /* update and check the accumulated received length */
   req->recv.specific.medium.frags_received_mask |= 1 << frag_seqnum;
   req->recv.specific.medium.accumulated_length += chunk;
-
   if (likely(req->recv.specific.medium.accumulated_length == msg_length)) {
     /* was the last frag */
     omx__debug_printf(MEDIUM, ep, "got last frag of seqnum %d (#%d)\n",
@@ -368,7 +379,7 @@ void
 omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
 		       const struct omx_evt_recv_msg *msg,
-		       const void *data /* unused */, uint32_t msg_length)
+		       const void *data /* unused */, uint32_t xfer_length)
 {
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, msg->match_info);
   uint8_t rdma_id = msg->specific.rndv.pulled_rdma_id;
@@ -377,7 +388,7 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
 
   omx__debug_printf(LARGE, ep, "got a rndv req for rdma id %d seqnum %d offset %d length %d\n",
 		    (unsigned) rdma_id, (unsigned) rdma_seqnum, (unsigned) rdma_offset,
-		    (unsigned) msg_length);
+		    (unsigned) xfer_length);
 
   req->recv.specific.large.pulled_rdma_id = rdma_id;
   req->recv.specific.large.pulled_rdma_seqnum = rdma_seqnum;
@@ -545,6 +556,8 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
     req->generic.status.addr = source;
     req->generic.status.match_info = msg->match_info;
     req->generic.status.msg_length = msg_length;
+    /* set xfer_length as well since it is used when continue partial medium receive */
+    req->generic.status.xfer_length = msg_length;
 
     (*recv_func)(ep, partner, req, msg, data, msg_length);
 
@@ -612,7 +625,7 @@ omx__continue_partial_request(struct omx_endpoint *ep,
 #endif
       }
       omx__process_recv_medium_frag(ep, partner, req,
-				    msg, data, msg_length);
+				    msg, data, req->generic.status.xfer_length);
       omx__update_partner_next_frag_recv_seq(ep, partner);
       return;
 
@@ -642,7 +655,7 @@ omx__process_partner_ordered_recv(struct omx_endpoint *ep,
 
     if (unlikely(msg->type == OMX_EVT_RECV_NOTIFY)) {
       /* internal message, no matching to do, just a recv+seqnum to handle */
-      (*recv_func)(ep, partner, NULL, msg, NULL, 0);
+      (*recv_func)(ep, partner, NULL, msg, NULL, msg->specific.notify.length);
     } else {
       /* regular message, do the matching */
       ret = omx__try_match_next_recv(ep, partner, seqnum,

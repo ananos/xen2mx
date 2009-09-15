@@ -658,9 +658,8 @@ void
 omx__process_recv_notify(struct omx_endpoint *ep, struct omx__partner *partner,
 			 union omx_request *req /* ignored */,
 			 const struct omx_evt_recv_msg *msg,
-			 const void *data /* unused */, uint32_t msg_length /* unused */)
+			 const void *data /* unused */, uint32_t xfer_length)
 {
-  uint32_t xfer_length = msg->specific.notify.length;
   uint8_t region_id = msg->specific.notify.pulled_rdma_id;
   uint8_t region_seqnum = msg->specific.notify.pulled_rdma_seqnum;
   struct omx__large_region * region;
