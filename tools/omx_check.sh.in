@@ -200,6 +200,15 @@ if [ $domisc -eq 1 ] ; then
 	fi
 
 	echo
+	echo "**************"
+	echo "TEST truncated"
+	echo "**************"
+	${TESTS_DIR}/omx_truncated_test
+	if [ $? -ne 0 ] ; then
+	    echo "Failed" && exit 1
+	fi
+
+	echo
 	echo "*************"
 	echo "TEST wait_any"
 	echo "*************"
