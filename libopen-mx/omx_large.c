@@ -644,6 +644,7 @@ omx__submit_discarded_notify(struct omx_endpoint *ep, const struct omx__partner 
   fakereq->generic.partner = (struct omx__partner *) partner;
   fakereq->generic.type = OMX_REQUEST_TYPE_RECV_LARGE;
   fakereq->generic.state = OMX_REQUEST_STATE_ZOMBIE;
+  fakereq->generic.status.xfer_length = 0; /* nothing was transfered */
   fakereq->recv.specific.large.pulled_rdma_id = rdma_id;
   fakereq->recv.specific.large.pulled_rdma_seqnum = rdma_seqnum;
   fakereq->recv.specific.large.pulled_rdma_offset = rdma_offset;
