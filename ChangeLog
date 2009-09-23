@@ -31,8 +31,8 @@ Caveats:
   does not invoke an Open-MX routine explicitly.
 
 
-Open-MX 1.1.1 (August 3rd 2009, svn r2693)
-==========================================
+Open-MX 1.1.1 (August 3rd 2009, svn/open-mx-1.1.x r2693)
+========================================================
 The multirail release.
 
 Bug fixes:
