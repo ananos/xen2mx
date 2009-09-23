@@ -3,10 +3,11 @@ Copyright © INRIA 2007-2009 (see AUTHORS file)
 
 The development of this software has been funded by Myricom, Inc.
 
-All the code is GPL licensed, except the code under libopen-mx/ and the
-corresponding header file common/open-mx.h, and the myriexpress.h, mx_raw.h
-and mx_extensions.h header files under common/mx/ subdirectories, which are
-LGPL licensed.
+Most of the code is GPL licensed. Exceptions are:
+* the code under libopen-mx/ and the corresponding header file common/open-mx.h,
+  and the myriexpress.h, mx_raw.h and mx_extensions.h header files under common/mx/
+  subdirectories, which are LGPL licensed.
+* libopen-mx/dlmalloc.[ch] are public domain.
 Each source code file contains a header that describes the license for
 the code in that specific file.
 
