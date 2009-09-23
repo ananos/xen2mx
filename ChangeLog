@@ -1,5 +1,5 @@
-Open-MX 1.1.901 ()
-==========================================
+Open-MX 1.1.901 aka 1.1-rc1 (September 23rd 2009, svn r2757)
+============================================================
 The OpenMPI regcache release.
 
 Major improvements from previous release:
@@ -29,7 +29,6 @@ Other improvements from previous release:
 Caveats:
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
-
 
 Open-MX 1.1.1 (August 3rd 2009, svn/open-mx-1.1.x r2693)
 ========================================================
