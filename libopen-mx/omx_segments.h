@@ -55,7 +55,7 @@ omx_cache_segments(struct omx__req_segs * reqsegs, const omx_seg_t * segs, uint3
       /* the caller checks error codes */
       return OMX_SEGMENTS_BAD_COUNT;
 
-    reqsegs->segs = malloc(nseg * sizeof(struct omx_cmd_user_segment));
+    reqsegs->segs = omx_malloc(nseg * sizeof(struct omx_cmd_user_segment));
     if (!reqsegs->segs)
       /* the caller checks error codes */
       return OMX_NO_RESOURCES;
@@ -76,7 +76,7 @@ static inline void
 omx_free_segments(struct omx__req_segs * reqsegs)
 {
   if (unlikely(reqsegs->nseg > 1))
-    free(reqsegs->segs);
+    omx_free(reqsegs->segs);
 }
 
 static inline void

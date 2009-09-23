@@ -50,7 +50,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
 
   switch (req->generic.type) {
   case OMX_REQUEST_TYPE_SEND_SMALL:
-    free(req->send.specific.small.copy);
+    omx_free(req->send.specific.small.copy);
     break;
   case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
     omx__endpoint_sendq_map_put(ep, req->send.specific.mediumsq.frags_nr, req->send.specific.mediumsq.sendq_map_index);
@@ -960,7 +960,7 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   if (likely(length <= OMX_TINY_MSG_LENGTH_MAX)) {
     omx__submit_isend_tiny(ep, partner, req);
   } else if (length <= OMX_SMALL_MSG_LENGTH_MAX) {
-    void *copy = malloc(length);
+    void *copy = omx_malloc(length);
     if (unlikely(!copy))
       return omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating isend small copy buffer");
     req->send.specific.small.copy = copy;

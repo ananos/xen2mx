@@ -230,7 +230,7 @@ omx__init_api(int app_api)
  out_with_fd:
   close(omx__globals.control_fd);
  out_with_message_prefix:
-  free(omx__globals.message_prefix);
+  omx_free(omx__globals.message_prefix);
   return ret;
 }
 
@@ -526,7 +526,7 @@ omx_finalize(void)
   /* FIXME: check that no endpoint is still open */
 
   close(omx__globals.control_fd);
-  free(omx__globals.message_prefix);
+  omx_free(omx__globals.message_prefix);
   omx__globals.initialized = 0;
   return OMX_SUCCESS;
 }

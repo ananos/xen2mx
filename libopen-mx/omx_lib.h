@@ -19,9 +19,9 @@
 #ifndef __omx_lib_h__
 #define __omx_lib_h__
 
-#ifdef OMX_LIB_DEBUG
-#define MALLOC_CHECK_ 3
-#endif
+#define omx_malloc malloc
+#define omx_calloc calloc
+#define omx_free free
 
 #include <stdio.h>
 #include <unistd.h>

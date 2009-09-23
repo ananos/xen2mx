@@ -149,7 +149,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
     /* obsolete early ? ignore */
     return;
 
-  early = malloc(sizeof(*early));
+  early = omx_malloc(sizeof(*early));
   if (unlikely(!early))
     /* cannot store early? just drop, it will be resent */
     return;
@@ -171,9 +171,9 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
 
   case OMX_EVT_RECV_SMALL: {
     uint16_t length = msg->specific.small.length;
-    char * early_data = malloc(length);
+    char * early_data = omx_malloc(length);
     if (!early_data) {
-      free(early);
+      omx_free(early);
       /* cannot store early? just drop, it will be resent */
       return;
     }
@@ -185,9 +185,9 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
 
   case OMX_EVT_RECV_MEDIUM_FRAG: {
     uint16_t frag_length = msg->specific.medium_frag.frag_length;
-    char * early_data = malloc(frag_length);
+    char * early_data = omx_malloc(frag_length);
     if (unlikely(!early_data)) {
-      free(early);
+      omx_free(early);
       /* cannot store early? just drop, it will be resent */
       return;
     }
@@ -539,7 +539,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       void *unexp_buffer = NULL;
 
       if (msg_length) {
-	unexp_buffer = malloc(msg_length);
+	unexp_buffer = omx_malloc(msg_length);
 	if (unlikely(!unexp_buffer)) {
 	  omx__printf(ep, "Failed to allocate buffer for unexpected messages, dropping\n");
 	  omx__request_free(ep, req);
@@ -762,8 +762,8 @@ omx__process_recv(struct omx_endpoint *ep,
 						  early->recv_func);
 	  /* ignore errors, the packet will be resent anyway, the recv seqnums didn't increase */
 
-	  free(early->data);
-	  free(early);
+	  omx_free(early->data);
+	  omx_free(early);
 	}
       }
     }
@@ -911,7 +911,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     }
 
     if (msg_length) {
-      unexp_buffer = malloc(msg_length);
+      unexp_buffer = omx_malloc(msg_length);
       if (unlikely(!unexp_buffer)) {
 	omx__request_free(ep, rreq);
 	status_code = omx__error_with_ep(ep, OMX_NO_RESOURCES,
@@ -1070,7 +1070,7 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
 
     omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length);
     if (msg_length)
-      free(unexp_buffer);
+      omx_free(unexp_buffer);
     omx__recv_complete(ep, req, status_code);
 
     omx__debug_assert(sreq->generic.state & OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND);
@@ -1090,7 +1090,7 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
 
     omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length); /* FIXME: could just copy what has been received */
     if (msg_length)
-      free(unexp_buffer);
+      omx_free(unexp_buffer);
 
     if (unlikely(req->generic.state)) {
       omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);

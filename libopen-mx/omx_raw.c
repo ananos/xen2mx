@@ -61,7 +61,7 @@ omx_raw_open_endpoint(uint32_t board_number,
     return ret;
   }
 
-  ep = malloc(sizeof(*ep));
+  ep = omx_malloc(sizeof(*ep));
   if (!ep)
     return OMX_NO_RESOURCES;
 
@@ -76,7 +76,7 @@ omx_return_t
 omx_raw_close_endpoint(struct omx_raw_endpoint * endpoint)
 {
   close(endpoint->fd);
-  free(endpoint);
+  omx_free(endpoint);
   return OMX_SUCCESS;
 }
 

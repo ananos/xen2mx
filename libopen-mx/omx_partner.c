@@ -145,7 +145,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   struct omx__partner * partner;
   uint32_t partner_index;
 
-  partner = malloc(sizeof(*partner));
+  partner = omx_malloc(sizeof(*partner));
   if (unlikely(!partner))
     /* let the caller handle the error if retransmission cannot recover this */
     return OMX_NO_RESOURCES;
@@ -898,8 +898,8 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     omx___dequeue_partner_early_packet(early);
     omx__debug_printf(CONNECT, ep, "Dropping early fragment %p\n", early);
 
-    free(early->data);
-    free(early);
+    omx_free(early->data);
+    omx_free(early);
     count++;
   }
   if (count)
@@ -921,7 +921,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     if (req->generic.type != OMX_REQUEST_TYPE_RECV_LARGE
 	&& req->generic.status.msg_length > 0)
       /* release the single segment used for unexp buffer */
-      free(OMX_SEG_PTR(&req->recv.segs.single));
+      omx_free(OMX_SEG_PTR(&req->recv.segs.single));
     omx__request_free(ep, req);
 
     count++;
@@ -954,7 +954,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
       uint32_t partner_index = ((uint32_t) partner->endpoint_index)
 				+ ((uint32_t) partner->peer_index) * omx__driver_desc->endpoint_max;
       ep->partners[partner_index] = NULL;
-      free(partner);
+      omx_free(partner);
     }
   }
 }
