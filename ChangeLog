@@ -1,3 +1,36 @@
+Open-MX 1.1.901 ()
+==========================================
+The OpenMPI regcache release.
+
+Major improvements from previous release:
+* Implement mx__regcache_clean() properly so that OpenMPI forcing
+  MX_RCACHE=2 does not cause data corruption.
+* Use dlmalloc internally so that OpenMPI cannot cause deadlock by
+  trying to cleanup the regcache when it intercept Open-MX internal
+  allocations.
+
+Bug fixes:
+* Fix the truncating of medium messages on the receive side so as to
+  not write outside of the receive buffer.
+* Fix the transferred length reported on the sender when discarding
+  a large message in the unexpected handler.
+* Fix some potential aliasing problems in the library.
+
+Other improvements from previous release:
+* Pass the medium message data to the unexpected handler when a single
+  fragment is used, as MX does.
+* Report information about all boards by default in omx_counters and
+  omx_endpoint_info.
+* Add OMX_IGNORE_MX_ENV environment variable to disable MX environment
+  variables.
+* Improve kernel detection and configuration messages.
+* Misc coding-style, tools and documentation improvements.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
+
 Open-MX 1.1.1 (August 3rd 2009, svn r2693)
 ==========================================
 The multirail release.
@@ -21,10 +54,6 @@ Bug fixes:
 * Fix the periodical checking of the driver status in the library.
 * Fix MTU reporting in the driver status.
 * A couple other minor improvements.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.1.0 (April 27th 2009, svn r2576)
 ==========================================
