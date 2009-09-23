@@ -76,6 +76,7 @@ omx_return_t
 omx_raw_close_endpoint(struct omx_raw_endpoint * endpoint)
 {
   close(endpoint->fd);
+  free(endpoint);
   return OMX_SUCCESS;
 }
 
