@@ -19,11 +19,17 @@
 #ifndef __omx_lib_h__
 #define __omx_lib_h__
 
+#if OMX_LIB_DLMALLOC
 #define USE_DL_PREFIX 1
 #include "dlmalloc.h"
 #define omx_malloc dlmalloc
 #define omx_calloc dlcalloc
 #define omx_free dlfree
+#else /* !OMX_LIB_DLMALLOC */
+#define omx_malloc malloc
+#define omx_calloc calloc
+#define omx_free free
+#endif /* !OMX_LIB_DLMALLOC */
 
 #include <stdio.h>
 #include <unistd.h>

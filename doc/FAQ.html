@@ -2045,6 +2045,17 @@ The following options may be passed to the configure command line before buildin
   See also <a href="#running-thread">Is Open-MX thread-safe?</a>.
 </dd>
 
+<dt>--disable-internal-malloc</dt>
+<dd>Disable the internal malloc implementation in the user-space library.
+  Open-MX has to use its own malloc implementation to prevent Open MPI
+  from intercepting it (for regcache purpose) and causing some possible
+  deadlocks. Although this internal implementation should not cause any
+  problem or overhead, it is possible to disable it and revert to the
+  default malloc implementation. However, this should only be considered
+  when the user is sure that nobody is going to intercept malloc in
+  the process (as many MPI layers do).
+</dd>
+
 <dt>--enable-valgrind</dt>
 <dd>Enable Valgrind hooks in the non-debugging library.
   By default, Valgrind hooks are only enabled in the debugging library.

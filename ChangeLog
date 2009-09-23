@@ -7,7 +7,7 @@ Major improvements from previous release:
   MX_RCACHE=2 does not cause data corruption.
 * Use dlmalloc internally so that OpenMPI cannot cause deadlock by
   trying to cleanup the regcache when it intercept Open-MX internal
-  allocations.
+  allocations. --disable-internal-malloc may disable it.
 
 Bug fixes:
 * Fix the truncating of medium messages on the receive side so as to

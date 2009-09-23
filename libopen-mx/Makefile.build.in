@@ -35,12 +35,16 @@ STATIC_CFLAGS	+=
 DYNAMIC_CFLAGS	+=	-fpic
 
 ALL_SRCS	=	$(wildcard @abs_srcdir@/*.c)
+IGNORED_SRCS	=	
 ifeq (@OMX_MX_ABI_COMPAT@,1)
-  SRCS	=	$(ALL_SRCS)
   DYNAMIC_LDFLAGS += -Wl,--version-script,$(abs_srcdir)/omx__mx_lib.version
 else
-  SRCS	=	$(filter-out @abs_srcdir@/omx__mx_%compat.c,$(ALL_SRCS))
+  IGNORED_SRCS	+=	@abs_srcdir@/omx__mx_%compat.c
 endif
+ifeq (@OMX_LIB_DLMALLOC@,0)
+  IGNORED_SRCS	+=	@abs_srcdir@/dlmalloc.c
+endif
+SRCS	=	$(filter-out $(IGNORED_SRCS),$(ALL_SRCS))
 
 STATIC_OBJS	=	$(patsubst @abs_srcdir@/%.c,%.o,$(SRCS))
 STATIC_LIB_OBJS	=	$(STATIC_OBJS)

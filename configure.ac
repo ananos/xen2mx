@@ -580,6 +580,19 @@ else
   AC_MSG_RESULT(no)
 fi
 
+AC_ARG_ENABLE(internal-malloc,
+	[AS_HELP_STRING([--disable-internal-malloc], [use the regular malloc instead of a custom internal dlmalloc if there is no risky symbol interception])],
+	enable_internal_malloc=$enableval, enable_internal_malloc=yes)
+AC_MSG_CHECKING(if the library uses its own internal malloc)
+if test x$enable_internal_malloc = xyes; then
+  AC_MSG_RESULT(yes)
+  AC_DEFINE(OMX_LIB_DLMALLOC, 1, [Define to enable the internal dlmalloc])
+  AC_SUBST(OMX_LIB_DLMALLOC, 1)
+else
+  AC_MSG_RESULT(no)
+  AC_SUBST(OMX_LIB_DLMALLOC, 0)
+fi
+
 AC_ARG_ENABLE(dynamic-tools,
 	[AS_HELP_STRING([--enable-dynamic-tools], [links tools and tests dynamically])],
 	enable_dynamic_tools=$enableval, enable_dynamic_tools=no)
