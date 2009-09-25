@@ -34,6 +34,8 @@
 #include "omx_lib.h"
 #include "omx_raw.h"
 
+#define MXOED_LOGFILE "/var/log/omxoed.log"
+
 #define MXOED_DEBUG 0
 
 #define MAX_PEERS 8192
@@ -420,6 +422,8 @@ main(
 {
   srandom((unsigned int)time(NULL));
   setlinebuf(stdout);
+  if (!freopen(MXOED_LOGFILE, "w", stderr))
+    fprintf(stderr, "%s: Failed to open " MXOED_LOGFILE ", sending errors to stderr.\n", argv[0]);
   setlinebuf(stderr);
 
   /* init mx */
