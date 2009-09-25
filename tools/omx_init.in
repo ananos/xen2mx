@@ -248,7 +248,7 @@ start_peer_discovery() {
 	[ "${OMX_PEER_DISCOVERY}" = "fma" ] && oldfmapid=$(cat "$FMS_RUN/fma.pid" 2>/dev/null || true)
 
 	echo "Starting the dynamic peer discovery (${OMX_PEER_DISCOVERY} ${discover_params})"
-	${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ${discover_params} &
+	${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ${discover_params} >/dev/null 2>&1 &
 	pid=$!
 
 	# wait a bit for the process to start (and maybe fail)
