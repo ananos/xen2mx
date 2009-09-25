@@ -197,6 +197,9 @@
 <li><a href="#peerdiscovery-raw">
   What is the raw interface and how do I use it?
 </a></li>
+<li><a href="#peerdiscovery-failed">
+  What does the message "Discovery exited early" mean?
+</a></li>
 </ul>
 
 <p><a href="#perf">
@@ -1383,6 +1386,25 @@ Unless you have a very good reason to not use the existing peer discovery
 programs or a static peer table, you really do not want to look at the raw
 interface.
 The regular message-passing interface should provide everything you need.
+</p>
+
+
+<h4><a id="peerdiscovery-failed" href="#peerdiscovery-failed">
+  What does the message "Discovery exited early" mean?
+</a></h4>
+<p>
+If the peer discovery program fails during startup for some reason,
+omx_init with issue the error message:
+</p>
+<pre>
+Starting the dynamic peer discovery (omxoed )
+Discovery exited early
+</pre>
+<p>
+The problem is usually explained in the log, either in <tt>/var/log/omxoed.log</tt>
+or <tt>/var/run/fms/fma.log</tt> (depending on the peer-discovery program that you use).
+A common reason for such a failure is when no interface was attached to Open-MX.
+<tt>/var/log/omxoed.log</tt> will report <tt>No NICs found</tt> in this case.
 </p>
 
 
