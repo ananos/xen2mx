@@ -1,3 +1,14 @@
+Open-MX 1.1.902 aka 1.2-rc2 ()
+============================================================
+
+Bug fixes:
+* Redirect omxoed errors to /var/log/omxoed.log so that we can
+  avoid hangs when running omx_init through ssh.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.1.901 aka 1.2-rc1 (September 23rd 2009, svn r2757)
 ============================================================
 The OpenMPI regcache release.
@@ -25,10 +36,6 @@ Other improvements from previous release:
   variables.
 * Improve kernel detection and configuration messages.
 * Misc coding-style, tools and documentation improvements.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.1.1 (August 3rd 2009, svn/open-mx-1.1.x r2693)
 ========================================================
