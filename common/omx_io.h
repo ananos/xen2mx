@@ -862,7 +862,7 @@ union omx_evt {
 				/* 40 */
 			} notify;
 
-			/* 40 */;
+			/* 40 */
 		} specific;
 		/* 56 */
 		uint8_t pad3[7];
