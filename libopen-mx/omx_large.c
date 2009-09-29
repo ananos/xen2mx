@@ -413,11 +413,48 @@ omx__segments_intersect(unsigned long begin1, unsigned long end1,
   return min_end > max_begin;
 }
 
+struct omx_regcache_clean_segment {
+  unsigned long begin, end;
+};  
+
+static void
+omx__endpoint_regcache_clean(struct omx_endpoint *ep, void *data)
+{
+  struct omx__large_region *region, *next;
+  struct omx_regcache_clean_segment *inval_seg = (void *)data;
+
+  OMX__ENDPOINT_LOCK(ep);
+  list_for_each_entry_safe(region, next, &ep->reg_list, reg_elt) {
+    unsigned long reg_begin = region->segs.single.vaddr;
+    unsigned long reg_end = reg_begin + region->segs.single.len;
+
+    /* If the invalidated segment intersects the region segment */
+    if (omx__segments_intersect(inval_seg->begin, inval_seg->end, reg_begin, reg_end)) {
+
+      if (region->use_count)
+	/* Invalidating a region that's being used is an application bug */
+	omx__abort(ep, "Application is freeing segment [%lx:%lx] under use by region %d segment [%lx:%lx]\n",
+		   inval_seg->begin, inval_seg->end,
+		   (unsigned) region->id,
+		   reg_begin, reg_end);
+
+      omx__verbose_printf(ep, "cleaning regcache [0x%lx:0x%lx] for region #%d segment [0x%lx:0x%lx]\n",
+			  inval_seg->begin, inval_seg->end,
+			  (unsigned) region->id,
+			  reg_begin, reg_end);
+      list_del(&region->reg_unused_elt);
+      omx__destroy_region(ep, region);
+    }
+  }
+  OMX__ENDPOINT_UNLOCK(ep);
+}
+
 void
 omx__regcache_clean(void *ptr, size_t size)
 {
-  unsigned long inval_begin = (uintptr_t) ptr;
-  unsigned long inval_end = inval_begin + size;
+  struct omx_regcache_clean_segment inval_seg;
+  inval_seg.begin = (uintptr_t) ptr;
+  inval_seg.end = inval_seg.begin + size;
 
   /*
    * don't bother trying to clean anything if regcache is disabled,
@@ -426,36 +463,7 @@ omx__regcache_clean(void *ptr, size_t size)
   if (!omx__globals.regcache)
     return;
 
-  void omx__endpoint_regcache_clean(struct omx_endpoint *ep, void *data) {
-    struct omx__large_region *region, *next;
-
-    OMX__ENDPOINT_LOCK(ep);
-    list_for_each_entry_safe(region, next, &ep->reg_list, reg_elt) {
-      unsigned long reg_begin = region->segs.single.vaddr;
-      unsigned long reg_end = reg_begin + region->segs.single.len;
-
-      /* If the invalidated segment intersects the region segment */
-      if (omx__segments_intersect(inval_begin, inval_end, reg_begin, reg_end)) {
-
-	if (region->use_count)
-	  /* Invalidating a region that's being used is an application bug */
-	  omx__abort(ep, "Application is freeing segment [%lx:%lx] under use by region %d segment [%lx:%lx]\n",
-		     inval_begin, inval_end,
-		     (unsigned) region->id,
-		     reg_begin, reg_end);
-
-	omx__verbose_printf(ep, "cleaning regcache [0x%lx:0x%lx] for region #%d segment [0x%lx:0x%lx]\n",
-			    inval_begin, inval_end,
-			    (unsigned) region->id,
-			    reg_begin, reg_end);
-	list_del(&region->reg_unused_elt);
-        omx__destroy_region(ep, region);
-      }
-    }
-    OMX__ENDPOINT_UNLOCK(ep);
-  }
-
-  omx__foreach_endpoint(omx__endpoint_regcache_clean, NULL);
+  omx__foreach_endpoint(omx__endpoint_regcache_clean, &inval_seg);
 }
 
 /***************************
