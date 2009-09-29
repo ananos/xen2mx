@@ -106,13 +106,13 @@ typedef uint16_t omx__seqnum_t;
 enum omx__partner_localization {
   OMX__PARTNER_LOCALIZATION_LOCAL,
   OMX__PARTNER_LOCALIZATION_REMOTE,
-  OMX__PARTNER_LOCALIZATION_UNKNOWN,
+  OMX__PARTNER_LOCALIZATION_UNKNOWN
 };
 
 enum omx__partner_need_ack {
   OMX__PARTNER_NEED_NO_ACK,
   OMX__PARTNER_NEED_ACK_DELAYED,
-  OMX__PARTNER_NEED_ACK_IMMEDIATE,
+  OMX__PARTNER_NEED_ACK_IMMEDIATE
 };
 
 struct omx__partner {
@@ -222,7 +222,7 @@ enum omx__request_resource {
   /* pull requests need kernel handle */
   OMX_REQUEST_RESOURCE_PULL_HANDLE = (1<<3),
   /* mediumsq send requests need sendq slots */
-  OMX_REQUEST_RESOURCE_SENDQ_SLOT = (1<<4),
+  OMX_REQUEST_RESOURCE_SENDQ_SLOT = (1<<4)
 };
 
 #define OMX_REQUEST_SEND_MEDIUMSQ_RESOURCES (OMX_REQUEST_RESOURCE_EXP_EVENT | OMX_REQUEST_RESOURCE_SENDQ_SLOT)
@@ -350,7 +350,7 @@ enum omx__request_type {
   OMX_REQUEST_TYPE_RECV,
   OMX_REQUEST_TYPE_RECV_LARGE,
   OMX_REQUEST_TYPE_SEND_SELF,
-  OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED,
+  OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED
 };
 
 /* Request states and queueing:
@@ -424,7 +424,7 @@ enum omx__request_state {
   /* request has been completed by the application and should not be notified when done for real (including acked) */
   OMX_REQUEST_STATE_ZOMBIE = (1<<11),
   /* request is internal, should not be queued in the doneq for peek/test_any */
-  OMX_REQUEST_STATE_INTERNAL = (1<<12),
+  OMX_REQUEST_STATE_INTERNAL = (1<<12)
 };
 
 struct omx__generic_request {
@@ -577,7 +577,7 @@ enum omx__internal_return_code {
   OMX_INTERNAL_UNEXPECTED_ERRNO,
   OMX_INTERNAL_MISC_ENODEV,
   OMX_INTERNAL_MISC_EINVAL,
-  OMX_INTERNAL_MISC_EFAULT,
+  OMX_INTERNAL_MISC_EFAULT
 };
 
 #endif /* __omx_types_h__ */

@@ -969,7 +969,7 @@ enum omx_counter_index {
 	OMX_COUNTER_SHARED_DMA_LARGE,
 	OMX_COUNTER_SHARED_DMA_PARTIAL_LARGE,
 
-	OMX_COUNTER_INDEX_MAX,
+	OMX_COUNTER_INDEX_MAX
 };
 
 static inline __pure const char *

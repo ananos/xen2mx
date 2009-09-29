@@ -83,7 +83,7 @@ enum omx_return {
   OMX_NO_SYSTEM_RESOURCES = 97,
 
   OMX_NOT_IMPLEMENTED = 99,
-  OMX_RETURN_CODE_MAX = 100,
+  OMX_RETURN_CODE_MAX = 100
 };
 typedef enum omx_return omx_return_t;
 
@@ -132,7 +132,7 @@ enum omx_endpoint_param_key
 {
   OMX_ENDPOINT_PARAM_ERROR_HANDLER = 0,
   OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX = 1,
-  OMX_ENDPOINT_PARAM_CONTEXT_ID = 2,
+  OMX_ENDPOINT_PARAM_CONTEXT_ID = 2
 };
 typedef enum omx_endpoint_param_key omx_endpoint_param_key_t;
 
@@ -336,7 +336,7 @@ enum omx_info_key {
   /* returns the values of all counters */
   OMX_INFO_COUNTER_VALUES,
   /* returns the label of a counter */
-  OMX_INFO_COUNTER_LABEL,
+  OMX_INFO_COUNTER_LABEL
 };
 typedef enum omx_info_key omx_info_key_t;
 

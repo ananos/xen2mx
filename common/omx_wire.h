@@ -145,7 +145,7 @@ enum omx_pkt_type {
 	OMX_PKT_TYPE_NACK_LIB,
 	OMX_PKT_TYPE_NACK_MCP,
 
-	OMX_PKT_TYPE_MAX=255,
+	OMX_PKT_TYPE_MAX=255
 };
 
 typedef uint8_t omx_packet_type_t; /* don't use enum since it may end-up being stored on 32bits unless -fshort-enums is passed */
@@ -207,7 +207,7 @@ enum omx_nack_type {
 	OMX_NACK_TYPE_ENDPT_CLOSED,
 	OMX_NACK_TYPE_BAD_SESSION,
 	OMX_NACK_TYPE_BAD_RDMAWIN,
-	OMX_NACK_TYPE_MAX,
+	OMX_NACK_TYPE_MAX
 };
 
 static inline __pure const char*
@@ -295,7 +295,7 @@ struct omx_pkt_truc {
 #define OMX_PKT_TRUC_LIBACK_DATA_LENGTH sizeof(struct omx_pkt_truc_liback_data)
 
 enum omx_pkt_truc_data_type {
-	OMX_PKT_TRUC_DATA_TYPE_ACK = 0x55,
+	OMX_PKT_TRUC_DATA_TYPE_ACK = 0x55
 };
 
 struct omx_pkt_connect { /* MX's pkt_connect + MX's lib connect_data */
@@ -344,7 +344,7 @@ struct omx_pkt_connect { /* MX's pkt_connect + MX's lib connect_data */
 
 enum omx_pkt_connect_status_code {
   OMX_PKT_CONNECT_STATUS_SUCCESS = 0,
-  OMX_PKT_CONNECT_STATUS_BAD_KEY = 11, /* enforced by wire compatibility */
+  OMX_PKT_CONNECT_STATUS_BAD_KEY = 11 /* enforced by wire compatibility */
 };
 
 struct omx_pkt_msg {
