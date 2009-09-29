@@ -81,13 +81,13 @@ omx__remove_endpoint_from_list(struct omx_endpoint *endpoint)
 }
 
 void
-omx__foreach_endpoint(void (*func)(struct omx_endpoint *))
+omx__foreach_endpoint(void (*func)(struct omx_endpoint *, void *), void *data)
 {
   struct omx_endpoint *current;
 
   omx__lock(&omx_endpoints_list_lock);
   list_for_each_entry(current, &omx_endpoints_list, omx_endpoints_list_elt)
-    func(current);
+    func(current, data);
   omx__unlock(&omx_endpoints_list_lock);
 }
 

@@ -426,7 +426,7 @@ omx__regcache_clean(void *ptr, size_t size)
   if (!omx__globals.regcache)
     return;
 
-  void omx__endpoint_regcache_clean(struct omx_endpoint *ep) {
+  void omx__endpoint_regcache_clean(struct omx_endpoint *ep, void *data) {
     struct omx__large_region *region, *next;
 
     OMX__ENDPOINT_LOCK(ep);
@@ -455,7 +455,7 @@ omx__regcache_clean(void *ptr, size_t size)
     OMX__ENDPOINT_UNLOCK(ep);
   }
 
-  omx__foreach_endpoint(omx__endpoint_regcache_clean);
+  omx__foreach_endpoint(omx__endpoint_regcache_clean, NULL);
 }
 
 /***************************

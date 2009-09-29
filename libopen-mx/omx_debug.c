@@ -148,7 +148,7 @@ omx__dump_partner_early_q(const struct omx__partner *partner)
 }
 
 static void
-omx__dump_endpoint(struct omx_endpoint *ep)
+omx__dump_endpoint(struct omx_endpoint *ep, void *data)
 {
   unsigned i, count;
 
@@ -215,7 +215,7 @@ omx__dump_endpoint(struct omx_endpoint *ep)
 static void
 omx__debug_signal_handler(int signum)
 {
-  omx__foreach_endpoint(omx__dump_endpoint);
+  omx__foreach_endpoint(omx__dump_endpoint, NULL);
 }
 
 void

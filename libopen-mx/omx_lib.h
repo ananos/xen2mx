@@ -655,7 +655,7 @@ extern __malloc char *
 omx__create_message_prefix(const struct omx_endpoint *ep);
 
 extern void
-omx__foreach_endpoint(void (*func)(struct omx_endpoint *));
+omx__foreach_endpoint(void (*func)(struct omx_endpoint *, void *), void *);
 
 #define OMX_PROCESS_BINDING_FILE "/tmp/open-mx.bindings.dat"
 #define OMX_PROCESS_BINDING_LENGTH_MAX 128
