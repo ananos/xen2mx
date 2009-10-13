@@ -6,6 +6,7 @@ Bug fixes:
   avoid hangs when running omx_init through ssh.
 * Fix build with the intel compiler icc.
 * Fix build with against 2.6.32 kernels.
+* Fix the management of the medium message fragment size.
 
 Caveats:
 * No background progression or retransmission is done if the application

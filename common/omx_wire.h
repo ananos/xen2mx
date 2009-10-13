@@ -19,6 +19,9 @@
 #ifndef __omx_wire_h__
 #define __omx_wire_h__
 
+/* bring enforced wire config */
+#include "omx_config.h"
+
 /* bring __pure and friends */
 #include "omx_hal.h"
 
@@ -104,13 +107,13 @@
 #define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT (	\
   OMX_MEDIUM_FRAG_LENGTH_MAX <= 1024		\
     ? 10					\
-    : OMX_MEDIUM_FRAG_LENGTH_MAX <= 2048	\
+    : ( OMX_MEDIUM_FRAG_LENGTH_MAX <= 2048	\
       ? 11					\
-      : OMX_MEDIUM_FRAG_LENGTH_MAX <= 4096	\
+      : ( OMX_MEDIUM_FRAG_LENGTH_MAX <= 4096	\
 	? 12					\
-	: OMX_MEDIUM_FRAG_LENGTH_MAX <= 8192	\
+	: ( OMX_MEDIUM_FRAG_LENGTH_MAX <= 8192	\
 	  ? 13					\
-	  : 14					\
+	  : 14 ) ) )				\
 )
 
 #endif /* !OMX_MX_WIRE_COMPAT */
