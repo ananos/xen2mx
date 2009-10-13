@@ -4,6 +4,8 @@ Open-MX 1.1.902 aka 1.2-rc2 ()
 Bug fixes:
 * Redirect omxoed errors to /var/log/omxoed.log so that we can
   avoid hangs when running omx_init through ssh.
+* Fix build with the intel compiler icc.
+* Fix build with against 2.6.32 kernels.
 
 Caveats:
 * No background progression or retransmission is done if the application
