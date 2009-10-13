@@ -24,6 +24,7 @@
 #include <linux/kref.h>
 #include <linux/moduleparam.h>
 #include <linux/skbuff.h>
+#include <linux/sched.h>
 #include <linux/fs.h>
 #include <linux/mm.h>
 #ifdef OMX_HAVE_MUTEX
