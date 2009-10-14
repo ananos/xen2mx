@@ -19,9 +19,6 @@
 #ifndef __omx_wire_h__
 #define __omx_wire_h__
 
-/* bring enforced wire config */
-#include "omx_config.h"
-
 /* bring __pure and friends */
 #include "omx_hal.h"
 
