@@ -12,6 +12,3 @@ echo "Running autoheader..."
 autoheader || exit 1
 
 cd $ORIGDIR || exit $?
-
-$srcdir/configure "$@"
-
