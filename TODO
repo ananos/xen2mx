@@ -3,13 +3,11 @@
 
 * constify the open-mx interface ?
 
-* add driver-specific ethtool configs
-
 * add restrict when c99 is enabled?
 
 * try get_user_pages_fast() with 32pages chunks or so
 
-* switch to automake once it supports CC foo.c
+* switch to automake with silent-rules
   + link tools/tests dynamically and let libtool add rpath
   + drop make install options, use configure options
   + drop make install prefix=foo
@@ -35,6 +33,8 @@
   + make them configurable?
   + merge small/tiny and change the packet type in the driver to TINY
     only in wire-compat mode?
+  + increase medium-size up to 32*8kB (needs 32bits message length in packet header, command and events)
+  + push-based model for large
 
 * make omx_prepare_binding more flexible:
   + work on a single board, with --append or --clearfile
@@ -42,6 +42,7 @@
   + pass a irq-name/pattern
 * add a tool to auto-tune the interface coalescing and binding?
   + do it within the startup script?
+  + driver-specific ethtool configs
 
 * when removing a peer (for instance a local iface), make the index available again
   in case of adding another peer/iface
@@ -56,7 +57,6 @@
 
 * regcache
   + disable regcache in omx_rcache_test when the driver feature flag is missing
-* regcache malloc hook (if no driver feature flag)
 * if killed while registering, needed to mark the region as failed?
 * huge page pinning support
   + add a pagesize in the region segment structure and use either pagesize of hugepagesize when possible
@@ -207,3 +207,4 @@
   + and mediums are not that useful for shared anyway (lower rndv threshold)
 * fix make install -j
   + just support make -j followed by make install -j, otherwise it's a useless mess
+* regcache malloc hook (if no driver feature flag)
