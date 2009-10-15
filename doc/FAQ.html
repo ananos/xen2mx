@@ -1680,7 +1680,7 @@ circumstances and should be avoided in most of the cases.
 <p>
   Open-MX works on generic hardware but may be enhanced if some
   specific hardware features are available.
-  Interrupt coalescing, and especially adaptive coalescing, may help
+  Interrupt coalescing, including adaptive coalescing, may help
   dealing with host interrupt load and latency.
   See <a href="#hardware-adaptive-coal">How to use adaptive interrupt coalescing?</a>.
   Hardware copy offload may significantly reduce the receive copy
@@ -1697,13 +1697,13 @@ circumstances and should be avoided in most of the cases.
 </a></h4>
 <p>
   If your driver supports <em>Adaptive interrupt coalescing</em>, it
-  may well help Open-MX performance significantly.
-  Indeed, it basically automatically disables coalescing (and thus improves latency)
+  may well help Open-MX performance.
+  It basically automatically disables coalescing (and thus improves latency)
   when the amount of packets is low, and reenables a high coalescing
   delay (and thus improve the overall performance) when the amount of
   packets is high
   (see also <a href="#perf-intrcoal">What is the interrupt coalescing impact on Open-MX' performance?</a>).
-  Thus, when it is supported, you probably want to enable adaptive interrupt
+  Thus, when it is supported, you probably want to try enabling adaptive interrupt
   coalescing on the receive side:
 </p>
 <pre>
@@ -1720,6 +1720,15 @@ $ ethtool -C eth2 adaptive-rx on
 $ ethtool -C eth2 pkt-rate-low 150000
 $ ethtool -C eth2 rx-usecs-low 0
 </pre>
+<p>
+  Note that some NICs and drivers are slow at adapting the coalescing
+  delay according to traffic pattern changes.
+  In this case, adaptive coalescing may disturb performance by reacting
+  too slowly.
+  A careful review of the applications' behavior and of the performance
+  improvement that it actually brings is thus necessary before enabling
+  adaptive coalescing by default.
+</p>
 
 
 <h4><a id="hardware-copy-offload" href="#hardware-copy-offload">
