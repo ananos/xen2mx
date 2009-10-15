@@ -663,7 +663,7 @@ mx_get_info(mx_endpoint_t mx_endpoint, mx_get_info_key_t key,
     return MX_SUCCESS;
 
   case MX_COPY_SEND_MAX:
-    * (uint32_t *) out_val = OMX_MEDIUM_MSG_LENGTH_MAX;
+    * (uint32_t *) out_val = omx__globals.rndv_threshold;
     return MX_SUCCESS;
 
   case MX_NUMA_NODE:
