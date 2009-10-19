@@ -98,7 +98,15 @@ if [ $dobase -eq 1 ] ; then
 	echo "**************************"
 	echo "CHECK board #0 is loopback"
 	echo "**************************"
-	${TOOLS_DIR}/omx_info | grep "board #0 name lo addr 00:00:00:00:00:00" >/dev/null 2>&1 || (echo "No" && false)
+	if ! ${TOOLS_DIR}/omx_info | grep -E '^ .* \(board #0 name lo addr 00:00:00:00:00:00\)' >/dev/null 2>&1 ; then
+		echo "Board #0 is not the loopback interface"
+		exit 77
+	else if ! ${TOOLS_DIR}/omx_info | grep -E '^ localhost \(board #0 name lo addr 00:00:00:00:00:00\)$' >/dev/null 2>&1 ; then
+		echo "Board #0 hostname is not 'localhost'"
+		exit 77
+	else
+		echo "OK"
+	fi fi
 fi
 
 if [ $doloopback -eq 1 ] ; then
