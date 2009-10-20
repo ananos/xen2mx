@@ -62,9 +62,18 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx_
 {
   omx__seqnum_t seqnum = msg->seqnum;
   omx__seqnum_t next_match_recv_seq = partner->next_match_recv_seq;
+  omx__seqnum_t new_index = OMX__SEQNUM(seqnum - next_match_recv_seq);
+  unsigned new_frag_seqnum  = msg->specific.medium_frag.frag_seqnum; /* not valid until we enter the special medium case */
+  unsigned new_type = msg->type;
   struct omx__early_packet * current;
-  omx__seqnum_t new_index;
   omx__seqnum_t current_index;
+
+  if (new_type == OMX_EVT_RECV_MEDIUM_FRAG)
+    omx__debug_printf(EARLY, ep, "queueing early index %d Medium Frag seqnum %d\n",
+		      new_index, new_frag_seqnum);
+  else
+    omx__debug_printf(EARLY, ep, "queueing early index %d type %s\n",
+		      new_index, omx_strevt(new_type));
 
   /* trivial case, early queue is empty */
   if (omx__empty_partner_early_packet_queue(partner)) {
@@ -78,7 +87,8 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx_
   current = omx__last_partner_early_packet(partner);
   current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index > current_index) {
-    omx__debug_printf(EARLY, ep, "inserting early at the end of queue\n");
+    omx__debug_printf(EARLY, ep, "inserting early at the end of queue, after index %d type %s\n",
+		      current_index, omx_strevt(current->msg.type));
     return (struct list_head *) partner->early_recv_q.prev;
   }
 
@@ -86,7 +96,8 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx_
   current = omx__first_partner_early_packet(partner);
   current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
   if (new_index < current_index) {
-    omx__debug_printf(EARLY, ep, "inserting early at the beginning of queue\n");
+    omx__debug_printf(EARLY, ep, "inserting early at the beginning of queue, before index %d type %s\n",
+		      current_index, omx_strevt(current->msg.type));
     return (struct list_head *) &partner->early_recv_q;
   }
 
@@ -96,35 +107,40 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx_
 
     if (new_index > current_index) {
       /* found an earlier one, insert after it */
-      omx__debug_printf(EARLY, ep, "inserting early after another one\n");
+      omx__debug_printf(EARLY, ep, "inserting early after index %d type %s\n",
+			current_index, omx_strevt(current->msg.type));
       return &current->partner_elt;
     }
 
     if (new_index < current_index) {
       /* later one, look further */
-      omx__debug_printf(EARLY, ep, "not inserting early after this one\n");
+      omx__debug_printf(EARLY, ep, "not inserting early after index %d type %s\n",
+			current_index, omx_strevt(current->msg.type));
       continue;
     }
 
     if (msg->type == OMX_EVT_RECV_MEDIUM_FRAG) {
       /* medium early, check the frag num */
-      unsigned long current_frag_seqnum = current->msg.specific.medium_frag.frag_seqnum;
-      unsigned long new_frag_seqnum = msg->specific.medium_frag.frag_seqnum;
+      unsigned current_frag_seqnum = current->msg.specific.medium_frag.frag_seqnum;
+
+      omx__debug_assert(new_type == OMX_EVT_RECV_MEDIUM_FRAG);
 
       if (new_frag_seqnum > current_frag_seqnum) {
 	/* found an earlier one, insert after it */
-	omx__debug_printf(EARLY, ep, "inserting early after this medium\n");
+	omx__debug_printf(EARLY, ep, "inserting early after index %d Medium Frag seqnum %d\n",
+			  current_index, current_frag_seqnum);
 	return &current->partner_elt;
       }
 
       if (new_frag_seqnum < current_frag_seqnum) {
 	/* later one, look further */
-	omx__debug_printf(EARLY, ep, "not inserting early after this medium\n");
+	omx__debug_printf(EARLY, ep, "not inserting early after index %d Medium Frag seqnum %d\n",
+			  current_index, current_frag_seqnum);
 	continue;
       }
 
       /* that's a duplicate medium frag, drop it */
-      omx__debug_printf(EARLY, ep, "dropping duplicate early medium\n");
+      omx__debug_printf(EARLY, ep, "dropping duplicate early medium frag\n");
       return NULL;
     }
 
