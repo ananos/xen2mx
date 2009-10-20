@@ -57,9 +57,10 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
  * or drop if duplicate
  */
 static INLINE struct list_head *
-omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx__partner * partner,
+omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx__partner * _partner,
 				const struct omx_evt_recv_msg *msg)
 {
+  struct omx__partner * partner = (struct omx__partner *) _partner; /* avoid const-related bogus warnings */
   omx__seqnum_t seqnum = msg->seqnum;
   omx__seqnum_t next_match_recv_seq = partner->next_match_recv_seq;
   omx__seqnum_t new_index = OMX__SEQNUM(seqnum - next_match_recv_seq);
@@ -78,7 +79,7 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx_
   /* trivial case, early queue is empty */
   if (omx__empty_partner_early_packet_queue(partner)) {
     omx__debug_printf(EARLY, ep, "insert early in empty queue\n");
-    return (struct list_head *) &partner->early_recv_q;
+    return &partner->early_recv_q;
   }
 
   new_index = OMX__SEQNUM(seqnum - next_match_recv_seq);
@@ -89,7 +90,7 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx_
   if (new_index > current_index) {
     omx__debug_printf(EARLY, ep, "inserting early at the end of queue, after index %d type %s\n",
 		      current_index, omx_strevt(current->msg.type));
-    return (struct list_head *) partner->early_recv_q.prev;
+    return partner->early_recv_q.prev;
   }
 
   /* a little bit less trivial case, append at the beginning */
@@ -98,7 +99,7 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx_
   if (new_index < current_index) {
     omx__debug_printf(EARLY, ep, "inserting early at the beginning of queue, before index %d type %s\n",
 		      current_index, omx_strevt(current->msg.type));
-    return (struct list_head *) &partner->early_recv_q;
+    return &partner->early_recv_q;
   }
 
   /* general case, add at the right position, and drop if duplicate */
