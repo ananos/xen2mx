@@ -135,7 +135,8 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, struct omx__partn
    * or the same seqnum with larger medium frag seqnum.
    * insert at the beginning
    */
-  return (struct list_head *) &partner->early_recv_q;
+  omx__debug_printf(EARLY, ep, "inserting early at the beginning of queue\n");
+  return &partner->early_recv_q;
 }
 
 static INLINE void
