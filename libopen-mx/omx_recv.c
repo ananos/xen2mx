@@ -57,10 +57,9 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
  * or drop if duplicate
  */
 static INLINE struct list_head *
-omx__find_previous_early_packet(const struct omx_endpoint *ep, const struct omx__partner * _partner,
+omx__find_previous_early_packet(const struct omx_endpoint *ep, struct omx__partner * partner,
 				const struct omx_evt_recv_msg *msg)
 {
-  struct omx__partner * partner = (struct omx__partner *) _partner; /* avoid const-related bogus warnings */
   omx__seqnum_t seqnum = msg->seqnum;
   omx__seqnum_t next_match_recv_seq = partner->next_match_recv_seq;
   omx__seqnum_t new_index = OMX__SEQNUM(seqnum - next_match_recv_seq);
