@@ -284,7 +284,7 @@ omx__get_contigous_region(struct omx_endpoint *ep,
     omx__debug_printf(LARGE, ep, "need a region without reserving it\n");
 
   if (omx__globals.regcache) {
-    struct omx_cmd_user_segment *seg = &((struct omx__req_segs *)reqsegs)->single;
+    const struct omx_cmd_user_segment *seg = &reqsegs->single;
     list_for_each_entry(region, &ep->reg_list, reg_elt) {
       if ((!reserver || !region->reserver)
 	  && (omx__globals.parallel_regcache || !region->use_count)

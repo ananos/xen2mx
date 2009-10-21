@@ -1,5 +1,7 @@
 * add hostname to the verbose_prefix
 
+* fix more icc warnings
+
 * document that omx needs lots of vmalloc memory, hard on small 32bits boxes, mtu=1500 helps
 * better document omx_perf -d, manpage ?
 * document that localhost is used by default for loopback and how to change it
