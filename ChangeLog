@@ -7,6 +7,8 @@ Bug fixes:
 * Fix build with the intel compiler icc.
 * Fix build with against 2.6.32 kernels.
 * Fix the management of the medium message fragment size.
+* Fix an invalid assertion when inserting an early medium fragment
+  at the beginning of the partner early queue.
 * Fix some possible aliasing problems.
 
 Caveats:

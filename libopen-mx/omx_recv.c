@@ -66,7 +66,6 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, struct omx__partn
   unsigned new_frag_seqnum  = msg->specific.medium_frag.frag_seqnum; /* not valid until we enter the special medium case */
   unsigned new_type = msg->type;
   struct omx__early_packet * current;
-  omx__seqnum_t current_index;
 
   if (new_type == OMX_EVT_RECV_MEDIUM_FRAG)
     omx__debug_printf(EARLY, ep, "queueing early index %d Medium Frag seqnum %d\n",
@@ -83,27 +82,9 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, struct omx__partn
 
   new_index = OMX__SEQNUM(seqnum - next_match_recv_seq);
 
-  /* a little bit less trivial case, append at the end */
-  current = omx__last_partner_early_packet(partner);
-  current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
-  if (new_index > current_index) {
-    omx__debug_printf(EARLY, ep, "inserting early at the end of queue, after index %d type %s\n",
-		      current_index, omx_strevt(current->msg.type));
-    return partner->early_recv_q.prev;
-  }
-
-  /* a little bit less trivial case, append at the beginning */
-  current = omx__first_partner_early_packet(partner);
-  current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
-  if (new_index < current_index) {
-    omx__debug_printf(EARLY, ep, "inserting early at the beginning of queue, before index %d type %s\n",
-		      current_index, omx_strevt(current->msg.type));
-    return &partner->early_recv_q;
-  }
-
   /* general case, add at the right position, and drop if duplicate */
   omx__foreach_partner_early_packet_reverse(partner, current) {
-    current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
+    omx__seqnum_t current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
 
     if (new_index > current_index) {
       /* found an earlier one, insert after it */
@@ -149,7 +130,12 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, struct omx__partn
     return NULL;
   }
 
-  omx__abort(ep, "Found no previous early");
+  /*
+   * all existing early have larger seqnums,
+   * or the same seqnum with larger medium frag seqnum.
+   * insert at the beginning
+   */
+  return (struct list_head *) &partner->early_recv_q;
 }
 
 static INLINE void
