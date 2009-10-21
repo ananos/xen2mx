@@ -20,7 +20,8 @@
 #define __omx_hal_h__
 
 #define __pure __attribute__((pure))
-#define __malloc  __attribute__((malloc))
+#define __malloc __attribute__((malloc))
+#define __may_alias __attribute__((may_alias))
 
 #endif /* __omx_hal_h__ */
 

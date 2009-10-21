@@ -202,7 +202,7 @@ struct omx__endpoint_addr {
   char pad[sizeof(struct omx_endpoint_addr) - sizeof(struct omx__partner *) - sizeof(uint32_t)];
   uint32_t session_id;
   /* pad to the exact API size to avoid aliasing problems */
-} __attribute__((may_alias));
+} __may_alias;
 
 #define HAS_CTXIDS(ep) ((ep)->ctxid_bits > 0)
 #define MATCHING_CROSS_CTXIDS(ep, match) (((match) & (ep)->ctxid_mask) != 0)

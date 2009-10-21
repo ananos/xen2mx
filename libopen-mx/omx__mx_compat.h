@@ -126,7 +126,7 @@ omx_status_code_from_mx(mx_status_code_t mxcode)
 union compat_endpoint_addr {
   omx_endpoint_addr_t omx;
   mx_endpoint_addr_t mx;
-} __attribute((may_alias));
+} __may_alias;
 #define omx_endpoint_addr_from_mx(addr) (((union compat_endpoint_addr *) &(addr))->omx)
 
 #define omx_endpoint_addr_ptr_from_mx(addr) ((omx_endpoint_addr_t *) (void *) (addr))
