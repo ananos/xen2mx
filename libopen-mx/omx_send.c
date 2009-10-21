@@ -438,7 +438,7 @@ omx__post_isend_mediumsq(struct omx_endpoint *ep,
 
   if (likely(req->send.segs.nseg == 1)) {
     /* optimize the contigous send medium */
-    void * data = OMX_SEG_PTR(&req->send.segs.single);
+    char * data = OMX_SEG_PTR(&req->send.segs.single);
     uint32_t offset = 0;
 
     for(i=0; i<frags_nr; i++) {

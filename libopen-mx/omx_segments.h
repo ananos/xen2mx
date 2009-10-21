@@ -25,7 +25,7 @@
 #include "omx_types.h"
 
 #define OMX_SEG_PTR_SET(_seg, _ptr) do { (_seg)->vaddr = (uintptr_t) (_ptr); } while (0)
-#define OMX_SEG_PTR(_seg) ((void *)(uintptr_t) (_seg)->vaddr)
+#define OMX_SEG_PTR(_seg) ((char *)(uintptr_t) (_seg)->vaddr)
 
 static inline void
 omx_cache_single_segment(struct omx__req_segs * reqsegs, const void * buffer, uint32_t length)
@@ -88,7 +88,7 @@ omx_clone_segments(struct omx__req_segs * dst, const struct omx__req_segs * src)
 }
 
 static inline void
-omx_copy_from_segments(void *dst, const struct omx__req_segs *srcsegs, uint32_t length)
+omx_copy_from_segments(char *dst, const struct omx__req_segs *srcsegs, uint32_t length)
 {
   omx__debug_assert(length <= srcsegs->total_length);
 
@@ -107,7 +107,7 @@ omx_copy_from_segments(void *dst, const struct omx__req_segs *srcsegs, uint32_t 
 }
 
 static inline void
-omx_copy_to_segments(const struct omx__req_segs *dstsegs, const void *src, uint32_t length)
+omx_copy_to_segments(const struct omx__req_segs *dstsegs, const char *src, uint32_t length)
 {
   omx__debug_assert(length <= dstsegs->total_length);
 
@@ -174,7 +174,7 @@ omx_copy_from_to_segments(const struct omx__req_segs *dstsegs, const struct omx_
  */
 static inline void
 omx_continue_partial_copy_from_segments(const struct omx_endpoint *ep,
-					void *dst, const struct omx__req_segs *srcsegs,
+					char *dst, const struct omx__req_segs *srcsegs,
 					uint32_t length,
 					struct omx_segscan_state *state)
 {
@@ -214,7 +214,7 @@ omx_continue_partial_copy_from_segments(const struct omx_endpoint *ep,
  */
 static inline void
 omx_continue_partial_copy_to_segments(const struct omx_endpoint *ep,
-				      const struct omx__req_segs *dstsegs, const void *src,
+				      const struct omx__req_segs *dstsegs, const char *src,
 				      uint32_t length,
 				      struct omx_segscan_state *state)
 {
@@ -253,7 +253,7 @@ omx_continue_partial_copy_to_segments(const struct omx_endpoint *ep,
  */
 static inline void
 omx_partial_copy_to_segments(const struct omx_endpoint *ep,
-			     const struct omx__req_segs *dstsegs, const void *src,
+			     const struct omx__req_segs *dstsegs, const char *src,
 			     uint32_t length,
 			     uint32_t offset, struct omx_segscan_state *scan_state, uint32_t *scan_offset)
 {
