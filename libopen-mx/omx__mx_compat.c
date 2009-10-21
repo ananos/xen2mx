@@ -303,14 +303,14 @@ mx_set_error_handler(mx_error_handler_t new_mxhdlr)
   return omx__mx_error_handler ? omx__mx_error_handler : omx_error_handler_to_mx(old_omxhdlr);
 }
 
-mx_return_t
+static mx_return_t
 mx__errors_are_fatal(char *str, mx_return_t ret)
 {
   return omx_error_to_mx(OMX_ERRORS_ARE_FATAL(str, omx_error_from_mx(ret)));
 }
 const mx_error_handler_t MX_ERRORS_ARE_FATAL = mx__errors_are_fatal;
 
-mx_return_t
+static mx_return_t
 mx__errors_return(char *str, mx_return_t ret)
 {
   return omx_error_to_mx(OMX_ERRORS_RETURN(str, omx_error_from_mx(ret)));
@@ -868,7 +868,7 @@ mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uin
  * Internal MX symbols (for OpenMPI 1.3)
  */
 
-mx_return_t
+static mx_return_t
 mx_open_board(int i, mx_endpt_handle_t *handle)
 {
   return MX_SUCCESS;
@@ -885,6 +885,10 @@ typedef struct {
   uint32_t level;
   uint32_t flags;
 } mx_mapper_state_t;
+
+/* internal MX symbols that must be exported for OpenMPI 1.3 */
+extern mx_return_t mx__get_mapper_state(mx_endpt_handle_t handle, mx_mapper_state_t *p);
+extern int mx__regcache_clean(void *ptr, size_t len);
 
 mx_return_t
 mx__get_mapper_state(mx_endpt_handle_t handle, mx_mapper_state_t *p)

@@ -40,7 +40,7 @@ static struct list_head omx_endpoints_list;
 static struct omx__lock omx_endpoints_list_lock;
 #endif
 
-void
+static void
 omx__init_endpoint_list(void)
 {
   INIT_LIST_HEAD(&omx_endpoints_list);

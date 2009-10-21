@@ -107,7 +107,7 @@ omx_decompose_endpoint_addr_with_session(omx_endpoint_addr_t endpoint_addr,
  * Partner management
  */
 
-void
+static void
 omx__partner_reset(struct omx__partner *partner)
 {
   INIT_LIST_HEAD(&partner->non_acked_req_q);
@@ -137,7 +137,7 @@ omx__partner_reset(struct omx__partner *partner)
   }
 }
 
-omx_return_t
+static omx_return_t
 omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
 		    uint64_t board_addr, uint8_t endpoint_index,
 		    struct omx__partner ** partnerp)
@@ -194,7 +194,7 @@ omx__partner_check_localization(const struct omx_endpoint * ep, struct omx__part
   }
 }
 
-omx_return_t
+static omx_return_t
 omx__partner_lookup(struct omx_endpoint *ep,
 		    uint16_t peer_index, uint8_t endpoint_index,
 		    struct omx__partner ** partnerp)
@@ -223,7 +223,7 @@ omx__partner_lookup(struct omx_endpoint *ep,
   return OMX_SUCCESS;
 }
 
-omx_return_t
+static omx_return_t
 omx__partner_lookup_by_addr(struct omx_endpoint *ep,
 			    uint64_t board_addr, uint8_t endpoint_index,
 			    struct omx__partner ** partnerp)
@@ -327,7 +327,7 @@ omx__post_connect_request(const struct omx_endpoint *ep,
 /*
  * Start the connection process to another peer
  */
-omx_return_t
+static omx_return_t
 omx__connect_common(omx_endpoint_t ep,
 		    uint64_t nic_id, uint32_t endpoint_id, uint32_t key,
 		    union omx_request * req)

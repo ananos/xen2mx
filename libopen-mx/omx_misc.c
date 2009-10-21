@@ -262,7 +262,7 @@ omx_context(omx_request_t *request, void ** context)
   return OMX_SUCCESS;
 }
 
-omx_return_t
+static omx_return_t
 omx__cancel_common(omx_endpoint_t ep,
 		   union omx_request *req,
 		   uint32_t *result)

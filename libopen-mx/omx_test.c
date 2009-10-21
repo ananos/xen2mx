@@ -32,7 +32,7 @@ struct omx__sleeper {
  * Common sleeping routine
  */
 
-omx_return_t
+static omx_return_t
 omx__wait(struct omx_endpoint *ep,
 	  struct omx_cmd_wait_event *wait_param,
 	  uint32_t ms_timeout,

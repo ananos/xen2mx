@@ -146,7 +146,7 @@ omx__get_board_index_by_name(const char * name, uint32_t * index)
 /*
  * Returns the current index of a board given by its addr
  */
-omx_return_t
+static omx_return_t
 omx__get_board_index_by_addr(uint64_t addr, uint32_t * index)
 {
   omx_return_t ret = OMX_SUCCESS;

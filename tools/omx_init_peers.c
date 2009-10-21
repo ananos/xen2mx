@@ -28,7 +28,7 @@ static int clear = 0;
 static int verbose = 0;
 static int done = 0;
 
-omx_return_t
+static omx_return_t
 omx__peer_add(uint64_t board_addr, char *hostname)
 {
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
@@ -54,7 +54,7 @@ omx__peer_add(uint64_t board_addr, char *hostname)
   return ret;
 }
 
-omx_return_t
+static omx_return_t
 omx__peers_read(const char * filename)
 {
   char line[OMX_PEERS_FILELINELEN_MAX];
