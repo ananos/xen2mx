@@ -123,10 +123,10 @@ omx_user_region_destroy_segments(struct omx_user_region * region)
 
 void
 omx__user_region_pin_init(struct omx_user_region_pin_state *pinstate,
-			  const struct omx_user_region *region)
+			  struct omx_user_region *region)
 {
-	pinstate->region = (struct omx_user_region *) region;
-	pinstate->segment = (struct omx_user_region_segment *) &region->segments[0];
+	pinstate->region = region;
+	pinstate->segment = &region->segments[0];
 	pinstate->pages = NULL; /* means that pin_new_segment() will do the init soon */
 	pinstate->aligned_vaddr = 0;
 	pinstate->remaining = 0;
@@ -1282,7 +1282,7 @@ omx_user_region_offset_cache_dma_vect_memcpy_from_pg_callback(struct omx_user_re
  */
 
 int
-omx_user_region_offset_cache_init(const struct omx_user_region *region,
+omx_user_region_offset_cache_init(struct omx_user_region *region,
 				  struct omx_user_region_offset_cache *cache,
 				  unsigned long offset, unsigned long length)
 {
@@ -1292,7 +1292,7 @@ omx_user_region_offset_cache_init(const struct omx_user_region *region,
 	if (unlikely(!region->nr_segments || offset + length > region->total_length))
 		return -1;
 
-	cache->region = (struct omx_user_region *) region;
+	cache->region = region;
 
 	if (unlikely(region->nr_segments > 1)) {
 		unsigned long tmp;

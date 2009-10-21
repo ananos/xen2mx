@@ -7,6 +7,7 @@ Bug fixes:
 * Fix build with the intel compiler icc.
 * Fix build with against 2.6.32 kernels.
 * Fix the management of the medium message fragment size.
+* Fix some possible aliasing problems.
 
 Caveats:
 * No background progression or retransmission is done if the application
