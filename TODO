@@ -5,7 +5,6 @@
 * fix more icc warnings
 
 * document that omx needs lots of vmalloc memory, hard on small 32bits boxes, mtu=1500 helps
-* document that localhost is used by default for loopback and how to change it
 
 * constify the open-mx interface ?
 

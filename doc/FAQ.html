@@ -167,6 +167,9 @@
 <li><a href="#ifaces-local-communication">
   Do I need to attach an interface if using Open-MX for local communications only?
 </a></li>
+<li><a href="#iface-peer-name">
+  What are the interface and peer names?
+</a></li>
 </ul>
 
 <p><a href="#peerdiscovery">
@@ -667,6 +670,11 @@ Peer table is ready, mapper is 00:00:00:00:00:00
 ================================================
   0) 00:00:00:00:00:00 localhost
 </pre>
+</p>
+<p>
+Note that <tt>localhost</tt> is a special hostname that the
+driver gives to the loopback interface instead of the usual
+<tt>hostname:0</tt> for the first attached interface.
 </p>
 <p>
 You may then run the local testing suite (which requires
@@ -1177,7 +1185,55 @@ it is not used by actual network traffic underneath.
 It is fortunately possible to attach the loopback interface (lo) and either use it
 as a regular interface talking to itself, or bypass it and use the optimized shared
 communicarion.
+The loopback interface is always names <tt>localhost</tt> by default
+(See <a href="#iface-peer-name">What are the interface and peer names?</a>).
 </p>
+
+
+<h4><a id="iface-peer-name" href="#iface-peer-name">
+  What are the interface and peer names?
+</a></h4>
+<p>
+Each interface attached to an Open-MX driver in the fabric is identified by a
+MAC address, an internal peer index, and a convenient Open-MX hostname.
+</p>
+<p>
+The hostname is set by the local driver when attaching the interface.
+By default, it is the machine hostname followed by a colon and the index of
+the interfaces in the list of attached Open-MX interfaces.
+For instance, when attaching two interfaces to machine <tt>node34</tt>,
+they will be named <tt>node34:0</tt> and <tt>node34:1</tt>.
+If attaching the loopback interface (lo), the driver will automatically name
+it <tt>localhost</tt> instead.
+</p>
+<p>
+Interface names are propagated to other machines in the fabric automatically.
+the list of all known peers (interfaces attached to any driver in the fabric)
+and thei hostnames may be seen with:
+<pre>
+$ omx_info
+[...]
+Peer table is ready, mapper is 01:02:03:04:05:06
+================================================
+  0) 01:02:03:04:05:06 node1:0
+  1) a0:b0:c0:d0:e0:f0 node2:0
+</pre>
+</p>
+<p>
+It is possible to rename local interfaces with:
+</p>
+<pre>
+$ omx_hostname -n <newname> -n <interface number>
+</pre>
+<p>
+If an interface is renamed while its old name has already been propagated to
+other machines, it is possible to force the update by clearing the list of
+known remote hostnames (as root) with:
+</p>
+<pre>
+$ omx_hostname -c
+</pre> 
+
 
 
 </div>
@@ -1197,6 +1253,8 @@ communicarion.
 <p>
 Each Open-MX node has to be aware of the hostnames and MAC addresses
 of all other peers.
+Specific information about hostnames may also be found in
+<a href="#iface-peer-name">What are the interface and peer names?</a>.
 </p>
 
 
@@ -1216,7 +1274,10 @@ omx_init startup script.
 <p>
 It is possible to restart the peer table management process without
 restarting the whole Open-MX driver with:
-    $ omx_init restart-discovery
+</p>
+<pre>
+$ omx_init restart-discovery
+</pre>
 This is especially important when attaching or detaching interfaces at
 runtime while using dynamic peer discovery. But it may also for instance
 be used to switch between static and dynamic peer table.
