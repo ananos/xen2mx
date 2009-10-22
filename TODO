@@ -1,3 +1,5 @@
+* make disconnect/reset message debug only
+
 * add hostname to the verbose_prefix
 
 * fix more icc warnings

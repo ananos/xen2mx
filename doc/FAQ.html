@@ -783,7 +783,7 @@ autoconf and autoheader are required to do so.
 The autogen.sh script takes care of running them accordingly:
 <pre>
 $ ./autogen.sh
-$ ./configure
+$ ./configure --prefix=...
 $ make
 $ make install
 </pre>
@@ -794,8 +794,7 @@ V=1 should be passed to make.
 </p>
 <p>
 By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
-the configure line to change this (or set prefix on the 'make install'
-command line).
+the configure line to change this.
 </p>
 <p>
 Open-MX brings the omx_init initialization scripts which takes care of
@@ -850,8 +849,7 @@ $ sbin/omx_init start ifnames=eth1
 <p>
 By default, Open-MX will install in /opt/open-mx.
 It is possible to change this path by passing --prefix=&lt;/new/path&gt;
-to the configure script, or by passing prefix=&lt;/new/path&gt; on the
-make install command line.
+to the configure script.
 </p>
 <p>
 All Open-MX install files should be available to all nodes since the driver
@@ -925,8 +923,7 @@ in Open-MX by passing <tt>udev=0</tt> at install-time.
 <p>
 Uninstalling Open-MX files is mainly a matter of removing the
 entire directory pointed by the prefix of the installation
-(either given with --prefix on the configure line or by the
- prefix variable on the make install command line, see
+(given with --prefix on the configure line, see
 <a href="#building-where-install">Where should I install Open-MX?</a>).
 </p>
 <p>
@@ -2169,6 +2166,8 @@ to tune the installation:
   Open-MX?</a>).
   Since multiple Makefiles from subdirectories are involved,
   an absolute path should be given.
+  This feature may be dropped in the future since it is not
+  supported by most other projects, do not rely on it.
 </dd>
 
 <dt>mx-trans=1</dt>

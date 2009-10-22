@@ -73,13 +73,12 @@ e. Use omx_perf to test actual communications, on the first node:
 +---------------------
 | II.a. Basic Install
 
-    $ ./configure
+    $ ./configure --prefix=...
     $ make
     $ make install
 
 By default, Open-MX will be installed in /opt/open-mx. Use --prefix on
-the configure line to change this (or set prefix on the 'make install'
-command line).
+the configure line to change this.
 
 Open-MX provides the omx_init initialization scripts which takes care of
 loading/unloading the driver and managing the peer table.
