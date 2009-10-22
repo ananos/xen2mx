@@ -1,0 +1,183 @@
+.TH OMX_PERF 1 "OCTOBER 2009"
+
+.SH NAME
+omx_perf \- measure Open-MX communication performance for a ping-ping between 2 hosts
+
+.SH SYNOPSIS
+On the server side
+.B omx_perf [ options ]
+On the client side
+.B omx_perf [ options ] -d <server>
+
+
+.SH DESCRIPTION
+.B omx_perf
+runs a ping-pong between two hosts and reports the throughput
+and one-way latency for different message sizes.
+It consists of a single program that should be first started
+as a server, and then again as a client that will connect to
+the server.
+
+.P
+The server will report its hostname right after startup:
+.RS
+node1 $ tests/omx_perf
+.br
+Successfully open endpoint 0 for hostname 'node0:1' iface 'lo'
+.RE
+
+.P 
+The client requires the
+.B -d
+option to be given together with the server hostname:
+.RS
+node2 $ tests/omx_perf -d node1:0
+.RE
+
+.P
+Most ping-pong configuration should be given to the client,
+which will pass them to the server before doing the actual run.
+
+
+.SH
+CONNECTION OPTIONS
+
+.TP
+.B -d <hostname>
+Connect to server given by the Open-MX hostname
+.B <hostname>
+as reported by the first line of the program when
+started on the server.
+This option is required on the client.
+
+.TP
+.B -s 
+Switch server to slave mode, so that it does not exit
+when the first clients terminates its ping-pong run.
+This option only matters on the server.
+
+.TP
+.B -b <board number>
+Open an endpoint on interface given by
+.B <board number>
+instead of the first interface.
+
+.TP
+.B -e <number>
+Open local endpoint given by
+.B <number>
+instead of a random endpoint (if running as client)
+or the first endpoint (if running as server).
+If given on the server,
+.B -r
+should be used on the client.
+
+.TP
+.B -r <number>
+Connect the server remote endpoint given by
+.B <number>
+assuming the server was started with
+.B -e <server>
+.
+This option only matters on the client.
+
+
+.SH
+PING-PONG OPTIONS
+
+The following options configure how many rounds,
+which message sizes, and how many iteration per rounds
+are needed.
+All these options are given to the client, which will
+pass them to the server before each round.
+
+By default, there will be one round for 0-byte message length,
+and then one round for each power-of-two length up to 4MB.
+For each round, 1000 round-trips are performed by default.
+10 warmup are also performed internally first.
+Between each round, a 100 milliseconds pause is observed.
+
+.TP
+.B -S <length>
+Start with message length at
+.B <length>
+bytes. Default is
+.BR 0 .
+
+.TP
+.B -E <length>
+End the ping-pong run when message length reaches
+.BR <length> .
+Default is
+.BR 4MB+1 .
+
+.TP
+.B -M <multiplier>
+Multiple message length by
+.B <multiple>
+after each round.
+Default is
+.BR 2 .
+
+.TP
+.B -I <increment>
+Increment message length by
+.B <increment>
+after each round.
+Default is
+.BR 0 .
+
+.TP
+.B -N <iterations>
+Do
+.B <iterations>
+round-trips per round.
+Default is
+.BR 1000 .
+
+.TP
+.B -W <iterations>
+Do
+.B <iterations>
+warmup round-trips before actually measuring the performance.
+Default is
+.BR 10 .
+
+.TP
+.B -U
+Switch to unidirectional mode.
+The server will only send 0-byte messages for pong.
+
+.TP
+.B -Y
+Switch to synchronous messages.
+
+.TP
+.B -a
+Use aligned buffers on both hosts.
+
+
+.SH
+COMMON OPTIONS
+
+.TP
+.B -P <ms>
+Wait
+.B <ms> milliseconds between each round.
+Default is
+.BR 100 .
+This option only matters on the client since it is the one deciding of
+when to start a new round.
+
+.TP
+.B -w
+Use blocking calls to sleep instead of busy polling
+when waiting for a message to arrive.
+
+.TP
+.B -v
+Print more verbose messages.
+
+
+.SH AUTHOR
+Brice Goglin

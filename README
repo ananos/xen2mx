@@ -64,6 +64,7 @@ e. Use omx_perf to test actual communications, on the first node:
      length         1:       7.950 us   0.00 MB/s        0.00 MiB/s
      [...]
      length   4194304:       8388.608 us   500.00 MB/s       476.83 MiB/s
+   See the the omx_perf.1 manpage for more details.
 
 
 ++=============================++
