@@ -868,12 +868,6 @@ mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uin
  * Internal MX symbols (for OpenMPI 1.3)
  */
 
-static mx_return_t
-mx_open_board(int i, mx_endpt_handle_t *handle)
-{
-  return MX_SUCCESS;
-}
-
 typedef struct {
   uint32_t board_number;
   uint8_t mapper_mac[6];
@@ -887,8 +881,15 @@ typedef struct {
 } mx_mapper_state_t;
 
 /* internal MX symbols that must be exported for OpenMPI 1.3 */
+extern mx_return_t mx_open_board(int i, mx_endpt_handle_t *handle);
 extern mx_return_t mx__get_mapper_state(mx_endpt_handle_t handle, mx_mapper_state_t *p);
 extern int mx__regcache_clean(void *ptr, size_t len);
+
+mx_return_t
+mx_open_board(int i, mx_endpt_handle_t *handle)
+{
+  return MX_SUCCESS;
+}
 
 mx_return_t
 mx__get_mapper_state(mx_endpt_handle_t handle, mx_mapper_state_t *p)
