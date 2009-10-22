@@ -6,9 +6,6 @@
 * better document omx_perf -d, manpage ?
 * document that localhost is used by default for loopback and how to change it
 
-* detect when 2 endpoints are being open by OpenMPI without actually using them
-  (remove a debug message?)
-
 * constify the open-mx interface ?
 
 * add restrict when c99 is enabled?

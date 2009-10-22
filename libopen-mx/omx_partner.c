@@ -337,6 +337,17 @@ omx__connect_common(omx_endpoint_t ep,
   uint8_t connect_seqnum;
   omx_return_t ret;
 
+  { /* warn once about connection deadlocks if actually connecting from different endpoints */
+    static omx_endpoint_t last_connecting_ep = NULL;
+    static int warned_about_connect_pollall = 0;
+    if (last_connecting_ep && last_connecting_ep != ep
+	&& !omx__globals.connect_pollall && !warned_about_connect_pollall) {
+      omx__verbose_printf(NULL, "Multirail might need OMX_CONNECT_POLLALL=1 to work around connection deadlocks.\n");      
+      warned_about_connect_pollall = 1;
+    }
+    last_connecting_ep = ep;
+  }
+
   ret = omx__partner_lookup_by_addr(ep, nic_id, endpoint_id, &partner);
   if (ret != OMX_SUCCESS) {
     if (ret == OMX_PEER_NOT_FOUND)
