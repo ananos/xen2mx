@@ -4,13 +4,12 @@ bindir		=	@bindir@
 includedir	=	@includedir@
 srcdir		=	@srcdir@
 
-ifneq ($(shell echo $(prefix) | cut -c1),/)
-  $(error expected an absolute directory name for prefix: $(prefix) $(abspath $(prefix)) $(realpath $(prefix)))
-endif
-
 OMX_CONFIGURED	=	@OMX_CONFIGURED@
 
 ifeq ($(OMX_CONFIGURED),1)
+  ifneq ($(shell echo $(prefix) | cut -c1),/)
+    $(error expected an absolute directory name for prefix: $(prefix))
+  endif
   include @abs_top_srcdir@/common.mk
 endif
 
