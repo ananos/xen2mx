@@ -213,6 +213,9 @@
 <li><a href="#perf-quick">
   How-to quickly benchmark Open-MX?
 </a></li>
+<li><a href="#perf-omxperf">
+  How do I measure performance with <tt>omx_perf</tt>?
+</a></li>
 <li><a href="#perf-wire-compat">
   What is the MX wire-compatibility impact on Open-MX performance?
 </a></li>
@@ -619,32 +622,8 @@ Peer table is ready, mapper is 01:02:03:04:05:06
 </pre>
 </li>
 <li>
-Use omx_perf to test actual communications, on the first node:
-<pre>
-node1 $ omx_perf
-Successfully attached endpoint #0 on board #0 (hostname 'node1:0', name 'eth2', addr 01:02:03:04:05:06)
-Starting receiver...
-</pre>
-<p>
-then on the second node:
-</p>
-<pre>
-node2 $ omx_perf -d node1:0
-Successfully attached endpoint #0 on board #0 (hostname 'node2:0', name 'eth2', addr a0:b0:c0:d0:e0:f0)
-Starting sender to node1:0...
-</pre>
-<p>
-You should get performance numbers such as
-</p>
-<pre>
-length         0:       7.970 us   0.00 MB/s        0.00 MiB/s
-length         1:       7.950 us   0.00 MB/s        0.00 MiB/s
-[...]
-length   4194304:       8388.608 us   500.00 MB/s       476.83 MiB/s
-</pre>
-<p>
-See the <tt>omx_perf.1</tt> manpage for more details.
-</p>
+Use omx_perf to test actual communications
+(see <a href="#perf-omxperf">How do I measure performance with <tt>omx_perf</tt>?</a>).
 </li>
 </ol>
 
@@ -1510,7 +1489,53 @@ into /proc/irq/&lt;n&gt;/smp_affinity).
 </li>
 </ul>
 <p>
+Once things are properly built, installed and loaded, you may check performance
+using <tt>omx_perf</tt>
+(see <a href="#perf-omxperf">How do I measure performance with <tt>omx_perf</tt>?</a>).
+</p>
+<p>
 You may also want to enable some hardware-specific <a href="#hardware">features</a>.
+</p>
+
+
+<h4><a id="perf-omxperf" href="#perf-omxperf">
+  How do I measure performance with <tt>omx_perf</tt>?
+</a></h4>
+<p>
+<tt>omx_perf</tt> measures the latency and throughput of a ping-pong for
+multiple message lengths between two hosts.
+As any ping-pong benchmark, it should not be considered as valuable as
+benchmarking actual applications, but it still may help measuring raw
+network performance and diagnosing performance problems.
+</p>
+<tt>omx_perf</tt> may be started as a server on the first node
+by passing no command-line arguments.
+</p>
+<pre>
+node1 $ omx_perf
+Successfully attached endpoint #0 on board #0 (hostname 'node1:0', name 'eth2', addr 01:02:03:04:05:06)
+Starting receiver...
+</pre>
+<p>
+Then another instance of <tt>omx_perf</tt> running on a second node may
+connect to the server:
+</p>
+<pre>
+node2 $ omx_perf -d node1:0
+Successfully attached endpoint #0 on board #0 (hostname 'node2:0', name 'eth2', addr a0:b0:c0:d0:e0:f0)
+Starting sender to node1:0...
+</pre>
+<p>
+You should get performance numbers such as
+</p>
+<pre>
+length         0:       7.970 us   0.00 MB/s        0.00 MiB/s
+length         1:       7.950 us   0.00 MB/s        0.00 MiB/s
+[...]
+length   4194304:       8388.608 us   500.00 MB/s       476.83 MiB/s
+</pre>
+<p>
+See the <tt>omx_perf.1</tt> manpage for more details.
 </p>
 
 
