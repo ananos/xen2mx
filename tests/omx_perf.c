@@ -96,7 +96,7 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -w\tsleep instead of busy polling\n");
   fprintf(stderr, " -v\tverbose\n");
   fprintf(stderr, "Sender options:\n");
-  fprintf(stderr, " -a\tuse aligned buffers on both hosts\n");
+  fprintf(stderr, " -a\tuse page-aligned buffers on both hosts\n");
   fprintf(stderr, " -d <hostname>\tset remote peer name and switch to sender mode\n");
   fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
   fprintf(stderr, " -S <n>\tchange the start length [%d]\n", MIN);
