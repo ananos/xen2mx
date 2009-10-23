@@ -330,6 +330,9 @@
 <li><a href="#debug-failed-create-user-region">
   What does "Failed to create user region" mean?
 </a></li>
+<li><a href="#debug-failed-endpoint-vmalloc">
+  What if endpoint opening fails with "No resources available in the system"?
+</a></li>
 </ul>
 
 <p><a href="#misc">
@@ -2184,7 +2187,16 @@ The following options may be passed to the configure command line before buildin
 <dt>--with-pull-block-replies=32</dt>
 <dd>Enforce the maximum number of pull reply packets to be sent per pull
   block request instead of relying on wire-compatibility configuration.
-</tt>
+</dd>
+
+<dt>--with-shared-ring-entries=1024</dt>
+<dd>Change the number of entries per shared ring.
+ By default, each endpoint uses 1024-entry rings that are shared between
+ user-space and the kernel for sending and receiving.
+ Reducing the number of entries reduces the overall amount of vmalloc'ed
+ memory.
+ See also <a href="#debug-failed-endpoint-vmalloc">What if endpoint opening fails with "No resources available in the system"?</a>.
+</dd>
 
 <dt>--disable-fma</dt>
 <dd>
@@ -2756,6 +2768,32 @@ $ omx_init status
  much, so Open-MX just aborts.
 </p>
 
+
+
+<h4><a id="debug-failed-endpoint-vmalloc" href="#debug-failed-endpoint-vmalloc">
+  What if endpoint opening fails with "No resources available in the system"?
+</a></h4>
+<pre>
+ mx_open_endpoint failed: No resources available in the system
+ vmap allocation for size 16912384 failed: use vmalloc=<size> to increase size.
+</pre>
+<p>
+ Open-MX requires a large amount of vmalloc memory (about 16MB per endpoint
+ by default) for maintaining shared rings between user-space and the kernel
+ for sending and receiving.
+ This requirement might be problematic on 32bits machine with very small
+ physical memory.
+</p>
+<p>
+ If performance is not important, passing <tt>--with-mtu=1500</tt> will reduce
+ memory requirements (thanks to small ring entries).
+ Otherwise, passing <tt>--with-shared-ring-entries=128</tt> will reduce the
+ number of slots per ring by 8 and thus significantly reduces vmalloc needs,
+ but it may also slightly hurt performance under high packet rate.
+ The last solution consists in increasing the pool of vmalloc'able memory
+ in the kernel thanks to the vmalloc parameter on the kernel boot command
+ line as shown in the above message.
+</p>
 
 
 </div>

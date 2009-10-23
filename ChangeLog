@@ -12,6 +12,7 @@ Bug fixes:
 * Fix some possible aliasing problems.
 
 Other improvements from previous release:
+* Add --with-shared-ring-entries to reduce vmalloc memory requirements.
 * Misc documentation updates.
 
 Caveats:

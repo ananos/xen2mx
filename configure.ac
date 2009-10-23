@@ -568,6 +568,18 @@ fi
 ############################
 # misc config
 
+AC_ARG_WITH(shared-ring-entries,
+	[AS_HELP_STRING([--with-shared-ring-entries], [change the number of entries per shared ring (default is 1024)])],
+	with_shared_ring_entries=$withval, with_shared_ring_entries=default)
+AC_MSG_CHECKING(the number of shared ring entries)
+if test x$with_shared_ring_entries = xdefault; then
+  AC_MSG_RESULT([default (1024)])
+else
+  AC_MSG_RESULT($with_shared_ring_entries)
+  AC_DEFINE_UNQUOTED(OMX_SHARED_RING_ENTRY_NR, ${with_shared_ring_entries}UL, [Define to change the number of entries per shared ring])
+fi
+
+
 AC_ARG_ENABLE(threads,
 	[AS_HELP_STRING([--disable-threads], [disable thread safety in the library])],
 	enable_lib_threads=$enableval, enable_lib_threads=yes)
