@@ -30,7 +30,7 @@ STATIC_LIB	=	@top_builddir@/@OPEN_MX_DEFAULT_LIB_STATIC_PATH@
 DYNAMIC_LIB_DIR	=	$(dir @top_builddir@/@OPEN_MX_DEFAULT_LIB_DYNAMIC_PATH@)
 DYNAMIC_LIB_OPT	=	@OPEN_MX_LIB_DYNAMIC_LINK_OPT@
 
-.PHONY: all installonly install clean distclean
+.PHONY: all install clean distclean
 
 all: $(TESTS)
 
@@ -62,7 +62,7 @@ $(OBJS): %.o: @srcdir@/%.c
 ##########
 # install
 
-install installonly:
+install:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(bindir)/"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(bindir); then \
 		$(MKDIR_P) $(DESTDIR)$(bindir) ; \

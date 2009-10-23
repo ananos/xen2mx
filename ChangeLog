@@ -1,3 +1,15 @@
+Open-MX 1.1.903 aka 1.2-rc3
+==========================================================
+
+
+Other improvements from previous release:
+* Drop features that were deprecated since 1.1:
+  + make installonly (use make install instead).
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.1.902 aka 1.2-rc2 (October 23rd 2009, svn r2802)
 ==========================================================
 
@@ -14,10 +26,6 @@ Bug fixes:
 Other improvements from previous release:
 * Add --with-shared-ring-entries to reduce vmalloc memory requirements.
 * Misc documentation updates.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.1.901 aka 1.2-rc1 (September 23rd 2009, svn r2757)
 ============================================================

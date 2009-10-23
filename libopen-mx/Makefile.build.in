@@ -56,7 +56,7 @@ DYNAMIC_LIB_OBJS	=	$(DYNAMIC_OBJS)
 DYNAMIC_LIB	=	@OPEN_MX_LIB_DYNAMIC@
 DYNAMIC_MX_LIB	=	libmyriexpress.so
 
-.PHONY: all installonly install depend clean distclean
+.PHONY: all install depend clean distclean
 
 all: $(STATIC_LIB) $(DYNAMIC_LIB)
 
@@ -106,7 +106,7 @@ $(DYNAMIC_OBJS): %.lo: @abs_srcdir@/%.c
 ##########
 # install
 
-install installonly:
+install:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(libdir)$(libdirsuffix)/"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(libdir)$(libdirsuffix); then \
 		$(MKDIR_P) $(DESTDIR)$(libdir)$(libdirsuffix) ; \

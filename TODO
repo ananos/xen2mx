@@ -193,7 +193,6 @@
 
 === things to drop in 1.2
 * IFACES in the config file instead of OMX_IFACES
-* make installonly
 
 === obsolete ideas
 * why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?

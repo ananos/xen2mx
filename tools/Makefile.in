@@ -31,7 +31,7 @@ udev	=	1
 UDEV_RULES_DIR	=	/etc/udev/rules.d/
 UDEV_RULES_FILE	=	45-open-mx.rules
 
-.PHONY: all installonly install clean distclean
+.PHONY: all install clean distclean
 
 omxoed_LIBS	=	-lpthread
 
@@ -69,7 +69,7 @@ $(OBJS): %.o: @srcdir@/%.c
 ##########
 # install
 
-install installonly:
+install:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(bindir)"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(bindir); then \
 		$(MKDIR_P) $(DESTDIR)$(bindir) ; \

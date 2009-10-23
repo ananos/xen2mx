@@ -23,7 +23,7 @@ OPEN_MX_DIR	=	@abs_builddir@
 INSTALL_MOD_PATH	=	$(prefix)/modules/$(LINUX_RELEASE)
 MODULE_OBJS	=	open-mx.ko
 
-.PHONY: all $(HDRCHECKFILE) installonly install clean distclean wc
+.PHONY: all $(HDRCHECKFILE) install clean distclean wc
 
 # Cannot avoid symlinking source files here and using O=builddir M=srcdir
 # since configure would have to generate Kbuild and omx_checks.h in srcdir
@@ -37,7 +37,7 @@ $(HDRCHECKFILE):
 	$(CMDECHO) "  CHECK   KERNEL HEADERS"
 	$(CMDPREFIX) @srcdir@/check_kernel_headers.sh $(HDRCHECKFILE) "$(LINUX_BUILD)" "$(LINUX_HDR)" "$(LINUX_RELEASE)"
 
-install installonly:
+install:
 	$(CMDECHO) "  MKDIR   $(DESTDIR)$(INSTALL_MOD_PATH)"
 	$(CMDPREFIX) if test ! -d $(DESTDIR)$(INSTALL_MOD_PATH); then \
 		$(MKDIR_P) $(DESTDIR)$(INSTALL_MOD_PATH) ; \

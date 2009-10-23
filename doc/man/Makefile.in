@@ -10,7 +10,7 @@ INSTALL	=	@INSTALL@
 
 MANPAGES	=	$(wildcard @srcdir@/*.1)
 
-.PHONY: all installonly install clean distclean
+.PHONY: all install clean distclean
 
 all:
 
@@ -22,7 +22,7 @@ install.1:
 	$(CMDECHO) "  INSTALL $(patsubst @srcdir@/%,$(DESTDIR)$(mandir)/man1/%,$(MANPAGES))"
 	$(CMDPREFIX) $(INSTALL) -m 0644 $(MANPAGES) $(DESTDIR)$(mandir)/man1/
 
-install installonly: install.1
+install: install.1
 
 clean:
 

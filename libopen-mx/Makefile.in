@@ -6,12 +6,12 @@ LN_S	=	@LN_S@
 
 TARGETS	=	@LIB_TARGETS@
 
-.PHONY: all install installonly depend clean distclean
+.PHONY: all install depend clean distclean
 
 all depend clean:
 	$(CMDPREFIX) +for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
 
-install installonly:
+install:
 	$(CMDPREFIX) +for dir in $(TARGETS) ; do $(MAKE) -C $$dir $@ ; done
 	$(CMDPREFIX) if test x@INSTALL_LIB_LINKTARGET@ != x -a ! -e $(prefix)/lib; then \
 		$(CMDECHOAFTERPREFIX) "  LN      lib" ; \
