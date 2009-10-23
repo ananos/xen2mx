@@ -1,5 +1,5 @@
-Open-MX 1.1.902 aka 1.2-rc2 ()
-============================================================
+Open-MX 1.1.902 aka 1.2-rc2 (October 23rd 2009, svn r)
+==========================================================
 
 Bug fixes:
 * Redirect omxoed errors to /var/log/omxoed.log so that we can
@@ -10,6 +10,9 @@ Bug fixes:
 * Fix an invalid assertion when inserting an early medium fragment
   at the beginning of the partner early queue.
 * Fix some possible aliasing problems.
+
+Other improvements from previous release:
+* Misc documentation updates.
 
 Caveats:
 * No background progression or retransmission is done if the application
