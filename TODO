@@ -191,9 +191,6 @@
 
 * add warning about mtu in nic/switches when truncated packet arrives, with printk_rate
 
-=== things to drop in 1.2
-* IFACES in the config file instead of OMX_IFACES
-
 === obsolete ideas
 * why shared memory from/to same send and recv buffer is very bad from 64k+ 128k ?
 * change --iface into ---iface, and use --iface as a "close when no more endpoint"

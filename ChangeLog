@@ -5,6 +5,7 @@ Open-MX 1.1.903 aka 1.2-rc3
 Other improvements from previous release:
 * Drop features that were deprecated since 1.1:
   + make installonly (use make install instead).
+  + IFACES in the open-mx.conf file (use OMX_IFACES instead).
 
 Caveats:
 * No background progression or retransmission is done if the application

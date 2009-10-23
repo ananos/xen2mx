@@ -71,9 +71,6 @@ fi
 [ -z "$OMX_FMA_START_TIMEOUT" ] && OMX_FMA_START_TIMEOUT=5
 [ -z "$OMX_IFACES" ] && OMX_IFACES="all"
 
-# drop from Open-MX 1.2
-[ -n "$IFACES" ] && echo "WARNING: IFACES deprecated, use OMX_IFACES instead."
-
 usage () {
 	echo "Usage: $0 [options] <command> [module load params]"
 	echo " Commands:	start stop status restart kill"
