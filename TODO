@@ -4,8 +4,6 @@
 
 * fix more icc warnings
 
-* document that omx needs lots of vmalloc memory, hard on small 32bits boxes, mtu=1500 helps
-
 * constify the open-mx interface ?
 
 * add restrict when c99 is enabled?
@@ -36,8 +34,6 @@
 
 * update all thresholds in non-wire-compat
   + make them configurable?
-  + merge small/tiny and change the packet type in the driver to TINY
-    only in wire-compat mode?
   + increase medium-size up to 32*8kB (needs 32bits message length in packet header, command and events)
   + push-based model for large
 
@@ -213,3 +209,5 @@
 * fix make install -j
   + just support make -j followed by make install -j, otherwise it's a useless mess
 * regcache malloc hook (if no driver feature flag)
+* merge small/tiny and change the packet type in the driver to TINY only in wire-compat mode?
+  + putting the data inside the request/event really helps performance, cannot remove this path
