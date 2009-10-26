@@ -19,10 +19,10 @@ AC_INIT([Open-MX],
         [http://open-mx.org],
         open-mx)
 AC_CONFIG_SRCDIR(common/omx_io.h)
-AC_PREREQ(2.60)
+AC_PREREQ(2.59)
 AC_CANONICAL_SYSTEM
 AC_PREFIX_DEFAULT(/opt/open-mx)
-AC_PRESERVE_HELP_ORDER
+m4_ifdef([AC_PRESERVE_HELP_ORDER], [AC_PRESERVE_HELP_ORDER])
 
 ################################################################
 # help the makefile guess whether it has been configured or not
@@ -34,8 +34,6 @@ AC_SUBST(OMX_CONFIGURED, 1)
 
 AC_PROG_CPP
 AC_PROG_CC
-AC_PROG_MKDIR_P
-AC_PROG_SED
 AC_PROG_LN_S
 AC_PROG_INSTALL
 
@@ -43,6 +41,28 @@ AC_CHECK_TOOL(AR, ar, false)
 if test $AR = false; then
   AC_MSG_ERROR(ar program not found in \$PATH)
 fi
+
+# AC_PROG_MKDIR_P and AC_PROG_SED introduced in 2.60, but it is not important
+# enough to not support 2.59
+m4_ifdef([AC_PROG_MKDIR_P], [AC_PROG_MKDIR_P], [
+	AC_MSG_CHECKING(for mkdir -p)
+	MKDIR=`which mkdir`
+	if test x$MKDIR = x; then
+		AC_MSG_ERROR(not found)
+	else
+		AC_MSG_RESULT(assuming $MKDIR -p works fine)
+		MKDIR_P=${MKDIR}" -p"
+		AC_SUBST(MKDIR_P)
+	fi])
+m4_ifdef([AC_PROG_SED], [AC_PROG_SED], [
+	AC_MSG_CHECKING(for sed)
+	SED=`which sed`
+	if test x$SED = x; then
+		AC_MSG_ERROR(not found)
+	else
+		AC_MSG_RESULT(assuming $SED works fine)
+		AC_SUBST(SED)
+	fi])
 
 ########################
 # save the build config
