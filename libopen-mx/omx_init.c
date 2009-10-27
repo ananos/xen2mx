@@ -56,9 +56,9 @@ omx__init_api(int app_api)
    */
   env = getenv("OMX_VERBOSE_PREFIX");
   if (!env)
-    omx__globals.message_prefix_format = "Open-MX: ";
+    omx__globals.message_prefix_format = "OMX: ";
   else if (*env == '1')
-    omx__globals.message_prefix_format = "Open-MX:p%P-e%E-b%B: ";
+    omx__globals.message_prefix_format = "OMX:%H:%p ";
   else
     omx__globals.message_prefix_format = env;
   omx__globals.message_prefix = omx__create_message_prefix(NULL);

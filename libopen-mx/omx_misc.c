@@ -401,22 +401,32 @@ omx__create_message_prefix(const struct omx_endpoint *ep)
       ret = fscanf(src, "%%%c", buf);
 	    
       if (ret > 0) {
-	if ('P' == buf[0])
+	if ('p' == buf[0])
 	  fprintf(dst, "%ld", (unsigned long) getpid());
-	else if ('E' == buf[0]) {
+	else if ('e' == buf[0]) {
 	  if (ep) fprintf(dst, "%ld", (unsigned long) ep->endpoint_index);
 	  else fprintf(dst, "X");
-	} else if ('B' == buf[0]) {
+	} else if ('b' == buf[0]) {
 	  if (ep) fprintf(dst, "%ld", (unsigned long) ep->board_index);
 	  else fprintf(dst, "X");
+	} else if ('B' == buf[0]) {
+	  if (ep) {
+	    struct omx_board_info board_info;
+	    omx__get_board_info(ep, ep->board_index, &board_info);
+	    fprintf(dst, "%s", board_info.ifacename);
+	  }
+	  else fprintf(dst, "X");
 	} else if ('H' == buf[0]) {
+	  gethostname(hostname, OMX_MESSAGE_PREFIX_HOSTNAME_MAX);
+	  len = strlen(hostname);
 	  if (2 == fscanf(src, "[%u-%u]", &start_idx, &end_idx)) {
-	    gethostname(hostname, OMX_MESSAGE_PREFIX_HOSTNAME_MAX);
-	    len = strlen(hostname);
 	    start_idx = (start_idx >= len) ? len-1 : start_idx;
 	    end_idx = (end_idx >= len) ? len-1 : end_idx;
-	    fwrite(hostname+start_idx, sizeof(char), end_idx-start_idx+1, dst);
+	  } else {
+	    start_idx = 0;
+	    end_idx = len-1;
 	  }
+	  fwrite(hostname+start_idx, sizeof(char), end_idx-start_idx+1, dst);
 	}
       } else
 	break;
