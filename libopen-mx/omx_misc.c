@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include "omx_lib.h"
 #include "omx_request.h"
@@ -369,44 +370,62 @@ omx_cancel_notest(omx_endpoint_t ep,
 }
 
 #define OMX_MESSAGE_PREFIX_LENGTH_MAX 256
+#define OMX_MESSAGE_PREFIX_HOSTNAME_MAX 20
 __malloc char *
 omx__create_message_prefix(const struct omx_endpoint *ep)
 {
-  char * buffer, *src, *dst, *c;
-  int len;
+  char *buffer;
+  char buf[OMX_MESSAGE_PREFIX_LENGTH_MAX];
+  char hostname[OMX_MESSAGE_PREFIX_HOSTNAME_MAX];
+  FILE *src, *dst;
+  int ret;
+  int start_idx, end_idx, len;
 
   buffer = omx_malloc(OMX_MESSAGE_PREFIX_LENGTH_MAX);
   if (!buffer)
     omx__abort(NULL, "Failed to allocate message prefix\n");
 
-  src = omx__globals.message_prefix_format;
-  dst = buffer;
+  src = fmemopen(omx__globals.message_prefix_format,
+		 strlen(omx__globals.message_prefix_format) + 1,
+		 "r");
+  dst = fmemopen(buffer, OMX_MESSAGE_PREFIX_LENGTH_MAX, "w");
 
-  while ((c = strchr(src, '%')) != NULL) {
-    strncpy(dst, src, c-src);
-    dst += c-src; src = c;
-    if (!strncmp(src, "%P", 2)) {
-      len = sprintf(dst, "%ld", (unsigned long) getpid());
-      src += 2; dst += len;
-    } else if (!strncmp(src, "%E", 2)) {
-      if (ep) {
-        len = sprintf(dst, "%ld", (unsigned long) ep->endpoint_index);
-      } else {
-        *dst = 'X'; len = 1;
-      }
-      src += 2; dst += len;
-    } else if (!strncmp(src, "%B", 2)) {
-      if (ep) {
-        len = sprintf(dst, "%ld", (unsigned long) ep->board_index);
-      } else {
-        *dst = 'X'; len = 1;
-      }
-      src += 2; dst += len;
-    } else {
-      *dst++ = *src++;
+  while (1) {
+#define safe_fmt(len) "%" #len "[^%%]"
+#define xsafe_fmt(len) safe_fmt(len)
+    ret = fscanf(src, xsafe_fmt(OMX_MESSAGE_PREFIX_LENGTH_MAX), buf);
+
+    if (ret > 0)
+      fwrite(buf, sizeof(char), strlen(buf), dst);
+    else {
+      ret = fscanf(src, "%%%c", buf);
+	    
+      if (ret > 0) {
+	if ('P' == buf[0])
+	  fprintf(dst, "%ld", (unsigned long) getpid());
+	else if ('E' == buf[0]) {
+	  if (ep) fprintf(dst, "%ld", (unsigned long) ep->endpoint_index);
+	  else fprintf(dst, "X");
+	} else if ('B' == buf[0]) {
+	  if (ep) fprintf(dst, "%ld", (unsigned long) ep->board_index);
+	  else fprintf(dst, "X");
+	} else if ('H' == buf[0]) {
+	  if (2 == fscanf(src, "[%u-%u]", &start_idx, &end_idx)) {
+	    gethostname(hostname, OMX_MESSAGE_PREFIX_HOSTNAME_MAX);
+	    len = strlen(hostname);
+	    start_idx = (start_idx >= len) ? len-1 : start_idx;
+	    end_idx = (end_idx >= len) ? len-1 : end_idx;
+	    fwrite(hostname+start_idx, sizeof(char), end_idx-start_idx+1, dst);
+	  }
+	}
+      } else
+	break;
     }
   }
-  strcpy(dst, src);
+    
+  fclose(dst);
+  fclose(src);
 
   return buffer;
 }
+
