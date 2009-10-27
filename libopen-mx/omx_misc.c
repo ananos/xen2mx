@@ -410,11 +410,7 @@ omx__create_message_prefix(const struct omx_endpoint *ep)
 	  if (ep) fprintf(dst, "%ld", (unsigned long) ep->board_index);
 	  else fprintf(dst, "X");
 	} else if ('B' == buf[0]) {
-	  if (ep) {
-	    struct omx_board_info board_info;
-	    omx__get_board_info(ep, ep->board_index, &board_info);
-	    fprintf(dst, "%s", board_info.ifacename);
-	  }
+	  if (ep) fprintf(dst, "%s", ep->board_info.hostname);
 	  else fprintf(dst, "X");
 	} else if ('H' == buf[0]) {
 	  gethostname(hostname, OMX_MESSAGE_PREFIX_HOSTNAME_MAX);
