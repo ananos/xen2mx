@@ -24,6 +24,9 @@ CPPFLAGS	+=	-I@abs_top_srcdir@/common
 CPPFLAGS	+=	-I@abs_srcdir@
 CPPFLAGS	+=	@CPPFLAGS@
 
+# We are using GNU extensions
+CPPFLAGS	+=	-D_GNU_SOURCE=1
+
 CFLAGS	+=	-Wall -fstrict-aliasing -Wstrict-aliasing
 CFLAGS	+=	@CFLAGS@
 ifeq ($(omx_build_lib_debug),1)
