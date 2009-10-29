@@ -2599,20 +2599,18 @@ behavior at runtime, when starting a process:
 </dd>
 
 <dt>OMX_VERBOSE_PREFIX=1</dt>
-<dd>Display the endpoint index and process pid in the prefix of
+<dd>Display information about the process in the prefix of
   all Open-MX messages. The default prefix is <tt>OMX:</tt>.
-  If 1 is given, <tt>Open-MX:%H:%p</tt> with %P the process
-  pid and %H the hostname.
-  Other variables are %e, %b and %B which are respectively the
-  endpoint index, the board index and the board name (or X if no
-  endpoint is involved).
-  Moreover, %H[<B>f</B>-<B>t</B>] is expanded with the hostname
-  truncated from the character index <B>f</B> to the character
-  index <B>t</B> (first character index is 0). If an index greater
-  than the hostname length is given, this one is corrected with the
-  last index of the hostname. Finally, negative index cannot be used.
-  If another string is given, it is used as a prefix after replacing
-  %p, %e, %b, %B and %H if necessary.
+  If 1 is given, the prefix becomes <tt>OMX:%H:%p</tt>.
+  Otherwise, any string may be given using special variables
+  %p, %e, %b, %B and %H.
+  %e will be replaced by the endpoint number, %p is the process id,
+  %b is the board number, %B is the Open-MX board hostname,
+  and %H is the machine hostname.
+  If no endpoint is involved, X is used as endpoint or board identifiers.
+  Moreover, if %H or %B is followed by [<B>f</B>-<B>t</B>], the hostname
+  or board hostname is truncated from the character index <B>f</B> to the
+  character index <B>t</B>.
 </dd>
 
 <dt>OMX_IGNORE_MX_ENV=1</dt>
