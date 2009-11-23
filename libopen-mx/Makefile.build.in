@@ -27,7 +27,7 @@ CPPFLAGS	+=	@CPPFLAGS@
 # We are using GNU extensions
 CPPFLAGS	+=	-D_GNU_SOURCE=1
 
-CFLAGS	+=	-Wall -fstrict-aliasing -Wstrict-aliasing
+CFLAGS	+=	-Wall -fstrict-aliasing
 CFLAGS	+=	@CFLAGS@
 ifeq ($(omx_build_lib_debug),1)
   CPPFLAGS	+=	-DOMX_LIB_DEBUG=1
