@@ -1,6 +1,8 @@
 Open-MX 1.1.903 aka 1.2-rc3
 ==========================================================
 
+Bug fixes:
+* Fix installation when using DESTDIR.
 
 Other improvements from previous release:
 * Drop features that were deprecated since 1.1:
