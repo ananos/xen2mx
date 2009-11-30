@@ -210,7 +210,7 @@ omx__partner_lookup(struct omx_endpoint *ep,
 
     ret = omx__peer_index_to_addr(peer_index, &board_addr);
     if (ret != OMX_SUCCESS) {
-      omx__printf(ep, "Failed to find peer address of index %d (%s)\n",
+      omx__verbose_printf(ep, "Failed to find peer address of index %d (%s)\n",
 		  (unsigned) peer_index, omx_strerror(ret));
       /* let the caller handle this */
       return ret;
@@ -597,7 +597,7 @@ omx__handle_connect_reply(struct omx_endpoint *ep,
       /* this partner changed since last time it talked to us, cleanup the stuff */
       omx__debug_assert(partner->true_session_id != target_session_id);
 
-      omx__printf(ep, "Got a connect reply from a new instance of a partner, cleaning old partner status\n");
+      omx__verbose_printf(ep, "Got a connect reply from a new instance of a partner, cleaning old partner status\n");
       omx__partner_cleanup(ep, partner, 0);
     }
 
@@ -690,7 +690,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
     if (partner->back_session_id != -1) {
       /* this partner changed since last time it talked to us, cleanup the stuff */
-      omx__printf(ep, "Got a connect from a new instance of a partner, cleaning old partner status\n");
+      omx__verbose_printf(ep, "Got a connect from a new instance of a partner, cleaning old partner status\n");
       omx__partner_cleanup(ep, partner, 0);
     }
 
@@ -783,7 +783,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
 
   omx__board_addr_sprintf(board_addr_str, partner->board_addr);
   if (disconnect <= 1)
-    omx__printf(ep, "Cleaning partner %s endpoint %d\n", board_addr_str, partner->endpoint_index);
+    omx__verbose_printf(ep, "Cleaning partner %s endpoint %d\n", board_addr_str, partner->endpoint_index);
 
   /*
    * Complete pending send/recv with an error status (they should get nacked earlier most of the times).
@@ -802,7 +802,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     count++;
   }
   if (count)
-    omx__printf(ep, "Dropped %d pending send requests to partner\n", count);
+    omx__verbose_printf(ep, "Dropped %d pending send requests to partner\n", count);
 
   /*
    * Complete send large that were acked without being notified.
@@ -819,7 +819,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     count++;
   }
   if (count)
-    omx__printf(ep, "Dropped %d need-reply large sends to partner\n", count);
+    omx__verbose_printf(ep, "Dropped %d need-reply large sends to partner\n", count);
 
   /*
    * No need to look at the endpoint pull_req_q, they will be nacked or timeout in the driver anyway.
@@ -839,7 +839,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     count++;
   }
   if (count)
-    omx__printf(ep, "Dropped %d need-resources sends to partner\n", count);
+    omx__verbose_printf(ep, "Dropped %d need-resources sends to partner\n", count);
 
   /*
    * Drop need-seqnum send requests to this partner.
@@ -855,7 +855,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     count++;
   }
   if (count)
-    omx__printf(ep, "Dropped %d need-seqnum send request to partner\n", count);
+    omx__verbose_printf(ep, "Dropped %d need-seqnum send request to partner\n", count);
 
   /*
    * Drop pending connect request to this partner.
@@ -869,7 +869,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     count++;
   }
   if (count)
-    omx__printf(ep, "Dropped %d pending connect request to partner\n", count);
+    omx__verbose_printf(ep, "Dropped %d pending connect request to partner\n", count);
 
   /*
    * Complete partially received request with an error status
@@ -899,7 +899,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     count++;
   }
   if (count)
-    omx__printf(ep, "Dropped %d partially received messages from partner\n", count);
+    omx__verbose_printf(ep, "Dropped %d partially received messages from partner\n", count);
 
   /*
    * Drop early fragments from the partner early queue.
@@ -914,7 +914,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     count++;
   }
   if (count)
-    omx__printf(ep, "Dropped %d early received packets from partner\n", count);
+    omx__verbose_printf(ep, "Dropped %d early received packets from partner\n", count);
 
   /*
    * Drop unexpected from this peer.
@@ -938,7 +938,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
     count++;
   }
   if (count)
-    omx__printf(ep, "Dropped %d unexpected message from partner\n", count);
+    omx__verbose_printf(ep, "Dropped %d unexpected message from partner\n", count);
 
   /*
    * Reset everything else to zero
