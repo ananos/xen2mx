@@ -29,7 +29,7 @@ DYNAMIC_LIB_OPT	=	@OPEN_MX_LIB_DYNAMIC_LINK_OPT@
 
 udev	=	1
 UDEV_RULES_DIR	=	/etc/udev/rules.d/
-UDEV_RULES_FILE	=	45-open-mx.rules
+UDEV_RULES_FILE	=	10-open-mx.rules
 
 .PHONY: all install clean distclean
 

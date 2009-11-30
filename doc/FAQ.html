@@ -898,7 +898,7 @@ to change device file names or access permissions
 (see <a href="#kernel-device-files">Which device files does Open-MX use?</a>).
 </p>
 <p>
-The udev rules file is usually <tt>/etc/udev/rules.d/45-open-mx.rules</tt>.
+The udev rules file is usually <tt>/etc/udev/rules.d/10-open-mx.rules</tt>.
 You may change this rules filename with the <tt>UDEV_RULES_FILE</tt> option at install-time,
 see <a href="#config-installtime">What are Open-MX install-time configuration options?</a>.
 In extreme circumstances, it is also possible to disable udev support entirely
@@ -2283,7 +2283,7 @@ to tune the installation:
   startup script.
 </dd>
 <dt>UDEV_RULES_DIR=/etc/udev/rules.d/</dt>
-<dt>UDEV_RULES_FILE=45-open-mx.rules</dt>
+<dt>UDEV_RULES_FILE=10-open-mx.rules</dt>
 <dd>
   Change the udev rules directory path and the Open-MX rules file to add.
   See also
