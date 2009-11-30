@@ -899,13 +899,8 @@ to change device file names or access permissions
 </p>
 <p>
 The udev rules file is usually <tt>/etc/udev/rules.d/45-open-mx.rules</tt>.
-For some reason, some old udev daemon (for instance on some RHEL5 distribution)
-may override the Open-MX rules with a default one, and thus cause the device
-files to not get the desired filenames and permissions.
-When it happens, you may try changing this rules filename into <tt>55-open-mx.rules</tt>
-in case it does not get overridden by the default <tt>50-udev.rules</tt> anymore.
-To do so, use the <tt>UDEV_RULES_FILE</tt> option at install-time
-at <a href="#config-installtime">What are Open-MX install-time configuration options?</a>.
+You may change this rules filename with the <tt>UDEV_RULES_FILE</tt> option at install-time,
+see <a href="#config-installtime">What are Open-MX install-time configuration options?</a>.
 In extreme circumstances, it is also possible to disable udev support entirely
 in Open-MX by passing <tt>udev=0</tt> at install-time.
 </p>

@@ -104,9 +104,9 @@ install:
 
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/$(UDEV_RULES_FILE)"
 	$(CMDPREFIX) $(RM) $(DESTDIR)$(sbindir)/$(UDEV_RULES_FILE)
-	$(CMDPREFIX) echo "KERNEL==\"open-mx\", NAME=\"@OMX_MAIN_DEVICE_NAME@\", GROUP=\"@OMX_MAIN_DEVICE_GROUP@\", MODE=\"@OMX_MAIN_DEVICE_MODE@\"" \
+	$(CMDPREFIX) echo "KERNEL==\"open-mx\", NAME=\"@OMX_MAIN_DEVICE_NAME@\", GROUP=\"@OMX_MAIN_DEVICE_GROUP@\", MODE=\"@OMX_MAIN_DEVICE_MODE@\", OPTIONS=\"last_rule\"" \
 		>> $(DESTDIR)$(sbindir)/$(UDEV_RULES_FILE)
-	$(CMDPREFIX) echo "KERNEL==\"open-mx-raw\", NAME=\"@OMX_RAW_DEVICE_NAME@\", GROUP=\"@OMX_RAW_DEVICE_GROUP@\", MODE=\"@OMX_RAW_DEVICE_MODE@\"" \
+	$(CMDPREFIX) echo "KERNEL==\"open-mx-raw\", NAME=\"@OMX_RAW_DEVICE_NAME@\", GROUP=\"@OMX_RAW_DEVICE_GROUP@\", MODE=\"@OMX_RAW_DEVICE_MODE@\", OPTIONS=\"last_rule\"" \
 		>> $(DESTDIR)$(sbindir)/$(UDEV_RULES_FILE)
 
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/omx_local_install"
