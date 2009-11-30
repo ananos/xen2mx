@@ -7,6 +7,8 @@ Bug fixes:
   ever override Open-MX rules.
 
 Other improvements from previous release:
+* Miscellaneous documentation updates.
+* Cleanup the verbose message prefix.
 * Drop features that were deprecated since 1.1:
   + make installonly (use make install instead).
   + IFACES in the open-mx.conf file (use OMX_IFACES instead).
