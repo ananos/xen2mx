@@ -336,6 +336,9 @@
 <li><a href="#debug-failed-endpoint-vmalloc">
   What if endpoint opening fails with "No resources available in the system"?
 </a></li>
+<li><a id="debug-failed-endpoint-unreachable" href="#debug-failed-endpoint-unreachable">
+  What if a message fails because an endpoint is unreachable?
+</a></li>
 </ul>
 
 <p><a href="#misc">
@@ -2539,6 +2542,8 @@ behavior at runtime, when starting a process:
 <dt>OMX_NOTACKED_MAX=4</dt>
 <dd>Allow a maximum of 4 messages not acked per partner. When passing
   this threshold, an explicit ack is sent immediatly if needed.
+  This is equivalent to <tt>MX_IMM_ACK</tt> and may be used to enforce
+  immediate acking of all incoming messages, see <a href="#debug-failed-endpoint-unreachable">What if a message fails because an endpoint is unreachable?</a>
 </dd>
 
 <dt>OMX_ZOMBIE_SEND=512</dt>
@@ -2819,6 +2824,48 @@ $ omx_init status
  in the kernel thanks to the vmalloc parameter on the kernel boot command
  line as shown in the above message.
 </p>
+
+
+
+<h4><a id="debug-failed-endpoint-unreachable" href="#debug-failed-endpoint-unreachable">
+  What if a message fails because an endpoint is unreachable?
+</a></h4>
+<pre>
+ Open-MX: Send request (seqnum 713 sesnum 0) timeout, already sent 41 times, resetting partner status
+ Open-MX: Cleaning partner 00:00:00:00:00:00 endpoint 0
+ Open-MX: Completing send request: Remote Endpoint Unreachable
+</pre>
+<p>
+ Open-MX completes send requests when they are acknowledged by the
+ receiver. If a message is dropped by the fabric or the receive stack
+ from some reason, it will be resent periodically by the sender (every
+ half second by default).
+ Once too many resends were tried (1000 by default), the sender will
+ consider that the target endpoint is unreachable.
+ All pending messages for this target are thus aborted with an
+ erroneous status.
+</p>
+<p>
+ The main reason for getting such an error is a node failure.
+ If the whole machine and system fails, packets cannot be received at
+ all.
+ Note that a process crashing does not cause this problem since its
+ system would still be alive and would thus report
+ <em>Endpoint Closed</em> instead.
+</p>
+<p>
+ Another reason for considering an endpoint as unreachable is when
+ the target process failed to ack in time.
+ It could mean that the machine is severely overloaded and the system
+ did not provide the process with enough CPU time.
+ It could also mean that the application did not poll Open-MX often
+ enough and thus prevented the ack from being sent.
+ A workaround for this problem is to pass
+ the <tt>OMX_NOTACKED_MAX=1</tt> environment variable
+ so that acks are sent as soon as possible
+ (see also <a href="#config-runtime">What are Open-MX runtime configuration options?</a>).
+</p>
+
 
 
 </div>
