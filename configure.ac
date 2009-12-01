@@ -15,7 +15,7 @@
 # See the GNU General Public License in COPYING.GPL for more details.
 
 AC_INIT([Open-MX],
-        1.1.902,
+        1.1.903,
         [http://open-mx.org],
         open-mx)
 AC_CONFIG_SRCDIR(common/omx_io.h)
