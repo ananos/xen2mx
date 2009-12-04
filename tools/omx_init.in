@@ -46,8 +46,8 @@ OMX_MODULE="${OMX_PREFIX}/modules/${LINUX_RELEASE}/open-mx.ko"
 set -e
 
 if test ! -d ${OMX_PREFIX}; then
-    echo "Something bad happened with the install script"
-    echo "OMX_PREFIX isn't pointing to a valid directory"
+    echo "[ERROR] Something bad happened with the install script"
+    echo "[ERROR] OMX_PREFIX isn't pointing to a valid directory"
     exit 1
 fi
 
@@ -174,7 +174,7 @@ load_omx() {
     module=${OMX_MODULE}
 
     if ! test -f $module; then
-	echo "Cannot find module $module"
+	echo "[ERROR] Cannot find module $module"
         exit -1
     fi
 
@@ -245,7 +245,7 @@ start_peer_discovery() {
 	[ "${OMX_PEER_DISCOVERY}" = "fma" ] && oldfmapid=$(cat "$FMS_RUN/fma.pid" 2>/dev/null || true)
 
 	if [ ! -x ${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ] || [ ! -f ${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ] ;  then
-	    echo "Error : failed to find dynamic peer discovery (${OMX_PEER_DISCOVERY})"
+	    echo "[ERROR] Cannot find dynamic peer discovery to start (${OMX_PEER_DISCOVERY})"
 	    return
 	fi
 
@@ -267,7 +267,7 @@ start_peer_discovery() {
 	fi
 	cmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
 	if [ -z "$cmdname" ] ; then
-	    echo "Discovery exited early"
+	    echo "[ERROR] Discovery exited early"
 	else
 	    echo "$pid $cmdname" > ${OMX_PID_FILE}
 	    echo "Started as pid=$pid"
@@ -281,7 +281,7 @@ stop_peer_discovery() {
 	cat ${OMX_PID_FILE} | while read pid cmdname ; do
 	realcmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
 	if [ "$cmdname" != "$realcmdname" ] ; then
-	    echo "Cannot find dynamic peer discovery to kill ($cmdname, pid=$pid)"
+	    echo "[ERROR] Cannot find dynamic peer discovery to kill ($cmdname, pid=$pid)"
 	else
 	    echo "Killing the dynamic peer discovery ($cmdname, pid=$pid)"
 	    kill -9 $pid || true
@@ -290,7 +290,7 @@ stop_peer_discovery() {
 	done
 	rm -f ${OMX_PID_FILE} || true
     else
-	echo "Cannot find dynamic peer discovery to kill"
+	echo "[ERROR] Cannot find dynamic peer discovery to kill"
     fi
 }
 
@@ -348,7 +348,7 @@ case "$cmd" in
 	fi
 	;;
     *)
-	echo "Unknown command: $cmd"
+	echo "[ERROR] Unknown command: $cmd"
 	usage
 esac
 
