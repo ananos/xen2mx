@@ -244,6 +244,11 @@ start_peer_discovery() {
 	# save the old fma.pid to see if it changed
 	[ "${OMX_PEER_DISCOVERY}" = "fma" ] && oldfmapid=$(cat "$FMS_RUN/fma.pid" 2>/dev/null || true)
 
+	if [ ! -x ${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ] || [ ! -f ${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ] ;  then
+	    echo "Error : failed to find dynamic peer discovery (${OMX_PEER_DISCOVERY})"
+	    return
+	fi
+
 	echo "Starting the dynamic peer discovery (${OMX_PEER_DISCOVERY} ${discover_params})"
 	${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ${discover_params} >/dev/null 2>&1 &
 	pid=$!
