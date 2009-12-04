@@ -98,7 +98,7 @@
 
 extern void omx__debug_init(int signum);
 
-#define BUILD_BUG_ON(condition) ((void)sizeof(char[1 - 2*!!(condition)]))
+#define BUILD_BUG_ON(condition) ((void)(sizeof(struct { int:-!!(condition); })))
 
 /*************
  * Optimizing

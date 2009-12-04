@@ -26,13 +26,8 @@
  * Misc helpers
  */
 
-#ifndef max
-#define max(x, y) ({				\
-	typeof(x) _max1 = (x);			\
-	typeof(y) _max2 = (y);			\
-	(void) (&_max1 == &_max2);		\
-	_max1 > _max2 ? _max1 : _max2; })
-#endif
+/* simplified max macros for constants */
+#define omx_constant_max(x, y) (x > y ? x : y)
 
 
 /************
@@ -65,9 +60,9 @@
 # define OMX_MEDIUM_FRAG_LENGTH_SHIFT		12 /* the exact power-of-two for the max length, only needed in wire-compat mode */
 # define OMX_MEDIUM_FRAG_LENGTH_ROUNDUPSHIFT	12 /* the power-of-two above or equal to the max length */
 # define OMX_MTU ((unsigned) (sizeof(struct omx_pkt_head)						\
-			      + max( sizeof(struct omx_pkt_medium_frag) + OMX_MEDIUM_FRAG_LENGTH_MAX,	\
-				     sizeof(struct omx_pkt_pull_reply) + OMX_PULL_REPLY_LENGTH_MAX )	\
-				    ))
+			      + omx_constant_max( sizeof(struct omx_pkt_medium_frag) + OMX_MEDIUM_FRAG_LENGTH_MAX,	\
+						  sizeof(struct omx_pkt_pull_reply) + OMX_PULL_REPLY_LENGTH_MAX )	\
+						 ))
 
 #else /* !OMX_MX_WIRE_COMPAT */
 
