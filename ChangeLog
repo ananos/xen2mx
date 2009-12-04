@@ -1,3 +1,10 @@
+Open-MX 1.2
+=======================================
+
+Bug fixes:
+* Fix the build of recent Myricom FMS.
+
+
 Open-MX 1.1.903 aka 1.2-rc3 (December 1st 2009, svn r2826)
 ==========================================================
 
