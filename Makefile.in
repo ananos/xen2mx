@@ -88,6 +88,7 @@ man man-install man-clean man-distclean:
 
 fma fma-install fma-clean fma-distclean:
 	$(CMDPREFIX) +$(MAKE) -C fma $(shell echo $@ | cut -s -d- -f2) "CC=$(CC)" MYRI_INC=-I@abs_top_srcdir@/common/mx MYRI_LIB=@abs_top_builddir@/@OPEN_MX_DEFAULT_LIB_DIR@
+	if [ -d mcp ] ; then rmdir mcp ; fi
 
 ################
 # other targets

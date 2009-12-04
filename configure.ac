@@ -667,6 +667,7 @@ fi
 
 if test $OMX_PEER_DISCOVERY = fma ; then
   AC_SUBST(OMX_PEER_DISCOVERY, fma)
+  mkdir mcp
   AC_CONFIG_SUBDIRS(fma)
 else
   AC_SUBST(OMX_PEER_DISCOVERY, omxoed)
