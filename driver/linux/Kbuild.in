@@ -6,16 +6,16 @@ ifneq ($(shell test -d @abs_top_srcdir@/.git/ && which git),)
 endif
 endif
 
-EXTRA_CFLAGS	+=	-include @abs_top_builddir@/common/omx_config.h
-EXTRA_CFLAGS	+=	-include @abs_top_builddir@/driver/linux/omx_checks.h
-EXTRA_CFLAGS	+=	-include @abs_top_builddir@/driver/linux/omx_debug.h
-EXTRA_CFLAGS	+=	-I@abs_srcdir@/
-EXTRA_CFLAGS	+=	-I@abs_top_srcdir@/common/
+@LINUX_KBUILD_CCFLAGS_Y@	+=	-include @abs_top_builddir@/common/omx_config.h
+@LINUX_KBUILD_CCFLAGS_Y@	+=	-include @abs_top_builddir@/driver/linux/omx_checks.h
+@LINUX_KBUILD_CCFLAGS_Y@	+=	-include @abs_top_builddir@/driver/linux/omx_debug.h
+@LINUX_KBUILD_CCFLAGS_Y@	+=	-I@abs_srcdir@/
+@LINUX_KBUILD_CCFLAGS_Y@	+=	-I@abs_top_srcdir@/common/
 ifneq ($(SRC_VERSION),)
-  EXTRA_CFLAGS	+=	-DSRC_VERSION="\"$(SRC_VERSION)\""
+  @LINUX_KBUILD_CCFLAGS_Y@	+=	-DSRC_VERSION="\"$(SRC_VERSION)\""
 endif
 ifeq (@OMX_DRIVER_PROFILING@,1)
-  EXTRA_CFLAGS	+=	-g
+  @LINUX_KBUILD_CCFLAGS_Y@	+=	-g
 endif
 
 obj-m	+=	open-mx.o

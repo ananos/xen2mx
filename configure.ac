@@ -260,6 +260,17 @@ if test x$build_driver = xyes ; then
     fi
     AC_SUBST(LINUX_RELEASE)
 
+    # Check whether ccflags-y is supported
+    AC_MSG_CHECKING(kernel build supports ccflags-y)
+    if test -d ${LINUX_BUILD}/scripts/ && grep ccflags-y -r ${LINUX_BUILD}/scripts/ >/dev/null ; then
+	AC_MSG_RESULT(yes)
+	LINUX_KBUILD_CCFLAGS_Y=ccflags-y
+    else
+	AC_MSG_RESULT([no, reverting to EXTRA_CFLAGS])
+	LINUX_KBUILD_CCFLAGS_Y=EXTRA_CFLAGS
+    fi
+    AC_SUBST(LINUX_KBUILD_CCFLAGS_Y)
+
 fi # end of $build_driver = yes
 
 #######################################
