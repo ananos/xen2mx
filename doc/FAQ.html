@@ -135,17 +135,17 @@
     Kernel Driver
 </a></p>
 <ul>
-<li><a href="#kernel-compiler">
-  How do I change the compiler for the kernel driver?
-</a></li>
-<li><a href="#kernel-arch">
-  How do I change the target architecture of the kernel driver?
-</a></li>
 <li><a href="#kernel-target-kernel">
   How do I change the target kernel for the driver?
 </a></li>
 <li><a href="#kernel-another-kernel">
   How to build the kernel for another kernel?
+</a></li>
+<li><a href="#kernel-compiler">
+  How do I change the compiler for the kernel driver?
+</a></li>
+<li><a href="#kernel-arch">
+  How do I change the target architecture of the kernel driver?
 </a></li>
 <li><a href="#kernel-device-files">
   Which device files does Open-MX use?
@@ -984,31 +984,6 @@ the new Open-MX static library.
 </a></h3>
 
 
-<h4><a id="kernel-compiler" href="#kernel-compiler">
-  How do I change the compiler for the kernel driver?
-</a></h4>
-<p>
-The kernel module should preferably be compiled with the same compiler
-than the kernel has been. To change the compiler for the kernel module,
-pass KCC=&lt;othercompiler&gt; on the configure or make command line.
-See also <a href="#kernel-arch">How do I change the target architecture of the kernel driver?</a>.
-</p>
-
-
-<h4><a id="kernel-arch" href="#kernel-arch">
-  How do I change the target architecture of the kernel driver?
-</a></h4>
-<p>
-By default the kernel module is built for the currently running architecture.
-If the target kernel was built for another architecture, the kernel module
-build should be modified accordingly.
-For instance, to build for i386 machines, pass KCC="gcc -m32" and KARCH="i386"
-on the configure command-line.
-These variables will be passed as CC and ARCH to the kernel build command line.
-See also <a href="#kernel-compiler">How do I change the compiler for the kernel driver?</a>.
-</p>
-
-
 <h4><a id="kernel-target-kernel" href="#kernel-target-kernel">
   How do I change the target kernel for the driver?
 </a></h4>
@@ -1051,6 +1026,31 @@ build path, kernel headers path and kernel release number:
 $ make driver LINUX_BUILD=&lt;/path/to/kernel/build&gt; LINUX_HDR=&lt;/path/to/kernel/headers&gt; LINUX_RELEASE=&lt;version&gt;
 $ make driver-install LINUX_BUILD=&lt;/path/to/kernel/build&gt; LINUX_HDR=&lt;/path/to/kernel/headers&gt; LINUX_RELEASE=&lt;version&gt;
 </pre>
+
+
+<h4><a id="kernel-compiler" href="#kernel-compiler">
+  How do I change the compiler for the kernel driver?
+</a></h4>
+<p>
+The kernel module should preferably be compiled with the same compiler
+than the kernel has been. To change the compiler for the kernel module,
+pass KCC=&lt;othercompiler&gt; on the configure or make command line.
+See also <a href="#kernel-arch">How do I change the target architecture of the kernel driver?</a>.
+</p>
+
+
+<h4><a id="kernel-arch" href="#kernel-arch">
+  How do I change the target architecture of the kernel driver?
+</a></h4>
+<p>
+By default the kernel module is built for the currently running architecture.
+If the target kernel was built for another architecture, the kernel module
+build should be modified accordingly.
+For instance, to build for i386 machines, pass KCC="gcc -m32" and KARCH="i386"
+on the configure command-line.
+These variables will be passed as CC and ARCH to the kernel build command line.
+See also <a href="#kernel-compiler">How do I change the compiler for the kernel driver?</a>.
+</p>
 
 
 <h4><a id="kernel-device-files" href="#kernel-device-files">
