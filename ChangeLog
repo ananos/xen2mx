@@ -1,13 +1,18 @@
+
+Other improvements from previous release:
+* Update the FAQ and install it in the documentation install directory.
+
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.2.0 (December 15th 2009, svn r2835)
 =============================================
 
 Bug fixes:
 * Fix the build of recent Myricom FMS.
 * Fix build with final Linux kernel 2.6.32.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.1.903 aka 1.2-rc3 (December 1st 2009, svn r2826)
 ==========================================================

@@ -1,8 +1,10 @@
+PACKAGE_TARNAME	=	@PACKAGE_TARNAME@
 exec_prefix	=	@exec_prefix@
 prefix		=	@prefix@
 bindir		=	@bindir@
 includedir	=	@includedir@
 srcdir		=	@srcdir@
+docdir		=	@docdir@
 
 OMX_CONFIGURED	=	@OMX_CONFIGURED@
 
@@ -91,7 +93,7 @@ fma fma-install fma-clean fma-distclean:
 	if [ -d mcp ] ; then rmdir mcp ; fi
 
 ################
-# other targets
+# other targets (including the FAQ which is always installed)
 
 other other-clean other-distclean:
 
@@ -119,6 +121,14 @@ other-install:
 		$(CMDECHOAFTERPREFIX) "  INSTALL $(DESTDIR)$(includedir)/mx_raw.h" ; \
 		$(INSTALL) -m 0644 $(srcdir)/common/mx/mx_raw.h $(DESTDIR)$(includedir) ; \
 	fi
+
+	$(CMDECHO) "  MKDIR   $(DESTDIR)$(docdir)"
+	$(CMDPREFIX) if test ! -d $(DESTDIR)$(docdir); then \
+		$(MKDIR_P) $(DESTDIR)$(docdir) ; \
+	fi
+	
+	$(CMDECHO) "  INSTALL $(DESTDIT)$(docdir)/FAQ.html"
+	$(CMDPREFIX) $(INSTALL) -m 0644 $(srcdir)/doc/FAQ.html $(DESTDIT)$(docdir)
 
 ##############
 # tags
