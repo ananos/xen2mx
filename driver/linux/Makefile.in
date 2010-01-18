@@ -3,15 +3,15 @@ prefix  =       @prefix@
 include @abs_top_srcdir@/common.mk
 
 KCC	=	@KCC@
-ARCH	=	@ARCH@
+KARCH	=	@KARCH@
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 
 ifneq ($(KCC),)
   KBUILD_VARS	+=	CC="$(KCC)"
 endif
-ifneq ($(ARCH),)
-  KBUILD_VARS	+=	ARCH="$(ARCH)"
+ifneq ($(KARCH),)
+  KBUILD_VARS	+=	ARCH="$(KARCH)"
 endif
 
 HDRCHECKFILE	=	omx_checks.h
