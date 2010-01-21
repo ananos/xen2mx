@@ -128,8 +128,8 @@ other-install:
 		$(MKDIR_P) $(DESTDIR)$(docdir) ; \
 	fi
 	
-	$(CMDECHO) "  INSTALL $(DESTDIT)$(docdir)/FAQ.html"
-	$(CMDPREFIX) $(INSTALL) -m 0644 $(srcdir)/doc/FAQ.html $(DESTDIT)$(docdir)
+	$(CMDECHO) "  INSTALL $(DESTDIR)$(docdir)/FAQ.html"
+	$(CMDPREFIX) $(INSTALL) -m 0644 $(srcdir)/doc/FAQ.html $(DESTDIR)$(docdir)
 
 ##############
 # tags
