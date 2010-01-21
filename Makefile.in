@@ -4,6 +4,7 @@ prefix		=	@prefix@
 bindir		=	@bindir@
 includedir	=	@includedir@
 srcdir		=	@srcdir@
+datarootdir	=	@datarootdir@
 docdir		=	@docdir@
 
 OMX_CONFIGURED	=	@OMX_CONFIGURED@
