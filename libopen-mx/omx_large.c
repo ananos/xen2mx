@@ -288,8 +288,8 @@ omx__get_contigous_region(struct omx_endpoint *ep,
     list_for_each_entry(region, &ep->reg_list, reg_elt) {
       if ((!reserver || !region->reserver)
 	  && (omx__globals.parallel_regcache || !region->use_count)
-	  && region->segs.segs[0].vaddr == seg->vaddr
-	  && region->segs.segs[0].len >= seg->len) {
+	  && region->segs.single.vaddr == seg->vaddr
+	  && region->segs.single.len >= seg->len) {
 
 	if (!(region->use_count++))
 	  list_del(&region->reg_unused_elt);

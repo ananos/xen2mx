@@ -181,6 +181,7 @@ omx_continue_partial_copy_from_segments(const struct omx_endpoint *ep,
   struct omx_cmd_user_segment * curseg = state->seg;
   uint32_t curoff = state->offset;
 
+  /* if copying from a single segments, memcpy should be directly */
   omx__debug_assert(srcsegs->nseg > 1);
 
   while (1) {
@@ -221,6 +222,9 @@ omx_continue_partial_copy_to_segments(const struct omx_endpoint *ep,
   struct omx_cmd_user_segment * curseg = state->seg;
   uint32_t curoff = state->offset;
 
+  /* if copying to a single segments, memcpy should be directly */
+  omx__debug_assert(dstsegs->nseg > 1);
+
   while (1) {
     uint32_t curchunk = curseg->len - curoff; /* remaining data in the segment */
     uint32_t chunk = curchunk > length ? length : curchunk; /* data to take */
@@ -257,6 +261,9 @@ omx_partial_copy_to_segments(const struct omx_endpoint *ep,
 			     uint32_t length,
 			     uint32_t offset, struct omx_segscan_state *scan_state, uint32_t *scan_offset)
 {
+  /* if copying to a single segments, memcpy should be directly */
+  omx__debug_assert(dstsegs->nseg > 1);
+
   if (offset != *scan_offset) {
     struct omx_cmd_user_segment * curseg = &dstsegs->segs[0];
     uint32_t curoffset = 0;
