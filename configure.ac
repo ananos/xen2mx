@@ -375,23 +375,6 @@ AC_SUBST(LIB_TARGETS)
 #######################################
 # debug, profiling and valgrind config
 
-AC_ARG_ENABLE(debug-requests,
-	[AS_HELP_STRING([--enable-debug-requests], [enable request debugging in the library])],
-	enable_debug_requests=$enableval, enable_debug_requests=no)
-AC_MSG_CHECKING(if request debugging is enabled in the library)
-if test x$enable_debug_requests = xyes; then
-  if test x$enable_debug = xyes ; then
-    AC_MSG_RESULT(yes)
-  else
-    AC_MSG_RESULT(yes in the debug library)
-  fi
-  AC_DEFINE(OMX_DEBUG_REQUESTS, [1], [Define to enable request debugging features in the library])
-  AC_SUBST(OMX_DEBUG_REQUESTS, 1)
-else
-  AC_MSG_RESULT(no)
-  AC_SUBST(OMX_DEBUG_REQUESTS, 0)
-fi
-
 AC_ARG_ENABLE(counters,
 	[AS_HELP_STRING([--disable-counters], [disable counters support in the driver])],
 	enable_counters=$enableval, enable_counters=yes)
