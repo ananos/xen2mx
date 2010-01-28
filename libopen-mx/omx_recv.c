@@ -1050,7 +1050,7 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
 
   /* get the unexp buffer and store the new segments */
   unexp_buffer = OMX_SEG_PTR(&req->recv.segs.single);
-  memcpy(&req->recv.segs, reqsegs, sizeof(*reqsegs));
+  omx_clone_segments(&req->recv.segs, reqsegs);
 
   /* compute xfer_length */
   msg_length = req->generic.status.msg_length;
@@ -1147,7 +1147,7 @@ omx__irecv_segs(struct omx_endpoint *ep, const struct omx__req_segs * reqsegs,
     goto out;
   }
 
-  memcpy(&req->recv.segs, reqsegs, sizeof(*reqsegs));
+  omx_clone_segments(&req->recv.segs, reqsegs);
 
   req->generic.type = OMX_REQUEST_TYPE_RECV;
   req->generic.state = OMX_REQUEST_STATE_RECV_NEED_MATCHING;

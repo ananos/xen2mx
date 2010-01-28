@@ -1,7 +1,11 @@
 
+
+Bug fixes:
+* Fix a potential memory corruption of the destination buffer address
+  when receiving expected messages.
+
 Other improvements from previous release:
 * Update the FAQ and install it in the documentation install directory.
-
 
 Caveats:
 * No background progression or retransmission is done if the application
