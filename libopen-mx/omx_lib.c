@@ -266,9 +266,11 @@ omx__progress(struct omx_endpoint * ep)
   /* check the endpoint descriptor */
   omx__check_endpoint_desc(ep);
 
+#ifdef OMX_LIB_DEBUG
   /* check if we leaked some requests */
   if (omx__globals.check_request_alloc)
     omx__request_alloc_check(ep);
+#endif
 
   return OMX_SUCCESS;
 }
