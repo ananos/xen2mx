@@ -294,36 +294,39 @@ omx_checksum_segments(struct omx__req_segs *reqsegs, uint64_t length) {
   struct omx_cmd_user_segment *segarray;
 
   if (reqsegs->nseg == 1)
-      segarray = &reqsegs->single;
+    segarray = &reqsegs->single;
   else
-      segarray = reqsegs->segs;
+    segarray = reqsegs->segs;
 
   for (seg = 0; seg < reqsegs->nseg; seg++) {
-      struct omx_cmd_user_segment *cseg  = segarray+seg;   
-      uint32_t                     chunk = cseg->len > length ? length : cseg->len;
-      char			   *ptr  = OMX_SEG_PTR(cseg);
+    struct omx_cmd_user_segment *cseg  = segarray+seg;   
+    uint32_t                     chunk = cseg->len > length ? length : cseg->len;
+    char			 *ptr  = OMX_SEG_PTR(cseg);
 
-      while (length) {   
-	  int j;
+    while (length) {   
+      int j;
 
-	  for (j = 0; j < chunk; j++) {
-	      int i;
+      for (j = 0; j < chunk; j++) {
+	int i;
 
-	      crc ^= *(ptr++) << 8;
+	crc ^= *(ptr++) << 8;
 
-	      for (i = 0; i < 8; ++i) {
-		  if (crc & 0x8000)
-		      crc = (crc << 1) ^ 0x1021;
-		  else
-		      crc = crc << 1;
-	      }
-	  }
-
-	  length -= chunk;
+	for (i = 0; i < 8; ++i) {
+	  if (crc & 0x8000)
+	    crc = (crc << 1) ^ 0x1021;
+	  else
+	    crc = crc << 1;
+	}
       }
+
+      length -= chunk;
+    }
   }
-  
+
   return crc;
 }
 
 #endif /* __omx_segments_h__ */
+
+/* vim: shiftwidth=2 softtabstop=2
+ */

@@ -351,14 +351,12 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(tiny_n->lib_piggyack, cmd.piggyack);
 	OMX_PKT_FIELD_FROM(tiny_n->session, cmd.session_id);
 	OMX_PKT_FIELD_FROM(tiny_n->checksum, cmd.checksum);
-
 	OMX_PKT_MATCH_INFO_FROM(tiny_n, cmd.match_info);
 
 	omx_send_dprintk(eh, "TINY length %ld", (unsigned long) length);
 
 	/* copy the data right after the header */
 	ret = copy_from_user(data, &((struct omx_cmd_send_tiny __user *) uparam)->data, length);
-	
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read send tiny cmd data\n");
 		ret = -EFAULT;

@@ -548,6 +548,7 @@ struct omx__globals {
   int waitintr;
   int fatal_errors;
   int debug_signal_level;
+  int debug_checksum;
   int check_request_alloc;
   int medium_sendq;
   uint32_t any_endpoint_id;

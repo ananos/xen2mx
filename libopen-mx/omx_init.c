@@ -280,6 +280,11 @@ omx__init_comms(void)
     omx__globals.check_request_alloc = atoi(env);
     omx__verbose_printf(NULL, "Enabling request allocation check level %d\n", omx__globals.check_request_alloc);
   }
+  env = getenv("OMX_DEBUG_CHECKSUM");
+  if (env) {
+    omx__globals.debug_checksum = atoi(env);
+    omx__verbose_printf(NULL, "Enabling checksum on packets\n");
+  }
 #endif
 
   /**********************************************
@@ -526,3 +531,6 @@ omx_finalize(void)
   omx__globals.initialized = 0;
   return OMX_SUCCESS;
 }
+
+/* vim: shiftwidth=2 softtabstop=2
+ */

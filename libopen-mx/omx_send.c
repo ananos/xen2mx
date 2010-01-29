@@ -146,10 +146,11 @@ omx__alloc_setup_isend_tiny(struct omx_endpoint *ep,
   tiny_param->hdr.length = length;
   tiny_param->hdr.session_id = partner->true_session_id;
 
-# ifdef OMX_LIB_DEBUG
-  tiny_param->hdr.checksum = omx_checksum_segments(&req->send.segs, req->generic.status.msg_length);
-# endif
-  omx_copy_from_segments(tiny_param->data, &req->send.segs, length);
+#ifdef OMX_LIB_DEBUG
+  if (omx__globals.debug_checksum)
+    tiny_param->hdr.checksum = omx_checksum_segments(&req->send.segs, req->generic.status.msg_length);
+#endif
+    omx_copy_from_segments(tiny_param->data, &req->send.segs, length);
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
@@ -1507,3 +1508,6 @@ omx__process_resend_requests(struct omx_endpoint *ep)
   /* requeue requests at the end */
   list_splice(&tmp_req_q, ep->connect_req_q.prev);
 }
+
+/* vim: shiftwidth=2 softtabstop=2
+ */
