@@ -247,6 +247,7 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 	event.seqnum = hdr->seqnum;
 	event.piggyack = hdr->piggyack;
 	event.specific.tiny.length = hdr->length;
+	event.specific.tiny.checksum = hdr->checksum;
 
 	/* copy the data */
 	err = copy_from_user(&event.specific.tiny.data, data, hdr->length);

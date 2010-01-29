@@ -236,6 +236,13 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 
   omx_copy_to_segments(&req->recv.segs, msg->specific.tiny.data, xfer_length);
 
+  /* Check for the checskum */
+# ifdef OMX_LIB_DEBUG
+  if (msg->specific.tiny.checksum != omx_checksum_segments(&req->recv.segs,
+							   req->generic.status.msg_length))
+    omx__abort(ep, "checksum checking failed during the reception of a tiny packet\n");
+# endif
+
   if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
     omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
     if (unlikely(HAS_CTXIDS(ep)))

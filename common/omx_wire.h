@@ -348,7 +348,7 @@ struct omx_pkt_msg {
 	uint8_t src_endpoint;
 	uint8_t src_generation; /* FIXME: unused ? */
 	uint16_t length;
-	uint16_t pad1;
+	uint16_t checksum;
 	/* 8 */
 	uint16_t lib_seqnum;
 	uint16_t lib_piggyack;

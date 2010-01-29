@@ -1,5 +1,3 @@
-
-
 Bug fixes:
 * Fix a potential memory corruption of the destination buffer address
   when receiving expected messages.

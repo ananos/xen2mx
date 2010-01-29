@@ -301,7 +301,8 @@ struct omx_cmd_send_tiny {
 		uint16_t seqnum;
 		uint16_t piggyack;
 		uint8_t length;
-		uint8_t pad2[3];
+		uint8_t pad2;
+		uint16_t checksum;
 		/* 16 */
 		uint64_t match_info;
 		/* 24 */
@@ -829,8 +830,9 @@ union omx_evt {
 		/* 16 */
 		union {
 			struct {
+				uint16_t checksum;
 				uint8_t length;
-				uint8_t pad[7];
+				uint8_t pad[5];
 				/* 8 */
 				char data[OMX_TINY_MSG_LENGTH_MAX];
 				/* 40 */

@@ -167,6 +167,8 @@ omx_recv_tiny(struct omx_iface * iface,
 	uint32_t session_id = OMX_FROM_PKT_FIELD(tiny_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(tiny_n->lib_seqnum);
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(tiny_n->lib_piggyack);
+	uint16_t checksum = OMX_FROM_PKT_FIELD(tiny_n->checksum);
+
 	struct omx_evt_recv_msg event;
 	int err = 0;
 
@@ -232,6 +234,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
 	event.specific.tiny.length = length;
+	event.specific.tiny.checksum = checksum;
 
 	/* copy data in event data */
 	err = skb_copy_bits(skb, hdr_len, event.specific.tiny.data, length);

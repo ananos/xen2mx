@@ -35,6 +35,10 @@ omx_cache_single_segment(struct omx__req_segs * reqsegs, const void * buffer, ui
   reqsegs->nseg = 1;
   reqsegs->segs = &reqsegs->single;
   reqsegs->total_length = reqsegs->single.len;
+
+  if (reqsegs->nseg == 1)
+      assert(&reqsegs->single == reqsegs->segs);
+
 }
 
 static inline omx_return_t
@@ -277,6 +281,49 @@ omx_partial_copy_to_segments(const struct omx_endpoint *ep,
 
   omx_continue_partial_copy_to_segments(ep, dstsegs, src, length, scan_state);
   *scan_offset = offset+length;
+}
+
+
+/*
+ * compute the checksum of a segment request
+ */
+static inline uint16_t
+omx_checksum_segments(struct omx__req_segs *reqsegs, uint64_t length) {
+  uint16_t crc  = 0;
+  uint32_t seg;
+  struct omx_cmd_user_segment *segarray;
+
+  if (reqsegs->nseg == 1)
+      segarray = &reqsegs->single;
+  else
+      segarray = reqsegs->segs;
+
+  for (seg = 0; seg < reqsegs->nseg; seg++) {
+      struct omx_cmd_user_segment *cseg  = segarray+seg;   
+      uint32_t                     chunk = cseg->len > length ? length : cseg->len;
+      char			   *ptr  = OMX_SEG_PTR(cseg);
+
+      while (length) {   
+	  int j;
+
+	  for (j = 0; j < chunk; j++) {
+	      int i;
+
+	      crc ^= *(ptr++) << 8;
+
+	      for (i = 0; i < 8; ++i) {
+		  if (crc & 0x8000)
+		      crc = (crc << 1) ^ 0x1021;
+		  else
+		      crc = crc << 1;
+	      }
+	  }
+
+	  length -= chunk;
+      }
+  }
+  
+  return crc;
 }
 
 #endif /* __omx_segments_h__ */
