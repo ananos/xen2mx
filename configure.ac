@@ -147,7 +147,7 @@ if test x$build_driver = xyes ; then
     fi
     AC_MSG_RESULT($KCC_BASE)
     AC_CHECK_PROGS(_KCC_BASE_UNUSED, $KCC_BASE)
-    KCC_VERSION=`$KCC_BASE --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
+    KCC_VERSION=`$KCC_BASE --version 2>/dev/null | sed -nr -e 's/.* ([[0-9]]+\.[[0-9]]+).*/\1/p' | head -1`
 
     LINUX_GCC_VERSION=`sed -e 's/.*gcc version \(.\..\).*/\1/' /proc/version`
 
