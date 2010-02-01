@@ -139,14 +139,15 @@ AC_ARG_VAR(KARCH, [Architecture name to pass when building the Open-MX kernel mo
 
 if test x$build_driver = xyes ; then
 
+    AC_MSG_CHECKING(which compiler to use for kernel modules)
     if test -n "$KCC" ; then
-	AC_CHECK_PROG(KCC, gcc, $CC)
-	AC_MSG_CHECKING(which compiler to use for kernel modules)
-	AC_MSG_RESULT($KCC)
-	KCC_VERSION=`$KCC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
+	KCC_BASE=`echo $KCC | cut -d' ' -f1`
     else
-	KCC_VERSION=`$CC --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
+	KCC_BASE=`echo $CC | cut -d' ' -f1`
     fi
+    AC_MSG_RESULT($KCC_BASE)
+    AC_CHECK_PROGS(_KCC_BASE_UNUSED, $KCC_BASE)
+    KCC_VERSION=`$KCC_BASE --version 2>/dev/null | sed -ne 's/gcc.* (GCC) \(.\..\).*/\1/p'`
 
     LINUX_GCC_VERSION=`sed -e 's/.*gcc version \(.\..\).*/\1/' /proc/version`
 
