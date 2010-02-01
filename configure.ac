@@ -145,7 +145,7 @@ if test x$build_driver = xyes ; then
     else
 	KCC_BASE=`echo $CC | cut -d' ' -f1`
     fi
-    AC_MSG_RESULT($KCC_BASE)
+    AC_MSG_RESULT($KCC)
     AC_CHECK_PROGS(_KCC_BASE_UNUSED, $KCC_BASE)
     KCC_VERSION=`$KCC_BASE --version 2>/dev/null | sed -nr -e 's/.* ([[0-9]]+\.[[0-9]]+).*/\1/p' | head -1`
 
