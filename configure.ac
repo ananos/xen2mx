@@ -183,7 +183,7 @@ if test x$build_driver = xyes ; then
     # Issue a warning if the kernel compiler seems to be different
     if test -n "$KCC_VERSION" && test -n "$LINUX_GCC_VERSION" ; then
       if test "$KCC_VERSION" != "$LINUX_GCC_VERSION" ; then
-        AC_MSG_NOTICE([kernel built with gcc $LINUX_GCC_VERSION and Open-MX with $KCC_VERSION? KCC might need to be set])
+        AC_MSG_NOTICE([kernel built with gcc $LINUX_GCC_VERSION and Open-MX with $KCC_VERSION? KCC might need to be adjusted])
       fi
     else
       if test -n  "$KCC" ; then
