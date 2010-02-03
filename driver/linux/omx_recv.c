@@ -236,10 +236,12 @@ omx_recv_tiny(struct omx_iface * iface,
 	event.specific.tiny.length = length;
 	event.specific.tiny.checksum = checksum;
 
+#ifndef OMX_NORECVCOPY
 	/* copy data in event data */
 	err = skb_copy_bits(skb, hdr_len, event.specific.tiny.data, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
+#endif
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
@@ -357,10 +359,12 @@ omx_recv_small(struct omx_iface * iface,
 
 	omx_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
+#ifndef OMX_NORECVCOPY
 	/* copy data in recvq slot */
 	err = skb_copy_bits(skb, hdr_len, endpoint->recvq + recvq_offset, length);
 	/* cannot fail since pages are allocated by us */
 	BUG_ON(err < 0);
+#endif
 
 	/* notify the event */
 	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
