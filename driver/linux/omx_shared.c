@@ -316,6 +316,7 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 	event.piggyack = hdr->piggyack;
 	event.specific.small.length = hdr->length;
 	event.specific.small.recvq_offset = recvq_offset;
+	event.specific.small.checksum = hdr->checksum;
 	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
 	omx_endpoint_release(dst_endpoint);
 
