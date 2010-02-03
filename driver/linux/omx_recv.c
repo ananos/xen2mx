@@ -277,6 +277,7 @@ omx_recv_small(struct omx_iface * iface,
 	uint32_t session_id = OMX_FROM_PKT_FIELD(small_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(small_n->lib_piggyack);
+	uint16_t checksum = OMX_FROM_PKT_FIELD(small_n->checksum);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
 	int err;
@@ -352,6 +353,7 @@ omx_recv_small(struct omx_iface * iface,
 	event.piggyack = lib_piggyack;
 	event.specific.small.length = length;
 	event.specific.small.recvq_offset = recvq_offset;
+	event.specific.small.checksum = checksum;
 
 	omx_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 

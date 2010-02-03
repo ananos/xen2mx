@@ -321,7 +321,7 @@ struct omx_cmd_send_small {
 	uint16_t seqnum;
 	uint16_t piggyack;
 	uint16_t length;
-	uint16_t pad2;
+	uint16_t checksum;
 	/* 16 */
 	uint64_t vaddr;
 	/* 24 */
@@ -841,7 +841,8 @@ union omx_evt {
 			struct {
 				uint32_t recvq_offset;
 				uint16_t length;
-				uint16_t pad[17];
+				uint16_t checksum;
+				uint16_t pad[15];
 				/* 40 */
 			} small;
 

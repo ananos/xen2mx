@@ -266,6 +266,11 @@ omx__alloc_setup_isend_small(struct omx_endpoint *ep,
   small_param->length = length;
   small_param->session_id = partner->true_session_id;
 
+#ifdef OMX_LIB_DEBUG
+  if (omx__globals.debug_checksum)
+    small_param->checksum = omx_checksum_segments(&req->send.segs, req->generic.status.msg_length);
+#endif
+
   /*
    * if single segment, use it for the first pio,
    * else copy it in the contigous copy buffer first

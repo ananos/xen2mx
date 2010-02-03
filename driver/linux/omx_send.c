@@ -447,6 +447,7 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(small_n->lib_seqnum, cmd.seqnum);
 	OMX_PKT_FIELD_FROM(small_n->lib_piggyack, cmd.piggyack);
 	OMX_PKT_FIELD_FROM(small_n->session, cmd.session_id);
+	OMX_PKT_FIELD_FROM(small_n->checksum, cmd.checksum);
 	OMX_PKT_MATCH_INFO_FROM(small_n, cmd.match_info);
 
 	omx_send_dprintk(eh, "SMALL length %ld", (unsigned long) length);
