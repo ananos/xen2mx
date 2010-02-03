@@ -1,3 +1,5 @@
+* OMX_DEBUG_CHECKSUM also compares checksum of unexp buffer and final segments?
+
 * fix more icc warnings
 
 * constify the open-mx interface ?

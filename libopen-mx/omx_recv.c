@@ -237,7 +237,7 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
   omx_copy_to_segments(&req->recv.segs, msg->specific.tiny.data, xfer_length);
 
 #ifdef OMX_LIB_DEBUG
-  if (omx__globals.debug_checksum) {
+  if (omx__globals.debug_checksum && xfer_length == req->generic.status.msg_length) {
     if (msg->specific.tiny.checksum != omx_checksum_segments(&req->recv.segs,
 							     req->generic.status.msg_length))
       omx__abort(ep, "checksum checking failed during the reception of a tiny packet\n");
@@ -264,7 +264,7 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
   omx_copy_to_segments(&req->recv.segs, data, xfer_length);
 
 #ifdef OMX_LIB_DEBUG
-  if (omx__globals.debug_checksum) {
+  if (omx__globals.debug_checksum && xfer_length == req->generic.status.msg_length) {
     if (msg->specific.small.checksum != omx_checksum_segments(&req->recv.segs,
 							     req->generic.status.msg_length))
       omx__abort(ep, "checksum checking failed during the reception of a small packet\n");
