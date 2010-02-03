@@ -249,6 +249,7 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 	event.specific.tiny.length = hdr->length;
 	event.specific.tiny.checksum = hdr->checksum;
 
+#ifndef OMX_NORECVCOPY
 	/* copy the data */
 	err = copy_from_user(&event.specific.tiny.data, data, hdr->length);
 	if (unlikely(err != 0)) {
@@ -256,6 +257,7 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 		err = -EFAULT;
 		goto out_with_endpoint;
 	}
+#endif
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
@@ -298,6 +300,7 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 		goto out_with_endpoint;
 	}
 
+#ifndef OMX_NORECVCOPY
 	/* copy the data */
 	err = copy_from_user(dst_endpoint->recvq + recvq_offset,
 			     (__user void *)(unsigned long) hdr->vaddr,
@@ -307,6 +310,7 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 		err = -EFAULT;
 		goto out_with_dst_event;
 	}
+#endif
 
 	/* fill and notify the event */
 	event.peer_index = src_endpoint->iface->peer.index;
@@ -364,6 +368,7 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 		goto out_with_endpoint;
 	}
 
+#ifndef OMX_NORECVCOPY
 	/* copy the data */
 	current_sendq_offset = sendq_offset;
 	current_recvq_offset = recvq_offset;
@@ -401,6 +406,7 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 		       src_endpoint->sendq + current_sendq_offset,
 		       remaining);
 	}
+#endif
 
 	/* fill the dst event */
 	dst_event.peer_index = src_endpoint->iface->peer.index;
@@ -521,6 +527,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	dst_event.specific.medium_frag.msg_length = hdr->length;
 	dst_event.specific.medium_frag.frag_pipeline = OMX_RECVQ_ENTRY_SHIFT;
 
+#ifndef OMX_NORECVCOPY
 	/* initialize position in segments */
 	cur_useg = &usegs[0];
 	cur_useg_remaining = cur_useg->len;
@@ -555,6 +562,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 		}
 		remaining -= frag_length;
 	}
+#endif
 
 	remaining = msg_length;
 	for(i=0; i<frags_nr; i++) {
@@ -705,11 +713,15 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 		goto out_notify_nack_with_dst_endpoint;
 	}
 
+#ifndef OMX_NORECVCOPY
 	/* pull from the dst region into the src region */
 	err = omx_copy_between_user_regions(dst_region, hdr->pulled_rdma_offset,
 					    src_region, 0,
 					    hdr->length);
 	event.status = err < 0 ? OMX_EVT_PULL_DONE_ABORTED : OMX_EVT_PULL_DONE_SUCCESS;
+#else
+	event.status = OMX_EVT_PULL_DONE_SUCCESS;
+#endif
 
 	/* release stuff */
 	omx_user_region_release(dst_region);
