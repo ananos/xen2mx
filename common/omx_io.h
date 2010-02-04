@@ -339,13 +339,16 @@ struct omx_cmd_send_mediumsq_frag {
 	uint16_t piggyack;
 	uint32_t sendq_offset;
 	/* 16 */
+	uint16_t checksum;
+	uint16_t pad[3];
+	/* 24*/
 	uint32_t msg_length;
 	uint16_t frag_length;
 	uint8_t frag_seqnum;
 	uint8_t frag_pipeline;
-	/* 24 */
-	uint64_t match_info;
 	/* 32 */
+	uint64_t match_info;
+	/* 40 */
 };
 
 struct omx_cmd_send_mediumva {
@@ -358,7 +361,8 @@ struct omx_cmd_send_mediumva {
 	uint16_t piggyack;
 	uint32_t length;
 	/* 16 */
-	uint32_t pad;
+	uint16_t checksum;
+	uint16_t pad;
 	uint32_t nr_segments;
 	/* 24 */
 	uint64_t segments;
@@ -854,7 +858,8 @@ union omx_evt {
 				uint8_t frag_seqnum;
 				uint8_t frag_pipeline;
 				/* 12 */
-				uint32_t pad[7];
+				uint16_t checksum;
+				uint16_t pad2[12];
 				/* 40 */
 			} medium_frag;
 

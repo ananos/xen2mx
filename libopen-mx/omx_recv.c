@@ -362,6 +362,14 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     if (unlikely(!new))
       omx__dequeue_partner_request(&partner->partial_medium_recv_req_q, req);
 
+#ifdef OMX_LIB_DEBUG
+  if (omx__globals.debug_checksum && xfer_length == req->generic.status.msg_length) {
+    if (msg->specific.medium_frag.checksum != omx_checksum_segments(&req->recv.segs,
+								    req->generic.status.msg_length))
+      omx__abort(ep, "checksum checking failed during the reception of a medium packet\n");
+  }
+#endif
+
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
     if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
       omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);

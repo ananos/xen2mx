@@ -369,7 +369,8 @@ struct omx_pkt_medium_frag { /* similar to MX's pkt_msg_t + pkt_frame_t */
 #else
 	uint8_t pad1;
 #endif
-	uint32_t pad2;
+	uint16_t checksum;
+	uint16_t pad2;
 	/* 32 */
 };
 

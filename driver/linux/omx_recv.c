@@ -167,7 +167,6 @@ omx_recv_tiny(struct omx_iface * iface,
 	uint32_t session_id = OMX_FROM_PKT_FIELD(tiny_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(tiny_n->lib_seqnum);
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(tiny_n->lib_piggyack);
-	uint16_t checksum = OMX_FROM_PKT_FIELD(tiny_n->checksum);
 
 	struct omx_evt_recv_msg event;
 	int err = 0;
@@ -234,7 +233,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
 	event.specific.tiny.length = length;
-	event.specific.tiny.checksum = checksum;
+	event.specific.tiny.checksum = OMX_FROM_PKT_FIELD(tiny_n->checksum);
 
 #ifndef OMX_NORECVCOPY
 	/* copy data in event data */
@@ -279,7 +278,6 @@ omx_recv_small(struct omx_iface * iface,
 	uint32_t session_id = OMX_FROM_PKT_FIELD(small_n->session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(small_n->lib_piggyack);
-	uint16_t checksum = OMX_FROM_PKT_FIELD(small_n->checksum);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
 	int err;
@@ -355,7 +353,7 @@ omx_recv_small(struct omx_iface * iface,
 	event.piggyack = lib_piggyack;
 	event.specific.small.length = length;
 	event.specific.small.recvq_offset = recvq_offset;
-	event.specific.small.checksum = checksum;
+	event.specific.small.checksum = OMX_FROM_PKT_FIELD(small_n->checksum);
 
 	omx_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
@@ -397,6 +395,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	uint32_t session_id = OMX_FROM_PKT_FIELD(medium_n->msg.session);
 	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(medium_n->msg.lib_seqnum);
 	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->msg.lib_piggyack);
+
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
 	int remaining_copy = frag_length;
@@ -505,6 +504,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event.specific.medium_frag.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
 	event.specific.medium_frag.frag_length = frag_length;
 	event.specific.medium_frag.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
+	event.specific.medium_frag.checksum = OMX_FROM_PKT_FIELD(medium_n->checksum);
 #ifdef OMX_MX_WIRE_COMPAT
 	event.specific.medium_frag.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
 #endif

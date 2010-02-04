@@ -418,7 +418,9 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 	dst_event.specific.medium_frag.frag_length = frag_length;
 	dst_event.specific.medium_frag.frag_seqnum = hdr->frag_seqnum;
 	dst_event.specific.medium_frag.frag_pipeline = hdr->frag_pipeline;
+	dst_event.specific.medium_frag.checksum = hdr->checksum;
 	dst_event.specific.medium_frag.recvq_offset = recvq_offset;
+
 
 	/* make sure the copy is done */
 #ifdef OMX_HAVE_DMA_ENGINE
@@ -525,6 +527,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	dst_event.seqnum = hdr->seqnum;
 	dst_event.piggyack = hdr->piggyack;
 	dst_event.specific.medium_frag.msg_length = hdr->length;
+	dst_event.specific.medium_frag.checksum = hdr->checksum;
 	dst_event.specific.medium_frag.frag_pipeline = OMX_RECVQ_ENTRY_SHIFT;
 
 #ifndef OMX_NORECVCOPY

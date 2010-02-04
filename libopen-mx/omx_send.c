@@ -408,6 +408,11 @@ omx__alloc_setup_isend_mediumva(struct omx_endpoint *ep,
   medium_param->nr_segments = req->send.segs.nseg;
   medium_param->segments = (uintptr_t) req->send.segs.segs;
 
+#ifdef OMX_LIB_DEBUG
+  if (omx__globals.debug_checksum)
+    medium_param->checksum = omx_checksum_segments(&req->send.segs, req->generic.status.msg_length);
+#endif
+
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
     req->generic.state |= OMX_REQUEST_STATE_NEED_SEQNUM;
@@ -625,6 +630,11 @@ omx__alloc_setup_isend_mediumsq(struct omx_endpoint *ep,
 #endif
   medium_param->msg_length = length;
   medium_param->session_id = partner->true_session_id;
+  
+#ifdef OMX_LIB_DEBUG
+  if (omx__globals.debug_checksum)
+    medium_param->checksum = omx_checksum_segments(&req->send.segs, req->generic.status.msg_length);
+#endif
 
   if (unlikely(OMX__SEQNUM(partner->next_send_seq - partner->next_acked_send_seq) >= OMX__THROTTLING_OFFSET_MAX)) {
     /* throttling */
