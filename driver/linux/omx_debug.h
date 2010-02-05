@@ -19,7 +19,7 @@
 #ifndef __omx_debug_h__
 #define __omx_debug_h__
 
-#if (defined OMX_DRIVER_DEBUG) || (defined OMX_DRIVER_PROFILING)
+#ifdef OMX_DRIVER_DEBUG
 #define INLINE
 #else
 #define INLINE inline

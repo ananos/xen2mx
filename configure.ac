@@ -338,8 +338,9 @@ EOF
 }
 
 if test x$enable_debug = xyes; then
-  # only build the debug lib lib
+  # only build the debug lib, enable debug in the driver
   AC_DEFINE(OMX_DRIVER_DEBUG, [1], [Define to enable debug features in the driver])
+  AC_SUBST(OMX_DRIVER_DEBUG, 1)
   AC_SUBST(omx_debug_tests, 1)
   if test x$enable_multilib = xyes; then
     generate_lib_build build32 32bits-debug-only 32 1 32
@@ -348,7 +349,8 @@ if test x$enable_debug = xyes; then
     generate_lib_build build debug-only "" 1 "${defaultptrsize}"
   fi
 else if test x$enable_debug = xno; then
-  # only build the non-debug lib
+  # only build the non-debug lib, disable debug in the driver
+  AC_SUBST(OMX_DRIVER_DEBUG, 0)
   AC_SUBST(omx_debug_tests, 0)
   if test x$enable_multilib = xyes; then
     generate_lib_build build32 32bits-normal 32 0 32
@@ -357,7 +359,8 @@ else if test x$enable_debug = xno; then
     generate_lib_build build normal "" 0 "${defaultptrsize}"
   fi
 else
-  # build both by default
+  # build both libs by default, disable debug in the driver
+  AC_SUBST(OMX_DRIVER_DEBUG, 0)
   if test x$enable_multilib = xyes; then
     generate_lib_build build32 32bits-normal 32 0 32
     generate_lib_build build64 64bits-normal 64 0 64
@@ -373,7 +376,7 @@ fi fi
 AC_SUBST(LIB_TARGETS)
 
 #######################################
-# debug, profiling and valgrind config
+# debug and valgrind config
 
 AC_ARG_ENABLE(counters,
 	[AS_HELP_STRING([--disable-counters], [disable counters support in the driver])],
@@ -386,19 +389,6 @@ if test x$enable_counters = xyes; then
 else
   AC_MSG_RESULT(no)
   AC_SUBST(OMX_DRIVER_COUNTERS, 0)
-fi
-
-AC_ARG_ENABLE(profiling,
-	[AS_HELP_STRING([--enable-profiling], [enable profiling support in the driver])],
-	enable_profiling=$enableval, enable_profiling=no)
-AC_MSG_CHECKING(if profiling support is enabled in the driver)
-if test x$enable_profiling = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_DRIVER_PROFILING, [1], [Define to enable profiling in the driver])
-  AC_SUBST(OMX_DRIVER_PROFILING, 1)
-else
-  AC_MSG_RESULT(no)
-  AC_SUBST(OMX_DRIVER_PROFILING, 0)
 fi
 
 AC_MSG_CHECKING(if valgrind is available)

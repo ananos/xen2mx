@@ -14,7 +14,7 @@ endif
 ifneq ($(SRC_VERSION),)
   @LINUX_KBUILD_CCFLAGS_Y@	+=	-DSRC_VERSION="\"$(SRC_VERSION)\""
 endif
-ifeq (@OMX_DRIVER_PROFILING@,1)
+ifeq (@OMX_DRIVER_DEBUG@,1)
   @LINUX_KBUILD_CCFLAGS_Y@	+=	-g
 endif
 
