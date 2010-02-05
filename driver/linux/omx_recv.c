@@ -617,6 +617,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	event.specific.rndv.pulled_rdma_id = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_id);
 	event.specific.rndv.pulled_rdma_seqnum = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_seqnum);
 	event.specific.rndv.pulled_rdma_offset = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_offset);
+	event.specific.rndv.checksum = OMX_FROM_PKT_FIELD(rndv_n->msg.checksum);
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));

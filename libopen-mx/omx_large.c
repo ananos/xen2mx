@@ -624,6 +624,14 @@ omx__process_pull_done(struct omx_endpoint * ep,
   omx__dequeue_request(&ep->driver_pulling_req_q, req);
   req->generic.state &= ~(OMX_REQUEST_STATE_DRIVER_PULLING | OMX_REQUEST_STATE_RECV_PARTIAL);
 
+#ifdef OMX_LIB_DEBUG
+  if (omx__globals.debug_checksum && status == OMX_SUCCESS) {
+    if (req->recv.checksum != omx_checksum_segments(&req->recv.segs,
+						    req->generic.status.msg_length))
+      omx__abort(ep, "checksum checking failed during the reception of a large packet\n");
+  }
+#endif
+
   /* enforce that segments are stored at the same place in send and recv
    * requests since we have to free recv large segments after using the
    * request as a send notify.

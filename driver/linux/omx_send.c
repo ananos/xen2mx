@@ -901,6 +901,7 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	OMX_PKT_FIELD_FROM(rndv_n->msg_length, cmd.msg_length);
 	OMX_PKT_FIELD_FROM(rndv_n->pulled_rdma_id, cmd.pulled_rdma_id);
 	OMX_PKT_FIELD_FROM(rndv_n->pulled_rdma_seqnum, cmd.pulled_rdma_seqnum);
+	OMX_PKT_FIELD_FROM(rndv_n->msg.checksum, cmd.checksum);
 	OMX_PKT_FIELD_FROM(rndv_n->pulled_rdma_offset, 0); /* not needed for Open-MX */
 
 	omx_queue_xmit(iface, skb, RNDV);

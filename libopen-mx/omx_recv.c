@@ -412,11 +412,13 @@ omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
   uint8_t rdma_id = msg->specific.rndv.pulled_rdma_id;
   uint8_t rdma_seqnum = msg->specific.rndv.pulled_rdma_seqnum;
   uint16_t rdma_offset = msg->specific.rndv.pulled_rdma_offset;
+  uint16_t checksum = msg->specific.rndv.checksum;
 
   omx__debug_printf(LARGE, ep, "got a rndv req for rdma id %d seqnum %d offset %d length %d\n",
 		    (unsigned) rdma_id, (unsigned) rdma_seqnum, (unsigned) rdma_offset,
 		    (unsigned) xfer_length);
 
+  req->recv.checksum = checksum;
   req->recv.specific.large.pulled_rdma_id = rdma_id;
   req->recv.specific.large.pulled_rdma_seqnum = rdma_seqnum;
   req->recv.specific.large.pulled_rdma_offset = rdma_offset;

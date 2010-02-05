@@ -620,6 +620,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	event.specific.rndv.pulled_rdma_id = hdr->pulled_rdma_id;
 	event.specific.rndv.pulled_rdma_seqnum = hdr->pulled_rdma_seqnum;
 	event.specific.rndv.pulled_rdma_offset = 0; /* not needed in Open-MX */
+	event.specific.rndv.checksum = hdr->checksum;
 
 	/* make sure the region is marked as pinning before reporting the event */
 	if (!omx_pin_synchronous) {

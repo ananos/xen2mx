@@ -386,7 +386,7 @@ struct omx_cmd_send_rndv {
 	uint32_t msg_length;
 	uint8_t pulled_rdma_id;
 	uint8_t pulled_rdma_seqnum;
-	uint16_t pad2;
+	uint16_t checksum;
 	/* 32 */
 };
 
@@ -869,7 +869,8 @@ union omx_evt {
 				uint8_t pulled_rdma_seqnum;
 				uint16_t pulled_rdma_offset;
 				/* 8 */
-				uint64_t pad2[4];
+				uint16_t checksum;
+				uint16_t pad2[15];
 				/* 40 */
 			} rndv;
 

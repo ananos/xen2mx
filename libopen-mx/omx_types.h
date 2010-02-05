@@ -491,6 +491,7 @@ union omx_request {
     struct omx__req_segs segs;
     uint64_t match_info;
     uint64_t match_mask;
+    uint16_t checksum;
     omx__seqnum_t seqnum; /* seqnum of the incoming matched send */
     union {
       struct {
