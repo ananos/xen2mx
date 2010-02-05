@@ -10,5 +10,8 @@ echo "Running autoconf..."
 autoconf || exit 1
 echo "Running autoheader..."
 autoheader || exit 1
+echo "Updating open-mx.spec version..."
+version=`sed -n /AC_INIT\(/,/\)/p configure.ac | tr -d '\n ' | cut -d, -f2`
+sed -e 's/^Version: .*/Version: '${version}'/' -i open-mx.spec
 
 cd $ORIGDIR || exit $?
