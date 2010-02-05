@@ -154,8 +154,8 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
   fprintf(stderr, " -l <n>\tuse length instead of predefined ones\n");
   fprintf(stderr, " -P <n>\tsend multiple messages in parallel [%d]\n", PARALLEL);
-  fprintf(stderr, " -s\tdo not disable shared communications\n");
-  fprintf(stderr, " -S\tdo not disable self communications\n");
+  fprintf(stderr, " -s\tuse shared communication instead of native networking\n");
+  fprintf(stderr, " -S\tuse self communication instead of shared or native networking\n");
   fprintf(stderr, " -v\tenable verbose messages\n");
 }
 

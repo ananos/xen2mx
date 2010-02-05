@@ -38,8 +38,8 @@ usage(int argc, char *argv[])
   fprintf(stderr, "%s [options]\n", argv[0]);
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
-  fprintf(stderr, " -s\tdo not disable shared communications\n");
-  fprintf(stderr, " -S\tdo not disable self communications\n");
+  fprintf(stderr, " -s\tuse shared communication instead of native networking\n");
+  fprintf(stderr, " -S\tuse self communication instead of shared or native networking\n");
   fprintf(stderr, " -v\tverbose\n");
 }
 

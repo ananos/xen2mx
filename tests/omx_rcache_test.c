@@ -152,8 +152,8 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -l <n>\tuse length [%d]\n", LENGTH);
   fprintf(stderr, " -P <n>\tsend multiple messages in parallel [%d]\n", PARALLEL);
   fprintf(stderr, " -R\tdo not enable regcache\n");
-  fprintf(stderr, " -s\tdo not disable shared communications\n");
-  fprintf(stderr, " -S\tdo not disable self communications\n");
+  fprintf(stderr, " -s\tuse shared communication instead of native networking\n");
+  fprintf(stderr, " -S\tuse self communication instead of shared or native networking\n");
   fprintf(stderr, " -v\tenable verbose messages\n");
 }
 
