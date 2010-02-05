@@ -5,6 +5,7 @@ Bug fixes:
 Other improvements from previous release:
 * Update the FAQ and install it in the documentation install directory.
 * Cleanup the management of KCC and KARCH for configuring the kernel build.
+* Add open-mx.spec to ease RPM package build.
 
 Caveats:
 * No background progression or retransmission is done if the application

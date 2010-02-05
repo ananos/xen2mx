@@ -1,5 +1,7 @@
 * OMX_DEBUG_CHECKSUM also compares checksum of unexp buffer and final segments?
 
+* rpmbuild -tb open-mx-<version>.tar.gz in FAQ
+
 * fix more icc warnings
 
 * constify the open-mx interface ?
