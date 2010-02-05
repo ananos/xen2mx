@@ -148,9 +148,9 @@ tags:
 
 .PHONY: check check-base check-loopback check-misc check-vect check-pingpong check-random-loop
 check:
-	OMX_PATH=$$PWD @srcdir@/tools/omx_check.sh.in
+	OMX_PATH=$$PWD @srcdir@/tools/omx_check.sh.pre
 check-base check-loopback check-misc check-vect check-pingpong check-random-loop:
-	OMX_PATH=$$PWD @srcdir@/tools/omx_check.sh.in $(patsubst check-%,%,$@)
+	OMX_PATH=$$PWD @srcdir@/tools/omx_check.sh.pre $(patsubst check-%,%,$@)
 
 ##################
 # create tarballs

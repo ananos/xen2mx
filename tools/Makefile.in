@@ -84,7 +84,7 @@ install:
 	fi
 
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/omx_init"
-	$(CMDPREFIX) $(INSTALL) -m 0755 @srcdir@/omx_init.in $(DESTDIR)$(sbindir)/omx_init
+	$(CMDPREFIX) $(INSTALL) -m 0755 @srcdir@/omx_init.pre $(DESTDIR)$(sbindir)/omx_init
 	$(CMDPREFIX) $(SED) -i $(DESTDIR)$(sbindir)/omx_init \
 		-e 's£@omx_install_prefix@£$(prefix)£' \
 		-e 's£@omx_main_device_name@£@OMX_MAIN_DEVICE_NAME@£' \
@@ -110,7 +110,7 @@ install:
 		>> $(DESTDIR)$(sbindir)/$(UDEV_RULES_FILE)
 
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/omx_local_install"
-	$(CMDPREFIX) $(INSTALL) -m 0755 @srcdir@/omx_local_install.in $(DESTDIR)$(sbindir)/omx_local_install
+	$(CMDPREFIX) $(INSTALL) -m 0755 @srcdir@/omx_local_install.pre $(DESTDIR)$(sbindir)/omx_local_install
 	$(CMDPREFIX) $(SED) -i $(DESTDIR)$(sbindir)/omx_local_install \
 		-e 's£@omx_install_prefix@£$(prefix)£' \
 		-e 's£@omx_udev@£$(udev)£' \
@@ -118,10 +118,10 @@ install:
 		-e 's£@omx_udev_rules_file@£$(UDEV_RULES_FILE)£' \
 
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(sbindir)/open-mx.conf"
-	$(CMDPREFIX) $(INSTALL) -m 0644 @srcdir@/open-mx.conf.in $(DESTDIR)$(sbindir)/open-mx.conf
+	$(CMDPREFIX) $(INSTALL) -m 0644 @srcdir@/open-mx.conf.pre $(DESTDIR)$(sbindir)/open-mx.conf
 
 	$(CMDECHO) "  INSTALL $(DESTDIR)$(bindir)/omx_check.sh"
-	$(CMDPREFIX) $(INSTALL) -m 0755 @srcdir@/omx_check.sh.in $(DESTDIR)$(bindir)/omx_check.sh
+	$(CMDPREFIX) $(INSTALL) -m 0755 @srcdir@/omx_check.sh.pre $(DESTDIR)$(bindir)/omx_check.sh
 	$(CMDPREFIX) $(SED) -i $(DESTDIR)$(bindir)/omx_check.sh \
 		-e 's£@omx_install_prefix@£$(prefix)£' \
 
