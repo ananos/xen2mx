@@ -19,6 +19,7 @@
 #define _SVID_SOURCE 1 /* for putenv */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <getopt.h>
 #include <assert.h>
 
@@ -35,6 +36,7 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
   fprintf(stderr, " -s\tuse shared communication instead of native networking\n");
   fprintf(stderr, " -S\tuse self communication instead of shared or native networking\n");
+  fprintf(stderr, " -l <n>\t length of messages [0]\n");
 }
 
 int main(int argc, char *argv[])
@@ -52,14 +54,19 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   omx_status_t status;
   uint32_t result;
+  int length = 0;
+  char *sbuf = NULL, *rbuf = NULL;
 
-  while ((c = getopt(argc, argv, "e:b:sSh")) != -1)
+  while ((c = getopt(argc, argv, "e:b:l:sSh")) != -1)
     switch (c) {
     case 'b':
       board_index = atoi(optarg);
       break;
     case 'e':
       endpoint_index = atoi(optarg);
+      break;
+    case 'l':
+      length = atoi(optarg);
       break;
     case 's':
       shared = 1;
@@ -80,6 +87,15 @@ int main(int argc, char *argv[])
 
   if (!shared && !getenv("OMX_DISABLE_SHARED"))
     putenv("OMX_DISABLE_SHARED=1");
+
+  if (length) {
+    sbuf = malloc(length);
+    rbuf = malloc(length);
+    if (!sbuf || !rbuf)
+      goto out;
+    memset(sbuf, 'a', length);
+    memset(rbuf, 'b', length);
+  }
 
   ret = omx_init();
   if (ret != OMX_SUCCESS) {
@@ -127,7 +143,7 @@ int main(int argc, char *argv[])
     goto out_with_ep;
   }
 
-  ret = omx_isend(ep, NULL, 0, addr, 0x1, NULL, NULL);
+  ret = omx_isend(ep, sbuf, length, addr, 0x1, NULL, NULL);
   assert(ret == OMX_SUCCESS);
   printf("posted send\n");
 
@@ -148,7 +164,7 @@ int main(int argc, char *argv[])
   assert(status.match_info == 0x01);
   printf("iprobe found match with mask\n");
 
-  ret = omx_irecv(ep, NULL, 0, 0, -2ULL, NULL, NULL);
+  ret = omx_irecv(ep, rbuf, length, 0, -2ULL, NULL, NULL);
   assert(ret == OMX_SUCCESS);
   printf("posted recv with mask\n");
 
@@ -156,6 +172,9 @@ int main(int argc, char *argv[])
   assert(ret == OMX_SUCCESS);
   assert(!result);
   printf("iprobe cannot found match with mask anymore\n");
+
+  free(sbuf);
+  free(rbuf);
 
   omx_close_endpoint(ep);
   return 0;
