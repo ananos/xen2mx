@@ -1156,6 +1156,8 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
 #ifdef OMX_LIB_DEBUG
     if (omx__globals.debug_checksum) {
       if (xfer_length == msg_length
+	  /* only checksum if the message was entirely received */
+	  && !(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL)
 	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs, msg_length))
         omx__abort(ep, "invalid checksum for unexpected message, length %ld\n",
 		   (unsigned long) xfer_length);
