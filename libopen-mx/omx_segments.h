@@ -288,7 +288,7 @@ omx_partial_copy_to_segments(const struct omx_endpoint *ep,
  * compute the checksum of a segment request
  */
 static inline uint16_t
-omx_checksum_segments(struct omx__req_segs *reqsegs, uint64_t length) {
+omx_checksum_segments(struct omx__req_segs *reqsegs, uint32_t length) {
   uint16_t crc  = 0;
   uint32_t seg;
   struct omx_cmd_user_segment *segarray;
@@ -298,29 +298,26 @@ omx_checksum_segments(struct omx__req_segs *reqsegs, uint64_t length) {
   else
     segarray = reqsegs->segs;
 
-  for (seg = 0; seg < reqsegs->nseg; seg++) {
-    struct omx_cmd_user_segment *cseg  = segarray+seg;   
+  for (seg = 0; seg < reqsegs->nseg && length > 0; seg++) {
+    struct omx_cmd_user_segment *cseg  = segarray+seg;
     uint32_t                     chunk = cseg->len > length ? length : cseg->len;
     char			 *ptr  = OMX_SEG_PTR(cseg);
+    int j;
 
-    while (length) {   
-      int j;
+    for (j = 0; j < chunk; j++) {
+      int i;
 
-      for (j = 0; j < chunk; j++) {
-	int i;
+      crc ^= *(ptr++) << 8;
 
-	crc ^= *(ptr++) << 8;
-
-	for (i = 0; i < 8; ++i) {
-	  if (crc & 0x8000)
-	    crc = (crc << 1) ^ 0x1021;
-	  else
-	    crc = crc << 1;
-	}
+      for (i = 0; i < 8; ++i) {
+	if (crc & 0x8000)
+	  crc = (crc << 1) ^ 0x1021;
+	else
+	  crc = crc << 1;
       }
-
-      length -= chunk;
     }
+
+    length -= chunk;
   }
 
   return crc;
