@@ -237,9 +237,11 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
   omx_copy_to_segments(&req->recv.segs, msg->specific.tiny.data, xfer_length);
 
 #ifdef OMX_LIB_DEBUG
-  if (omx__globals.debug_checksum && xfer_length == req->generic.status.msg_length) {
-    if (msg->specific.tiny.checksum != omx_checksum_segments(&req->recv.segs,
-							     req->generic.status.msg_length))
+  if (omx__globals.debug_checksum) {
+    req->recv.checksum = msg->specific.tiny.checksum;
+    if (xfer_length == req->generic.status.msg_length
+        && msg->specific.tiny.checksum != omx_checksum_segments(&req->recv.segs,
+								req->generic.status.msg_length))
       omx__abort(ep, "checksum checking failed during the reception of a tiny packet\n");
   }
 #endif
@@ -264,9 +266,11 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
   omx_copy_to_segments(&req->recv.segs, data, xfer_length);
 
 #ifdef OMX_LIB_DEBUG
-  if (omx__globals.debug_checksum && xfer_length == req->generic.status.msg_length) {
-    if (msg->specific.small.checksum != omx_checksum_segments(&req->recv.segs,
-							     req->generic.status.msg_length))
+  if (omx__globals.debug_checksum) {
+    req->recv.checksum = msg->specific.small.checksum;
+    if (xfer_length == req->generic.status.msg_length
+        && msg->specific.small.checksum != omx_checksum_segments(&req->recv.segs,
+								 req->generic.status.msg_length))
       omx__abort(ep, "checksum checking failed during the reception of a small packet\n");
   }
 #endif
@@ -349,6 +353,16 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 				 offset, &req->recv.specific.medium.scan_state,
 				 &req->recv.specific.medium.scan_offset);
 
+#ifdef OMX_LIB_DEBUG
+  if (omx__globals.debug_checksum) {
+    /* store the incoming checksum and verify that all fragments tell the same */
+    if (new)
+      req->recv.checksum = msg->specific.medium_frag.checksum;
+    else
+      omx__debug_assert(req->recv.checksum == msg->specific.medium_frag.checksum);
+  }
+#endif
+
   /* update and check the accumulated received length */
   req->recv.specific.medium.frags_received_mask |= 1 << frag_seqnum;
   req->recv.specific.medium.accumulated_length += chunk;
@@ -363,11 +377,12 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
       omx__dequeue_partner_request(&partner->partial_medium_recv_req_q, req);
 
 #ifdef OMX_LIB_DEBUG
-  if (omx__globals.debug_checksum && xfer_length == req->generic.status.msg_length) {
-    if (msg->specific.medium_frag.checksum != omx_checksum_segments(&req->recv.segs,
-								    req->generic.status.msg_length))
-      omx__abort(ep, "checksum checking failed during the reception of a medium packet\n");
-  }
+    if (omx__globals.debug_checksum) {
+      if (xfer_length == req->generic.status.msg_length
+	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs,
+							 req->generic.status.msg_length))
+	omx__abort(ep, "checksum checking failed during the reception of a medium packet\n");
+    }
 #endif
 
     req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
