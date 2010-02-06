@@ -625,7 +625,8 @@ omx__process_pull_done(struct omx_endpoint * ep,
   req->generic.state &= ~(OMX_REQUEST_STATE_DRIVER_PULLING | OMX_REQUEST_STATE_RECV_PARTIAL);
 
 #ifdef OMX_LIB_DEBUG
-  if (omx__globals.debug_checksum && status == OMX_SUCCESS) {
+  if (omx__globals.debug_checksum && status == OMX_SUCCESS
+      && req->generic.status.msg_length == req->generic.status.xfer_length) {
     if (req->recv.checksum != omx_checksum_segments(&req->recv.segs,
 						    req->generic.status.msg_length))
       omx__abort(ep, "checksum checking failed during the reception of a large packet\n");
