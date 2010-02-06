@@ -380,11 +380,10 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 
 #ifdef OMX_LIB_DEBUG
     if (omx__globals.debug_checksum) {
-      if (xfer_length == req->generic.status.msg_length
-	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs,
-							 req->generic.status.msg_length))
+      if (xfer_length == msg_length
+	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs, msg_length))
         omx__abort(ep, "invalid checksum for medium message, length %ld\n",
-		   (unsigned long) req->generic.status.msg_length);
+		   (unsigned long) msg_length);
     }
 #endif
 
@@ -1127,9 +1126,8 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
     omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length);
 #ifdef OMX_LIB_DEBUG
     if (omx__globals.debug_checksum) {
-      if (xfer_length == req->generic.status.msg_length
-	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs,
-							 req->generic.status.msg_length))
+      if (xfer_length == msg_length
+	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs, msg_length))
         omx__abort(ep, "invalid checksum for self unexpected message, length %ld\n",
 		   (unsigned long) xfer_length);
     }
@@ -1157,9 +1155,8 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
     omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length); /* FIXME: could just copy what has been received */
 #ifdef OMX_LIB_DEBUG
     if (omx__globals.debug_checksum) {
-      if (xfer_length == req->generic.status.msg_length
-	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs,
-							 req->generic.status.msg_length))
+      if (xfer_length == msg_length
+	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs, msg_length))
         omx__abort(ep, "invalid checksum for unexpected message, length %ld\n",
 		   (unsigned long) xfer_length);
     }
