@@ -1116,6 +1116,16 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
     omx_return_t status_code = xfer_length < msg_length ? OMX_MESSAGE_TRUNCATED : OMX_SUCCESS;
 
     omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length);
+#ifdef OMX_LIB_DEBUG
+    if (omx__globals.debug_checksum) {
+      if (xfer_length == req->generic.status.msg_length
+	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs,
+							 req->generic.status.msg_length))
+        omx__abort(ep, "invalid checksum for self unexpected message, length %ld\n",
+		   (unsigned long) xfer_length);
+    }
+#endif
+
     if (msg_length)
       omx_free(unexp_buffer);
     omx__recv_complete(ep, req, status_code);
@@ -1136,6 +1146,16 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
     /* it's a tiny/small/medium, copy the data back to our buffer */
 
     omx_copy_to_segments(reqsegs, unexp_buffer, xfer_length); /* FIXME: could just copy what has been received */
+#ifdef OMX_LIB_DEBUG
+    if (omx__globals.debug_checksum) {
+      if (xfer_length == req->generic.status.msg_length
+	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs,
+							 req->generic.status.msg_length))
+        omx__abort(ep, "invalid checksum for unexpected message, length %ld\n",
+		   (unsigned long) xfer_length);
+    }
+#endif
+
     if (msg_length)
       omx_free(unexp_buffer);
 
