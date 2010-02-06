@@ -630,7 +630,8 @@ omx__process_pull_done(struct omx_endpoint * ep,
         && req->generic.status.msg_length == req->generic.status.xfer_length
 	&& req->recv.checksum != omx_checksum_segments(&req->recv.segs,
 						       req->generic.status.msg_length))
-      omx__abort(ep, "checksum checking failed during the reception of a large packet\n");
+      omx__abort(ep, "invalid checksum for large message, length %ld\n",
+		 (unsigned long) req->generic.status.msg_length);
   }
 #endif
 
