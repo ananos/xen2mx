@@ -108,6 +108,9 @@
 <li><a href="#building-build-install">
   How do I build and install Open-MX?
 </a></li>
+<li><a href="#building-rpm">
+  Can I install Open-MX as RPM packages?
+</a></li>
 <li><a href="#building-multilib">
   May I build a 32bit library? or a 64bit? or both?
 </a></lib>
@@ -810,6 +813,35 @@ may be given on the command line:
 <pre>
 $ sbin/omx_init start ifnames=eth1
 </pre>
+
+
+<h4><a id="building-rpm" href="#building-rpm">
+  Can I install Open-MX as RPM packages?
+</a></h4>
+<p>
+ Recent Open-MX tarballs contain a RPM spec file that eases the building of
+ Open-MX as RPM binary packages. To use it, download the tarball and run for instance:
+</p>
+<pre>
+    rpmbuild -tb open-mx-1.2.1.tar.gz
+</pre>
+<p>
+ It will produce a single RPM package such as <tt>open-mx-1.2.1-0.x86_64.rpm</tt>
+ which contains user-space tools and libraries and the kernel module.
+ After installing the RPM package, Open-MX binaries will be installed
+ under <tt>/opt/open-mx-&lt;version&gt;/</tt>.
+</p>
+<p>
+ The RPM package will also install the init script <tt>/etc/init.d/open-mx</tt>,
+ the config file <tt>/etc/open-mx/open-mx.conf</tt> and udev rules in
+ <tt>/etc/udev/rules.d/10-open-mx.rules</tt>.
+ The administrator may then want to enable automatic launch of the Open-MX
+ init script during the boot.
+</p>
+<p>
+ Note that, if the kernel ever gets upgraded, you might have to rebuild the RPM
+ packages so as to update the kernel module.
+</p>
 
 
 <h4><a id="building-multilib" href="#building-multilib">
