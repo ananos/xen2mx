@@ -2591,6 +2591,16 @@ behavior at runtime, when starting a process:
   request-intensive applications.
 </dd>
 
+<dt>OMX_DEBUG_CHECKSUM=1</dt>
+<dd>Enable end-to-end checksumming of messages.
+  Compute the checksum of the send buffer and compare it with the
+  checksum of the final receiver buffer.
+  If the message was truncated because the receive buffer was too
+  small, the check is ignored.
+  This feature is disabled by default since it usually slows down
+  communication a lot.
+</dd>
+
 <dt>OMX_DEBUG_SIGNAL=1</dt>
 <dd>Enable dumping of the library state when receiving a signal.
   This feature is only enabled by default in the debug library.

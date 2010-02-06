@@ -5,6 +5,7 @@ Bug fixes:
 Other improvements from previous release:
 * Update the FAQ and install it in the documentation install directory.
 * Cleanup the management of KCC and KARCH for configuring the kernel build.
+* Add OMX_DEBUG_CHECKSUM to detect end-to-end data corruption.
 * Add open-mx.spec to ease RPM package build.
 
 Caveats:
