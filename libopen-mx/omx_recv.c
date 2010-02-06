@@ -937,6 +937,15 @@ omx__process_self_send(struct omx_endpoint *ep,
     sreq->generic.status.xfer_length = xfer_length;
 
     omx_copy_from_to_segments(&rreq->recv.segs, &sreq->send.segs, xfer_length);
+#ifdef OMX_LIB_DEBUG
+    if (omx__globals.debug_checksum) {
+      /* no need to check for truncation, both side know the xfer_length here */
+      if (omx_checksum_segments(&rreq->recv.segs, xfer_length) != omx_checksum_segments(&sreq->send.segs, xfer_length))
+	omx__abort(ep, "invalid checksum for self message, length %ld (truncated %ld)\n",
+		   (unsigned long) msg_length, (unsigned long) xfer_length);
+    }
+#endif
+
     omx__send_complete(ep, sreq, status_code);
     omx__recv_complete(ep, rreq, status_code);
 
