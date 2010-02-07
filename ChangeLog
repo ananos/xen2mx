@@ -1,12 +1,16 @@
+Open-MX 1.2.1 (February 8th 2010, svn r28xy)
+============================================
+
 Bug fixes:
 * Fix a potential memory corruption of the destination buffer address
   when receiving expected messages.
 
 Other improvements from previous release:
-* Update the FAQ and install it in the documentation install directory.
 * Cleanup the management of KCC and KARCH for configuring the kernel build.
-* Add OMX_DEBUG_CHECKSUM to detect end-to-end data corruption.
+* Add OMX_DEBUG_CHECKSUM to detect end-to-end data corruption when debug
+  is enabled.
 * Add open-mx.spec to ease RPM package build.
+* Update the FAQ and install it in the documentation install directory.
 
 Caveats:
 * No background progression or retransmission is done if the application
