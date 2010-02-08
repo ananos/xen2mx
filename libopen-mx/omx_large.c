@@ -630,8 +630,9 @@ omx__process_pull_done(struct omx_endpoint * ep,
         && req->generic.status.msg_length == req->generic.status.xfer_length
 	&& req->recv.checksum != omx_checksum_segments(&req->recv.segs,
 						       req->generic.status.msg_length))
-      omx__abort(ep, "invalid checksum for large message, length %ld\n",
-		 (unsigned long) req->generic.status.msg_length);
+      omx__abort(ep, "invalid checksum for large message (length %ld) from peer index %d on ep %d board %d\n",
+		 (unsigned long) req->generic.status.msg_length, (unsigned) req->generic.partner->peer_index,
+		 (unsigned) ep->endpoint_index, (unsigned) ep->board_index);
   }
 #endif
 

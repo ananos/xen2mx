@@ -242,8 +242,9 @@ omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
     if (xfer_length == req->generic.status.msg_length
         && msg->specific.tiny.checksum != omx_checksum_segments(&req->recv.segs,
 								req->generic.status.msg_length))
-      omx__abort(ep, "invalid checksum for tiny message, length %ld\n",
-		 (unsigned long) req->generic.status.msg_length);
+      omx__abort(ep, "invalid checksum for tiny message (length %ld) from peer index %d on ep %d board %d\n",
+		 (unsigned long) req->generic.status.msg_length, (unsigned) partner->peer_index,
+		 (unsigned) ep->endpoint_index, (unsigned) ep->board_index);
   }
 #endif
 
@@ -272,8 +273,9 @@ omx__process_recv_small(struct omx_endpoint *ep, struct omx__partner *partner,
     if (xfer_length == req->generic.status.msg_length
         && msg->specific.small.checksum != omx_checksum_segments(&req->recv.segs,
 								 req->generic.status.msg_length))
-      omx__abort(ep, "invalid checksum for small message, length %ld\n",
-		 (unsigned long) req->generic.status.msg_length);
+      omx__abort(ep, "invalid checksum for small message (length %ld) from peer index %d on ep %d board %d\n",
+		 (unsigned long) req->generic.status.msg_length, (unsigned) partner->peer_index,
+		 (unsigned) ep->endpoint_index, (unsigned) ep->board_index);
   }
 #endif
 
@@ -382,8 +384,9 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     if (omx__globals.debug_checksum) {
       if (xfer_length == msg_length
 	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs, msg_length))
-        omx__abort(ep, "invalid checksum for medium message, length %ld\n",
-		   (unsigned long) msg_length);
+	omx__abort(ep, "invalid checksum for medium message (length %ld) from peer index %d on ep %d board %d\n",
+		   (unsigned long) msg_length, (unsigned) partner->peer_index,
+		   (unsigned) ep->endpoint_index, (unsigned) ep->board_index);
     }
 #endif
 
@@ -940,8 +943,9 @@ omx__process_self_send(struct omx_endpoint *ep,
     if (omx__globals.debug_checksum) {
       /* no need to check for truncation, both side know the xfer_length here */
       if (omx_checksum_segments(&rreq->recv.segs, xfer_length) != omx_checksum_segments(&sreq->send.segs, xfer_length))
-	omx__abort(ep, "invalid checksum for self message, length %ld (truncated %ld)\n",
-		   (unsigned long) msg_length, (unsigned long) xfer_length);
+	omx__abort(ep, "invalid checksum for self message (length %ld, truncated %ld) on ep %d board %d\n",
+		   (unsigned long) msg_length, (unsigned long) xfer_length,
+		   (unsigned) ep->endpoint_index, (unsigned) ep->board_index);
     }
 #endif
 
@@ -1128,8 +1132,9 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
     if (omx__globals.debug_checksum) {
       if (xfer_length == msg_length
 	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs, msg_length))
-        omx__abort(ep, "invalid checksum for self unexpected message, length %ld\n",
-		   (unsigned long) xfer_length);
+	omx__abort(ep, "invalid checksum for unexpected self message (length %ld) on ep %d board %d\n",
+		   (unsigned long) msg_length,
+		   (unsigned) ep->endpoint_index, (unsigned) ep->board_index);
     }
 #endif
 
@@ -1159,8 +1164,9 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
 	  /* only checksum if the message was entirely received */
 	  && !(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL)
 	  && req->recv.checksum != omx_checksum_segments(&req->recv.segs, msg_length))
-        omx__abort(ep, "invalid checksum for unexpected message, length %ld\n",
-		   (unsigned long) xfer_length);
+	omx__abort(ep, "invalid checksum for unexpected message (length %ld) on ep %d board %d\n",
+		   (unsigned long) msg_length,
+		   (unsigned) ep->endpoint_index, (unsigned) ep->board_index);
     }
 #endif
 
