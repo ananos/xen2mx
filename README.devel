@@ -1,3 +1,7 @@
+If not done yet, update the ChangeLog and the version in configure.ac, and
+then run ./autogen.sh so that COPYING and open-mx.spec get updated.
+
+
 To make a release from the main SVN repository, enter a SVN checkout, and do:
 	make dist -f Makefile.in TARBALL=open-mx-x.y.z
 To use a specific SVN branch instead of trunk, add:
