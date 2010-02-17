@@ -991,6 +991,8 @@ omx__process_self_send(struct omx_endpoint *ep,
 
     rreq->recv.specific.self_unexp.sreq = sreq;
     omx_copy_from_segments(unexp_buffer, &sreq->send.segs, msg_length);
+    rreq->recv.checksum = omx_checksum_segments(&rreq->recv.segs, msg_length);
+
     omx__enqueue_request(&ep->anyctxid.unexp_req_q, rreq);
     if (unlikely(HAS_CTXIDS(ep)))
       omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, rreq);
