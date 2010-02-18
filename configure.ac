@@ -134,8 +134,9 @@ fi
 ########################
 # Kernel related config
 
-AC_ARG_VAR(KCC, [Compiler for building the Open-MX kernel module])
-AC_ARG_VAR(KARCH, [Architecture name to pass when building the Open-MX kernel module])
+AC_ARG_VAR(KCC,     [Compiler for building the Open-MX kernel module])
+AC_ARG_VAR(KCFLAGS, [Additional compilation flags when building the Open-MX kernel module])
+AC_ARG_VAR(KARCH,   [Architecture name to pass when building the Open-MX kernel module])
 
 if test x$build_driver = xyes ; then
 

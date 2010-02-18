@@ -8,7 +8,7 @@ MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 
 ifneq ($(KCC),)
-  KBUILD_VARS	+=	CC="$(KCC)"
+  KBUILD_VARS	+=	CC="$(KCC) $(KCFLAGS)"
 endif
 ifneq ($(KARCH),)
   KBUILD_VARS	+=	ARCH="$(KARCH)"
