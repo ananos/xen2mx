@@ -1,4 +1,4 @@
-bindir = @bindir@
+ybindir = @bindir@
 exec_prefix = @exec_prefix@
 prefix = @prefix@
 
@@ -18,6 +18,8 @@ CC	=	@CC@
 LD	=	$(CC) #FIXME
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
+
+LDFLAGS		+=	@LDFLAGS@
 
 CPPFLAGS	+=	-I@top_srcdir@/common/mx/translate # for translation wrappers
 CPPFLAGS	+=	-I@top_srcdir@/common # for open-mx.h used after translation
@@ -54,11 +56,11 @@ include @top_srcdir@/depend.mk
 ifeq (@OMX_DYNAMIC_TOOLS@,1)
 $(TESTS): %: %.o
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
-	$(CMDPREFIX) $(LD) $^ -L $(DYNAMIC_LIB_DIR) $(DYNAMIC_LIB_OPT) $($(@)_LIBS) -o $@
+	$(CMDPREFIX) $(LD) $(LDFLAGS) $^ -L $(DYNAMIC_LIB_DIR) $(DYNAMIC_LIB_OPT) $($(@)_LIBS) -o $@
 else
 $(TESTS): %: %.o $(STATIC_LIB)
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
-	$(CMDPREFIX) $(LD) $^ $($(@)_LIBS) -o $@
+	$(CMDPREFIX) $(LD) $(LDFLAGS) $^ $($(@)_LIBS) -o $@
 endif
 
 # build and create dependency file

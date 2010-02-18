@@ -14,6 +14,8 @@ LD	=	$(CC) #FIXME
 MKDIR_P	=	@MKDIR_P@
 INSTALL	=	@INSTALL@
 
+LDFLAGS		+=	@LDFLAGS@
+
 CPPFLAGS	+=	-I@top_srcdir@/common
 CPPFLAGS	+=	@CPPFLAGS@
 
@@ -47,11 +49,11 @@ include @top_srcdir@/depend.mk
 ifeq (@OMX_DYNAMIC_TOOLS@,1)
 $(TESTS): %: %.o
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
-	$(CMDPREFIX) $(LD) $^ -L $(DYNAMIC_LIB_DIR) $(DYNAMIC_LIB_OPT) -o $@
+	$(CMDPREFIX) $(LD) $(LDFLAGS) $^ -L $(DYNAMIC_LIB_DIR) $(DYNAMIC_LIB_OPT) -o $@
 else
 $(TESTS): %: %.o $(STATIC_LIB)
 	$(CMDECHO) "  LD      $(REL_DIR)$@"
-	$(CMDPREFIX) $(LD) $^ -o $@
+	$(CMDPREFIX) $(LD) $(LDFLAGS) $^ -o $@
 endif
 
 # build and create dependency file
