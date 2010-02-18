@@ -21,22 +21,22 @@
 #  OMX_FMA_START_TIMEOUT (fma startup timeout)
 
 # Note that this is replaced by make install, not configure!
-OMX_PREFIX=@omx_install_prefix@
-MAIN_DEVICE_NAME=@omx_main_device_name@
-MAIN_DEVICE_GROUP=@omx_main_device_group@
-MAIN_DEVICE_MODE=@omx_main_device_mode@
-RAW_DEVICE_NAME=@omx_raw_device_name@
-RAW_DEVICE_GROUP=@omx_raw_device_group@
-RAW_DEVICE_MODE=@omx_raw_device_mode@
-OMX_STATIC_MAPPING=@omx_static_peers@
-OMX_PEER_DISCOVERY=@omx_peer_discovery@
-OMX_PEERS_FILE=@omx_peers_file@
-FMS_RUN=@fms_run@
-FMS_SERVER=@fms_server@
+OMX_PREFIX=@prefix@
+MAIN_DEVICE_NAME=@OMX_MAIN_DEVICE_NAME@
+MAIN_DEVICE_GROUP=@OMX_MAIN_DEVICE_GROUP@
+MAIN_DEVICE_MODE=@OMX_MAIN_DEVICE_MODE@
+RAW_DEVICE_NAME=@OMX_RAW_DEVICE_NAME@
+RAW_DEVICE_GROUP=@OMX_RAW_DEVICE_GROUP@
+RAW_DEVICE_MODE=@OMX_RAW_DEVICE_MODE@
+OMX_STATIC_MAPPING=@OMX_STATIC_PEERS@
+OMX_PEER_DISCOVERY=@OMX_PEER_DISCOVERY@
+OMX_PEERS_FILE=@OMX_PEERS_FILE@
+FMS_RUN=@OMX_FMS_RUN@
+FMS_SERVER=@OMX_FMS_SERVER@
 
-UDEV=@omx_udev@
-UDEV_RULES_DIR=@omx_udev_rules_dir@
-UDEV_RULES_FILE=${UDEV_RULES_DIR}/@omx_udev_rules_file@
+UDEV=1
+UDEV_RULES_DIR=/etc/udev/rules.d
+UDEV_RULES_FILE=${UDEV_RULES_DIR}/10-open-mx.rules
 
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf

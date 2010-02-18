@@ -19,7 +19,7 @@
 #ifndef __omx__valgrind_h__
 #define __omx__valgrind_h__
 
-#if (defined OMX_LIB_VALGRIND_NONDEBUG) || (defined OMX_LIB_DEBUG && defined OMX_LIB_VALGRIND_DEBUG)
+#if defined OMX_LIB_DEBUG && defined OMX_LIB_VALGRIND_DEBUG
 
 /*
  * Valgrind support to check memory access and allocation.
@@ -48,6 +48,6 @@
 #define OMX_VALGRIND_CHECK_DEFINED(p, s) /* nothing */
 #define OMX_VALGRIND_CHECK_WRITABLE(p, s) /* nothing */
 
-#endif /* !VALGRIND_NONDEBUG && (!DEBUG || !VALGRIND_DEBUG) */
+#endif /* DEBUG && VALGRIND_DEBUG */
 
 #endif /* __omx__valgrind_h__ */

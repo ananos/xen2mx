@@ -16,7 +16,6 @@
  * See the GNU General Public License in COPYING.GPL for more details.
  */
 
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>

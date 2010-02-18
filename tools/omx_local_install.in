@@ -1,23 +1,24 @@
 #!/bin/sh
 
-# Note that this is replaced by make install, not configure!
-OMX_PREFIX=@omx_install_prefix@
 
-OMX_INIT_SCRIPT=${DESTDIR}${OMX_PREFIX}/sbin/omx_init
-OMX_INIT_SCRIPT_DEST=${DESTDIR}/etc/init.d/open-mx
+OMX_PREFIX=@prefix@
+OMX_CONFIG_DIR=@sysconfdir@/open-mx
+OMX_WIDE_CONFIG_DIR=/etc/open-mx
 
-OMX_CONFIG_STUB=${DESTDIR}${OMX_PREFIX}/sbin/open-mx.conf
-OMX_CONFIG_DIR=${DESTDIR}/etc/open-mx
-OMX_CONFIG_DEST=${OMX_CONFIG_DIR}/open-mx.conf
+OMX_INIT_SCRIPT=${OMX_PREFIX}/sbin/omx_init
+OMX_INIT_SCRIPT_DEST=/etc/init.d/open-mx
 
-UDEV=@omx_udev@
-UDEV_RULES_DIR=${DESTDIR}@omx_udev_rules_dir@
-UDEV_RULES_FILE=${DESTDIR}${OMX_PREFIX}/sbin/@omx_udev_rules_file@
-UDEV_RULES_DEST=${UDEV_RULES_DIR}/@omx_udev_rules_file@
+OMX_CONFIG_STUB=${OMX_CONFIG_DIR}/open-mx.conf
+OMX_CONFIG_DEST=${OMX_WIDE_CONFIG_DIR}/open-mx.conf
+
+UDEV=1
+UDEV_RULES_DIR=/etc/udev/rules.d
+UDEV_RULES_FILE=${OMX_CONFIG_DIR}/10-open-mx.rules
+UDEV_RULES_DEST=${UDEV_RULES_DIR}/10-open-mx.rules
 
 set -e
 
-if test ! -d ${DESTDIR}${OMX_PREFIX}; then
+if test ! -d ${OMX_PREFIX}; then
     echo "Something bad happened with the install script"
     echo "OMX_PREFIX isn't pointing to a valid directory"
     exit 1
@@ -75,9 +76,9 @@ if test x"$1" != "x--uninstall"; then
     cmp_mv_old_and_install_new "${OMX_INIT_SCRIPT}" "${OMX_INIT_SCRIPT_DEST}" "startup script"
 
     echo "Installing config file..."
-    if test ! -d ${OMX_CONFIG_DIR} ; then
-	echo "  Creating ${OMX_CONFIG_DIR} directory..."
-	mkdir ${OMX_CONFIG_DIR}
+    if test ! -d ${OMX_WIDE_CONFIG_DIR} ; then
+	echo "  Creating ${OMX_WIDE_CONFIG_DIR} directory..."
+	mkdir ${OMX_WIDE_CONFIG_DIR}
     fi
     cmp_mv_old_and_install_new "${OMX_CONFIG_STUB}" "${OMX_CONFIG_DEST}" "stub config"
 
@@ -100,7 +101,7 @@ else
 
     echo "Uninstalling config file..."
     cmp_mv_old_and_remove "${OMX_CONFIG_STUB}" "${OMX_CONFIG_DEST}" "config"
-    test -d "${OMX_CONFIG_DIR}" && ( rmdir "${OMX_CONFIG_DIR}" 2> /dev/null || echo "  ${OMX_CONFIG_DIR} not empty, not removing" )
+    test -d "${OMX_WIDE_CONFIG_DIR}" && ( rmdir "${OMX_WIDE_CONFIG_DIR}" 2> /dev/null || echo "  ${OMX_WIDE_CONFIG_DIR} not empty, not removing" )
 
     if test x$UDEV = x1; then
 	echo "Uninstalling udev rules file..."

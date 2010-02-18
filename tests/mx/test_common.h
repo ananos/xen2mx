@@ -1,5 +1,3 @@
-#include "omx_config.h"
-
 #include <assert.h>
 #define insist assert
 

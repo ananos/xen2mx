@@ -1,3 +1,19 @@
+* Use AC_CONFIG_LINKS to symlink the driver sources in
+  the build directory
+
+* Find a cleaner way to handle the driver installation.
+  Currently, this is performed at the Automake level only.
+  As the open-mx.ko target is PHONYfied, 'make install' always
+  enters the Kbuild 'make all' which creates files in the builddir.
+  This is problematic when running 'sudo make install' with a builddir on NFS
+  as this tries to creates some root-owned files over the NFS and leads to an
+  error (root access is not remapped by default)
+
+* find a cleaner way to propagate the software version
+  where needed
+
+* set the library ABI version in the library filename
+
 * fix more icc warnings
 
 * constify the open-mx interface ?

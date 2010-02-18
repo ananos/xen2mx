@@ -1,29 +1,36 @@
 ifneq ($(shell test -d @abs_srcdir@/.svn/ && which svn),)
-	SRC_VERSION	=	svn r$(shell svn info @abs_srcdir@ | sed -n -e 's/^Revision: //p' 2>/dev/null)
-else
+  SRC_VERSION =	svn r$(shell svn info @abs_srcdir@	\
+			   | sed -n -e 's/^Revision: //p' 2>/dev/null)
+endif
+
 ifneq ($(shell test -d @abs_top_srcdir@/.git/ && which git),)
-	SRC_VERSION	=	git-svn r$(shell GIT_DIR=@abs_top_srcdir@/.git/ git log | grep git-svn-id: | head -1 | sed -r -e 's/.*@(.+) .*/\1/')
-endif
+  SRC_VERSION =	git-svn r$(shell GIT_DIR=@abs_top_srcdir@/.git/ git log	\
+			       | grep git-svn-id: | head -1 		\
+			       | sed -r -e 's/.*@(.+) .*/\1/')
 endif
 
-@LINUX_KBUILD_CCFLAGS_Y@	+=	-include @abs_top_builddir@/common/omx_config.h
-@LINUX_KBUILD_CCFLAGS_Y@	+=	-include @abs_top_builddir@/driver/linux/omx_checks.h
-@LINUX_KBUILD_CCFLAGS_Y@	+=	-include @abs_top_builddir@/driver/linux/omx_debug.h
-@LINUX_KBUILD_CCFLAGS_Y@	+=	-I@abs_srcdir@/
-@LINUX_KBUILD_CCFLAGS_Y@	+=	-I@abs_top_srcdir@/common/
+
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -include @abs_top_builddir@/common/config.h
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -include @abs_top_builddir@/driver/linux/omx_checks.h
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -include @abs_top_builddir@/driver/linux/omx_debug.h
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -I@abs_srcdir@/
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -I@abs_top_srcdir@/common/
+
 ifneq ($(SRC_VERSION),)
-  @LINUX_KBUILD_CCFLAGS_Y@	+=	-DSRC_VERSION="\"$(SRC_VERSION)\""
-endif
-ifeq (@OMX_DRIVER_DEBUG@,1)
-  @LINUX_KBUILD_CCFLAGS_Y@	+=	-g
+  @OMX_KBUILD_CFLAGS_ARG@	+= -DSRC_VERSION="\"$(SRC_VERSION)\""
 endif
 
-obj-m	+=	open-mx.o
-open-mx-objs	:=	omx_main.o omx_dev.o omx_peer.o omx_raw.o \
-			omx_iface.o omx_send.o omx_recv.o \
-			omx_reg.o omx_pull.o omx_event.o \
-			omx_dma.o
+ifeq (@OMX_DRIVER_DEBUG@,1)
+  @OMX_KBUILD_CFLAGS_ARG@	+= -g -O0
+  @OMX_KBUILD_CFLAGS_ARG@	+= @DBGCPPFLAGS@ @DBGCFLAGS@ @DBGLDFLAGS@
+endif
+
+obj-m		+= open-mx.o
+open-mx-objs	:= omx_main.o omx_dev.o omx_peer.o omx_raw.o	\
+		   omx_iface.o omx_send.o omx_recv.o		\
+		   omx_reg.o omx_pull.o omx_event.o		\
+		   omx_dma.o
 
 ifneq (@OMX_DISABLE_SHARED@,1)
-open-mx-objs	+=	omx_shared.o
+  open-mx-objs	+= omx_shared.o
 endif

@@ -22,7 +22,6 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 
-#include "omx_config.h"
 #include "omx_lib.h"
 
 #define EP 3

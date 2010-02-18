@@ -202,9 +202,9 @@ omx_unavail_module_param(raw_packet_loss, "--enable-debug was given");
  */
 
 #ifdef SRC_VERSION
-#define VERSION PACKAGE_VERSION " (" SRC_VERSION ")"
+#define OMX_DRIVER_VERSION PACKAGE_VERSION " (" SRC_VERSION ")"
 #else
-#define VERSION PACKAGE_VERSION
+#define OMX_DRIVER_VERSION PACKAGE_VERSION
 #endif
 
 struct omx_driver_desc * omx_driver_userdesc = NULL; /* exported read-only to user-space */
@@ -266,7 +266,7 @@ omx_get_driver_string(unsigned int *lenp)
 	buflen = 0;
 
 	len = snprintf(tmp, OMX_DRIVER_STRING_LEN-buflen,
-		       "Open-MX " VERSION "\n");
+		       "Open-MX " OMX_DRIVER_VERSION "\n");
 	tmp += len;
 	buflen += len;
 
@@ -421,7 +421,7 @@ omx_init(void)
 {
 	int ret;
 
-	printk(KERN_INFO "Open-MX " VERSION " initializing...\n");
+	printk(KERN_INFO "Open-MX " OMX_DRIVER_VERSION " initializing...\n");
 
 	omx_driver_userdesc = omx_vmalloc_user(sizeof(struct omx_driver_desc));
 	if (!omx_driver_userdesc) {
@@ -543,7 +543,7 @@ omx_exit(void)
 	del_timer_sync(&omx_driver_userdesc_update_timer);
 	vfree(omx_driver_userdesc);
 	synchronize_rcu();
-	printk(KERN_INFO "Open-MX " VERSION " terminated\n");
+	printk(KERN_INFO "Open-MX " OMX_DRIVER_VERSION " terminated\n");
 }
 module_exit(omx_exit);
 

@@ -233,9 +233,9 @@ echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_NAME}
 
 # install final file
 if diff -q ${CHECKS_NAME} ${TMP_CHECKS_NAME} --ignore-matching-lines="${CHECKS_DATE_PREFIX}" >/dev/null 2>&1; then
-  echo "  driver/linux/${CHECKS_NAME} is unchanged"
+  echo "  ${CHECKS_NAME} is unchanged"
   rm -f ${TMP_CHECKS_NAME}
 else
-  echo "  creating driver/linux/${CHECKS_NAME}"
+  echo "  creating ${CHECKS_NAME}"
   mv -f ${TMP_CHECKS_NAME} ${CHECKS_NAME}
 fi

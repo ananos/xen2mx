@@ -1,0 +1,60 @@
+RM_F = rm -f
+
+AM_CPPFLAGS = -imacros $(abs_top_builddir)/common/config.h	\
+	      -I$(abs_top_srcdir)/common -I$(abs_srcdir)/..	\
+	      $(GLOBAL_AM_CPPFLAGS) $(AM_CPPFLAGS_SPEC)
+AM_CFLAGS   = -fstrict-aliasing $(GLOBAL_AM_CFLAGS) $(AM_CFLAGS_SPEC)
+AM_LDFLAGS  = $(GLOBAL_AM_LDFLAGS) $(AM_LDFLAGS_SPEC)
+
+if OMX_LIB_DEBUG
+if OMX_LIB_RELEASE
+  REAL_LIBIDIR_SUFFIX=$(LIBIDIR_SUFFIX)
+else
+  REAL_LIBIDIR_SUFFIX=
+endif
+else
+  REAL_LIBIDIR_SUFFIX=
+endif
+
+if OMX_MULTILIB
+  libidir = $(prefix)/lib$(ARCHSIZE)$(REAL_LIBIDIR_SUFFIX)
+else
+  libidir = $(prefix)/lib$(REAL_LIBIDIR_SUFFIX)
+endif
+
+libi_LTLIBRARIES = libopen-mx.la
+
+libopen_mx_la_SOURCES = ../omx_ack.c ../omx_debug.c ../omx_endpoint.c ../omx_error.c	\
+			../omx_get_info.c ../omx_init.c ../omx_large.c ../omx_lib.c	\
+			../omx_misc.c ../omx_partner.c ../omx_peer.c ../omx_raw.c	\
+			../omx_recv.c ../omx_send.c ../omx_test.c
+
+
+# Build with MX ABI compatibility
+if OMX_MX_ABI_COMPAT
+  AM_LDFLAGS		+= -Wl,--version-script,$(abs_srcdir)/../omx__mx_lib.version
+  libopen_mx_la_SOURCES += ../omx__mx_compat.c ../omx__mx_raw_compat.c
+endif
+
+
+# Build with internal dlmalloc
+if OMX_LIB_DLMALLOC
+  libopen_mx_la_SOURCES += ../dlmalloc.c
+endif
+
+all-local:
+	@[ -f .libs/libmyriexpress.so ] || $(LN_S) libopen-mx.so .libs/libmyriexpress.so
+	@[ -f .libs/libmyriexpress.a  ] || $(LN_S) libopen-mx.a  .libs/libmyriexpress.a
+
+clean-local:
+	@$(RM_F) $(builddir)/.libs/libmyriexpress.so $(builddir)/.libs/libmyriexpress.a
+
+install-data-hook:
+	@[ -f $(DESTDIR)$(libidir)/libmyriexpress.so ] || $(LN_S) libopen-mx.so $(DESTDIR)$(libidir)/libmyriexpress.so
+	@[ -f $(DESTDIR)$(libidir)/libmyriexpress.a ]  || $(LN_S) libopen-mx.a  $(DESTDIR)$(libidir)/libmyriexpress.a
+
+uninstall-local:
+	@$(RM_F) $(DESTDIR)$(libidir)/libmyriexpress.so
+	@$(RM_F) $(DESTDIR)$(libidir)/libmyriexpress.a
+
+# vim: ft=automake

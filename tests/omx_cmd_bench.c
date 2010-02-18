@@ -20,7 +20,6 @@
 #include <sys/time.h>
 #include <getopt.h>
 
-#include "omx_config.h"
 #include "omx_lib.h"
 
 #define ITER 1000000

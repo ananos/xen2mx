@@ -141,9 +141,6 @@
 <li><a href="#kernel-target-kernel">
   How do I change the target kernel for the driver?
 </a></li>
-<li><a href="#kernel-another-kernel">
-  How to build the kernel for another kernel?
-</a></li>
 <li><a href="#kernel-compiler">
   How do I change the compiler for the kernel driver?
 </a></li>
@@ -299,9 +296,6 @@
 <ul>
 <li><a href="#config-buildtime">
   What are Open-MX build-time configuration options?
-</a></li>
-<li><a href="#config-installtime">
-  What are Open-MX install-time configuration options?
 </a></li>
 <li><a href="#config-startup">
   What are Open-MX startup-time configuration options?
@@ -775,8 +769,7 @@ $ make
 $ make install
 </pre>
 <p>
-Note that <tt>make install</tt> does not build automatically if needed.
-<tt>make</tt> must be used first. Both steps may be independently
+Both steps may be independently
 parallelized with <tt>-j</tt>.
 </p>
 <p>
@@ -858,20 +851,21 @@ $ sbin/omx_init start ifnames=eth1
   <tt>--enable-multilib</tt> to the configure script.
   The resulting libraries will be installed in <tt>lib32/</tt> and <tt>lib64/</tt>
   directories respectively.
-  A <tt>lib</tt> symbolic link will also point to the library directory that was built
-  with the default compiler pointer size.
-  Note that Open-MX internal tools and tests program will be linked will this
-  default library.
+  Note that Open-MX internal tools and tests program will be linked with the
+  default library (the one using the native architecture pointer size).
 </p>
 <p>
-  When building a MPI layer, it will usually look for the <tt>lib</tt> directory
-  within the Open-MX install tree.
-  If the <tt>lib</tt> symbolic link points to <tt>lib64</tt>
-  (because the compiler defaults to 64bits pointers), the MPI build will
-  use 64bits libraries by default.
-  To enforce 32bits libraries, you may want to tell the MPI configure
-  script to look in lib32 instead of lib, for instance by using
-  <tt>--with-mx=/path/to/open-mx/install --with-mx-libdir=/path/to/open-mx/install/lib32</tt>.
+  When linking a MPI layer or other applications over Open-MX, it will usually
+  look for the <tt>lib</tt> directory within the Open-MX install tree.
+  To make sure that 64bits libraries are used, you may want to tell the MPI
+  configure script to look in lib64 instead of lib, for instance by using
+  <tt>--with-mx=/path/to/open-mx/install --with-mx-libdir=/path/to/open-mx/install/lib64</tt>
+  and by pointing <tt>LD_LIBRARY_PATH</tt> accordingly.
+  The administrator may also want to add a <tt>lib</tt> symlink pointing to
+  the preferred library for this environment.
+  Open-MX does not create this symlink automatically since it cannot guess
+  the administrator preference and also because adding such a symlink in a
+  standard installation path might be a bad idea.
 </p>
 
 
@@ -937,10 +931,10 @@ to change device file names or access permissions
 </p>
 <p>
 The udev rules file is usually <tt>/etc/udev/rules.d/10-open-mx.rules</tt>.
-You may change this rules filename with the <tt>UDEV_RULES_FILE</tt> option at install-time,
-see <a href="#config-installtime">What are Open-MX install-time configuration options?</a>.
-In extreme circumstances, it is also possible to disable udev support entirely
-in Open-MX by passing <tt>udev=0</tt> at install-time.
+<!-- You may change this rules filename with the <tt>UDEV_RULES_FILE</tt> option at install-time, -->
+<!-- see <a href="#config-installtime">What are Open-MX install-time configuration options?</a>. -->
+<!-- In extreme circumstances, it is also possible to disable udev support entirely -->
+<!-- in Open-MX by passing <tt>udev=0</tt> at install-time. -->
 </p>
 
 
@@ -952,6 +946,13 @@ Uninstalling Open-MX files is mainly a matter of removing the
 entire directory pointed by the prefix of the installation
 (given with --prefix on the configure line, see
 <a href="#building-where-install">Where should I install Open-MX?</a>).
+</p>
+<p>
+A safer way is to run:
+<pre>
+$ make uninstall
+</pre>
+in the root of the build tree.
 </p>
 <p>
  If <tt>omx_local_install</tt> was used, some system files have been
@@ -1045,21 +1046,6 @@ $ ./configure --with-linux=/usr/src/linux-2.6.16.60-0.34 \
 </pre>
 
 
-<h4><a id="kernel-another-kernel" href="#kernel-another-kernel">
-  How to build the kernel for another kernel?
-</a></h4>
-<p>
-If for some reason (for instance for multiple kernel support) you need
-to rebuild the driver for a different kernel, it is possible to avoid
-reconfiguring/rebuilding the whole tree. You need to pass the kernel
-build path, kernel headers path and kernel release number:
-</p>
-<pre>
-$ make driver LINUX_BUILD=&lt;/path/to/kernel/build&gt; LINUX_HDR=&lt;/path/to/kernel/headers&gt; LINUX_RELEASE=&lt;version&gt;
-$ make driver-install LINUX_BUILD=&lt;/path/to/kernel/build&gt; LINUX_HDR=&lt;/path/to/kernel/headers&gt; LINUX_RELEASE=&lt;version&gt;
-</pre>
-
-
 <h4><a id="kernel-compiler" href="#kernel-compiler">
   How do I change the compiler for the kernel driver?
 </a></h4>
@@ -1078,7 +1064,7 @@ See also <a href="#kernel-arch">How do I change the target architecture of the k
 By default the kernel module is built for the currently running architecture.
 If the target kernel was built for another architecture, the kernel module
 build should be modified accordingly.
-For instance, to build for i386 machines, pass KCC="gcc -m32" and KARCH="i386"
+For instance, to build for i386 machines, pass KCFLAGS="-m32" and KARCH="i386"
 on the configure command-line.
 These variables will be passed as CC and ARCH to the kernel build command line.
 See also <a href="#kernel-compiler">How do I change the compiler for the kernel driver?</a>.
@@ -2120,21 +2106,6 @@ If you do not plan to use any applications that has been written for MX, it
 is possible to disable the API and ABI compatibility alltogether by passing
 --disable-mx-abi to the configure script.
 </p>
-<p>
-If you only use Open-MX and never link your application with MX, you may
-want to hardwire the translation from the MX API into Open-MX calls at
-compile time to avoid going across these conversion routines at runtime.
-To do so, you may pass <tt>mx-trans=1</tt> on the <tt>make install</tt>
-command line
-(see also <a href="#config-installtime">What are Open-MX install-time configuration options?</a>).
-</p>
-<p>
-Note that enabling this automatically API translation does not disable the
-MX ABI support in Open-MX since it may be required by some sanity checks
-when building external applications. It is thus still possible to link MX
-applications with Open-MX. But any application built against Open-MX will
-not be MX ABI compatible in this case.
-</p>
 
 
 <h4><a id="compat-mx-version" href="#compat-mx-version">
@@ -2226,14 +2197,11 @@ The following options may be passed to the configure command line before buildin
   the process (as many MPI layers do).
 </dd>
 
-<dt>--enable-valgrind</dt>
-<dd>Enable Valgrind hooks in the non-debugging library.
-  By default, Valgrind hooks are only enabled in the debugging library.
-  They help Valgrind understanding what is going on in the Open-MX
-  library.
-</dd>
 <dt>--disable-valgrind</dt>
 <dd>Disable Valgrind hooks in the debugging library.
+  By default, Valgrind hooks are enabled in the debugging library.
+  They help Valgrind understanding what is going on in the Open-MX
+  library.
 </dd>
 
 <dt>--disable-mx-abi</dt>
@@ -2295,54 +2263,6 @@ The following options may be passed to the configure command line before buildin
   instead of retrieving them from <tt>uname -r</tt>.
   Note that --with-linux-release also changes the linux and linux-build
   directories, and that --with-linux also changes the linux-build directory.
-</dd>
-
-</dl>
-
-
-<h4><a id="config-installtime" href="#config-installtime">
-  What are Open-MX install-time configuration options?
-</a></h4>
-<p>
-The following options may be passed to the make install command line
-to tune the installation:
-</p>
-
-<dl>
-
-<dt>prefix=/opt/open-mx/</dt>
-<dd>
-  Override the installation prefix that was given to the configure
-  line with --prefix.
-  See also <a href="#building-where-install">Where should I install
-  Open-MX?</a>).
-  Since multiple Makefiles from subdirectories are involved,
-  an absolute path should be given.
-  This feature may be dropped in the future since it is not
-  supported by most other projects, do not rely on it.
-</dd>
-
-<dt>mx-trans=1</dt>
-<dd>
-  When set, this option requests that the translating
-  MX API headers are installed.
-  This way, any MX application built against Open-MX headers
-  will automatically be converted into the Open-MX API
-  (inserted of being converted at runtime as usual).
-  See also <a href="#compat-api-abi-disable">When can I disable the MX-API or -ABI compatibility?</a>.
-</dd>
-<dt>udev=1</dt>
-<dd>
-  If set to 0, disable udev support, which means no udev rules file
-  will be installed, and device files will be created by the Open-MX
-  startup script.
-</dd>
-<dt>UDEV_RULES_DIR=/etc/udev/rules.d/</dt>
-<dt>UDEV_RULES_FILE=10-open-mx.rules</dt>
-<dd>
-  Change the udev rules directory path and the Open-MX rules file to add.
-  See also
-  <a href="#building-udev">How to configure udev for Open-MX?</a>.
 </dd>
 
 </dl>
@@ -2700,8 +2620,6 @@ you should read the following configuration advices:
   middleware involved use the native Open-MX API. In most cases, keeping the
   MX ABI/API compatibility enabled should cause no harm and a very small
   overhead. It thus is recommended.
-  Passing <tt>mx-trans=1</tt> to the <tt>make install</tt> command line
-  may however reduce the overhead a bit.
   Once Open-MX is installed, passing its installation path to the middleware
   configuration system as the MX installation path should do the trick.
 </dd>

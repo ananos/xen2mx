@@ -1,803 +1,519 @@
-# Open-MX
-# Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
-#
-# The development of this software has been funded by Myricom, Inc.
-#
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or (at
-# your option) any later version.
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#
-# See the GNU General Public License in COPYING.GPL for more details.
+# General informations on the project
+AC_INIT(Open-MX,
+	1.2.90,
+	http://open-mx.org,
+	open-mx)
 
-AC_INIT([Open-MX],
-        1.2.1,
-        [http://open-mx.org],
-        open-mx)
-AC_CONFIG_SRCDIR(common/omx_io.h)
 AC_PREREQ(2.59)
-AC_CANONICAL_SYSTEM
+
 AC_PREFIX_DEFAULT(/opt/open-mx)
+AC_CONFIG_SRCDIR(./configure.ac)
+AC_CONFIG_AUX_DIR(./build-aux)
+AC_CONFIG_MACRO_DIR(./build-aux)
+
+# Make the build output less verbose
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+
+# Preserve order options in help
 m4_ifdef([AC_PRESERVE_HELP_ORDER], [AC_PRESERVE_HELP_ORDER])
 
-################################################################
-# help the makefile guess whether it has been configured or not
 
-AC_SUBST(OMX_CONFIGURED, 1)
+PUSH_BUILDENV
 
-######################
-# usual config checks
 
+# Retrieve the canonical system type
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+
+
+# Guess the arch size (temporary hack before finding a cleaner solution)
+AC_COMPILE_IFELSE([int a [[sizeof(void *)-7]];],
+		  [NATARCHSIZE=64; ALTARCHSIZE=32], [NATARCHSIZE=32; ALTARCHSIZE=64])
+AC_SUBST(NATARCHSIZE)
+AC_SUBST(ALTARCHSIZE)
+AM_CONDITIONAL(ON_ARCHSIZE_64, test x$NATARCHSIZE = x64)
+
+
+# Activate Automake support
+AM_INIT_AUTOMAKE
+AC_CONFIG_HEADER(./common/config.h)
+
+
+# Check for usual build tools
 AC_PROG_CPP
 AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_LN_S
+LT_INIT
 AC_PROG_INSTALL
 
-AC_CHECK_TOOL(AR, ar, false)
-if test $AR = false; then
-  AC_MSG_ERROR(ar program not found in \$PATH)
-fi
 
-# AC_PROG_MKDIR_P and AC_PROG_SED introduced in 2.60, but it is not important
-# enough to not support 2.59
-m4_ifdef([AC_PROG_MKDIR_P], [AC_PROG_MKDIR_P], [
-	AC_MSG_CHECKING(for mkdir -p)
-	MKDIR=`which mkdir`
-	if test x$MKDIR = x; then
-		AC_MSG_ERROR(not found)
-	else
-		AC_MSG_RESULT(assuming $MKDIR -p works fine)
-		MKDIR_P=${MKDIR}" -p"
-		AC_SUBST(MKDIR_P)
-	fi])
-m4_ifdef([AC_PROG_SED], [AC_PROG_SED], [
-	AC_MSG_CHECKING(for sed)
-	SED=`which sed`
-	if test x$SED = x; then
-		AC_MSG_ERROR(not found)
-	else
-		AC_MSG_RESULT(assuming $SED works fine)
-		AC_SUBST(SED)
-	fi])
+POP_BUILDENV
 
-########################
-# save the build config
 
-OMX_BUILD_STR="`id -run 2> /dev/null`@`uname -n`:`cd ${srcdir} && pwd` `date`"
-AC_DEFINE_UNQUOTED(OMX_BUILD_STR, "$OMX_BUILD_STR", [Define to the build version string])
+# Global build tool options
+GLOBAL_AM_CPPFLAGS="-D_GNU_SOURCE=1"
+GLOBAL_AM_CFLAGS="-Wall"
+GLOBAL_AM_LDFLAGS="-Wl,--enable-new-dtags"
+AC_SUBST(GLOBAL_AM_CPPFLAGS)
+AC_SUBST(GLOBAL_AM_CFLAGS)
+AC_SUBST(GLOBAL_AM_LDFLAGS)
 
-#####################
-# build flags config
 
-AC_SUBST(CPPFLAGS)
-AC_SUBST(CFLAGS)
+# Build debug options
+AC_ARG_VAR(DBGCPPFLAGS, Additional preprocessor flags used in debug mode)
+AC_ARG_VAR(DBGCFLAGS,   Additional compiler flags used in debug mode)
+AC_ARG_VAR(DBGLDFLAGS,  Additional linker flags used in debug mode)
 
-if test -z "$DBGCFLAGS" ; then
-	DBGCFLAGS="-g -O0"
-fi
-AC_SUBST(DBGCFLAGS)
 
-#####################
-# what to build?
+# Define the build string
+GET_BUILD_STRING(BUILD_STRING)
+AC_DEFINE_UNQUOTED(OMX_BUILD_STR, "$BUILD_STRING", Define to the build version string)
 
-libopen_mx_dir="libopen-mx/"
-driver_dir="driver/"
 
-AC_MSG_CHECKING(whether driver source is available)
-if test -d "$srcdir/$driver_dir" ; then
-  AC_MSG_RESULT(yes)
-  build_driver=yes
-else
-  AC_MSG_RESULT(no)
-  build_driver=no
-fi
 
-AC_MSG_CHECKING(whether the driver has to be built)
-AC_ARG_ENABLE(driver-build,
-	[AS_HELP_STRING([--disable-driver-build], [do not build the driver])],
-	build_driver=$enableval)
-AC_MSG_RESULT($build_driver)
+# Driver configuration
+######################
+OMX_DISABLE(driver-build, enable_driver_build,
+	    do not build the driver,
+	    whether the driver has to be built)
 
-if test x$build_driver = xyes ; then
-	driver_ac_output="driver/linux/Makefile driver/linux/Kbuild"
-	AC_SUBST(OMX_BUILD_DRIVER, 1)
-else
-	AC_SUBST(OMX_BUILD_DRIVER, 0)
-fi
+AC_ARG_WITH(linux-release,
+	    AC_HELP_STRING(--with-linux-release=<version>, release number of the target kernel),
+	    OMX_LINUX_RELEASE=$withval   ; linux_release_set=true,
+	    OMX_LINUX_RELEASE=`uname -r` ; linux_release_set=false)
 
-AC_MSG_CHECKING(whether the library source is available)
-if test -d "$srcdir/$libopen_mx_dir" ; then
-  AC_MSG_RESULT(yes)
-  build_lib=yes
-else
-  AC_MSG_RESULT(no)
-  build_lib=no
-fi
 
-AC_MSG_CHECKING(whether the library and user-space tools have to be built)
-AC_ARG_ENABLE(library-build,
-	[AS_HELP_STRING([--disable-library-build], [do not build the library and user-space tools])],
-	build_lib=$enableval)
-AC_MSG_RESULT($build_lib)
+# TODO : clean these two items
+AC_ARG_WITH(linux,
+	    AC_HELP_STRING(--with-linux=<dir>, location of the Linux kernel sources),
+	    OMX_LINUX_SRC=$withval; OMX_LINUX_BUILD=$withval,
+	    OMX_LINUX_SRC=/lib/modules/$OMX_LINUX_RELEASE/source)
 
-if test x$build_lib = xyes ; then
-	lib_ac_output="libopen-mx/Makefile libopen-mx/Makefile.build tools/Makefile tests/Makefile tests/mx/Makefile doc/man/Makefile"
-	AC_SUBST(OMX_BUILD_LIB, 1)
-else
-	AC_SUBST(OMX_BUILD_LIB, 0)
-fi
+AC_ARG_WITH(linux-build,
+	    AC_HELP_STRING(--with-linux-build=<dir>, location of the Linux kernel build tree),
+	    OMX_LINUX_BUILD=$withval)
+test -z $OMX_LINUX_BUILD && OMX_LINUX_BUILD=/lib/modules/$OMX_LINUX_RELEASE/build
 
-########################
-# Kernel related config
+OMX_DISABLE(shared, enable_shared,
+	    disable shared communication between endpoints,
+            whether shared communication is enabled)
+OMX_DISABLE(self, enable_self,
+	    disable communication to myself,
+            whether self communication is enabled)
+OMX_WITH(shared-ring-entries, n, OMX_SHARED_RING_ENTRIES,
+         [change the number of entries per shared ring (default is 1024)],
+	 setting the number of shared ring entries to $OMX_SHARED_RING_ENTRIES,
+	 default)
 
-AC_ARG_VAR(KCC,     [Compiler for building the Open-MX kernel module])
-AC_ARG_VAR(KCFLAGS, [Additional compilation flags when building the Open-MX kernel module])
-AC_ARG_VAR(KARCH,   [Architecture name to pass when building the Open-MX kernel module])
+AC_ARG_VAR(KCC,	    Compiler used for building the driver)
+AC_ARG_VAR(KCFLAGS, Additional kernel compiler flags)
+AC_ARG_VAR(KARCH,   Architecture used to build the driver)
 
-if test x$build_driver = xyes ; then
 
-    AC_MSG_CHECKING(which compiler to use for kernel modules)
-    if test -n "$KCC" ; then
-	KCC_BASE=`echo $KCC | cut -d' ' -f1`
-    else
-	KCC_BASE=`echo $CC | cut -d' ' -f1`
-    fi
-    AC_MSG_RESULT($KCC)
-    AC_CHECK_PROGS(_KCC_BASE_UNUSED, $KCC_BASE)
-    KCC_VERSION=`$KCC_BASE --version 2>/dev/null | sed -nr -e 's/.* ([[0-9]]+\.[[0-9]]+).*/\1/p' | head -1`
+AM_CONDITIONAL(OMX_BUILD_DRIVER, test x$enable_driver_build = xyes)
 
-    LINUX_GCC_VERSION=`sed -e 's/.*gcc version \(.\..\).*/\1/' /proc/version`
 
-    AC_ARG_WITH(linux-release,
-	[AS_HELP_STRING([--with-linux-release=<version>], [release number of the target kernel])],
-	FORCE_LINUX_RELEASE="$withval"; LINUX_GCC_VERSION="")
-    if test -z "$FORCE_LINUX_RELEASE"; then
-	LINUX_SRC="/lib/modules/"`uname -r`"/source"
-	LINUX_BUILD="/lib/modules/"`uname -r`"/build"
-    else
-	AC_MSG_NOTICE([overriding kernel release uname -r with $FORCE_LINUX_RELEASE])
-	LINUX_SRC="/lib/modules/$FORCE_LINUX_RELEASE/source"
-	LINUX_BUILD="/lib/modules/$FORCE_LINUX_RELEASE/build"
-	if ! test -d "/lib/modules/$FORCE_LINUX_RELEASE/" ; then
-	    AC_MSG_WARN([kernel module directory /lib/modules/$FORCE_LINUX_RELEASE/ does not exist])
-	fi
-    fi
-    # If the user changes the source, use it as build by default
-    # If it changes the build, do not use it as the source by default
-    AC_ARG_WITH(linux,
-	[AS_HELP_STRING([--with-linux=<dir>],
-	[location of the Linux kernel source])],
-	[LINUX_SRC="$withval"; LINUX_BUILD="$withval"; LINUX_GCC_VERSION="";
-	 AC_MSG_NOTICE([overrifing kernel source and build dirs with $withval])])
-    AC_ARG_WITH(linux-build,
-	[AS_HELP_STRING([--with-linux-build=<dir>],
-	 [location of the Linux kernel build tree])],
-	[LINUX_BUILD="$withval"; LINUX_GCC_VERSION="";
-	 AC_MSG_NOTICE([overrifing kernel build dir with $withval])])
-    AC_SUBST(LINUX_SRC)
-    AC_SUBST(LINUX_BUILD)
+OMX_DEFINE(OMX_DISABLE_SHARED, 1,
+	   Define to disable shared communication between endpoints on the same node,
+	   test x$enable_shared = xno)
+OMX_DEFINE(OMX_DISABLE_SELF, 1, Define to disable communication to myself,
+	   test x$enable_self = xno)
+OMX_DEFINE(OMX_SHARED_RING_ENTRY_NR, ${OMX_SHARED_RING_ENTRIES}UL,
+	   Define to change the number of entries per shared ring,
+	   test x$OMX_SHARED_RING_ENTRIES != xdefault)
 
-    # Issue a warning if the kernel compiler seems to be different
-    if test -n "$KCC_VERSION" && test -n "$LINUX_GCC_VERSION" ; then
-      if test "$KCC_VERSION" != "$LINUX_GCC_VERSION" ; then
-        AC_MSG_NOTICE([kernel built with gcc $LINUX_GCC_VERSION and Open-MX with $KCC_VERSION? KCC might need to be adjusted])
-      fi
-    else
-      if test -n  "$KCC" ; then
-        AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is set correctly ($KCC)])
-      else
-        AC_MSG_NOTICE([cannot check kernel module compiler version, assuming KCC is unset on purpose])
-      fi
-    fi
 
-    # Find where the headers are (to avoid grepping at both places).
-    # Do not check for autoconf.h or version.h since these are in
-    # both the source and the build directory.
-    AC_MSG_CHECKING(include/linux/kernel.h)
-    LINUX_HDR=
-    if test -f ${LINUX_SRC}/include/linux/kernel.h ; then
-      LINUX_HDR=$LINUX_SRC
-    else if test -f ${LINUX_BUILD}/include/linux/kernel.h ; then
-      LINUX_HDR=$LINUX_BUILD
-    fi fi
-    if test -z "${LINUX_HDR}" ; then
-      AC_MSG_RESULT([not found])
-    else
-      AC_MSG_RESULT([found in ${LINUX_HDR}])
-      AC_SUBST(LINUX_HDR)
-    fi
+if test x$enable_driver_build ; then
+  OMX_PROG_KCC($KCC)
+  OMX_FIND_KERNEL_HEADERS(OMX_LINUX_HDR, $OMX_LINUX_SRC $OMX_LINUX_BUILD)
+  OMX_FIND_KERNEL_AUTOCONF_HEADER(OMX_LINUX_AUTOCONF_DIR, $OMX_LINUX_BUILD $OMX_LINUX_SRC)
+  OMX_CHECK_KBUILD_MAKEFILE($OMX_LINUX_BUILD)
+  OMX_FIND_KBUILD_CFLAGS_ARG(OMX_KBUILD_CFLAGS_ARG, $OMX_LINUX_BUILD)
+  OMX_GET_KERNEL_RELEASE(OMX_LINUX_REAL_RELEASE, $OMX_LINUX_BUILD)
 
-    # Find where the autoconf header is (to avoid grepping at both places).
-    # The one in the build dir is preferred since this is where the configured
-    # tree should be
-    AC_MSG_CHECKING(include/linux/autoconf.h)
-    LINUX_AUTOCONF_DIR=
-    if test -f ${LINUX_BUILD}/include/linux/autoconf.h ; then
-      LINUX_AUTOCONF_DIR=${LINUX_BUILD}
-    else if test -f ${LINUX_SRC}/include/linux/autoconf.h ; then
-      LINUX_AUTOCONF_DIR=${LINUX_SRC}
-    fi fi
-    if test -z "${LINUX_AUTOCONF_DIR}" ; then
-      AC_MSG_RESULT([not found])
-    else
-      AC_MSG_RESULT([found in ${LINUX_AUTOCONF_DIR}])
-    fi
+  AC_MSG_NOTICE(using the Linux kernel sources in $OMX_LINUX_SRC)
+  AC_MSG_NOTICE(using the Linux kernel build tree $OMX_LINUX_BUILD)
+  AC_MSG_NOTICE(using the Linux kernel release $OMX_LINUX_REAL_RELEASE)
 
-    # Find where the kbuild Makefile is
-    AC_MSG_CHECKING(kernel Makefile)
-    if test -f ${LINUX_BUILD}/Makefile ; then
-      AC_MSG_RESULT([found in ${LINUX_BUILD}])
-    else
-      AC_MSG_RESULT([not found])
-    fi
-
-    # Error out if we fail to find everything
-    if test -z "${LINUX_HDR}" -o -z "${LINUX_AUTOCONF_DIR}" -o ! -f ${LINUX_BUILD}/Makefile  ; then
-      AC_MSG_NOTICE([looked for kernel headers and build system using:])
-      AC_MSG_NOTICE([  kernel headers in ${LINUX_SRC}])
-      AC_MSG_NOTICE([  kernel build in ${LINUX_BUILD}])
-      AC_MSG_NOTICE([might need --with-linux-release, --with-linux, or --with-linux-build])
-      AC_MSG_ERROR([could not find kernel headers and build system])
-    fi
-
-    # Check the kernel release
-    REAL_LINUX_RELEASE=$(make kernelrelease -C ${LINUX_BUILD} | grep ^2.6.)
-    AC_MSG_CHECKING(kernel release)
-    if test x${REAL_LINUX_RELEASE} = x; then
-      AC_MSG_ERROR(not found)
-    fi
-    AC_MSG_RESULT(${REAL_LINUX_RELEASE})
-    if test -z "$FORCE_LINUX_RELEASE"; then
-	LINUX_RELEASE="$REAL_LINUX_RELEASE"
-    else
-	if test "x$FORCE_LINUX_RELEASE" != "x$REAL_LINUX_RELEASE" ; then
-	    AC_MSG_WARN(kernel build reports $REAL_LINUX_RELEASE instead of $FORCE_LINUX_RELEASE)
-	fi
-	LINUX_RELEASE="$FORCE_LINUX_RELEASE"
-    fi
-    AC_SUBST(LINUX_RELEASE)
-
-    # Check whether ccflags-y is supported
-    AC_MSG_CHECKING(kernel build supports ccflags-y)
-    if test -d ${LINUX_BUILD}/scripts/ && grep ccflags-y -r ${LINUX_BUILD}/scripts/ >/dev/null ; then
-	AC_MSG_RESULT(yes)
-	LINUX_KBUILD_CCFLAGS_Y=ccflags-y
-    else
-	AC_MSG_RESULT([no, reverting to EXTRA_CFLAGS])
-	LINUX_KBUILD_CCFLAGS_Y=EXTRA_CFLAGS
-    fi
-    AC_SUBST(LINUX_KBUILD_CCFLAGS_Y)
-
-fi # end of $build_driver = yes
-
-#######################################
-# options that change multilib configs
-
-AC_ARG_ENABLE(debug,
-	[AS_HELP_STRING([--enable-debug], [enable debugging features in the driver and main library])],
-	enable_debug=$enableval, enable_debug=optional)
-AC_MSG_CHECKING(if debug is enabled in the driver and main library)
-AC_MSG_RESULT($enable_debug)
-
-AC_ARG_ENABLE(multilib,
-	[AS_HELP_STRING([--enable-multilib], [build both 32bits and 64bits libraries])],
-	enable_multilib=$enableval, enable_multilib=no)
-AC_MSG_CHECKING(if multilib is enabled)
-AC_MSG_RESULT($enable_multilib)
-
-##################
-# multilib builds
-
-if test x$build_lib = xyes ; then
-    # find the default pointer size of the compiler
-    AC_MSG_CHECKING(checking compiler default pointer size)
-    AC_COMPILE_IFELSE([int a[[sizeof(void *)-7]];], defaultptrsize=64, defaultptrsize=32)
-    AC_MSG_RESULT($defaultptrsize)
-
-    # setup the creation of a lib symlink to compiler-default-pointer-size library
-    AC_MSG_CHECKING(default lib symlink)
-    INSTALL_LIB_LINKTARGET=lib${defaultptrsize}
-    AC_MSG_RESULT(lib${defaultptrsize})
-fi
-AC_SUBST(INSTALL_LIB_LINKTARGET)
-
-if test x$enable_multilib = xyes; then
-  libopen_mx_default_builddir="${libopen_mx_dir}build${defaultptrsize}/"
-else
-  libopen_mx_default_builddir="${libopen_mx_dir}build/"
-fi
-libopen_mx_name="libopen-mx"
-LIB_TARGETS=""
-
-generate_lib_build() {
-	dir=$1; shift
-	name=$1; shift
-	ptrsize=$1; shift
-	debug=$1; shift
-	installsuffix=$1; shift
-
-	if test x$build_lib != xyes ; then return ; fi
-
-	mkdir -p ${libopen_mx_dir}${dir} || exit -1
-
-	cat >${libopen_mx_dir}${dir}/Makefile <<EOF
-omx_build_lib_debug = $debug
-omx_build_lib_ptrsize = $ptrsize
-omx_build_lib_name = $name
-omx_build_lib_dir = ${libopen_mx_dir}${dir}
-libdirsuffix = ${installsuffix}
-include ../Makefile.build
-EOF
-	test $? -eq 0 || exit -1
-
-	AC_MSG_NOTICE(building the $name library in ${libopen_mx_dir}${dir})
-	LIB_TARGETS="$LIB_TARGETS $dir"
-}
-
-if test x$enable_debug = xyes; then
-  # only build the debug lib, enable debug in the driver
-  AC_DEFINE(OMX_DRIVER_DEBUG, [1], [Define to enable debug features in the driver])
-  AC_SUBST(OMX_DRIVER_DEBUG, 1)
-  AC_SUBST(omx_debug_tests, 1)
-  if test x$enable_multilib = xyes; then
-    generate_lib_build build32 32bits-debug-only 32 1 32
-    generate_lib_build build64 64bits-debug-only 64 1 64
-  else
-    generate_lib_build build debug-only "" 1 "${defaultptrsize}"
+  if $linux_release_set && test x$OMX_LINUX_RELEASE != x$OMX_LINUX_REAL_RELEASE ; then
+     AC_MSG_ERROR(kernel build reports $OMX_LINUX_REAL_RELEASE instead of $OMX_LINUX_RELEASE)
   fi
-else if test x$enable_debug = xno; then
-  # only build the non-debug lib, disable debug in the driver
-  AC_SUBST(OMX_DRIVER_DEBUG, 0)
-  AC_SUBST(omx_debug_tests, 0)
-  if test x$enable_multilib = xyes; then
-    generate_lib_build build32 32bits-normal 32 0 32
-    generate_lib_build build64 64bits-normal 64 0 64
-  else
-    generate_lib_build build normal "" 0 "${defaultptrsize}"
+
+  { ! test -z $KCC && _kcc=$KCC; } || _kcc=$CC
+  OMX_GET_GCC_VERSION(GCC_VERSION, $_kcc)
+  OMX_GET_KERNEL_GCC_VERSION(KERNEL_GCC_VERSION)
+
+  if test "x$GCC_VERSION" != "x$KERNEL_GCC_VERSION" ; then
+     AC_MSG_WARN(kernel built with gcc $KERNEL_GCC_VERSION and Open-MX with $GCC_VERSION)
   fi
-else
-  # build both libs by default, disable debug in the driver
-  AC_SUBST(OMX_DRIVER_DEBUG, 0)
-  if test x$enable_multilib = xyes; then
-    generate_lib_build build32 32bits-normal 32 0 32
-    generate_lib_build build64 64bits-normal 64 0 64
-    generate_lib_build build32-dbg 32bits-debug 32 1 "32/debug"
-    generate_lib_build build64-dbg 64bits-debug 64 1 "64/debug"
-  else
-    generate_lib_build build normal "" 0 "${defaultptrsize}"
-    generate_lib_build build-dbg debug "" 1 "${defaultptrsize}/debug"
-  fi
-  AC_SUBST(omx_debug_tests, 0)
-fi fi
 
-AC_SUBST(LIB_TARGETS)
+  OMX_SYMLINK_DRIVER_SOURCES
+  OMX_CHECK_KERNEL_HEADERS($OMX_LINUX_BUILD, $OMX_LINUX_HDR, $OMX_LINUX_REAL_RELEASE)
 
-#######################################
-# debug and valgrind config
-
-AC_ARG_ENABLE(counters,
-	[AS_HELP_STRING([--disable-counters], [disable counters support in the driver])],
-	enable_counters=$enableval, enable_counters=yes)
-AC_MSG_CHECKING(if counter support is enabled in the driver)
-if test x$enable_counters = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_DRIVER_COUNTERS, [1], [Define to enable countering in the driver])
-  AC_SUBST(OMX_DRIVER_COUNTERS, 1)
-else
-  AC_MSG_RESULT(no)
-  AC_SUBST(OMX_DRIVER_COUNTERS, 0)
+  AC_SUBST(OMX_KBUILD_CFLAGS_ARG)
+  AC_SUBST(OMX_LINUX_RELEASE)
+  AC_SUBST(OMX_LINUX_HDR)
+  AC_SUBST(OMX_LINUX_BUILD)   # useful ? --> in the driver Makefile !?
 fi
 
-AC_MSG_CHECKING(if valgrind is available)
-AC_PREPROC_IFELSE([
-#include <valgrind/memcheck.h>
-#ifndef VALGRIND_MAKE_MEM_NOACCESS
-#error VALGRIND_MAKE_MEM_NOACCESS not defined
-#endif
-], valgrind_available=yes)
-if test x$valgrind_available = xyes ; then
-  AC_MSG_RESULT(yes)
+if test x$enable_shared = xyes ; then
+   AC_SUBST(OMX_DISABLE_SHARED, 0)
 else
-  AC_MSG_RESULT(no)
+   AC_SUBST(OMX_DISABLE_SHARED, 1)
 fi
 
-AC_ARG_ENABLE(valgrind,
-	[AS_HELP_STRING([--enable-valgrind], [enable Valgrind hooks in the debug or non-debug libraries])],
-	enable_valgrind=$enableval, enable_valgrind=maybe)
-AC_MSG_CHECKING(if valgrind hooks are enabled in the non-debug library)
-if test x$valgrind_available = xyes -a x$enable_valgrind = xyes ; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_LIB_VALGRIND_NONDEBUG, 1, [Enable memory allocation debugging with Valgrind in the non-debug library])
-else
-  AC_MSG_RESULT(no)
-fi
-AC_MSG_CHECKING(if valgrind hooks are enabled in the debug library)
-if test x$valgrind_available = xyes -a x$enable_valgrind != xno ; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_LIB_VALGRIND_DEBUG, 1, [Enable memory allocation debugging with Valgrind in the debug library])
-else
-  AC_MSG_RESULT(no)
-fi
+test -z $KCC   || OMX_KBUILD_ARGS="$OMX_KBUILD_ARGS CC=\"$KCC $KCFLAGS\""
+test -z $KARCH || OMX_KBUILD_ARGS="$OMX_KBUILD_ARGS ARCH=\"$KARCH\""
+AC_SUBST(OMX_KBUILD_ARGS)
+
+
+
+# Driver debugging configuration
+################################
+OMX_DISABLE(counters, enable_counters,
+            disable counters support in the driver,
+	    whether counter support is enabled in the driver)
 
 AC_ARG_ENABLE(recvcopy,
-	[AS_HELP_STRING([--disable-recvcopy], [do not copy data on the receive side, pass random data to user-space])],
-	enable_recvcopy=$enableval, enable_recvcopy=yes)
+	      AC_HELP_STRING(--disable-recvcopy,
+			     [do not copy data on the receive side, pass random data to user-space]),
+	      enable_recvcopy=$enableval,
+	      enable_recvcopy=yes)
+
+
+
+OMX_DEFINE(OMX_DRIVER_COUNTERS, 1,
+	   Define to enable countering in the driver,
+   	   test x$enable_counters = xyes)
+OMX_DEFINE(OMX_NORECVCOPY, 1,
+	   Define to remove the driver copy on the receive side and pass random data to user-space,
+	   test x$enable_recvcopy = xno)
+
+
+
 if test x$enable_recvcopy = xno ; then
-  AC_MSG_CHECKING(if data is copied by the driver on the receive side)
-  AC_MSG_RESULT(no)
-  AC_DEFINE_UNQUOTED(OMX_NORECVCOPY, 1, [Enable to remove the driver copy on the receive side and pass random data to user-space])
-# else
-  # print nothing in the regular case, this is a high-debug options
+    AC_MSG_NOTICE(random data will be passed by the driver to user-space on the receive side)
 fi
 
-#######################################
-# self and shared communication config
 
-AC_ARG_ENABLE(self,
-	[AS_HELP_STRING([--disable-self], [disable communication to myself])],
-	enable_self=$enableval, enable_self=yes)
-AC_MSG_CHECKING(if self communication is enabled)
-if test x$enable_self = xyes; then
-  AC_MSG_RESULT(yes)
+
+
+
+# Library configuration
+#######################
+OMX_DISABLE(library-build, enable_library_build,
+	    do not build the library and user-space tools,
+            whether the library and user-space tools have to be built)
+ OMX_ENABLE(multilib, enable_multilib,
+            build both a 32-bits and 64-bits version of the library,
+            whether both a 32-bits and 64-bits version of the library have to be built)
+OMX_DISABLE(internal-malloc, enable_internal_malloc,
+	    use the regular malloc instead of a custom internal dlmalloc if
+	    there is no risky symbol interception,
+	    whether internal malloc is enabled)
+OMX_DISABLE(threads, enable_lib_threads,
+	    disable thread safety in the library,
+            whether thread safety is enabled in the library)
+
+
+AM_CONDITIONAL(OMX_BUILD_LIBRARY,     test x$enable_library_build   = xyes)
+AM_CONDITIONAL(OMX_MULTILIB,          test x$enable_multilib        = xyes)
+AM_CONDITIONAL(OMX_LIB_DLMALLOC,      test x$enable_internal_malloc = xyes)
+AM_CONDITIONAL(OMX_LIB_THREAD_SAFETY, test x$enable_lib_threads     = xyes)
+
+
+OMX_DEFINE(OMX_LIB_DLMALLOC, 1, Define to enable the internal dlmalloc,
+	   test x$enable_internal_malloc = xyes)
+OMX_DEFINE(OMX_LIB_THREAD_SAFETY, 1, Define to enable thread safety support in the library,
+ 	   test x$enable_lib_threads = xyes)
+
+
+
+# Library debugging configuration
+#################################
+AC_ARG_ENABLE(debug,
+	      AC_HELP_STRING(--enable-debug, build the library and the driver in debug mode),
+	      enable_debug=$enableval,
+	      enable_debug=both)
+
+OMX_DISABLE(valgrind, enable_valgrind,
+            disable Valgrind hooks in the debug library,
+	    whether Valgrind hooks are enabled in the debug library)
+
+AM_CONDITIONAL(OMX_LIB_DEBUG,   test x$enable_debug    = xyes || test x$enable_debug = xboth)
+AM_CONDITIONAL(OMX_LIB_RELEASE, test x$enable_debug    = xno  || test x$enable_debug = xboth)
+AM_CONDITIONAL(OMX_VALGRIND,    test x$enable_valgrind = xyes)
+
+OMX_DEFINE(OMX_LIB_VALGRIND_DEBUG, 1,
+           Enable memory allocation debugging with Valgrind in the debug library,
+	   test x$enable_valgrind = xyes)
+
+
+OMX_DRIVER_DEBUG=0
+DEFAULT_LIBDIR=lib$NATARCHSIZE
+if test x$enable_debug = xyes ; then
+    AC_MSG_NOTICE(building the library in debug mode)
+    AC_MSG_NOTICE(building the driver in debug mode)
+
+    DEFAULT_LIBDIR=${DEFAULT_LIBDIR}-debug
+
+    OMX_DRIVER_DEBUG=1
+    OMX_DEFINE(OMX_DRIVER_DEBUG, 1,
+	       Define to enable debugging features in the driver,
+	       test x$enable_debug = xyes)
+elif test x$enable_debug = xno ; then
+    AC_MSG_NOTICE(building the library in release mode)
+elif test x$enable_debug = xboth ; then
+    AC_MSG_NOTICE(building the library in both debug and release mode)
+fi
+AC_SUBST(OMX_DRIVER_DEBUG)
+AC_SUBST(DEFAULT_LIBDIR)
+
+if test x$enable_valgrind = xyes ; then
+   OMX_CHECK_VALGRIND_HEADERS
+fi
+
+
+
+
+
+# MX compatibility and wire configuration
+#########################################
+OMX_DISABLE(endian, enable_endian,
+	    disable endian-independant networking,
+	    whether endian-independant networking is enabled)
+
+OMX_WITH_COND(mtu, n, OMX_MTU,
+	      [change MTU (default is 9000 in non-MX-wire-compatible mode)],
+	      setting MTU to $OMX_MTU, test x$enable_mx_wire = xno,
+	      9000)
+OMX_WITH_COND(medium-frag-length, n, OMX_MEDIUM_FRAG_LENGTH,
+	      [change medium fragment maximum payload size (default depends on the MTU and wire
+	       compatibility)],
+	       setting medium frag length to $OMX_MEDIUM_FRAG_LENGTH, test x$enable_mx_wire = xno,
+	       default) 
+OMX_WITH_COND(pull-reply-length, n, OMX_PULL_REPLY_LENGTH,
+	      [change pull reply maximum payload size (default depends on the MTU and wire
+	       compatibility)],
+	       setting pull reply length to $OMX_PULL_REPLY_LENGTH, test x$enable_mx_wire = xno,
+	       default)
+OMX_WITH_COND(pull-block-replies, n, OMX_PULL_BLOCK_REPLIES,
+	      [change the number of pull replies per block (default is 32 in non-MX-wire-compatible
+	       mode)],
+	       setting pull block replies to $OMX_PULL_BLOCK_REPLIES, test x$enable_mx_wire = xno,
+	       default)
+OMX_WITH_COND(ethertype, n, OMX_ETHERTYPE,
+	      [change Ethertype (default is 0x86DF)],
+	      setting Ethertype to $OMX_ETHERTYPE, test x$enable_mx_wire = xno, 
+	      default)
+
+ OMX_ENABLE(mx-wire, enable_mx_wire,
+            enable MX wire compatibility,
+	    whether MX wire compatibility is enabled)
+OMX_DISABLE(mx-abi, enable_mx_abi,
+            disable MX binary compatibility,
+	    whether MX ABI compatibility is enabled)
+
+AM_CONDITIONAL(OMX_MX_ABI_COMPAT, test x$enable_mx_abi = xyes)
+
+OMX_DEFINE(OMX_MX_ABI_COMPAT, 1, Define to enable MX ABI compatibility,
+           test x$enable_mx_abi = xyes)
+OMX_DEFINE(OMX_MX_WIRE_COMPAT, 1, Define to enable MX wire compatibilty,
+           test x$enable_mx_wire = xyes)
+OMX_DEFINE(OMX_MEDIUM_FRAG_LENGTH_MAX, $OMX_MEDIUM_FRAG_LENGTH,
+	   Define to change the medium frag length max,
+	   test x$OMX_MEDIUM_FRAG_LENGTH != xdefault)
+OMX_DEFINE(OMX_PULL_REPLY_LENGTH_MAX, $OMX_PULL_REPLY_LENGTH,
+	   Define to change the pull reply length max,
+	   test x$OMX_PULL_REPLY_LENGTH != xdefault)
+OMX_DEFINE(OMX_PULL_REPLY_PER_BLOCK, $OMX_PULL_BLOCK_REPLIES,
+           Define to change the number of pull replies per block,
+	   test x$OMX_PULL_BLOCK_REPLIES != xdefault)
+OMX_DEFINE(ETH_P_OMX, $OMX_ETHERTYPE, Define to change the Ethertype,
+	   test x$OMX_ETHERTYPE != xdefault)
+OMX_DEFINE(OMX_ENDIAN_COMPAT, 1, Define to enable endian-independent networking,
+	   test x$enable_endian = xyes)
+
+if test x$enable_mx_wire = xno ; then
+    AC_DEFINE_UNQUOTED(OMX_MTU, $OMX_MTU, Define to change the MTU)
+fi
+
+# MX wire compatibility is incompatible with many tunning options
+if test x$enable_mx_wire = xyes ; then
+   if test x$OMX_MTU != x9000 ; then
+      AC_MSG_ERROR(Changing the MTU requires MX-wire compatibility to be disabled)
+   fi
+   if test x$OMX_MEDIUM_FRAG_LENGTH != xdefault ; then
+      AC_MSG_ERROR(Changing the medium frag length max requires MX-wire compatibility to be
+      	           disabled)
+   fi
+   if test x$OMX_PULL_REPLY_LENGTH != xdefault ; then
+      AC_MSG_ERROR(Changing the number of pull replies per block requires MX-wire
+      	           compatibility to be disabled)
+   fi
+   if test x$OMX_PULL_BLOCK_REPLIES != xdefault ; then
+      AC_MSG_ERROR(Changing the number of pull replies per block requires MX-wire compatibility
+      		   to be disabled)
+   fi
+   if test x$enable_endian = xno ; then
+      AC_MSG_WARN(endian-independant networking is required to talk to native MX peers)
+   fi
+fi 
+
+
+
+
+
+# Peer discovery
+################
+OMX_DISABLE(fma, enable_fma,
+	    never use FMA,
+	    whether FMA is enabled)
+ OMX_ENABLE(static-peers, enable_static_peers,
+ 	    use static peer instead of dynamic discovery,
+            whether static peer mapping is performed instead of dynamic)
+
+OMX_WITH_COND(peers-file, path, OMX_PEERS_FILE,
+	      use argument as a static peers file,
+	      using the static peers file $OMX_PEERS_FILE, test x$enable_static_peers = xyes,
+	      /etc/open-mx/peers)
+
+
+if test x$enable_static_peers = xyes ; then
+    AC_SUBST(OMX_STATIC_PEERS, 1)
 else
-  AC_MSG_RESULT(no)
-  AC_DEFINE(OMX_DISABLE_SELF, [1], [Define to disable communication to myself])
+    AC_SUBST(OMX_STATIC_PEERS, 0)
 fi
 
-AC_ARG_ENABLE(shared,
-	[AS_HELP_STRING([--disable-shared], [disable shared communication between endpoints on the same node])],
-	enable_shared=$enableval, enable_shared=yes)
-AC_MSG_CHECKING(if shared communication is enabled)
-if test x$enable_shared = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_SUBST(OMX_DISABLE_SHARED, 0)
-else
-  AC_MSG_RESULT(no)
-  AC_DEFINE(OMX_DISABLE_SHARED, [1], [Define to disable shared communication between endpoints on the same node])
-  AC_SUBST(OMX_DISABLE_SHARED, 1)
+if test x$enable_static_peers != xyes ; then
+   OMX_PEER_DISCOVERY=omxoed
+   if test x$enable_fma = xyes ; then
+      AC_MSG_CHECKING(whether FMA sources are available)
+      if test -d "$srcdir/fma" ; then
+	 AC_MSG_RESULT(yes)
+	 if test x$enable_mx_abi = xyes ; then
+	    OMX_PEER_DISCOVERY=fma
+	 else
+	    AC_MSG_WARN(building FMA requires MX ABI compatibility) # or API ?
+	 fi
+      else
+	 AC_MSG_RESULT(no)
+      fi
+   fi
+
+   if test x$OMX_PEER_DISCOVERY = xfma ; then
+      AC_MSG_NOTICE(using FMA for dynamic peer discovery)
+      mkdir -p mcp
+      AC_CONFIG_SUBDIRS(fma) # Beurk...
+   else
+      AC_MSG_NOTICE(using omxoed for dynamic peer discovery)
+      if test x$enable_mx_wire = xyes && test x$enable_fma = xyes ; then
+	 AC_MSG_ERROR([FMA is recommended for dynamic discovery of native MX peers, use --disable-fma to force])
+      fi
+   fi
 fi
 
-############################
-# MX compat and wire config
+AM_CONDITIONAL(OMX_USE_FMA, test x$OMX_PEER_DISCOVERY = xfma)
 
-AC_ARG_ENABLE(mx-abi,
-	[AS_HELP_STRING([--disable-mx-abi], [disable MX binary compatibility])],
-	enable_mx_abi=$enableval, enable_mx_abi=yes)
-AC_MSG_CHECKING(if MX ABI compatibility is enabled)
-if test x$enable_mx_abi = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_MX_ABI_COMPAT, 1, [Define to enable MX ABI compatibility])
-  AC_SUBST(OMX_MX_ABI_COMPAT, 1)
-else
-  AC_MSG_RESULT(no)
-  AC_SUBST(OMX_MX_ABI_COMPAT, 0)
-fi
-
-AC_ARG_ENABLE(mx-wire,
-	[AS_HELP_STRING([--enable-mx-wire], [enable MX wire compatibility])],
-	enable_mx_wire=$enableval, enable_mx_wire=no)
-AC_MSG_CHECKING(if MX wire compatibility is enabled)
-if test x$enable_mx_wire = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_MX_WIRE_COMPAT, 1, [Define to enable MX wire compatibility])
-else
-  AC_MSG_RESULT(no)
-fi
-
-AC_ARG_WITH(mtu,
-	[AS_HELP_STRING([--with-mtu=<n>], [change MTU (default is 9000 in non-MX-wire-compatible mode)])],
-	with_mtu=$withval)
-if test x$enable_mx_wire = xno; then
-  AC_MSG_CHECKING(MTU)
-  if test x$with_mtu != x; then
-    AC_MSG_RESULT($with_mtu)
-  else
-    AC_MSG_RESULT([default (9000)])
-    with_mtu=9000
-  fi
-  AC_DEFINE_UNQUOTED(OMX_MTU, $with_mtu, [Define to change the MTU])
-else
-  if test x$with_mtu != x; then
-    AC_MSG_ERROR([Changing the MTU requires MX-wire compatibility to be disabled (--disable-mx-wire)])
-  fi
-fi
-
-AC_ARG_WITH(medium-frag-length,
-	[AS_HELP_STRING([--with-medium-frag-length=<n>], [change medium fragment maximum payload size (default depends on the MTU and wire compatibility)])],
-	with_medium_frag_length=$withval)
-if test x$with_medium_frag_length != x; then
-  if test x$enable_mx_wire = xno; then
-    AC_MSG_CHECKING(medium frag length)
-    AC_MSG_RESULT($with_medium_frag_length)
-    AC_DEFINE_UNQUOTED(OMX_MEDIUM_FRAG_LENGTH_MAX, $with_medium_frag_length, [Define to change the medium frag length max])
-  else
-    AC_MSG_ERROR([Changing the packet size requires MX-wire compatibility to be disabled (--disable-mx-wire)])
-  fi
-fi
-
-AC_ARG_WITH(pull-reply-length,
-	[AS_HELP_STRING([--with-pull-reply-length=<n>], [change pull reply maximum payload size (default depends on the MTU and wire compatibility)])],
-	with_pull_reply_length=$withval)
-if test x$with_pull_reply_length != x; then
-  if test x$enable_mx_wire = xno; then
-    AC_MSG_CHECKING(pull reply length)
-    AC_MSG_RESULT($with_pull_reply_length)
-    AC_DEFINE_UNQUOTED(OMX_PULL_REPLY_LENGTH_MAX, $with_pull_reply_length, [Define to change the pull reply length max])
-  else
-    AC_MSG_ERROR([Changing the packet size requires MX-wire compatibility to be disabled (--disable-mx-wire)])
-  fi
-fi
-
-AC_ARG_WITH(pull-block-replies,
-	[AS_HELP_STRING([--with-pull-block-replies=<n>], [change the number of pull replies per block (default is 32 in non-MX-wire-compatible mode)])],
-	with_pull_block_replies=$withval)
-if test x$with_pull_block_replies != x; then
-  if test x$enable_mx_wire = xno; then
-    AC_MSG_CHECKING(pull block replies)
-    AC_MSG_RESULT($with_pull_block_replies)
-    AC_DEFINE_UNQUOTED(OMX_PULL_REPLY_PER_BLOCK, $with_pull_block_replies, [Define to change the number of pull replies per block])
-  else
-    AC_MSG_ERROR([Changing the number of pull replies per block requires MX-wire compatibility to be disabled (--disable-mx-wire)])
-  fi
-fi
-
-AC_ARG_WITH(ethertype,
-	[AS_HELP_STRING([--with-ethertype=<value>], [change Ethertype (default is 0x86DF)])],
-	ethertype=$withval, ethertype=default)
-AC_MSG_CHECKING(the Ethertype to use)
-if test x$ethertype = xdefault; then
-  AC_MSG_RESULT([default (0x86df)])
-else
-  AC_MSG_RESULT($ethertype)
-  AC_DEFINE_UNQUOTED(ETH_P_OMX, $ethertype, [Define to change the Ethertype])
-fi
-
-AC_ARG_ENABLE(endian,
-	[AS_HELP_STRING([--disable-endian], [disable endian-independent networking])],
-	enable_endian=$enableval, enable_endian=yes)
-AC_MSG_CHECKING(if endian-independent networking is enabled)
-if test x$enable_endian = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_ENDIAN_COMPAT, 1, [Define to enable endian-independent networking])
-else
-  AC_MSG_RESULT(no)
-  if test x$enable_mx_wire = xyes; then
-    AC_MSG_WARN([endian-independent networking is required to talk to native MX peers])
-  fi
-fi
-
-############################
-# misc config
-
-AC_ARG_WITH(shared-ring-entries,
-	[AS_HELP_STRING([--with-shared-ring-entries], [change the number of entries per shared ring (default is 1024)])],
-	with_shared_ring_entries=$withval, with_shared_ring_entries=default)
-AC_MSG_CHECKING(the number of shared ring entries)
-if test x$with_shared_ring_entries = xdefault; then
-  AC_MSG_RESULT([default (1024)])
-else
-  AC_MSG_RESULT($with_shared_ring_entries)
-  AC_DEFINE_UNQUOTED(OMX_SHARED_RING_ENTRY_NR, ${with_shared_ring_entries}UL, [Define to change the number of entries per shared ring])
-fi
+AC_SUBST(OMX_PEERS_FILE)
+AC_SUBST(OMX_PEER_DISCOVERY)
 
 
-AC_ARG_ENABLE(threads,
-	[AS_HELP_STRING([--disable-threads], [disable thread safety in the library])],
-	enable_lib_threads=$enableval, enable_lib_threads=yes)
-AC_MSG_CHECKING(if thread safety is enabled in the library)
-if test x$enable_lib_threads = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_LIB_THREAD_SAFETY, 1, [Define to enable thread safety support in the library])
-  AC_SUBST(OMX_LIB_THREAD_SAFETY, 1)
-else
-  AC_MSG_RESULT(no)
-fi
 
-AC_ARG_ENABLE(internal-malloc,
-	[AS_HELP_STRING([--disable-internal-malloc], [use the regular malloc instead of a custom internal dlmalloc if there is no risky symbol interception])],
-	enable_internal_malloc=$enableval, enable_internal_malloc=yes)
-AC_MSG_CHECKING(if the library uses its own internal malloc)
-if test x$enable_internal_malloc = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_DEFINE(OMX_LIB_DLMALLOC, 1, [Define to enable the internal dlmalloc])
-  AC_SUBST(OMX_LIB_DLMALLOC, 1)
-else
-  AC_MSG_RESULT(no)
-  AC_SUBST(OMX_LIB_DLMALLOC, 0)
-fi
 
-AC_ARG_ENABLE(dynamic-tools,
-	[AS_HELP_STRING([--enable-dynamic-tools], [links tools and tests dynamically])],
-	enable_dynamic_tools=$enableval, enable_dynamic_tools=no)
-AC_MSG_CHECKING(if tools and tests are statically linked)
-if test x$enable_dynamic_tools = xyes; then
-  AC_MSG_RESULT(yes)
-  AC_SUBST(OMX_DYNAMIC_TOOLS, 1)
-else
-  AC_MSG_RESULT(no)
-  AC_SUBST(OMX_DYNAMIC_TOOLS, 0)
-fi
 
-#################
-# peer discovery
-
-OMX_PEER_DISCOVERY=omxoed
-
-AC_ARG_ENABLE(fma,
-	[AS_HELP_STRING([--disable-fma], [never use FMA])],
-	enable_fma=$enableval, enable_fma=yes)
-
-AC_MSG_CHECKING([whether FMA is enabled])
-if test "$enable_fma" = no ; then
-  AC_MSG_RESULT([no])
-else
-  AC_MSG_RESULT([yes])
-  AC_MSG_CHECKING([whether the FMA source is available])
-  if test -d "$srcdir/fma/" ; then
-    AC_MSG_RESULT([yes])
-    if test "$enable_mx_abi" = yes ; then
-      AC_MSG_NOTICE([using FMA for dynamic peer discovery])
-      OMX_PEER_DISCOVERY=fma
-    else
-      AC_MSG_WARN([Building FMA requires the MX API compatibility])
-    fi
-  else
-    AC_MSG_RESULT([no])
-  fi
-fi
-
-if test $OMX_PEER_DISCOVERY = fma ; then
-  AC_SUBST(OMX_PEER_DISCOVERY, fma)
-  mkdir mcp
-  AC_CONFIG_SUBDIRS(fma)
-else
-  AC_SUBST(OMX_PEER_DISCOVERY, omxoed)
-  AC_MSG_NOTICE([using omxoed for dynamic peer discovery])
-  if test "$enable_mx_wire" = yes -a "$enable_fma" = yes ; then
-    AC_MSG_ERROR([FMA is recommended for dynamic discovery of native MX peers, use --disable-fma to force])
-  fi
-fi
-
-AC_ARG_ENABLE(static-peers,
-	[AS_HELP_STRING([--enable-static-peers], [use static peer instead of dynamic discovery])],
-	static_peers=$enableval, static_peers=no)
-AC_MSG_CHECKING(how peer mapping is performed)
-if test "$static_peers" = yes; then
-  AC_MSG_RESULT(static)
-  AC_SUBST(OMX_STATIC_PEERS, 1)
-else
-  AC_MSG_RESULT(dynamic)
-  AC_SUBST(OMX_STATIC_PEERS, 0)
-fi
-
-AC_ARG_WITH(peers-file,
-	[AS_HELP_STRING([--with-peers-file=<path>], [use argument as a static peers file])],
-	with_peers_file=$withval, with_peers_file=/etc/open-mx/peers)
-AC_MSG_NOTICE(using static peers file in $with_peers_file)
-AC_SUBST(OMX_PEERS_FILE, $with_peers_file)
-
-######################
 # FMS specific config
+#####################
+OMX_WITH_COND(fms-run, dir, OMX_FMS_RUN,
+	      directory where fms data are to be stored,
+	      using $OMX_FMS_RUN to store fms data, test x$OMX_PEER_DISCOVERY = xfma,
+	      /var/run/fms)
+OMX_WITH_COND(fms-server, fms_server, OMX_FMS_SERVER,
+	      node on which fms process will run,
+	      fms will run on $OMX_FMS_SERVER, test x$OMX_PEER_DISCOVERY = xfma,
+	      default) 
 
-AC_ARG_WITH(fms-run,
-	[AS_HELP_STRING([--with-fms-run=<dir>], [directory where fms data is to be stored])],
-	FMS_RUN=$withval, FMS_RUN=/var/run/fms)
-AC_ARG_WITH(fms-server,
-	[AS_HELP_STRING([--with-fms-server=<fms_server>], [node on which fms process will run])],
-	FMS_SERVER=$withval, FMS_SERVER="")
-AC_SUBST(FMS_RUN)
-AC_SUBST(FMS_SERVER)
+AC_SUBST(OMX_FMS_RUN)
 
-######################
-# installation config
+test x$OMX_FMS_SERVER = xdefault && OMX_FMS_SERVER=
+AC_SUBST(OMX_FMS_SERVER)
 
-AC_ARG_WITH(device,
-	[AS_HELP_STRING([--with-device=<path>:<group>:<mode>],
-	[change main device node name, group and/or mode])],
-	main_device_attrs=$withval, main_device_attrs="")
 
-AC_MSG_CHECKING(main device node name)
-OMX_MAIN_DEVICE_NAME=open-mx
-OMX_MAIN_DEVICE_GROUP=root
-OMX_MAIN_DEVICE_MODE=0666
-main_device_path=$(echo $main_device_attrs | cut -d: -f1)
-main_device_group=$(echo $main_device_attrs | cut -d: -f2 -s)
-main_device_mode=$(echo $main_device_attrs | cut -d: -f3 -s)
-if ! test -z "$main_device_path"; then
-  main_device_path=$(echo "$main_device_path" | sed -r -e 's@//+@/@g')
-  main_device_name=${main_device_path##/dev/}
-  if test "$main_device_name" = "$main_device_path"; then
-    AC_MSG_ERROR(device path must start with /dev/)
-  fi
-  if test -z "$main_device_name" ; then
-    AC_MSG_ERROR(cannot use empty device name within /dev/)
-  fi
-  OMX_MAIN_DEVICE_NAME="$main_device_name"
-fi
-if ! test -z "$main_device_group"; then
-  OMX_MAIN_DEVICE_GROUP=$main_device_group
-fi
-if ! test -z "$main_device_mode"; then
-  OMX_MAIN_DEVICE_MODE=$main_device_mode
-fi
-AC_MSG_RESULT($OMX_MAIN_DEVICE_NAME (group=$OMX_MAIN_DEVICE_GROUP, mode=$OMX_MAIN_DEVICE_MODE))
-AC_DEFINE_UNQUOTED(OMX_MAIN_DEVICE_NAME, "$OMX_MAIN_DEVICE_NAME", [Define to change the main device node name])
+
+
+
+# Device nodes
+##############
+OMX_WITH(device, path:group:mode, OMX_DEVICE,
+         [[change main device node name, group and mode]],
+	 setting device to $OMX_DEVICE,
+	 open-mx:root:0666)
+OMX_WITH(raw-device, path:group:mode, OMX_RAW_DEVICE,
+         [[change raw device node name, group and mode]],
+	 setting raw device to $OMX_RAW_DEVICE,
+	 open-mx-raw:root:0666)
+
+
+OMX_MAIN_DEVICE_NAME=$(echo $OMX_DEVICE  | cut -d: -f1)
+OMX_MAIN_DEVICE_GROUP=$(echo $OMX_DEVICE | cut -d: -f2 -s)
+OMX_MAIN_DEVICE_MODE=$(echo $OMX_DEVICE  | cut -d: -f3 -s)
+
+OMX_DEFINE(OMX_MAIN_DEVICE_NAME, "$OMX_MAIN_DEVICE_NAME",
+           Define to change the main device node name,
+	   ! test -z $OMX_MAIN_DEVICE_NAME)
+OMX_DEFINE(OMX_MAIN_DEVICE_GROUP, "$OMX_MAIN_DEVICE_GROUP",
+	   Define to change the main device group owner,
+	   ! test -z $OMX_MAIN_DEVICE_GROUP)
+OMX_DEFINE(OMX_MAIN_DEVICE_MODE, "$OMX_MAIN_DEVICE_MODE",
+	   Define to change the main device permissions,
+	   ! test -z $OMX_MAIN_DEVICE_MODE)
+
 AC_SUBST(OMX_MAIN_DEVICE_NAME)
 AC_SUBST(OMX_MAIN_DEVICE_GROUP)
 AC_SUBST(OMX_MAIN_DEVICE_MODE)
 
-AC_ARG_WITH(raw-device,
-	[AS_HELP_STRING([--with-raw-device=<path>:<group>:<mode>],
-	[change raw device node name, group and/or mode])],
-	raw_device_attrs=$withval, raw_device_attrs="")
 
-AC_MSG_CHECKING(raw device node name)
-OMX_RAW_DEVICE_NAME=open-mx-raw
-OMX_RAW_DEVICE_GROUP=root
-OMX_RAW_DEVICE_MODE=0660
-raw_device_path=$(echo $raw_device_attrs | cut -d: -f1)
-raw_device_group=$(echo $raw_device_attrs | cut -d: -f2 -s)
-raw_device_mode=$(echo $raw_device_attrs | cut -d: -f3 -s)
-if ! test -z "$raw_device_path"; then
-  raw_device_path=$(echo "$raw_device_path" | sed -r -e 's@//+@/@g')
-  raw_device_name=${raw_device_path##/dev/}
-  if test "$raw_device_name" = "$raw_device_path"; then
-    AC_MSG_ERROR(raw device path must start with /dev/)
-  fi
-  if test -z "$raw_device_name" ; then
-    AC_MSG_ERROR(cannot use empty raw device name within /dev/)
-  fi
-  OMX_RAW_DEVICE_NAME="$raw_device_name"
-fi
-if ! test -z "$raw_device_group"; then
-  OMX_RAW_DEVICE_GROUP=$raw_device_group
-fi
-if ! test -z "$raw_device_mode"; then
-  OMX_RAW_DEVICE_MODE=$raw_device_mode
-fi
-AC_MSG_RESULT($OMX_RAW_DEVICE_NAME (group=$OMX_RAW_DEVICE_GROUP, mode=$OMX_RAW_DEVICE_MODE))
-AC_DEFINE_UNQUOTED(OMX_RAW_DEVICE_NAME, "$OMX_RAW_DEVICE_NAME", [Define to change the raw device node name])
+OMX_RAW_DEVICE_NAME=$(echo $OMX_RAW_DEVICE  | cut -d: -f1)
+OMX_RAW_DEVICE_GROUP=$(echo $OMX_RAW_DEVICE | cut -d: -f2 -s)
+OMX_RAW_DEVICE_MODE=$(echo $OMX_RAW_DEVICE  | cut -d: -f3 -s)
+
+OMX_DEFINE(OMX_RAW_DEVICE_NAME, "$OMX_RAW_DEVICE_NAME",
+	   Define to change the raw device node name,
+	   ! test -z $OMX_RAW_DEVICE_NAME)
+OMX_DEFINE(OMX_RAW_DEVICE_GROUP, "$OMX_RAW_DEVICE_GROUP",
+	   Define to change the raw device group owner,
+	   ! test -z $OMX_RAW_DEVICE_GROUP)
+OMX_DEFINE(OMX_RAW_DEVICE_MODE, "$OMX_RAW_DEVICE_MODE",
+	   Define to change the raw device permissions,
+	   ! test -z $OMX_RAW_DEVICE_MODE)
+
 AC_SUBST(OMX_RAW_DEVICE_NAME)
 AC_SUBST(OMX_RAW_DEVICE_GROUP)
 AC_SUBST(OMX_RAW_DEVICE_MODE)
 
-##########
-# Globals
 
-AC_SUBST(OPEN_MX_LIB_STATIC, ${libopen_mx_name}.a)
-AC_SUBST(OPEN_MX_LIB_DYNAMIC, ${libopen_mx_name}.so)
-AC_SUBST(OPEN_MX_LIB_DYNAMIC_LINK_OPT, ${libopen_mx_name/lib/-l})
-AC_SUBST(MX_LIB_DYNAMIC_LINK_OPT, -lmyriexpress)
-AC_SUBST(OPEN_MX_DEFAULT_LIB_DIR, ${libopen_mx_default_builddir})
-AC_SUBST(OPEN_MX_DEFAULT_LIB_STATIC_PATH, ${libopen_mx_default_builddir}/${libopen_mx_name}.a)
-AC_SUBST(OPEN_MX_DEFAULT_LIB_DYNAMIC_PATH, ${libopen_mx_default_builddir}/${libopen_mx_name}.so)
 
-if test x$build_driver = xyes ; then
-    orig_builddir=$(pwd)
-    mkdir -p driver/linux/ ; cd driver/linux
+# Here is the list of Automake files
+AC_CONFIG_FILES(Makefile
+		driver/linux/Makefile
+		driver/linux/Kbuild
+		libopen-mx/Makefile
+		libopen-mx/lib32/Makefile
+		libopen-mx/lib64/Makefile
+		libopen-mx/lib32-debug/Makefile
+		libopen-mx/lib64-debug/Makefile
+		tools/Makefile
+		tools/omx_check.sh
+		tools/omx_local_install
+		tools/omx_init
+		tools/10-open-mx.rules
+		tests/Makefile
+		tests/mx/Makefile)
 
-    # Check kernel headers early
-    AC_MSG_NOTICE([checking kernel headers ...])
-    ${orig_builddir}/${srcdir}/driver/linux/check_kernel_headers.sh --force omx_checks.h "$LINUX_BUILD" "$LINUX_HDR" "$LINUX_RELEASE"
+AC_CONFIG_COMMANDS(chmoding-omx_check.sh, chmod ugo+x tools/omx_check.sh)
+AC_CONFIG_COMMANDS(chmoding-omx_init,     chmod ugo+x tools/omx_init)
 
-    if ( cd ${orig_builddir} && test ! "$srcdir" -ef . ) then
-	# Symlink kernel sources into the build tree if needed
-	AC_MSG_NOTICE([creating symlinks to kernel sources in driver/linux/ ...])
-	for file in ${orig_builddir}/${srcdir}/driver/linux/*.[[ch]] ; do
-	    # don't symlink omx_checks.h, it has been generated in builddir above.
-	    # this will avoid problems if it has been generated in srcdir as well.
-	    if test "$(basename $file)" != omx_checks.h ; then
-		rm -f $(basename $file) && ln -s $file
-	    fi
-	done
-    fi
+AC_OUTPUT
 
-    cd ${orig_builddir} > /dev/null
-fi
-
-AC_CONFIG_HEADER(common/omx_config.h)
-AC_OUTPUT(Makefile $driver_ac_output $lib_ac_output)
