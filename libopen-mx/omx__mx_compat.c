@@ -675,7 +675,11 @@ mx_get_info(mx_endpoint_t mx_endpoint, mx_get_info_key_t key,
     return MX_SUCCESS;
 
   case MX_LINE_SPEED:
+#ifdef OMX_MX_WIRE_COMPAT
+    * (uint32_t *) out_val = MX_SPEED_10G;
+#else
     * (uint32_t *) out_val = MX_SPEED_OPEN_MX;
+#endif
     return MX_SUCCESS;
 
   }
