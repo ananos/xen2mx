@@ -894,8 +894,16 @@ mx_open_board(int i, mx_endpt_handle_t *handle)
 mx_return_t
 mx__get_mapper_state(mx_endpt_handle_t handle, mx_mapper_state_t *p)
 {
-  memset(&p->mapper_mac, 0, sizeof(p->mapper_mac));
-  return MX_SUCCESS;
+  omx_return_t ret;
+  uint64_t mapper_mac;
+  ret = omx__driver_get_peer_table_state(NULL, &(p->map_version), NULL, &mapper_mac);
+  p->mapper_mac[0] = (mapper_mac >> 40) & 0xff;
+  p->mapper_mac[1] = (mapper_mac >> 32) & 0xff;
+  p->mapper_mac[2] = (mapper_mac >> 24) & 0xff;
+  p->mapper_mac[3] = (mapper_mac >> 16) & 0xff;
+  p->mapper_mac[4] = (mapper_mac >> 8) & 0xff;
+  p->mapper_mac[5] = (mapper_mac >> 0) & 0xff;
+  return ret;
 }
 
 int
