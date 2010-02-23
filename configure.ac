@@ -49,6 +49,7 @@ AC_PROG_LN_S
 m4_ifdef([LT_PREREQ], [],
 	 [m4_fatal([libtool version 2 or higher is required], [63])])
 LT_INIT
+LT_LANG([C])
 AC_PROG_INSTALL
 
 
