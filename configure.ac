@@ -47,8 +47,7 @@ AM_PROG_CC_C_O
 AC_PROG_LN_S
 
 m4_ifdef([LT_PREREQ], [],
-	 [errprint([error: you must have Libtool 2 or a more recent version
-])])
+	 [m4_fatal([libtool version 2 or higher is required], [63])])
 LT_INIT
 AC_PROG_INSTALL
 
