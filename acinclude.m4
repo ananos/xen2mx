@@ -120,7 +120,7 @@ fi
 # stores the result in VAR
 AC_DEFUN([OMX_FIND_KERNEL_HEADERS],
 [
-AC_MSG_CHECKING(for the kernel headers)
+AC_MSG_CHECKING(for kernel.h kernel header)
 for dir in $2 ; do
   if test -f $dir/include/linux/kernel.h ; then
     $1=$dir
@@ -142,7 +142,7 @@ fi
 # path in VAR
 AC_DEFUN([OMX_FIND_KERNEL_AUTOCONF_HEADER],
 [
-AC_MSG_CHECKING(for the kernel autoconf header)
+AC_MSG_CHECKING(for autoconf.h kernel header)
 for dir in $2 ; do
     if test -f $dir/include/linux/autoconf.h -o -f $dir/include/generated/autoconf.h ; then
        $1=$dir
