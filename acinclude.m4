@@ -144,7 +144,7 @@ AC_DEFUN([OMX_FIND_KERNEL_AUTOCONF_HEADER],
 [
 AC_MSG_CHECKING(for the kernel autoconf header)
 for dir in $2 ; do
-    if test -f $dir/include/linux/autoconf.h ; then
+    if test -f $dir/include/linux/autoconf.h -o -f $dir/include/generated/autoconf.h ; then
        $1=$dir
        AC_MSG_RESULT($dir)
        break
