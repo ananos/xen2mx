@@ -978,11 +978,9 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 		    (unsigned) OMX__SEQNUM(partner->next_send_seq),
 		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
 
-#ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
     omx__process_self_send(ep, req);
   } else
-#endif
 
   if (likely(length <= OMX_TINY_MSG_LENGTH_MAX)) {
     omx__submit_isend_tiny(ep, partner, req);
@@ -1107,11 +1105,9 @@ omx__issend_req(struct omx_endpoint *ep, struct omx__partner *partner,
 		    (unsigned) OMX__SEQNUM(partner->next_send_seq),
 		    (unsigned) OMX__SESNUM_SHIFTED(partner->next_send_seq));
 
-#ifndef OMX_DISABLE_SELF
   if (unlikely(omx__globals.selfcomms && partner == ep->myself)) {
     omx__process_self_send(ep, req);
   } else
-#endif
     omx__submit_isend_large(ep, partner, req);
 
   if (requestp) {

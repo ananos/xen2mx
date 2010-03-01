@@ -292,7 +292,6 @@ omx__init_comms(void)
    */
 
   /* self comm configuration */
-#ifndef OMX_DISABLE_SELF
   omx__globals.selfcomms = 1;
   env = getenv("OMX_DISABLE_SELF");
 #ifdef OMX_MX_ABI_COMPAT
@@ -307,7 +306,6 @@ omx__init_comms(void)
     omx__verbose_printf(NULL, "Forcing self comms to %s\n",
 			omx__globals.selfcomms ? "enabled" : "disabled");
   }
-#endif /* OMX_DISABLE_SELF */
 
   /* shared comm configuration */
   omx__globals.sharedcomms = (omx__driver_desc->features & OMX_DRIVER_FEATURE_SHARED);

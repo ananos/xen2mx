@@ -277,9 +277,7 @@ omx__connect_myself(struct omx_endpoint *ep)
   ep->myself->true_session_id = ep->desc->session_id;
   ep->myself->back_session_id = ep->desc->session_id;
 
-#ifndef OMX_DISABLE_SELF
   maybe_self = omx__globals.selfcomms;
-#endif
   maybe_shared = omx__globals.sharedcomms;
   ep->myself->localization = (maybe_self || maybe_shared) ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
   ep->myself->rndv_threshold = (maybe_self || maybe_shared) ? omx__globals.shared_rndv_threshold : omx__globals.rndv_threshold;
@@ -350,7 +348,6 @@ omx__connect_common(omx_endpoint_t ep,
 
   req->generic.state |= OMX_REQUEST_STATE_NEED_REPLY;
 
-#ifndef OMX_DISABLE_SELF
   if (partner == ep->myself) {
     req->generic.partner = ep->myself;
     omx__enqueue_request(&ep->connect_req_q, req);
@@ -365,7 +362,6 @@ omx__connect_common(omx_endpoint_t ep,
 
     return OMX_SUCCESS;
   }
-#endif
 
   connect_seqnum = partner->connect_seqnum++;
   req->generic.resends = 0;

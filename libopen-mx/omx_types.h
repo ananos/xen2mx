@@ -553,9 +553,7 @@ struct omx__globals {
   int check_request_alloc;
   int medium_sendq;
   uint32_t any_endpoint_id;
-#ifndef OMX_DISABLE_SELF
   int selfcomms;
-#endif
   int sharedcomms;
   unsigned rndv_threshold;
   unsigned shared_rndv_threshold;
