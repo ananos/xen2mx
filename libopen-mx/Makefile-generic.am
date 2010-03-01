@@ -43,15 +43,15 @@ if OMX_LIB_DLMALLOC
 endif
 
 all-local:
-	@[ -f .libs/libmyriexpress.so ] || $(LN_S) libopen-mx.so .libs/libmyriexpress.so
-	@[ -f .libs/libmyriexpress.a  ] || $(LN_S) libopen-mx.a  .libs/libmyriexpress.a
+	@[ -L .libs/libmyriexpress.so ] || $(LN_S) libopen-mx.so .libs/libmyriexpress.so
+	@[ -L .libs/libmyriexpress.a  ] || $(LN_S) libopen-mx.a  .libs/libmyriexpress.a
 
 clean-local:
 	@$(RM_F) $(builddir)/.libs/libmyriexpress.so $(builddir)/.libs/libmyriexpress.a
 
 install-data-hook:
-	@[ -f $(DESTDIR)$(libidir)/libmyriexpress.so ]  || $(LN_S) libopen-mx.so $(DESTDIR)$(libidir)/libmyriexpress.so
-	@[ -f $(DESTDIR)$(libidir)/libmyriexpress.a  ]  || $(LN_S) libopen-mx.a  $(DESTDIR)$(libidir)/libmyriexpress.a
+	@[ -L $(DESTDIR)$(libidir)/libmyriexpress.so ]  || $(LN_S) libopen-mx.so $(DESTDIR)$(libidir)/libmyriexpress.so
+	@[ -L $(DESTDIR)$(libidir)/libmyriexpress.a  ]  || $(LN_S) libopen-mx.a  $(DESTDIR)$(libidir)/libmyriexpress.a
 
 uninstall-local:
 	@$(RM_F) $(DESTDIR)$(libidir)/libmyriexpress.so
