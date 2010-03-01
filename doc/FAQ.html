@@ -1507,8 +1507,7 @@ you might want to:
 </p>
 <ul>
 <li>
-Build Open-MX with --disable-endian, --disable-mx-wire (default), probably --disable-self
-as well, and even --disable-shared if there is a single process per host.
+Build Open-MX with --disable-endian and --disable-mx-wire (default).
 </li>
 <li>
 Make sure no cores are sleeping since they would be slow to process incoming
@@ -1690,8 +1689,7 @@ Open-MX may use a software loopback to send messages from one endpoint to
 itself (self communications) or to another endpoint of any interface of the
 same host (shared communications).
 If these shared/self communication are useless, the library overhead may be
-slightly reduced by disabling them either at build-time with --disable-self
-or --disable-shared, or at runtime by setting OMX_DISABLE_SELF=1 or
+slightly reduced by disabling them at runtime by setting OMX_DISABLE_SELF=1 or
 OMX_DISABLE_SHARED=1 in the environment.
 Note that some MPI layers such as OpenMPI already set these environment
 variables by default.
@@ -2169,16 +2167,6 @@ The following options may be passed to the configure command line before buildin
 <dt>--disable-endian</dt>
 <dd>Disable variable endian architectures support on the wire.
   Endian-ness independent wire protocol is enabled by default.
-</dd>
-
-<dt>--disable-self</dt>
-<dd>Disable software loopback between an endpoint and itself.
-  Self software loopback is enabled by default.
-</dd>
-
-<dt>--disable-shared</dt>
-<dd>Disable software loopback between endpoints of the same node.
-  Shared software loopback is enabled by default.
 </dd>
 
 <dt>--disable-threads</dt>
