@@ -1,3 +1,10 @@
+* Since Linux 2.6.32, there are some warnings during the build
+  regarding to symbol version errors : look for a possible easy fix.
+
+* Symlinks for both the static and shared libraries are
+  created even if --disable-shared and/or --disable-static
+  is given
+
 * Use AC_CONFIG_LINKS to symlink the driver sources in
   the build directory
 
