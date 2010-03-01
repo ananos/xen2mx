@@ -175,13 +175,7 @@ omx__partner_check_localization(const struct omx_endpoint * ep, struct omx__part
 {
   enum omx__partner_localization localization;
 
-#ifdef OMX_DISABLE_SHARED
-  if (shared)
-    omx__debug_printf(CONNECT, ep, "Driver reporting shared peer while shared support is disabled in the lib\n");
-  localization = OMX__PARTNER_LOCALIZATION_REMOTE;
-#else
   localization = shared ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
-#endif
 
   if (partner->localization == OMX__PARTNER_LOCALIZATION_UNKNOWN) {
     partner->localization = localization;
@@ -286,9 +280,7 @@ omx__connect_myself(struct omx_endpoint *ep)
 #ifndef OMX_DISABLE_SELF
   maybe_self = omx__globals.selfcomms;
 #endif
-#ifndef OMX_DISABLE_SHARED
   maybe_shared = omx__globals.sharedcomms;
-#endif
   ep->myself->localization = (maybe_self || maybe_shared) ? OMX__PARTNER_LOCALIZATION_LOCAL : OMX__PARTNER_LOCALIZATION_REMOTE;
   ep->myself->rndv_threshold = (maybe_self || maybe_shared) ? omx__globals.shared_rndv_threshold : omx__globals.rndv_threshold;
 
@@ -380,11 +372,7 @@ omx__connect_common(omx_endpoint_t ep,
 
   connect_param->peer_index = partner->peer_index;
   connect_param->dest_endpoint = partner->endpoint_index;
-#ifdef OMX_DISABLE_SHARED
-  connect_param->shared_disabled = 1;
-#else
   connect_param->shared_disabled = !omx__globals.sharedcomms;
-#endif
   connect_param->seqnum = 0;
   connect_param->src_session_id = ep->desc->session_id;
   connect_param->app_key = key;
@@ -713,11 +701,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
 
   reply_param.peer_index = partner->peer_index;
   reply_param.dest_endpoint = partner->endpoint_index;
-#ifdef OMX_DISABLE_SHARED
-  reply_param.shared_disabled = 1;
-#else
   reply_param.shared_disabled = !omx__globals.sharedcomms;
-#endif
   reply_param.seqnum = 0;
   reply_param.src_session_id = event->src_session_id;
   reply_param.target_session_id = ep->desc->session_id;

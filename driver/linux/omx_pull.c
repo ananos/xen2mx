@@ -32,9 +32,7 @@
 #include "omx_endpoint.h"
 #include "omx_reg.h"
 #include "omx_dma.h"
-#ifndef OMX_DISABLE_SHARED
 #include "omx_shared.h"
-#endif
 
 /**************************
  * Pull-specific Constants
@@ -871,10 +869,8 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_pull(endpoint, &cmd);
-#endif
 
 	/* acquire the region */
 	region = omx_user_region_acquire(endpoint, cmd.puller_rdma_id);

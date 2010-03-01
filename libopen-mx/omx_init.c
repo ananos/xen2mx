@@ -310,7 +310,6 @@ omx__init_comms(void)
 #endif /* OMX_DISABLE_SELF */
 
   /* shared comm configuration */
-#ifndef OMX_DISABLE_SHARED
   omx__globals.sharedcomms = (omx__driver_desc->features & OMX_DRIVER_FEATURE_SHARED);
   if (!omx__globals.sharedcomms) {
     omx__verbose_printf(NULL, "Shared comms support disabled in the driver\n");
@@ -329,13 +328,11 @@ omx__init_comms(void)
 			  omx__globals.sharedcomms ? "enabled" : "disabled");
     }
   }
-#endif /* OMX_DISABLE_SHARED */
 
   /******************
    * Rndv thresholds
    */
 
-#ifndef OMX_DISABLE_SHARED
   /* must be AFTER sharedcomms init */
   if (omx__globals.sharedcomms) {
     omx__globals.shared_rndv_threshold = 4096;
@@ -357,7 +354,6 @@ omx__init_comms(void)
 			  omx__globals.shared_rndv_threshold);
     }
   }
-#endif /* OMX_DISABLE_SHARED */
 
   /*******************************
    * Retransmission configuration

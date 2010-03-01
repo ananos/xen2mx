@@ -556,9 +556,7 @@ struct omx__globals {
 #ifndef OMX_DISABLE_SELF
   int selfcomms;
 #endif
-#ifndef OMX_DISABLE_SHARED
   int sharedcomms;
-#endif
   unsigned rndv_threshold;
   unsigned shared_rndv_threshold;
   unsigned ack_delay_jiffies;

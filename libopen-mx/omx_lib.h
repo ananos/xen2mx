@@ -182,11 +182,7 @@ static inline __pure int
 omx__partner_localization_shared(const struct omx__partner *partner)
 {
   omx__debug_assert(partner->localization != OMX__PARTNER_LOCALIZATION_UNKNOWN);
-#ifdef OMX_DISABLE_SHARED
-  return 0;
-#else
   return (partner->localization == OMX__PARTNER_LOCALIZATION_LOCAL);
-#endif
 }
 
 static inline void

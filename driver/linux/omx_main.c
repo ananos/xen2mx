@@ -447,9 +447,7 @@ omx_init(void)
 	/* setup driver abi config, feature mask and mtu */
 	omx_driver_userdesc->abi_config = omx_get_abi_config();
 	omx_driver_userdesc->features = 0;
-#ifndef OMX_DISABLE_SHARED
 	omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_SHARED;
-#endif
 #ifdef CONFIG_MMU_NOTIFIER
 	if (omx_pin_invalidate && !omx_pin_synchronous)
 		omx_driver_userdesc->features |= OMX_DRIVER_FEATURE_PIN_INVALIDATE;

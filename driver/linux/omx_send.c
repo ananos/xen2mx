@@ -28,9 +28,7 @@
 #include "omx_peer.h"
 #include "omx_reg.h"
 #include "omx_endpoint.h"
-#ifndef OMX_DISABLE_SHARED
 #include "omx_shared.h"
-#endif
 
 #ifdef OMX_DRIVER_DEBUG
 /* defined as module parameters */
@@ -139,14 +137,12 @@ omx_ioctl_send_connect_request(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-#ifndef OMX_DISABLE_SHARED
 	if (!cmd.shared_disabled) {
 		ret = omx_shared_try_send_connect_request(endpoint, &cmd);
 		if (ret <= 0)
 			return ret;
 		/* fallback if ret==1 */
 	}
-#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len, ETH_ZLEN));
@@ -219,14 +215,12 @@ omx_ioctl_send_connect_reply(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-#ifndef OMX_DISABLE_SHARED
 	if (!cmd.shared_disabled) {
 		ret = omx_shared_try_send_connect_reply(endpoint, &cmd);
 		if (ret <= 0)
 			return ret;
 		/* fallback if ret==1 */
 	}
-#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len, ETH_ZLEN));
@@ -310,10 +304,8 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_tiny(endpoint, &cmd, &((struct omx_cmd_send_tiny __user *) uparam)->data);
-#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
@@ -407,10 +399,8 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_small(endpoint, &cmd);
-#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len + length, ETH_ZLEN));
@@ -514,10 +504,8 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_mediumsq_frag(endpoint, &cmd);
-#endif
 
 	if (unlikely(frag_length > omx_skb_copy_max
 		     && hdr_len + frag_length >= ETH_ZLEN
@@ -687,10 +675,8 @@ omx_ioctl_send_mediumva(struct omx_endpoint * endpoint,
 	frags_nr = (msg_length+OMX_MEDIUM_FRAG_LENGTH_MAX-1) / OMX_MEDIUM_FRAG_LENGTH_MAX;
 	nseg = cmd.nr_segments;
 
-#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_mediumva(endpoint, &cmd);
-#endif
 
 	/* get user segments */
 	usegs = kmalloc(nseg * sizeof(struct omx_cmd_user_segment), GFP_KERNEL);
@@ -836,10 +822,8 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_rndv(endpoint, &cmd);
-#endif
 
 	if (!omx_pin_synchronous) {
 		/* make sure the region is pinned */
@@ -936,10 +920,8 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_notify(endpoint, &cmd);
-#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len, ETH_ZLEN));
@@ -1011,10 +993,8 @@ omx_ioctl_send_liback(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
-#ifndef OMX_DISABLE_SHARED
 	if (unlikely(cmd.shared))
 		return omx_shared_send_liback(endpoint, &cmd);
-#endif
 
 	skb = omx_new_skb(/* pad to ETH_ZLEN */
 			  max_t(unsigned long, hdr_len, ETH_ZLEN));

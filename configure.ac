@@ -100,12 +100,6 @@ AC_ARG_WITH(linux-build,
 	    OMX_LINUX_BUILD=$withval)
 test -z $OMX_LINUX_BUILD && OMX_LINUX_BUILD=/lib/modules/$OMX_LINUX_RELEASE/build
 
-OMX_DISABLE(shared, enable_shared,
-	    disable shared communication between endpoints,
-            whether shared communication is enabled)
-OMX_DISABLE(self, enable_self,
-	    disable communication to myself,
-            whether self communication is enabled)
 OMX_WITH(shared-ring-entries, n, OMX_SHARED_RING_ENTRIES,
          [change the number of entries per shared ring (default is 1024)],
 	 setting the number of shared ring entries to $OMX_SHARED_RING_ENTRIES,
@@ -119,11 +113,6 @@ AC_ARG_VAR(KARCH,   Architecture used to build the driver)
 AM_CONDITIONAL(OMX_BUILD_DRIVER, test x$enable_driver_build = xyes)
 
 
-OMX_DEFINE(OMX_DISABLE_SHARED, 1,
-	   Define to disable shared communication between endpoints on the same node,
-	   test x$enable_shared = xno)
-OMX_DEFINE(OMX_DISABLE_SELF, 1, Define to disable communication to myself,
-	   test x$enable_self = xno)
 OMX_DEFINE(OMX_SHARED_RING_ENTRY_NR, ${OMX_SHARED_RING_ENTRIES}UL,
 	   Define to change the number of entries per shared ring,
 	   test x$OMX_SHARED_RING_ENTRIES != xdefault)
@@ -162,11 +151,6 @@ if test x$enable_driver_build ; then
   AC_SUBST(OMX_LINUX_BUILD)   # useful ? --> in the driver Makefile !?
 fi
 
-if test x$enable_shared = xyes ; then
-   AC_SUBST(OMX_DISABLE_SHARED, 0)
-else
-   AC_SUBST(OMX_DISABLE_SHARED, 1)
-fi
 
 test -z $KCC   || OMX_KBUILD_ARGS="$OMX_KBUILD_ARGS CC=\"$KCC $KCFLAGS\""
 test -z $KARCH || OMX_KBUILD_ARGS="$OMX_KBUILD_ARGS ARCH=\"$KARCH\""
