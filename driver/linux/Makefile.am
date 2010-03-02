@@ -31,7 +31,7 @@ open-mx.ko:
 	+$(MAKE) -C $(OMX_LINUX_BUILD) M=$(OPEN_MX_DIR) $(OMX_KBUILD_ARGS) || test x`id -u` != x`stat -c %u Kbuild`
 
 clean-local:
-	$(MAKE) -C $(OMX_LINUX_BUILD) M=$(OPEN_MX_DIR) clean
+	+$(MAKE) -C $(OMX_LINUX_BUILD) M=$(OPEN_MX_DIR) clean
 
 distclean-local:
 	$(RM_F) omx_checks.h
