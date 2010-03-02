@@ -118,7 +118,7 @@ OMX_DEFINE(OMX_SHARED_RING_ENTRY_NR, ${OMX_SHARED_RING_ENTRIES}UL,
 	   test x$OMX_SHARED_RING_ENTRIES != xdefault)
 
 
-if test x$enable_driver_build ; then
+if test x$enable_driver_build = xyes ; then
   OMX_PROG_KCC($KCC)
   OMX_FIND_KERNEL_HEADERS(OMX_LINUX_HDR, $OMX_LINUX_SRC $OMX_LINUX_BUILD)
   OMX_FIND_KERNEL_AUTOCONF_HEADER(OMX_LINUX_AUTOCONF_DIR, $OMX_LINUX_BUILD $OMX_LINUX_SRC)
@@ -499,6 +499,7 @@ AC_CONFIG_FILES(Makefile
 		tools/10-open-mx.rules
 		tests/Makefile
 		tests/mx/Makefile)
+
 
 AC_CONFIG_COMMANDS(chmoding-omx_check.sh, chmod ugo+x tools/omx_check.sh)
 AC_CONFIG_COMMANDS(chmoding-omx_init,     chmod ugo+x tools/omx_init)

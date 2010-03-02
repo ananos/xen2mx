@@ -212,8 +212,8 @@ if test ! "$srcdir" -ef . ; then
    AC_MSG_NOTICE(creating symlinks to kernel sources in driver/linux/ ...)
 
    for file in $srcdir/driver/linux/*.[[ch]] ; do
-       target_link=driver/linux/$(basename $file)
-       rm -f $target_link && ln -s $(readlink -f $file) $target_link
+       filename=$(basename $file)
+       AC_CONFIG_LINKS(driver/linux/$filename:driver/linux/$filename)
    done
 fi
 ])
