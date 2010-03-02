@@ -1,3 +1,5 @@
+* Hide copy_from_seru_overflow warning on 2.6.33/i386
+
 * Symlinks for both the static and shared libraries are
   created even if --disable-shared and/or --disable-static
   is given
