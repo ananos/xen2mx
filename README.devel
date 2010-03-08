@@ -1,16 +1,15 @@
 If not done yet, update the ChangeLog and the version in configure.ac, and
 then run ./autogen.sh so that COPYING and open-mx.spec get updated.
 
+Apply all changes to the source dir, even if you cannot commit them.
+Then, run the configure script, either inside the source directory
+or outside.
 
-To make a release from the main SVN repository, enter a SVN checkout, and do:
-	make dist -f Makefile.in TARBALL=open-mx-x.y.z
-To use a specific SVN branch instead of trunk, add:
-	... SVN_BRANCH=open-mx-u.v.x
+Go into the build directory and run:
+	make dist
+It will generate open-mx-$(VERSION).tar.gz where VERSION is specified
+in AC_INIT() in configure.ac.
 
-To use a GIT-SVN repository instead, do:
-	make dist -f Makefile.in TARBALL=open-mx-x.y.z GITSVN_BRANCH=master
-To use a specific branch of a GIT-SVN repository instead, do:
-	... GITSVN_BRANCH=mybranch
-
-To apply a quilt patch serie from a local subdirectory before releasing, add:
-	... PATCHES=foobar/
+To change the tarball name, use the VERSION variable:
+	make dist VERSION=2.0.0-alpha5
+It will generate open-mx-2.0.0-alpha5.tar.gz.
