@@ -232,7 +232,10 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 {
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg event;
+	int length = hdr->length;
 	int err;
+
+	BUG_ON(length > OMX_TINY_MSG_LENGTH_MAX); /* required to shutup gcc 4.4 copy_from_user size checks in 2.6.33/x86_32 */
 
 	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
 							      hdr->dest_endpoint, hdr->session_id,
@@ -251,7 +254,7 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 
 #ifndef OMX_NORECVCOPY
 	/* copy the data */
-	err = copy_from_user(&event.specific.tiny.data, data, hdr->length);
+	err = copy_from_user(&event.specific.tiny.data, data, length);
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read shared send tiny cmd data\n");
 		err = -EFAULT;
