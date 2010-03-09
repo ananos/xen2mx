@@ -201,8 +201,8 @@ omx_unavail_module_param(raw_packet_loss, "--enable-debug was given");
  * Main Module Init/Exit
  */
 
-#ifdef SRC_VERSION
-#define OMX_DRIVER_VERSION PACKAGE_VERSION " (" SRC_VERSION ")"
+#ifdef OMX_SRC_VERSION
+#define OMX_DRIVER_VERSION PACKAGE_VERSION " (" OMX_SRC_VERSION ")"
 #else
 #define OMX_DRIVER_VERSION PACKAGE_VERSION
 #endif
