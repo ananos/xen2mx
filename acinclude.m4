@@ -130,7 +130,7 @@ for dir in $2 ; do
 done
 
 if test -z $$1 ; then
-   AC_MSG_RESULT(not found)
+   AC_MSG_RESULT(not found in $2)
    AC_MSG_ERROR(no kernel header found)
 fi
 ])
@@ -152,7 +152,7 @@ for dir in $2 ; do
 done
 
 if test -z $$1 ; then
-   AC_MSG_RESULT(not found)
+   AC_MSG_RESULT(not found in $2)
    AC_MSG_ERROR(no kernel autoconf header found)
 fi
 ])
