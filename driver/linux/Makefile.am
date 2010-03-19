@@ -1,4 +1,3 @@
-ECHO	      = echo
 RM_F          = rm -f
 
 OPEN_MX_DIR   =	$(abs_builddir)
