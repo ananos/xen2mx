@@ -1181,6 +1181,7 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	struct omx_iface * iface = endpoint->iface;
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_cmd_bench_hdr cmd;
+	union omx_evt event;
 	char data[OMX_TINY_MSG_LENGTH_MAX];
 	int ret = 0;
 
@@ -1247,7 +1248,7 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_ACQU)
 		goto out_with_endpoint;
 
-	omx_notify_exp_event(endpoint, OMX_EVT_NONE, NULL, 0);
+	omx_notify_exp_event(endpoint, OMX_EVT_NONE, &event, 0);
 
 	/* level 12: recv notify */
 	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_NOTIFY)
