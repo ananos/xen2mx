@@ -551,7 +551,7 @@ module_exit(omx_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Brice Goglin <Brice.Goglin@inria.fr>");
-MODULE_VERSION(PACKAGE_VERSION);
+MODULE_VERSION(OMX_DRIVER_VERSION);
 MODULE_DESCRIPTION(PACKAGE_NAME ": Myrinet Express over generic Ethernet");
 
 /*
