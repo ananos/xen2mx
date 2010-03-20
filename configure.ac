@@ -500,7 +500,8 @@ AC_CONFIG_FILES(Makefile
 		tests/Makefile
 		tests/mx/Makefile)
 
-AC_SUBST(CONFIG_STATUS_DEPENDENCIES, '$(top_srcdir)/driver/linux/Kbuild.in')
+AC_SUBST(CONFIG_STATUS_DEPENDENCIES,
+	'$(top_srcdir)/driver/linux/Kbuild.in $(top_srcdir)/driver/linux/check_kernel_headers.sh')
 
 AC_CONFIG_COMMANDS(chmoding-omx_check.sh, chmod ugo+x tools/omx_check.sh)
 AC_CONFIG_COMMANDS(chmoding-omx_init,     chmod ugo+x tools/omx_init)
