@@ -138,8 +138,10 @@ if test x$enable_driver_build = xyes ; then
   OMX_GET_GCC_VERSION(GCC_VERSION, $_kcc)
   OMX_GET_KERNEL_GCC_VERSION(KERNEL_GCC_VERSION)
 
-  if test "x$GCC_VERSION" != "x$KERNEL_GCC_VERSION" ; then
-     AC_MSG_WARN(kernel built with gcc $KERNEL_GCC_VERSION and Open-MX with $GCC_VERSION)
+  if test "x$OMX_LINUX_REAL_RELEASE" = x`uname -r` ; then
+      if test "x$GCC_VERSION" != "x$KERNEL_GCC_VERSION" ; then
+	  AC_MSG_WARN(kernel built with gcc $KERNEL_GCC_VERSION and Open-MX with $GCC_VERSION)
+      fi
   fi
 
   OMX_SYMLINK_DRIVER_SOURCES
