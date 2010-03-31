@@ -386,7 +386,7 @@ if test x$enable_static_peers != xyes ; then
 	 if test x$enable_mx_abi = xyes ; then
 	    OMX_PEER_DISCOVERY=fma
 	 else
-	    AC_MSG_WARN(building FMA requires MX ABI compatibility) # or API ?
+	    AC_MSG_ERROR(building FMA requires MX ABI compatibility)
 	 fi
       else
 	 AC_MSG_RESULT(no)
