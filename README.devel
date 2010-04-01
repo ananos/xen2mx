@@ -5,7 +5,7 @@ Apply all changes to the source dir, even if you cannot commit them.
 Then, run the configure script, either inside the source directory
 or outside.
 
-Go into the build directory and run:
+Enter the build directory and run:
 	make dist
 It will generate open-mx-$(VERSION).tar.gz where VERSION is specified
 in AC_INIT() in configure.ac.
