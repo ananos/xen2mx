@@ -17,6 +17,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/slab.h>
 
 #include "omx_endpoint.h"
 #include "omx_shared.h"

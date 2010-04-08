@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/miscdevice.h>
 #include <linux/device.h>
+#include <linux/slab.h>
 #include <linux/poll.h>
 #include <linux/fs.h>
 #include <linux/mm.h>

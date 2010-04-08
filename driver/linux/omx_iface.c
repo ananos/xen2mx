@@ -22,6 +22,7 @@
 #include <linux/rcupdate.h>
 #include <linux/ethtool.h>
 #include <linux/device.h>
+#include <linux/slab.h>
 #include <linux/pci.h>
 #ifdef OMX_HAVE_MUTEX
 #include <linux/mutex.h>

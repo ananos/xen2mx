@@ -20,6 +20,7 @@
 #include <linux/miscdevice.h>
 #include <linux/device.h>
 #include <linux/fs.h>
+#include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <linux/mm.h>
 #include <linux/random.h>
