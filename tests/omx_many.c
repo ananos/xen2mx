@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to connect (%s)\n",
 	      omx_strerror(ret));
-      goto out_with_ep;
+      goto out_with_ep_and_buffer;
     }
 
     for(i=0; i<iter; i++) {
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 	ret = omx_isend(ep, buffer, length[j], addr, 0, NULL, &req);
 	if (ret != OMX_SUCCESS) {
 	  fprintf(stderr, "Failed to post isend, %s\n", omx_strerror(ret));
-	  goto out_with_ep;
+	  goto out_with_ep_and_buffer;
 	}
       }
     }
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
       omx_wait_any(ep, 0, 0, &status, &result, OMX_TIMEOUT_INFINITE);
       if (ret != OMX_SUCCESS || !result) {
 	fprintf(stderr, "Failed to post wait any, %s\n", omx_strerror(ret));
-	goto out_with_ep;
+	goto out_with_ep_and_buffer;
       }
     }
 
@@ -202,24 +202,29 @@ int main(int argc, char *argv[])
       ret = omx_irecv(ep, buffer, maxlen, 0, 0, NULL, &req);
       if (ret != OMX_SUCCESS) {
 	fprintf(stderr, "Failed to post irecv, %s\n", omx_strerror(ret));
-	goto out_with_ep;
+	goto out_with_ep_and_buffer;
       }
     }
     for(i=0; i<iter*nlen; i++) {
       omx_wait_any(ep, 0, 0, &status, &result, OMX_TIMEOUT_INFINITE);
       if (ret != OMX_SUCCESS || !result) {
 	fprintf(stderr, "Failed to post wait any, %s\n", omx_strerror(ret));
-	goto out_with_ep;
+	goto out_with_ep_and_buffer;
       }
     }
   }
 
   omx_close_endpoint(ep);
   free(dest_hostname);
+  free(buffer);
   return 0;
+
+ out_with_ep_and_buffer:
+  free(buffer);
 
  out_with_ep:
   omx_close_endpoint(ep);
+
  out:
   free(dest_hostname);
   return -1;

@@ -69,7 +69,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to send message length %d (%s)\n",
 	      length, omx_strerror(ret));
-      goto out;
+      goto out_with_buffers;
     }
   }
 
@@ -81,14 +81,14 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     if (ret != OMX_SUCCESS) {
       fprintf(stderr, "Failed to post a recv for a tiny message (%s)\n",
 	      omx_strerror(ret));
-      goto out;
+      goto out_with_buffers;
     }
 
     ret = omx_wait(ep, &rreq[i], &status, &result, OMX_TIMEOUT_INFINITE);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait for completion (%s)\n",
 	      omx_strerror(ret));
-      goto out;
+      goto out_with_buffers;
     }
   }
 
@@ -97,7 +97,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   if (ret != OMX_SUCCESS || !result) {
     fprintf(stderr, "Failed to wait for completion (%s)\n",
             omx_strerror(ret));
-    goto out;
+    goto out_with_buffers;
   }
 
   /* use peek to wait for the sends to complete */
@@ -106,20 +106,20 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to peek (%s)\n",
               omx_strerror(ret));
-      goto out;
+      goto out_with_buffers;
     }
     if (req != sreq[i]) {
       fprintf(stderr, "Peek got request %p instead of %p\n",
               req, sreq[i]);
       ret = OMX_BAD_ERROR;
-      goto out;
+      goto out_with_buffers;
     }
 
     ret = omx_test(ep, &sreq[i], &status, &result);
     if (ret != OMX_SUCCESS || !result) {
       fprintf(stderr, "Failed to wait for completion (%s)\n",
               omx_strerror(ret));
-      goto out;
+      goto out_with_buffers;
     }
   }
 
@@ -128,7 +128,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
     if (buffer[i] != buffer2[i]) {
       fprintf(stderr, "buffer invalid at offset %d, got '%c' instead of '%c'\n",
 	      i, buffer2[i], buffer[i]);
-      goto out;
+      goto out_with_buffers;
     }
   }
 
@@ -139,6 +139,9 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   free(buffer);
   return OMX_SUCCESS;
 
+ out_with_buffers:
+  free(buffer2);
+  free(buffer);  
  out:
   return OMX_BAD_ERROR;
 }
