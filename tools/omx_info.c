@@ -58,7 +58,7 @@ handle_one_board(unsigned index)
 
   if (verbose && board_info.drivername[0] != '\0')
     printf("   managed by driver '%s'\n", board_info.drivername);
-  if (verbose && board_info.numa_node != -1)
+  if (verbose && board_info.numa_node != (uint32_t) -1)
     printf("   attached to numa node %d\n", board_info.numa_node);
   if (board_info.status & OMX_BOARD_INFO_STATUS_DOWN)
     printf("   WARNING: interface is currently DOWN.\n");

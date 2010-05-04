@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   unsigned nbrails = 0;
   int c;
-  int i;
+  unsigned i;
   unsigned long length;
   int sender = 0;
   char *dest_hostname = NULL;

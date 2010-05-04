@@ -302,10 +302,10 @@ omx_checksum_segments(struct omx__req_segs *reqsegs, uint32_t length) {
     struct omx_cmd_user_segment *cseg  = segarray+seg;
     uint32_t                     chunk = cseg->len > length ? length : cseg->len;
     char			 *ptr  = OMX_SEG_PTR(cseg);
-    int j;
+    unsigned j;
 
     for (j = 0; j < chunk; j++) {
-      int i;
+      unsigned i;
 
       crc ^= *(ptr++) << 8;
 

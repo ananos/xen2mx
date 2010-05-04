@@ -577,7 +577,7 @@ omx__handle_connect_reply(struct omx_endpoint *ep,
 		      (unsigned long) target_session_id,
 		      (unsigned long) partner->true_session_id, (unsigned long) partner->back_session_id);
     if (partner->back_session_id != target_session_id
-	&& partner->back_session_id != -1) {
+	&& partner->back_session_id != (uint32_t) -1) {
       /* this partner changed since last time it talked to us, cleanup the stuff */
       omx__debug_assert(partner->true_session_id != target_session_id);
 
@@ -672,7 +672,7 @@ omx__process_recv_connect_request(struct omx_endpoint *ep,
   if (partner->back_session_id != src_session_id) {
     /* either a new (recv) instance, or the first one, we need to reset our recv seqnums */
 
-    if (partner->back_session_id != -1) {
+    if (partner->back_session_id != (uint32_t) -1) {
       /* this partner changed since last time it talked to us, cleanup the stuff */
       omx__verbose_printf(ep, "Got a connect from a new instance of a partner, cleaning old partner status\n");
       omx__partner_cleanup(ep, partner, 0);

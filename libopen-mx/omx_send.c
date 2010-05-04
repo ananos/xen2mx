@@ -442,8 +442,8 @@ omx__post_isend_mediumsq(struct omx_endpoint *ep,
   uint32_t length = req->generic.status.msg_length;
   uint32_t remaining = length;
   int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
-  int frags_nr = req->send.specific.mediumsq.frags_nr;
-  int frag_max = OMX_MEDIUM_FRAG_LENGTH_MAX;
+  uint32_t frags_nr = req->send.specific.mediumsq.frags_nr;
+  uint32_t frag_max = OMX_MEDIUM_FRAG_LENGTH_MAX;
   unsigned i;
   int err;
 
@@ -474,7 +474,7 @@ omx__post_isend_mediumsq(struct omx_endpoint *ep,
       if (unlikely(err < 0)) {
 	/* finish copying frags if not done already */
 	if (likely(!req->generic.resends)) {
-	  int j;
+	  unsigned j;
 	  for(j=i+1; j<frags_nr; i++) {
 	    unsigned chunk = remaining > frag_max ? frag_max : remaining;
 	    memcpy(ep->sendq + (sendq_index[j] << OMX_SENDQ_ENTRY_SHIFT), data + offset, chunk);
@@ -511,7 +511,7 @@ omx__post_isend_mediumsq(struct omx_endpoint *ep,
       if (unlikely(err < 0)) {
 	/* finish copying frags if not done already */
 	if (likely(!req->generic.resends)) {
-	  int j;
+	  unsigned j;
 	  for(j=i+1; j<frags_nr; i++) {
 	    unsigned chunk = remaining > frag_max ? frag_max : remaining;
 	    omx_continue_partial_copy_from_segments(ep, ep->sendq + (sendq_index[j] << OMX_SENDQ_ENTRY_SHIFT),
@@ -601,7 +601,7 @@ omx__alloc_setup_isend_mediumsq(struct omx_endpoint *ep,
   uint32_t length = req->generic.status.msg_length;
   int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
   int res = req->generic.missing_resources;
-  unsigned frags_nr = req->send.specific.mediumsq.frags_nr;
+  uint32_t frags_nr = req->send.specific.mediumsq.frags_nr;
 
   if (likely(res & OMX_REQUEST_RESOURCE_EXP_EVENT))
     goto need_exp_events;

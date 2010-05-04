@@ -31,7 +31,7 @@ one_length(omx_endpoint_t ep, omx_endpoint_addr_t addr, char *send_buffer, char 
   omx_return_t ret;
   omx_status_t status;
   uint32_t result;
-  int i;
+  unsigned i;
 
   memset(recv_buffer, 0, length);
 

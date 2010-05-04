@@ -25,7 +25,7 @@
 
 static int discard;
 static int sync;
-static int length;
+static uint32_t length;
 
 static omx_unexp_handler_action_t
 unexp_handler(void *context, omx_endpoint_addr_t source,
@@ -45,9 +45,9 @@ unexp_handler(void *context, omx_endpoint_addr_t source,
     assert(data_if_available);
 
   if (data_if_available) {
-    int i;
+    unsigned i;
     for(i=0; i<msg_length; i++)
-      assert(((char*)data_if_available)[i] == 'a' + (i%26));
+      assert(((char*)data_if_available)[i] == (char)('a' + (i%26)));
   }
 
   if (discard) {

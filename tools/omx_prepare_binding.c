@@ -45,8 +45,8 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
   struct omx_board_info board_info;
   omx_return_t ret;
   FILE *file;
-  int slicemax = 0, slicemodulo;
-  int j;
+  unsigned slicemax = 0, slicemodulo;
+  unsigned j;
 
   ret = omx__get_board_info(NULL, board_index, &board_info);
   if (ret == OMX_BOARD_NOT_FOUND)
@@ -130,7 +130,7 @@ omx__try_prepare_board(FILE *output, uint32_t board_index)
       }
 
       slice_irq[slice] = irq;
-      if (slice >= slicemax)
+      if ((unsigned) slice >= slicemax)
 	slicemax = slice+1;
     }
   }

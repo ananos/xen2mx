@@ -50,7 +50,7 @@ usage(int argc, char *argv[])
 
 static void
 vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
-			 omx_seg_t *segs, int nseg,
+			 omx_seg_t *segs, unsigned nseg,
 			 char *sbuf, char *rbuf)
 {
   omx_request_t sreq, rreq;
@@ -58,7 +58,7 @@ vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
   omx_status_t status;
   uint32_t result;
   uint32_t len;
-  int i,j;
+  unsigned i,j;
   char c;
 
   /* initialize the whole send buffer to DEFAULT_SEND_CHAR */
@@ -125,14 +125,14 @@ vect_send_to_contig_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 static void
 contig_send_to_vect_recv(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 			 char *sbuf,
-			 omx_seg_t *segs, int nseg, char *rbuf)
+			 omx_seg_t *segs, unsigned nseg, char *rbuf)
 {
   omx_request_t sreq, rreq;
   omx_return_t ret;
   omx_status_t status;
   uint32_t result;
   uint32_t len;
-  int i,j;
+  unsigned i,j;
   char c;
 
   for(i=0, len=0; i<nseg; i++) {

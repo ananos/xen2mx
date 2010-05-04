@@ -94,7 +94,7 @@ static INLINE omx_return_t
 omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
 {
   struct omx__sendq_entry * array;
-  int i;
+  unsigned i;
 
   array = omx_malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct omx__sendq_entry));
   if (!array)
@@ -129,7 +129,7 @@ omx__endpoint_bind_process(const struct omx_endpoint *ep, const char *bindstring
 {
   cpu_set_t cs;
   CPU_ZERO(&cs);
-  int i;
+  unsigned i;
 
   if (!strncmp(bindstring, "file", 4)) {
     char *filename;
@@ -337,7 +337,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   uint8_t ctxid_shift;
   omx_error_handler_t error_handler;
   omx_return_t ret = OMX_SUCCESS;
-  int err, fd, i;
+  int err, fd;
+  unsigned i;
 
   if (!omx__globals.initialized) {
     ret = omx__error(OMX_NOT_INITIALIZED, "Opening endpoint");
@@ -629,7 +630,7 @@ omx_return_t
 omx_close_endpoint(struct omx_endpoint *ep)
 {
   omx_return_t ret;
-  int i;
+  unsigned i;
 
   OMX__ENDPOINT_LOCK(ep);
 
@@ -775,7 +776,7 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep)
 {
   union omx_request *req, *next;
   struct omx__early_packet *early, *next_early;
-  int i;
+  unsigned i;
 
   for(i=0; i<omx__driver_desc->peer_max * omx__driver_desc->endpoint_max; i++) {
     struct omx__partner *partner =  ep->partners[i];
@@ -921,8 +922,7 @@ void
 omx__request_alloc_check(const struct omx_endpoint *ep)
 {
 #ifdef OMX_LIB_DEBUG
-  int nr = 0;
-  int i,j;
+  unsigned i, j, nr = 0;
 
   for(i=0; i<ep->ctxid_max; i++) {
     j = omx__queue_count(&ep->ctxid[i].recv_req_q);

@@ -132,11 +132,11 @@ omx__empty_queue(const struct list_head *head)
   return list_empty(head);
 }
 
-static inline int
+static inline unsigned
 omx__queue_count(const struct list_head *head)
 {
   struct list_head *elt;
-  int i=0;
+  unsigned i=0;
   list_for_each(elt, head)
     i++;
   return i;

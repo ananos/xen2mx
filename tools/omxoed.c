@@ -107,7 +107,7 @@ void
 add_peer(
   struct nic_info *nip,
   uint64_t peer_mac,
-  int serial,
+  uint32_t serial,
   uint64_t gw)
 {
   /* Add this to our local peer table */
@@ -218,7 +218,7 @@ process_pkt(
 {
   uint32_t nic_half;
   uint64_t nic_id;
-  int serial;
+  uint32_t serial;
   int index;
   struct mxoed_pkt *pkt;
   uint64_t gw;
