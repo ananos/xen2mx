@@ -328,9 +328,9 @@ mx_open_endpoint(uint32_t board_number, uint32_t endpoint_id,
   BUILD_BUG_ON(MX_ANY_NIC != OMX_ANY_NIC);
   BUILD_BUG_ON(MX_ANY_ENDPOINT != OMX_ANY_ENDPOINT);
   /* check endpoint parameter keys */
-  BUILD_BUG_ON(MX_PARAM_ERROR_HANDLER != OMX_ENDPOINT_PARAM_ERROR_HANDLER);
-  BUILD_BUG_ON(MX_PARAM_UNEXP_QUEUE_MAX != OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX);
-  BUILD_BUG_ON(MX_PARAM_CONTEXT_ID != OMX_ENDPOINT_PARAM_CONTEXT_ID);
+  BUILD_BUG_ON((unsigned) MX_PARAM_ERROR_HANDLER != (unsigned) OMX_ENDPOINT_PARAM_ERROR_HANDLER);
+  BUILD_BUG_ON((unsigned) MX_PARAM_UNEXP_QUEUE_MAX != (unsigned) OMX_ENDPOINT_PARAM_UNEXP_QUEUE_MAX);
+  BUILD_BUG_ON((unsigned) MX_PARAM_CONTEXT_ID != (unsigned) OMX_ENDPOINT_PARAM_CONTEXT_ID);
 
   omxret = omx_open_endpoint(board_number, endpoint_id, endpoint_key,
 			     omx_endpoint_param_ptr_from_mx(params_array), params_count,
@@ -360,8 +360,8 @@ mx_register_unexp_handler(mx_endpoint_t endpoint, mx_unexp_handler_t handler, vo
   omx_return_t omxret;
 
   /* check unexp handler return values */
-  BUILD_BUG_ON(MX_RECV_CONTINUE != OMX_UNEXP_HANDLER_RECV_CONTINUE);
-  BUILD_BUG_ON(MX_RECV_FINISHED != OMX_UNEXP_HANDLER_RECV_FINISHED);
+  BUILD_BUG_ON((unsigned) MX_RECV_CONTINUE != (unsigned) OMX_UNEXP_HANDLER_RECV_CONTINUE);
+  BUILD_BUG_ON((unsigned) MX_RECV_FINISHED != (unsigned) OMX_UNEXP_HANDLER_RECV_FINISHED);
 
   omxret = omx_register_unexp_handler(omx_endpoint_from_mx(endpoint),
 				      omx_unexp_handler_from_mx(handler),
