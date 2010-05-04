@@ -178,21 +178,24 @@ omx_unlikely_return_from_mx(mx_return_t mxret, int strict)
   case MX_BAD_MATCHING_FOR_CONTEXT_ID_MASK:
     return OMX_BAD_MATCHING_FOR_CONTEXT_ID_MASK;
 
-  case OMX_CANCELLED:
-  case OMX_REMOTE_RDMA_WINDOW_BAD_ID:
-  case OMX_REMOTE_ENDPOINT_UNREACHABLE:
-  case OMX_REMOTE_ENDPOINT_BAD_SESSION:
-  case OMX_MESSAGE_ABORTED:
-  case OMX_MESSAGE_TRUNCATED:
-  case OMX_NO_SYSTEM_RESOURCES:
-  case OMX_NOT_IMPLEMENTED:
-    if (!strict)
-      /* just return the original code since the MX error handler code mixes return and status code */
-      return (omx_return_t) mxret;
-    /* fallthrough */
-
   default:
-    omx__abort(NULL, "Unexpected MX return code %d to translate into Open-MX\n", mxret);
+    switch ((omx_return_t) mxret) {
+    case OMX_CANCELLED:
+    case OMX_REMOTE_RDMA_WINDOW_BAD_ID:
+    case OMX_REMOTE_ENDPOINT_UNREACHABLE:
+    case OMX_REMOTE_ENDPOINT_BAD_SESSION:
+    case OMX_MESSAGE_ABORTED:
+    case OMX_MESSAGE_TRUNCATED:
+    case OMX_NO_SYSTEM_RESOURCES:
+    case OMX_NOT_IMPLEMENTED:
+      if (!strict)
+	/* just return the original code since the MX error handler code mixes return and status code */
+	return (omx_return_t) mxret;
+      /* fallthrough */
+
+    default:
+      omx__abort(NULL, "Unexpected MX return code %d to translate into Open-MX\n", mxret);
+    }
   }
 }
 
