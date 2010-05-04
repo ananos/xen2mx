@@ -569,13 +569,11 @@ struct omx__globals {
   unsigned abort_sleeps;
 };
 
-enum omx__internal_return_code {
-  OMX_INTERNAL_RETURN_CODE_MIN = 101,
-  OMX_INTERNAL_MISSING_RESOURCES,
-  OMX_INTERNAL_UNEXPECTED_ERRNO,
-  OMX_INTERNAL_MISC_ENODEV,
-  OMX_INTERNAL_MISC_EINVAL,
-  OMX_INTERNAL_MISC_EFAULT
-};
+#define OMX_INTERNAL_RETURN_CODE_MIN ((omx_return_t) 101)
+#define OMX_INTERNAL_MISSING_RESOURCES ((omx_return_t) 102)
+#define OMX_INTERNAL_UNEXPECTED_ERRNO ((omx_return_t) 103)
+#define OMX_INTERNAL_MISC_ENODEV ((omx_return_t) 104)
+#define OMX_INTERNAL_MISC_EINVAL ((omx_return_t) 105)
+#define OMX_INTERNAL_MISC_EFAULT ((omx_return_t) 106)
 
 #endif /* __omx_types_h__ */
