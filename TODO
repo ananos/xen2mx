@@ -5,10 +5,6 @@
 * find a cleaner way to propagate the software version
   where needed
 
-* make OMPI work over mx<->omx wire-compat by generating the same unique network id ?
-  + retrieve the actual mapperid (and version by the way) in get_mapper_state
-  + return MX_SPEED_10G in mx_get_info MX_LINE_SPEED
-
 * set the library ABI version in the library filename
 
 * fix more icc warnings
@@ -18,12 +14,6 @@
 * add restrict when c99 is enabled?
 
 * try get_user_pages_fast() with 32pages chunks or so
-
-* switch to automake with silent-rules
-  + link tools/tests dynamically and let libtool add rpath
-  + drop make install options, use configure options
-  + drop make install prefix=foo
-  + convert all .in files at configure instead of make install
 
 * stop supporting mtu!=1500/9000 ?
   + go back to mtu/wire-compat indep library, with send
