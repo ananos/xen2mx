@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <pthread.h>
-#define _GNU_SOURCE
 #include <sched.h>
 #include <sys/time.h>
+#include <signal.h>
 
 #include "open-mx.h"
 #include "omx_lib.h"
@@ -13,6 +14,13 @@
 static omx_endpoint_t ep = NULL;
 static cpu_set_t      s_mask;
 static cpu_set_t      r_mask;
+static bool           loop = true;
+
+static void
+omx__sa_handler(int signum)
+{
+	loop = false;
+}
 
 static void *
 omx__gen_sender (void *arg)
@@ -21,7 +29,8 @@ omx__gen_sender (void *arg)
 		perror("sched_setaffinity");
 		exit(1);
 	}
-	while (1) {
+
+	while (loop) {
 		if (unlikely(ep->desc->status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL))
 			continue;
 		omx_generate_events (ep, OMX_EVT_NUM);
@@ -40,10 +49,10 @@ omx__gen_receiver (void *arg)
 		perror("sched_setaffinity");
 		exit(2);
 	}
-	
+
 	gettimeofday(&tv, NULL);
 	time = tv.tv_sec;
-	while (1) {
+	while (loop) {
 
 		volatile union omx_evt * evt = ep->next_unexp_event;
 
@@ -67,9 +76,10 @@ main (int argc, char *argv[])
 	omx_return_t ret;
 	int cpu_0, cpu_1;
 	struct omx_board_info board_info;
+	struct sigaction sa = { .sa_handler = omx__sa_handler };
 	char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 	pthread_t sender, receiver;
-
+	
 	if (argc < 3) {
 		fprintf(stderr, "Usage: %s <cpu #0> <cpu #1>\n", argv[0]);
 		goto out;
@@ -85,6 +95,13 @@ main (int argc, char *argv[])
 	printf("sender on cpu%d/receiver on cpu%d\n", cpu_0, cpu_1);
 	CPU_SET(cpu_0, &s_mask);
 	CPU_SET(cpu_1, &r_mask);
+
+	sigemptyset(&sa.sa_mask);
+
+	if (sigaction(SIGINT | SIGTERM, &sa, NULL)) {
+		perror("sigaction");
+		goto out;
+	}
 	
 	if (ret != OMX_SUCCESS) {
 		fprintf (stderr, "%s: Failed to initialize (%s)\n", argv[0],
