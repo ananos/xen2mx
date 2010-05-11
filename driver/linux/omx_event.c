@@ -206,7 +206,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 	/* wake up waiters */
 	dprintk(EVENT, "notify_unexp waking up everybody\n");
 	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
-
+	
 	spin_unlock_bh(&endpoint->event_lock);
 
 	return 0;
@@ -502,6 +502,32 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
 	return 0;
 
+ out:
+	return err;
+}
+
+int
+omx_ioctl_test(struct omx_endpoint * endpoint, void __user * uparam)
+{
+	union omx_evt evt;
+	int err, num, i;
+
+	err = copy_from_user(&num, uparam, sizeof(int));
+
+	if (unlikely(err != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read counter from userspace\n");
+		err = -EFAULT;
+		goto out;
+	}
+
+	for (i = 0; i < num; i++) {
+		evt.test.id = i;
+		err = omx_notify_unexp_event(endpoint, OMX_EVT_TEST, &evt.test, sizeof evt);
+
+		if (err != 0)
+			goto out;
+	}
+	return 0;
  out:
 	return err;
 }

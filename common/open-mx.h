@@ -356,6 +356,9 @@ omx_return_t
 omx_reenable_progression(omx_endpoint_t ep);
 
 omx_return_t
+omx_generate_events(omx_endpoint_t ep, int count);
+
+omx_return_t
 omx_get_info(omx_endpoint_t ep, omx_info_key_t key,
 	     const void * in_val, uint32_t in_len,
 	     void * out_val, uint32_t out_len);
@@ -374,6 +377,9 @@ omx_nic_id_to_hostname(uint64_t board_addr,
 
 omx_return_t
 omx_progress(omx_endpoint_t ep);
+
+omx_return_t
+omx_progress_counter(omx_endpoint_t ep, int * count);
 
 omx_return_t
 omx_set_request_timeout(omx_endpoint_t endpoint,

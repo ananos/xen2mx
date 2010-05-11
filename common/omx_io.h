@@ -164,6 +164,7 @@ struct omx_endpoint_desc {
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_BAD_MTU (1ULL << 3)
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_REMOVED (1ULL << 4)
 #define OMX_ENDPOINT_DESC_STATUS_IFACE_HIGH_INTRCOAL (1ULL << 5)
+#define OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_EMPTY (1ULL << 6)
 
 #define OMX_BOARD_INFO_STATUS_DOWN (1ULL << 0)
 #define OMX_BOARD_INFO_STATUS_BAD_MTU (1ULL << 1)
@@ -583,6 +584,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_DESTROY_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_destroy_user_region)
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_wait_event)
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8e, struct omx_cmd_wakeup)
+#define OMX_CMD_TEST                    _IOR(OMX_CMD_MAGIC, 0x8f, int)
 
 static inline __pure const char *
 omx_strcmd(unsigned cmd)
@@ -674,6 +676,7 @@ omx_strcmd(unsigned cmd)
 #define OMX_EVT_RECV_NACK_LIB		0x19
 #define OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE	0x20
 #define OMX_EVT_PULL_DONE		0x21
+#define OMX_EVT_TEST                    0x22
 
 #define OMX_EVT_NACK_LIB_BAD_ENDPT	0x01
 #define OMX_EVT_NACK_LIB_ENDPT_CLOSED	0x02
@@ -736,6 +739,12 @@ union omx_evt {
 		uint8_t type;
 		/* 64 */
 	} generic;
+
+	struct omx_evt_test {
+		char    pad[62];
+		uint8_t id;
+		uint8_t type;
+	} test;
 
 	/* send medium frag done */
 	struct omx_evt_send_mediumsq_frag_done {

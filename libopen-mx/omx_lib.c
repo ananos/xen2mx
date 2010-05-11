@@ -39,6 +39,16 @@ omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
     break;
   }
 
+  case OMX_EVT_TEST: {
+    struct omx_evt_test test;
+
+    memcpy(&test, &evt->test, sizeof(struct omx_evt_test));
+    
+    omx__debug_printf(EVENT, ep, "OMX_EVT_TEST: received event #%d\n", test.id);
+    
+    break;
+  }
+
   case OMX_EVT_RECV_CONNECT_REPLY: {
     omx__process_recv_connect_reply(ep, &evt->recv_connect_reply);
     break;
@@ -275,6 +285,80 @@ omx__progress(struct omx_endpoint * ep)
   return OMX_SUCCESS;
 }
 
+
+omx_return_t
+omx__progress_counter(struct omx_endpoint * ep, int *count)
+{
+  if (unlikely(ep->progression_disabled))
+    return OMX_SUCCESS;
+
+  omx__check_enough_progression(ep);
+
+  /* process unexpected events first,
+   * to release the pressure coming from the network
+   */
+  while (1) {
+    volatile union omx_evt * evt = ep->next_unexp_event;
+
+    if (unlikely(evt->generic.type == OMX_EVT_NONE))
+      break;
+
+    omx__process_event(ep, (union omx_evt *) evt);
+
+    /* mark event as done */
+    (*count)++;
+    evt->generic.type = OMX_EVT_NONE;
+
+    /* next event */
+    evt++;
+    if (unlikely((void *) evt >= ep->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
+      evt = ep->unexp_eventq;
+    ep->next_unexp_event = (void *) evt;
+
+    if (unlikely(ep->desc->status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL))
+      ep->desc->status ^= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
+  }
+
+  /* process expected events then */
+  while (1) {
+    volatile union omx_evt * evt = ep->next_exp_event;
+
+    if (unlikely(evt->generic.type == OMX_EVT_NONE))
+      break;
+
+    omx__process_event(ep, (union omx_evt *) evt);
+
+    /* mark event as done */
+    evt->generic.type = OMX_EVT_NONE;
+
+    /* next event */
+    evt++;
+    if (unlikely((void *) evt >= ep->exp_eventq + OMX_EXP_EVENTQ_SIZE))
+      evt = ep->exp_eventq;
+    ep->next_exp_event = (void *) evt;
+  }
+
+  /* resend requests that didn't get acked/replied */
+  omx__process_resend_requests(ep);
+
+  /* post delayed requests */
+  omx__process_delayed_requests(ep);
+
+  /* ack partners that didn't get acked recently */
+  omx__process_partners_to_ack(ep);
+
+  /* check the endpoint descriptor */
+  omx__check_endpoint_desc(ep);
+
+#ifdef OMX_LIB_DEBUG
+  /* check if we leaked some requests */
+  if (omx__globals.check_request_alloc)
+    omx__request_alloc_check(ep);
+#endif
+
+  return OMX_SUCCESS;
+}
+
 /* API omx_register_unexp_handler */
 omx_return_t
 omx_register_unexp_handler(omx_endpoint_t ep,
@@ -303,6 +387,21 @@ omx_progress(omx_endpoint_t ep)
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
+
+/* API omx_progress_counter */
+omx_return_t
+omx_progress_counter(omx_endpoint_t ep, int *count)
+{
+  omx_return_t ret = OMX_SUCCESS;
+
+  OMX__ENDPOINT_LOCK(ep);
+
+  ret = omx__progress_counter(ep, count);
+
+  OMX__ENDPOINT_UNLOCK(ep);
+  return ret;
+}
+
 
 #ifdef OMX_LIB_DEBUG
 static uint64_t omx_disable_progression_jiffies_start = 0;
@@ -362,4 +461,27 @@ omx_reenable_progression(struct omx_endpoint *ep)
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
   return OMX_SUCCESS;
+}
+
+/* API omx_generate_events */
+omx_return_t
+omx_generate_events(omx_endpoint_t ep, int count)
+{
+  int          err;
+  omx_return_t ret = OMX_SUCCESS;
+
+  if (unlikely(!ep)) {
+    ret = OMX_BAD_ENDPOINT;
+    goto out;
+  }
+
+  err = ioctl(ep->fd, OMX_CMD_TEST, &count);
+
+  if (unlikely(err < 0)) {
+    ret = OMX_ACCESS_DENIED;
+    goto out;
+  }
+
+ out:
+  return ret;
 }
