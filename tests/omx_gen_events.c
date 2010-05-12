@@ -2,19 +2,20 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <pthread.h>
-#include <sched.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <hwloc.h>
 
 #include "open-mx.h"
 #include "omx_lib.h"
 
 #define OMX_EVT_NUM 1024
 
-static omx_endpoint_t ep = NULL;
-static cpu_set_t      s_mask;
-static cpu_set_t      r_mask;
-static bool           loop = true;
+static omx_endpoint_t   ep   = NULL;
+static bool             loop = true;
+static hwloc_topology_t topology;
+static hwloc_cpuset_t   s_cpuset; 
+static hwloc_cpuset_t   r_cpuset;
 
 static void
 omx__sa_handler(int signum)
@@ -22,14 +23,23 @@ omx__sa_handler(int signum)
 	loop = false;
 }
 
+static void
+omx__cpubind(hwloc_const_cpuset_t cpuset, int retval)
+{
+	char *str;
+
+	if (hwloc_set_cpubind(topology, cpuset, HWLOC_CPUBIND_THREAD)) {
+		hwloc_cpuset_asprintf(&str, cpuset);
+		fprintf(stderr, "Couldn't bind to cpuset %s\n", str);
+		free(str);
+		exit(retval);
+	}
+}
+
 static void *
 omx__gen_sender (void *arg)
 {
-	if (sched_setaffinity(0, sizeof(cpu_set_t), &s_mask)) {
-		perror("sched_setaffinity");
-		exit(1);
-	}
-
+	omx__cpubind(s_cpuset, 1);
 	while (loop) {
 		if (unlikely(ep->desc->status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL))
 			continue;
@@ -45,10 +55,7 @@ omx__gen_receiver (void *arg)
 	time_t time;
 	int    counter = 0;
 
-	if (sched_setaffinity(0, sizeof(cpu_set_t), &r_mask)) {
-		perror("sched_setaffinity");
-		exit(2);
-	}
+	omx__cpubind(r_cpuset, 2);
 
 	gettimeofday(&tv, NULL);
 	time = tv.tv_sec;
@@ -74,27 +81,34 @@ int
 main (int argc, char *argv[])
 {
 	omx_return_t ret;
-	int cpu_0, cpu_1;
 	struct omx_board_info board_info;
 	struct sigaction sa = { .sa_handler = omx__sa_handler };
 	char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 	pthread_t sender, receiver;
-	
-	if (argc < 3) {
-		fprintf(stderr, "Usage: %s <cpu #0> <cpu #1>\n", argv[0]);
+	hwloc_obj_t obj;
+	int         nb_cpus;
+
+	ret = omx_init ();
+
+	hwloc_topology_init(&topology);
+	hwloc_topology_load(topology);
+
+	nb_cpus =  hwloc_get_nbobjs_by_type (topology, HWLOC_OBJ_CORE);
+
+	printf("Found %d CPU(s) on the remote machine\n", nb_cpus);
+
+	obj = hwloc_get_obj_by_type (topology, HWLOC_OBJ_PU, 0);
+
+	if (! obj) {
+		fprintf(stderr, "%s: Failed to get back obj for the first core\n", argv[0]);
 		goto out;
 	}
+
+	s_cpuset = hwloc_cpuset_dup(obj->cpuset);
+
+	obj = obj->next_cousin;
 	
-	ret   = omx_init ();
-	cpu_0 = atoi(argv[1]);
-	cpu_1 = atoi(argv[2]);
-
-	CPU_ZERO(&s_mask);
-	CPU_ZERO(&r_mask);
-
-	printf("sender on cpu%d/receiver on cpu%d\n", cpu_0, cpu_1);
-	CPU_SET(cpu_0, &s_mask);
-	CPU_SET(cpu_1, &r_mask);
+	r_cpuset = obj ? hwloc_cpuset_dup(obj->cpuset) : s_cpuset;
 
 	sigemptyset(&sa.sa_mask);
 
@@ -137,6 +151,9 @@ main (int argc, char *argv[])
 	pthread_join (receiver, NULL);
 	
 	omx_close_endpoint (ep);
+        hwloc_cpuset_free(s_cpuset);
+	hwloc_cpuset_free(r_cpuset);
+	hwloc_topology_destroy(topology);
 	
 	return 0;
  out:

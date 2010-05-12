@@ -12,6 +12,7 @@ test_PROGRAMS	= omx_cancel_test omx_cmd_bench omx_loopback_test omx_many	\
 omx_reg_CPPFLAGS	= -I$(abs_top_srcdir)/libopen-mx $(AM_CPPFLAGS)
 omx_cmd_bench_CPPFLAGS	= -I$(abs_top_srcdir)/libopen-mx $(AM_CPPFLAGS)
 omx_gen_events_CPPFLAGS = -I$(abs_top_srcdir)/libopen-mx $(AM_CPPFLAGS)
+omx_gen_events_CFLAGS   = $(HWLOC_CFLAGS)
 
 LDADD = $(abs_top_builddir)/libopen-mx/$(DEFAULT_LIBDIR)/libopen-mx.la
-omx_gen_events_LDADD    = -lpthread $(LDADD)
+omx_gen_events_LDADD    = -lpthread $(HWLOC_LIBS) $(LDADD)
