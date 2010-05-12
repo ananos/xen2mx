@@ -314,9 +314,6 @@ omx__progress_counter(struct omx_endpoint * ep, int *count)
     if (unlikely((void *) evt >= ep->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
       evt = ep->unexp_eventq;
     ep->next_unexp_event = (void *) evt;
-
-    if (unlikely(ep->desc->status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL))
-      ep->desc->status ^= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
   }
 
   /* process expected events then */

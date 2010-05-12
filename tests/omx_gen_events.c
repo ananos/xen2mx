@@ -7,9 +7,10 @@
 #include <hwloc.h>
 
 #include "open-mx.h"
+#include "omx_io.h"
 #include "omx_lib.h"
 
-#define OMX_EVT_NUM 1024
+#define OMX_EVT_NUM 512
 
 static omx_endpoint_t   ep   = NULL;
 static bool             loop = true;
@@ -41,7 +42,12 @@ omx__gen_sender (void *arg)
 {
 	omx__cpubind(s_cpuset, 1);
 	while (loop) {
-		if (unlikely(ep->desc->status & OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL))
+
+		union omx_evt *slot;
+
+		slot = ep->unexp_eventq + (OMX_EVENTQ_ENTRY_SIZE * OMX_UNEXP_EVENTQ_ENTRY_NR);
+		/* unexp eventq is full */
+		if (unlikely(slot->generic.type != OMX_EVT_NONE)) 
 			continue;
 		omx_generate_events (ep, OMX_EVT_NUM);
 	}
@@ -63,6 +69,7 @@ omx__gen_receiver (void *arg)
 
 		volatile union omx_evt * evt = ep->next_unexp_event;
 
+		/* unexp eventq is empty */
 		if (unlikely(evt->generic.type == OMX_EVT_NONE))
 			continue;
 		omx_progress_counter (ep, &counter);
@@ -97,7 +104,7 @@ main (int argc, char *argv[])
 
 	printf("Found %d CPU(s) on the remote machine\n", nb_cpus);
 
-	obj = hwloc_get_obj_by_type (topology, HWLOC_OBJ_PU, 0);
+	obj = hwloc_get_next_obj_by_type (topology, HWLOC_OBJ_CORE, NULL);
 
 	if (! obj) {
 		fprintf(stderr, "%s: Failed to get back obj for the first core\n", argv[0]);
@@ -106,9 +113,12 @@ main (int argc, char *argv[])
 
 	s_cpuset = hwloc_cpuset_dup(obj->cpuset);
 
-	obj = obj->next_cousin;
+	obj = hwloc_get_next_obj_by_type (topology, HWLOC_OBJ_CORE, obj);
 	
 	r_cpuset = obj ? hwloc_cpuset_dup(obj->cpuset) : s_cpuset;
+
+	hwloc_cpuset_singlify(s_cpuset);
+	hwloc_cpuset_singlify(r_cpuset);
 
 	sigemptyset(&sa.sa_mask);
 
