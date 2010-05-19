@@ -773,9 +773,9 @@ Both steps may be independently
 parallelized with <tt>-j</tt>.
 </p>
 <p>
-Also note that if building from SVN, you will need to generate the
-configure script and common/omx_config.h.in header first.
-autoconf and autoheader are required to do so.
+Also, if building from SVN, you will need to generate some
+files such as the configure script and some .in files first.
+automake, autoconf, autoheader and libtool 2 are required to do so.
 The autogen.sh script takes care of running them accordingly:
 <pre>
 $ ./autogen.sh
