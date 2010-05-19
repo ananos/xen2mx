@@ -4,6 +4,7 @@ The automake release.
 
 Bug fixes:
 * Fix checksumming of unexpected self messages.
+* Fix omxoed to generate a consistent mapper id across the fabric.
 * Improve the ABI of some internal symbols so that Open MPI generates
   the right unique network id.
 * Fix build with Linux kernel 2.6.33 and 2.6.34.
