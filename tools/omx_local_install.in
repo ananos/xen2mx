@@ -80,14 +80,14 @@ if test x"$1" != "x--uninstall"; then
     echo "Installing startup script..."
     if test ! -d ${DESTDIR}${OMX_INIT_SCRIPT_DIR} ; then
 	echo "  Creating ${OMX_INIT_SCRIPT_DIR} directory..."
-	mkdir ${DESTDIR}${OMX_INIT_SCRIPT_DIR}
+	mkdir -p ${DESTDIR}${OMX_INIT_SCRIPT_DIR}
     fi
     cmp_mv_old_and_install_new "${OMX_INIT_SCRIPT_STUB}" "${OMX_INIT_SCRIPT_DEST}" "startup script"
 
     echo "Installing config file..."
     if test ! -d ${DESTDIR}${OMX_WIDE_CONFIG_DIR} ; then
 	echo "  Creating ${OMX_WIDE_CONFIG_DIR} directory..."
-	mkdir ${DESTDIR}${OMX_WIDE_CONFIG_DIR}
+	mkdir -p ${DESTDIR}${OMX_WIDE_CONFIG_DIR}
     fi
     cmp_mv_old_and_install_new "${OMX_CONFIG_STUB}" "${OMX_CONFIG_DEST}" "stub config"
 
