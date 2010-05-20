@@ -1,6 +1,6 @@
 # General informations on the project
 AC_INIT(Open-MX,
-	1.2.90,
+	1.2.901,
 	http://open-mx.org,
 	open-mx)
 

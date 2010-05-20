@@ -1,16 +1,16 @@
-Open-MX 1.2.901 aka 1.3-rc1 (May 17th 2010, svn rxxxx)
+Open-MX 1.2.901 aka 1.3-rc1 (May 20th 2010, svn r2984)
 ======================================================
 The automake release.
 
 Bug fixes:
 * Fix checksumming of unexpected self messages.
+* Fix build with Linux kernel 2.6.33 and 2.6.34.
 * Fix omxoed to generate a consistent mapper id across the fabric.
 * Improve the ABI of some internal symbols so that Open MPI generates
   the right unique network id.
-* Fix build with Linux kernel 2.6.33 and 2.6.34.
 
 Other improvements from previous release:
-* Switch build system to automake.
+* Large cleanup of the build system by switching to automake.
 * Miscellaneous minor fixes all over the place.
 * Fix many warnings with picky compilers.
 
