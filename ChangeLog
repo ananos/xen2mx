@@ -1,3 +1,13 @@
+Open-MX 1.2.902 aka 1.3-rc2
+======================================================
+
+
+
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.2.901 aka 1.3-rc1 (May 20th 2010, svn r2984)
 ======================================================
 The automake release.
@@ -13,10 +23,6 @@ Other improvements from previous release:
 * Large cleanup of the build system by switching to automake.
 * Miscellaneous minor fixes all over the place.
 * Fix many warnings with picky compilers.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.2.1 (February 8th 2010, svn r2888)
 ============================================
