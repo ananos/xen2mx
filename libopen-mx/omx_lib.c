@@ -44,7 +44,7 @@ omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
 
     memcpy(&test, &evt->test, sizeof(struct omx_evt_test));
     
-    omx__debug_printf(EVENT, ep, "OMX_EVT_TEST: received event #%d\n", test.id);
+    omx__debug_printf(EVENT, ep, "received event #%d\n", evt->generic.id);
     
     break;
   }
@@ -229,17 +229,27 @@ omx__progress(struct omx_endpoint * ep)
    */
   while (1) {
     volatile union omx_evt * evt = ep->next_unexp_event;
+    int done;
 
-    if (unlikely(evt->generic.type == OMX_EVT_NONE))
+    //printf("generic.id == %u, next_unexp_event_id == %u\n", evt->generic.id,  ep->next_unexp_event_id);
+    if (unlikely(evt->generic.id !=  ep->next_unexp_event_id))
       break;
 
     omx__process_event(ep, (union omx_evt *) evt);
 
-    /* mark event as done */
-    evt->generic.type = OMX_EVT_NONE;
-
     /* next event */
     evt++;
+    done = (void *) evt - ep->unexp_eventq;
+
+    /* mark as done per chunks of 256 events */
+    if (unlikely(done % 16384 == 0)) {
+      done = 256;
+      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_CHUNK, &done);
+    }
+
+    /* next event id */
+    ep->next_unexp_event_id = ( ep->next_unexp_event_id == OMX_EVENTQ_MAX_ID) ? 
+      1 : ep->next_unexp_event_id + 1;
     if (unlikely((void *) evt >= ep->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
       evt = ep->unexp_eventq;
     ep->next_unexp_event = (void *) evt;
@@ -248,17 +258,26 @@ omx__progress(struct omx_endpoint * ep)
   /* process expected events then */
   while (1) {
     volatile union omx_evt * evt = ep->next_exp_event;
+    int done;
 
-    if (unlikely(evt->generic.type == OMX_EVT_NONE))
+    if (unlikely(evt->generic.id != ep->next_exp_event_id))
       break;
 
     omx__process_event(ep, (union omx_evt *) evt);
 
-    /* mark event as done */
-    evt->generic.type = OMX_EVT_NONE;
-
     /* next event */
     evt++;
+    done = (void *) evt - ep->exp_eventq;
+
+    /* mark as done per chunks of 256 events */
+    if (unlikely(done % 16384 == 0)) {
+      done = 256;
+      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_CHUNK, &done);
+    }
+
+    /* next event id */
+    ep->next_exp_event_id = (ep->next_exp_event_id == OMX_EVENTQ_MAX_ID) ? 
+      1 : ep->next_exp_event_id + 1;
     if (unlikely((void *) evt >= ep->exp_eventq + OMX_EXP_EVENTQ_SIZE))
       evt = ep->exp_eventq;
     ep->next_exp_event = (void *) evt;
@@ -285,9 +304,8 @@ omx__progress(struct omx_endpoint * ep)
   return OMX_SUCCESS;
 }
 
-
 omx_return_t
-omx__progress_counter(struct omx_endpoint * ep, int *count)
+omx__progress_counter(struct omx_endpoint * ep, int * counter)
 {
   if (unlikely(ep->progression_disabled))
     return OMX_SUCCESS;
@@ -299,18 +317,32 @@ omx__progress_counter(struct omx_endpoint * ep, int *count)
    */
   while (1) {
     volatile union omx_evt * evt = ep->next_unexp_event;
+    int done;
 
-    if (unlikely(evt->generic.type == OMX_EVT_NONE))
+    if (unlikely(evt->generic.id !=  ep->next_unexp_event_id))
       break;
 
     omx__process_event(ep, (union omx_evt *) evt);
-
-    /* mark event as done */
-    (*count)++;
-    evt->generic.type = OMX_EVT_NONE;
+    (*counter)++;
 
     /* next event */
     evt++;
+    done = (void *) evt - ep->unexp_eventq;
+
+    /* mark as done per chunks of 256 events */
+    if (unlikely(done % 16384 == 0)) {
+      done = 256;
+      /*FIXME: remove last_free_unexp_event from userspace (just for benchs) */
+      ep->last_free_unexp_event  = (unsigned long) ep->last_free_unexp_event % OMX_UNEXP_EVENTQ_SIZE;
+      ep->last_free_unexp_event += (done * OMX_EVENTQ_ENTRY_SIZE);
+      if (unlikely(ep->last_free_unexp_event == ep->next_unexp_event))
+		ep->last_free_unexp_event -= OMX_EVENTQ_ENTRY_SIZE;
+      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_CHUNK, &done);
+    }
+
+    /* next event id */
+    ep->next_unexp_event_id = ( ep->next_unexp_event_id == OMX_EVENTQ_MAX_ID) ? 
+      1 : ep->next_unexp_event_id + 1;
     if (unlikely((void *) evt >= ep->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
       evt = ep->unexp_eventq;
     ep->next_unexp_event = (void *) evt;
@@ -319,17 +351,26 @@ omx__progress_counter(struct omx_endpoint * ep, int *count)
   /* process expected events then */
   while (1) {
     volatile union omx_evt * evt = ep->next_exp_event;
+    int done;
 
-    if (unlikely(evt->generic.type == OMX_EVT_NONE))
+    if (unlikely(evt->generic.id != ep->next_exp_event_id))
       break;
 
     omx__process_event(ep, (union omx_evt *) evt);
 
-    /* mark event as done */
-    evt->generic.type = OMX_EVT_NONE;
-
     /* next event */
     evt++;
+    done = (void *) evt - ep->exp_eventq;
+
+    /* mark as done per chunks of 256 events */
+    if (unlikely(done % 16384 == 0)) {
+      done = 256;
+      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_CHUNK, &done);
+    }
+
+    /* next event id */
+    ep->next_exp_event_id = (ep->next_exp_event_id == OMX_EVENTQ_MAX_ID) ? 
+      1 : ep->next_exp_event_id + 1;
     if (unlikely((void *) evt >= ep->exp_eventq + OMX_EXP_EVENTQ_SIZE))
       evt = ep->exp_eventq;
     ep->next_exp_event = (void *) evt;
@@ -355,6 +396,7 @@ omx__progress_counter(struct omx_endpoint * ep, int *count)
 
   return OMX_SUCCESS;
 }
+
 
 /* API omx_register_unexp_handler */
 omx_return_t

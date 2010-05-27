@@ -420,6 +420,8 @@ omx_miscdev_release(struct inode * inode, struct file * file)
 #define OMX_CMD_HANDLER_SHIFT(index) (index - OMX_CMD_INDEX(OMX_CMD_BENCH))
 #define OMX_CMD_HANDLER_OFFSET(cmd) OMX_CMD_HANDLER_SHIFT(OMX_CMD_INDEX(cmd))
 
+/* FIXME: Drop OMX_CMD_TEST (bench only) */
+
 static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_BENCH)]			= omx_ioctl_bench,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_TINY)]		= omx_ioctl_send_tiny,
@@ -437,6 +439,8 @@ static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAKEUP)]		= omx_ioctl_wakeup,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_TEST)]		        = omx_ioctl_test,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_RELEASE_EXP_CHUNK)]     = omx_ioctl_release_exp_chunk,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_RELEASE_UNEXP_CHUNK)]   = omx_ioctl_release_unexp_chunk
 };
 
 /*

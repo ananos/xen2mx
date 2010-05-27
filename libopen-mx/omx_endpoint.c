@@ -479,6 +479,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_recvq;
   }
   ep->exp_eventq = ep->next_exp_event = exp_eventq;
+  ep->next_exp_event_id = ep->next_unexp_event_id = 1;
+
   /* mmap unexp eventq */
   unexp_eventq = mmap(0, OMX_UNEXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_UNEXP_EVENTQ_FILE_OFFSET);
   if (unexp_eventq == MAP_FAILED) {
@@ -486,6 +488,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_exp_eventq;
   }
   ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
+  ep->last_free_unexp_event = OMX_UNEXP_EVENTQ_SIZE;
 
   BUILD_BUG_ON(sizeof(struct omx_evt_recv_msg) != OMX_EVENTQ_ENTRY_SIZE);
   BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);

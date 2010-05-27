@@ -59,6 +59,8 @@ extern void omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoi
 extern int omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_wakeup(struct omx_endpoint * endpoint, void __user * uparam);
 extern int omx_ioctl_test(struct omx_endpoint * endpoint, void __user * uparam);
+extern int omx_ioctl_release_exp_chunk(struct omx_endpoint *endpoint, void __user * uparam);
+extern int omx_ioctl_release_unexp_chunk(struct omx_endpoint *endpoint, void __user * uparam);
 extern void omx_wakeup_endpoint_on_close(struct omx_endpoint * endpoint);
 
 /* sending */

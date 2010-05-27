@@ -13,7 +13,7 @@ aclocal || exit 1
 echo "Running autoheader..."
 autoheader || exit 1
 echo "Running libtoolize..."
-libtoolize -c || exit 1
+libtoolize -ifc || exit 1
 echo "Running automake..."
 automake -ac || exit 1
 echo "Running autoconf..."

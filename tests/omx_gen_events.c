@@ -10,7 +10,7 @@
 #include "omx_io.h"
 #include "omx_lib.h"
 
-#define OMX_EVT_NUM 512
+#define OMX_EVT_NUM 1024
 
 static omx_endpoint_t   ep   = NULL;
 static bool             loop = true;
@@ -42,12 +42,10 @@ omx__gen_sender (void *arg)
 {
 	omx__cpubind(s_cpuset, 1);
 	while (loop) {
+		union omx_evt *evt = ep->next_unexp_event;
 
-		union omx_evt *slot;
-
-		slot = ep->unexp_eventq + (OMX_EVENTQ_ENTRY_SIZE * OMX_UNEXP_EVENTQ_ENTRY_NR);
 		/* unexp eventq is full */
-		if (unlikely(slot->generic.type != OMX_EVT_NONE)) 
+		if (unlikely(evt == ep->last_free_unexp_event))
 			continue;
 		omx_generate_events (ep, OMX_EVT_NUM);
 	}
@@ -70,7 +68,7 @@ omx__gen_receiver (void *arg)
 		volatile union omx_evt * evt = ep->next_unexp_event;
 
 		/* unexp eventq is empty */
-		if (unlikely(evt->generic.type == OMX_EVT_NONE))
+		if (unlikely(evt->generic.id != ep->next_unexp_event_id))
 			continue;
 		omx_progress_counter (ep, &counter);
 		gettimeofday(&tv, NULL);

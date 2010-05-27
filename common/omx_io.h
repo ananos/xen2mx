@@ -76,6 +76,8 @@
 #endif
 #define OMX_EXP_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE * OMX_EXP_EVENTQ_ENTRY_NR)
 #define OMX_UNEXP_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE * OMX_UNEXP_EVENTQ_ENTRY_NR)
+/* Please make it non power of two*/
+#define OMX_EVENTQ_MAX_ID               7
 
 #define OMX_TINY_MSG_LENGTH_MAX		32
 #define OMX_SMALL_MSG_LENGTH_MAX	128
@@ -585,6 +587,9 @@ struct omx_cmd_bench {
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_wait_event)
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8e, struct omx_cmd_wakeup)
 #define OMX_CMD_TEST                    _IOR(OMX_CMD_MAGIC, 0x8f, int)
+#define OMX_CMD_RELEASE_EXP_CHUNK       _IOR(OMX_CMD_MAGIC, 0x90, int)
+#define OMX_CMD_RELEASE_UNEXP_CHUNK     _IOR(OMX_CMD_MAGIC, 0x91, int)
+ 
 
 static inline __pure const char *
 omx_strcmd(unsigned cmd)
@@ -735,14 +740,14 @@ omx_strevt(unsigned type)
 union omx_evt {
 	/* generic event */
 	struct omx_evt_generic {
-		char pad[63];
+		char    pad[62];
+		uint8_t id;
 		uint8_t type;
 		/* 64 */
 	} generic;
 
 	struct omx_evt_test {
-		char    pad[62];
-		uint8_t id;
+		char    pad[63];
 		uint8_t type;
 	} test;
 

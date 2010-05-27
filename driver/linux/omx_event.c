@@ -93,6 +93,10 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	/* set the first expected event slot */
 	endpoint->next_exp_eventq_offset = 0;
 
+	/* set the last free expected event slot */
+	endpoint->last_free_exp_eventq_offset = OMX_EXP_EVENTQ_SIZE;
+	endpoint->next_exp_event_id = 1;
+
 	/* initialize all unexpected events to none */
 	for(evt = endpoint->unexp_eventq;
 	    (void *) evt < endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE;
@@ -102,11 +106,16 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	endpoint->next_free_unexp_eventq_offset = 0;
 	endpoint->next_reserved_unexp_eventq_offset = 0;
 
+	/* set the last free unexpected event slot */
+	endpoint->last_free_unexp_eventq_offset = OMX_UNEXP_EVENTQ_SIZE;
+	endpoint->next_unexp_event_id = 1;
+
 	/* set the first recvq slot */
 	endpoint->next_recvq_offset = 0;
 
 	INIT_LIST_HEAD(&endpoint->waiters);
 	spin_lock_init(&endpoint->event_lock);
+	spin_lock_init(&endpoint->ack_lock);
 }
 
 /******************************************
@@ -122,7 +131,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 	spin_lock_bh(&endpoint->event_lock);
 
 	slot = endpoint->exp_eventq + endpoint->next_exp_eventq_offset;
-	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
+	if (unlikely(slot == endpoint->exp_eventq + endpoint->last_free_exp_eventq_offset)) {
 		/* the application sucks, it did not check
 		 * the expected eventq before posting requests
 		 */
@@ -145,8 +154,11 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 
 	/* store the event and then the actual type */
 	memcpy(slot, event, length);
-	wmb();
 	((struct omx_evt_generic *) slot)->type = type;
+	wmb();
+	((struct omx_evt_generic *) slot)->id   = endpoint->next_exp_event_id;
+	endpoint->next_exp_event_id = (endpoint->next_exp_event_id == OMX_EVENTQ_MAX_ID) ? 
+		1 : endpoint->next_exp_event_id + 1;
 
 	/* wake up waiters */
 	dprintk(EVENT, "notify_exp waking up everybody\n");
@@ -171,7 +183,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 	spin_lock_bh(&endpoint->event_lock);
 
 	slot = endpoint->unexp_eventq + endpoint->next_free_unexp_eventq_offset;
-	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
+	if (unlikely(slot == endpoint->unexp_eventq + endpoint->last_free_unexp_eventq_offset)) {
 		/* the application sucks, it did not check
 		 * the unexpected eventq before posting requests
 		 */
@@ -200,8 +212,11 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 
 	/* store the event and then the actual type */
 	memcpy(slot, event, length);
-	wmb();
 	((struct omx_evt_generic *) slot)->type = type;
+	wmb();
+	((struct omx_evt_generic *) slot)->id   = endpoint->next_unexp_event_id;
+	endpoint->next_unexp_event_id = (endpoint->next_unexp_event_id == OMX_EVENTQ_MAX_ID) ? 
+		1 : endpoint->next_unexp_event_id + 1;
 
 	/* wake up waiters */
 	dprintk(EVENT, "notify_unexp waking up everybody\n");
@@ -235,7 +250,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 
 	/* check that there's a slot available and reserve it */
 	slot = endpoint->unexp_eventq + endpoint->next_free_unexp_eventq_offset;
-	if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
+	if (unlikely(slot == endpoint->unexp_eventq + endpoint->last_free_unexp_eventq_offset)) {
 		dprintk(EVENT,
 			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
@@ -277,7 +292,7 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
 	offset = endpoint->next_free_unexp_eventq_offset;
 	for(i=0; i<nr; i++) {
 		slot = endpoint->unexp_eventq + offset;
-		if (unlikely(slot->generic.type != OMX_EVT_NONE)) {
+		if (unlikely(slot == endpoint->unexp_eventq + endpoint->last_free_unexp_eventq_offset)) {
 			dprintk(EVENT,
 				"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
 				endpoint->endpoint_index);
@@ -334,8 +349,11 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 
 	/* store the event and then the actual type */
 	memcpy(slot, event, length);
-	wmb();
 	((struct omx_evt_generic *) slot)->type = type;
+	wmb();
+	((struct omx_evt_generic *) slot)->id   = endpoint->next_unexp_event_id;
+	endpoint->next_unexp_event_id = (endpoint->next_unexp_event_id == OMX_EVENTQ_MAX_ID) ? 
+		1 : endpoint->next_unexp_event_id + 1;
 
 	/* wake up waiters */
 	dprintk(EVENT, "commit_notify_unexp waking up everybody\n");
@@ -350,6 +368,11 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
  *  since prepare/commit calls could have been overlapped).
  * We can't cancel for real since the recvq slot could not be the last one.
  */
+
+/* FIXME: Probably we've to ignore and cancel id too...  
+ * => in userspace expected id could be wrong after cancel...
+ */
+
 void
 omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
 {
@@ -506,6 +529,77 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	return err;
 }
 
+/* FIXME: make a bit of refactoring */
+
+int
+omx_ioctl_release_exp_chunk(struct omx_endpoint *endpoint, void __user * uparam)
+{
+	int evts, err;
+
+	err = copy_from_user(&evts, uparam, sizeof(int));
+
+	if (unlikely(err != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read the number of expected events to release\n");
+		err = -EFAULT;
+		goto out;
+	}
+
+	if (unlikely(evts == 0)) {
+		printk(KERN_ERR "Open-MX: Invalid number of expected events to release\n");
+		err = -EINVAL;
+		goto out;
+	}
+
+	/* FIXME: What about its own spinlock ? release_lock for example */
+	spin_lock(&endpoint->event_lock);
+
+	endpoint->last_free_exp_eventq_offset %= OMX_EXP_EVENTQ_SIZE;
+	endpoint->last_free_exp_eventq_offset += (evts * OMX_EVENTQ_ENTRY_SIZE);
+
+	if (unlikely(endpoint->last_free_exp_eventq_offset == endpoint->next_exp_eventq_offset))
+		endpoint->last_free_exp_eventq_offset -= OMX_EVENTQ_ENTRY_SIZE;
+
+	spin_unlock(&endpoint->event_lock);
+
+	return 0;
+ out:
+	return err;
+}
+
+int
+omx_ioctl_release_unexp_chunk(struct omx_endpoint *endpoint, void __user *uparam)
+{
+	int evts, err;
+
+	err = copy_from_user(&evts, uparam, sizeof(int));
+	
+	if (unlikely(err != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read the number of unexpected events to release\n");
+		err = -EFAULT;
+		goto out;
+	}
+
+	if (unlikely(evts == 0)) {
+		printk(KERN_ERR "Open-MX: Invalid number of unexpected events to release\n");
+		err = -EINVAL;
+		goto out;
+	}
+	
+	spin_lock(&endpoint->event_lock);
+
+	endpoint->last_free_unexp_eventq_offset %= OMX_UNEXP_EVENTQ_SIZE;
+	endpoint->last_free_unexp_eventq_offset += (evts * OMX_EVENTQ_ENTRY_SIZE);
+
+	if (unlikely(endpoint->last_free_unexp_eventq_offset == endpoint->next_free_unexp_eventq_offset))
+		endpoint->last_free_unexp_eventq_offset -= OMX_EVENTQ_ENTRY_SIZE;
+
+	spin_unlock(&endpoint->event_lock);
+	
+	return 0;
+ out:
+	return err;
+}
+
 int
 omx_ioctl_test(struct omx_endpoint * endpoint, void __user * uparam)
 {
@@ -521,7 +615,6 @@ omx_ioctl_test(struct omx_endpoint * endpoint, void __user * uparam)
 	}
 
 	for (i = 0; i < num; i++) {
-		evt.test.id = i;
 		err = omx_notify_unexp_event(endpoint, OMX_EVT_TEST, &evt.test, sizeof evt);
 
 		if (err != 0)
