@@ -31,8 +31,9 @@ dist_man1_MANS    = doc/man/omx_counters.1 doc/man/omx_hostname.1 doc/man/omx_in
 dist_pkgdata_DATA = doc/FAQ.html
 
 
-EXTRA_DIST = AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL	\
-	     README README.devel REPORTING-BUGS TODO open-mx.spec
+EXTRA_DIST = AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL		\
+	     README README.devel REPORTING-BUGS TODO open-mx.spec	\
+	     autogen.sh
 
 
 if OMX_BUILD_LIBRARY

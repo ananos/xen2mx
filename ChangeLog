@@ -1,3 +1,30 @@
+Open-MX 1.2.902 aka 1.3-rc2
+======================================================
+
+Bug fixes:
+* Fix the management of skb destructors to be compatible with 2.6.33
+  kernel and laters.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
+Open-MX 1.2.901 aka 1.3-rc1 (May 20th 2010, svn r2984)
+======================================================
+The automake release.
+
+Bug fixes:
+* Fix checksumming of unexpected self messages.
+* Fix build with Linux kernel 2.6.33 and 2.6.34.
+* Fix omxoed to generate a consistent mapper id across the fabric.
+* Improve the ABI of some internal symbols so that Open MPI generates
+  the right unique network id.
+
+Other improvements from previous release:
+* Large cleanup of the build system by switching to automake.
+* Miscellaneous minor fixes all over the place.
+* Fix many warnings with picky compilers.
+
 Open-MX 1.2.1 (February 8th 2010, svn r2888)
 ============================================
 
@@ -11,10 +38,6 @@ Other improvements from previous release:
   is enabled.
 * Add open-mx.spec to ease RPM package build.
 * Update the FAQ and install it in the documentation install directory.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.2.0 (December 15th 2009, svn r2835)
 =============================================

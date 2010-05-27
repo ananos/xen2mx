@@ -27,8 +27,8 @@ a. Build and install Open-MX in /opt/open-mx
      $ make
      $ make install
 
-   Note that if building from SVN, the configure script and
-   common/omx_config.h.in header should be generated first.
+   If building from SVN, note that several files such as the
+   configure script and some .in files must be generated first.
    autoconf, autoheader, automake and libtool 2 are required
    to do so.
      $ ./autogen.sh

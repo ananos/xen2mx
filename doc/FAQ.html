@@ -24,7 +24,7 @@
 
 
 
-<h1><a href=".." id="top">Open-MX 1.2.x</a></h1>
+<h1><a href=".." id="top">Open-MX 1.3.x</a></h1>
 <h1 class="sub">Frequently Asked Questions</h1>
 
 
@@ -36,9 +36,10 @@
 <hr class="main" />
 
 <p><em>
-  This FAQ is specific to Open-MX version 1.2.x.
-  When using an older release (prior to 1.1.90),
-  you should refer to the <a href="index-1.1.html">FAQ for Open-MX 1.1.x</a>.
+  This FAQ is specific to Open-MX version 1.3.x.
+  When using an older release (prior to 1.2.90),
+  you should refer to the <a href="index-1.2.html">FAQ for Open-MX 1.2.x</a>,
+  <a href="index-1.1.html">Open-MX 1.1.x</a>
   or <a href="index-1.0.html">Open-MX 1.0.x</a>.
 </em></p>
 
@@ -773,9 +774,9 @@ Both steps may be independently
 parallelized with <tt>-j</tt>.
 </p>
 <p>
-Also note that if building from SVN, you will need to generate the
-configure script and common/omx_config.h.in header first.
-autoconf and autoheader are required to do so.
+Also, if building from SVN, you will need to generate some
+files such as the configure script and some .in files first.
+automake, autoconf, autoheader and libtool 2 are required to do so.
 The autogen.sh script takes care of running them accordingly:
 <pre>
 $ ./autogen.sh
@@ -2894,7 +2895,7 @@ Open-MX thanks to the following changes in the HP-MPI configuration file:
 
 
 <p class="updated">
-  Last updated on 2010/02/09.
+  Last updated on 2010/05/19.
 </p>
 
 <script type="text/javascript">

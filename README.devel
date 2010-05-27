@@ -1,9 +1,17 @@
+How-to release a tarball
+========================
+
 If not done yet, update the ChangeLog and the version in configure.ac, and
 then run ./autogen.sh so that COPYING and open-mx.spec get updated.
 
 Apply all changes to the source dir, even if you cannot commit them.
 Then, run the configure script, either inside the source directory
 or outside.
+
+If building the tarball from a machine without kernel headers installed,
+you may pass --disable-driver-build to configure so that it does not fail
+when detecting kernel features. This option will not change the behavior
+of the generated tarball.
 
 Enter the build directory and run:
 	make dist

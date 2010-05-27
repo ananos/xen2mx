@@ -326,13 +326,13 @@ int main(int argc, char *argv[])
 
   for(i=0; i<=nseg; i++)
     for(j=0; j<=nseg-i; j++) {
-      printf("sending %d segments starting as #%d\n", j, i);
+      printf("sending %d segments starting at #%d\n", j, i);
       vect_send_to_contig_recv(ep, addr, seg+i, j, buffer1, buffer2);
     }
 
   for(i=0; i<=nseg; i++)
     for(j=0; j<=nseg-i; j++) {
-      printf("receiving %d segments starting as #%d\n", j, i);
+      printf("receiving %d segments starting at #%d\n", j, i);
       contig_send_to_vect_recv(ep, addr, buffer2, seg+i, j, buffer1);
     }
 
