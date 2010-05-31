@@ -248,7 +248,6 @@ struct omx_endpoint {
 #endif
   void * recvq, * sendq, * exp_eventq, * unexp_eventq;
   void * next_exp_event, * next_unexp_event;
-  void * last_free_unexp_event;
   uint8_t  next_exp_event_id, next_unexp_event_id;
   uint32_t avail_exp_events;
   uint32_t req_resends_max;

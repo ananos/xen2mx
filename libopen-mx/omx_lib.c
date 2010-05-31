@@ -231,7 +231,6 @@ omx__progress(struct omx_endpoint * ep)
     volatile union omx_evt * evt = ep->next_unexp_event;
     int done;
 
-    //printf("generic.id == %u, next_unexp_event_id == %u\n", evt->generic.id,  ep->next_unexp_event_id);
     if (unlikely(evt->generic.id !=  ep->next_unexp_event_id))
       break;
 
@@ -241,10 +240,10 @@ omx__progress(struct omx_endpoint * ep)
     evt++;
     done = (void *) evt - ep->unexp_eventq;
 
-    /* mark as done per chunks of 256 events */
-    if (unlikely(done % 16384 == 0)) {
-      done = 256;
-      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_CHUNK, &done);
+    /* Acknowledgement per chunk */
+    if (unlikely(done % OMX_UNEXP_CHUNK_SIZE == 0)) {
+      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_CHUNK);
+      done = 0;
     }
 
     /* next event id */
@@ -269,10 +268,10 @@ omx__progress(struct omx_endpoint * ep)
     evt++;
     done = (void *) evt - ep->exp_eventq;
 
-    /* mark as done per chunks of 256 events */
-    if (unlikely(done % 16384 == 0)) {
-      done = 256;
-      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_CHUNK, &done);
+    /* Acknowledgement per chunk */
+    if (unlikely(done % OMX_EXP_CHUNK_SIZE == 0)) {
+      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_CHUNK);
+      done = 0;
     }
 
     /* next event id */
@@ -329,15 +328,10 @@ omx__progress_counter(struct omx_endpoint * ep, int * counter)
     evt++;
     done = (void *) evt - ep->unexp_eventq;
 
-    /* mark as done per chunks of 256 events */
-    if (unlikely(done % 16384 == 0)) {
-      done = 256;
-      /*FIXME: remove last_free_unexp_event from userspace (just for benchs) */
-      ep->last_free_unexp_event  = (unsigned long) ep->last_free_unexp_event % OMX_UNEXP_EVENTQ_SIZE;
-      ep->last_free_unexp_event += (done * OMX_EVENTQ_ENTRY_SIZE);
-      if (unlikely(ep->last_free_unexp_event == ep->next_unexp_event))
-		ep->last_free_unexp_event -= OMX_EVENTQ_ENTRY_SIZE;
-      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_CHUNK, &done);
+    /* Acknowledgement per chunk */
+    if (unlikely(done % OMX_UNEXP_CHUNK_SIZE == 0)) {
+      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_CHUNK);
+      done = 0;
     }
 
     /* next event id */
@@ -362,10 +356,10 @@ omx__progress_counter(struct omx_endpoint * ep, int * counter)
     evt++;
     done = (void *) evt - ep->exp_eventq;
 
-    /* mark as done per chunks of 256 events */
-    if (unlikely(done % 16384 == 0)) {
-      done = 256;
-      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_CHUNK, &done);
+    /* Acknowledgement per chunk */
+    if (unlikely(done % OMX_EXP_CHUNK_SIZE == 0)) {
+      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_CHUNK);
+      done = 0;
     }
 
     /* next event id */

@@ -70,8 +70,7 @@ struct omx_endpoint {
 	unsigned long next_free_unexp_eventq_offset, next_reserved_unexp_eventq_offset, last_free_unexp_eventq_offset;
 	unsigned long next_recvq_offset;
 	struct list_head waiters;
-	spinlock_t event_lock;
-	spinlock_t ack_lock;
+	spinlock_t event_lock, release_exp_lock, release_unexp_lock;
 
 	struct page ** sendq_pages;
 	struct page ** recvq_pages;

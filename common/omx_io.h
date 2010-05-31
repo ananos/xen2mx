@@ -75,7 +75,10 @@
 #define OMX_UNEXP_EVENTQ_ENTRY_NR	1024UL
 #endif
 #define OMX_EXP_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE * OMX_EXP_EVENTQ_ENTRY_NR)
+#define OMX_EXP_CHUNK_SIZE		(256 * OMX_EVENTQ_ENTRY_SIZE)
 #define OMX_UNEXP_EVENTQ_SIZE		(OMX_EVENTQ_ENTRY_SIZE * OMX_UNEXP_EVENTQ_ENTRY_NR)
+#define OMX_UNEXP_CHUNK_SIZE		(256 * OMX_EVENTQ_ENTRY_SIZE)
+
 /* Please make it non power of two*/
 #define OMX_EVENTQ_MAX_ID               7
 
@@ -587,9 +590,9 @@ struct omx_cmd_bench {
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_wait_event)
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8e, struct omx_cmd_wakeup)
 #define OMX_CMD_TEST                    _IOR(OMX_CMD_MAGIC, 0x8f, int)
-#define OMX_CMD_RELEASE_EXP_CHUNK       _IOR(OMX_CMD_MAGIC, 0x90, int)
-#define OMX_CMD_RELEASE_UNEXP_CHUNK     _IOR(OMX_CMD_MAGIC, 0x91, int)
- 
+#define OMX_CMD_RELEASE_EXP_CHUNK       _IO(OMX_CMD_MAGIC, 0x90)
+#define OMX_CMD_RELEASE_UNEXP_CHUNK     _IO(OMX_CMD_MAGIC, 0x91)
+
 
 static inline __pure const char *
 omx_strcmd(unsigned cmd)

@@ -42,11 +42,11 @@ omx__gen_sender (void *arg)
 {
 	omx__cpubind(s_cpuset, 1);
 	while (loop) {
-		union omx_evt *evt = ep->next_unexp_event;
-
-		/* unexp eventq is full */
-		if (unlikely(evt == ep->last_free_unexp_event))
-			continue;
+		/* FIXME: We could eventually check if the shared ring isn't full
+		 * in order to avoid some syscalls for nothing... in practice
+		 * a syscall nowadays is very cheap...
+		 * Don't forget to remove "last_free_unexp_event" from userspace if
+		 * this check is useless */
 		omx_generate_events (ep, OMX_EVT_NUM);
 	}
 	return NULL;
@@ -64,12 +64,6 @@ omx__gen_receiver (void *arg)
 	gettimeofday(&tv, NULL);
 	time = tv.tv_sec;
 	while (loop) {
-
-		volatile union omx_evt * evt = ep->next_unexp_event;
-
-		/* unexp eventq is empty */
-		if (unlikely(evt->generic.id != ep->next_unexp_event_id))
-			continue;
 		omx_progress_counter (ep, &counter);
 		gettimeofday(&tv, NULL);
 

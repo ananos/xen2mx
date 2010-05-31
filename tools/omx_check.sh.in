@@ -16,14 +16,17 @@
 # 
 # See the GNU General Public License in COPYING.GPL for more details.
 
+scriptpath=`readlink -f $0`
+scriptdir=`dirname $scriptpath`
+rootdir=$scriptdir/..
 
 OMX_PREFIX=@prefix@
 
-if [ -n "$OMX_PATH" ] ; then
+if [ -f $scriptdir/Makefile ] ; then
     # use binaries from tools/tests directories in the given build tree
-    TOOLS_DIR="${OMX_PATH}/tools/"
-    TESTS_DIR="${OMX_PATH}/tests/"
-    MXTESTS_DIR="${OMX_PATH}/tests/mx/"
+    TOOLS_DIR="$rootdir/tools/"
+    TESTS_DIR="$rootdir/tests/"
+    MXTESTS_DIR="$rootdir/tests/mx/"
 else
     # use binaries in the install tree
     TOOLS_DIR="${OMX_PREFIX}/bin/"

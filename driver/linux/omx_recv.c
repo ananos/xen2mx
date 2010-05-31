@@ -106,9 +106,10 @@ omx_recv_connect(struct omx_iface * iface,
 		request_event.app_key = OMX_FROM_PKT_FIELD(connect_n->request.app_key);
 		request_event.target_recv_seqnum_start = OMX_FROM_PKT_FIELD(connect_n->request.target_recv_seqnum_start);
 		request_event.connect_seqnum = OMX_FROM_PKT_FIELD(connect_n->request.connect_seqnum);
+		request_event.type = OMX_EVT_RECV_CONNECT_REQUEST;
 
 		/* notify the event */
-		err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT_REQUEST, &request_event, sizeof(request_event));
+		err = omx_notify_unexp_event(endpoint, &request_event, sizeof(request_event));
 
 	} else {
 		struct omx_evt_recv_connect_reply reply_event;
@@ -122,11 +123,12 @@ omx_recv_connect(struct omx_iface * iface,
 		reply_event.target_recv_seqnum_start = OMX_FROM_PKT_FIELD(connect_n->reply.target_recv_seqnum_start);
 		reply_event.connect_seqnum = OMX_FROM_PKT_FIELD(connect_n->reply.connect_seqnum);
 		reply_event.connect_status_code = OMX_FROM_PKT_FIELD(connect_n->reply.connect_status_code);
+		reply_event.type = OMX_EVT_RECV_CONNECT_REPLY;
 		BUILD_BUG_ON(OMX_CONNECT_STATUS_SUCCESS != OMX_PKT_CONNECT_STATUS_SUCCESS);
 		BUILD_BUG_ON(OMX_CONNECT_STATUS_BAD_KEY != OMX_PKT_CONNECT_STATUS_BAD_KEY);
 
 		/* notify the event */
-		err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_CONNECT_REPLY, &reply_event, sizeof(reply_event));
+		err = omx_notify_unexp_event(endpoint, &reply_event, sizeof(reply_event));
 	}
 
 	if (unlikely(err < 0)) {
@@ -234,6 +236,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	event.piggyack = lib_piggyack;
 	event.specific.tiny.length = length;
 	event.specific.tiny.checksum = OMX_FROM_PKT_FIELD(tiny_n->checksum);
+	event.type = OMX_EVT_RECV_TINY;
 
 #ifndef OMX_NORECVCOPY
 	/* copy data in event data */
@@ -243,7 +246,7 @@ omx_recv_tiny(struct omx_iface * iface,
 #endif
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_TINY, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "TINY packet because of unexpected event queue full");
@@ -354,6 +357,7 @@ omx_recv_small(struct omx_iface * iface,
 	event.specific.small.length = length;
 	event.specific.small.recvq_offset = recvq_offset;
 	event.specific.small.checksum = OMX_FROM_PKT_FIELD(small_n->checksum);
+	event.type = OMX_EVT_RECV_SMALL;
 
 	omx_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
@@ -365,7 +369,7 @@ omx_recv_small(struct omx_iface * iface,
 #endif
 
 	/* notify the event */
-	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_SMALL, &event, sizeof(event));
+	omx_commit_notify_unexp_event_with_recvq(endpoint, &event, sizeof(event));
 
 	omx_counter_inc(iface, RECV_SMALL);
 	omx_endpoint_release(endpoint);
@@ -509,6 +513,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event.specific.medium_frag.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
 #endif
 	event.specific.medium_frag.recvq_offset = recvq_offset;
+	event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 
 	omx_recv_dprintk(eh, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
@@ -532,7 +537,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 #endif /* OMX_NORECVCOPY */
 
 	/* notify the event */
-	omx_commit_notify_unexp_event_with_recvq(endpoint, OMX_EVT_RECV_MEDIUM_FRAG, &event, sizeof(event));
+	omx_commit_notify_unexp_event_with_recvq(endpoint, &event, sizeof(event));
 
 	omx_counter_inc(iface, RECV_MEDIUM_FRAG);
 	omx_endpoint_release(endpoint);
@@ -618,9 +623,10 @@ omx_recv_rndv(struct omx_iface * iface,
 	event.specific.rndv.pulled_rdma_seqnum = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_seqnum);
 	event.specific.rndv.pulled_rdma_offset = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_offset);
 	event.specific.rndv.checksum = OMX_FROM_PKT_FIELD(rndv_n->msg.checksum);
+	event.type = OMX_EVT_RECV_RNDV;
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_RNDV, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "RNDV packet because of unexpected event queue full");
@@ -700,9 +706,10 @@ omx_recv_notify(struct omx_iface * iface,
 	event.specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
 	event.specific.notify.pulled_rdma_id = OMX_FROM_PKT_FIELD(notify_n->pulled_rdma_id);
 	event.specific.notify.pulled_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->pulled_rdma_seqnum);
+	event.type = OMX_EVT_RECV_NOTIFY;
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NOTIFY, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "NOTIFY packet because of unexpected event queue full");
@@ -794,8 +801,10 @@ omx_recv_truc(struct omx_iface * iface,
 		liback_event.acknum = OMX_FROM_PKT_FIELD(truc_n->liback.acknum);
 		liback_event.send_seq = OMX_FROM_PKT_FIELD(truc_n->liback.send_seq);
 		liback_event.resent = OMX_FROM_PKT_FIELD(truc_n->liback.resent);
+		liback_event.type = OMX_EVT_RECV_LIBACK;
+
 		/* notify the event */
-		err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_LIBACK, &liback_event, sizeof(liback_event));
+		err = omx_notify_unexp_event(endpoint, &liback_event, sizeof(liback_event));
 		break;
 	}
 	default:
@@ -894,9 +903,10 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	BUILD_BUG_ON(OMX_EVT_NACK_LIB_ENDPT_CLOSED != OMX_NACK_TYPE_ENDPT_CLOSED);
 	BUILD_BUG_ON(OMX_EVT_NACK_LIB_BAD_SESSION != OMX_NACK_TYPE_BAD_SESSION);
 	event.nack_type = nack_type;
+	event.type = OMX_EVT_RECV_NACK_LIB;
 
 	/* notify the event */
-	err = omx_notify_unexp_event(endpoint, OMX_EVT_RECV_NACK_LIB, &event, sizeof(event));
+	err = omx_notify_unexp_event(endpoint, &event, sizeof(event));
 	if (unlikely(err < 0)) {
 		/* no more unexpected eventq slot? just drop the packet, it will be resent anyway */
 		omx_drop_dprintk(eh, "NACK LIB packet because of unexpected event queue full");

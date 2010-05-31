@@ -115,7 +115,8 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 
 	INIT_LIST_HEAD(&endpoint->waiters);
 	spin_lock_init(&endpoint->event_lock);
-	spin_lock_init(&endpoint->ack_lock);
+	spin_lock_init(&endpoint->release_exp_lock);
+	spin_lock_init(&endpoint->release_unexp_lock);
 }
 
 /******************************************
@@ -123,8 +124,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
  */
 
 int
-omx_notify_exp_event(struct omx_endpoint *endpoint,
-		     uint8_t type, const void *event, int length)
+omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int length)
 {
 	union omx_evt *slot;
 
@@ -144,17 +144,16 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
 		return -EBUSY;
 	}
 
+	if (unlikely(endpoint->next_exp_eventq_offset >= OMX_EXP_EVENTQ_SIZE)) {
+		endpoint->next_exp_eventq_offset = 0;
+		slot = endpoint->exp_eventq;
+	}
+
 	/* update the queue */
 	endpoint->next_exp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
-	if (unlikely(endpoint->next_exp_eventq_offset >= OMX_EXP_EVENTQ_SIZE))
-		endpoint->next_exp_eventq_offset = 0;
-
-	/* set type to NONE for now */
-	((struct omx_evt_generic *) event)->type = OMX_EVT_NONE;
 
 	/* store the event and then the actual type */
 	memcpy(slot, event, length);
-	((struct omx_evt_generic *) slot)->type = type;
 	wmb();
 	((struct omx_evt_generic *) slot)->id   = endpoint->next_exp_event_id;
 	endpoint->next_exp_event_id = (endpoint->next_exp_event_id == OMX_EVENTQ_MAX_ID) ? 
@@ -175,8 +174,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint,
  */
 
 int
-omx_notify_unexp_event(struct omx_endpoint *endpoint,
-		       uint8_t type, const void *event, int length)
+omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int length)
 {
 	union omx_evt *slot;
 
@@ -195,11 +193,12 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 		spin_unlock_bh(&endpoint->event_lock);
 		return -EBUSY;
 	}
+	
+	if (unlikely(endpoint->next_free_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
+		endpoint->next_free_unexp_eventq_offset = 0;
 
 	/* update the next free slot in the queue */
 	endpoint->next_free_unexp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
-	if (unlikely(endpoint->next_free_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
-		endpoint->next_free_unexp_eventq_offset = 0;
 
 	/* find and update the next reserved slot in the queue */
 	slot = endpoint->unexp_eventq + endpoint->next_reserved_unexp_eventq_offset;
@@ -207,14 +206,10 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint,
 	if (unlikely(endpoint->next_reserved_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
 		endpoint->next_reserved_unexp_eventq_offset = 0;
 
-	/* set type to NONE for now */
-	((struct omx_evt_generic *) event)->type = OMX_EVT_NONE;
-
 	/* store the event and then the actual type */
 	memcpy(slot, event, length);
-	((struct omx_evt_generic *) slot)->type = type;
 	wmb();
-	((struct omx_evt_generic *) slot)->id   = endpoint->next_unexp_event_id;
+	((struct omx_evt_generic *) slot)->id = endpoint->next_unexp_event_id;
 	endpoint->next_unexp_event_id = (endpoint->next_unexp_event_id == OMX_EVENTQ_MAX_ID) ? 
 		1 : endpoint->next_unexp_event_id + 1;
 
@@ -260,10 +255,11 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 		return -EBUSY;
 	}
 
-	/* update the next free slot in the queue */
-	endpoint->next_free_unexp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
 	if (unlikely(endpoint->next_free_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
 		endpoint->next_free_unexp_eventq_offset = 0;
+
+	/* update the next free slot in the queue */
+	endpoint->next_free_unexp_eventq_offset += OMX_EVENTQ_ENTRY_SIZE;
 
 	/* take the next recvq slot and return it now */
 	*recvq_offset_p = endpoint->next_recvq_offset;
@@ -301,9 +297,9 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
 			spin_unlock_bh(&endpoint->event_lock);
 			return -EBUSY;
 		}
-		offset += OMX_EVENTQ_ENTRY_SIZE;
 		if (unlikely(offset >= OMX_UNEXP_EVENTQ_SIZE))
 			offset = 0;
+		offset += OMX_EVENTQ_ENTRY_SIZE;
 	}
 
 	/* update the next free slot in the queue */
@@ -328,8 +324,8 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
  *  since prepare/commit calls could have been overlapped).
  */
 void
-omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
-					 uint8_t type, const void *event, int length)
+omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint, 
+					 const void *event, int length)
 {
 	union omx_evt *slot;
 
@@ -344,12 +340,8 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	if (unlikely(endpoint->next_reserved_unexp_eventq_offset >= OMX_UNEXP_EVENTQ_SIZE))
 		endpoint->next_reserved_unexp_eventq_offset = 0;
 
-	/* set type to none for now */
-	((struct omx_evt_generic *) event)->type = OMX_EVT_NONE;
-
 	/* store the event and then the actual type */
 	memcpy(slot, event, length);
-	((struct omx_evt_generic *) slot)->type = type;
 	wmb();
 	((struct omx_evt_generic *) slot)->id   = endpoint->next_unexp_event_id;
 	endpoint->next_unexp_event_id = (endpoint->next_unexp_event_id == OMX_EVENTQ_MAX_ID) ? 
@@ -368,11 +360,6 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
  *  since prepare/commit calls could have been overlapped).
  * We can't cancel for real since the recvq slot could not be the last one.
  */
-
-/* FIXME: Probably we've to ignore and cancel id too...  
- * => in userspace expected id could be wrong after cancel...
- */
-
 void
 omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
 {
@@ -529,79 +516,40 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	return err;
 }
 
-/* FIXME: make a bit of refactoring */
-
 int
-omx_ioctl_release_exp_chunk(struct omx_endpoint *endpoint, void __user * uparam)
+omx_ioctl_release_exp_chunk(struct omx_endpoint *endpoint, void __user *uparam)
 {
-	int evts, err;
+	spin_lock(&endpoint->release_exp_lock);
 
-	err = copy_from_user(&evts, uparam, sizeof(int));
-
-	if (unlikely(err != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read the number of expected events to release\n");
-		err = -EFAULT;
-		goto out;
-	}
-
-	if (unlikely(evts == 0)) {
-		printk(KERN_ERR "Open-MX: Invalid number of expected events to release\n");
-		err = -EINVAL;
-		goto out;
-	}
-
-	/* FIXME: What about its own spinlock ? release_lock for example */
-	spin_lock(&endpoint->event_lock);
-
+	endpoint->last_free_exp_eventq_offset += OMX_EXP_CHUNK_SIZE;
 	endpoint->last_free_exp_eventq_offset %= OMX_EXP_EVENTQ_SIZE;
-	endpoint->last_free_exp_eventq_offset += (evts * OMX_EVENTQ_ENTRY_SIZE);
 
 	if (unlikely(endpoint->last_free_exp_eventq_offset == endpoint->next_exp_eventq_offset))
 		endpoint->last_free_exp_eventq_offset -= OMX_EVENTQ_ENTRY_SIZE;
 
-	spin_unlock(&endpoint->event_lock);
+	spin_unlock(&endpoint->release_exp_lock);
 
 	return 0;
- out:
-	return err;
 }
 
 int
 omx_ioctl_release_unexp_chunk(struct omx_endpoint *endpoint, void __user *uparam)
 {
-	int evts, err;
+	spin_lock(&endpoint->release_unexp_lock);
 
-	err = copy_from_user(&evts, uparam, sizeof(int));
-	
-	if (unlikely(err != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read the number of unexpected events to release\n");
-		err = -EFAULT;
-		goto out;
-	}
-
-	if (unlikely(evts == 0)) {
-		printk(KERN_ERR "Open-MX: Invalid number of unexpected events to release\n");
-		err = -EINVAL;
-		goto out;
-	}
-	
-	spin_lock(&endpoint->event_lock);
-
+	endpoint->last_free_unexp_eventq_offset += OMX_UNEXP_CHUNK_SIZE;
 	endpoint->last_free_unexp_eventq_offset %= OMX_UNEXP_EVENTQ_SIZE;
-	endpoint->last_free_unexp_eventq_offset += (evts * OMX_EVENTQ_ENTRY_SIZE);
 
 	if (unlikely(endpoint->last_free_unexp_eventq_offset == endpoint->next_free_unexp_eventq_offset))
 		endpoint->last_free_unexp_eventq_offset -= OMX_EVENTQ_ENTRY_SIZE;
 
-	spin_unlock(&endpoint->event_lock);
+	spin_unlock(&endpoint->release_unexp_lock);
 	
 	return 0;
- out:
-	return err;
 }
 
 int
-omx_ioctl_test(struct omx_endpoint * endpoint, void __user * uparam)
+omx_ioctl_test(struct omx_endpoint * endpoint, void __user *uparam)
 {
 	union omx_evt evt;
 	int err, num, i;
@@ -613,11 +561,11 @@ omx_ioctl_test(struct omx_endpoint * endpoint, void __user * uparam)
 		err = -EFAULT;
 		goto out;
 	}
-
+	evt.generic.type = OMX_EVT_TEST;
 	for (i = 0; i < num; i++) {
-		err = omx_notify_unexp_event(endpoint, OMX_EVT_TEST, &evt.test, sizeof evt);
 
-		if (err != 0)
+		err = omx_notify_unexp_event(endpoint, &evt.test, sizeof evt.test);
+		if (unlikely(err != 0))
 			goto out;
 	}
 	return 0;

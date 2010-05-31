@@ -488,7 +488,6 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out_with_exp_eventq;
   }
   ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
-  ep->last_free_unexp_event = OMX_UNEXP_EVENTQ_SIZE;
 
   BUILD_BUG_ON(sizeof(struct omx_evt_recv_msg) != OMX_EVENTQ_ENTRY_SIZE);
   BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);

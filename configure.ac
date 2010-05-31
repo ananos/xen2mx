@@ -64,7 +64,6 @@ AC_SUBST(GLOBAL_AM_CPPFLAGS)
 AC_SUBST(GLOBAL_AM_CFLAGS)
 AC_SUBST(GLOBAL_AM_LDFLAGS)
 
-
 # Build debug options
 AC_ARG_VAR(DBGCPPFLAGS, Additional preprocessor flags used in debug mode)
 AC_ARG_VAR(DBGCFLAGS,   Additional compiler flags used in debug mode)

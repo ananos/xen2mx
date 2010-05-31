@@ -103,8 +103,8 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 	struct omx_endpoint * endpoint = defevent->endpoint;
 
 	/* report the event to user-space */
+	defevent->evt.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 	omx_notify_exp_event(endpoint,
-			     OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE,
 			     &defevent->evt, sizeof(defevent->evt));
 
 	/* release objects now */
@@ -606,8 +606,8 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 
 		/* notify the event right now */
 		evt.sendq_offset = cmd.sendq_offset;
+		evt.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 		omx_notify_exp_event(endpoint,
-				     OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE,
 				     &evt, sizeof(evt));
 	}
 
@@ -1249,7 +1249,8 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_ACQU)
 		goto out_with_endpoint;
 
-	omx_notify_exp_event(endpoint, OMX_EVT_NONE, &event, 0);
+	event.generic.type = OMX_EVT_NONE;
+	omx_notify_exp_event(endpoint, &event, 0);
 
 	/* level 12: recv notify */
 	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_NOTIFY)

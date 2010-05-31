@@ -716,8 +716,8 @@ omx_pull_handle_notify(struct omx_pull_handle * handle)
 {
 	struct omx_endpoint * endpoint = handle->endpoint;
 
+	handle->done_event.type = OMX_EVT_PULL_DONE;
 	omx_notify_exp_event(endpoint,
-			     OMX_EVT_PULL_DONE,
 			     &handle->done_event, sizeof(handle->done_event));
 
 	/* release the handle */
