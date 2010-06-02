@@ -49,8 +49,8 @@ LINUX_RELEASE=$(uname -r)
 set -e
 
 if [ -f $scriptdir/Makefile ] ; then
-    OMX_MODULE='../driver/linux/open-mx.ko'
-    TOOLS_DIR='../tools'
+    OMX_MODULE="$scriptdir/../driver/linux/open-mx.ko"
+    TOOLS_DIR="$scriptdir/../tools"
 else
     OMX_MODULE="${OMX_PREFIX}/modules/${LINUX_RELEASE}/open-mx.ko"
     TOOLS_DIR="${OMX_PREFIX}/bin"
