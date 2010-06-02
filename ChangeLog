@@ -1,9 +1,14 @@
-Open-MX 1.2.902 aka 1.3-rc2
+Open-MX 1.2.902 aka 1.3-rc2 (June 2nd 2010, svn rxyzt)
 ======================================================
+The skb->cb release.
 
 Bug fixes:
 * Fix the management of skb destructors to be compatible with 2.6.33
   kernel and laters.
+
+Other improvements from previous release:
+* Make omx_check.sh and omx_init work from the build directory before
+  make install.
 
 Caveats:
 * No background progression or retransmission is done if the application
