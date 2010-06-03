@@ -5,6 +5,8 @@ The skb->cb release.
 Bug fixes:
 * Fix the management of skb destructors to be compatible with 2.6.33
   kernel and laters.
+* Fix memory corruption when multiple threads access multiple endpoints
+  simultaneously.
 
 Other improvements from previous release:
 * Make omx_check.sh work from the build directory before make install.
