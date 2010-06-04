@@ -228,18 +228,14 @@ AC_ARG_ENABLE(debug,
 	      enable_debug=$enableval,
 	      enable_debug=both)
 
-OMX_DISABLE(valgrind, enable_valgrind,
-            disable Valgrind hooks in the debug library,
-	    whether Valgrind hooks are enabled in the debug library)
+AC_ARG_ENABLE(valgrind,
+	      AC_HELP_STRING(--enable-valgrind, enable Valgrind hooks in the debug library),
+	      enable_valgrind=$enableval,
+	      enable_valgrind=maybe)
+
 
 AM_CONDITIONAL(OMX_LIB_DEBUG,   test x$enable_debug    = xyes || test x$enable_debug = xboth)
 AM_CONDITIONAL(OMX_LIB_RELEASE, test x$enable_debug    = xno  || test x$enable_debug = xboth)
-AM_CONDITIONAL(OMX_VALGRIND,    test x$enable_valgrind = xyes)
-
-OMX_DEFINE(OMX_LIB_VALGRIND_DEBUG, 1,
-           Enable memory allocation debugging with Valgrind in the debug library,
-	   test x$enable_valgrind = xyes)
-
 
 OMX_DRIVER_DEBUG=0
 DEFAULT_LIBDIR=lib$NATARCHSIZE
@@ -262,7 +258,19 @@ AC_SUBST(OMX_DRIVER_DEBUG)
 AC_SUBST(DEFAULT_LIBDIR)
 
 if test x$enable_valgrind = xyes ; then
-   OMX_CHECK_VALGRIND_HEADERS
+   OMX_CHECK_VALGRIND_HEADERS(valgrind_found)
+   if $valgrind_found ; then
+       AC_DEFINE(OMX_LIB_VALGRIND_DEBUG, 1, Enable memory allocation debugging with Valgrind in the debug library)
+       AC_MSG_NOTICE(activate Valgrind hooks in the debug library)
+   else
+       AC_MSG_ERROR(cannot used Valgrind hooks without Valgrind headers)
+   fi
+elif test x$enable_valgrind = xmaybe ; then
+   OMX_CHECK_VALGRIND_HEADERS(valgrind_found)
+   if $valgrind_found ; then
+       AC_DEFINE(OMX_LIB_VALGRIND_DEBUG, 1, Enable memory allocation debugging with Valgrind in the debug library)
+       AC_MSG_NOTICE(activate Valgrind hooks in the debug library)
+   fi
 fi
 
 
