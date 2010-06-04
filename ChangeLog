@@ -10,6 +10,7 @@ Bug fixes:
 
 Other improvements from previous release:
 * Make omx_check.sh work from the build directory before make install.
+* Fix Valgrind requirements during configure.
 
 Caveats:
 * No background progression or retransmission is done if the application
