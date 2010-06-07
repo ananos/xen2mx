@@ -283,7 +283,7 @@ OMX_WITH_COND(medium-frag-length, n, OMX_MEDIUM_FRAG_LENGTH,
 	      [change medium fragment maximum payload size (default depends on the MTU and wire
 	       compatibility)],
 	       setting medium frag length to $OMX_MEDIUM_FRAG_LENGTH, test x$enable_mx_wire = xno,
-	       default) 
+	       default)
 OMX_WITH_COND(pull-reply-length, n, OMX_PULL_REPLY_LENGTH,
 	      [change pull reply maximum payload size (default depends on the MTU and wire
 	       compatibility)],
@@ -296,7 +296,7 @@ OMX_WITH_COND(pull-block-replies, n, OMX_PULL_BLOCK_REPLIES,
 	       default)
 OMX_WITH_COND(ethertype, n, OMX_ETHERTYPE,
 	      [change Ethertype (default is 0x86DF)],
-	      setting Ethertype to $OMX_ETHERTYPE, test x$enable_mx_wire = xno, 
+	      setting Ethertype to $OMX_ETHERTYPE, test x$enable_mx_wire = xno,
 	      default)
 
  OMX_ENABLE(mx-wire, enable_mx_wire,
@@ -350,7 +350,7 @@ if test x$enable_mx_wire = xyes ; then
    if test x$enable_endian = xno ; then
       AC_MSG_WARN(endian-independant networking is required to talk to native MX peers)
    fi
-fi 
+fi
 
 
 
@@ -423,7 +423,7 @@ OMX_WITH_COND(fms-run, dir, OMX_FMS_RUN,
 OMX_WITH_COND(fms-server, fms_server, OMX_FMS_SERVER,
 	      node on which fms process will run,
 	      fms will run on $OMX_FMS_SERVER, test x$OMX_PEER_DISCOVERY = xfma,
-	      default) 
+	      default)
 
 AC_SUBST(OMX_FMS_RUN)
 

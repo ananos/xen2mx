@@ -124,7 +124,7 @@ Bug fixes:
 * Add the OMX_CONNECT_POLLALL environment variable to enforce polling
   on all endpoints while waiting for a connect request to complete,
   work around for connection deadlocks in multirail configurations.
-* Change some globals to endpoint-specific variables so that multiple 
+* Change some globals to endpoint-specific variables so that multiple
   endpoints within a single endpoint actually get their progression.
 * Fix the management of local peers when clearing the peer table.
 * Fix completion of requests in case of timeout.

@@ -630,7 +630,7 @@ omx__alloc_setup_isend_mediumsq(struct omx_endpoint *ep,
 #endif
   medium_param->msg_length = length;
   medium_param->session_id = partner->true_session_id;
-  
+
 #ifdef OMX_LIB_DEBUG
   if (omx__globals.debug_checksum)
     medium_param->checksum = omx_checksum_segments(&req->send.segs, req->generic.status.msg_length);

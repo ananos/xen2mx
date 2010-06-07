@@ -54,7 +54,7 @@
 #define OMX_SENDQ_SIZE		(OMX_SENDQ_ENTRY_NR << OMX_SENDQ_ENTRY_SHIFT)
 
 /* recvq: where received packet payload is stored */
-#ifdef OMX_SHARED_RING_ENTRY_NR 
+#ifdef OMX_SHARED_RING_ENTRY_NR
 #define OMX_RECVQ_ENTRY_NR	OMX_SHARED_RING_ENTRY_NR
 #else
 #define OMX_RECVQ_ENTRY_NR	1024UL
