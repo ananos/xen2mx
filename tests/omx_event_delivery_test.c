@@ -1,9 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <pthread.h>
 #include <sys/time.h>
-#include <signal.h>
 #include <hwloc.h>
 #include <unistd.h>
 
@@ -43,17 +40,14 @@ omx__cpubind(hwloc_const_cpuset_t cpuset)
 }
 
 static void
-omx__gen_sender (void *arg)
+omx__gen_sender (const struct data *data)
 {
-	struct data *data;
 	omx_endpoint_addr_t addr;
 	omx_return_t ret;
 	omx_status_t status;
 	omx_request_t req;
 	uint32_t result;
 	int i;
-
-	data = (struct data *)arg;
 
 	omx__cpubind(data->cpuset);
  	ret  = omx_connect(data->ep, dest_addr, data->recv_id, OMX_FILTER_KEY, OMX_TIMEOUT_INFINITE, &addr);
@@ -75,17 +69,14 @@ omx__gen_sender (void *arg)
 }
 
 static void
-omx__gen_receiver (void *arg)
+omx__gen_receiver (const struct data *data)
 {
-	struct data *data;
 	omx_return_t ret;
 	omx_status_t status;
 	omx_request_t rreq;
 	struct timeval tv1, tv2;
         uint32_t result;
 	int i;
-
-	data = (struct data *)arg;
 
 	omx__cpubind(data->cpuset);
 
@@ -108,15 +99,13 @@ int
 main (int argc, char *argv[])
 {
 	struct omx_board_info board_info;
+	struct data *data;
 	char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-	pthread_t threads[8];
 	omx_return_t ret;
 	hwloc_obj_t obj;
-	int i, nb_socket, nb_core;
+	int i, nb_socket, nb_core, sender = 0, begin, end;
 	hwloc_cpuset_t *cpuset;
-	struct data *data;
-	int sender = 0 , begin, end;
-
+	void (*dispatcher)(const struct data *);
 
 	if (argc >= 2 && !strcmp(argv[1], "-s"))
 		sender = 1;
@@ -138,6 +127,7 @@ main (int argc, char *argv[])
 
 	memset(data, 0, sizeof(*data));
 
+	/* FIXME: for each socket and each core within this socket bind a process */
 	nb_core =  hwloc_get_nbobjs_by_type (topology, HWLOC_OBJ_CORE);
 
 	printf("Found %d socket(s) and %d core(s) on the remote machine\n", nb_socket, nb_core);
@@ -183,6 +173,7 @@ main (int argc, char *argv[])
 		goto out_with_ep;
 	}
 	
+	/* FIXME: Don't use it (private) ! */
 	ret = omx__get_board_info (data[sender ? 0 : 4].ep, sender ? 0 : 4, &board_info);
 	
 	if (ret != OMX_SUCCESS) {
@@ -191,30 +182,21 @@ main (int argc, char *argv[])
 		goto out_with_ep;
 	}
 	
+	/* FIXME: Don't use it (private) ! */
 	omx__board_addr_sprintf (board_addr_str, board_info.addr);
 	
 	printf ("%s (board #0 name %s addr %s)\n",
 		board_info.hostname, board_info.ifacename, board_addr_str);
 
-	//setenv("OMX_WAITSPIN", "1", 1);
+	printf("Starting %s...\n", sender ? "senders" : "receivers");
+	dispatcher = sender ? omx__gen_sender : omx__gen_receiver;
 
-	if (sender) {
-		printf("Starting senders...\n");
-		for (i = 0; i < 4; i++) {
-			data[i].recv_id = i + 4;
-			if (fork() == 0) {
-				omx__gen_sender(data + i);
-				exit(0);
-			}
-		}
-	}
-	else {
-		printf("Starting receivers...\n");
-		for (i = 4; i < 8; i++) {
-			if (fork() == 0) {
-				omx__gen_receiver(data + i);
-				exit(0);
-			}
+	for (i = begin; i < end; i++) {
+		data[i].recv_id = sender ? i + 4 : 0;
+
+		if (fork() == 0) {
+			dispatcher(data + i);
+			exit(0);
 		}
 	}
 	for (i = 0; i < 4; i++)
