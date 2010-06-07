@@ -1,6 +1,6 @@
 /*
  * Open-MX
- * Copyright © INRIA 2007-2009 (see AUTHORS file)
+ * Copyright © INRIA 2007-2010 (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
  *
@@ -332,7 +332,7 @@ omx__connect_common(omx_endpoint_t ep,
     static int warned_about_connect_pollall = 0;
     if (last_connecting_ep && last_connecting_ep != ep
 	&& !omx__globals.connect_pollall && !warned_about_connect_pollall) {
-      omx__verbose_printf(NULL, "Multirail might need OMX_CONNECT_POLLALL=1 to work around connection deadlocks.\n");      
+      omx__verbose_printf(NULL, "Multirail might need OMX_CONNECT_POLLALL=1 to work around connection deadlocks.\n");
       warned_about_connect_pollall = 1;
     }
     last_connecting_ep = ep;

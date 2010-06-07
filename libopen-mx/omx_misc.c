@@ -399,7 +399,7 @@ omx__create_message_prefix(const struct omx_endpoint *ep)
       fwrite(buf, sizeof(char), strlen(buf), dst);
     else {
       ret = fscanf(src, "%%%c", buf);
-	    
+
       if (ret > 0) {
 	if ('p' == buf[0])
 	  fprintf(dst, "%ld", (unsigned long) getpid());
@@ -431,7 +431,7 @@ omx__create_message_prefix(const struct omx_endpoint *ep)
 	break;
     }
   }
-    
+
   fclose(dst);
   fclose(src);
 

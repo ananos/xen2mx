@@ -5,34 +5,32 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <hwloc.h>
+#include <unistd.h>
 
 #include "open-mx.h"
 #include "omx_io.h"
 #include "omx_lib.h"
 
-#define OMX_NUM_REQS   1024
+#define OMX_NUM_REQS 1000000
 #define OMX_FILTER_KEY 0x12345678
 #define OMX_BID 0
-#define OMX_SEND_EID 0
-#define OMX_RECV_EID 1
 
-static uint64_t            dest_addr;
-static omx_endpoint_addr_t addr;
-static omx_endpoint_t      eps  = NULL;
-static omx_endpoint_t      epr  = NULL;
-static bool                loop = true;
-static hwloc_topology_t    topology;
-static hwloc_cpuset_t      s_cpuset; 
-static hwloc_cpuset_t      r_cpuset;
 
-static void
-omx__sa_handler(int signum)
+#define TIME_DIFF(tv1, tv2)			\
+	((tv2.tv_sec - tv1.tv_sec) * 1000000ULL + (tv2.tv_usec - tv1.tv_usec))
+
+static uint64_t dest_addr;
+static hwloc_topology_t topology;
+
+struct data
 {
-	loop = false;
-}
+	omx_endpoint_t ep;
+	uint32_t recv_id;
+	hwloc_cpuset_t cpuset;
+};
 
 static void
-omx__cpubind(hwloc_const_cpuset_t cpuset, int retval)
+omx__cpubind(hwloc_const_cpuset_t cpuset)
 {
 	char *str;
 
@@ -40,147 +38,152 @@ omx__cpubind(hwloc_const_cpuset_t cpuset, int retval)
 		hwloc_cpuset_asprintf(&str, cpuset);
 		fprintf(stderr, "Couldn't bind to cpuset %s\n", str);
 		free(str);
-		exit(retval);
+		exit(1);
 	}
 }
 
-static void *
+static void
 omx__gen_sender (void *arg)
 {
-	omx_request_t sreq[OMX_NUM_REQS];
-	omx_return_t  ret;
-	omx_status_t  status;
-	uint32_t      result;
-	int           i;
+	struct data *data;
+	omx_endpoint_addr_t addr;
+	omx_return_t ret;
+	omx_status_t status;
+	omx_request_t req;
+	uint32_t result;
+	int i;
 
-	ret = omx_connect(eps, dest_addr, OMX_RECV_EID, OMX_FILTER_KEY, OMX_TIMEOUT_INFINITE, &addr);
-	
-	if (ret != OMX_SUCCESS) {
-		fprintf(stderr, "Failed to connect to eps(%s)\n",
+	data = (struct data *)arg;
+
+	omx__cpubind(data->cpuset);
+ 	ret  = omx_connect(data->ep, dest_addr, data->recv_id, OMX_FILTER_KEY, OMX_TIMEOUT_INFINITE, &addr);
+
+	if (unlikely(ret != OMX_SUCCESS)) {
+		fprintf(stderr, "Failed to connect to ep #%d (%s)\n", i,
 			omx_strerror(ret));
 		exit(1);
 	}
 
-	omx__cpubind(s_cpuset, 1);
-	while (loop) {
-		for (i = 0; i < OMX_NUM_REQS; i++)
-			omx_isend(eps, NULL, 0, addr, 0, NULL, sreq + i);
-		for (i = 0; i < OMX_NUM_REQS; i++)
-			omx_wait(eps, sreq + i, &status, &result, OMX_TIMEOUT_INFINITE);
-	}
-	return NULL;
+	/* synchronize with receiver */
+	omx_isend(data->ep, NULL, 0, addr, 0, NULL, &req);
+	omx_wait(data->ep, &req, &status, &result, OMX_TIMEOUT_INFINITE);
+	
+	for (i = 0; i < OMX_NUM_REQS - 1; i++)
+		omx_isend(data->ep, NULL, 0, addr, 0, NULL, NULL);
+	omx_isend(data->ep, NULL, 0, addr, 0, NULL, &req);
+	omx_wait(data->ep, &req, &status, &result, OMX_TIMEOUT_INFINITE);
 }
 
-static void *
+static void
 omx__gen_receiver (void *arg)
 {
-	omx_return_t   ret;
-	omx_status_t   status;
-	omx_request_t  rreq[OMX_NUM_REQS];
-	struct timeval tv;
-	time_t   time;
-	int      counter = 0;
+	struct data *data;
+	omx_return_t ret;
+	omx_status_t status;
+	omx_request_t rreq;
+	struct timeval tv1, tv2;
         uint32_t result;
-	int      i;
+	int i;
 
-	omx__cpubind(r_cpuset, 2);
+	data = (struct data *)arg;
 
-	gettimeofday(&tv, NULL);
-	time = tv.tv_sec;
-	while (loop) {
-		for (i = 0; i < OMX_NUM_REQS; i++) {
-			omx_irecv(epr, NULL, 0, 0, 0, NULL, rreq + i);
-			ret = omx_wait(epr, rreq + i, &status, &result, OMX_TIMEOUT_INFINITE);
-			
-			if (likely(ret == OMX_SUCCESS && status.code == OMX_SUCCESS))
-				counter++;
-		}
-		gettimeofday(&tv, NULL);
-		if (unlikely(tv.tv_sec - time)) {
-			printf("%d events/s\n", counter);
-			time    = tv.tv_sec;
-			counter = 0;
-		}
-	}
-	return NULL;
+	omx__cpubind(data->cpuset);
+
+	/* synchronize with sender (required for the timer) */
+	omx_irecv(data->ep, NULL, 0, 0, 0, NULL, &rreq);
+	omx_wait(data->ep, &rreq, &status, &result, OMX_TIMEOUT_INFINITE);
+
+	gettimeofday(&tv1, NULL);
+
+	for (i = 0; i < OMX_NUM_REQS - 1; i++)
+		omx_irecv(data->ep, NULL, 0, 0, 0, NULL, NULL);
+	omx_irecv(data->ep, NULL, 0, 0, 0, NULL, &rreq);
+	omx_wait(data->ep, &rreq, &status, &result, OMX_TIMEOUT_INFINITE);
+
+	gettimeofday(&tv2, NULL);
+	printf("%.3lf ms\n", (double)TIME_DIFF(tv1, tv2) / 1000);
 }
 
 int
 main (int argc, char *argv[])
 {
-	omx_return_t ret;
 	struct omx_board_info board_info;
-	struct sigaction sa = { .sa_handler = omx__sa_handler };
 	char board_addr_str[OMX_BOARD_ADDR_STRLEN];
-	pthread_t sender, receiver;
+	pthread_t threads[8];
+	omx_return_t ret;
 	hwloc_obj_t obj;
-	int         nb_cpus;
+	int i, nb_socket, nb_core;
+	hwloc_cpuset_t *cpuset;
+	struct data *data;
+	int sender = 0 , begin, end;
 
+
+	if (argc >= 2 && !strcmp(argv[1], "-s"))
+		sender = 1;
+	
 	hwloc_topology_init(&topology);
 	hwloc_topology_load(topology);
 
-	nb_cpus =  hwloc_get_nbobjs_by_type (topology, HWLOC_OBJ_CORE);
+	nb_socket =  hwloc_get_nbobjs_by_type (topology, HWLOC_OBJ_SOCKET);
 
-	printf("Found %d CPU(s) on the remote machine\n", nb_cpus);
-
-	obj = hwloc_get_next_obj_by_type (topology, HWLOC_OBJ_CORE, NULL);
-
-	if (! obj) {
-		fprintf(stderr, "%s: Failed to get back obj for the first core\n", argv[0]);
+	if (nb_socket < 2) {
+		fprintf(stderr, "%s: Not sockets enough, at least 2 are required\n", argv[0]);
 		goto out_with_topo;
 	}
 
-	s_cpuset = hwloc_cpuset_dup(obj->cpuset);
+	cpuset = malloc(8 * sizeof(*cpuset));
+	data = malloc(8 * sizeof(*data));
 
-	obj = hwloc_get_next_obj_by_type (topology, HWLOC_OBJ_CORE, obj);
+	assert (cpuset && data);
+
+	memset(data, 0, sizeof(*data));
+
+	nb_core =  hwloc_get_nbobjs_by_type (topology, HWLOC_OBJ_CORE);
+
+	printf("Found %d socket(s) and %d core(s) on the remote machine\n", nb_socket, nb_core);
+
+	/* Distribute senders on the first socket */
+	obj = hwloc_get_next_obj_by_type (topology, HWLOC_OBJ_SOCKET, NULL);
+
+	hwloc_distribute(topology, obj, cpuset, 4);
 	
-	r_cpuset = obj ? hwloc_cpuset_dup(obj->cpuset) : s_cpuset;
+	/* Then distribute receivers on the second socket */
+	obj = hwloc_get_next_obj_by_type (topology, HWLOC_OBJ_SOCKET, obj);
 
-	hwloc_cpuset_singlify(s_cpuset);
-	hwloc_cpuset_singlify(r_cpuset);
-
-	sigemptyset(&sa.sa_mask);
-
-	if (sigaction(SIGINT | SIGTERM, &sa, NULL)) {
-		perror("sigaction");
-		goto out_with_hwloc;
-	}
+	hwloc_distribute(topology, obj, cpuset + 4, 4);
 
 	ret = omx_init ();
 	
 	if (ret != OMX_SUCCESS) {
 		fprintf (stderr, "%s: Failed to initialize (%s)\n", argv[0],
 			 omx_strerror (ret));
-		goto out_with_hwloc;
+		goto out_with_free;
 	}
 
+	begin = sender ? 0 : 4;
+	end   = sender ? 4 : 8;
+	
+	for (i = begin; i < end; i++) {
+		ret = omx_open_endpoint (OMX_BID, i, OMX_FILTER_KEY, NULL, 0, &data[i].ep);
+		
+		if (unlikely(ret != OMX_SUCCESS)) {
+			fprintf (stderr, "%s: Failed to open endpoint #%d (%s)\n", argv[0], i,
+				 omx_strerror (ret));
+			goto out_with_free;
+		}
 
-	ret = omx_open_endpoint (OMX_BID, OMX_RECV_EID, OMX_FILTER_KEY, NULL, 0, &epr);
-
-	if (ret != OMX_SUCCESS) {
-		fprintf (stderr, "%s: Failed to open endpoint for receiver(%s)\n", argv[0],
-			 omx_strerror (ret));
-		goto out_with_hwloc;
+		data[i].cpuset = cpuset[i];
+		hwloc_cpuset_singlify(cpuset[i]);
 	}
-
 	
 	ret = omx_hostname_to_nic_id("localhost", &dest_addr);
 	
 	if (ret != OMX_SUCCESS) {
 		fprintf(stderr, "Cannot find peer name localhost\n");
-		goto out_with_epr;
+		goto out_with_ep;
 	}
 	
-	
-	ret = omx_open_endpoint (OMX_BID, OMX_SEND_EID, OMX_FILTER_KEY, NULL, 0, &eps);
-	    
-	if (ret != OMX_SUCCESS) {
-		fprintf (stderr, "%s: Failed to open endpoint for sender(%s)\n", argv[0],
-			 omx_strerror (ret));
-		goto out_with_epr;
-	}
-	
-	ret = omx__get_board_info (eps, 0, &board_info);
+	ret = omx__get_board_info (data[sender ? 0 : 4].ep, sender ? 0 : 4, &board_info);
 	
 	if (ret != OMX_SUCCESS) {
 		fprintf (stderr, "%s: Failed to read board #0, %s\n", argv[0],
@@ -192,20 +195,39 @@ main (int argc, char *argv[])
 	
 	printf ("%s (board #0 name %s addr %s)\n",
 		board_info.hostname, board_info.ifacename, board_addr_str);
-	
-	pthread_create (&sender, NULL, omx__gen_sender, NULL);
-	pthread_create (&receiver, NULL, omx__gen_receiver, NULL);
-	
-	pthread_join (sender, NULL);
-	pthread_join (receiver, NULL);
-	
+
+	//setenv("OMX_WAITSPIN", "1", 1);
+
+	if (sender) {
+		printf("Starting senders...\n");
+		for (i = 0; i < 4; i++) {
+			data[i].recv_id = i + 4;
+			if (fork() == 0) {
+				omx__gen_sender(data + i);
+				exit(0);
+			}
+		}
+	}
+	else {
+		printf("Starting receivers...\n");
+		for (i = 4; i < 8; i++) {
+			if (fork() == 0) {
+				omx__gen_receiver(data + i);
+				exit(0);
+			}
+		}
+	}
+	for (i = 0; i < 4; i++)
+		wait(NULL);
+
  out_with_ep:
-	omx_close_endpoint (eps);
- out_with_epr:
-	omx_close_endpoint (epr);
- out_with_hwloc:
-        hwloc_cpuset_free(s_cpuset);
-	hwloc_cpuset_free(r_cpuset);
+	for (i = begin; i < end; i++)
+		omx_close_endpoint (data[i].ep);
+ out_with_free:
+	for (i = 0; i < 8; i++)
+		hwloc_cpuset_free(cpuset[i]);
+	free(cpuset);
+	free(data);
  out_with_topo:
 	hwloc_topology_destroy(topology);
 

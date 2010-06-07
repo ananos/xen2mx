@@ -415,7 +415,7 @@ omx__segments_intersect(unsigned long begin1, unsigned long end1,
 
 struct omx_regcache_clean_segment {
   unsigned long begin, end;
-};  
+};
 
 static void
 omx__endpoint_regcache_clean(struct omx_endpoint *ep, void *data)

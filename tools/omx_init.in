@@ -21,6 +21,10 @@
 #  OMX_FMA_START_TIMEOUT (fma startup timeout)
 
 # Note that this is replaced by make install, not configure!
+
+scriptpath=`readlink -e $0`
+scriptdir=`dirname $scriptpath`
+
 OMX_PREFIX=@prefix@
 MAIN_DEVICE_NAME=@OMX_MAIN_DEVICE_NAME@
 MAIN_DEVICE_GROUP=@OMX_MAIN_DEVICE_GROUP@
@@ -41,14 +45,15 @@ UDEV_RULES_FILE=${UDEV_RULES_DIR}/10-open-mx.rules
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
 LINUX_RELEASE=$(uname -r)
-OMX_MODULE="${OMX_PREFIX}/modules/${LINUX_RELEASE}/open-mx.ko"
 
 set -e
 
-if test ! -d ${OMX_PREFIX}; then
-    echo "[ERROR] Something bad happened with the install script"
-    echo "[ERROR] OMX_PREFIX isn't pointing to a valid directory"
-    exit 1
+if [ -f $scriptdir/Makefile ] ; then
+    OMX_MODULE="$scriptdir/../driver/linux/open-mx.ko"
+    TOOLS_DIR="$scriptdir/../tools"
+else
+    OMX_MODULE="${OMX_PREFIX}/modules/${LINUX_RELEASE}/open-mx.ko"
+    TOOLS_DIR="${OMX_PREFIX}/bin"
 fi
 
 # save environment-enforced values
@@ -57,10 +62,12 @@ fi
 [ -n "$OMX_MODULE_DEPENDS" ] && FORCE_MODULE_DEPENDS="$OMX_MODULE_DEPENDS"
 [ -n "$OMX_FMA_PARAMS" ] && FORCE_FMA_PARAMS="$OMX_FMA_PARAMS"
 [ -n "$OMX_FMA_START_TIMEOUT" ] && FORCE_FMA_START_TIMEOUT="$OMX_FMA_START_TIMEOUT"
+
 # read values from the config file
 if test -r ${OMX_CONFIG}; then
     . ${OMX_CONFIG}
 fi
+
 # restore environment-enforced values
 [ -n "$FORCE_IFACES" ] && OMX_IFACES="$FORCE_IFACES"
 [ -n "$FORCE_MODULE_PARAMS" ] && OMX_MODULE_PARAMS="$FORCE_MODULE_PARAMS"
@@ -214,7 +221,7 @@ load_omx() {
 
 # Check the driver status
 check_omx() {
-    ${OMX_PREFIX}/bin/omx_info -q
+    ${TOOLS_DIR}/omx_info -q
 }
 
 # Start the peer discovery
@@ -223,7 +230,7 @@ start_peer_discovery() {
 	# initialize peers
 	if test -r ${OMX_PEERS_FILE}; then
 	    echo "Initializing peers using file '${OMX_PEERS_FILE}'"
-	    ${OMX_PREFIX}/bin/omx_init_peers -c "${OMX_PEERS_FILE}"
+	    ${TOOLS_DIR}/omx_init_peers -c "${OMX_PEERS_FILE}"
 	else
 	    echo "Peers file ${OMX_PEERS_FILE} does not exist, remember to run omx_peers_init with the correct file"
 	fi
@@ -244,13 +251,13 @@ start_peer_discovery() {
 	# save the old fma.pid to see if it changed
 	[ "${OMX_PEER_DISCOVERY}" = "fma" ] && oldfmapid=$(cat "$FMS_RUN/fma.pid" 2>/dev/null || true)
 
-	if [ ! -x ${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ] || [ ! -f ${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ] ;  then
+	if [ ! -x ${TOOLS_DIR}/${OMX_PEER_DISCOVERY} ] || [ ! -f ${TOOLS_DIR}/${OMX_PEER_DISCOVERY} ] ;  then
 	    echo "[ERROR] Cannot find dynamic peer discovery to start (${OMX_PEER_DISCOVERY})"
 	    return
 	fi
 
 	echo "Starting the dynamic peer discovery (${OMX_PEER_DISCOVERY} ${discover_params})"
-	${OMX_PREFIX}/bin/${OMX_PEER_DISCOVERY} ${discover_params} >/dev/null 2>&1 &
+	${TOOLS_DIR}/${OMX_PEER_DISCOVERY} ${discover_params} >/dev/null 2>&1 &
 	pid=$!
 
 	# wait a bit for the process to start (and maybe fail)

@@ -141,7 +141,7 @@ one_iteration(omx_endpoint_t ep, omx_endpoint_addr_t addr,
 
  out_with_buffers:
   free(buffer2);
-  free(buffer);  
+  free(buffer);
  out:
   return OMX_BAD_ERROR;
 }

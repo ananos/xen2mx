@@ -711,7 +711,7 @@ omx__connect_wait(omx_endpoint_t ep, union omx_request * req, uint32_t ms_timeou
       OMX__ENDPOINT_UNLOCK(ep);
       omx__foreach_endpoint((void *) omx_progress, NULL);
       OMX__ENDPOINT_LOCK(ep);
-    
+
       if (req->generic.state == (OMX_REQUEST_STATE_DONE|OMX_REQUEST_STATE_INTERNAL))
 	goto out;
 

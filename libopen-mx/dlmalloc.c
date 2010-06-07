@@ -7,6 +7,9 @@
 #ifdef OMX_LIB_DEBUG
 #define FOOTERS 1
 #endif
+#ifdef OMX_LIB_THREAD_SAFETY
+#define USE_LOCKS 1
+#endif
 
 /* missing header */
 #include <time.h>

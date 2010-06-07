@@ -58,7 +58,7 @@ POP_BUILDENV
 
 # Global build tool options
 GLOBAL_AM_CPPFLAGS="-D_GNU_SOURCE=1"
-GLOBAL_AM_CFLAGS="-Wall"
+GLOBAL_AM_CFLAGS="-Wall -ggdb"
 GLOBAL_AM_LDFLAGS="-Wl,--enable-new-dtags"
 AC_SUBST(GLOBAL_AM_CPPFLAGS)
 AC_SUBST(GLOBAL_AM_CFLAGS)
@@ -227,18 +227,14 @@ AC_ARG_ENABLE(debug,
 	      enable_debug=$enableval,
 	      enable_debug=both)
 
-OMX_DISABLE(valgrind, enable_valgrind,
-            disable Valgrind hooks in the debug library,
-	    whether Valgrind hooks are enabled in the debug library)
+AC_ARG_ENABLE(valgrind,
+	      AC_HELP_STRING(--disable-valgrind, disable Valgrind hooks in the debug library),
+	      enable_valgrind=$enableval,
+	      enable_valgrind=maybe)
+
 
 AM_CONDITIONAL(OMX_LIB_DEBUG,   test x$enable_debug    = xyes || test x$enable_debug = xboth)
 AM_CONDITIONAL(OMX_LIB_RELEASE, test x$enable_debug    = xno  || test x$enable_debug = xboth)
-AM_CONDITIONAL(OMX_VALGRIND,    test x$enable_valgrind = xyes)
-
-OMX_DEFINE(OMX_LIB_VALGRIND_DEBUG, 1,
-           Enable memory allocation debugging with Valgrind in the debug library,
-	   test x$enable_valgrind = xyes)
-
 
 OMX_DRIVER_DEBUG=0
 DEFAULT_LIBDIR=lib$NATARCHSIZE
@@ -260,8 +256,12 @@ fi
 AC_SUBST(OMX_DRIVER_DEBUG)
 AC_SUBST(DEFAULT_LIBDIR)
 
-if test x$enable_valgrind = xyes ; then
-   OMX_CHECK_VALGRIND_HEADERS
+if test x$enable_valgrind != xno ; then
+   OMX_CHECK_VALGRIND_HEADERS(valgrind_found)
+   if $valgrind_found ; then
+       AC_DEFINE(OMX_LIB_VALGRIND_DEBUG, 1, Enable memory allocation debugging with Valgrind in the debug library)
+       AC_MSG_NOTICE(activating Valgrind hooks in the debug library)
+   fi
 fi
 
 
@@ -282,7 +282,7 @@ OMX_WITH_COND(medium-frag-length, n, OMX_MEDIUM_FRAG_LENGTH,
 	      [change medium fragment maximum payload size (default depends on the MTU and wire
 	       compatibility)],
 	       setting medium frag length to $OMX_MEDIUM_FRAG_LENGTH, test x$enable_mx_wire = xno,
-	       default) 
+	       default)
 OMX_WITH_COND(pull-reply-length, n, OMX_PULL_REPLY_LENGTH,
 	      [change pull reply maximum payload size (default depends on the MTU and wire
 	       compatibility)],
@@ -295,7 +295,7 @@ OMX_WITH_COND(pull-block-replies, n, OMX_PULL_BLOCK_REPLIES,
 	       default)
 OMX_WITH_COND(ethertype, n, OMX_ETHERTYPE,
 	      [change Ethertype (default is 0x86DF)],
-	      setting Ethertype to $OMX_ETHERTYPE, test x$enable_mx_wire = xno, 
+	      setting Ethertype to $OMX_ETHERTYPE, test x$enable_mx_wire = xno,
 	      default)
 
  OMX_ENABLE(mx-wire, enable_mx_wire,
@@ -349,7 +349,7 @@ if test x$enable_mx_wire = xyes ; then
    if test x$enable_endian = xno ; then
       AC_MSG_WARN(endian-independant networking is required to talk to native MX peers)
    fi
-fi 
+fi
 
 
 
@@ -422,7 +422,7 @@ OMX_WITH_COND(fms-run, dir, OMX_FMS_RUN,
 OMX_WITH_COND(fms-server, fms_server, OMX_FMS_SERVER,
 	      node on which fms process will run,
 	      fms will run on $OMX_FMS_SERVER, test x$OMX_PEER_DISCOVERY = xfma,
-	      default) 
+	      default)
 
 AC_SUBST(OMX_FMS_RUN)
 

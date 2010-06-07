@@ -255,9 +255,10 @@ __valgrind_available=yes)
 
 if test x$__valgrind_available = xyes ; then
    AC_MSG_RESULT(yes)
+   $1=true
 else
    AC_MSG_RESULT(no)
-   AC_MSG_ERROR(cannot used Valgrind hooks without Valgrind headers)
+   $1=false
 fi
 ])
 

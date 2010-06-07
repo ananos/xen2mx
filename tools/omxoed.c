@@ -1,6 +1,6 @@
 /*
  * Open-MX
- * Copyright © INRIA 2007-2009 (see AUTHORS file)
+ * Copyright © INRIA 2007-2010 (see AUTHORS file)
  *
  * This file has been copied and modified from mxoed.c in Myricom's
  * Myrinet Express software. Copyright 2003 - 2008 by Myricom, Inc.
