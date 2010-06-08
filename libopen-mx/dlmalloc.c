@@ -7,9 +7,30 @@
 #ifdef OMX_LIB_DEBUG
 #define FOOTERS 1
 #endif
+
 #ifdef OMX_LIB_THREAD_SAFETY
 #define USE_LOCKS 1
-#endif
+#include <pthread.h>
+#include <stdio.h>
+/* provide weak symbols so that we don't need to explicitly depend on libpthread
+ * (other weak symbols are provided by the glibc).
+ */
+#pragma weak pthread_mutexattr_init
+#pragma weak pthread_mutexattr_destroy
+#pragma weak pthread_mutexattr_setkind_np
+int pthread_mutexattr_init(pthread_mutexattr_t *attr)
+{
+  return 0;
+}
+int pthread_mutexattr_destroy(pthread_mutexattr_t *attr)
+{
+  return 0;
+}
+int pthread_mutexattr_setkind_np(pthread_mutexattr_t *attr, int kind)
+{
+  return 0;
+}
+#endif /* OMX_LIB_THREAD_SAFETY */
 
 /* missing header */
 #include <time.h>
