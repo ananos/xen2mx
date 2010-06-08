@@ -103,7 +103,7 @@ main (int argc, char *argv[])
 	char board_addr_str[OMX_BOARD_ADDR_STRLEN];
 	omx_return_t ret;
 	hwloc_obj_t obj;
-	int i, nb_socket, nb_core, sender = 0, begin, end;
+	int i, nb_socket, nb_core, sender = 0, begin, end, core_per_sock;
 	hwloc_cpuset_t *cpuset;
 	void (*dispatcher)(const struct data *);
 
@@ -120,27 +120,25 @@ main (int argc, char *argv[])
 		goto out_with_topo;
 	}
 
-	cpuset = malloc(8 * sizeof(*cpuset));
-	data = malloc(8 * sizeof(*data));
+	nb_core =  hwloc_get_nbobjs_by_type (topology, HWLOC_OBJ_CORE);
+	core_per_sock = nb_core / nb_socket;
+
+	cpuset = malloc(core_per_sock * 2 * sizeof(*cpuset));
+	data = malloc(core_per_sock * 2 * sizeof(*data));
 
 	assert (cpuset && data);
-
-	memset(data, 0, sizeof(*data));
-
-	/* FIXME: for each socket and each core within this socket bind a process */
-	nb_core =  hwloc_get_nbobjs_by_type (topology, HWLOC_OBJ_CORE);
 
 	printf("Found %d socket(s) and %d core(s) on the remote machine\n", nb_socket, nb_core);
 
 	/* Distribute senders on the first socket */
 	obj = hwloc_get_next_obj_by_type (topology, HWLOC_OBJ_SOCKET, NULL);
 
-	hwloc_distribute(topology, obj, cpuset, 4);
+	hwloc_distribute(topology, obj, cpuset, core_per_sock);
 	
 	/* Then distribute receivers on the second socket */
 	obj = hwloc_get_next_obj_by_type (topology, HWLOC_OBJ_SOCKET, obj);
 
-	hwloc_distribute(topology, obj, cpuset + 4, 4);
+	hwloc_distribute(topology, obj, cpuset + core_per_sock, core_per_sock);
 
 	ret = omx_init ();
 	
@@ -150,8 +148,8 @@ main (int argc, char *argv[])
 		goto out_with_free;
 	}
 
-	begin = sender ? 0 : 4;
-	end   = sender ? 4 : 8;
+	begin = sender ? 0 : core_per_sock;
+	end   = sender ? core_per_sock : core_per_sock * 2;
 	
 	for (i = begin; i < end; i++) {
 		ret = omx_open_endpoint (OMX_BID, i, OMX_FILTER_KEY, NULL, 0, &data[i].ep);
@@ -174,7 +172,7 @@ main (int argc, char *argv[])
 	}
 	
 	/* FIXME: Don't use it (private) ! */
-	ret = omx__get_board_info (data[sender ? 0 : 4].ep, sender ? 0 : 4, &board_info);
+	ret = omx__get_board_info (data[sender ? 0 : core_per_sock].ep, sender ? 0 : core_per_sock, &board_info);
 	
 	if (ret != OMX_SUCCESS) {
 		fprintf (stderr, "%s: Failed to read board #0, %s\n", argv[0],
@@ -192,14 +190,14 @@ main (int argc, char *argv[])
 	dispatcher = sender ? omx__gen_sender : omx__gen_receiver;
 
 	for (i = begin; i < end; i++) {
-		data[i].recv_id = sender ? i + 4 : 0;
+		data[i].recv_id = sender ? i + core_per_sock : 0;
 
 		if (fork() == 0) {
 			dispatcher(data + i);
 			exit(0);
 		}
 	}
-	for (i = 0; i < 4; i++)
+	for (i = 0; i < core_per_sock; i++)
 		wait(NULL);
 
  out_with_ep:
