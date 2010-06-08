@@ -5,8 +5,10 @@ OMX_GITSVN_REVISION = $(shell GIT_DIR=@abs_top_srcdir@/.git/ git log 2>/dev/null
 			       | sed -r -e 's/.*@(.+) .*/\1/')
 ifneq ($(OMX_GITSVN_REVISION),)
 	OMX_SRC_VERSION	=	git svn r$(OMX_GITSVN_REVISION)
-else ifneq ($(OMX_SVN_REVISION),)
+else
+ifneq ($(OMX_SVN_REVISION),)
 	OMX_SRC_VERSION	=	svn r$(OMX_SVN_REVISION)
+endif
 endif
 
 @OMX_KBUILD_CFLAGS_ARG@ 	+= -include @abs_top_builddir@/common/config.h
