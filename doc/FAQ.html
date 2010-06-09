@@ -691,8 +691,14 @@ driver in a MX-similar way.
 </a></h4>
 <p>
 The Open-MX driver is always thread-safe. The user-space library is
-thread-safe by default, but you may pass --disable-threads to the
-configure script to disable thread safety if needed.
+thread-safe by default as long as all threads use the same endpoint.
+Using multiple endpoints concurrently within multiple threads
+of a single process is however not supported, but this corner case
+is never used in real-world MPI implementations and applications.
+</p>
+<p>
+You may pass --disable-threads to the configure script to disable
+thread safety entirely if needed.
 Disabling thread safety is only useful for reducing the latency
 a little bit when all applications either ensure thread safety above
 Open-MX or never use any thread.

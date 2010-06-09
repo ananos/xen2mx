@@ -8,7 +8,9 @@
 #define FOOTERS 1
 #endif
 
-#ifdef OMX_LIB_THREAD_SAFETY
+/* disabled for now since the overhead is too high */
+#if 0
+//def OMX_LIB_THREAD_SAFETY
 #define USE_LOCKS 1
 #include <pthread.h>
 #include <stdio.h>
