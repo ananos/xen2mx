@@ -1,14 +1,15 @@
-Open-MX 1.2.902 aka 1.3-rc2 (June 4th 2010, svn rxyzt)
+Open-MX 1.2.902 aka 1.3-rc2 (June 9th 2010, svn r3022)
 ======================================================
 The skb->cb release.
 
 Bug fixes:
 * Fix the management of skb destructors to be compatible with 2.6.33
-  kernel and laters.
+  Linux kernel and later.
 
 Other improvements from previous release:
 * Make omx_check.sh work from the build directory before make install.
 * Fix Valgrind requirements during configure.
+* Some minor fixes to the build system.
 * Clarify thread-safety in the FAQ.
 
 Caveats:
