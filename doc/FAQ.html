@@ -697,6 +697,14 @@ of a single process is however not supported, but this corner case
 is never used in real-world MPI implementations and applications.
 </p>
 <p>
+When thread-safety is enabled but no threads are actually used,
+locking is optimized by using weak fake symbols.
+However, as soon as libpthread is loaded by the application or MPI
+implementation, real pthread locks are used to ensure thread-safety.
+Therefore achieving optimal performance with non-threaded applications
+and MPI implementations requires that libpthread is not loaded uselessly.
+</p>
+<p>
 You may pass --disable-threads to the configure script to disable
 thread safety entirely if needed.
 Disabling thread safety is only useful for reducing the latency
