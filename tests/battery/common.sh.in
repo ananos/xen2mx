@@ -19,6 +19,10 @@
 
 __verbose=false
 
+echoerr() { echo "$1" >&2	 ;}
+error()	  { echoerr "ERROR => $1";}
+fatal()	  { error "$1" && exit 1 ;}
+
 activate_verbose()
 {
     __verbose=true
@@ -43,12 +47,15 @@ find_tests()
 
 do_test()
 {
-    __lng=`expr length "$1"`
-
+    __msg="TEST $1"
+    __lng=`expr length "$__msg"`
+    
     if $__verbose ; then
 	echo `seq -s- 0  $__lng | tr -d '0-9'`
-	echo "$1"
+	echo "$__msg"
 	echo `seq -s- 0  $__lng | tr -d '0-9'`
+    else
+	echo "TEST $1"
     fi
 
     shift
@@ -68,8 +75,24 @@ do_test()
     return $__ret
 }
 
-error()	{ echo "ERROR => $1" >&2 ;}
-fatal()	{ error "$1" && exit 1	 ;}
+do_test_or_error() {
+    do_test "$@"
+
+    __msg="TEST $1 FAILED"
+    __lng=`expr length "$__msg"`
+  
+    if [ ! $? -eq 0 ] ; then
+	if $__verbose ; then
+	    echoerr `seq -sx 0  $__lng | tr -d '0-9'`
+	    echoerr "$__msg"
+	    echoerr `seq -sx 0  $__lng | tr -d '0-9'`
+	    echo
+	    echo
+	else
+	    echoerr 'failed !'
+	fi
+    fi
+}
 
 parse_cli()
 {

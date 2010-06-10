@@ -28,17 +28,6 @@ parse_cli "$@"
 find_tests $scriptdir @prefix@
 
 
-check_loopback()
-{
-    $TOOLS_DIR/omx_info | grep -qE '^ .* \(board #0 name lo addr 00:00:00:00:00:00\)' 2>&1
-}
-
-check_localhost()
-{
-    $TOOLS_DIR/omx_info | grep -qE '^ localhost \(board #0 name lo addr 00:00:00:00:00:00\)' 2>&1
-}
-
-
-do_test_or_error 'omx_info' $TOOLS_DIR/omx_info
-do_test_or_error 'check loopback' check_loopback
-do_test_or_error 'check localhost' check_localhost
+do_test_or_error 'loopback with native networking' $TESTS_DIR/omx_loopback_test
+do_test_or_error 'loopback with shared networking' $TESTS_DIR/omx_loopback_test -s
+do_test_or_error 'loopback with self networking'   $TESTS_DIR/omx_loopback_test -S
