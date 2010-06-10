@@ -1,0 +1,103 @@
+#!/bin/sh
+
+# Open-MX
+# Copyright © INRIA, CNRS 2007-2009 (see AUTHORS file)
+# 
+# The development of this software has been funded by Myricom, Inc.
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# See the GNU General Public License in COPYING.GPL for more details.
+
+
+__verbose=false
+
+activate_verbose()
+{
+    __verbose=true
+}
+
+find_tests()
+{
+    if [ -f $1/../Makefile ] ; then
+	TOOLS_DIR="$1/../../tools"
+	TESTS_DIR="$1/../../tests"
+	MXTESTS_DIR="$1/../mx"
+
+	echo 'Running tests from the build directory.'
+    else
+	TOOLS_DIR="$2/bin"
+	TESTS_DIR="$2/bin/tests"
+	MXTESTS_DIR="$2/bin/tests"
+
+	echo 'Running tests from the installation directory.'
+    fi
+}
+
+do_test()
+{
+    __lng=`expr length "$1"`
+
+    if $__verbose ; then
+	echo `seq -s- 0  $__lng | tr -d '0-9'`
+	echo "$1"
+	echo `seq -s- 0  $__lng | tr -d '0-9'`
+    fi
+
+    shift
+
+    if $__verbose ; then
+	"$@"
+    else
+	"$@" >/dev/null 2>/dev/null
+    fi
+    __ret=$?
+
+    if $__verbose ; then
+	echo
+	echo
+    fi
+
+    return $__ret
+}
+
+error()	{ echo "ERROR => $1" >&2 ;}
+fatal()	{ error "$1" && exit 1	 ;}
+
+parse_cli()
+{
+    while [ $# -gt 0 ] ; do
+	case $1 in
+	    -v|--verbose)   activate_verbose ;;
+	    *)		    fatal 'Invalid option'
+	esac
+
+	shift
+    done
+}
+
+print_usage()
+{
+    cat <<EOM
+
+Usage : $0 [-v|--verbose]
+EOM
+}
+
+detect_help_request()
+{
+    case $# in
+	1)
+	    case $1 in
+		-h|--help) print_usage && exit 0;;
+	    esac
+    esac
+}
+

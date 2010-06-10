@@ -500,7 +500,9 @@ AC_CONFIG_FILES(Makefile
 		tools/omx_init
 		tools/10-open-mx.rules
 		tests/Makefile
-		tests/mx/Makefile)
+		tests/mx/Makefile
+		tests/battery/common.sh
+		tests/battery/omx_test_iface_lo)
 
 AC_SUBST(CONFIG_STATUS_DEPENDENCIES,
 	'$(top_srcdir)/driver/linux/Kbuild.in $(top_srcdir)/driver/linux/check_kernel_headers.sh')
