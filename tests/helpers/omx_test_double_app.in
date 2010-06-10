@@ -1,0 +1,98 @@
+#!/bin/sh
+
+# Open-MX
+# Copyright © INRIA, CNRS 2007-2009 (see AUTHORS file)
+# 
+# The development of this software has been funded by Myricom, Inc.
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# See the GNU General Public License in COPYING.GPL for more details.
+
+scriptpath=`readlink -e $0`
+scriptdir=`dirname $scriptpath`
+
+. $scriptdir/common.sh
+
+app=
+opts=
+sender_opts='-e 3 -d localhost'
+suspend=false
+
+print_usage()
+{
+    cat <<EOM
+
+Usage : $0 [options] <test> [sender/receiver options] -- [sender options]
+
+Options :
+    -s | --suspend  Suspend the receiver just after having spawned it
+
+EOM
+}
+
+parse_cli()
+{
+    while [ $# -gt 0 ] ; do
+	case $1 in
+	    -s|--suspend)   suspend=true ;;
+	    *)		    break
+	esac 
+
+	shift
+    done
+
+    if [ $1 ] ; then
+	app=$1
+	shift
+    fi
+
+    while [ $# -gt 0 ] ; do
+	case $1 in
+	    --)	sender_opts= ; shift; break ;;
+	    *)  opts="$opts $1"
+	esac
+
+	shift
+    done
+
+    while [ $# -gt 0 ] ; do sender_opts="$sender_opts $1"; shift; done
+}
+
+do_run()
+{
+    $app $opts & __pid=$!
+
+    # I think this a bit dirty but I currently have not better...
+    sleep 1
+    { ps | grep -q $__pid; } || exit 1
+
+    $suspend && kill -STOP $__pid
+    sleep 1
+
+    $app $opts $sender_opts && __ret=$?
+
+    if $suspend ; then
+	kill -9    $__pid
+	kill -CONT $__pid
+    fi
+
+    return $__ret
+}
+
+
+
+detect_help_request "$@"
+
+parse_cli "$@"
+
+[ $app ] || fatal "Missing test argument."
+
+do_run

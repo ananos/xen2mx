@@ -28,7 +28,20 @@ parse_cli "$@"
 
 find_tests $scriptdir @prefix@
 
+do_test 'unexpected' $TESTS_DIR/omx_unexp_test
 
-do_test 'loopback with native networking' $TESTS_DIR/omx_loopback_test
-do_test 'loopback with shared networking' $TESTS_DIR/omx_loopback_test -s
-do_test 'loopback with self networking'   $TESTS_DIR/omx_loopback_test -S
+export OMX_CTXIDS=10,10
+do_test 'unexpected with ctxids' $TESTS_DIR/omx_unexp_test
+export OMX_CTXIDS=
+
+do_test 'unexpected handler' $TESTS_DIR/omx_unexp_handler_test
+do_test 'truncated' $TESTS_DIR/omx_truncated_test
+
+export OMX_DISABLED_SHARED=1
+do_test 'wait_any' $helpersdir/omx_test_double_app $MXTESTS_DIR/mx_wait_any_test
+export OMX_DISABLED_SHARED=0
+
+do_test 'cancel' $helpersdir/omx_test_double_app -s $TESTS_DIR/omx_cancel_test
+do_test 'wakeup' $helpersdir/omx_test_double_app -s $MXTESTS_DIR/mx_wakeup_test
+do_test 'multirails' $helpersdir/omx_test_double_app $TESTS_DIR/omx_rails \
+    -R 3 -- -d 'localhost:0,localhost:1,localhost:2' 

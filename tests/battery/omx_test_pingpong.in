@@ -28,7 +28,8 @@ parse_cli "$@"
 
 find_tests $scriptdir @prefix@
 
+export OMX_DISABLE_SHARED=1
+do_test 'pingpong with native networking' $helpersdir/omx_test_double_app $TESTS_DIR/omx_perf
 
-do_test 'loopback with native networking' $TESTS_DIR/omx_loopback_test
-do_test 'loopback with shared networking' $TESTS_DIR/omx_loopback_test -s
-do_test 'loopback with self networking'   $TESTS_DIR/omx_loopback_test -S
+export OMX_DISABLE_SHARED=0
+do_test 'pingpong with shared networking' $helpersdir/omx_test_double_app $TESTS_DIR/omx_perf

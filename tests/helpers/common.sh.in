@@ -45,61 +45,79 @@ find_tests()
     fi
 }
 
-do_test()
+
+__do_test_silent()
 {
-    __msg="TEST $1"
-    __lng=`expr length "$__msg"`
-    
-    if $__verbose ; then
-	echo `seq -s- 0  $__lng | tr -d '0-9'`
-	echo "$__msg"
-	echo `seq -s- 0  $__lng | tr -d '0-9'`
-    else
-	echo "TEST $1"
-    fi
+    __msg="TEST $1 ... "
+
+    echo -n "$__msg"
 
     shift
 
-    if $__verbose ; then
-	"$@"
+    if "$@" >/dev/null 2>/dev/null ; then
+	echo 'ok'
+	return 0
     else
-	"$@" >/dev/null 2>/dev/null
+	echo failed
+	return 1
     fi
-    __ret=$?
+}
 
-    if $__verbose ; then
+__do_test_verbose()
+{
+    __testname="$1"
+    __msg="TEST $__testname"
+    __lng=`expr length "$__msg"`
+    
+    echo `seq -s- 0  $__lng | tr -d '0-9'`
+    echo "$__msg"
+    echo `seq -s- 0  $__lng | tr -d '0-9'`
+
+    shift
+
+    if "$@" ; then
+	__ret=0
+    else
+	__ret=1
+
 	echo
 	echo
+
+	__msg="TEST $__testname FAILED"
+	__lng=`expr length "$__msg"`
+
+	echoerr `seq -sx 0  $__lng | tr -d '0-9'`
+	echoerr "$__msg"
+	echoerr `seq -sx 0  $__lng | tr -d '0-9'`
     fi
+
+    echo
+    echo
 
     return $__ret
 }
 
-do_test_or_error() {
-    do_test "$@"
-
-    __msg="TEST $1 FAILED"
-    __lng=`expr length "$__msg"`
-  
-    if [ ! $? -eq 0 ] ; then
-	if $__verbose ; then
-	    echoerr `seq -sx 0  $__lng | tr -d '0-9'`
-	    echoerr "$__msg"
-	    echoerr `seq -sx 0  $__lng | tr -d '0-9'`
-	    echo
-	    echo
-	else
-	    echoerr 'failed !'
-	fi
+do_test() {
+    if $__verbose ; then
+	__do_test_verbose "$@"
+	__ret=$?
+    else
+	__do_test_silent "$@"
+	__ret=$?
     fi
+
+    return $?
 }
 
 parse_cli()
 {
     while [ $# -gt 0 ] ; do
 	case $1 in
-	    -v|--verbose)   activate_verbose ;;
-	    *)		    fatal 'Invalid option'
+	    -v|--verbose)
+		activate_verbose
+		;;
+	    *)
+		fatal "Invalid option : $1"
 	esac
 
 	shift
@@ -111,6 +129,7 @@ print_usage()
     cat <<EOM
 
 Usage : $0 [-v|--verbose]
+
 EOM
 }
 
@@ -119,7 +138,7 @@ detect_help_request()
     case $# in
 	1)
 	    case $1 in
-		-h|--help) print_usage && exit 0;;
+		-h|--help) print_usage && exit 0 ;;
 	    esac
     esac
 }

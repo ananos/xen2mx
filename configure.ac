@@ -501,9 +501,13 @@ AC_CONFIG_FILES(Makefile
 		tools/10-open-mx.rules
 		tests/Makefile
 		tests/mx/Makefile
-		tests/battery/common.sh
+		tests/helpers/common.sh
+		tests/helpers/omx_test_double_app
 		tests/battery/omx_test_iface_lo
-		tests/battery/omx_test_loopback)
+		tests/battery/omx_test_loopback
+		tests/battery/omx_test_misc
+		tests/battery/omx_test_pingpong
+		tests/battery/omx_test_randomloop)
 
 AC_SUBST(CONFIG_STATUS_DEPENDENCIES,
 	'$(top_srcdir)/driver/linux/Kbuild.in $(top_srcdir)/driver/linux/check_kernel_headers.sh')

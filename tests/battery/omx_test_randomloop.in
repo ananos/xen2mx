@@ -18,40 +18,23 @@
 
 scriptpath=`readlink -e $0`
 scriptdir=`dirname $scriptpath`
+helpersdir=$scriptdir/../helpers
 
-. $scriptdir/common.sh
+. $helpersdir/common.sh
 
-detect_help_request
+detect_help_request "$@"
 
 parse_cli "$@"
 
 find_tests $scriptdir @prefix@
 
-opts=
-sender_opts='-e 3 -d localhost'
+test_wrapper()
+{
+    $MXTESTS_DIR/mx_msg_loop -R -P 11 & _pid=$!
+    sleep 20
 
-app=$1
-shift
+    echo 'Killing the program now that it ran for 20s...'
+    kill -9 $_pid 2>/dev/null
+}
 
-while [ $# -gt 0 ] ; do
-    case $1 in
-	--) break ;;
-	*)  opts="$opts $1"
-    esac
-
-    shift
-done
-
-while [ $# -gt 0 ] ; do sender_opts="$sender_opts $1"; shift; done
-
-$app $opts & pid=$!
-
-# I think this a bit dirty but I have not better...
-sleep 1
-ps | grep -q $pid || exit 1
-
-$app $opts $sender_opts && ret=$?
-
-wait $pid
-
-exit $ret
+do_test 'random msg loop with native networking during 20s' test_wrapper

@@ -18,10 +18,11 @@
 
 scriptpath=`readlink -e $0`
 scriptdir=`dirname $scriptpath`
+helpersdir=$scriptdir/../helpers
 
-. $scriptdir/common.sh
+. $helpersdir/common.sh
 
-detect_help_request
+detect_help_request "$@"
 
 parse_cli "$@"
 
@@ -39,6 +40,6 @@ check_localhost()
 }
 
 
-do_test_or_error 'omx_info' $TOOLS_DIR/omx_info
-do_test_or_error 'check loopback' check_loopback
-do_test_or_error 'check localhost' check_localhost
+do_test 'omx_info'        $TOOLS_DIR/omx_info
+do_test 'check loopback'  check_loopback
+do_test 'check localhost' check_localhost
