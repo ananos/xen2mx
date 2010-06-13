@@ -10,7 +10,6 @@ Packager: Brice Goglin
 Source: open-mx-%{version}.tar.gz
 Provides: mx
 BuildRoot: /var/tmp/%{name}-%{version}-build
-BuildRequires: gcc
 
 %description
 Open-MX is a high-performance implementation of the Myrinet Express message-passing stack over generic Ethernet networks. It provides application-level and wire-protocol compatibility with the native MXoE (Myrinet Express over Ethernet) stack.
