@@ -1,8 +1,9 @@
 # General informations on the project
 AC_INIT(Open-MX,
 	1.2.902,
-	http://open-mx.org,
-	open-mx)
+	open-mx-devel@lists.gforge.inria.fr,
+	open-mx,
+	http://open-mx.org)
 
 AC_PREREQ(2.59)
 
