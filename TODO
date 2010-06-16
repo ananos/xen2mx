@@ -1,3 +1,9 @@
+* rework skb->cb usage to directly store data instead of kmalloc'ing
+  the medium_send_frag deferred structure
+  + check at build-time that we use less than sizeof(skb->cb)
+  + move the event out of the defevent structure, just put the
+    medium_send_frag sendq_offset in there
+
 * switch to another malloc library with smaller locking overhead
   + use per-endpoint pools (no need to be thread-safe there) ?
   + thread-safe global pool for non-endpoint-specific allocations
