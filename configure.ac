@@ -510,6 +510,7 @@ AC_CONFIG_FILES(Makefile
 		libopen-mx/lib32-debug/Makefile
 		libopen-mx/lib64-debug/Makefile
 		tools/Makefile
+		tools/omx_check.sh
 		tools/omx_check
 		tools/omx_local_install
 		tools/omx_init
@@ -521,6 +522,7 @@ AC_CONFIG_FILES(Makefile
 AC_SUBST(CONFIG_STATUS_DEPENDENCIES,
 	'$(top_srcdir)/driver/linux/Kbuild.in $(top_srcdir)/driver/linux/check_kernel_headers.sh')
 
+AC_CONFIG_COMMANDS(chmoding-omx_check.sh,	chmod ugo+x tools/omx_check.sh)
 AC_CONFIG_COMMANDS(chmoding-omx_check,		chmod ugo+x tools/omx_check)
 AC_CONFIG_COMMANDS(chmoding-omx_init,		chmod ugo+x tools/omx_init)
 AC_CONFIG_COMMANDS(chmoding-omx_test_launcher,	chmod ugo+x tests/helpers/omx_test_launcher)

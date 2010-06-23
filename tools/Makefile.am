@@ -8,7 +8,7 @@ omxconfdir = $(sysconfdir)/open-mx
 
 bin_PROGRAMS	= omx_counters omx_endpoint_info omx_hostname omx_info	\
 		  omx_init_peers omxoed omx_prepare_binding
-bin_SCRIPTS	= omx_check
+bin_SCRIPTS	= omx_check.sh omx_check
 sbin_SCRIPTS	= omx_init omx_local_install
 omxconf_DATA	= open-mx.conf 10-open-mx.rules
 
