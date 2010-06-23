@@ -14,8 +14,8 @@ test_PROGRAMS		= omx_cancel_test omx_cmd_bench omx_loopback_test omx_many		\
 			  omx_perf omx_rails omx_rcache_test omx_reg omx_truncated_test		\
 			  omx_unexp_handler_test omx_unexp_test omx_vect_test
 
-helpers_SCRIPTS		= helpers/omx_test_double_app helpers/omx_test_battery			\
-			  helpers/omx_test_launcher
+dist_helpers_SCRIPTS	= helpers/omx_test_double_app helpers/omx_test_battery
+nodist_helpers_SCRIPTS	= helpers/omx_test_launcher
 
 TESTS			= $(FINAL_TEST_LIST)
 
