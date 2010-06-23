@@ -31,13 +31,21 @@ static inline void
 omx_set_skb_destructor(struct sk_buff *skb, void (*callback)(struct sk_buff *skb), const void * data)
 {
 	skb->destructor = callback;
+#ifdef OMX_HAVE_SKB_SHARED_INFO_DESTRUCTOR_ARG
+	skb_shinfo(skb)->destructor_arg = (void *) data;
+#else
 	skb->sk = (void *) data;
+#endif
 }
 
 static inline __pure void *
 omx_get_skb_destructor_data(const struct sk_buff *skb)
 {
+#ifdef OMX_HAVE_SKB_SHARED_INFO_DESTRUCTOR_ARG
+	return skb_shinfo(skb)->destructor_arg;
+#else
 	return (void *) skb->sk;
+#endif
 }
 
 /* queue a skb for xmit, account it, and eventually actually drop it for debugging */
