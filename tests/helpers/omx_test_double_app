@@ -16,15 +16,17 @@
 # 
 # See the GNU General Public License in COPYING.GPL for more details.
 
-scriptpath=`readlink -e $0`
-scriptdir=`dirname $scriptpath`
-
-. $scriptdir/common.sh
 
 app=
 opts=
 sender_opts='-e 3 -d localhost'
 suspend=false
+
+
+echoerr() { echo "$1" >&2	 ;}
+error()	  { echoerr "ERROR => $1";}
+fatal()	  { error "$1" && exit 1 ;}
+
 
 print_usage()
 {
@@ -36,6 +38,16 @@ Options :
     -s | --suspend  Suspend the receiver just after having spawned it
 
 EOM
+}
+
+detect_help_request()
+{
+    case $# in
+	1)
+	    case $1 in
+		-h|--help) print_usage && exit 0 ;;
+	    esac
+    esac
 }
 
 parse_cli()

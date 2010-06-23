@@ -1,40 +1,35 @@
 #!/bin/sh
 
 # Open-MX
-# Copyright © INRIA, CNRS 2007-2009 (see AUTHORS file)
-# 
+# Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
+#
 # The development of this software has been funded by Myricom, Inc.
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# 
+#
 # See the GNU General Public License in COPYING.GPL for more details.
 
-scriptpath=`readlink -e $0`
+scriptpath=`readlink -f $0`
 scriptdir=`dirname $scriptpath`
-helpersdir=$scriptdir/../helpers
 
-. $helpersdir/common.sh
+BATTERY_LIST='@BATTERY_LIST@'
 
-detect_help_request "$@"
-
-parse_cli "$@"
-
-find_tests $scriptdir @prefix@
-
-test_wrapper()
+find_battery()
 {
-    $MXTESTS_DIR/mx_msg_loop -R -P 11 & _pid=$!
-    sleep 20
-
-    echo 'Killing the program now that it ran for 20s...'
-    kill -9 $_pid 2>/dev/null
+    if [ -f $1/Makefile ] ; then
+	BATTERY_DIR="$1/../tests/battery"
+    else
+	BATTERY_DIR="$2/bin/tests/battery"
+    fi
 }
 
-do_test 'random msg loop with native networking during 20s' test_wrapper
+find_battery $scriptdir @prefix@
+
+for b in $BATTERY_LIST ; do $BATTERY_DIR/$b ; done
