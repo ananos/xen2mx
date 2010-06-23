@@ -1,6 +1,6 @@
 # General informations on the project
 AC_INIT(Open-MX,
-	1.2.902,
+	1.2.903,
 	open-mx-devel@lists.gforge.inria.fr,
 	open-mx,
 	http://open-mx.org)

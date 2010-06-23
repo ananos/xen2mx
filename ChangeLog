@@ -1,3 +1,5 @@
+Open-MX 1.2.903 aka 1.3-rc3 (June 25th 2010, svn rxyzt)
+=======================================================
 
 Bug fixes:
 * Further fix the management of skb destructors by using shared info
