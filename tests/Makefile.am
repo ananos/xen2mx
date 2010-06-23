@@ -11,16 +11,10 @@ test_PROGRAMS	= omx_cancel_test omx_cmd_bench omx_loopback_test omx_many	\
 		  omx_perf omx_rails omx_rcache_test omx_reg omx_truncated_test	\
 		  omx_unexp_handler_test omx_unexp_test omx_vect_test
 
-nodist_battery_SCRIPTS	= battery/omx_test_iface_lo battery/omx_test_loopback	\
-			  battery/omx_test_misc battery/omx_test_pingpong	\
-			  battery/omx_test_randomloop
-nodist_helpers_SCRIPTS	= helpers/omx_test_double_app
-helpers_SCRIPTS		= helpers/common.sh
-
-EXTRA_DIST = battery/omx_test_iface_lo.in battery/omx_test_loopback.in	\
-	     battery/omx_test_misc.in battery/omx_test_pingpong.in	\
-	     battery/omx_test_randomloop.in				\
-	     helpers/helpers/omx_test_double_app.in
+battery_SCRIPTS	= battery/omx_test_iface_lo battery/omx_test_loopback	\
+		  battery/omx_test_misc battery/omx_test_pingpong	\
+		  battery/omx_test_randomloop
+helpers_SCRIPTS = helpers/omx_test_double_app helpers/common.sh
 
 omx_reg_CPPFLAGS	= -I$(abs_top_srcdir)/libopen-mx $(AM_CPPFLAGS)
 omx_cmd_bench_CPPFLAGS	= -I$(abs_top_srcdir)/libopen-mx $(AM_CPPFLAGS)
