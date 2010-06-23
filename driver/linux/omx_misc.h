@@ -31,13 +31,13 @@ static inline void
 omx_set_skb_destructor(struct sk_buff *skb, void (*callback)(struct sk_buff *skb), const void * data)
 {
 	skb->destructor = callback;
-	*((void **)(skb->cb)) = (void *) data;
+	skb->sk = (void *) data;
 }
 
 static inline __pure void *
 omx_get_skb_destructor_data(const struct sk_buff *skb)
 {
-	return *((void **)(skb->cb));
+	return (void *) skb->sk;
 }
 
 /* queue a skb for xmit, account it, and eventually actually drop it for debugging */
