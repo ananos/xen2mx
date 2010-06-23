@@ -6,7 +6,14 @@ Bug fixes:
   destructor data in recent kernels and reverting to the old code
   in earlier kernels.
 
+Other improvements from previous release:
+* Add a new test infrastructure in parallel of the old omx_check.sh
+  script.
+* Miscellaneous minor fixes all over the place.
 
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.2.902 aka 1.3-rc2 (June 9th 2010, svn r3022)
 ======================================================
@@ -21,10 +28,6 @@ Other improvements from previous release:
 * Fix Valgrind requirements during configure.
 * Some minor fixes to the build system.
 * Clarify thread-safety in the FAQ.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.2.901 aka 1.3-rc1 (May 20th 2010, svn r2984)
 ======================================================
