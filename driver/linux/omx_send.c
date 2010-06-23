@@ -1282,7 +1282,7 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	goto out;
 
  out_with_skb:
-	kfree_skb(skb);
+	dev_kfree_skb(skb);
  out:
 	return ret;
 }

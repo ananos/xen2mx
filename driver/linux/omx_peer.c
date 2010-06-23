@@ -820,7 +820,7 @@ omx_peer_host_query(const struct omx_peer *peer)
 	/* send on all attached interfaces */
 	omx_for_each_iface(omx_peer_host_query_send_iface_handler, skb);
 
-	kfree_skb(skb);
+	dev_kfree_skb(skb);
 
  out:
 	return;
@@ -980,7 +980,7 @@ omx_process_host_queries_and_replies(void)
 	out:
 		omx_ifaces_peers_unlock();
 
- 		kfree_skb(in_skb);
+ 		dev_kfree_skb(in_skb);
 	}
 
 	while ((in_skb = skb_dequeue(&omx_host_query_list)) != NULL) {

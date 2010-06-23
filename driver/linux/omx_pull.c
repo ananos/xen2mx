@@ -1270,8 +1270,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 		} else {
 			void *data;
 
-			/* attached pages will be released in kfree_skb() */
-			kfree_skb(skb);
+			dev_kfree_skb(skb);
 
  linear:
 			/* failed to append, revert back to copy into a linear skb */
@@ -1429,7 +1428,7 @@ omx__pull_handle_poll_dma_completions(struct dma_chan *dma_chan, dma_cookie_t la
 	       (dma_async_is_complete(oldskb->dma_cookie, done, used) == DMA_SUCCESS)) {
 		dprintk(DMA, "cleaning skb %p with cookie %d\n", oldskb, oldskb->dma_cookie);
 		__skb_dequeue(queue);
-		kfree_skb(oldskb);
+		dev_kfree_skb(oldskb);
 	}
 
 	return DMA_IN_PROGRESS;

@@ -67,7 +67,7 @@ extern unsigned long omx_packet_loss_index;
 		omx_packet_loss_index = 0;					\
 	} else if (omx_##type##_packet_loss &&					\
 	    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) {	\
-		kfree_skb(skb);							\
+		dev_kfree_skb(skb);						\
 		omx_##type##_packet_loss_index = 0;				\
 	} else {								\
 		__omx_queue_xmit(iface, skb, counter);				\
