@@ -37,8 +37,7 @@ find_programs()
 
 
 pre_check() {
-    { lsmod | grep -q open_mx			     ; } || return 1
-    { test -c /dev/open-mx -a -r /dev/open-mx	     ; } || return 1
+    { /sbin/lsmod | grep -q open_mx		     ; } || return 1
     { test -c /dev/open-mx -a -r /dev/open-mx	     ; } || return 1
     { test -c /dev/open-mx-raw -a -r /dev/open-mx-raw; } || return 1
 
