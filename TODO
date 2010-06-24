@@ -1,3 +1,10 @@
+* document omx_check usage and env variable
+* remove omx_check.sh and use omx_check by default
+
+* switch to another malloc library with smaller locking overhead
+  + use per-endpoint pools (no need to be thread-safe there) ?
+  + thread-safe global pool for non-endpoint-specific allocations
+
 * Symlinks for both the static and shared libraries are
   created even if --disable-shared and/or --disable-static
   is given

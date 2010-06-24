@@ -101,7 +101,7 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 {
 	struct omx_deferred_event * defevent = omx_get_skb_destructor_data(skb);
 	struct omx_endpoint * endpoint = defevent->endpoint;
-
+	
 	/* report the event to user-space */
 	defevent->evt.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 	omx_notify_exp_event(endpoint,
@@ -115,6 +115,16 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 /*********************
  * Main send routines
  */
+
+#ifdef OMX_DRIVER_DEBUG
+static void
+omx_tiny_skb_debug_destructor(struct sk_buff *skb)
+{
+	/* check that nobody modified our destructor data in our back since we queued this skb */
+	void * magic =  omx_get_skb_destructor_data(skb);
+	WARN_ON(magic != (void *) 0x666);
+}
+#endif /* OMX_DRIVER_DEBUG */
 
 int
 omx_ioctl_send_connect_request(struct omx_endpoint * endpoint,
@@ -355,6 +365,10 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 		ret = -EFAULT;
 		goto out_with_skb;
 	}
+
+#ifdef OMX_DRIVER_DEBUG
+	omx_set_skb_destructor(skb, omx_tiny_skb_debug_destructor, (void *) 0x666);
+#endif
 
 	omx_queue_xmit(iface, skb, TINY);
 
@@ -1269,7 +1283,7 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	goto out;
 
  out_with_skb:
-	kfree_skb(skb);
+	dev_kfree_skb(skb);
  out:
 	return ret;
 }

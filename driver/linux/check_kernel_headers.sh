@@ -227,6 +227,17 @@ else
   echo no
 fi
 
+# skb shared info destructor_arg added in 2.6.31
+echo -n "  checking (in kernel headers) whether skb_shared_info contains a destructor_arg field ... "
+if sed -ne '/^struct skb_shared_info {/,/^};/p' ${LINUX_HDR}/include/linux/skbuff.h \
+  | grep "void \*	*destructor_arg;" > /dev/null ; then
+  echo "#define OMX_HAVE_SKB_SHARED_INFO_DESTRUCTOR_ARG 1" >> ${TMP_CHECKS_NAME}
+  echo yes
+else
+  echo no
+fi
+
+
 # add the footer
 echo "" >> ${TMP_CHECKS_NAME}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_NAME}

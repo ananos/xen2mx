@@ -1,0 +1,90 @@
+#!/bin/sh
+
+# Open-MX
+# Copyright © INRIA, CNRS 2007-2009 (see AUTHORS file)
+# 
+# The development of this software has been funded by Myricom, Inc.
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# See the GNU General Public License in COPYING.GPL for more details.
+
+
+scriptpath=`readlink -f $0`
+scriptdir=`dirname $scriptpath`
+testdir=$scriptdir/..
+helperdir=$testdir/helpers
+
+find_programs()
+{
+    if [ -f $1/../Makefile ] ; then
+	TOOLS_DIR="$1/../../tools"
+	TESTS_DIR="$1/../../tests"
+	MXTESTS_DIR="$1/../mx"
+    else
+	TOOLS_DIR="$2/bin"
+	TESTS_DIR="$2/bin/tests"
+	MXTESTS_DIR="$2/bin/tests"
+    fi
+}
+
+
+pre_check() {
+    { /sbin/lsmod | grep -q open_mx		     ; } || return 1
+    { test -c /dev/open-mx -a -r /dev/open-mx	     ; } || return 1
+
+    $TOOLS_DIR/omx_info | grep -qE '^ .* \(board #0 name lo addr 00:00:00:00:00:00\)'
+    $TOOLS_DIR/omx_info | grep -qE '^ localhost \(board #0 name lo addr 00:00:00:00:00:00\)'
+}
+
+process_omx_test_verbose_env() {
+    case $OMX_TEST_VERBOSE in
+	2)  ;;
+	1)  exec >/dev/null ;;
+	*)  exec >/dev/null 2>&1
+    esac
+}
+
+
+find_programs $scriptdir @prefix@
+pre_check || exit 77
+process_omx_test_verbose_env
+
+testname=`basename $0`
+
+case $testname in
+    loopback_native)		$TESTS_DIR/omx_loopback_test ;;
+    loopback_shared)		$TESTS_DIR/omx_loopback_test -s ;;
+    loopback_self)		$TESTS_DIR/omx_loopback_test -S ;;
+    unexpected)			$TESTS_DIR/omx_unexp_test ;;
+    unexpected_with_ctxids)	OMX_CTXIDS=10,10 $TESTS_DIR/omx_unexp_test ;;
+    unexpected_handler)		$TESTS_DIR/omx_unexp_handler_test ;;
+    truncated)			$TESTS_DIR/omx_truncated_test ;;
+    wait_any)			OMX_DISABLED_SHARED=1 $helperdir/omx_test_double_app \
+				$MXTESTS_DIR/mx_wait_any_test ;;
+    cancel)			$helperdir/omx_test_double_app -s $TESTS_DIR/omx_cancel_test ;;
+    wakeup)			$helperdir/omx_test_double_app -s $MXTESTS_DIR/mx_wakeup_test ;;
+    multirails)			$helperdir/omx_test_double_app $TESTS_DIR/omx_rails -R 3 -- \
+				-d localhost:0,localhost:1,localhost:2 ;;
+    vect_native)		$TESTS_DIR/omx_vect_test ;;
+    vect_shared)		$TESTS_DIR/omx_vect_test -s ;;
+    vect_self)			$TESTS_DIR/omx_vect_test -S ;;
+    pingpong_native)		OMX_DISABLE_SHARED=1 $helperdir/omx_test_double_app \
+				$TESTS_DIR/omx_perf ;;
+    pingpong_shared)		$helperdir/omx_test_double_app $TESTS_DIR/omx_perf ;;
+    randomloop)
+	$MXTESTS_DIR/mx_msg_loop -R -P 11 & _pid=$!
+	sleep 20
+	echo "Killing the program now that it ran for 20s..."
+	kill -9 $_pid 2>/dev/null
+	sleep 1
+	;;
+    *)				echo "Unknown test" >&2 && exit 1
+esac

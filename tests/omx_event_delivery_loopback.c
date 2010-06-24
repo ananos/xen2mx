@@ -191,12 +191,12 @@ main (int argc, char *argv[])
 
 	for (i = begin; i < end; i++) {
 		data[i].recv_id = sender ? i + core_per_sock : 0;
-
 		if (fork() == 0) {
 			dispatcher(data + i);
 			exit(0);
 		}
 	}
+
 	for (i = 0; i < core_per_sock; i++)
 		wait(NULL);
 

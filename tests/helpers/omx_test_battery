@@ -1,0 +1,137 @@
+#!/bin/sh
+
+# Open-MX
+# Copyright © INRIA, CNRS 2007-2009 (see AUTHORS file)
+# 
+# The development of this software has been funded by Myricom, Inc.
+# 
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+# 
+# See the GNU General Public License in COPYING.GPL for more details.
+
+scriptdir=`dirname $0`
+testdir=$scriptdir/..
+launcherdir=$testdir/launchers
+
+
+verbose=false
+
+
+echoerr() { echo "$1" >&2	 ;}
+error()	  { echoerr "ERROR => $1";}
+fatal()	  { error "$1" && exit 1 ;}
+
+
+do_test_silent()
+{
+    __msg="TEST $1 ... "
+
+    echo -n "$__msg"
+
+    $2 >/dev/null 2>&1
+    __ret=$?
+    case $__ret in
+	0)	echo 'ok' ;;
+	77)	echo 'skip' ;;
+	*)	echo 'failed'
+    esac
+
+    return $__ret
+}
+
+do_test_verbose()
+{
+    __testname="$1"
+    __msg="TEST $__testname"
+    __lng=`expr length "$__msg"`
+    
+    echo `seq -s- 0  $__lng | tr -d '0-9'`
+    echo "$__msg"
+    echo `seq -s- 0  $__lng | tr -d '0-9'`
+
+    $2
+    __ret=$?
+    case $__ret in
+	0)
+	    ;;
+	77)
+	    echo
+	    echo
+
+	    __msg="TEST $__testname SKIPPED"
+	    __lng=`expr length "$__msg"`
+
+	    echo `seq -sx 0  $__lng | tr -d '0-9'`
+	    echo "$__msg"
+	    echo `seq -sx 0  $__lng | tr -d '0-9'`
+	    ;;
+	*)
+	    echo
+	    echo
+
+	    __msg="TEST $__testname FAILED"
+	    __lng=`expr length "$__msg"`
+
+	    echoerr `seq -sx 0  $__lng | tr -d '0-9'`
+	    echoerr "$__msg"
+	    echoerr `seq -sx 0  $__lng | tr -d '0-9'`
+    esac
+    
+    echo
+    echo
+
+    return $__ret
+}
+
+do_test() {
+    if $verbose ; then
+	do_test_verbose "$@"
+	__ret=$?
+    else
+	do_test_silent "$@"
+	__ret=$?
+    fi
+
+    return $?
+}
+
+
+case $OMX_TEST_VERBOSE in
+    1|2)    verbose=true
+esac
+
+
+batteryname=`basename $0`
+
+case $batteryname in
+    loopback)
+	do_test 'loopback with native networking'	$launcherdir/loopback_native
+	do_test 'loopback with shared networking'	$launcherdir/loopback_shared
+	do_test 'loopback with self networking'		$launcherdir/loopback_self
+	;;
+    misc)
+	do_test 'unexpected'				$launcherdir/unexpected
+	do_test 'unexpected with ctxids'		$launcherdir/unexpected_with_ctxids
+	do_test 'unexpected handler'			$launcherdir/unexpected_handler
+	do_test 'truncated'				$launcherdir/truncated
+	do_test 'wait_any'				$launcherdir/wait_any
+	do_test 'cancel'				$launcherdir/cancel
+	do_test 'wakeup'				$launcherdir/wakeup
+	do_test 'multirails'				$launcherdir/multirails
+	;;
+    vect)
+	do_test 'vectorials with native networking'	$launcherdir/vect_native
+	do_test 'vectorials with shared networking'	$launcherdir/vect_shared
+	do_test 'vectorials with self networking'	$launcherdir/vect_self
+	;;
+    pingpong)
+	do_test 'pingpong with native networking'	$launcherdir/pingpong_native
+	do_test 'pingpong with shared networking'	$launcherdir/pingpong_shared
+esac

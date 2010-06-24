@@ -31,13 +31,21 @@ static inline void
 omx_set_skb_destructor(struct sk_buff *skb, void (*callback)(struct sk_buff *skb), const void * data)
 {
 	skb->destructor = callback;
-	*((void **)(skb->cb)) = (void *) data;
+#ifdef OMX_HAVE_SKB_SHARED_INFO_DESTRUCTOR_ARG
+	skb_shinfo(skb)->destructor_arg = (void *) data;
+#else
+	skb->sk = (void *) data;
+#endif
 }
 
 static inline __pure void *
 omx_get_skb_destructor_data(const struct sk_buff *skb)
 {
-	return *((void **)(skb->cb));
+#ifdef OMX_HAVE_SKB_SHARED_INFO_DESTRUCTOR_ARG
+	return skb_shinfo(skb)->destructor_arg;
+#else
+	return (void *) skb->sk;
+#endif
 }
 
 /* queue a skb for xmit, account it, and eventually actually drop it for debugging */
@@ -59,7 +67,7 @@ extern unsigned long omx_packet_loss_index;
 		omx_packet_loss_index = 0;					\
 	} else if (omx_##type##_packet_loss &&					\
 	    (++omx_##type##_packet_loss_index >= omx_##type##_packet_loss)) {	\
-		kfree_skb(skb);							\
+		dev_kfree_skb(skb);						\
 		omx_##type##_packet_loss_index = 0;				\
 	} else {								\
 		__omx_queue_xmit(iface, skb, counter);				\

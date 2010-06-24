@@ -1,8 +1,9 @@
 # General informations on the project
 AC_INIT(Open-MX,
-	1.2.901,
-	http://open-mx.org,
-	open-mx)
+	1.2.903,
+	open-mx-devel@lists.gforge.inria.fr,
+	open-mx,
+	http://open-mx.org)
 
 AC_PREREQ(2.59)
 
@@ -490,8 +491,22 @@ AC_SUBST(OMX_RAW_DEVICE_GROUP)
 AC_SUBST(OMX_RAW_DEVICE_MODE)
 
 
+# Test configuration
+# Do not use multiline for the both following variables
+TEST_LIST='loopback_native loopback_shared loopback_self unexpected unexpected_with_ctxids unexpected_handler truncated wait_any cancel wakeup multirails vect_native vect_shared vect_self pingpong_native pingpong_shared randomloop'
 
-# Here is the list of Automake files
+BATTERY_LIST='loopback misc vect pingpong'
+
+FINAL_TEST_LIST=
+for t in $TEST_LIST ; do FINAL_TEST_LIST="$FINAL_TEST_LIST launchers/$t" ; done
+
+AC_SUBST(TEST_LIST)
+AC_SUBST(FINAL_TEST_LIST)
+AC_SUBST(BATTERY_LIST)
+
+
+
+# Here is the list of configured files
 AC_CONFIG_FILES(Makefile
 		driver/linux/Makefile
 		driver/linux/Kbuild
@@ -502,17 +517,23 @@ AC_CONFIG_FILES(Makefile
 		libopen-mx/lib64-debug/Makefile
 		tools/Makefile
 		tools/omx_check.sh
+		tools/omx_check
 		tools/omx_local_install
 		tools/omx_init
 		tools/10-open-mx.rules
 		tests/Makefile
-		tests/mx/Makefile)
+		tests/mx/Makefile
+		tests/helpers/omx_test_launcher)
 
 AC_SUBST(CONFIG_STATUS_DEPENDENCIES,
 	'$(top_srcdir)/driver/linux/Kbuild.in $(top_srcdir)/driver/linux/check_kernel_headers.sh')
 
-AC_CONFIG_COMMANDS(chmoding-omx_check.sh, chmod ugo+x tools/omx_check.sh)
-AC_CONFIG_COMMANDS(chmoding-omx_init,     chmod ugo+x tools/omx_init)
+AC_CONFIG_COMMANDS(chmoding-omx_check.sh,	chmod ugo+x tools/omx_check.sh)
+AC_CONFIG_COMMANDS(chmoding-omx_check,		chmod ugo+x tools/omx_check)
+AC_CONFIG_COMMANDS(chmoding-omx_init,		chmod ugo+x tools/omx_init)
+AC_CONFIG_COMMANDS(chmoding-omx_test_launcher,	chmod ugo+x tests/helpers/omx_test_launcher)
+
+OMX_SYMLINK_TESTS
 
 AC_OUTPUT
 

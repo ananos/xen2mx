@@ -273,3 +273,27 @@ if ! $srcdir/driver/linux/check_kernel_headers.sh --force ./driver/linux/omx_che
    AC_MSG_ERROR(Open-MX is not compliant with the Linux kernel internal API)
 fi
 ])
+
+
+# OMX_SYMLINK_TESTS()
+# ----------------------------
+# Symlink teststo omx_test_launcher
+AC_DEFUN([OMX_SYMLINK_TESTS],
+[
+mkdir -p tests/helpers
+AC_CONFIG_LINKS(tests/helpers/omx_test_double_app:tests/helpers/omx_test_double_app)
+AC_CONFIG_LINKS(tests/helpers/omx_test_battery:tests/helpers/omx_test_battery)
+
+AC_MSG_NOTICE(creating symlinks to omx_test_launcher in tests/launchers/ ...)
+mkdir -p tests/launchers
+for __t in $TEST_LIST ; do
+    ln -sf ../helpers/omx_test_launcher tests/launchers/$__t
+done
+
+AC_MSG_NOTICE(creating symlinks to omx_test_battery in tests/battery/ ...)
+mkdir -p tests/battery
+for __b in $BATTERY_LIST ; do
+    ln -sf ../helpers/omx_test_battery tests/battery/$__b
+done
+])
+
