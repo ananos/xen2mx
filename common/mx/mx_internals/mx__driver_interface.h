@@ -17,13 +17,25 @@
  */
 
 /*
- * This file mimics myriexpress.h from Myricom's MX distribution.
+ * This file mimics mx__driver_interface.h from Myricom's MX distribution.
  * It is used to build applications on top of Open-MX using the MX ABI.
  */
 
 #ifndef MX__DRIVER_INTERFACE_H
 #define MX__DRIVER_INTERFACE_H
 
-/* Dummy header so that OpenMPI >= 1.3 enables internal symbols at configure */
+#include "mx_io.h"
+#include "mx__fops.h"
+
+#ifdef __cpluscplus
+extern "C" {
+#endif
+
+/* Dummy prototypes so that OpenMPI >= 1.3 enables internal symbols at configure */
+extern mx_return_t mx__get_mapper_state(void *, void *);
+
+#ifdef __cpluscplus
+}
+#endif
 
 #endif /* MX__DRIVER_INTERFACE_H */
