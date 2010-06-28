@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 /* Dummy prototypes so that OpenMPI >= 1.3 enables internal symbols at configure */
-extern mx_return_t mx__get_mapper_state(void *, void *);
+extern mx_return_t mx__get_mapper_state(mx_endpt_handle_t, mx_mapper_state_t *);
 
 #ifdef __cpluscplus
 }

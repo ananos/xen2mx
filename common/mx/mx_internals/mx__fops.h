@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 /* Dummy prototypes so that OpenMPI >= 1.3 enables internal symbols at configure */
-extern mx_return_t mx_open_board(int i, void *handle);
+extern mx_return_t mx_open_board(int i, mx_endpt_handle_t *handle);
 
 #ifdef __cpluscplus
 }

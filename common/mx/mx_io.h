@@ -24,4 +24,19 @@
 #ifndef MX_IO_H
 #define MX_IO_H
 
+typedef int mx_endpt_handle_t;
+#define MX__INVALID_HANDLE -1
+
+typedef struct {
+  uint32_t board_number;
+  uint8_t mapper_mac[6];
+  uint16_t iport;
+  uint32_t map_version;
+  uint32_t num_hosts;
+  uint32_t network_configured;
+  uint32_t routes_valid;
+  uint32_t level;
+  uint32_t flags;
+} mx_mapper_state_t;
+
 #endif /* MX_IO_H */
