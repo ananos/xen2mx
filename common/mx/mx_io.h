@@ -18,11 +18,13 @@
 
 /*
  * This file mimics mx_io.h from Myricom's MX distribution.
- * It is used to build applications on top of Open-MX using the MX ABI.
+ * It is used to build applications on top of Open-MX using the MX internal API.
  */
 
 #ifndef MX_IO_H
 #define MX_IO_H
+
+/* Types needed so that ugly OpenMPI >= 1.3 enables internal symbols at configure */
 
 typedef int mx_endpt_handle_t;
 #define MX__INVALID_HANDLE -1

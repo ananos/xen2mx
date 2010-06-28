@@ -18,7 +18,7 @@
 
 /*
  * This file mimics mx__driver_interface.h from Myricom's MX distribution.
- * It is used to build applications on top of Open-MX using the MX ABI.
+ * It is used to build applications on top of Open-MX using the MX internal API.
  */
 
 #ifndef MX__DRIVER_INTERFACE_H
@@ -31,7 +31,7 @@
 extern "C" {
 #endif
 
-/* Dummy prototypes so that OpenMPI >= 1.3 enables internal symbols at configure */
+/* Prototype needed so that ugly OpenMPI >= 1.3 enables internal symbols at configure */
 extern mx_return_t mx__get_mapper_state(mx_endpt_handle_t, mx_mapper_state_t *);
 
 #ifdef __cpluscplus
