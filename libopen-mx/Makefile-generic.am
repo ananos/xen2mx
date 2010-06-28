@@ -1,7 +1,7 @@
 RM_F = rm -f
 
-AM_CPPFLAGS = -imacros $(abs_top_builddir)/common/config.h	\
-	      -I$(abs_top_srcdir)/common -I$(abs_srcdir)/..	\
+AM_CPPFLAGS = -imacros $(abs_top_builddir)/common/config.h -I$(abs_srcdir)/..	\
+	      -I$(abs_top_srcdir)/common -I$(abs_top_srcdir)/common/mx		\
 	      $(GLOBAL_AM_CPPFLAGS) $(AM_CPPFLAGS_SPEC)
 AM_CFLAGS   = -fstrict-aliasing $(GLOBAL_AM_CFLAGS) $(AM_CFLAGS_SPEC)
 AM_LDFLAGS  = $(GLOBAL_AM_LDFLAGS) $(AM_LDFLAGS_SPEC)

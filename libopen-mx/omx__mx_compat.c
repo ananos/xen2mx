@@ -875,17 +875,7 @@ mx_buffered(mx_endpoint_t endpoint, mx_request_t *request, uint32_t timeout, uin
  * Internal MX symbols (for OpenMPI 1.3)
  */
 
-typedef struct {
-  uint32_t board_number;
-  uint8_t mapper_mac[6];
-  uint16_t iport;
-  uint32_t map_version;
-  uint32_t num_hosts;
-  uint32_t network_configured;
-  uint32_t routes_valid;
-  uint32_t level;
-  uint32_t flags;
-} mx_mapper_state_t;
+#include "mx_io.h"
 
 /* internal MX symbols that must be exported for OpenMPI 1.3 */
 extern mx_return_t mx_open_board(int i, mx_endpt_handle_t *handle);
