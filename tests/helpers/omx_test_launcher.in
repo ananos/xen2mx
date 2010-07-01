@@ -37,7 +37,7 @@ find_programs()
 
 
 pre_check() {
-    { /sbin/lsmod | grep -q open_mx		     ; } || return 1
+    { cat /proc/modules | grep -q open_mx	     ; } || return 1
     { test -c /dev/open-mx -a -r /dev/open-mx	     ; } || return 1
 
     $TOOLS_DIR/omx_info | grep -qE '^ .* \(board #0 name lo addr 00:00:00:00:00:00\)'
