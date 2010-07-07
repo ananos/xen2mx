@@ -39,6 +39,8 @@ EXTRA_DIST = AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL		\
 	     README README.devel REPORTING-BUGS TODO open-mx.spec	\
 	     autogen.sh
 
+dist-hook:
+	@$(distdir)/autogen.sh
 
 if OMX_BUILD_LIBRARY
 if OMX_USE_FMA
