@@ -1,3 +1,7 @@
+* /etc/init.d/open-mx on some suse by looking at the existency
+  of the udev rules file in the current directory instead of a Makefile
+  + or drop omx_init support before make install
+
 * document omx_check usage and env variable
 * remove omx_check.sh and use omx_check by default
 
@@ -8,9 +12,8 @@
 * Symlinks for both the static and shared libraries are
   created even if --disable-shared and/or --disable-static
   is given
-
-* find a cleaner way to propagate the software version
-  where needed
+  + or drop libopen-mx.so and only ship libmyriexpress.so
+    (and always enable abi compat)
 
 * set the library ABI version in the library filename
 
