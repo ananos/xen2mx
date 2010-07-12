@@ -1,4 +1,4 @@
-Open-MX 1.3.0 (July 11th 2010, svn r3xyz)
+Open-MX 1.3.0 (July 12th 2010, svn r3078)
 =========================================
 
 Bug fixes:
@@ -25,10 +25,6 @@ Other improvements from previous release:
 * Add a new test infrastructure in parallel of the old omx_check.sh
   script.
 * Miscellaneous minor fixes all over the place.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.2.902 aka 1.3-rc2 (June 9th 2010, svn r3022)
 ======================================================
