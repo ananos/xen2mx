@@ -78,6 +78,10 @@ fi
 [ -z "$OMX_FMA_START_TIMEOUT" ] && OMX_FMA_START_TIMEOUT=5
 [ -z "$OMX_IFACES" ] && OMX_IFACES="all"
 
+echoerr () {
+    echo "$1" >&2
+}
+
 usage () {
 	echo "Usage: $0 [options] <command> [module load params]"
 	echo " Commands:	start stop status restart kill"
@@ -153,10 +157,10 @@ check_or_create_device() {
 	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
 	minor=$(sed -nr -e 's/ *([0-9]+) *'$kernelname'$/\1/p' /proc/misc)
 	if test -z "$major" -o -z "$minor"; then
-	    echo "  [ERROR] Failed to retrieve $name device major/minor numbers"
+	    echoerr "  [ERROR] Failed to retrieve $name device major/minor numbers"
 	else
 	    mknod "$path" c "$major" "$minor" \
-		|| echo "  [ERROR] Failed to create $name device node"
+		|| echoerr "  [ERROR] Failed to create $name device node"
 	fi
 	created_device=1
     fi
@@ -165,9 +169,9 @@ check_or_create_device() {
     if test x$created_device = "x1" || ! udev_is_active || ! test -f "$UDEV_RULES_FILE" ; then
 	echo "  Setting group '$group' and mode '$mode' on $name device '$path'"
 	chgrp "$group" "$path" \
-	    || echo "  [ERROR] Failed to set $name device mode"
+	    || echoerr "  [ERROR] Failed to set $name device mode"
 	chmod "$mode" "$path" \
-	    || echo "  [ERROR] Failed to set $name device group"
+	    || echoerr "  [ERROR] Failed to set $name device group"
     fi
 
     # print the device status
@@ -181,7 +185,7 @@ load_omx() {
     module=${OMX_MODULE}
 
     if ! test -f $module; then
-	echo "[ERROR] Cannot find module $module"
+	echoerr "[ERROR] Cannot find module $module"
         exit -1
     fi
 
@@ -252,7 +256,7 @@ start_peer_discovery() {
 	[ "${OMX_PEER_DISCOVERY}" = "fma" ] && oldfmapid=$(cat "$FMS_RUN/fma.pid" 2>/dev/null || true)
 
 	if [ ! -x ${TOOLS_DIR}/${OMX_PEER_DISCOVERY} ] || [ ! -f ${TOOLS_DIR}/${OMX_PEER_DISCOVERY} ] ;  then
-	    echo "[ERROR] Cannot find dynamic peer discovery to start (${OMX_PEER_DISCOVERY})"
+	    echoerr "[ERROR] Cannot find dynamic peer discovery to start (${OMX_PEER_DISCOVERY})"
 	    return
 	fi
 
@@ -274,7 +278,7 @@ start_peer_discovery() {
 	fi
 	cmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
 	if [ -z "$cmdname" ] ; then
-	    echo "[ERROR] Discovery exited early"
+	    echoerr "[ERROR] Discovery exited early"
 	else
 	    echo "$pid $cmdname" > ${OMX_PID_FILE}
 	    echo "Started as pid=$pid"
@@ -288,7 +292,7 @@ stop_peer_discovery() {
 	cat ${OMX_PID_FILE} | while read pid cmdname ; do
 	realcmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
 	if [ "$cmdname" != "$realcmdname" ] ; then
-	    echo "[ERROR] Cannot find dynamic peer discovery to kill ($cmdname, pid=$pid)"
+	    echoerr "[ERROR] Cannot find dynamic peer discovery to kill ($cmdname, pid=$pid)"
 	else
 	    echo "Killing the dynamic peer discovery ($cmdname, pid=$pid)"
 	    kill -9 $pid || true
@@ -297,7 +301,7 @@ stop_peer_discovery() {
 	done
 	rm -f ${OMX_PID_FILE} || true
     else
-	echo "[ERROR] Cannot find dynamic peer discovery to kill"
+	echoerr "[ERROR] Cannot find dynamic peer discovery to kill"
     fi
 }
 
@@ -355,7 +359,7 @@ case "$cmd" in
 	fi
 	;;
     *)
-	echo "[ERROR] Unknown command: $cmd"
+	echoerr "[ERROR] Unknown command: $cmd"
 	usage
 esac
 
