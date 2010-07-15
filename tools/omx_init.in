@@ -39,8 +39,9 @@ FMS_RUN=@OMX_FMS_RUN@
 FMS_SERVER=@OMX_FMS_SERVER@
 
 UDEV=1
+UDEV_RULES_SRC=10-open-mx.rules
 UDEV_RULES_DIR=/etc/udev/rules.d
-UDEV_RULES_FILE=${UDEV_RULES_DIR}/10-open-mx.rules
+UDEV_RULES_FILE=${UDEV_RULES_DIR}/${UDEV_RULES_SRC}
 
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
@@ -48,7 +49,7 @@ LINUX_RELEASE=$(uname -r)
 
 set -e
 
-if [ -f $scriptdir/Makefile ] ; then
+if [ -f $scriptdir/${UDEV_RULES_SRC} ] ; then
     OMX_MODULE="$scriptdir/../driver/linux/open-mx.ko"
     TOOLS_DIR="$scriptdir/../tools"
 else
