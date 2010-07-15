@@ -2,6 +2,8 @@ How-to release a tarball
 ========================
 
 If not done yet, update the ChangeLog and the version in configure.ac.
+Before committing the update, make sure, you run autogen.sh so that
+version updates in other files are also committed.
 
 Apply all changes to the source dir, even if you cannot commit them.
 Then, run the configure script, either inside the source directory
