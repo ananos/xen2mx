@@ -1,5 +1,4 @@
 * document omx_check usage and env variable
-* remove omx_check.sh and use omx_check by default
 
 * switch to another malloc library with smaller locking overhead
   + use per-endpoint pools (no need to be thread-safe there) ?
