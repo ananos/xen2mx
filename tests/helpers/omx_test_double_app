@@ -19,7 +19,7 @@
 
 app=
 opts=
-sender_opts='-e 3 -d localhost'
+sender_opts='-d localhost -e 3'
 suspend=false
 
 
