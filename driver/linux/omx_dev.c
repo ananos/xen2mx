@@ -268,7 +268,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, const void __user * uparam)
  * Always called in a sleepable context:
  * - from the release method of the fd when the process closes it
  * - from the netdevice notifier
- * - from the ifnames sysfs store methode
+ * - from the ifnames sysfs store method
  */
 int
 omx_endpoint_close(struct omx_endpoint * endpoint,
