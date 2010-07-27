@@ -24,11 +24,17 @@
 #include "dlmalloc.h"
 #define omx_malloc dlmalloc
 #define omx_calloc dlcalloc
-#define omx_free dlfree
+#define omx_free   dlfree
+#define omx_malloc_ep(ep,size) dlmalloc(size)
+#define omx_calloc_ep(ep,nb_elt,size_elt) dlcalloc(nb_elt,size_elt)
+#define omx_free_ep(ep,ptr) dlfree(ptr)
 #else /* !OMX_LIB_DLMALLOC */
 #define omx_malloc malloc
 #define omx_calloc calloc
-#define omx_free free
+#define omx_free   free
+#define omx_malloc_ep(ep,size) malloc(size)
+#define omx_calloc_ep(ep,nb_elt,size_elt) calloc(nb_elt,size_elt)
+#define omx_free_ep(ep,ptr) free(ptr)
 #endif /* !OMX_LIB_DLMALLOC */
 
 #include <stdio.h>
