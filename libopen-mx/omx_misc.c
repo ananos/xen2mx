@@ -381,7 +381,7 @@ omx__create_message_prefix(const struct omx_endpoint *ep)
   int ret;
   int start_idx, end_idx, len;
 
-  buffer = omx_malloc(OMX_MESSAGE_PREFIX_LENGTH_MAX);
+  buffer = omx_malloc_ep(ep, OMX_MESSAGE_PREFIX_LENGTH_MAX);
   if (!buffer)
     omx__abort(NULL, "Failed to allocate message prefix\n");
 

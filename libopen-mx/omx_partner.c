@@ -145,7 +145,7 @@ omx__partner_create(struct omx_endpoint *ep, uint16_t peer_index,
   struct omx__partner * partner;
   uint32_t partner_index;
 
-  partner = omx_malloc(sizeof(*partner));
+  partner = omx_malloc_ep(ep, sizeof(*partner));
   if (unlikely(!partner))
     /* let the caller handle the error if retransmission cannot recover this */
     return OMX_NO_RESOURCES;

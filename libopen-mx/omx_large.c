@@ -35,7 +35,7 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
   struct omx__large_region_slot * array;
   int i;
 
-  array = omx_malloc(OMX_USER_REGION_MAX * sizeof(struct omx__large_region_slot));
+  array = omx_malloc_ep(ep, OMX_USER_REGION_MAX * sizeof(struct omx__large_region_slot));
   if (!array)
     /* let the caller handle the error */
     return OMX_NO_RESOURCES;

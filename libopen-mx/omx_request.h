@@ -51,9 +51,9 @@ omx__request_alloc(struct omx_endpoint *ep)
   union omx_request * req;
 
 #ifdef OMX_LIB_DEBUG
-  req = omx_calloc(1, sizeof(*req));
+  req = omx_calloc_ep(ep, 1, sizeof(*req));
 #else
-  req = omx_malloc(sizeof(*req));
+  req = omx_malloc_ep(ep, sizeof(*req));
 #endif
   if (unlikely(!req))
     return NULL;

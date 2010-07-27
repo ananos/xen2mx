@@ -96,7 +96,7 @@ omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
   struct omx__sendq_entry * array;
   unsigned i;
 
-  array = omx_malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct omx__sendq_entry));
+  array = omx_malloc_ep(ep, OMX_SENDQ_ENTRY_NR * sizeof(struct omx__sendq_entry));
   if (!array)
     /* let the caller handle the error */
     return OMX_NO_RESOURCES;
@@ -543,7 +543,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->ctxid_shift = ctxid_shift;
   ep->ctxid_mask = ((uint64_t) ep->ctxid_max - 1) << ctxid_shift;
 
-  ep->ctxid = omx_malloc(ep->ctxid_max * sizeof(*ep->ctxid));
+  ep->ctxid = omx_malloc_ep(ep, ep->ctxid_max * sizeof(*ep->ctxid));
   if (!ep->ctxid) {
     ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint ctxids array");
     goto out_with_myself;

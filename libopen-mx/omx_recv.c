@@ -152,7 +152,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
     /* obsolete early ? ignore */
     return;
 
-  early = omx_malloc(sizeof(*early));
+  early = omx_malloc_ep(ep, sizeof(*early));
   if (unlikely(!early))
     /* cannot store early? just drop, it will be resent */
     return;
@@ -174,7 +174,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
 
   case OMX_EVT_RECV_SMALL: {
     uint16_t length = msg->specific.small.length;
-    char * early_data = omx_malloc(length);
+    char * early_data = omx_malloc_ep(ep, length);
     if (!early_data) {
       omx_free(early);
       /* cannot store early? just drop, it will be resent */
@@ -188,7 +188,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
 
   case OMX_EVT_RECV_MEDIUM_FRAG: {
     uint16_t frag_length = msg->specific.medium_frag.frag_length;
-    char * early_data = omx_malloc(frag_length);
+    char * early_data = omx_malloc_ep(ep, frag_length);
     if (unlikely(!early_data)) {
       omx_free(early);
       /* cannot store early? just drop, it will be resent */
@@ -588,7 +588,7 @@ omx__try_match_next_recv(struct omx_endpoint *ep,
       void *unexp_buffer = NULL;
 
       if (msg_length) {
-	unexp_buffer = omx_malloc(msg_length);
+	unexp_buffer = omx_malloc_ep(ep, msg_length);
 	if (unlikely(!unexp_buffer)) {
 	  omx__verbose_printf(ep, "Failed to allocate buffer for unexpected messages, dropping\n");
 	  omx__request_free(ep, req);
@@ -970,7 +970,7 @@ omx__process_self_send(struct omx_endpoint *ep,
     }
 
     if (msg_length) {
-      unexp_buffer = omx_malloc(msg_length);
+      unexp_buffer = omx_malloc_ep(ep, msg_length);
       if (unlikely(!unexp_buffer)) {
 	omx__request_free(ep, rreq);
 	status_code = omx__error_with_ep(ep, OMX_NO_RESOURCES,

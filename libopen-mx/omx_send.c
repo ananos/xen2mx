@@ -985,7 +985,7 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   if (likely(length <= OMX_TINY_MSG_LENGTH_MAX)) {
     omx__submit_isend_tiny(ep, partner, req);
   } else if (length <= OMX_SMALL_MSG_LENGTH_MAX) {
-    void *copy = omx_malloc(length);
+    void *copy = omx_malloc_ep(ep, length);
     if (unlikely(!copy))
       return omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating isend small copy buffer");
     req->send.specific.small.copy = copy;
