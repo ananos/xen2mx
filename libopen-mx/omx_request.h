@@ -70,7 +70,7 @@ omx__request_alloc(struct omx_endpoint *ep)
 static inline void
 omx__request_free(struct omx_endpoint *ep, union omx_request * req)
 {
-  omx_free(req);
+  omx_free_ep(ep, req);
 #ifdef OMX_LIB_DEBUG
   ep->req_alloc_nr--;
 #endif

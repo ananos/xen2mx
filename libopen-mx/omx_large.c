@@ -125,7 +125,7 @@ omx__endpoint_large_region_map_exit(struct omx_endpoint * ep)
     omx__destroy_region(ep, region);
   }
 
-  omx_free(ep->large_region_map.array);
+  omx_free_ep(ep, ep->large_region_map.array);
 }
 
 /****************************************

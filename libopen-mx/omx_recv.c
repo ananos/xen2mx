@@ -176,7 +176,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
     uint16_t length = msg->specific.small.length;
     char * early_data = omx_malloc_ep(ep, length);
     if (!early_data) {
-      omx_free(early);
+      omx_free_ep(ep, early);
       /* cannot store early? just drop, it will be resent */
       return;
     }
@@ -190,7 +190,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
     uint16_t frag_length = msg->specific.medium_frag.frag_length;
     char * early_data = omx_malloc_ep(ep, frag_length);
     if (unlikely(!early_data)) {
-      omx_free(early);
+      omx_free_ep(ep, early);
       /* cannot store early? just drop, it will be resent */
       return;
     }
@@ -811,8 +811,8 @@ omx__process_recv(struct omx_endpoint *ep,
 						  early->recv_func);
 	  /* ignore errors, the packet will be resent anyway, the recv seqnums didn't increase */
 
-	  omx_free(early->data);
-	  omx_free(early);
+	  omx_free_ep(ep, early->data);
+	  omx_free_ep(ep, early);
 	}
       }
     }
@@ -1141,7 +1141,7 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
 #endif
 
     if (msg_length)
-      omx_free(unexp_buffer);
+      omx_free_ep(ep, unexp_buffer);
     omx__recv_complete(ep, req, status_code);
 
     omx__debug_assert(sreq->generic.state & OMX_REQUEST_STATE_UNEXPECTED_SELF_SEND);
@@ -1173,7 +1173,7 @@ omx__complete_unexp_req_as_irecv(struct omx_endpoint *ep,
 #endif
 
     if (msg_length)
-      omx_free(unexp_buffer);
+      omx_free_ep(ep, unexp_buffer);
 
     if (unlikely(req->generic.state)) {
       omx__debug_assert(req->generic.state & OMX_REQUEST_STATE_RECV_PARTIAL);

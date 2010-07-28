@@ -50,7 +50,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
 
   switch (req->generic.type) {
   case OMX_REQUEST_TYPE_SEND_SMALL:
-    omx_free(req->send.specific.small.copy);
+    omx_free_ep(ep, req->send.specific.small.copy);
     break;
   case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
     omx__endpoint_sendq_map_put(ep, req->send.specific.mediumsq.frags_nr, req->send.specific.mediumsq.sendq_map_index);
