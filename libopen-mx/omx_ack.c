@@ -200,16 +200,15 @@ omx__handle_nack(struct omx_endpoint *ep,
 
  try_connect_req:
 
-  /* look in the list of pending connect requests */
-  omx__foreach_partner_request(&partner->connect_req_q, req) {
-    /* FIXME: if > then break,
-     * but take care of the wrap around using partner->connect_seqnum
-     * but this protocol is crap so far since we can't distinguish between nacks for send and connect
-     */
-    if (req->connect.connect_seqnum == seqnum) {
-      omx__connect_complete(ep, req, status, (uint32_t) -1);
-      return;
-    }
+  /* The MX protocol does not pass the connect_seqnum in lib nacks.
+   * The lib_seqnum is always 0 there, so we can't identify which connect request
+   * is being nacked. But all these requests are equivalent anyway.
+   * So just nack the first we find, it should be the oldest one.
+   */
+  if (!omx__empty_partner_queue(&partner->connect_req_q)) {
+    req = omx__first_partner_request(&partner->connect_req_q);
+    omx__connect_complete(ep, req, status, (uint32_t) -1);
+    return;
   }
 
   omx__debug_printf(ACK, ep, "Failed to find request to nack for seqnum %d, could be a duplicate, ignoring\n",

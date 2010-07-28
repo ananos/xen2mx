@@ -87,6 +87,10 @@ omx_recv_connect(struct omx_iface * iface,
 		omx_counter_inc(iface, DROP_BAD_ENDPOINT);
 		omx_drop_dprintk(eh, "CONNECT packet for unknown endpoint %d",
 				 dst_endpoint);
+		/* it would be more clever to use the connect_seqnum (so that the receiver
+		 * knows which connect request is being nacked), but the MX MCP does not know it.
+		 * so just pass lib_seqnum to match the wire spec
+		 */
 		omx_send_nack_lib(iface, peer_index,
 				  omx_endpoint_acquire_by_iface_index_error_to_nack_type(endpoint),
 				  dst_endpoint, src_endpoint, lib_seqnum);

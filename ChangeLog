@@ -1,6 +1,8 @@
 
 Bug fixes:
-* Fix omx_init when running from /etc/init.d on som distributions.
+* Fix omx_init when running from /etc/init.d on some distributions.
+* Clarify the management of connection nacks so that multiple connect
+  requests to the same invalid peer fail properly.
 
 
 Open-MX 1.3.0 (July 12th 2010, svn r3078)
