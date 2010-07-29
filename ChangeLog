@@ -1,5 +1,6 @@
 
 Bug fixes:
+* Fix in-order matching when many unexpected messages arrive out-of-order.
 * Fix omx_init when running from /etc/init.d on some distributions.
 * Clarify the management of connection nacks so that multiple connect
   requests to the same invalid peer fail properly.

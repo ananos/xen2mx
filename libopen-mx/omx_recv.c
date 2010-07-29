@@ -226,6 +226,14 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
  * Packet-type-specific receive callbacks
  */
 
+/*
+ * When these callbacks are invoked, the request is on no queue.
+ * When it returns, the request is on the done or unexp queue.
+ * In case of multiple medium fragments, between each callback,
+ * the request is on the endpoint unexp or partial queue, and on
+ * the partner partial queue.
+ */
+
 void
 omx__process_recv_tiny(struct omx_endpoint *ep, struct omx__partner *partner,
 		       union omx_request *req,
@@ -329,15 +337,7 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
 		      (unsigned) frag_seqnum,
 		      (unsigned) OMX__SEQNUM(req->recv.seqnum),
 		      (unsigned) OMX__SESNUM_SHIFTED(req->recv.seqnum));
-    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
-      omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
-      if (unlikely(HAS_CTXIDS(ep)))
-	omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
-#ifdef OMX_LIB_DEBUG
-    } else {
-      omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
-#endif
-    }
+    /* keep the request enqueued the same */
     return;
   }
 
@@ -370,15 +370,34 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   /* update and check the accumulated received length */
   req->recv.specific.medium.frags_received_mask |= 1 << frag_seqnum;
   req->recv.specific.medium.accumulated_length += chunk;
+
+  if (unlikely(new)) {
+    /* first frag, queue the request and keep it there until the last frag arrives
+     * (and move it if unexpected gets matched)
+     */
+    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
+      omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
+      if (unlikely(HAS_CTXIDS(ep)))
+	omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
+#ifdef OMX_LIB_DEBUG
+    } else {
+      omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
+#endif
+    }
+
+    req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
+    omx__enqueue_partner_request(&partner->partial_medium_recv_req_q, req);
+  }
+
   if (likely(req->recv.specific.medium.accumulated_length == msg_length)) {
-    /* was the last frag */
+    /* last frag */
     omx__debug_printf(MEDIUM, ep, "got last frag of seqnum %d (#%d)\n",
 		      (unsigned) OMX__SEQNUM(req->recv.seqnum),
 		      (unsigned) OMX__SESNUM_SHIFTED(req->recv.seqnum));
 
-    /* if there were previous frags, remove from the partialq */
-    if (unlikely(!new))
-      omx__dequeue_partner_request(&partner->partial_medium_recv_req_q, req);
+    /* remove from the partialq */
+    req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
+    omx__dequeue_partner_request(&partner->partial_medium_recv_req_q, req);
 
 #ifdef OMX_LIB_DEBUG
     if (omx__globals.debug_checksum) {
@@ -390,12 +409,10 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     }
 #endif
 
-    req->generic.state &= ~OMX_REQUEST_STATE_RECV_PARTIAL;
-    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
-      omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
-      if (unlikely(HAS_CTXIDS(ep)))
-	omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
-    } else {
+    if (likely(!(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV))) {
+#ifdef OMX_LIB_DEBUG
+      omx__dequeue_request(&ep->partial_medium_recv_req_q, req);
+#endif
       omx__recv_complete(ep, req, OMX_SUCCESS);
     }
 
@@ -404,23 +421,9 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
     omx__debug_printf(MEDIUM, ep, "got one frag of seqnum %d (#%d)\n",
 		      (unsigned) OMX__SEQNUM(req->recv.seqnum),
 		      (unsigned) OMX__SESNUM_SHIFTED(req->recv.seqnum));
-
-    if (unlikely(new)) {
-      req->generic.state |= OMX_REQUEST_STATE_RECV_PARTIAL;
-      omx__enqueue_partner_request(&partner->partial_medium_recv_req_q, req);
-    }
-
-    if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
-      omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);
-      if (unlikely(HAS_CTXIDS(ep)))
-	omx__enqueue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
-#ifdef OMX_LIB_DEBUG
-    } else {
-      omx__enqueue_request(&ep->partial_medium_recv_req_q, req);
-#endif
-    }
   }
 }
+
 
 void
 omx__process_recv_rndv(struct omx_endpoint *ep, struct omx__partner *partner,
@@ -656,23 +659,12 @@ omx__continue_partial_request(struct omx_endpoint *ep,
 			      struct omx__partner * partner, omx__seqnum_t seqnum,
 			      const struct omx_evt_recv_msg *msg, const void *data, uint32_t msg_length)
 {
-  uint64_t match_info = msg->match_info;
-  uint32_t ctxid = CTXID_FROM_MATCHING(ep, match_info);
   union omx_request * req = NULL;
   omx__seqnum_t new_index = OMX__SEQNUM(seqnum - partner->next_frag_recv_seq);
 
   omx__foreach_partner_request(&partner->partial_medium_recv_req_q, req) {
     omx__seqnum_t req_index = OMX__SEQNUM(req->recv.seqnum - partner->next_frag_recv_seq);
     if (likely(req_index == new_index)) {
-      if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
-	omx__dequeue_request(&ep->anyctxid.unexp_req_q, req);
-	if (unlikely(HAS_CTXIDS(ep)))
-	  omx__dequeue_ctxid_request(&ep->ctxid[ctxid].unexp_req_q, req);
-#ifdef OMX_LIB_DEBUG
-      } else {
-	omx__dequeue_request(&ep->partial_medium_recv_req_q, req);
-#endif
-      }
       omx__process_recv_medium_frag(ep, partner, req,
 				    msg, data, req->generic.status.xfer_length);
       omx__update_partner_next_frag_recv_seq(ep, partner);
