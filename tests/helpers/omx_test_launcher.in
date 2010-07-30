@@ -36,20 +36,23 @@ find_programs()
 }
 
 
-pre_check() {
-    { grep -q open_mx /proc/modules		     ; } || return 1
-    { test -c /dev/open-mx -a -r /dev/open-mx	     ; } || return 1
-
-    $TOOLS_DIR/omx_info | grep -qE '^ .* \(board #0 name lo addr 00:00:00:00:00:00\)'
-    $TOOLS_DIR/omx_info | grep -qE '^ localhost \(board #0 name lo addr 00:00:00:00:00:00\)'
-}
-
 process_omx_test_verbose_env() {
     case $OMX_TEST_VERBOSE in
 	2)  ;;
 	1)  exec >/dev/null ;;
 	*)  exec >/dev/null 2>&1
     esac
+}
+
+
+pre_check() {
+    grep -q open_mx /proc/modules	    || { echo 'module not loaded' >&2 && return 1	;}
+    test -c /dev/open-mx -a -r /dev/open-mx || { echo 'device not accessible' >&2 && return 1	;}
+
+    #$TOOLS_DIR/omx_info | grep -qE '^ .* \(board #0 name lo addr 00:00:00:00:00:00\)'
+	
+    { $TOOLS_DIR/omx_info | grep -qE '^ localhost \(board #0 name lo addr 00:00:00:00:00:00\)' ;} || \
+	{ echo 'loopback interface not found' >&2 && return 1 ;}
 }
 
 
