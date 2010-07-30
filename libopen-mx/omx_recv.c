@@ -372,8 +372,12 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   req->recv.specific.medium.accumulated_length += chunk;
 
   if (unlikely(new)) {
-    /* first frag, queue the request and keep it there until the last frag arrives
-     * (and move it if unexpected gets matched)
+    /*
+     * first frag, queue the request and keep it there until the last frag arrives.
+     * if unexpected and getting matched in the middle, dequeue from the unexpected
+     * queues and move to the done or partial recv queue.
+     * never dequeue/requeue in between since the unexpected queues must remain
+     * ordered to ensure in-order matching.
      */
     if (unlikely(req->generic.state & OMX_REQUEST_STATE_UNEXPECTED_RECV)) {
       omx__enqueue_request(&ep->anyctxid.unexp_req_q, req);

@@ -1,5 +1,3 @@
-* document omx_check usage and env variable
-
 * switch to another malloc library with smaller locking overhead
   + use per-endpoint pools (no need to be thread-safe there) ?
   + thread-safe global pool for non-endpoint-specific allocations

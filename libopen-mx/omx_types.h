@@ -272,6 +272,7 @@ struct omx_endpoint {
     /* unexpected receive, may be partial (queued by their ctxid_elt, only if there are multiple ctxids) */
     struct list_head unexp_req_q;
     /* posted non-matched receive (queued by their queue_elt) */
+    /* (we could queue by the ctxid_elt but we would need another recv_req_q to ensure conservation of matter) */
     struct list_head recv_req_q;
 
     /* done requests (queued by their ctxid_elt, only if there are multiple ctxids) */
@@ -295,14 +296,14 @@ struct omx_endpoint {
   struct list_head unexp_self_send_req_q;
 
 #ifdef OMX_LIB_DEBUG
-  /* two debug queues so that a request queue_elt is always queued somewhere */
+  /* some debug queues so that a request queue_elt is always queued somewhere */
   /* RECV MEDIUM req with state = PARTIAL (queued by their queue_elt) */
   struct list_head partial_medium_recv_req_q;
   /* SEND req with state = NEED_SEQNUM (queued by their queue_elt) */
   struct list_head need_seqnum_send_req_q;
   /* any request with state == DONE (done for real, not early, not zombie) (queued by their queue_elt) */
   struct list_head really_done_req_q;
-  /* internal DONE requests (synchronous connect) */
+  /* internal DONE requests (synchronous connect) (queued by their queue_elt) */
   struct list_head internal_done_req_q;
 #endif
 

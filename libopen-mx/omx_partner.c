@@ -854,7 +854,7 @@ omx__partner_cleanup(struct omx_endpoint *ep, struct omx__partner *partner, int 
   /*
    * Complete partially received request with an error status
    * Take them from the partner partial queue, it will remove them
-   * from the endpoint multifrag_medium_recv_req_q or unexp_req_q.
+   * from the endpoint partial_medium_recv_req_q or unexp_req_q.
    */
   count = 0;
   omx__foreach_partner_request_safe(&partner->partial_medium_recv_req_q, req, next) {
