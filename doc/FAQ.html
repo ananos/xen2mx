@@ -613,11 +613,11 @@ $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
 </pre>
 </li>
 <li>
-Wait a couple seconds and run /path/to/open-mx/bin/omx_info to
+Wait a couple seconds and run omx_info to
 check that all peers are seeing each other.
 See <a href="#peerdiscovery">Peer Discovery</a> for details.
 <pre>
-$ omx_info
+$ /path/to/open-mx/bin/omx_info
 [...]
 Peer table is ready, mapper is 01:02:03:04:05:06
 ================================================
@@ -651,7 +651,7 @@ $ /path/to/open-mx/sbin/omx_init start ifnames=lo
 <p>
 You should now see localhost appear in the peer table.
 <pre>
-$ tools/omx_info
+$ /path/to/open-mx/bin/omx_info
 [...]
 Peer table is ready, mapper is 00:00:00:00:00:00
 ================================================
@@ -663,14 +663,16 @@ Note that <tt>localhost</tt> is a special hostname that the
 driver gives to the loopback interface instead of the usual
 <tt>hostname:0</tt> for the first attached interface.
 </p>
+
 <p>
 You may then run the local testing suite (which requires
 that the first attached board is the above localhost peer).
 <pre>
-  $ tools/omx_check
+  $ /path/to/open-mx/bin/omx_check
 </pre>
 </p>
-
+Moreover, you can control the verbosity of the test suite with
+the OMX_TEST_VERBOSE environment variable. Valid values are 0 (default value), 1 and 2.
 
 <h4><a id="running-how-work" href="#running-how-work">
   How does Open-MX work?
