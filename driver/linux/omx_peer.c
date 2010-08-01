@@ -57,7 +57,7 @@ static struct omx_cmd_peer_table_state omx_peer_table_state = {
   *  - all peer hostnames (never accessed by the bottom half)
   *  - the host_query peer list
   *
-  * The bottom only access the peer (not its hostname) to get peer indexes,
+  * The bottom half only accesses the peer (not its hostname) to get peer indexes,
   * so we use rcu there.
   */
 struct mutex omx_ifaces_peers_mutex;
