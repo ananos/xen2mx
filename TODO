@@ -1,3 +1,11 @@
+* drop the open-mxd kernel thread, use work struct and timers instead
+
+* drop the mmapped jiffies
+  * use clock_gettime(CLOCK_MONOTONIC_COARSE) when available,
+    it has the HZ resolution and cost about 10ns
+  * use clock_gettime(CLOCK_MONOTONIC) otherwise,
+    but it costs about 30ns
+
 * switch to another malloc library with smaller locking overhead
   + use per-endpoint pools (no need to be thread-safe there) ?
   + thread-safe global pool for non-endpoint-specific allocations
