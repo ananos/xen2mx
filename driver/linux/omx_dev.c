@@ -215,8 +215,6 @@ omx_endpoint_open(struct omx_endpoint * endpoint, const void __user * uparam)
 		printk(KERN_ERR "Open-MX: Failed to read open endpoint command argument, error %d\n", ret);
 		goto out;
 	}
-	endpoint->board_index = param.board_index;
-	endpoint->endpoint_index = param.endpoint_index;
 
 	/* test whether the endpoint is ok to be open
 	 * and mark it as initializing */
@@ -235,6 +233,8 @@ omx_endpoint_open(struct omx_endpoint * endpoint, const void __user * uparam)
 		goto out_with_init;
 
 	/* attach the endpoint to the iface */
+	endpoint->board_index = param.board_index;
+	endpoint->endpoint_index = param.endpoint_index;
 	ret = omx_iface_attach_endpoint(endpoint);
 	if (ret < 0)
 		goto out_with_resources;

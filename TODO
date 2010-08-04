@@ -6,6 +6,8 @@
   * use clock_gettime(CLOCK_MONOTONIC) otherwise,
     but it costs about 30ns
 
+* merge the endpoint management stuff from the kernel-matching branch?
+
 * switch to another malloc library with smaller locking overhead
   + use per-endpoint pools (no need to be thread-safe there) ?
   + thread-safe global pool for non-endpoint-specific allocations
