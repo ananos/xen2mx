@@ -20,14 +20,14 @@ sed -e 's/^Version: .*/Version: '${version}'/' -i open-mx.spec
 echo "Creating the build-aux directory if necessary..."
 mkdir -p build-aux
 echo "Running aclocal..."
-aclocal || exit 1
+aclocal --force || exit 1
 echo "Running autoheader..."
-autoheader || exit 1
+autoheader -f || exit 1
 echo "Running libtoolize..."
-libtoolize -c || exit 1
+libtoolize -cf || exit 1
 echo "Running automake..."
 automake -ac || exit 1
 echo "Running autoconf..."
-autoconf || exit 1
+autoconf -f || exit 1
 
 cd $ORIGDIR || exit $?
