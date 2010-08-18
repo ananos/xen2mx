@@ -44,7 +44,7 @@ struct omx_user_region {
 
 	struct rcu_head rcu_head; /* rcu deferred releasing callback */
 	int nr_vmalloc_segments;
-	struct list_head cleanup_list_elt; /* deferred cleanup thread freeing */
+	struct work_struct destroy_work;
 
 	unsigned nr_segments;
 	unsigned long total_length;
@@ -97,8 +97,6 @@ extern int omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint, void __
 
 extern struct omx_user_region * omx_user_region_acquire(const struct omx_endpoint * endpoint, uint32_t rdma_id);
 extern void __omx_user_region_last_release(struct kref * kref);
-
-extern void omx_user_regions_cleanup(void);
 
 static inline void
 omx_user_region_reacquire(struct omx_user_region * region)

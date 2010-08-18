@@ -1,5 +1,3 @@
-* drop the open-mxd kernel thread, use work struct and timers instead
-
 * drop the mmapped jiffies
   * use clock_gettime(CLOCK_MONOTONIC_COARSE) when available,
     it has the HZ resolution and cost about 10ns

@@ -1,3 +1,15 @@
+Open-MX 1.3.2 (September ..., svn r....)
+========================================
+The no-kernel-thread release.
+
+Improvements from previous release:
+* Drop the open-mxd kernel thread in favor of deferred works and
+  kernel timers.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.3.1 (August 4th 2010, svn r3111)
 ==========================================
 The out-of-order unexpected release.
@@ -11,10 +23,6 @@ Bug fixes:
 Other improvements from previous release:
 * Remove the old omx_check.sh script and document the new omx_check
   testing infrastructure.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.3.0 (July 12th 2010, svn r3078)
 =========================================

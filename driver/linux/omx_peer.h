@@ -49,9 +49,6 @@ extern int omx_peer_lookup_by_addr(uint64_t board_addr, char *hostname, uint32_t
 extern int omx_peer_lookup_by_hostname(const char *hostname, uint64_t *board_addr, uint32_t *index);
 extern struct omx_peer * omx_peer_lookup_by_addr_locked(uint64_t board_addr);
 
-extern void omx_process_host_queries_and_replies(void);
-extern void omx_process_peers_to_host_query(void);
-
 #define OMX_UNKNOWN_REVERSE_PEER_INDEX ((uint32_t)-1)
 
 struct omx_peer {
@@ -62,7 +59,6 @@ struct omx_peer {
 	struct omx_iface * local_iface;
 
 	struct list_head host_query_list_elt;
-	uint64_t host_query_last_resend_jiffies;
 
 	struct rcu_head rcu_head; /* rcu deferred free callback */
 };
