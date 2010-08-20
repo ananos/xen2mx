@@ -1,3 +1,6 @@
+* add DKMS support and have omx_init try modprobe if there's no module
+  for current kernel in $prefix
+
 * drop the mmapped jiffies
   * use clock_gettime(CLOCK_MONOTONIC_COARSE) when available,
     it has the HZ resolution and cost about 10ns
