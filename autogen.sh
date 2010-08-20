@@ -16,6 +16,8 @@ echo "Updating COPYING version..."
 sed -e 's/^Open-MX .*/Open-MX '${version}'/' -i COPYING
 echo "Updating open-mx.spec version..."
 sed -e 's/^Version: .*/Version: '${version}'/' -i open-mx.spec
+echo "Updating dkms.conf version..."
+sed -e 's/^PACKAGE_VERSION=.*/PACKAGE_VERSION=\"'${version}'\"/' -i dkms.conf
 
 echo "Creating the build-aux directory if necessary..."
 mkdir -p build-aux

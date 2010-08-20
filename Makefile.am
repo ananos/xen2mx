@@ -37,7 +37,7 @@ dist_pkgdata_DATA = doc/FAQ.html
 
 EXTRA_DIST = AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL		\
 	     README README.devel REPORTING-BUGS TODO open-mx.spec	\
-	     autogen.sh
+	     autogen.sh dkms.conf
 
 dist-hook:
 	@$(distdir)/autogen.sh
@@ -58,7 +58,7 @@ fma:
 
 fma-install:
 	+$(MAKE) -C fma CC="$(CC)" MYRI_INC=-I$(abs_top_srcdir)/common/mx MYRI_LIB=$(abs_top_builddir)/libopen-mx/$(DEFAULT_LIBDIR)/.libs install
-	
+
 fma-clean:
 	+$(MAKE) -C fma CC="$(CC)" MYRI_INC=-I$(abs_top_srcdir)/common/mx MYRI_LIB=$(abs_top_builddir)/libopen-mx/$(DEFAULT_LIBDIR)/.libs clean
 
