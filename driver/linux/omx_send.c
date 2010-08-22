@@ -640,7 +640,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 	OMX_PKT_MATCH_INFO_FROM(&medium_n->msg, cmd.match_info);
 	OMX_PKT_FIELD_FROM(medium_n->frag_length, frag_length);
 	OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, cmd.frag_seqnum);
-	OMX_PKT_FIELD_FROM(medium_n->checksum, cmd.checksum);
+	OMX_PKT_FIELD_FROM(medium_n->msg.checksum, cmd.checksum);
 #ifdef OMX_MX_WIRE_COMPAT
 	OMX_PKT_FIELD_FROM(medium_n->frag_pipeline, cmd.frag_pipeline);
 #endif
