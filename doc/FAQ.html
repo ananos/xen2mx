@@ -142,6 +142,9 @@
 <li><a href="#kernel-target-kernel">
   How do I change the target kernel for the driver?
 </a></li>
+<li><a href="#kernel-dkms">
+  Can DKMS update the Open-MX kernel module automatically?
+</a></li>
 <li><a href="#kernel-compiler">
   How do I change the compiler for the kernel driver?
 </a></li>
@@ -1061,6 +1064,52 @@ split into multiple directories, you may also need to define the build directory
 $ ./configure --with-linux=/usr/src/linux-2.6.16.60-0.34 \
               --with-linux-build=/usr/src/linux-2.6.16.60-0.34-obj/x86_64/smp/
 </pre>
+
+
+<h4><a id="kernel-dkms" href="#kernel-dkms">
+  Can DKMS update the Open-MX kernel module automatically?
+</a></h4>
+<p>
+ Since Open-MX 1.3.2, <a href="http://linux.dell.com/dkms/">DKMS</a>
+ (Dynamic Kernel Module Support) may be used to automatically rebuild
+ the Open-MX kernel module when a new kernel is installed.
+</p>
+<p>
+ Assuming you want to use Open-MX 1.3.2, you should first unpack the
+ <tt>open-mx-1.3.2.tar.gz</tt> tarball in <tt>/usr/src</tt> (required by DKMS).
+ Then run configure inside this source tree, and build and install it as usual.
+ Now, you should tell DKMS to use the source tree for building updated kernel
+ modules:
+</p>
+<pre>
+# dkms add -m open-mx -v 1.3.2
+</pre>
+<p>
+ DKMS will reconfigure the source tree with the same options and specify
+ the currently running kernel as the target kernel.
+ The resulting <tt>open-mx</tt> module will be installed under <tt>/lib/modules/</tt>
+ and may thus be loaded with <tt>modprobe</tt>.
+ Finally, the <tt>omx_init</tt> startup script will try to load a DKMS-built
+ kernel module if it cannot find one in the regular Open-MX installation directory.
+</p>
+<p>
+ If you ever need to manually invoke DKMS to rebuild the module against the current
+ kernel (or against a specific kernel by adding the right <tt>-k</tt> option), do:
+</p>
+<pre>
+# dkms build -m open-mx -v 1.3.2
+# dkms install -m open-mx -v 1.3.2
+</pre>
+<p>
+ To uninstall everything DKMS generated from this Open-MX tarball:
+</p>
+<pre>
+# dkms remove -m open-mx -v 1.3.2 --all
+# rm -rf /usr/src/open-mx-1.3.2
+</pre>
+ See <a href="http://www.linuxjournal.com/article/6896">this article</a>
+ for more details about DKMS.
+</p>
 
 
 <h4><a id="kernel-compiler" href="#kernel-compiler">

@@ -5,6 +5,8 @@ The no-kernel-thread release.
 Improvements from previous release:
 * Drop the open-mxd kernel thread in favor of deferred works and
   kernel timers.
+* Add DKMS support to ease automatic rebuild of the kernel driver
+  when a new kernel is installed, see the FAQ for details.
 
 Caveats:
 * No background progression or retransmission is done if the application
