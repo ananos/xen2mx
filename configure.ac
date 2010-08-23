@@ -275,6 +275,12 @@ fi
 OMX_DISABLE(endian, enable_endian,
 	    disable endian-independant networking,
 	    whether endian-independant networking is enabled)
+ OMX_ENABLE(mx-wire, enable_mx_wire,
+            enable MX wire compatibility,
+	    whether MX wire compatibility is enabled)
+OMX_DISABLE(mx-abi, enable_mx_abi,
+            disable MX binary compatibility,
+	    whether MX ABI compatibility is enabled)
 
 OMX_WITH_COND(mtu, n, OMX_MTU,
 	      [change MTU (default is 9000 in non-MX-wire-compatible mode)],
@@ -299,13 +305,6 @@ OMX_WITH_COND(ethertype, n, OMX_ETHERTYPE,
 	      [change Ethertype (default is 0x86DF)],
 	      setting Ethertype to $OMX_ETHERTYPE, test x$enable_mx_wire = xno,
 	      default)
-
- OMX_ENABLE(mx-wire, enable_mx_wire,
-            enable MX wire compatibility,
-	    whether MX wire compatibility is enabled)
-OMX_DISABLE(mx-abi, enable_mx_abi,
-            disable MX binary compatibility,
-	    whether MX ABI compatibility is enabled)
 
 AM_CONDITIONAL(OMX_MX_ABI_COMPAT, test x$enable_mx_abi = xyes)
 
