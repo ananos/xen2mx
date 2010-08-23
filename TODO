@@ -1,5 +1,5 @@
-* add DKMS support and have omx_init try modprobe if there's no module
-  for current kernel in $prefix
+* rerun configure with the same options in dkms
+* document DKMS
 
 * drop the mmapped jiffies
   * use clock_gettime(CLOCK_MONOTONIC_COARSE) when available,

@@ -185,20 +185,28 @@ load_omx() {
     echo "Loading Open-MX driver (with $params)"
     module=${OMX_MODULE}
 
-    if ! test -f $module; then
-	echoerr "[ERROR] Cannot find module $module"
-        exit -1
+    if test -f $module; then
+	# modprobe the dependencies
+	depends="$(/sbin/modinfo $module 2>/dev/null | grep ^depends | awk '{print $2}' | sed 's/,/ /') $OMX_MODULE_DEPENDS"
+	for depend in $depends ; do
+	    echo "Loading dependency module: $depend"
+	    /sbin/modprobe $depend
+	done
+	# load the driver
+	/sbin/insmod $module $params
+    else
+	# module not found, the kernel probably changed since we installed Open-MX
+	# try modprobe in case DKMS rebuilt the driver for the new kernel
+	echoerr "[WARNING] Failed to find module $module, trying modprobe..."
+	if /sbin/modprobe open-mx ; then
+	    # looks good, let's hope DKMS compiled the module from the right source tree
+	    # and with the right configure options
+	    echoerr "[WARNING] Assuming modprobe loaded the right module"
+	else
+	    echoerr "[ERROR] Failed to modprobe open-mx"
+	    exit -1
+	fi
     fi
-
-    # modprobe the dependencies
-    depends="$(/sbin/modinfo $module 2>/dev/null | grep ^depends | awk '{print $2}' | sed 's/,/ /') $OMX_MODULE_DEPENDS"
-    for depend in $depends ; do
-	echo "Loading dependency module: $depend"
-	/sbin/modprobe $depend
-    done
-
-    # load the driver
-    /sbin/insmod $module $params
 
     # sleep a bit so that udev is done
     sleep 1
