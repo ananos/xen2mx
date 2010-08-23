@@ -519,7 +519,7 @@ See also <a href="#perf-packet-sizes">How should I tune Open-MX MTU
   $ cat /dev/open-mx
   Open-MX 1.0.90 (git-svn r2405)
    WireSpecs: NoWireCompat EtherType=0x86df MTU>=0x9000
-   MediumMessages: 8952B per fragment
+   MediumMessages: 8192B per fragment
    LargeMessages: 4 requests in parallel, 32 x 8968B pull replies per request
 </pre>
 </p>
@@ -2226,8 +2226,8 @@ The following options may be passed to the configure command line before buildin
   This may reduce large message throughput.
 </dd>
 
-<dt>--with-medium-frag-length=8952</dt>
-<dt>--with-pull-reply-length=8192</dt>
+<dt>--with-medium-frag-length=8192</dt>
+<dt>--with-pull-reply-length=8968</dt>
 <dd>Enforce the maximum size of medium message fragments
   instead of relying on the MTU and wire-compatibility configuration.
 </dd>
