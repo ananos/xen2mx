@@ -82,7 +82,7 @@ AC_MSG_NOTICE($5)
 ])
 
 
-# OMX_WITH_COND(ARGNAME, ARGSTRING, SHELLVAR, DESC, MSG, MSG_CONF, [DEFVAL])
+# OMX_WITH_COND(ARGNAME, ARGSTRING, SHELLVAR, DESC, MSG, MSG_COND, [DEFVAL])
 # --------------------------------------------------------------------------
 # The same as AC_ARG_WITH but the message displaying can be controlled by a condition
 AC_DEFUN([OMX_WITH_COND],
