@@ -528,3 +528,10 @@ OMX_SYMLINK_TESTS
 
 AC_OUTPUT
 
+# Create the DKMS quick configure file
+AC_MSG_NOTICE(Creating the DKMS quick configure script)
+cat >configure-dkms <<EOF
+$srcdir/configure $(./config.status --config) --with-linux-release=\$1
+EOF
+chmod ugo+x configure-dkms
+
