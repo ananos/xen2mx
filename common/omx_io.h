@@ -37,7 +37,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x20c
+#define OMX_DRIVER_ABI_VERSION		0x20d
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -79,7 +79,7 @@
 
 #define OMX_TINY_MSG_LENGTH_MAX		32
 #define OMX_SMALL_MSG_LENGTH_MAX	128
-#define OMX_MEDIUM_MSG_LENGTH_MAX	32768
+#define OMX__MX_MEDIUM_MSG_LENGTH_MAX	32768
 
 #define OMX_HOSTNAMELEN_MAX	80
 #define OMX_IF_NAMESIZE		16

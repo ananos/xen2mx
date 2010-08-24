@@ -441,7 +441,7 @@ omx__post_isend_mediumsq(struct omx_endpoint *ep,
   omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   uint32_t length = req->generic.status.msg_length;
   uint32_t remaining = length;
-  int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
+  omx_sendq_map_index_t * sendq_index = req->send.specific.mediumsq.sendq_map_index;
   uint32_t frags_nr = req->send.specific.mediumsq.frags_nr;
   uint32_t frag_max = OMX_MEDIUM_FRAG_LENGTH_MAX;
   unsigned i;
@@ -599,7 +599,7 @@ omx__alloc_setup_isend_mediumsq(struct omx_endpoint *ep,
 {
   struct omx_cmd_send_mediumsq_frag * medium_param = &req->send.specific.mediumsq.send_mediumsq_frag_ioctl_param;
   uint32_t length = req->generic.status.msg_length;
-  int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
+  omx_sendq_map_index_t * sendq_index = req->send.specific.mediumsq.sendq_map_index;
   int res = req->generic.missing_resources;
   uint32_t frags_nr = req->send.specific.mediumsq.frags_nr;
 
@@ -660,7 +660,11 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   int use_sendq = omx__globals.medium_sendq;
   omx_return_t ret;
 
-  BUILD_BUG_ON(OMX_MEDIUM_MSG_LENGTH_MAX > OMX_MEDIUM_FRAG_LENGTH_MAX * OMX_MEDIUM_FRAGS_MAX);
+  /* the frag seqnum is stored in uint8_t on the wire */
+  BUILD_BUG_ON(OMX_MEDIUM_FRAGS_MAX > 255);
+
+  /* the default max medium length should fit in the maximal number of frags */
+  BUILD_BUG_ON(OMX__MX_MEDIUM_MSG_LENGTH_MAX > OMX_MEDIUM_FRAG_LENGTH_MAX * OMX_MEDIUM_FRAGS_MAX);
 
   if (use_sendq) {
     int frag_max = OMX_MEDIUM_FRAG_LENGTH_MAX;

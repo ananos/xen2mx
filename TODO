@@ -1,3 +1,5 @@
+* dynamically alloc the sendq_map index array out of the medium request?
+
 * drop the mmapped jiffies
   * use clock_gettime(CLOCK_MONOTONIC_COARSE) when available,
     it has the HZ resolution and cost about 10ns
@@ -44,7 +46,6 @@
 
 * update all thresholds in non-wire-compat
   + make them configurable?
-  + increase medium-size up to 32*8kB (needs 32bits message length in packet header, command and events)
   + push-based model for large
 
 * make omx_prepare_binding more flexible:

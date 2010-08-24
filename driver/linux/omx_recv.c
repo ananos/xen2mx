@@ -394,11 +394,11 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	struct omx_pkt_medium_frag *medium_n = &mh->body.medium;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag);
 	uint16_t frag_length = OMX_FROM_PKT_FIELD(medium_n->frag_length);
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(medium_n->msg.src_endpoint);
-	uint32_t session_id = OMX_FROM_PKT_FIELD(medium_n->msg.session);
-	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(medium_n->msg.lib_seqnum);
-	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->msg.lib_piggyack);
+	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(medium_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(medium_n->src_endpoint);
+	uint32_t session_id = OMX_FROM_PKT_FIELD(medium_n->session);
+	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(medium_n->lib_seqnum);
+	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->lib_piggyack);
 
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
@@ -502,10 +502,10 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	/* fill event */
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
-	event.match_info = OMX_FROM_PKT_MATCH_INFO(&medium_n->msg);
+	event.match_info = OMX_FROM_PKT_MATCH_INFO(medium_n);
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
-	event.specific.medium_frag.msg_length = OMX_FROM_PKT_FIELD(medium_n->msg.length);
+	event.specific.medium_frag.msg_length = OMX_FROM_PKT_FIELD(medium_n->length);
 	event.specific.medium_frag.frag_length = frag_length;
 	event.specific.medium_frag.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
 	event.specific.medium_frag.checksum = OMX_FROM_PKT_FIELD(medium_n->msg.checksum);

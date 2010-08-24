@@ -291,6 +291,12 @@ OMX_WITH_COND(medium-frag-length, n, OMX_MEDIUM_FRAG_LENGTH,
 	       compatibility)],
 	       setting medium frag length to $OMX_MEDIUM_FRAG_LENGTH, test x$enable_mx_wire = xno,
 	       default)
+OMX_WITH_COND(medium-frags, n, OMX_MEDIUM_FRAGS_MAX,
+	      [change the maximal number of fragments per medium message (default is 32 in
+	       non-MX-wire-compatible mode)],
+	      setting the maximal number of fragments per medium message to $OMX_MEDIUM_FRAGS_MAX,
+	      test x$enable_mx_wire = xno,
+	      default)
 OMX_WITH_COND(pull-reply-length, n, OMX_PULL_REPLY_LENGTH,
 	      [change pull reply maximum payload size (default depends on the MTU and wire
 	       compatibility)],
@@ -315,6 +321,9 @@ OMX_DEFINE(OMX_MX_WIRE_COMPAT, 1, Define to enable MX wire compatibilty,
 OMX_DEFINE(OMX_MEDIUM_FRAG_LENGTH_MAX, $OMX_MEDIUM_FRAG_LENGTH,
 	   Define to change the medium frag length max,
 	   test x$OMX_MEDIUM_FRAG_LENGTH != xdefault)
+OMX_DEFINE(OMX_MEDIUM_FRAGS_MAX, ${OMX_MEDIUM_FRAGS_MAX},
+	   Define to change the maximal number of fragments per medium message,
+	   test x$OMX_MEDIUM_FRAGS_MAX != xdefault)
 OMX_DEFINE(OMX_PULL_REPLY_LENGTH_MAX, $OMX_PULL_REPLY_LENGTH,
 	   Define to change the pull reply length max,
 	   test x$OMX_PULL_REPLY_LENGTH != xdefault)
@@ -338,6 +347,10 @@ if test x$enable_mx_wire = xyes ; then
    if test x$OMX_MEDIUM_FRAG_LENGTH != xdefault ; then
       AC_MSG_ERROR(Changing the medium frag length max requires MX-wire compatibility to be
       	           disabled)
+   fi
+   if test x$OMX_MEDIUM_FRAGS_MAX != xdefault ; then
+      AC_MSG_ERROR(Changing the maximal number of medium fragments requires MX-wire
+      	           compatibility to be disabled)
    fi
    if test x$OMX_PULL_REPLY_LENGTH != xdefault ; then
       AC_MSG_ERROR(Changing the number of pull replies per block requires MX-wire

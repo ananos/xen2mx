@@ -120,7 +120,7 @@ struct omx__partner {
   uint16_t peer_index;
   uint8_t endpoint_index;
   uint8_t localization;
-  uint16_t rndv_threshold;
+  uint32_t rndv_threshold;
 
   /* the main session id, obtained from the our actual connect */
   uint32_t true_session_id;
@@ -451,7 +451,13 @@ struct omx__generic_request {
   struct omx_status status;
 };
 
-#define OMX_MEDIUM_FRAGS_MAX 32 /* 32 are needed if MTU=1500, only 8 is the regular case */
+#ifdef OMX_MX_WIRE_COMPAT
+#define OMX_MEDIUM_FRAGS_MAX 8
+#elif !defined OMX_MEDIUM_FRAGS_MAX /* if not enforced by configure */
+#define OMX_MEDIUM_FRAGS_MAX 32 /* 32 needed for 32kB if MTU=1500 */
+#endif
+
+typedef uint16_t omx_sendq_map_index_t;
 
 union omx_request {
   struct omx__generic_request generic;
@@ -474,7 +480,7 @@ union omx_request {
 #ifdef OMX_MX_WIRE_COMPAT
 	unsigned frag_pipeline;
 #endif
-	int sendq_map_index[OMX_MEDIUM_FRAGS_MAX];
+	omx_sendq_map_index_t sendq_map_index[OMX_MEDIUM_FRAGS_MAX];
       } mediumsq;
       struct {
 	struct omx_cmd_send_mediumva send_mediumva_ioctl_param;

@@ -2280,6 +2280,19 @@ The following options may be passed to the configure command line before buildin
   This may reduce large message throughput.
 </dd>
 
+<dt>--with-medium-frags=32</dt>
+<dd>Enforce the maximum number of fragments per medium messages.
+  This consumes a bit more memory but lets you switch later to the
+  rendezvous strategy
+  (using <tt>OMX_RNDV_THRESHOLD</tt> and <tt>OMX_SHARED_RNDV_THRESHOLD</tt>
+   environment variables).
+  By default, medium messages may not be larger than 256kB if MTU is 9000
+  (32 8kB-fragments) and 45kB if MTU is 1500, and the rendezvous strategy
+  usually gets enabled after 32kB.
+  This option lets you increase the maximal number of fragments up to 255
+  per medium messages, which means almost 2MB per message if MTU is 9000.
+</dd>
+
 <dt>--with-medium-frag-length=8192</dt>
 <dt>--with-pull-reply-length=8968</dt>
 <dd>Enforce the maximum size of medium message fragments
@@ -2498,10 +2511,25 @@ behavior at runtime, when starting a process:
   Shared software loopback is enabled by default.
 </dd>
 
+<dt>OMX_RNDV_THRESHOLD=32768</dt>
+<dd>Set the rendezvous threshold for native inter-node communication.
+  Native inter-node networking switches from eager to rendezvous at 32kB
+  (while shared intra-node communication switches at 4kB by default).
+  This threshold may be modified with this environment variable with the
+  following restrictions:
+  It cannot be lower than 128 bytes (minimal medium message length).
+  The threshold may be increased above 32kB, up to the maximal number of fragments
+  per medium messages (32 by default unless <tt>--with-medium-frags</tt> was used
+  at configured time) multiplied by the maximal medium fragment length (8kB if
+  MTU is 9000).
+</dd>
+
 <dt>OMX_SHARED_RNDV_THRESHOLD=4096</dt>
-<dd>Set the rendezvous threshold for shared communication.
-  Native networking switches from eager to rendezvous at 32kB while
-  shared communication switches at 4kB by default.
+<dd>Set the rendezvous threshold for shared intra-node communication.
+  Native inter-node networking switches from eager to rendezvous at 32kB while
+  shared intra-node communication switches at 4kB by default.
+  Acceptable values for this threshold are the same as those of
+  <tt>OMX_RNDV_THRESHOLD</tt>.
 </dd>
 
 <dt>OMX_PROCESS_BINDING=2,0,3,4,1,5,7,6</dt>
@@ -2965,7 +2993,7 @@ Open-MX thanks to the following changes in the HP-MPI configuration file:
 
 
 <p class="updated">
-  Last updated on 2010/07/30.
+  Last updated on 2010/08/24.
 </p>
 
 <script type="text/javascript">

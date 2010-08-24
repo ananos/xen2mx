@@ -310,7 +310,7 @@ struct omx_pkt_connect { /* MX's pkt_connect + MX's lib connect_data */
 		struct {
 			uint8_t pad[10];
 			uint8_t is_reply; /* is this a request ot a reply? 0 here */
-		} generic;			
+		} generic;
 		struct omx_pkt_connect_request_data {
 			uint32_t src_session_id; /* the sender's session id (so that the connected know when the connect has been sent) */
 			uint32_t app_key; /* the application level key in the request that the connected will check */
@@ -359,8 +359,24 @@ struct omx_pkt_msg {
 	/* 24 */
 };
 
-struct omx_pkt_medium_frag { /* similar to MX's pkt_msg_t + pkt_frame_t */
-	struct omx_pkt_msg msg;
+struct omx_pkt_medium_frag { /* similar to MX's pkt_msg_t + pkt_frame_t, contains omx_pkt_msg with extended length field */
+	omx_packet_type_t ptype;
+	uint8_t dst_endpoint;
+	uint8_t src_endpoint;
+	uint8_t src_generation; /* FIXME: unused ? */
+#ifdef OMX_MX_WIRE_COMPAT
+	uint16_t length;
+	uint16_t pad;
+#else
+	uint32_t length;
+#endif
+	/* 8 */
+	uint16_t lib_seqnum;
+	uint16_t lib_piggyack;
+	uint32_t match_a;
+	/* 16 */
+	uint32_t match_b;
+	uint32_t session;
 	/* 24 */
 	uint16_t frag_length;
 	uint8_t frag_seqnum;

@@ -7,6 +7,10 @@ Bug fixes:
   the fragment pipeline log on the receive side.
 
 Improvements from previous release:
+* Add OMX_RNDV_THRESHOLD environment variable to tune the eager/rendezvous
+  threshold (32kB by default) for inter-node communication.
+  + Add --with-medium-frags configure option to make the rendezvous
+    threshold further tunable if needed.
 * Drop the open-mxd kernel thread in favor of deferred works and
   kernel timers.
 * Add DKMS support to ease automatic rebuild of the kernel driver
