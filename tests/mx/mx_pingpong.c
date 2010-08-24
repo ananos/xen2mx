@@ -66,6 +66,7 @@ usage()
   fprintf(stderr, "-V - verify msg content [OFF]\n");
   fprintf(stderr, "-w - block rather than poll\n");  
   fprintf(stderr, "-W warmup - number of warmup iterations\n");  
+  fprintf(stderr, "-R - use rendezvous (mx_issend)\n");
   fprintf(stderr, "-h - help\n");
   fprintf(stderr, "\tIf -M specified, length progression is geometric, "
 	  "else arithmetic\n"); 
@@ -85,7 +86,8 @@ pingpong(uint32_t sender,
 	 double mult,
 	 struct datapoint *lengths,
 	 int wait,
-	 int warmup)
+	 int warmup,
+	 int use_rndv)
 {
   mx_status_t stat;
   mx_request_t sreq, rreq[2];
@@ -168,7 +170,10 @@ pingpong(uint32_t sender,
       
       if (sender) {
 	/* post send */
-	mx_isend(ep, &seg_send, 1, dest, sseq, NULL, &sreq);
+	if (!use_rndv)
+	  mx_isend(ep, &seg_send, 1, dest, sseq, NULL, &sreq);
+	else
+	  mx_issend(ep, &seg_send, 1, dest, sseq, NULL, &sreq);
 	sseq++;
 	
 	/* post receive */
@@ -229,7 +234,10 @@ pingpong(uint32_t sender,
 	}
 	
 	/* post send from recv buffer */
-	mx_isend(ep, &seg_recv, 1, stat.source, rseq, NULL, &sreq);
+	if (!use_rndv)
+          mx_isend(ep, &seg_recv, 1, stat.source, rseq, NULL, &sreq);
+	else
+	  mx_issend(ep, &seg_recv, 1, stat.source, rseq, NULL, &sreq);
 	rseq++;
 
 	/* post receive */
@@ -256,7 +264,10 @@ pingpong(uint32_t sender,
     /* consume the pre-posted receives */
     if (sender) {
       /* post send */
-      mx_isend(ep, &seg_send, 1, dest, sseq, NULL, &sreq);
+      if (!use_rndv)
+        mx_isend(ep, &seg_send, 1, dest, sseq, NULL, &sreq);
+      else
+        mx_issend(ep, &seg_send, 1, dest, sseq, NULL, &sreq);
       sseq++;
       
       /* wait for the send to complete */
@@ -272,7 +283,10 @@ pingpong(uint32_t sender,
       usleep(200000);
 
       /* post send */
-      mx_isend(ep, &seg_send, 1, dest, sseq, NULL, &sreq);
+      if (!use_rndv)
+        mx_isend(ep, &seg_send, 1, dest, sseq, NULL, &sreq);
+      else
+        mx_issend(ep, &seg_send, 1, dest, sseq, NULL, &sreq);
       sseq++;
       
       /* wait for the send to complete */
@@ -315,7 +329,10 @@ pingpong(uint32_t sender,
 	} while (!result);  
       }
       /* post send from recv buffer */
-      mx_isend(ep, &seg_recv, 1, stat.source, rseq, NULL, &sreq);
+      if (!use_rndv)
+        mx_isend(ep, &seg_recv, 1, stat.source, rseq, NULL, &sreq);
+      else
+        mx_issend(ep, &seg_recv, 1, stat.source, rseq, NULL, &sreq);
       rseq++;
       
       /* wait for send to complete */
@@ -374,10 +391,11 @@ pingpong_blocking(uint32_t sender,
 		  int inc,
 		  double mult,
 		  struct datapoint *lengths,
-		  int warmup)
+		  int warmup,
+		  int use_rndv)
 {
   pingpong(sender, ep, dest, iter, start_len, end_len, inc,
-	   mult, lengths, 1, warmup);
+	   mult, lengths, 1, warmup, use_rndv);
 }
 
 static void
@@ -390,10 +408,11 @@ pingpong_polling(uint32_t sender,
 		 int inc,
 		 double mult,
 		 struct datapoint *lengths,
-		 int warmup)
+		 int warmup,
+		 int use_rndv)
 {
   pingpong(sender, ep, dest, iter, start_len, end_len, inc,
-	   mult, lengths, 0, warmup);
+	   mult, lengths, 0, warmup, use_rndv);
 }
 
 #if MX_OS_FREEBSD
@@ -419,6 +438,7 @@ struct app_param {
   uint32_t iter;
   uint32_t do_wait;
   uint32_t eid;
+  uint32_t use_rndv;
   uint32_t nic_low32;
   uint16_t nic_high16;
   char mult[64];
@@ -450,6 +470,7 @@ int main(int argc, char **argv)
   int do_wait;
   int slave;
   int warmup;
+  int use_rndv;
   int opt_n;
   extern char *optarg;
 
@@ -476,12 +497,13 @@ int main(int argc, char **argv)
   do_wait = 0;
   slave = 0;
   opt_n = 0;
+  use_rndv = 0;
 
 #if MX_OS_FREEBSD
   (void)signal(SIGINT, terminate);
 #endif
 
-  while ((c = getopt(argc, argv, "hsd:e:n:b:r:f:S:E:I:M:L:N:VwW:")) != EOF) switch(c) {
+  while ((c = getopt(argc, argv, "hsd:e:n:b:r:f:S:E:I:M:L:N:VwW:R")) != EOF) switch(c) {
   case 'd':
     rem_host = optarg;
     break;
@@ -526,6 +548,9 @@ int main(int argc, char **argv)
     break;
   case 'V':
     Verify = 1;
+    break;
+  case 'R':
+    use_rndv = 1;
     break;
   case 'w':
     do_wait = 1;
@@ -615,6 +640,7 @@ int main(int argc, char **argv)
       nic = ((uint64_t)ntohs(param.nic_high16) << 32) |
 	ntohl(param.nic_low32);
       warmup = ntohl(param.warmup);
+      use_rndv = ntohl(param.use_rndv);
       
       if (Verify) printf("Verifying results\n");
       
@@ -622,10 +648,10 @@ int main(int argc, char **argv)
       
       if (do_wait)
 	pingpong_blocking(0, ep, his_addr, iter, start_len, end_len, 
-			       inc, mult, anchor.next, warmup);
+			       inc, mult, anchor.next, warmup, use_rndv);
       else
 	pingpong_polling(0, ep, his_addr, iter, start_len, end_len, 
-			      inc, mult, anchor.next, warmup);
+			      inc, mult, anchor.next, warmup, use_rndv);
     } while (slave);
 
   /* remote hostname implies we are sender */
@@ -652,6 +678,7 @@ int main(int argc, char **argv)
     param.nic_low32 = htonl((uint32_t)nic);
     param.nic_high16 = htons((nic) >> 32);
     param.warmup = htonl(warmup);
+    param.use_rndv = htonl(use_rndv);
 
     /* get address of destination */
     if (strncmp(rem_host,"0x", 2) == 0) {
@@ -670,9 +697,9 @@ int main(int argc, char **argv)
 
     /* start up the sender */
     if (do_wait)
-      pingpong_blocking(1, ep, his_addr, iter, start_len, end_len, inc, mult, anchor.next, warmup);
+      pingpong_blocking(1, ep, his_addr, iter, start_len, end_len, inc, mult, anchor.next, warmup, use_rndv);
     else
-      pingpong_polling(1, ep, his_addr, iter, start_len, end_len, inc, mult, anchor.next, warmup);
+      pingpong_polling(1, ep, his_addr, iter, start_len, end_len, inc, mult, anchor.next, warmup, use_rndv);
   }
 
   

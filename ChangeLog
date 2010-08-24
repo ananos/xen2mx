@@ -7,6 +7,7 @@ Improvements from previous release:
   kernel timers.
 * Add DKMS support to ease automatic rebuild of the kernel driver
   when a new kernel is installed, see the FAQ for details.
+* Update to mx_pingpong from MX 1.2.12 so as to restore its compatibility.
 
 Caveats:
 * No background progression or retransmission is done if the application
