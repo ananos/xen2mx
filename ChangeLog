@@ -2,6 +2,10 @@ Open-MX 1.3.2 (September ..., svn r....)
 ========================================
 The no-kernel-thread release.
 
+Bug fixes:
+* Fix wire-compatibility with MX for medium messages by properly using
+  the fragment pipeline log on the receive side.
+
 Improvements from previous release:
 * Drop the open-mxd kernel thread in favor of deferred works and
   kernel timers.
