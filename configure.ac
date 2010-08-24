@@ -347,6 +347,9 @@ if test x$enable_mx_wire = xyes ; then
       AC_MSG_ERROR(Changing the number of pull replies per block requires MX-wire compatibility
       		   to be disabled)
    fi
+   if test x$OMX_ETHERTYPE != xdefault ; then
+      AC_MSG_ERROR(Changing the Ethertype requires MX-wire compatibility to be disabled)
+   fi
    if test x$enable_endian = xno ; then
       AC_MSG_WARN(endian-independant networking is required to talk to native MX peers)
    fi
