@@ -317,11 +317,11 @@ omx__process_recv_medium_frag(struct omx_endpoint *ep, struct omx__partner *part
   unsigned long msg_length = msg->specific.medium_frag.msg_length;
   unsigned long chunk = msg->specific.medium_frag.frag_length;
   unsigned long frag_seqnum = msg->specific.medium_frag.frag_seqnum;
-#ifdef OMX_WIRE_COMPAT
-  unsigned long offset = frag_seqnum * OMX_MEDIUM_FRAG_LENGTH_MAX;
-#else
+#ifdef OMX_MX_WIRE_COMPAT
   unsigned frag_pipeline = msg->specific.medium_frag.frag_pipeline;
   unsigned long offset = frag_seqnum << frag_pipeline;
+#else
+  unsigned long offset = frag_seqnum * OMX_MEDIUM_FRAG_LENGTH_MAX;
 #endif
   unsigned long xfer_chunk;
   int new = (req->recv.specific.medium.frags_received_mask == 0);
