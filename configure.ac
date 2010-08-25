@@ -5,7 +5,7 @@ AC_INIT(Open-MX,
 	open-mx,
 	http://open-mx.org)
 
-AC_PREREQ(2.59)
+AC_PREREQ(2.65)
 
 AC_PREFIX_DEFAULT(/opt/open-mx)
 AC_CONFIG_SRCDIR(./configure.ac)
