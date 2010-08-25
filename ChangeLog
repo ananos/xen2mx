@@ -1,20 +1,20 @@
-Open-MX 1.3.2 (September ..., svn r....)
-========================================
+Open-MX 1.3.2 (August 25th, svn r3177)
+======================================
 The no-kernel-thread release.
 
 Bug fixes:
 * Fix wire-compatibility with MX for medium messages by properly using
   the fragment pipeline log on the receive side.
 
-Improvements from previous release:
+Other improvements from previous release:
 * Add OMX_RNDV_THRESHOLD environment variable to tune the eager/rendezvous
   threshold (32kB by default) for inter-node communication.
   + Add --with-medium-frags configure option to make the rendezvous
     threshold further tunable if needed.
-* Drop the open-mxd kernel thread in favor of deferred works and
-  kernel timers.
 * Add DKMS support to ease automatic rebuild of the kernel driver
   when a new kernel is installed, see the FAQ for details.
+* Drop the open-mxd kernel thread in favor of deferred works and
+  kernel timers.
 * Update to mx_pingpong from MX 1.2.12 so as to restore its compatibility.
 
 Caveats:
