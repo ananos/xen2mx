@@ -1103,8 +1103,8 @@ $ ./configure --with-linux=/usr/src/linux-2.6.16.60-0.34 \
 # dkms add -m open-mx -v 1.3.2
 </pre>
 <p>
- DKMS will reconfigure the source tree with the same options and specify
- the currently running kernel as the target kernel.
+ When installing a new kernel, DKMS will reconfigure the source tree with the
+ same options and specify the new kernel as the target.
  The resulting <tt>open-mx</tt> module will be installed under <tt>/lib/modules/</tt>
  and may thus be loaded with <tt>modprobe</tt>.
  Finally, the <tt>omx_init</tt> startup script will try to load a DKMS-built
