@@ -9,7 +9,7 @@ Questions may be asked there too.
 
 When reporting a problem, make sure you include:
 * the version number of Open-MX
-  (or the SVN revision if you checkouted the SVN repository)
+  (or the output of 'git show' if you checkouted the GIT repository)
 * the output (as root) of
   + cat /dev/open-mx
   + omx_info
