@@ -1,3 +1,3 @@
 autom4te.cache/
-common/omx_config.h.in
-configure
+build-aux/
+build/

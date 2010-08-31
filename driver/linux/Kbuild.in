@@ -1,14 +1,23 @@
-OMX_SVN_REVISION = $(shell svn info @abs_srcdir@ 2>/dev/null	\
-			| sed -n -e 's/^Revision: //p' )
-OMX_GITSVN_REVISION = $(shell GIT_DIR=@abs_top_srcdir@/.git/ git log 2>/dev/null	\
-			       | grep git-svn-id: | head -1				\
-			       | sed -r -e 's/.*@(.+) .*/\1/')
-ifneq ($(OMX_GITSVN_REVISION),)
-	OMX_SRC_VERSION	=	git svn r$(OMX_GITSVN_REVISION)
-else
-ifneq ($(OMX_SVN_REVISION),)
-	OMX_SRC_VERSION	=	svn r$(OMX_SVN_REVISION)
-endif
+# Open-MX
+# Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
+#
+# The development of this software has been funded by Myricom, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU General Public License in COPYING.GPL for more details.
+# General informations on the project
+
+OMX_GIT_REVISION = $(shell GIT_DIR=@abs_top_srcdir@/.git/ git show-ref -s HEAD --abbrev 2>/dev/null)
+ifneq ($(OMX_GIT_REVISION),)
+	OMX_SRC_VERSION	=	git$(shell date +%Y%m%d).$(OMX_GIT_REVISION)
 endif
 
 @OMX_KBUILD_CFLAGS_ARG@ 	+= -include @abs_top_builddir@/common/config.h

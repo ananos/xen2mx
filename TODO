@@ -1,5 +1,12 @@
-* document omx_check usage and env variable
-* remove omx_check.sh and use omx_check by default
+* dynamically alloc the sendq_map index array out of the medium request?
+
+* drop the mmapped jiffies
+  * use clock_gettime(CLOCK_MONOTONIC_COARSE) when available,
+    it has the HZ resolution and cost about 10ns
+  * use clock_gettime(CLOCK_MONOTONIC) otherwise,
+    but it costs about 30ns
+
+* merge the endpoint management stuff from the kernel-matching branch?
 
 * switch to another malloc library with smaller locking overhead
   + use per-endpoint pools (no need to be thread-safe there) ?
@@ -8,9 +15,8 @@
 * Symlinks for both the static and shared libraries are
   created even if --disable-shared and/or --disable-static
   is given
-
-* find a cleaner way to propagate the software version
-  where needed
+  + or drop libopen-mx.so and only ship libmyriexpress.so
+    (and always enable abi compat)
 
 * set the library ABI version in the library filename
 
@@ -40,7 +46,6 @@
 
 * update all thresholds in non-wire-compat
   + make them configurable?
-  + increase medium-size up to 32*8kB (needs 32bits message length in packet header, command and events)
   + push-based model for large
 
 * make omx_prepare_binding more flexible:

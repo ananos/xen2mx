@@ -22,6 +22,7 @@
 #include <linux/spinlock.h>
 #include <linux/skbuff.h>
 #include <linux/list.h>
+#include <linux/timer.h>
 #include <linux/rcupdate.h>
 #ifdef OMX_HAVE_MUTEX
 #include <linux/mutex.h>
@@ -39,7 +40,11 @@ static struct omx_peer ** omx_peer_array;
 static struct list_head * omx_peer_addr_hash_array;
 static int omx_peer_next_nr;
 static int omx_peer_table_full;
+
 static struct list_head omx_host_query_peer_list;
+static struct work_struct omx_host_query_work;
+static struct timer_list omx_host_query_timer;
+#define OMX_HOST_QUERY_RESEND_JIFFIES (5*HZ)
 
 static struct omx_cmd_peer_table_state omx_peer_table_state = {
 	.status = 0,
@@ -57,7 +62,7 @@ static struct omx_cmd_peer_table_state omx_peer_table_state = {
   *  - all peer hostnames (never accessed by the bottom half)
   *  - the host_query peer list
   *
-  * The bottom only access the peer (not its hostname) to get peer indexes,
+  * The bottom half only accesses the peer (not its hostname) to get peer indexes,
   * so we use rcu there.
   */
 struct mutex omx_ifaces_peers_mutex;
@@ -66,6 +71,9 @@ struct mutex omx_ifaces_peers_mutex;
 static int omx_host_query_magic = 0x13052008;
 
 #define OMX_PEER_ADDR_HASH_NR 256
+
+/* forward declaration */
+static void omx_peer_host_query(const struct omx_peer *peer);
 
 /***********************
  * Reverse Peer Helpers
@@ -181,7 +189,9 @@ omx_peers_clear(int local)
 		} else {
 			if (!peer->hostname) {
 				list_del(&peer->host_query_list_elt);
-				dprintk(PEER, "peer does not need host query anymore\n");
+				dprintk(QUERY, "peer does not need host query anymore\n");
+				if (list_empty(&omx_host_query_peer_list))
+					del_timer(&omx_host_query_timer);
 			}
 
 			/* we don't want to call synchronize_rcu() for every peer or so */
@@ -223,6 +233,7 @@ omx_peer_add(uint64_t board_addr, const char *hostname)
 	uint16_t index;
 	uint8_t hash;
 	int already_hashed = 0;
+	int needshostquery = 0;
 	int err;
 
 	if (hostname) {
@@ -299,11 +310,17 @@ omx_peer_add(uint64_t board_addr, const char *hostname)
 
 		if (!old_hostname && new_hostname) {
 			list_del(&peer->host_query_list_elt);
-			dprintk(PEER, "peer does not need host query anymore\n");
+			dprintk(QUERY, "peer does not need host query anymore\n");
+			if (list_empty(&omx_host_query_peer_list))
+				del_timer(&omx_host_query_timer);
 		} else if (old_hostname && !new_hostname) {
+			int listwasempty = list_empty(&omx_host_query_peer_list);
 			list_add_tail(&peer->host_query_list_elt, &omx_host_query_peer_list);
-			peer->host_query_last_resend_jiffies = 0;
-			dprintk(PEER, "peer needs host query\n");
+			dprintk(QUERY, "peer needs host query\n");
+			needshostquery = 1;
+			if (listwasempty)
+				/* timer not pending yet, use the regular mod_timer() */
+				mod_timer(&omx_host_query_timer, get_jiffies_64() + OMX_HOST_QUERY_RESEND_JIFFIES);
 		}
 
 		peer->hostname = new_hostname;
@@ -322,9 +339,13 @@ omx_peer_add(uint64_t board_addr, const char *hostname)
 		peer->local_iface = NULL;
 
 		if (!new_hostname) {
+			int listwasempty = list_empty(&omx_host_query_peer_list);
 			list_add_tail(&peer->host_query_list_elt, &omx_host_query_peer_list);
-			peer->host_query_last_resend_jiffies = 0;
-			dprintk(PEER, "peer needs host query\n");
+			dprintk(QUERY, "peer needs host query\n");
+			needshostquery = 1;
+			if (listwasempty)
+				/* timer not pending yet, use the regular mod_timer() */
+				mod_timer(&omx_host_query_timer, get_jiffies_64() + OMX_HOST_QUERY_RESEND_JIFFIES);
 	       	}
 	}
 
@@ -346,6 +367,9 @@ omx_peer_add(uint64_t board_addr, const char *hostname)
 		rcu_assign_pointer(omx_peer_array[omx_peer_next_nr], peer);
 		omx_peer_next_nr++;
 	}
+
+	if (needshostquery)
+		omx_peer_host_query(peer);
 
 	omx_ifaces_peers_unlock();
 
@@ -409,7 +433,9 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 				oldpeer->hostname = NULL;
 			} else {
 				list_del(&oldpeer->host_query_list_elt);
-				dprintk(PEER, "peer does not need host query anymore\n");
+				dprintk(QUERY, "peer does not need host query anymore\n");
+				if (list_empty(&omx_host_query_peer_list))
+					del_timer(&omx_host_query_timer);
 			}
 
 			rcu_assign_pointer(omx_peer_array[index], ifacepeer);
@@ -826,30 +852,31 @@ omx_peer_host_query(const struct omx_peer *peer)
 	return;
 }
 
-#define OMX_HOST_QUERY_RESEND_JIFFIES HZ
+static void
+omx_host_query_workfunc(omx_work_struct_data_t data)
 
-void
-omx_process_peers_to_host_query(void)
 {
-	struct omx_peer *peer, *npeer;
-	u64 current_jiffies;
-
 	omx_ifaces_peers_lock();
-
-	current_jiffies = get_jiffies_64();
-	list_for_each_entry_safe(peer, npeer, &omx_host_query_peer_list, host_query_list_elt) {
-		dprintk(QUERY, "need to query peer %d?\n", peer->index);
-		if (time_after64(peer->host_query_last_resend_jiffies + OMX_HOST_QUERY_RESEND_JIFFIES, current_jiffies))
-			break;
-
-		omx_peer_host_query(peer);
-		peer->host_query_last_resend_jiffies = current_jiffies;
-		list_move_tail(&peer->host_query_list_elt, &omx_host_query_peer_list);
+	if (!list_empty(&omx_host_query_peer_list)) {
+		/* query all peers */
+		struct omx_peer *peer;
+		list_for_each_entry(peer, &omx_host_query_peer_list, host_query_list_elt) {
+			dprintk(QUERY, "querying peer %d\n", peer->index);
+			omx_peer_host_query(peer);
+		}
+		/* reschedule the timer as long as the list isn't empty */
+		mod_timer(&omx_host_query_timer, get_jiffies_64() + OMX_HOST_QUERY_RESEND_JIFFIES);
 	}
-
 	omx_ifaces_peers_unlock();
 }
 
+static void
+omx_host_query_timer_handler(unsigned long data)
+{
+	schedule_work(&omx_host_query_work);
+}
+
+static struct work_struct omx_process_host_queries_and_replies_work;
 static struct sk_buff_head omx_host_query_list;
 static struct sk_buff_head omx_host_reply_list;
 
@@ -880,6 +907,7 @@ omx_recv_host_query(struct omx_iface * iface,
 	skb->sk = (void *) iface;
 
 	skb_queue_tail(&omx_host_query_list, skb);
+	schedule_work(&omx_process_host_queries_and_replies_work);
 	dprintk(QUERY, "got host query\n");
 	omx_counter_inc(iface, RECV_HOST_QUERY);
 	return 0;
@@ -913,14 +941,15 @@ omx_recv_host_reply(struct omx_iface * iface,
 	skb->sk = (void *) iface;
 
 	skb_queue_tail(&omx_host_reply_list, skb);
+	schedule_work(&omx_process_host_queries_and_replies_work);
 	dprintk(QUERY, "got host reply\n");
 	omx_counter_inc(iface, RECV_HOST_REPLY);
 	return 0;
 }
 
 /* process host queries and replies in a regular context, outside of interrupt context */
-void
-omx_process_host_queries_and_replies(void)
+static void
+omx_process_host_queries_and_replies_workfunc(omx_work_struct_data_t data)
 {
 	struct sk_buff *in_skb;
 
@@ -962,8 +991,10 @@ omx_process_host_queries_and_replies(void)
 			dprintk(QUERY, "got hostname %s from peer %d\n", new_hostname, peer->index);
 			if (!old_hostname) {
 				list_del(&peer->host_query_list_elt);
-				dprintk(PEER, "peer %s does not need host query anymore\n",
+				dprintk(QUERY, "peer %s does not need host query anymore\n",
 					new_hostname);
+				if (list_empty(&omx_host_query_peer_list))
+					del_timer(&omx_host_query_timer);
 			}
 			peer->hostname = new_hostname;
 			kfree(old_hostname);
@@ -1065,9 +1096,13 @@ omx_process_host_queries_and_replies(void)
 void
 omx_peers_clear_names(void)
 {
+	int listwasempty;
 	int i;
 
 	omx_ifaces_peers_lock();
+
+	listwasempty = list_empty(&omx_host_query_peer_list);
+
 	for(i=0; i<omx_peer_max; i++) {
 		struct omx_peer *peer;
 		char *hostname;
@@ -1080,10 +1115,14 @@ omx_peers_clear_names(void)
 		peer->hostname = NULL;
 		kfree(hostname);
 
-		peer->host_query_last_resend_jiffies = 0;
 		list_add_tail(&peer->host_query_list_elt, &omx_host_query_peer_list);
-		dprintk(PEER, "peer needs host query\n");
+		dprintk(QUERY, "peer needs host query\n");
+		omx_peer_host_query(peer);
 	}
+
+	if (listwasempty && !list_empty(&omx_host_query_peer_list))
+		/* timer not pending yet, use the regular mod_timer() */
+		mod_timer(&omx_host_query_timer, get_jiffies_64() + OMX_HOST_QUERY_RESEND_JIFFIES);
 
 	/* increase the magic to avoid obsolete host_reply packets */
 	omx_host_query_magic++;
@@ -1127,6 +1166,9 @@ omx_peers_init(void)
 	int err;
 	int i;
 
+	OMX_INIT_WORK(&omx_process_host_queries_and_replies_work,
+		      omx_process_host_queries_and_replies_workfunc, NULL);
+
 	skb_queue_head_init(&omx_host_query_list);
 	skb_queue_head_init(&omx_host_reply_list);
 
@@ -1154,6 +1196,10 @@ omx_peers_init(void)
 	for(i=0; i<OMX_PEER_ADDR_HASH_NR; i++)
 		INIT_LIST_HEAD(&omx_peer_addr_hash_array[i]);
 	INIT_LIST_HEAD(&omx_host_query_peer_list);
+	/* setup a deferred work to host query the peer list */
+	OMX_INIT_WORK(&omx_host_query_work, omx_host_query_workfunc, NULL);
+	/* setup a timer to schedule the above work */
+	setup_timer(&omx_host_query_timer, omx_host_query_timer_handler, 0);
 
 	return 0;
 
@@ -1167,6 +1213,14 @@ void
 omx_peers_exit(void)
 {
 	omx_peers_clear(1); /* clear all peers, including the local ifaces so that kref are released */
+	/* now the host query peer list should be empty,
+	 * which means that the host query deferred work will not rescheduled the timer
+	 */
+	BUG_ON(!list_empty(&omx_host_query_peer_list));
+	/* delete an outstanding rescheduled timer as well */
+	del_timer_sync(&omx_host_query_timer);
+	/* and let the caller flush any outstanding deferred work */
+
 	kfree(omx_peer_addr_hash_array);
 	vfree(omx_peer_array);
 	skb_queue_purge(&omx_host_query_list);

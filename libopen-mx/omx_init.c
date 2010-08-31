@@ -1,6 +1,8 @@
 /*
  * Open-MX
- * Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
+ * Copyright © INRIA 2007-2010
+ * Copyright © CNRS 2009
+ * (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
  *
@@ -244,7 +246,6 @@ omx__init_comms(void)
    * Misc globals
    */
 
-  omx__globals.rndv_threshold = OMX_MEDIUM_MSG_LENGTH_MAX;
   omx__globals.ack_delay_jiffies = omx__ack_delay_jiffies();
   omx__globals.resend_delay_jiffies = omx__resend_delay_jiffies();
 
@@ -331,6 +332,31 @@ omx__init_comms(void)
    * Rndv thresholds
    */
 
+#ifdef OMX_MX_WIRE_COMPAT
+#define OMX_MEDIUM_MSG_LENGTH_MAX OMX__MX_MEDIUM_MSG_LENGTH_MAX
+#else
+#define OMX_MEDIUM_MSG_LENGTH_MAX (OMX_MEDIUM_FRAG_LENGTH_MAX * OMX_MEDIUM_FRAGS_MAX)
+#endif
+
+  omx__globals.rndv_threshold = 32768;
+  env = getenv("OMX_RNDV_THRESHOLD");
+  if (env) {
+    int val = atoi(env);
+    if (val < OMX_SMALL_MSG_LENGTH_MAX) {
+      omx__verbose_printf(NULL, "Cannot set a rndv threshold to less than %d\n",
+			  OMX_SMALL_MSG_LENGTH_MAX);
+      val = OMX_SMALL_MSG_LENGTH_MAX;
+    }
+    if (val > OMX_MEDIUM_MSG_LENGTH_MAX) {
+      omx__verbose_printf(NULL, "Cannot set a rndv threshold to more than %ld\n",
+			  (unsigned long) OMX_MEDIUM_MSG_LENGTH_MAX);
+      val = OMX_MEDIUM_MSG_LENGTH_MAX;
+    }
+    omx__globals.rndv_threshold = val;
+    omx__verbose_printf(NULL, "Forcing rndv threshold to %d\n",
+			omx__globals.rndv_threshold);
+  }
+
   /* must be AFTER sharedcomms init */
   if (omx__globals.sharedcomms) {
     omx__globals.shared_rndv_threshold = 4096;
@@ -343,8 +369,8 @@ omx__init_comms(void)
 	val = OMX_SMALL_MSG_LENGTH_MAX;
       }
       if (val > OMX_MEDIUM_MSG_LENGTH_MAX) {
-	omx__verbose_printf(NULL, "Cannot set a rndv threshold to more than %d\n",
-			    OMX_MEDIUM_MSG_LENGTH_MAX);
+	omx__verbose_printf(NULL, "Cannot set a rndv threshold to more than %ld\n",
+			    (unsigned long) OMX_MEDIUM_MSG_LENGTH_MAX);
 	val = OMX_MEDIUM_MSG_LENGTH_MAX;
       }
       omx__globals.shared_rndv_threshold = val;

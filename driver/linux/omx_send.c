@@ -1,6 +1,8 @@
 /*
  * Open-MX
- * Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
+ * Copyright © INRIA 2007-2010
+ * Copyright © CNRS 2009
+ * (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
  *
@@ -630,14 +632,14 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(medium_n->msg.src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(medium_n->msg.dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(medium_n->msg.ptype, OMX_PKT_TYPE_MEDIUM);
-	OMX_PKT_FIELD_FROM(medium_n->msg.length, cmd.msg_length);
-	OMX_PKT_FIELD_FROM(medium_n->msg.lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(medium_n->msg.lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(medium_n->msg.session, cmd.session_id);
-	OMX_PKT_MATCH_INFO_FROM(&medium_n->msg, cmd.match_info);
+	OMX_PKT_FIELD_FROM(medium_n->src_endpoint, endpoint->endpoint_index);
+	OMX_PKT_FIELD_FROM(medium_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_PKT_FIELD_FROM(medium_n->ptype, OMX_PKT_TYPE_MEDIUM);
+	OMX_PKT_FIELD_FROM(medium_n->length, cmd.msg_length);
+	OMX_PKT_FIELD_FROM(medium_n->lib_seqnum, cmd.seqnum);
+	OMX_PKT_FIELD_FROM(medium_n->lib_piggyack, cmd.piggyack);
+	OMX_PKT_FIELD_FROM(medium_n->session, cmd.session_id);
+	OMX_PKT_MATCH_INFO_FROM(medium_n, cmd.match_info);
 	OMX_PKT_FIELD_FROM(medium_n->frag_length, frag_length);
 	OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, cmd.frag_seqnum);
 	OMX_PKT_FIELD_FROM(medium_n->checksum, cmd.checksum);
@@ -666,7 +668,7 @@ omx_ioctl_send_mediumva(struct omx_endpoint * endpoint,
 	struct net_device * ifp = iface->eth_ifp;
 	struct sk_buff *skb;
 	struct omx_cmd_user_segment *usegs, *cur_useg;
-	uint16_t msg_length, remaining, cur_useg_remaining;
+	uint32_t msg_length, remaining, cur_useg_remaining;
 	void __user * cur_udata;
 	uint32_t nseg;
 	int ret;
@@ -681,12 +683,14 @@ omx_ioctl_send_mediumva(struct omx_endpoint * endpoint,
 	}
 
 	msg_length = cmd.length;
-	if (unlikely(msg_length > OMX_MEDIUM_MSG_LENGTH_MAX)) {
-		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a mediumva (tried %ld)\n",
-		       (unsigned long) OMX_MEDIUM_MSG_LENGTH_MAX, (unsigned long) msg_length);
+#ifdef OMX_MX_WIRE_COMPAT
+	if (unlikely(msg_length > OMX__MX_MEDIUM_MSG_LENGTH_MAX)) {
+		printk(KERN_ERR "Open-MX: Cannot send more than %ld as a mediumva in MX-wire-compat mode (tried %ld)\n",
+		       (unsigned long) OMX__MX_MEDIUM_MSG_LENGTH_MAX, (unsigned long) msg_length);
 		ret = -EINVAL;
 		goto out;
 	}
+#endif
 	frags_nr = (msg_length+OMX_MEDIUM_FRAG_LENGTH_MAX-1) / OMX_MEDIUM_FRAG_LENGTH_MAX;
 	nseg = cmd.nr_segments;
 
@@ -762,14 +766,14 @@ omx_ioctl_send_mediumva(struct omx_endpoint * endpoint,
 		memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 		/* fill omx header */
-		OMX_PKT_FIELD_FROM(medium_n->msg.src_endpoint, endpoint->endpoint_index);
-		OMX_PKT_FIELD_FROM(medium_n->msg.dst_endpoint, cmd.dest_endpoint);
-		OMX_PKT_FIELD_FROM(medium_n->msg.ptype, OMX_PKT_TYPE_MEDIUM);
-		OMX_PKT_FIELD_FROM(medium_n->msg.length, msg_length);
-		OMX_PKT_FIELD_FROM(medium_n->msg.lib_seqnum, cmd.seqnum);
-		OMX_PKT_FIELD_FROM(medium_n->msg.lib_piggyack, cmd.piggyack);
-		OMX_PKT_FIELD_FROM(medium_n->msg.session, cmd.session_id);
-		OMX_PKT_MATCH_INFO_FROM(&medium_n->msg, cmd.match_info);
+		OMX_PKT_FIELD_FROM(medium_n->src_endpoint, endpoint->endpoint_index);
+		OMX_PKT_FIELD_FROM(medium_n->dst_endpoint, cmd.dest_endpoint);
+		OMX_PKT_FIELD_FROM(medium_n->ptype, OMX_PKT_TYPE_MEDIUM);
+		OMX_PKT_FIELD_FROM(medium_n->length, msg_length);
+		OMX_PKT_FIELD_FROM(medium_n->lib_seqnum, cmd.seqnum);
+		OMX_PKT_FIELD_FROM(medium_n->lib_piggyack, cmd.piggyack);
+		OMX_PKT_FIELD_FROM(medium_n->session, cmd.session_id);
+		OMX_PKT_MATCH_INFO_FROM(medium_n, cmd.match_info);
 		OMX_PKT_FIELD_FROM(medium_n->frag_length, frag_length);
 		OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, i);
 #ifdef OMX_MX_WIRE_COMPAT

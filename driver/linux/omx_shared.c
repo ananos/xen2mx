@@ -472,22 +472,29 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	struct omx_endpoint * dst_endpoint;
 	struct omx_evt_recv_msg dst_event;
 	struct omx_cmd_user_segment *usegs, *cur_useg;
-	uint16_t msg_length, remaining, cur_useg_remaining;
+	uint32_t msg_length, remaining, cur_useg_remaining;
 	void __user * cur_udata;
-	unsigned long recvq_offset[OMX_MEDIUM_MSG_LENGTH_MAX >> OMX_RECVQ_ENTRY_SHIFT];
+	unsigned long *recvq_offset;
 	uint32_t nseg;
 	int ret;
 	int frags_nr;
      	int i;
 
+	msg_length = hdr->length;
+
+	recvq_offset = kmalloc((msg_length >> OMX_RECVQ_ENTRY_SHIFT) * sizeof(*recvq_offset), GFP_KERNEL);
+	if (!recvq_offset)
+		return -ENOMEM;
+
 	dst_endpoint = omx_shared_get_endpoint_or_notify_nack(src_endpoint, hdr->peer_index,
 							      hdr->dest_endpoint, hdr->session_id,
 							      hdr->seqnum);
-	if (unlikely(!dst_endpoint))
-		return 0;
+	if (unlikely(!dst_endpoint)) {
+		ret = 0;
+		goto out_with_recvq_offset;
+	}
 
 	nseg = hdr->nr_segments;
-	msg_length = hdr->length;
 	frags_nr = (msg_length + OMX_RECVQ_ENTRY_SIZE - 1) >> OMX_RECVQ_ENTRY_SHIFT;
 	/* FIXME: assert <= 8 */
 
@@ -594,6 +601,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 
 	omx_counter_inc(omx_shared_fake_iface, SHARED_MEDIUMVA);
 
+	kfree(recvq_offset);
 	return 0;
 
  out_with_events:
@@ -603,6 +611,8 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	kfree(usegs);
  out_with_endpoint:
 	omx_endpoint_release(dst_endpoint);
+ out_with_recvq_offset:
+	kfree(recvq_offset);
 	return ret;
 }
 

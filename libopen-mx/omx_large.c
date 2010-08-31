@@ -1,6 +1,8 @@
 /*
  * Open-MX
- * Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
+ * Copyright © INRIA 2007-2010
+ * Copyright © CNRS 2009
+ * (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
  *
@@ -35,7 +37,7 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
   struct omx__large_region_slot * array;
   int i;
 
-  array = omx_malloc(OMX_USER_REGION_MAX * sizeof(struct omx__large_region_slot));
+  array = omx_malloc_ep(ep, OMX_USER_REGION_MAX * sizeof(struct omx__large_region_slot));
   if (!array)
     /* let the caller handle the error */
     return OMX_NO_RESOURCES;
@@ -125,7 +127,7 @@ omx__endpoint_large_region_map_exit(struct omx_endpoint * ep)
     omx__destroy_region(ep, region);
   }
 
-  omx_free(ep->large_region_map.array);
+  omx_free_ep(ep, ep->large_region_map.array);
 }
 
 /****************************************

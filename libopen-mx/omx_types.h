@@ -1,6 +1,8 @@
 /*
  * Open-MX
- * Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
+ * Copyright © INRIA 2007-2010
+ * Copyright © CNRS 2009
+ * (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
  *
@@ -124,7 +126,7 @@ struct omx__partner {
   uint16_t peer_index;
   uint8_t endpoint_index;
   uint8_t localization;
-  uint16_t rndv_threshold;
+  uint32_t rndv_threshold;
 
   /* the main session id, obtained from the our actual connect */
   uint32_t true_session_id;
@@ -277,6 +279,7 @@ struct omx_endpoint {
     /* unexpected receive, may be partial (queued by their ctxid_elt, only if there are multiple ctxids) */
     struct list_head unexp_req_q;
     /* posted non-matched receive (queued by their queue_elt) */
+    /* (we could queue by the ctxid_elt but we would need another recv_req_q to ensure conservation of matter) */
     struct list_head recv_req_q;
 
     /* done requests (queued by their ctxid_elt, only if there are multiple ctxids) */
@@ -300,14 +303,14 @@ struct omx_endpoint {
   struct list_head unexp_self_send_req_q;
 
 #ifdef OMX_LIB_DEBUG
-  /* two debug queues so that a request queue_elt is always queued somewhere */
+  /* some debug queues so that a request queue_elt is always queued somewhere */
   /* RECV MEDIUM req with state = PARTIAL (queued by their queue_elt) */
   struct list_head partial_medium_recv_req_q;
   /* SEND req with state = NEED_SEQNUM (queued by their queue_elt) */
   struct list_head need_seqnum_send_req_q;
   /* any request with state == DONE (done for real, not early, not zombie) (queued by their queue_elt) */
   struct list_head really_done_req_q;
-  /* internal DONE requests (synchronous connect) */
+  /* internal DONE requests (synchronous connect) (queued by their queue_elt) */
   struct list_head internal_done_req_q;
 #endif
 
@@ -455,7 +458,13 @@ struct omx__generic_request {
   struct omx_status status;
 };
 
-#define OMX_MEDIUM_FRAGS_MAX 32 /* 32 are needed if MTU=1500, only 8 is the regular case */
+#ifdef OMX_MX_WIRE_COMPAT
+#define OMX_MEDIUM_FRAGS_MAX 8
+#elif !defined OMX_MEDIUM_FRAGS_MAX /* if not enforced by configure */
+#define OMX_MEDIUM_FRAGS_MAX 32 /* 32 needed for 32kB if MTU=1500 */
+#endif
+
+typedef uint16_t omx_sendq_map_index_t;
 
 union omx_request {
   struct omx__generic_request generic;
@@ -478,7 +487,7 @@ union omx_request {
 #ifdef OMX_MX_WIRE_COMPAT
 	unsigned frag_pipeline;
 #endif
-	int sendq_map_index[OMX_MEDIUM_FRAGS_MAX];
+	omx_sendq_map_index_t sendq_map_index[OMX_MEDIUM_FRAGS_MAX];
       } mediumsq;
       struct {
 	struct omx_cmd_send_mediumva send_mediumva_ioctl_param;

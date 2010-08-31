@@ -24,11 +24,17 @@
 #include "dlmalloc.h"
 #define omx_malloc dlmalloc
 #define omx_calloc dlcalloc
-#define omx_free dlfree
+#define omx_free   dlfree
+#define omx_malloc_ep(ep,size) dlmalloc(size)
+#define omx_calloc_ep(ep,nb_elt,size_elt) dlcalloc(nb_elt,size_elt)
+#define omx_free_ep(ep,ptr) dlfree(ptr)
 #else /* !OMX_LIB_DLMALLOC */
 #define omx_malloc malloc
 #define omx_calloc calloc
-#define omx_free free
+#define omx_free   free
+#define omx_malloc_ep(ep,size) malloc(size)
+#define omx_calloc_ep(ep,nb_elt,size_elt) calloc(nb_elt,size_elt)
+#define omx_free_ep(ep,ptr) free(ptr)
 #endif /* !OMX_LIB_DLMALLOC */
 
 #include <stdio.h>
@@ -303,10 +309,16 @@ omx__board_addr_sscanf(const char * buffer, uint64_t * addr)
 
 static inline int
 omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
-			    int nr, const void * user, int * founds)
+			    int nr, const void * user, omx_sendq_map_index_t * founds)
 {
   struct omx__sendq_entry * array = ep->sendq_map.array;
   int index, i;
+
+  /* the sendq_map API manipulates omx_sendq_map_index_t to reduce memory consumption in requests
+   * (even if it may not be uint16_t internally),
+   * make sure it's enough for the actual offset
+   */
+  BUILD_BUG_ON(1ULL << (8*sizeof(omx_sendq_map_index_t)) < OMX_SENDQ_ENTRY_NR);
 
   omx__debug_assert((ep->sendq_map.first_free == -1) == (ep->sendq_map.nr_free == 0));
 
@@ -336,7 +348,7 @@ omx__endpoint_sendq_map_get(struct omx_endpoint * ep,
 
 static inline void
 omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
-			    int nr, const int *indexes)
+			    int nr, const omx_sendq_map_index_t * indexes)
 {
   struct omx__sendq_entry * array = ep->sendq_map.array;
   void * user;
@@ -364,7 +376,7 @@ omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
 
 static inline void *
 omx__endpoint_sendq_map_user(const struct omx_endpoint * ep,
-			     int index)
+			     omx_sendq_map_index_t index)
 {
   struct omx__sendq_entry * array = ep->sendq_map.array;
   void * user = array[index].user;

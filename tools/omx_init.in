@@ -12,6 +12,24 @@
 # Description:       Starts the Open-MX driver
 ### END INIT INFO
 
+
+# Open-MX
+# Copyright © INRIA 2007-2010 (see AUTHORS file)
+#
+# The development of this software has been funded by Myricom, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU General Public License in COPYING.GPL for more details.
+
+
 # The following configuration variable may be defined in the OMX_CONFIG
 # file or in the environment:
 #  OMX_IFACES (which interfaces should be attached by the driver on load)
@@ -39,8 +57,9 @@ FMS_RUN=@OMX_FMS_RUN@
 FMS_SERVER=@OMX_FMS_SERVER@
 
 UDEV=1
+UDEV_RULES_SRC=10-open-mx.rules
 UDEV_RULES_DIR=/etc/udev/rules.d
-UDEV_RULES_FILE=${UDEV_RULES_DIR}/10-open-mx.rules
+UDEV_RULES_FILE=${UDEV_RULES_DIR}/${UDEV_RULES_SRC}
 
 OMX_PID_FILE=/var/run/open-mx.peer-discovery.pid
 OMX_CONFIG=/etc/open-mx/open-mx.conf
@@ -48,7 +67,7 @@ LINUX_RELEASE=$(uname -r)
 
 set -e
 
-if [ -f $scriptdir/Makefile ] ; then
+if [ -f $scriptdir/${UDEV_RULES_SRC} ] ; then
     OMX_MODULE="$scriptdir/../driver/linux/open-mx.ko"
     TOOLS_DIR="$scriptdir/../tools"
 else
@@ -77,6 +96,10 @@ fi
 # add defaults
 [ -z "$OMX_FMA_START_TIMEOUT" ] && OMX_FMA_START_TIMEOUT=5
 [ -z "$OMX_IFACES" ] && OMX_IFACES="all"
+
+echoerr () {
+    echo "$1" >&2
+}
 
 usage () {
 	echo "Usage: $0 [options] <command> [module load params]"
@@ -153,10 +176,10 @@ check_or_create_device() {
 	major=$(sed -nr -e '/^Character devices:/,/^Block devices:/s/ *([0-9]+) *misc/\1/p' /proc/devices)
 	minor=$(sed -nr -e 's/ *([0-9]+) *'$kernelname'$/\1/p' /proc/misc)
 	if test -z "$major" -o -z "$minor"; then
-	    echo "  [ERROR] Failed to retrieve $name device major/minor numbers"
+	    echoerr "  [ERROR] Failed to retrieve $name device major/minor numbers"
 	else
 	    mknod "$path" c "$major" "$minor" \
-		|| echo "  [ERROR] Failed to create $name device node"
+		|| echoerr "  [ERROR] Failed to create $name device node"
 	fi
 	created_device=1
     fi
@@ -165,9 +188,9 @@ check_or_create_device() {
     if test x$created_device = "x1" || ! udev_is_active || ! test -f "$UDEV_RULES_FILE" ; then
 	echo "  Setting group '$group' and mode '$mode' on $name device '$path'"
 	chgrp "$group" "$path" \
-	    || echo "  [ERROR] Failed to set $name device mode"
+	    || echoerr "  [ERROR] Failed to set $name device mode"
 	chmod "$mode" "$path" \
-	    || echo "  [ERROR] Failed to set $name device group"
+	    || echoerr "  [ERROR] Failed to set $name device group"
     fi
 
     # print the device status
@@ -180,20 +203,28 @@ load_omx() {
     echo "Loading Open-MX driver (with $params)"
     module=${OMX_MODULE}
 
-    if ! test -f $module; then
-	echo "[ERROR] Cannot find module $module"
-        exit -1
+    if test -f $module; then
+	# modprobe the dependencies
+	depends="$(/sbin/modinfo $module 2>/dev/null | grep ^depends | awk '{print $2}' | sed 's/,/ /') $OMX_MODULE_DEPENDS"
+	for depend in $depends ; do
+	    echo "Loading dependency module: $depend"
+	    /sbin/modprobe $depend
+	done
+	# load the driver
+	/sbin/insmod $module $params
+    else
+	# module not found, the kernel probably changed since we installed Open-MX
+	# try modprobe in case DKMS rebuilt the driver for the new kernel
+	echoerr "[WARNING] Failed to find module $module, trying modprobe..."
+	if /sbin/modprobe open-mx ; then
+	    # looks good, let's hope DKMS compiled the module from the right source tree
+	    # and with the right configure options
+	    echoerr "[WARNING] Assuming modprobe loaded the right module"
+	else
+	    echoerr "[ERROR] Failed to modprobe open-mx"
+	    exit -1
+	fi
     fi
-
-    # modprobe the dependencies
-    depends="$(/sbin/modinfo $module 2>/dev/null | grep ^depends | awk '{print $2}' | sed 's/,/ /') $OMX_MODULE_DEPENDS"
-    for depend in $depends ; do
-	echo "Loading dependency module: $depend"
-	/sbin/modprobe $depend
-    done
-
-    # load the driver
-    /sbin/insmod $module $params
 
     # sleep a bit so that udev is done
     sleep 1
@@ -252,7 +283,7 @@ start_peer_discovery() {
 	[ "${OMX_PEER_DISCOVERY}" = "fma" ] && oldfmapid=$(cat "$FMS_RUN/fma.pid" 2>/dev/null || true)
 
 	if [ ! -x ${TOOLS_DIR}/${OMX_PEER_DISCOVERY} ] || [ ! -f ${TOOLS_DIR}/${OMX_PEER_DISCOVERY} ] ;  then
-	    echo "[ERROR] Cannot find dynamic peer discovery to start (${OMX_PEER_DISCOVERY})"
+	    echoerr "[ERROR] Cannot find dynamic peer discovery to start (${OMX_PEER_DISCOVERY})"
 	    return
 	fi
 
@@ -274,7 +305,7 @@ start_peer_discovery() {
 	fi
 	cmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
 	if [ -z "$cmdname" ] ; then
-	    echo "[ERROR] Discovery exited early"
+	    echoerr "[ERROR] Discovery exited early"
 	else
 	    echo "$pid $cmdname" > ${OMX_PID_FILE}
 	    echo "Started as pid=$pid"
@@ -288,7 +319,7 @@ stop_peer_discovery() {
 	cat ${OMX_PID_FILE} | while read pid cmdname ; do
 	realcmdname=$(ps -p $pid -o comm= 2>/dev/null || true)
 	if [ "$cmdname" != "$realcmdname" ] ; then
-	    echo "[ERROR] Cannot find dynamic peer discovery to kill ($cmdname, pid=$pid)"
+	    echoerr "[ERROR] Cannot find dynamic peer discovery to kill ($cmdname, pid=$pid)"
 	else
 	    echo "Killing the dynamic peer discovery ($cmdname, pid=$pid)"
 	    kill -9 $pid || true
@@ -297,7 +328,7 @@ stop_peer_discovery() {
 	done
 	rm -f ${OMX_PID_FILE} || true
     else
-	echo "[ERROR] Cannot find dynamic peer discovery to kill"
+	echoerr "[ERROR] Cannot find dynamic peer discovery to kill"
     fi
 }
 
@@ -355,7 +386,7 @@ case "$cmd" in
 	fi
 	;;
     *)
-	echo "[ERROR] Unknown command: $cmd"
+	echoerr "[ERROR] Unknown command: $cmd"
 	usage
 esac
 

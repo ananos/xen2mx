@@ -150,7 +150,7 @@ static void omx_pull_handle_timeout_handler(unsigned long data);
 #ifdef OMX_HAVE_DMA_ENGINE
 static void omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle);
 static int omx_pull_handle_deferred_wait_dma_completions(struct omx_pull_handle *handle);
-static void omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_data_t data);
+static void omx_pull_handle_deferred_dma_completions_wait_workfunc(omx_work_struct_data_t data);
 #else
 #define omx_pull_handle_poll_dma_completions(ph) /* nothing */
 #define omx_pull_handle_deferred_wait_dma_completions(ph) 0 /* always completed */
@@ -625,7 +625,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 	handle->dma_copy_last_cookie = -1;
 	skb_queue_head_init(&handle->dma_copy_skb_queue);
 	OMX_INIT_WORK(&handle->dma_copy_deferred_wait_work,
-		      omx_pull_handle_deferred_dma_completions_wait_work,
+		      omx_pull_handle_deferred_dma_completions_wait_workfunc,
 		      handle);
 #endif
 
@@ -1495,7 +1495,7 @@ omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle)
  * Deferred wait for completions work.
  */
 static void
-omx_pull_handle_deferred_dma_completions_wait_work(omx_work_struct_data_t data)
+omx_pull_handle_deferred_dma_completions_wait_workfunc(omx_work_struct_data_t data)
 {
 	struct omx_pull_handle *handle = OMX_WORK_STRUCT_DATA(data, struct omx_pull_handle, dma_copy_deferred_wait_work);
 

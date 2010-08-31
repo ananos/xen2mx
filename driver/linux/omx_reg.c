@@ -23,6 +23,7 @@
 #include <linux/skbuff.h>
 #include <linux/spinlock.h>
 #include <linux/rcupdate.h>
+#include <linux/hardirq.h>
 
 #include "omx_hal.h"
 #include "omx_io.h"
@@ -389,12 +390,18 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
  * Region destroying
  */
 
-/* vfree cannot be called from BH, so we just
- * let the cleanup thread take care of it by moving
- * regions to a cleanup list first
+/*
+ * This work destroys egion resources which may sleep because of vfree.
+ * It is scheduled when the last region reference is released in interrupt context
+ * and some region segments need to be vfreed.
  */
-static spinlock_t omx_regions_cleanup_lock = SPIN_LOCK_UNLOCKED;
-static LIST_HEAD(omx_regions_cleanup_list);
+static void
+omx_region_destroy_workfunc(omx_work_struct_data_t data)
+{
+	struct omx_user_region *region = OMX_WORK_STRUCT_DATA(data, struct omx_user_region, destroy_work);
+	omx_user_region_destroy_segments(region);
+	kfree(region);
+}
 
 /* Called when the last reference on the region is released */
 void
@@ -405,32 +412,11 @@ __omx_user_region_last_release(struct kref * kref)
 	dprintk(KREF, "releasing the last reference on region %p\n",
 		region);
 
-	if (region->nr_vmalloc_segments) {
-		spin_lock_bh(&omx_regions_cleanup_lock);
-		list_add_tail(&region->cleanup_list_elt, &omx_regions_cleanup_list);
-		spin_unlock_bh(&omx_regions_cleanup_lock);
+	if (region->nr_vmalloc_segments && in_interrupt()) {
+		OMX_INIT_WORK(&region->destroy_work, omx_region_destroy_workfunc, region);
+		schedule_work(&region->destroy_work);
 	} else {
 		omx_user_region_destroy_segments(region);
-		kfree(region);
-	}
-}
-
-void
-omx_user_regions_cleanup(void)
-{
-        struct omx_user_region * region, * next;
-	LIST_HEAD(private_head);
-
-	/* move the whole list to our private head at once */
-	spin_lock_bh(&omx_regions_cleanup_lock);
-	list_splice(&omx_regions_cleanup_list, &private_head);
-	INIT_LIST_HEAD(&omx_regions_cleanup_list);
-	spin_unlock_bh(&omx_regions_cleanup_lock);
-
-	/* and now free all regions without needing any lock */
-	list_for_each_entry_safe(region, next, &private_head, cleanup_list_elt) {
-		omx_user_region_destroy_segments(region);
-		list_del(&region->cleanup_list_elt);
 		kfree(region);
 	}
 }

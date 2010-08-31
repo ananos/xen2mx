@@ -96,7 +96,7 @@ omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
   struct omx__sendq_entry * array;
   unsigned i;
 
-  array = omx_malloc(OMX_SENDQ_ENTRY_NR * sizeof(struct omx__sendq_entry));
+  array = omx_malloc_ep(ep, OMX_SENDQ_ENTRY_NR * sizeof(struct omx__sendq_entry));
   if (!array)
     /* let the caller handle the error */
     return OMX_NO_RESOURCES;
@@ -117,7 +117,7 @@ omx__endpoint_sendq_map_init(struct omx_endpoint * ep)
 static INLINE void
 omx__endpoint_sendq_map_exit(struct omx_endpoint * ep)
 {
-  omx_free(ep->sendq_map.array);
+  omx_free_ep(ep, ep->sendq_map.array);
 }
 
 /**********
@@ -545,7 +545,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->ctxid_shift = ctxid_shift;
   ep->ctxid_mask = ((uint64_t) ep->ctxid_max - 1) << ctxid_shift;
 
-  ep->ctxid = omx_malloc(ep->ctxid_max * sizeof(*ep->ctxid));
+  ep->ctxid = omx_malloc_ep(ep, ep->ctxid_max * sizeof(*ep->ctxid));
   if (!ep->ctxid) {
     ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint ctxids array");
     goto out_with_myself;
@@ -597,9 +597,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   return OMX_SUCCESS;
 
  out_with_myself:
-  omx_free(ep->myself);
+  omx_free_ep(ep, ep->myself);
  out_with_partners:
-  omx_free(ep->partners);
+  omx_free_ep(ep, ep->partners);
  out_with_large_regions:
   omx__endpoint_large_region_map_exit(ep);
  out_with_message_prefix:
@@ -653,13 +653,13 @@ omx_close_endpoint(struct omx_endpoint *ep)
   omx__request_alloc_check(ep);
   omx__request_alloc_exit(ep);
 
-  omx_free(ep->ctxid);
+  omx_free_ep(ep, ep->ctxid);
   for(i=0; i<omx__driver_desc->peer_max * omx__driver_desc->endpoint_max; i++)
     if (ep->partners[i])
-      omx_free(ep->partners[i]);
-  omx_free(ep->partners);
+      omx_free_ep(ep, ep->partners[i]);
+  omx_free_ep(ep, ep->partners);
   omx__endpoint_large_region_map_exit(ep);
-  omx_free(ep->message_prefix);
+  omx_free_ep(ep, ep->message_prefix);
   munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
   munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
   munmap(ep->recvq, OMX_RECVQ_SIZE);
@@ -714,7 +714,7 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
     break;
 
   case OMX_REQUEST_TYPE_SEND_SMALL:
-    omx_free(req->send.specific.small.copy);
+    omx_free_ep(ep, req->send.specific.small.copy);
     omx_free_segments(&req->send.segs);
     break;
 
@@ -748,7 +748,7 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
   case OMX_REQUEST_TYPE_RECV:
     if (state & OMX_REQUEST_STATE_UNEXPECTED_RECV) {
       if (req->generic.status.msg_length)
-	omx_free(OMX_SEG_PTR(&req->recv.segs.single));
+	omx_free_ep(ep, OMX_SEG_PTR(&req->recv.segs.single));
     } else {
       omx_free_segments(&req->send.segs);
     }
@@ -760,7 +760,7 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
 
   case OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED:
     if (req->generic.status.msg_length)
-      omx_free(OMX_SEG_PTR(&req->recv.segs.single));
+      omx_free_ep(ep, OMX_SEG_PTR(&req->recv.segs.single));
     omx_free_segments(&req->send.segs);
     break;
 
@@ -788,8 +788,8 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep)
     /* free early packets */
     omx__foreach_partner_early_packet_safe(partner, early, next_early) {
       omx___dequeue_partner_early_packet(early);
-      omx_free(early->data);
-      omx_free(early);
+      omx_free_ep(ep, early->data);
+      omx_free_ep(ep, early);
     }
 
     /* free throttling requests */

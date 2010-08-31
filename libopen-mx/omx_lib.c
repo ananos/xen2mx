@@ -1,6 +1,8 @@
 /*
  * Open-MX
- * Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
+ * Copyright © INRIA 2007-2010
+ * Copyright © CNRS 2009
+ * (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
  *
@@ -98,7 +100,7 @@ omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
   }
 
   case OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE: {
-    uint16_t sendq_index = evt->send_mediumsq_frag_done.sendq_offset >> OMX_SENDQ_ENTRY_SHIFT;
+    omx_sendq_map_index_t sendq_index = evt->send_mediumsq_frag_done.sendq_offset >> OMX_SENDQ_ENTRY_SHIFT;
     union omx_request * req = omx__endpoint_sendq_map_user(ep, sendq_index);
 
     omx__debug_assert(req);

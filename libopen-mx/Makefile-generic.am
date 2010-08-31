@@ -1,7 +1,25 @@
-RM_F = rm -f
+# Open-MX
+# Copyright © INRIA 2007-2010 (see AUTHORS file)
+#
+# The development of this software has been funded by Myricom, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2.1 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU Lesser General Public License in COPYING.LGPL for more details.
 
-AM_CPPFLAGS = -imacros $(abs_top_builddir)/common/config.h	\
-	      -I$(abs_top_srcdir)/common -I$(abs_srcdir)/..	\
+
+RM_F	= rm -f
+MKDIR_P = mkdir -p
+
+AM_CPPFLAGS = -imacros $(abs_top_builddir)/common/config.h -I$(abs_srcdir)/..	\
+	      -I$(abs_top_srcdir)/common -I$(abs_top_srcdir)/common/mx		\
 	      $(GLOBAL_AM_CPPFLAGS) $(AM_CPPFLAGS_SPEC)
 AM_CFLAGS   = -fstrict-aliasing $(GLOBAL_AM_CFLAGS) $(AM_CFLAGS_SPEC)
 AM_LDFLAGS  = $(GLOBAL_AM_LDFLAGS) $(AM_LDFLAGS_SPEC)
@@ -43,6 +61,7 @@ if OMX_LIB_DLMALLOC
 endif
 
 all-local:
+	@$(MKDIR_P) .libs
 	@$(LN_S) -f libopen-mx.so .libs/libmyriexpress.so
 	@$(LN_S) -f libopen-mx.a  .libs/libmyriexpress.a
 

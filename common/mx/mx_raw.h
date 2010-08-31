@@ -24,6 +24,8 @@
 #ifndef MX_RAW_H
 #define MX_RAW_H
 
+#include "mx_io.h"
+
 #define MX_RAW_POLL_SUPPORTED 1
 
 #define MX_RAW_NO_EVENT      0
@@ -41,7 +43,6 @@
 
 typedef struct omx_raw_endpoint * mx_raw_endpoint_t;
 typedef int mx_raw_status_t;
-typedef int mx_endpt_handle_t;
 
 typedef enum {
   MX_HOST_GM = 1,

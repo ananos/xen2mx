@@ -25,6 +25,7 @@
 #include <linux/mm.h>
 #include <linux/random.h>
 #include <linux/ethtool.h>
+#include <linux/hardirq.h>
 #include <asm/uaccess.h>
 
 #include "omx_hal.h"
@@ -147,12 +148,17 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
  * Endpoint Deferred Release
  */
 
-/* vfree cannot be called from BH, so we just
- * let the cleanup thread take care of it by moving
- * endpoints to a cleanup list first
+/*
+ * This work destroys endpoint resources which may sleep because of vfree.
+ * It is scheduled when the last endpoint reference is released in interrupt context.
  */
-static spinlock_t omx_endpoints_cleanup_lock = SPIN_LOCK_UNLOCKED;
-static LIST_HEAD(omx_endpoints_cleanup_list);
+static void
+omx_endpoint_destroy_workfunc(omx_work_struct_data_t data)
+{
+	struct omx_endpoint * endpoint = OMX_WORK_STRUCT_DATA(data, struct omx_endpoint, destroy_work);
+	omx_endpoint_free_resources(endpoint);
+	kfree(endpoint);
+}
 
 /* Called when the last reference on the endpoint is released */
 void
@@ -167,32 +173,11 @@ __omx_endpoint_last_release(struct kref *kref)
 	endpoint->iface = NULL;
 	omx_iface_release(iface);
 
-	spin_lock_bh(&omx_endpoints_cleanup_lock);
-	list_add(&endpoint->cleanup_list_elt, &omx_endpoints_cleanup_list);
-	spin_unlock_bh(&omx_endpoints_cleanup_lock);
-}
-
-void
-omx_endpoints_cleanup(void)
-{
-        struct omx_endpoint * endpoint, * next;
-	LIST_HEAD(private_head);
-
-	/* move the whole list to our private head at once */
-	spin_lock_bh(&omx_endpoints_cleanup_lock);
-	list_splice(&omx_endpoints_cleanup_list, &private_head);
-	INIT_LIST_HEAD(&omx_endpoints_cleanup_list);
-	spin_unlock_bh(&omx_endpoints_cleanup_lock);
-
-	/* and now free all endpoints without needing any lock */
-	list_for_each_entry_safe(endpoint, next, &private_head, cleanup_list_elt) {
-		/*
-		 * only that were open before end up here,
-		 * the global fd is freed in omx_endpoint_close()
-		 */
-		BUG_ON(endpoint->status != OMX_ENDPOINT_STATUS_CLOSING);
+	if (in_interrupt()) {
+		OMX_INIT_WORK(&endpoint->destroy_work, omx_endpoint_destroy_workfunc, endpoint);
+		schedule_work(&endpoint->destroy_work);
+	} else {
 		omx_endpoint_free_resources(endpoint);
-		list_del(&endpoint->cleanup_list_elt);
 		kfree(endpoint);
 	}
 }
@@ -215,8 +200,6 @@ omx_endpoint_open(struct omx_endpoint * endpoint, const void __user * uparam)
 		printk(KERN_ERR "Open-MX: Failed to read open endpoint command argument, error %d\n", ret);
 		goto out;
 	}
-	endpoint->board_index = param.board_index;
-	endpoint->endpoint_index = param.endpoint_index;
 
 	/* test whether the endpoint is ok to be open
 	 * and mark it as initializing */
@@ -235,6 +218,8 @@ omx_endpoint_open(struct omx_endpoint * endpoint, const void __user * uparam)
 		goto out_with_init;
 
 	/* attach the endpoint to the iface */
+	endpoint->board_index = param.board_index;
+	endpoint->endpoint_index = param.endpoint_index;
 	ret = omx_iface_attach_endpoint(endpoint);
 	if (ret < 0)
 		goto out_with_resources;
@@ -268,7 +253,7 @@ omx_endpoint_open(struct omx_endpoint * endpoint, const void __user * uparam)
  * Always called in a sleepable context:
  * - from the release method of the fd when the process closes it
  * - from the netdevice notifier
- * - from the ifnames sysfs store methode
+ * - from the ifnames sysfs store method
  */
 int
 omx_endpoint_close(struct omx_endpoint * endpoint,

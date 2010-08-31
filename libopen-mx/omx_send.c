@@ -1,6 +1,8 @@
 /*
  * Open-MX
- * Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
+ * Copyright © INRIA 2007-2010
+ * Copyright © CNRS 2009
+ * (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
  *
@@ -50,7 +52,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
 
   switch (req->generic.type) {
   case OMX_REQUEST_TYPE_SEND_SMALL:
-    omx_free(req->send.specific.small.copy);
+    omx_free_ep(ep, req->send.specific.small.copy);
     break;
   case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
     omx__endpoint_sendq_map_put(ep, req->send.specific.mediumsq.frags_nr, req->send.specific.mediumsq.sendq_map_index);
@@ -441,7 +443,7 @@ omx__post_isend_mediumsq(struct omx_endpoint *ep,
   omx__seqnum_t ack_upto = omx__get_partner_needed_ack(ep, partner);
   uint32_t length = req->generic.status.msg_length;
   uint32_t remaining = length;
-  int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
+  omx_sendq_map_index_t * sendq_index = req->send.specific.mediumsq.sendq_map_index;
   uint32_t frags_nr = req->send.specific.mediumsq.frags_nr;
   uint32_t frag_max = OMX_MEDIUM_FRAG_LENGTH_MAX;
   unsigned i;
@@ -463,7 +465,7 @@ omx__post_isend_mediumsq(struct omx_endpoint *ep,
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
       medium_param->sendq_offset = sendq_index[i] << OMX_SENDQ_ENTRY_SHIFT;
-      omx__debug_printf(MEDIUM, ep, "sending mediumsq seqnum %d pipeline 2 length %d of total %ld\n",
+      omx__debug_printf(MEDIUM, ep, "sending mediumsq seqnum %d length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
@@ -498,7 +500,7 @@ omx__post_isend_mediumsq(struct omx_endpoint *ep,
       medium_param->frag_length = chunk;
       medium_param->frag_seqnum = i;
       medium_param->sendq_offset = sendq_index[i] << OMX_SENDQ_ENTRY_SHIFT;
-      omx__debug_printf(MEDIUM, ep, "sending mediumsq seqnum %d pipeline 2 length %d of total %ld\n",
+      omx__debug_printf(MEDIUM, ep, "sending mediumsq seqnum %d length %d of total %ld\n",
 			i, chunk, (unsigned long) length);
 
       /* copy the data in the sendq only once */
@@ -599,7 +601,7 @@ omx__alloc_setup_isend_mediumsq(struct omx_endpoint *ep,
 {
   struct omx_cmd_send_mediumsq_frag * medium_param = &req->send.specific.mediumsq.send_mediumsq_frag_ioctl_param;
   uint32_t length = req->generic.status.msg_length;
-  int * sendq_index = req->send.specific.mediumsq.sendq_map_index;
+  omx_sendq_map_index_t * sendq_index = req->send.specific.mediumsq.sendq_map_index;
   int res = req->generic.missing_resources;
   uint32_t frags_nr = req->send.specific.mediumsq.frags_nr;
 
@@ -660,7 +662,11 @@ omx__submit_isend_medium(struct omx_endpoint *ep,
   int use_sendq = omx__globals.medium_sendq;
   omx_return_t ret;
 
-  BUILD_BUG_ON(OMX_MEDIUM_MSG_LENGTH_MAX > OMX_MEDIUM_FRAG_LENGTH_MAX * OMX_MEDIUM_FRAGS_MAX);
+  /* the frag seqnum is stored in uint8_t on the wire */
+  BUILD_BUG_ON(OMX_MEDIUM_FRAGS_MAX > 255);
+
+  /* the default max medium length should fit in the maximal number of frags */
+  BUILD_BUG_ON(OMX__MX_MEDIUM_MSG_LENGTH_MAX > OMX_MEDIUM_FRAG_LENGTH_MAX * OMX_MEDIUM_FRAGS_MAX);
 
   if (use_sendq) {
     int frag_max = OMX_MEDIUM_FRAG_LENGTH_MAX;
@@ -985,7 +991,7 @@ omx__isend_req(struct omx_endpoint *ep, struct omx__partner *partner,
   if (likely(length <= OMX_TINY_MSG_LENGTH_MAX)) {
     omx__submit_isend_tiny(ep, partner, req);
   } else if (length <= OMX_SMALL_MSG_LENGTH_MAX) {
-    void *copy = omx_malloc(length);
+    void *copy = omx_malloc_ep(ep, length);
     if (unlikely(!copy))
       return omx__error_with_ep(ep, OMX_NO_RESOURCES, "Allocating isend small copy buffer");
     req->send.specific.small.copy = copy;

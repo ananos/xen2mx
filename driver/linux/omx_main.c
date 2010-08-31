@@ -1,6 +1,8 @@
 /*
  * Open-MX
- * Copyright © INRIA, CNRS 2007-2010 (see AUTHORS file)
+ * Copyright © INRIA 2007-2010
+ * Copyright © CNRS 2009
+ * (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
  *
@@ -22,7 +24,6 @@
 #include <linux/timer.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
-#include <linux/kthread.h>
 #include <linux/delay.h>
 #include <linux/rcupdate.h>
 
@@ -210,7 +211,6 @@ omx_unavail_module_param(raw_packet_loss, "--enable-debug was given");
 
 struct omx_driver_desc * omx_driver_userdesc = NULL; /* exported read-only to user-space */
 static struct timer_list omx_driver_userdesc_update_timer;
-static struct task_struct * omx_kthread_task = NULL;
 
 static void
 omx_driver_userdesc_update_handler(unsigned long data)
@@ -220,34 +220,6 @@ omx_driver_userdesc_update_handler(unsigned long data)
 	wmb();
 	/* timer already expired, use the regular mod_timer() */
 	mod_timer(&omx_driver_userdesc_update_timer, current_jiffies + 1);
-}
-
-static int
-omx_kthread_func(void *dummy)
-{
-	printk(KERN_INFO "Open-MX: kthread starting\n");
-
-	while (1) {
-		if (kthread_should_stop())
-			break;
-
-		msleep_interruptible(1000);
-
-		omx_endpoints_cleanup();
-		omx_user_regions_cleanup();
-		omx_process_host_queries_and_replies();
-		omx_process_peers_to_host_query();
-	}
-
-	/*
-	 * do a last round of cleanup before exiting since we might
-	 * have been stopped before other resources were cleaned up
-	 */
-	omx_endpoints_cleanup();
-	omx_user_regions_cleanup();
-
-	printk(KERN_INFO "Open-MX: kthread stopping\n");
-	return 0;
 }
 
 char *
@@ -492,15 +464,9 @@ omx_init(void)
 	if (ret < 0)
 		goto out_with_peers;
 
-	omx_kthread_task = kthread_run(omx_kthread_func, NULL, "open-mxd");
-	if (IS_ERR(omx_kthread_func)) {
-		ret = PTR_ERR(omx_kthread_task);
-		goto out_with_net;
-	}
-
 	ret = omx_raw_init();
 	if (ret < 0)
-		goto out_with_kthread;
+		goto out_with_net;
 
 	ret = omx_dev_init();
 	if (ret < 0)
@@ -511,8 +477,6 @@ omx_init(void)
 
  out_with_raw:
 	omx_raw_exit();
- out_with_kthread:
-	kthread_stop(omx_kthread_task);
  out_with_net:
 	omx_net_exit();
  out_with_peers:
@@ -535,13 +499,13 @@ omx_exit(void)
 	printk(KERN_INFO "Open-MX terminating...\n");
 	omx_dev_exit();
 	omx_raw_exit();
-	kthread_stop(omx_kthread_task);
 	omx_net_exit();
 	omx_peers_exit();
 	omx_dma_exit();
 	del_timer_sync(&omx_driver_userdesc_update_timer);
 	vfree(omx_driver_userdesc);
 	synchronize_rcu();
+	flush_scheduled_work();
 	printk(KERN_INFO "Open-MX " OMX_DRIVER_VERSION " terminated\n");
 }
 module_exit(omx_exit);

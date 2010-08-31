@@ -1,5 +1,23 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+
+<!-- Open-MX
+     Copyright © INRIA 2007-2010 (see AUTHORS file)
+
+     The development of this software has been funded by Myricom, Inc.
+
+     This program is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; either version 2 of the License, or (at
+     your option) any later version.
+
+     This program is distributed in the hope that it will be useful, but
+     WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+     See the GNU General Public License in COPYING.GPL for more details.
+     General informations on the project -->
+
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
  <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
@@ -141,6 +159,9 @@
 <ul>
 <li><a href="#kernel-target-kernel">
   How do I change the target kernel for the driver?
+</a></li>
+<li><a href="#kernel-dkms">
+  Can DKMS update the Open-MX kernel module automatically?
 </a></li>
 <li><a href="#kernel-compiler">
   How do I change the compiler for the kernel driver?
@@ -519,7 +540,7 @@ See also <a href="#perf-packet-sizes">How should I tune Open-MX MTU
   $ cat /dev/open-mx
   Open-MX 1.0.90 (git-svn r2405)
    WireSpecs: NoWireCompat EtherType=0x86df MTU>=0x9000
-   MediumMessages: 8952B per fragment
+   MediumMessages: 8192B per fragment
    LargeMessages: 4 requests in parallel, 32 x 8968B pull replies per request
 </pre>
 </p>
@@ -613,11 +634,11 @@ $ /path/to/open-mx/sbin/omx_init start ifnames=eth2
 </pre>
 </li>
 <li>
-Wait a couple seconds and run /path/to/open-mx/bin/omx_info to
+Wait a couple seconds and run omx_info to
 check that all peers are seeing each other.
 See <a href="#peerdiscovery">Peer Discovery</a> for details.
 <pre>
-$ omx_info
+$ /path/to/open-mx/bin/omx_info
 [...]
 Peer table is ready, mapper is 01:02:03:04:05:06
 ================================================
@@ -651,7 +672,7 @@ $ /path/to/open-mx/sbin/omx_init start ifnames=lo
 <p>
 You should now see localhost appear in the peer table.
 <pre>
-$ tools/omx_info
+$ /path/to/open-mx/bin/omx_info
 [...]
 Peer table is ready, mapper is 00:00:00:00:00:00
 ================================================
@@ -663,14 +684,16 @@ Note that <tt>localhost</tt> is a special hostname that the
 driver gives to the loopback interface instead of the usual
 <tt>hostname:0</tt> for the first attached interface.
 </p>
+
 <p>
 You may then run the local testing suite (which requires
 that the first attached board is the above localhost peer).
 <pre>
-  $ tools/omx_check.sh
+  $ /path/to/open-mx/bin/omx_check
 </pre>
 </p>
-
+Moreover, you can control the verbosity of the test suite with
+the OMX_TEST_VERBOSE environment variable. Valid values are 0 (default value), 1 and 2.
 
 <h4><a id="running-how-work" href="#running-how-work">
   How does Open-MX work?
@@ -788,7 +811,7 @@ Both steps may be independently
 parallelized with <tt>-j</tt>.
 </p>
 <p>
-Also, if building from SVN, you will need to generate some
+Also, if building from GIT, you will need to generate some
 files such as the configure script and some .in files first.
 automake, autoconf, autoheader and libtool 2 are required to do so.
 The autogen.sh script takes care of running them accordingly:
@@ -827,7 +850,7 @@ $ sbin/omx_init start ifnames=eth1
   Can I install Open-MX as RPM packages?
 </a></h4>
 <p>
- Recent Open-MX tarballs contain a RPM spec file that eases the building of
+ Recent Open-MX tarballs (since 1.2.1) contain a RPM spec file that eases the building of
  Open-MX as RPM binary packages. To use it, download the tarball and run for instance:
 </p>
 <pre>
@@ -1059,6 +1082,57 @@ split into multiple directories, you may also need to define the build directory
 $ ./configure --with-linux=/usr/src/linux-2.6.16.60-0.34 \
               --with-linux-build=/usr/src/linux-2.6.16.60-0.34-obj/x86_64/smp/
 </pre>
+
+
+<h4><a id="kernel-dkms" href="#kernel-dkms">
+  Can DKMS update the Open-MX kernel module automatically?
+</a></h4>
+<p>
+ Since Open-MX 1.3.2, <a href="http://linux.dell.com/dkms/">DKMS</a>
+ (Dynamic Kernel Module Support) may be used to automatically rebuild
+ the Open-MX kernel module when a new kernel is installed.
+</p>
+<p>
+ Assuming you want to use Open-MX 1.3.2, you should first unpack the
+ <tt>open-mx-1.3.2.tar.gz</tt> tarball in <tt>/usr/src</tt> (required by DKMS).
+ Then run configure inside this source tree, and build and install it as usual.
+ Now, you should tell DKMS to use the source tree for building updated kernel
+ modules:
+</p>
+<pre>
+# dkms add -m open-mx -v 1.3.2
+</pre>
+<p>
+ When installing a new kernel, DKMS will reconfigure the source tree with the
+ same options and specify the new kernel as the target.
+ The resulting <tt>open-mx</tt> module will be installed under <tt>/lib/modules/</tt>
+ and may thus be loaded with <tt>modprobe</tt>.
+ Finally, the <tt>omx_init</tt> startup script will try to load a DKMS-built
+ kernel module if it cannot find one in the regular Open-MX installation directory.
+</p>
+<p>
+ If you ever need to manually invoke DKMS to rebuild the module against the current
+ kernel (or against a specific kernel by adding the right <tt>-k</tt> option), do:
+</p>
+<pre>
+# dkms build -m open-mx -v 1.3.2
+# dkms install -m open-mx -v 1.3.2
+</pre>
+<p>
+ Beware that only one instance of the <tt>open-mx</tt> may be available in <tt>/lib/modules/</tt>
+ for each kernel. If you ever use multiple Open-MX installations simultaneously,
+ DKMS will not be able to manage all of their modules at the same time.
+</p>
+<p>
+ To uninstall everything DKMS generated from this Open-MX tarball:
+</p>
+<pre>
+# dkms remove -m open-mx -v 1.3.2 --all
+# rm -rf /usr/src/open-mx-1.3.2
+</pre>
+ See <a href="http://www.linuxjournal.com/article/6896">this article</a>
+ for more details about DKMS.
+</p>
 
 
 <h4><a id="kernel-compiler" href="#kernel-compiler">
@@ -2224,8 +2298,21 @@ The following options may be passed to the configure command line before buildin
   This may reduce large message throughput.
 </dd>
 
-<dt>--with-medium-frag-length=8952</dt>
-<dt>--with-pull-reply-length=8192</dt>
+<dt>--with-medium-frags=32</dt>
+<dd>Enforce the maximum number of fragments per medium messages.
+  This consumes a bit more memory but lets you switch later to the
+  rendezvous strategy
+  (using <tt>OMX_RNDV_THRESHOLD</tt> and <tt>OMX_SHARED_RNDV_THRESHOLD</tt>
+   environment variables).
+  By default, medium messages may not be larger than 256kB if MTU is 9000
+  (32 8kB-fragments) and 45kB if MTU is 1500, and the rendezvous strategy
+  usually gets enabled after 32kB.
+  This option lets you increase the maximal number of fragments up to 255
+  per medium messages, which means almost 2MB per message if MTU is 9000.
+</dd>
+
+<dt>--with-medium-frag-length=8192</dt>
+<dt>--with-pull-reply-length=8968</dt>
 <dd>Enforce the maximum size of medium message fragments
   instead of relying on the MTU and wire-compatibility configuration.
 </dd>
@@ -2442,10 +2529,25 @@ behavior at runtime, when starting a process:
   Shared software loopback is enabled by default.
 </dd>
 
+<dt>OMX_RNDV_THRESHOLD=32768</dt>
+<dd>Set the rendezvous threshold for native inter-node communication.
+  Native inter-node networking switches from eager to rendezvous at 32kB
+  (while shared intra-node communication switches at 4kB by default).
+  This threshold may be modified with this environment variable with the
+  following restrictions:
+  It cannot be lower than 128 bytes (minimal medium message length).
+  The threshold may be increased above 32kB, up to the maximal number of fragments
+  per medium messages (32 by default unless <tt>--with-medium-frags</tt> was used
+  at configured time) multiplied by the maximal medium fragment length (8kB if
+  MTU is 9000).
+</dd>
+
 <dt>OMX_SHARED_RNDV_THRESHOLD=4096</dt>
-<dd>Set the rendezvous threshold for shared communication.
-  Native networking switches from eager to rendezvous at 32kB while
-  shared communication switches at 4kB by default.
+<dd>Set the rendezvous threshold for shared intra-node communication.
+  Native inter-node networking switches from eager to rendezvous at 32kB while
+  shared intra-node communication switches at 4kB by default.
+  Acceptable values for this threshold are the same as those of
+  <tt>OMX_RNDV_THRESHOLD</tt>.
 </dd>
 
 <dt>OMX_PROCESS_BINDING=2,0,3,4,1,5,7,6</dt>
@@ -2909,7 +3011,7 @@ Open-MX thanks to the following changes in the HP-MPI configuration file:
 
 
 <p class="updated">
-  Last updated on 2010/05/19.
+  Last updated on 2010/08/24.
 </p>
 
 <script type="text/javascript">

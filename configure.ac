@@ -1,11 +1,27 @@
+# Open-MX
+# Copyright © INRIA 2007-2010 (see AUTHORS file)
+#
+# The development of this software has been funded by Myricom, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU General Public License in COPYING.GPL for more details.
 # General informations on the project
+
 AC_INIT(Open-MX,
-	1.2.903,
+	1.3.2,
 	open-mx-devel@lists.gforge.inria.fr,
 	open-mx,
 	http://open-mx.org)
 
-AC_PREREQ(2.59)
+AC_PREREQ(2.65)
 
 AC_PREFIX_DEFAULT(/opt/open-mx)
 AC_CONFIG_SRCDIR(./configure.ac)
@@ -274,6 +290,12 @@ fi
 OMX_DISABLE(endian, enable_endian,
 	    disable endian-independant networking,
 	    whether endian-independant networking is enabled)
+ OMX_ENABLE(mx-wire, enable_mx_wire,
+            enable MX wire compatibility,
+	    whether MX wire compatibility is enabled)
+OMX_DISABLE(mx-abi, enable_mx_abi,
+            disable MX binary compatibility,
+	    whether MX ABI compatibility is enabled)
 
 OMX_WITH_COND(mtu, n, OMX_MTU,
 	      [change MTU (default is 9000 in non-MX-wire-compatible mode)],
@@ -284,6 +306,12 @@ OMX_WITH_COND(medium-frag-length, n, OMX_MEDIUM_FRAG_LENGTH,
 	       compatibility)],
 	       setting medium frag length to $OMX_MEDIUM_FRAG_LENGTH, test x$enable_mx_wire = xno,
 	       default)
+OMX_WITH_COND(medium-frags, n, OMX_MEDIUM_FRAGS_MAX,
+	      [change the maximal number of fragments per medium message (default is 32 in
+	       non-MX-wire-compatible mode)],
+	      setting the maximal number of fragments per medium message to $OMX_MEDIUM_FRAGS_MAX,
+	      test x$enable_mx_wire = xno,
+	      default)
 OMX_WITH_COND(pull-reply-length, n, OMX_PULL_REPLY_LENGTH,
 	      [change pull reply maximum payload size (default depends on the MTU and wire
 	       compatibility)],
@@ -299,13 +327,6 @@ OMX_WITH_COND(ethertype, n, OMX_ETHERTYPE,
 	      setting Ethertype to $OMX_ETHERTYPE, test x$enable_mx_wire = xno,
 	      default)
 
- OMX_ENABLE(mx-wire, enable_mx_wire,
-            enable MX wire compatibility,
-	    whether MX wire compatibility is enabled)
-OMX_DISABLE(mx-abi, enable_mx_abi,
-            disable MX binary compatibility,
-	    whether MX ABI compatibility is enabled)
-
 AM_CONDITIONAL(OMX_MX_ABI_COMPAT, test x$enable_mx_abi = xyes)
 
 OMX_DEFINE(OMX_MX_ABI_COMPAT, 1, Define to enable MX ABI compatibility,
@@ -315,6 +336,9 @@ OMX_DEFINE(OMX_MX_WIRE_COMPAT, 1, Define to enable MX wire compatibilty,
 OMX_DEFINE(OMX_MEDIUM_FRAG_LENGTH_MAX, $OMX_MEDIUM_FRAG_LENGTH,
 	   Define to change the medium frag length max,
 	   test x$OMX_MEDIUM_FRAG_LENGTH != xdefault)
+OMX_DEFINE(OMX_MEDIUM_FRAGS_MAX, ${OMX_MEDIUM_FRAGS_MAX},
+	   Define to change the maximal number of fragments per medium message,
+	   test x$OMX_MEDIUM_FRAGS_MAX != xdefault)
 OMX_DEFINE(OMX_PULL_REPLY_LENGTH_MAX, $OMX_PULL_REPLY_LENGTH,
 	   Define to change the pull reply length max,
 	   test x$OMX_PULL_REPLY_LENGTH != xdefault)
@@ -339,6 +363,10 @@ if test x$enable_mx_wire = xyes ; then
       AC_MSG_ERROR(Changing the medium frag length max requires MX-wire compatibility to be
       	           disabled)
    fi
+   if test x$OMX_MEDIUM_FRAGS_MAX != xdefault ; then
+      AC_MSG_ERROR(Changing the maximal number of medium fragments requires MX-wire
+      	           compatibility to be disabled)
+   fi
    if test x$OMX_PULL_REPLY_LENGTH != xdefault ; then
       AC_MSG_ERROR(Changing the number of pull replies per block requires MX-wire
       	           compatibility to be disabled)
@@ -346,6 +374,9 @@ if test x$enable_mx_wire = xyes ; then
    if test x$OMX_PULL_BLOCK_REPLIES != xdefault ; then
       AC_MSG_ERROR(Changing the number of pull replies per block requires MX-wire compatibility
       		   to be disabled)
+   fi
+   if test x$OMX_ETHERTYPE != xdefault ; then
+      AC_MSG_ERROR(Changing the Ethertype requires MX-wire compatibility to be disabled)
    fi
    if test x$enable_endian = xno ; then
       AC_MSG_WARN(endian-independant networking is required to talk to native MX peers)
@@ -516,7 +547,6 @@ AC_CONFIG_FILES(Makefile
 		libopen-mx/lib32-debug/Makefile
 		libopen-mx/lib64-debug/Makefile
 		tools/Makefile
-		tools/omx_check.sh
 		tools/omx_check
 		tools/omx_local_install
 		tools/omx_init
@@ -528,7 +558,6 @@ AC_CONFIG_FILES(Makefile
 AC_SUBST(CONFIG_STATUS_DEPENDENCIES,
 	'$(top_srcdir)/driver/linux/Kbuild.in $(top_srcdir)/driver/linux/check_kernel_headers.sh')
 
-AC_CONFIG_COMMANDS(chmoding-omx_check.sh,	chmod ugo+x tools/omx_check.sh)
 AC_CONFIG_COMMANDS(chmoding-omx_check,		chmod ugo+x tools/omx_check)
 AC_CONFIG_COMMANDS(chmoding-omx_init,		chmod ugo+x tools/omx_init)
 AC_CONFIG_COMMANDS(chmoding-omx_test_launcher,	chmod ugo+x tests/helpers/omx_test_launcher)
@@ -536,4 +565,11 @@ AC_CONFIG_COMMANDS(chmoding-omx_test_launcher,	chmod ugo+x tests/helpers/omx_tes
 OMX_SYMLINK_TESTS
 
 AC_OUTPUT
+
+# Create the DKMS quick configure file
+AC_MSG_NOTICE(Creating the DKMS quick configure script)
+cat >configure-dkms <<EOF
+$srcdir/configure $(./config.status --config) "\$@"
+EOF
+chmod ugo+x configure-dkms
 

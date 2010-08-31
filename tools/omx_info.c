@@ -61,11 +61,11 @@ handle_one_board(unsigned index)
   if (verbose && board_info.numa_node != (uint32_t) -1)
     printf("   attached to numa node %d\n", board_info.numa_node);
   if (board_info.status & OMX_BOARD_INFO_STATUS_DOWN)
-    printf("   WARNING: interface is currently DOWN.\n");
+    fprintf(stderr, "   WARNING: interface is currently DOWN.\n");
   if (board_info.status & OMX_BOARD_INFO_STATUS_BAD_MTU)
-    printf("   WARNING: MTU=%ld invalid\n", (unsigned long)board_info.mtu);
+    fprintf(stderr, "   WARNING: MTU=%ld invalid\n", (unsigned long)board_info.mtu);
   if (verbose && board_info.status & OMX_BOARD_INFO_STATUS_HIGH_INTRCOAL)
-    printf("   WARNING: high interrupt-coalescing\n");
+    fprintf(stderr, "   WARNING: high interrupt-coalescing\n");
 
   return 0;
 }
@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
     omx__peers_dump("  %d) %s %s\n");
   }
   if (status & OMX_PEER_TABLE_STATUS_FULL) {
-    printf("WARNING: peer table is full, some peers could not be added.\n");
+    fprintf(stderr, "WARNING: peer table is full, some peers could not be added.\n");
   }
 
   return 0;

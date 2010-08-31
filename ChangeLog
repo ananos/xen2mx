@@ -1,4 +1,59 @@
-Open-MX 1.2.903 aka 1.3-rc3 (June 25th 2010, svn rxyzt)
+Open-MX 1.3.3
+======================================
+
+Bug fixes:
+* Make omx_set_error_handler() work before omx_init().
+
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
+Open-MX 1.3.2 (August 25th, svn r3177)
+======================================
+The no-kernel-thread release.
+
+Bug fixes:
+* Fix wire-compatibility with MX for medium messages by properly using
+  the fragment pipeline log on the receive side.
+
+Other improvements from previous release:
+* Add OMX_RNDV_THRESHOLD environment variable to tune the eager/rendezvous
+  threshold (32kB by default) for inter-node communication.
+  + Add --with-medium-frags configure option to make the rendezvous
+    threshold further tunable if needed.
+* Add DKMS support to ease automatic rebuild of the kernel driver
+  when a new kernel is installed, see the FAQ for details.
+* Drop the open-mxd kernel thread in favor of deferred works and
+  kernel timers.
+* Update to mx_pingpong from MX 1.2.12 so as to restore its compatibility.
+
+Open-MX 1.3.1 (August 4th 2010, svn r3111)
+==========================================
+The out-of-order unexpected release.
+
+Bug fixes:
+* Fix in-order matching when many unexpected messages arrive out-of-order.
+* Fix omx_init when running from /etc/init.d on some distributions.
+* Clarify the management of connection nacks so that multiple connect
+  requests to the same invalid peer fail properly.
+
+Other improvements from previous release:
+* Remove the old omx_check.sh script and document the new omx_check
+  testing infrastructure.
+
+Open-MX 1.3.0 (July 12th 2010, svn r3078)
+=========================================
+
+Bug fixes:
+* Properly build non-debug libraries with -O2.
+
+Other improvements from previous release:
+* Install more internal MX API compatibility headers so that OpenMPI
+  enables MX internal symbols when configured on top of Open-MX. 
+* Miscellaneous minor fixes.
+
+Open-MX 1.2.903 aka 1.3-rc3 (June 24th 2010, svn r3060)
 =======================================================
 
 Bug fixes:
@@ -10,10 +65,6 @@ Other improvements from previous release:
 * Add a new test infrastructure in parallel of the old omx_check.sh
   script.
 * Miscellaneous minor fixes all over the place.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.2.902 aka 1.3-rc2 (June 9th 2010, svn r3022)
 ======================================================

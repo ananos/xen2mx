@@ -1,3 +1,19 @@
+# Open-MX
+# Copyright © INRIA 2007-2010 (see AUTHORS file)
+#
+# The development of this software has been funded by Myricom, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU General Public License in COPYING.GPL for more details.
+
 MAKE = make
 
 ACLOCAL_AMFLAGS = -I ./build-aux
@@ -18,7 +34,11 @@ endif
 # Public and private API
 include_HEADERS = common/open-mx.h
 if OMX_MX_ABI_COMPAT
-include_HEADERS += common/mx/mx_extensions.h common/mx/mx_raw.h common/mx/myriexpress.h
+incinternaldir = $(includedir)/mx_internals
+
+include_HEADERS    += common/mx/mx_extensions.h common/mx/mx_raw.h common/mx/myriexpress.h	\
+		      common/mx/mx_io.h
+incinternal_HEADERS = common/mx/mx_internals/mx__fops.h common/mx/mx_internals/mx__driver_interface.h
 endif
 noinst_HEADERS  = common/omx_io.h common/omx_list.h common/omx_wire.h			\
 		  common/mx/translate/mx_extensions.h common/mx/translate/myriexpress.h
@@ -33,8 +53,10 @@ dist_pkgdata_DATA = doc/FAQ.html
 
 EXTRA_DIST = AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL		\
 	     README README.devel REPORTING-BUGS TODO open-mx.spec	\
-	     autogen.sh
+	     autogen.sh dkms.conf
 
+dist-hook:
+	@$(distdir)/autogen.sh
 
 if OMX_BUILD_LIBRARY
 if OMX_USE_FMA
@@ -52,7 +74,7 @@ fma:
 
 fma-install:
 	+$(MAKE) -C fma CC="$(CC)" MYRI_INC=-I$(abs_top_srcdir)/common/mx MYRI_LIB=$(abs_top_builddir)/libopen-mx/$(DEFAULT_LIBDIR)/.libs install
-	
+
 fma-clean:
 	+$(MAKE) -C fma CC="$(CC)" MYRI_INC=-I$(abs_top_srcdir)/common/mx MYRI_LIB=$(abs_top_builddir)/libopen-mx/$(DEFAULT_LIBDIR)/.libs clean
 
