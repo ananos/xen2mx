@@ -78,11 +78,11 @@ omx_shared_notify_nack(struct omx_endpoint *src_endpoint,
 {
 	struct omx_evt_recv_nack_lib event;
 
+	event.type = OMX_EVT_RECV_NACK_LIB;
 	event.peer_index = dst_peer_index;
 	event.src_endpoint = dst_endpoint_index;
 	event.seqnum = seqnum;
 	event.nack_type = nack_type;
-	event.type = OMX_EVT_RECV_NACK_LIB;
 
 	/* notify the event */
 	omx_notify_unexp_event(src_endpoint, &event, sizeof(event));
@@ -150,6 +150,7 @@ omx_shared_try_send_connect_request(struct omx_endpoint *src_endpoint,
 	/* no session to check for connect */
 
 	/* feel the event */
+	event.type = OMX_EVT_RECV_CONNECT_REQUEST;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.shared = 1;
@@ -158,7 +159,6 @@ omx_shared_try_send_connect_request(struct omx_endpoint *src_endpoint,
 	event.app_key = hdr->app_key;
 	event.target_recv_seqnum_start = hdr->target_recv_seqnum_start;
 	event.connect_seqnum = hdr->connect_seqnum;
-	event.type = OMX_EVT_RECV_CONNECT_REQUEST;
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, &event, sizeof(event));
@@ -201,6 +201,7 @@ omx_shared_try_send_connect_reply(struct omx_endpoint *src_endpoint,
 	/* no session to check for connect */
 
 	/* feel the event */
+	event.type = OMX_EVT_RECV_CONNECT_REPLY;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.shared = 1;
@@ -210,7 +211,6 @@ omx_shared_try_send_connect_reply(struct omx_endpoint *src_endpoint,
 	event.target_recv_seqnum_start = hdr->target_recv_seqnum_start;
 	event.connect_seqnum = hdr->connect_seqnum;
 	event.connect_status_code = hdr->connect_status_code;
-	event.type = OMX_EVT_RECV_CONNECT_REPLY;
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, &event, sizeof(event));
@@ -248,6 +248,7 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 		return 0;
 
 	/* fill the event */
+	event.type = OMX_EVT_RECV_TINY;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.match_info = hdr->match_info;
@@ -255,7 +256,6 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 	event.piggyack = hdr->piggyack;
 	event.specific.tiny.length = hdr->length;
 	event.specific.tiny.checksum = hdr->checksum;
-	event.type = OMX_EVT_RECV_TINY;
 
 #ifndef OMX_NORECVCOPY
 	/* copy the data */
@@ -321,6 +321,7 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 #endif
 
 	/* fill and notify the event */
+	event.type = OMX_EVT_RECV_SMALL;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.match_info = hdr->match_info;
@@ -329,7 +330,6 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 	event.specific.small.length = hdr->length;
 	event.specific.small.recvq_offset = recvq_offset;
 	event.specific.small.checksum = hdr->checksum;
-	event.type = OMX_EVT_RECV_SMALL;
 	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, &event, sizeof(event));
 	omx_endpoint_release(dst_endpoint);
 
@@ -418,6 +418,7 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 #endif
 
 	/* fill the dst event */
+	dst_event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 	dst_event.peer_index = src_endpoint->iface->peer.index;
 	dst_event.src_endpoint = src_endpoint->endpoint_index;
 	dst_event.match_info = hdr->match_info;
@@ -429,7 +430,6 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 	dst_event.specific.medium_frag.frag_pipeline = hdr->frag_pipeline;
 	dst_event.specific.medium_frag.checksum = hdr->checksum;
 	dst_event.specific.medium_frag.recvq_offset = recvq_offset;
-	dst_event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 
 	/* make sure the copy is done */
 #ifdef OMX_HAVE_DMA_ENGINE
@@ -446,8 +446,8 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, &dst_event, sizeof(dst_event));
 
 	/* fill and notify the src event */
-	src_event.sendq_offset = hdr->sendq_offset;
 	src_event.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
+	src_event.sendq_offset = hdr->sendq_offset;
 	omx_notify_exp_event(src_endpoint, &src_event, sizeof(src_event));
 	omx_endpoint_release(dst_endpoint);
 
@@ -457,8 +457,8 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 
  out_with_endpoint:
 	/* fill and notify the src event anyway, so that the sender doesn't leak eventq slots */
-	src_event.sendq_offset = hdr->sendq_offset;
 	src_event.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
+	src_event.sendq_offset = hdr->sendq_offset;
 	omx_notify_exp_event(src_endpoint, &src_event, sizeof(src_event));
 
 	omx_endpoint_release(dst_endpoint);
@@ -589,10 +589,10 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	for(i=0; i<frags_nr; i++) {
 		uint16_t frag_length = remaining > OMX_RECVQ_ENTRY_SIZE ? OMX_RECVQ_ENTRY_SIZE : remaining;
 		/* notify the dst event */
+		dst_event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 		dst_event.specific.medium_frag.frag_length = frag_length;
 		dst_event.specific.medium_frag.frag_seqnum = i;
 		dst_event.specific.medium_frag.recvq_offset = recvq_offset[i];
-		dst_event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 		omx_commit_notify_unexp_event_with_recvq(dst_endpoint, &dst_event, sizeof(dst_event));
 		remaining -= frag_length;
 	}
@@ -633,6 +633,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 		return 0;
 
 	/* fill the event */
+	event.type = OMX_EVT_RECV_RNDV;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.match_info = hdr->match_info;
@@ -643,7 +644,6 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 	event.specific.rndv.pulled_rdma_seqnum = hdr->pulled_rdma_seqnum;
 	event.specific.rndv.pulled_rdma_offset = 0; /* not needed in Open-MX */
 	event.specific.rndv.checksum = hdr->checksum;
-	event.type = OMX_EVT_RECV_RNDV;
 
 	/* make sure the region is marked as pinning before reporting the event */
 	if (!omx_pin_synchronous) {
@@ -756,9 +756,9 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 	omx_user_region_release(src_region);
 
 	/* fill and notify the event */
+	event.type = OMX_EVT_PULL_DONE;
 	event.lib_cookie = hdr->lib_cookie;
 	event.puller_rdma_id = hdr->puller_rdma_id;
-	event.type = OMX_EVT_PULL_DONE;
 	omx_notify_exp_event(src_endpoint, &event, sizeof(event));
 
 	omx_counter_inc(omx_shared_fake_iface, SHARED_PULL);
@@ -770,9 +770,9 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
  out_notify_nack:
 	omx_user_region_release(src_region);
 
+	event.type = OMX_EVT_PULL_DONE;
 	event.lib_cookie = hdr->lib_cookie;
 	event.puller_rdma_id = hdr->puller_rdma_id;
-	event.type = OMX_EVT_PULL_DONE;
 	omx_notify_exp_event(src_endpoint, &event, sizeof(event));
 	return 0;
 
@@ -795,6 +795,7 @@ omx_shared_send_notify(struct omx_endpoint *src_endpoint,
 		return 0;
 
 	/* fill the event */
+	event.type = OMX_EVT_RECV_NOTIFY;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.seqnum = hdr->seqnum;
@@ -802,7 +803,6 @@ omx_shared_send_notify(struct omx_endpoint *src_endpoint,
 	event.specific.notify.length = hdr->total_length;
 	event.specific.notify.pulled_rdma_id = hdr->pulled_rdma_id;
 	event.specific.notify.pulled_rdma_seqnum = hdr->pulled_rdma_seqnum;
-	event.type = OMX_EVT_RECV_NOTIFY;
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, &event, sizeof(event));
@@ -838,13 +838,13 @@ omx_shared_send_liback(struct omx_endpoint *src_endpoint,
 		return 0;
 
 	/* fill the event */
+	event.type = OMX_EVT_RECV_LIBACK;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
 	event.acknum = hdr->acknum;
 	event.lib_seqnum = hdr->lib_seqnum;
 	event.send_seq = hdr->send_seq;
 	event.resent = hdr->resent;
-	event.type = OMX_EVT_RECV_LIBACK;
 
 	/* notify the event */
 	err = omx_notify_unexp_event(dst_endpoint, &event, sizeof(event));

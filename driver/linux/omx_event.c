@@ -85,7 +85,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);
 	BUILD_BUG_ON(OMX_UNEXP_EVENTQ_ENTRY_NR != OMX_RECVQ_ENTRY_NR);
 
-	/* initialize all expected events to none */
+	/* initialize all expected events to none */ /* TODO: update for id-based delivery */
 	for(evt = endpoint->exp_eventq;
 	    (void *) evt < endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE;
 	    evt++)
@@ -97,7 +97,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	endpoint->last_free_exp_eventq_offset = OMX_EXP_EVENTQ_SIZE;
 	endpoint->next_exp_event_id = 1;
 
-	/* initialize all unexpected events to none */
+	/* initialize all unexpected events to none */ /* TODO: update for id-based delivery */
 	for(evt = endpoint->unexp_eventq;
 	    (void *) evt < endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE;
 	    evt++)

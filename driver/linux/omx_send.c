@@ -105,7 +105,6 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 	struct omx_endpoint * endpoint = defevent->endpoint;
 
 	/* report the event to user-space */
-	defevent->evt.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 	omx_notify_exp_event(endpoint,
 			     &defevent->evt, sizeof(defevent->evt));
 
@@ -584,6 +583,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 		/* prepare the deferred event now that we cannot fail anymore */
 		omx_endpoint_reacquire(endpoint); /* keep a reference in the defevent */
 		defevent->endpoint = endpoint;
+		defevent->evt.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 		defevent->evt.sendq_offset = cmd.sendq_offset;
 		omx_set_skb_destructor(skb, omx_medium_frag_skb_destructor, defevent);
 
@@ -621,8 +621,8 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 		memcpy(data, endpoint->sendq + sendq_offset, frag_length);
 
 		/* notify the event right now */
-		evt.sendq_offset = cmd.sendq_offset;
 		evt.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
+		evt.sendq_offset = cmd.sendq_offset;
 		omx_notify_exp_event(endpoint,
 				     &evt, sizeof(evt));
 	}

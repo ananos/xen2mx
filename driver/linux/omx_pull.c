@@ -630,6 +630,7 @@ omx_pull_handle_create(struct omx_endpoint * endpoint,
 #endif
 
 	/* initialize the completion event */
+	handle->done_event.type = OMX_EVT_PULL_DONE;
 	handle->done_event.puller_rdma_id = cmd->puller_rdma_id;
 	handle->done_event.lib_cookie = cmd->lib_cookie;
 
@@ -716,7 +717,6 @@ omx_pull_handle_notify(struct omx_pull_handle * handle)
 {
 	struct omx_endpoint * endpoint = handle->endpoint;
 
-	handle->done_event.type = OMX_EVT_PULL_DONE;
 	omx_notify_exp_event(endpoint,
 			     &handle->done_event, sizeof(handle->done_event));
 

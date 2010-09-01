@@ -104,6 +104,7 @@ omx_recv_connect(struct omx_iface * iface,
 	if (!is_reply) {
 		struct omx_evt_recv_connect_request request_event;
 
+		request_event.type = OMX_EVT_RECV_CONNECT_REQUEST;
 		request_event.peer_index = peer_index;
 		request_event.src_endpoint = src_endpoint;
 		request_event.shared = 0;
@@ -112,7 +113,6 @@ omx_recv_connect(struct omx_iface * iface,
 		request_event.app_key = OMX_FROM_PKT_FIELD(connect_n->request.app_key);
 		request_event.target_recv_seqnum_start = OMX_FROM_PKT_FIELD(connect_n->request.target_recv_seqnum_start);
 		request_event.connect_seqnum = OMX_FROM_PKT_FIELD(connect_n->request.connect_seqnum);
-		request_event.type = OMX_EVT_RECV_CONNECT_REQUEST;
 
 		/* notify the event */
 		err = omx_notify_unexp_event(endpoint, &request_event, sizeof(request_event));
@@ -120,6 +120,7 @@ omx_recv_connect(struct omx_iface * iface,
 	} else {
 		struct omx_evt_recv_connect_reply reply_event;
 
+		reply_event.type = OMX_EVT_RECV_CONNECT_REPLY;
 		reply_event.peer_index = peer_index;
 		reply_event.src_endpoint = src_endpoint;
 		reply_event.shared = 0;
@@ -129,7 +130,6 @@ omx_recv_connect(struct omx_iface * iface,
 		reply_event.target_recv_seqnum_start = OMX_FROM_PKT_FIELD(connect_n->reply.target_recv_seqnum_start);
 		reply_event.connect_seqnum = OMX_FROM_PKT_FIELD(connect_n->reply.connect_seqnum);
 		reply_event.connect_status_code = OMX_FROM_PKT_FIELD(connect_n->reply.connect_status_code);
-		reply_event.type = OMX_EVT_RECV_CONNECT_REPLY;
 		BUILD_BUG_ON(OMX_CONNECT_STATUS_SUCCESS != OMX_PKT_CONNECT_STATUS_SUCCESS);
 		BUILD_BUG_ON(OMX_CONNECT_STATUS_BAD_KEY != OMX_PKT_CONNECT_STATUS_BAD_KEY);
 
@@ -235,6 +235,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	omx_recv_dprintk(eh, "TINY length %ld", (unsigned long) length);
 
 	/* fill event */
+	event.type = OMX_EVT_RECV_TINY;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(tiny_n);
@@ -242,7 +243,6 @@ omx_recv_tiny(struct omx_iface * iface,
 	event.piggyack = lib_piggyack;
 	event.specific.tiny.length = length;
 	event.specific.tiny.checksum = OMX_FROM_PKT_FIELD(tiny_n->checksum);
-	event.type = OMX_EVT_RECV_TINY;
 
 #ifndef OMX_NORECVCOPY
 	/* copy data in event data */
@@ -355,6 +355,7 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* fill event */
+	event.type = OMX_EVT_RECV_SMALL;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(small_n);
@@ -363,7 +364,6 @@ omx_recv_small(struct omx_iface * iface,
 	event.specific.small.length = length;
 	event.specific.small.recvq_offset = recvq_offset;
 	event.specific.small.checksum = OMX_FROM_PKT_FIELD(small_n->checksum);
-	event.type = OMX_EVT_RECV_SMALL;
 
 	omx_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
@@ -506,6 +506,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 #endif
 
 	/* fill event */
+	event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(medium_n);
@@ -519,7 +520,6 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event.specific.medium_frag.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
 #endif
 	event.specific.medium_frag.recvq_offset = recvq_offset;
-	event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 
 	omx_recv_dprintk(eh, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
 
@@ -619,6 +619,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	}
 
 	/* fill event */
+	event.type = OMX_EVT_RECV_RNDV;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
 	event.match_info = OMX_FROM_PKT_MATCH_INFO(&rndv_n->msg);
@@ -629,7 +630,6 @@ omx_recv_rndv(struct omx_iface * iface,
 	event.specific.rndv.pulled_rdma_seqnum = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_seqnum);
 	event.specific.rndv.pulled_rdma_offset = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_offset);
 	event.specific.rndv.checksum = OMX_FROM_PKT_FIELD(rndv_n->msg.checksum);
-	event.type = OMX_EVT_RECV_RNDV;
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, &event, sizeof(event));
@@ -705,6 +705,7 @@ omx_recv_notify(struct omx_iface * iface,
 	omx_recv_dprintk(eh, "NOTIFY");
 
 	/* fill event */
+	event.type = OMX_EVT_RECV_NOTIFY;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
 	event.seqnum = lib_seqnum;
@@ -712,7 +713,6 @@ omx_recv_notify(struct omx_iface * iface,
 	event.specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
 	event.specific.notify.pulled_rdma_id = OMX_FROM_PKT_FIELD(notify_n->pulled_rdma_id);
 	event.specific.notify.pulled_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->pulled_rdma_seqnum);
-	event.type = OMX_EVT_RECV_NOTIFY;
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, &event, sizeof(event));
@@ -801,13 +801,13 @@ omx_recv_truc(struct omx_iface * iface,
 		}
 
 		/* fill event */
+		liback_event.type = OMX_EVT_RECV_LIBACK;
 		liback_event.peer_index = peer_index;
 		liback_event.src_endpoint = src_endpoint;
 		liback_event.lib_seqnum = OMX_FROM_PKT_FIELD(truc_n->liback.lib_seqnum);
 		liback_event.acknum = OMX_FROM_PKT_FIELD(truc_n->liback.acknum);
 		liback_event.send_seq = OMX_FROM_PKT_FIELD(truc_n->liback.send_seq);
 		liback_event.resent = OMX_FROM_PKT_FIELD(truc_n->liback.resent);
-		liback_event.type = OMX_EVT_RECV_LIBACK;
 
 		/* notify the event */
 		err = omx_notify_unexp_event(endpoint, &liback_event, sizeof(liback_event));
@@ -901,6 +901,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 			 omx_strnacktype(nack_type));
 
 	/* fill event */
+	event.type = OMX_EVT_RECV_NACK_LIB;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
 	event.seqnum = lib_seqnum;
@@ -909,7 +910,6 @@ omx_recv_nack_lib(struct omx_iface * iface,
 	BUILD_BUG_ON(OMX_EVT_NACK_LIB_ENDPT_CLOSED != OMX_NACK_TYPE_ENDPT_CLOSED);
 	BUILD_BUG_ON(OMX_EVT_NACK_LIB_BAD_SESSION != OMX_NACK_TYPE_BAD_SESSION);
 	event.nack_type = nack_type;
-	event.type = OMX_EVT_RECV_NACK_LIB;
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, &event, sizeof(event));
