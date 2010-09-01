@@ -376,9 +376,6 @@ omx_return_t
 omx_progress(omx_endpoint_t ep);
 
 omx_return_t
-omx_progress_counter(omx_endpoint_t ep, int * count);
-
-omx_return_t
 omx_set_request_timeout(omx_endpoint_t endpoint,
 			omx_request_t request, uint32_t milliseconds);
 

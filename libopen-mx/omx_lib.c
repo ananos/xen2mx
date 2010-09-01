@@ -302,8 +302,8 @@ omx__progress(struct omx_endpoint * ep)
   return OMX_SUCCESS;
 }
 
-omx_return_t
-omx__progress_counter(struct omx_endpoint * ep, int * counter)
+static omx_return_t
+omx___progress_counter(struct omx_endpoint * ep, int * counter)
 {
   if (unlikely(ep->progression_disabled))
     return OMX_SUCCESS;
@@ -420,16 +420,12 @@ omx_progress(omx_endpoint_t ep)
   return ret;
 }
 
-/* API omx_progress_counter */
 omx_return_t
-omx_progress_counter(omx_endpoint_t ep, int *count)
+omx__progress_counter(omx_endpoint_t ep, int *count)
 {
-  omx_return_t ret = OMX_SUCCESS;
-
+  omx_return_t ret;
   OMX__ENDPOINT_LOCK(ep);
-
-  ret = omx__progress_counter(ep, count);
-
+  ret = omx___progress_counter(ep, count);
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
