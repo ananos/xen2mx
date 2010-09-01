@@ -531,17 +531,6 @@ AC_SUBST(BATTERY_LIST)
 
 
 
-
-# External dependencies
-########################
-
-PKG_CHECK_MODULES(HWLOC, hwloc >= 1.0)
-AC_SUBST(HWLOC_CFLAGS)
-AC_SUBST(HWLOC_LIBS)
-
-
-
-
 # Here is the list of configured files
 AC_CONFIG_FILES(Makefile
 		driver/linux/Makefile
