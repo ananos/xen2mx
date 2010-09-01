@@ -130,13 +130,6 @@ omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
     break;
   }
 
-  case OMX_EVT_FAKE: {
-    union omx_evt test;
-    memcpy(&test, &evt, sizeof(union omx_evt));
-    omx__debug_printf(EVENT, ep, "received fake event with id #%d\n", evt->generic.id);
-    break;
-  }
-
   case OMX_EVT_IGNORE:
     break;
 
@@ -302,95 +295,6 @@ omx__progress(struct omx_endpoint * ep)
   return OMX_SUCCESS;
 }
 
-static omx_return_t
-omx___progress_counter(struct omx_endpoint * ep, int * counter)
-{
-  if (unlikely(ep->progression_disabled))
-    return OMX_SUCCESS;
-
-  omx__check_enough_progression(ep);
-
-  /* process unexpected events first,
-   * to release the pressure coming from the network
-   */
-  while (1) {
-    volatile union omx_evt * evt = ep->next_unexp_event;
-    int done;
-
-    if (unlikely(evt->generic.id !=  ep->next_unexp_event_id))
-      break;
-
-    omx__process_event(ep, (union omx_evt *) evt);
-    (*counter)++;
-
-    /* next event */
-    evt++;
-    done = (void *) evt - ep->unexp_eventq;
-
-    /* Acknowledgement per chunk */
-    if (unlikely(done % OMX_UNEXP_CHUNK_SIZE == 0)) {
-      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_SLOTS);
-      done = 0;
-    }
-
-    /* next event id */
-    ep->next_unexp_event_id = ( ep->next_unexp_event_id == OMX_EVENTQ_MAX_ID) ? 
-      1 : ep->next_unexp_event_id + 1;
-    if (unlikely((void *) evt >= ep->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE))
-      evt = ep->unexp_eventq;
-    ep->next_unexp_event = (void *) evt;
-  }
-
-  /* process expected events then */
-  while (1) {
-    volatile union omx_evt * evt = ep->next_exp_event;
-    int done;
-
-    if (unlikely(evt->generic.id != ep->next_exp_event_id))
-      break;
-
-    omx__process_event(ep, (union omx_evt *) evt);
-
-    /* next event */
-    evt++;
-    done = (void *) evt - ep->exp_eventq;
-
-    /* Acknowledgement per chunk */
-    if (unlikely(done % OMX_EXP_CHUNK_SIZE == 0)) {
-      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_SLOTS);
-      done = 0;
-    }
-
-    /* next event id */
-    ep->next_exp_event_id = (ep->next_exp_event_id == OMX_EVENTQ_MAX_ID) ? 
-      1 : ep->next_exp_event_id + 1;
-    if (unlikely((void *) evt >= ep->exp_eventq + OMX_EXP_EVENTQ_SIZE))
-      evt = ep->exp_eventq;
-    ep->next_exp_event = (void *) evt;
-  }
-
-  /* resend requests that didn't get acked/replied */
-  omx__process_resend_requests(ep);
-
-  /* post delayed requests */
-  omx__process_delayed_requests(ep);
-
-  /* ack partners that didn't get acked recently */
-  omx__process_partners_to_ack(ep);
-
-  /* check the endpoint descriptor */
-  omx__check_endpoint_desc(ep);
-
-#ifdef OMX_LIB_DEBUG
-  /* check if we leaked some requests */
-  if (omx__globals.check_request_alloc)
-    omx__request_alloc_check(ep);
-#endif
-
-  return OMX_SUCCESS;
-}
-
-
 /* API omx_register_unexp_handler */
 omx_return_t
 omx_register_unexp_handler(omx_endpoint_t ep,
@@ -419,17 +323,6 @@ omx_progress(omx_endpoint_t ep)
   OMX__ENDPOINT_UNLOCK(ep);
   return ret;
 }
-
-omx_return_t
-omx__progress_counter(omx_endpoint_t ep, int *count)
-{
-  omx_return_t ret;
-  OMX__ENDPOINT_LOCK(ep);
-  ret = omx___progress_counter(ep, count);
-  OMX__ENDPOINT_UNLOCK(ep);
-  return ret;
-}
-
 
 #ifdef OMX_LIB_DEBUG
 static uint64_t omx_disable_progression_jiffies_start = 0;
@@ -489,22 +382,4 @@ omx_reenable_progression(struct omx_endpoint *ep)
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
   return OMX_SUCCESS;
-}
-
-omx_return_t
-omx__generate_fake_events(omx_endpoint_t ep, int count)
-{
-  omx_return_t ret;
-  int err;
-
-  err = ioctl(ep->fd, OMX_CMD_FAKE_EVENTS, &count);
-  if (unlikely(err < 0)) {
-    ret = OMX_BAD_ERROR;
-    goto out;
-  }
-
-  return OMX_SUCCESS;
-
- out:
-  return ret;
 }

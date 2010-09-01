@@ -593,8 +593,6 @@ struct omx_cmd_bench {
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8e, struct omx_cmd_wakeup)
 #define OMX_CMD_RELEASE_EXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x8f)
 #define OMX_CMD_RELEASE_UNEXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x90)
-#define OMX_CMD_FAKE_EVENTS		_IOR(OMX_CMD_MAGIC, 0x91, int)
-
 
 static inline __pure const char *
 omx_strcmd(unsigned cmd)
@@ -668,8 +666,6 @@ omx_strcmd(unsigned cmd)
 		return "Release Expected Event Slots";
 	case OMX_CMD_RELEASE_UNEXP_SLOTS:
 		return "Release Unexpected Event Slots";
-	case OMX_CMD_FAKE_EVENTS:
-		return "Deliver Fake Events";
 	default:
 		return "** Unknown **";
 	}
@@ -692,7 +688,6 @@ omx_strcmd(unsigned cmd)
 #define OMX_EVT_RECV_NACK_LIB		0x19
 #define OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE	0x20
 #define OMX_EVT_PULL_DONE		0x21
-#define OMX_EVT_FAKE			0x22
 
 #define OMX_EVT_NACK_LIB_BAD_ENDPT	0x01
 #define OMX_EVT_NACK_LIB_ENDPT_CLOSED	0x02

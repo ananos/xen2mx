@@ -665,12 +665,6 @@ omx__create_message_prefix(const struct omx_endpoint *ep);
 extern void
 omx__foreach_endpoint(void (*func)(struct omx_endpoint *, void *), void *);
 
-extern omx_return_t
-omx_generate_fake_events(omx_endpoint_t ep, int count);
-
-extern omx_return_t
-omx__progress_counter(omx_endpoint_t ep, int * count);
-
 #define OMX_PROCESS_BINDING_FILE "/tmp/open-mx.bindings.dat"
 #define OMX_PROCESS_BINDING_LENGTH_MAX 128
 
