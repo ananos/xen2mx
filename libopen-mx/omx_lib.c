@@ -241,7 +241,7 @@ omx__progress(struct omx_endpoint * ep)
 
     /* Acknowledgement per chunk */
     if (unlikely(done % OMX_UNEXP_CHUNK_SIZE == 0)) {
-      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_CHUNK);
+      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_SLOTS);
       done = 0;
     }
 
@@ -269,7 +269,7 @@ omx__progress(struct omx_endpoint * ep)
 
     /* Acknowledgement per chunk */
     if (unlikely(done % OMX_EXP_CHUNK_SIZE == 0)) {
-      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_CHUNK);
+      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_SLOTS);
       done = 0;
     }
 
@@ -329,7 +329,7 @@ omx___progress_counter(struct omx_endpoint * ep, int * counter)
 
     /* Acknowledgement per chunk */
     if (unlikely(done % OMX_UNEXP_CHUNK_SIZE == 0)) {
-      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_CHUNK);
+      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_SLOTS);
       done = 0;
     }
 
@@ -357,7 +357,7 @@ omx___progress_counter(struct omx_endpoint * ep, int * counter)
 
     /* Acknowledgement per chunk */
     if (unlikely(done % OMX_EXP_CHUNK_SIZE == 0)) {
-      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_CHUNK);
+      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_SLOTS);
       done = 0;
     }
 

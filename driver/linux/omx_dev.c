@@ -421,9 +421,9 @@ static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_DESTROY_USER_REGION)]	= omx_ioctl_user_region_destroy,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
 	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAKEUP)]		= omx_ioctl_wakeup,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_FAKE_EVENTS)]		= omx_ioctl_fake_events,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_RELEASE_EXP_CHUNK)]     = omx_ioctl_release_exp_chunk,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_RELEASE_UNEXP_CHUNK)]   = omx_ioctl_release_unexp_chunk
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_RELEASE_EXP_SLOTS)]     = omx_ioctl_release_exp_slots,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_RELEASE_UNEXP_SLOTS)]   = omx_ioctl_release_unexp_slots,
+	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_FAKE_EVENTS)]		= omx_ioctl_fake_events
 };
 
 /*
@@ -717,6 +717,8 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_DESTROY_USER_REGION:
 	case OMX_CMD_WAIT_EVENT:
 	case OMX_CMD_WAKEUP:
+	case OMX_CMD_RELEASE_EXP_SLOTS:
+	case OMX_CMD_RELEASE_UNEXP_SLOTS:
 	case OMX_CMD_FAKE_EVENTS:
 		/* this should be handled in the fast path */
 		BUG();

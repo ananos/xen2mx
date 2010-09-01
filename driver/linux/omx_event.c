@@ -517,7 +517,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 }
 
 int
-omx_ioctl_release_exp_chunk(struct omx_endpoint *endpoint, void __user *uparam)
+omx_ioctl_release_exp_slots(struct omx_endpoint *endpoint, void __user *uparam)
 {
 	spin_lock(&endpoint->release_exp_lock);
 
@@ -533,7 +533,7 @@ omx_ioctl_release_exp_chunk(struct omx_endpoint *endpoint, void __user *uparam)
 }
 
 int
-omx_ioctl_release_unexp_chunk(struct omx_endpoint *endpoint, void __user *uparam)
+omx_ioctl_release_unexp_slots(struct omx_endpoint *endpoint, void __user *uparam)
 {
 	spin_lock(&endpoint->release_unexp_lock);
 
@@ -544,7 +544,7 @@ omx_ioctl_release_unexp_chunk(struct omx_endpoint *endpoint, void __user *uparam
 		endpoint->last_free_unexp_eventq_offset -= OMX_EVENTQ_ENTRY_SIZE;
 
 	spin_unlock(&endpoint->release_unexp_lock);
-	
+
 	return 0;
 }
 

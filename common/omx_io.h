@@ -591,9 +591,9 @@ struct omx_cmd_bench {
 #define OMX_CMD_DESTROY_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_destroy_user_region)
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_wait_event)
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8e, struct omx_cmd_wakeup)
-#define OMX_CMD_FAKE_EVENTS		_IOR(OMX_CMD_MAGIC, 0x8f, int)
-#define OMX_CMD_RELEASE_EXP_CHUNK       _IO(OMX_CMD_MAGIC, 0x90)
-#define OMX_CMD_RELEASE_UNEXP_CHUNK     _IO(OMX_CMD_MAGIC, 0x91)
+#define OMX_CMD_RELEASE_EXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x8f)
+#define OMX_CMD_RELEASE_UNEXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x90)
+#define OMX_CMD_FAKE_EVENTS		_IOR(OMX_CMD_MAGIC, 0x91, int)
 
 
 static inline __pure const char *
@@ -664,6 +664,10 @@ omx_strcmd(unsigned cmd)
 		return "Wait Event";
 	case OMX_CMD_WAKEUP:
 		return "Wakeup";
+	case OMX_CMD_RELEASE_EXP_SLOTS:
+		return "Release Expected Event Slots";
+	case OMX_CMD_RELEASE_UNEXP_SLOTS:
+		return "Release Unexpected Event Slots";
 	case OMX_CMD_FAKE_EVENTS:
 		return "Deliver Fake Events";
 	default:
