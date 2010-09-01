@@ -521,7 +521,7 @@ omx_ioctl_release_exp_slots(struct omx_endpoint *endpoint, void __user *uparam)
 {
 	spin_lock(&endpoint->release_exp_lock);
 
-	endpoint->last_free_exp_eventq_offset += OMX_EXP_CHUNK_SIZE;
+	endpoint->last_free_exp_eventq_offset += OMX_EXP_RELEASE_SLOTS_BATCH_NR * sizeof(union omx_evt);
 	endpoint->last_free_exp_eventq_offset %= OMX_EXP_EVENTQ_SIZE;
 
 	if (unlikely(endpoint->last_free_exp_eventq_offset == endpoint->next_exp_eventq_offset))
@@ -537,7 +537,7 @@ omx_ioctl_release_unexp_slots(struct omx_endpoint *endpoint, void __user *uparam
 {
 	spin_lock(&endpoint->release_unexp_lock);
 
-	endpoint->last_free_unexp_eventq_offset += OMX_UNEXP_CHUNK_SIZE;
+	endpoint->last_free_unexp_eventq_offset += OMX_UNEXP_RELEASE_SLOTS_BATCH_NR * sizeof(union omx_evt);
 	endpoint->last_free_unexp_eventq_offset %= OMX_UNEXP_EVENTQ_SIZE;
 
 	if (unlikely(endpoint->last_free_unexp_eventq_offset == endpoint->next_free_unexp_eventq_offset))

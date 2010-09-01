@@ -239,8 +239,9 @@ omx__progress(struct omx_endpoint * ep)
     evt++;
     done = (void *) evt - ep->unexp_eventq;
 
-    /* Acknowledgement per chunk */
-    if (unlikely(done % OMX_UNEXP_CHUNK_SIZE == 0)) {
+    /* Acknowledge batch event slots */
+    BUILD_BUG_ON(OMX_UNEXP_EVENTQ_ENTRY_NR<4); /* we release by quarter, make sure it's not 0 slot */
+    if (unlikely(done % (OMX_UNEXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
       ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_SLOTS);
       done = 0;
     }
@@ -268,7 +269,8 @@ omx__progress(struct omx_endpoint * ep)
     done = (void *) evt - ep->exp_eventq;
 
     /* Acknowledgement per chunk */
-    if (unlikely(done % OMX_EXP_CHUNK_SIZE == 0)) {
+    BUILD_BUG_ON(OMX_EXP_EVENTQ_ENTRY_NR<4); /* we release by quarter, make sure it's not 0 slot */
+    if (unlikely(done % (OMX_EXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
       ioctl(ep->fd, OMX_CMD_RELEASE_EXP_SLOTS);
       done = 0;
     }
@@ -328,7 +330,7 @@ omx___progress_counter(struct omx_endpoint * ep, int * counter)
     done = (void *) evt - ep->unexp_eventq;
 
     /* Acknowledgement per chunk */
-    if (unlikely(done % OMX_UNEXP_CHUNK_SIZE == 0)) {
+    if (unlikely(done % (OMX_UNEXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
       ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_SLOTS);
       done = 0;
     }
@@ -356,7 +358,7 @@ omx___progress_counter(struct omx_endpoint * ep, int * counter)
     done = (void *) evt - ep->exp_eventq;
 
     /* Acknowledgement per chunk */
-    if (unlikely(done % OMX_EXP_CHUNK_SIZE == 0)) {
+    if (unlikely(done % (OMX_EXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
       ioctl(ep->fd, OMX_CMD_RELEASE_EXP_SLOTS);
       done = 0;
     }
