@@ -103,7 +103,7 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 {
 	struct omx_deferred_event * defevent = omx_get_skb_destructor_data(skb);
 	struct omx_endpoint * endpoint = defevent->endpoint;
-	
+
 	/* report the event to user-space */
 	defevent->evt.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 	omx_notify_exp_event(endpoint,
@@ -540,7 +540,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 			ret = -ENOMEM;
 			goto out;
 		}
-		
+ 
 		defevent = kmalloc(sizeof(*defevent), GFP_KERNEL);
 		if (unlikely(!defevent)) {
 			omx_counter_inc(iface, SEND_NOMEM_MEDIUM_DEFEVENT);

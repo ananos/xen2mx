@@ -75,11 +75,12 @@ POP_BUILDENV
 
 # Global build tool options
 GLOBAL_AM_CPPFLAGS="-D_GNU_SOURCE=1"
-GLOBAL_AM_CFLAGS="-Wall -ggdb"
+GLOBAL_AM_CFLAGS="-Wall"
 GLOBAL_AM_LDFLAGS="-Wl,--enable-new-dtags"
 AC_SUBST(GLOBAL_AM_CPPFLAGS)
 AC_SUBST(GLOBAL_AM_CFLAGS)
 AC_SUBST(GLOBAL_AM_LDFLAGS)
+
 
 # Build debug options
 AC_ARG_VAR(DBGCPPFLAGS, Additional preprocessor flags used in debug mode)
@@ -495,13 +496,6 @@ AC_SUBST(OMX_MAIN_DEVICE_NAME)
 AC_SUBST(OMX_MAIN_DEVICE_GROUP)
 AC_SUBST(OMX_MAIN_DEVICE_MODE)
 
-# HWLOC
-##############
-
-PKG_CHECK_MODULES(HWLOC, hwloc >= 1.0)
-AC_SUBST(HWLOC_CFLAGS)
-AC_SUBST(HWLOC_LIBS)
-
 
 OMX_RAW_DEVICE_NAME=$(echo $OMX_RAW_DEVICE  | cut -d: -f1)
 OMX_RAW_DEVICE_GROUP=$(echo $OMX_RAW_DEVICE | cut -d: -f2 -s)
@@ -534,6 +528,17 @@ for t in $TEST_LIST ; do FINAL_TEST_LIST="$FINAL_TEST_LIST launchers/$t" ; done
 AC_SUBST(TEST_LIST)
 AC_SUBST(FINAL_TEST_LIST)
 AC_SUBST(BATTERY_LIST)
+
+
+
+
+# External dependencies
+########################
+
+PKG_CHECK_MODULES(HWLOC, hwloc >= 1.0)
+AC_SUBST(HWLOC_CFLAGS)
+AC_SUBST(HWLOC_LIBS)
+
 
 
 

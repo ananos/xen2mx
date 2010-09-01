@@ -18,7 +18,7 @@ RM_F  = rm -f
 
 AM_CPPFLAGS = -I$(abs_top_srcdir)/common -imacros $(abs_top_builddir)/common/config.h	\
 	      $(GLOBAL_AM_CPPFLAGS)
-AM_CFLAGS   = $(GLOBAL_AM_CFLAGS) -ggdb
+AM_CFLAGS   = $(GLOBAL_AM_CFLAGS)
 AM_LDFLAGS  = $(GLOBAL_AM_LDFLAGS)
 
 testdir		= $(bindir)/tests

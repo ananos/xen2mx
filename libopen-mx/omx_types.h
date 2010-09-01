@@ -33,13 +33,9 @@
 
 struct omx__req_segs {
   struct omx_cmd_user_segment single; /* optimization to store the single segment */
-  /* 16 */
   uint32_t nseg;
-  /* 20 */
   struct omx_cmd_user_segment *segs;
-  /* 28 */
   uint32_t total_length;
-  /* 32 */
 };
 
 /* current segment and offset within an array of segments */
