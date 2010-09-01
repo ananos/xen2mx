@@ -549,26 +549,26 @@ omx_ioctl_release_unexp_chunk(struct omx_endpoint *endpoint, void __user *uparam
 }
 
 int
-omx_ioctl_test(struct omx_endpoint * endpoint, void __user *uparam)
+omx_ioctl_fake_events(struct omx_endpoint * endpoint, void __user *uparam)
 {
 	union omx_evt evt;
 	int err, num, i;
 
 	err = copy_from_user(&num, uparam, sizeof(int));
-
 	if (unlikely(err != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read counter from userspace\n");
+		printk(KERN_ERR "Open-MX: Failed to read fake events counter from userspace\n");
 		err = -EFAULT;
 		goto out;
 	}
-	evt.generic.type = OMX_EVT_TEST;
-	for (i = 0; i < num; i++) {
 
-		err = omx_notify_unexp_event(endpoint, &evt.test, sizeof evt.test);
+	evt.generic.type = OMX_EVT_FAKE;
+	for (i = 0; i < num; i++) {
+		err = omx_notify_unexp_event(endpoint, &evt, sizeof evt);
 		if (unlikely(err != 0))
 			goto out;
 	}
 	return 0;
+
  out:
 	return err;
 }

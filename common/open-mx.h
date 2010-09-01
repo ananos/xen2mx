@@ -356,9 +356,6 @@ omx_return_t
 omx_reenable_progression(omx_endpoint_t ep);
 
 omx_return_t
-omx_generate_events(omx_endpoint_t ep, int count);
-
-omx_return_t
 omx_get_info(omx_endpoint_t ep, omx_info_key_t key,
 	     const void * in_val, uint32_t in_len,
 	     void * out_val, uint32_t out_len);

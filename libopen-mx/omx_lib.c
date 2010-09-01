@@ -41,16 +41,6 @@ omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
     break;
   }
 
-  case OMX_EVT_TEST: {
-    struct omx_evt_test test;
-
-    memcpy(&test, &evt->test, sizeof(struct omx_evt_test));
-    
-    omx__debug_printf(EVENT, ep, "received event #%d\n", evt->generic.id);
-    
-    break;
-  }
-
   case OMX_EVT_RECV_CONNECT_REPLY: {
     omx__process_recv_connect_reply(ep, &evt->recv_connect_reply);
     break;
@@ -137,6 +127,13 @@ omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
 
   case OMX_EVT_RECV_NACK_LIB: {
     omx__process_recv_nack_lib(ep, &evt->recv_nack_lib);
+    break;
+  }
+
+  case OMX_EVT_FAKE: {
+    union omx_evt test;
+    memcpy(&test, &evt, sizeof(union omx_evt));
+    omx__debug_printf(EVENT, ep, "received fake event with id #%d\n", evt->generic.id);
     break;
   }
 
@@ -498,24 +495,19 @@ omx_reenable_progression(struct omx_endpoint *ep)
   return OMX_SUCCESS;
 }
 
-/* API omx_generate_events */
 omx_return_t
-omx_generate_events(omx_endpoint_t ep, int count)
+omx__generate_fake_events(omx_endpoint_t ep, int count)
 {
-  int          err;
-  omx_return_t ret = OMX_SUCCESS;
+  omx_return_t ret;
+  int err;
 
-  if (unlikely(!ep)) {
-    ret = OMX_BAD_ENDPOINT;
-    goto out;
-  }
-
-  err = ioctl(ep->fd, OMX_CMD_TEST, &count);
-
+  err = ioctl(ep->fd, OMX_CMD_FAKE_EVENTS, &count);
   if (unlikely(err < 0)) {
-    ret = OMX_ACCESS_DENIED;
+    ret = OMX_BAD_ERROR;
     goto out;
   }
+
+  return OMX_SUCCESS;
 
  out:
   return ret;

@@ -591,7 +591,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_DESTROY_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_destroy_user_region)
 #define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_wait_event)
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8e, struct omx_cmd_wakeup)
-#define OMX_CMD_TEST                    _IOR(OMX_CMD_MAGIC, 0x8f, int)
+#define OMX_CMD_FAKE_EVENTS		_IOR(OMX_CMD_MAGIC, 0x8f, int)
 #define OMX_CMD_RELEASE_EXP_CHUNK       _IO(OMX_CMD_MAGIC, 0x90)
 #define OMX_CMD_RELEASE_UNEXP_CHUNK     _IO(OMX_CMD_MAGIC, 0x91)
 
@@ -664,6 +664,8 @@ omx_strcmd(unsigned cmd)
 		return "Wait Event";
 	case OMX_CMD_WAKEUP:
 		return "Wakeup";
+	case OMX_CMD_FAKE_EVENTS:
+		return "Deliver Fake Events";
 	default:
 		return "** Unknown **";
 	}
@@ -686,7 +688,7 @@ omx_strcmd(unsigned cmd)
 #define OMX_EVT_RECV_NACK_LIB		0x19
 #define OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE	0x20
 #define OMX_EVT_PULL_DONE		0x21
-#define OMX_EVT_TEST                    0x22
+#define OMX_EVT_FAKE			0x22
 
 #define OMX_EVT_NACK_LIB_BAD_ENDPT	0x01
 #define OMX_EVT_NACK_LIB_ENDPT_CLOSED	0x02
@@ -750,11 +752,6 @@ union omx_evt {
 		uint8_t type;
 		/* 64 */
 	} generic;
-
-	struct omx_evt_test {
-		char    pad[63];
-		uint8_t type;
-	} test;
 
 	/* send medium frag done */
 	struct omx_evt_send_mediumsq_frag_done {
