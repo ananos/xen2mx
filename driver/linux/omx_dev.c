@@ -767,10 +767,14 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 					       OMX_SENDQ_SIZE >> PAGE_SHIFT);
 
 	} else if (offset == OMX_EXP_EVENTQ_FILE_OFFSET && size == OMX_EXP_EVENTQ_SIZE) {
+		if (vma->vm_flags & VM_WRITE) /* may open for writing but cannot mmap for writing */
+			return -EPERM;
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
 					       (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE) >> PAGE_SHIFT);
 
 	} else if (offset == OMX_UNEXP_EVENTQ_FILE_OFFSET && size == OMX_UNEXP_EVENTQ_SIZE) {
+		if (vma->vm_flags & VM_WRITE) /* may open for writing but cannot mmap for writing */
+			return -EPERM;
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
 					       (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EXP_EVENTQ_SIZE) >> PAGE_SHIFT);
 

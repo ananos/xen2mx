@@ -218,7 +218,7 @@ omx__check_enough_progression(struct omx_endpoint * ep)
 omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
-  volatile union omx_evt * evt;
+  const volatile union omx_evt * evt;
   int id;
 
   if (unlikely(ep->progression_disabled))
@@ -314,7 +314,7 @@ omx__progress(struct omx_endpoint * ep)
 static omx_return_t
 omx___progress_counter(struct omx_endpoint * ep, int * counter)
 {
-  volatile union omx_evt * evt;
+  const volatile union omx_evt * evt;
   int id;
 
   if (unlikely(ep->progression_disabled))
