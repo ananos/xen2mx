@@ -148,7 +148,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int lengt
 	/* store the event and then the actual type */
 	memcpy(slot, event, length);
 	wmb();
-	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENTQ_MAX_ID);
+	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENT_ID_MAX);
 
 	/* wake up waiters */
 	dprintk(EVENT, "notify_exp waking up everybody\n");
@@ -192,7 +192,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int len
 	/* store the event and then the actual type */
 	memcpy(slot, event, length);
 	wmb();
-	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENTQ_MAX_ID);
+	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENT_ID_MAX);
 
 	/* wake up waiters */
 	dprintk(EVENT, "notify_unexp waking up everybody\n");
@@ -310,7 +310,7 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	/* store the event and then the actual type */
 	memcpy(slot, event, length);
 	wmb();
-	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENTQ_MAX_ID);
+	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENT_ID_MAX);
 
 	/* wake up waiters */
 	dprintk(EVENT, "commit_notify_unexp waking up everybody\n");
@@ -343,7 +343,7 @@ omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
 	/* fill an event to be ignored by user-space */
 	((struct omx_evt_generic *) slot)->type = OMX_EVT_IGNORE;
 	wmb();
-	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENTQ_MAX_ID);
+	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENT_ID_MAX);
 
 	/* no need to wakeup people */
 

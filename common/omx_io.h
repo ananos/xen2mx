@@ -81,8 +81,8 @@
 #define OMX_EXP_RELEASE_SLOTS_BATCH_NR		(OMX_EXP_EVENTQ_ENTRY_NR/4)
 #define OMX_UNEXP_RELEASE_SLOTS_BATCH_NR	(OMX_UNEXP_EVENTQ_ENTRY_NR/4)
 
-/* Please make it non power of two*/
-#define OMX_EVENTQ_MAX_ID               7
+/* Event ids go from 1 to a power-of-two, 0 means unused yet. */
+#define OMX_EVENT_ID_MAX		7
 
 #define OMX_TINY_MSG_LENGTH_MAX		32
 #define OMX_SMALL_MSG_LENGTH_MAX	128
