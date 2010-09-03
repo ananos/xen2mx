@@ -174,9 +174,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int len
 
 	if (unlikely(endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
 		     >= OMX_UNEXP_EVENTQ_ENTRY_NR)) {
-		/* the application sucks, it did not check
-		 * the unexpected eventq before posting requests
-		 */
+		/* the application did not process the unexpected queue and release slots fast enough */
 		dprintk(EVENT,
 			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
@@ -226,6 +224,7 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 
 	if (unlikely(endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
 		     >= OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+		/* the application did not process the unexpected queue and release slots fast enough */
 		dprintk(EVENT,
 			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
@@ -261,6 +260,7 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
 
 	if (unlikely(endpoint->nextfree_unexp_eventq_index + nr - 1 - endpoint->nextreleased_unexp_eventq_index
 		     >= OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+		/* the application did not process the unexpected queue and release slots fast enough */
 		dprintk(EVENT,
 			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
 			endpoint->endpoint_index);
@@ -384,7 +384,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
 	spin_lock_bh(&endpoint->event_lock);
 
-	/* check for race conditions */
+	/* did we deposit an event before the lib decided to go to sleep ? */
 	if ((cmd.next_exp_event_offset != (endpoint->nextfree_exp_eventq_index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE)
 	    || (cmd.next_unexp_event_offset != (endpoint->nextreserved_unexp_eventq_index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE)
 	    || (cmd.user_event_index != endpoint->userdesc->user_event_index)) {

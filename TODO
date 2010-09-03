@@ -1,4 +1,3 @@
-* update eventq full debug messages
 * improve the update of the next event ids in the lib
 * make sure we don't need to release slots before posting a request that will need an exp slot
 * sort endpoint eventq fields for better locality
