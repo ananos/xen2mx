@@ -485,21 +485,29 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 int
 omx_ioctl_release_exp_slots(struct omx_endpoint *endpoint, void __user *uparam)
 {
+	int err = 0;
 	spin_lock(&endpoint->release_exp_lock);
-	/* TODO check that nr isn't too high */
-	endpoint->nextreleased_exp_eventq_index += OMX_EXP_RELEASE_SLOTS_BATCH_NR;
+	if (endpoint->nextfree_exp_eventq_index - endpoint->nextreleased_exp_eventq_index
+	    <= OMX_EXP_RELEASE_SLOTS_BATCH_NR)
+		err = -EINVAL;
+	else
+		endpoint->nextreleased_exp_eventq_index += OMX_EXP_RELEASE_SLOTS_BATCH_NR;
 	spin_unlock(&endpoint->release_exp_lock);
-	return 0;
+	return err;
 }
 
 int
 omx_ioctl_release_unexp_slots(struct omx_endpoint *endpoint, void __user *uparam)
 {
+	int err = 0;
 	spin_lock(&endpoint->release_unexp_lock);
-	/* TODO check that nr isn't too high */
-	endpoint->nextreleased_unexp_eventq_index += OMX_EXP_RELEASE_SLOTS_BATCH_NR;
+	if (endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+	    <= OMX_EXP_RELEASE_SLOTS_BATCH_NR)
+		err = -EINVAL;
+	else
+		endpoint->nextreleased_unexp_eventq_index += OMX_EXP_RELEASE_SLOTS_BATCH_NR;
 	spin_unlock(&endpoint->release_unexp_lock);
-	return 0;
+	return err;
 }
 
 int
