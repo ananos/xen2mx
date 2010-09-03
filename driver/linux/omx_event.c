@@ -94,6 +94,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	/* initialize indexes */
 	endpoint->nextfree_exp_eventq_index = 0;
 	endpoint->nextreleased_exp_eventq_index = 0;
+	BUILD_BUG_ON((omx_eventq_index_t) -1 <= OMX_EXP_EVENTQ_ENTRY_NR);
 
 	/* initialize all unexpected events */
 	for(evt = endpoint->unexp_eventq;
@@ -105,6 +106,7 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	endpoint->nextfree_unexp_eventq_index = 0;
 	endpoint->nextreserved_unexp_eventq_index = 0;
 	endpoint->nextreleased_unexp_eventq_index = 0;
+	BUILD_BUG_ON((omx_eventq_index_t) -1 <= OMX_UNEXP_EVENTQ_ENTRY_NR);
 
 	/* set the first recvq slot */
 	endpoint->next_recvq_offset = 0;
@@ -123,7 +125,7 @@ int
 omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int length)
 {
 	union omx_evt *slot;
-	uint32_t index;
+	omx_eventq_index_t index;
 
 	spin_lock_bh(&endpoint->event_lock);
 
@@ -168,7 +170,7 @@ int
 omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int length)
 {
 	union omx_evt *slot;
-	uint32_t index;
+	omx_eventq_index_t index;
 
 	spin_lock_bh(&endpoint->event_lock);
 
@@ -296,7 +298,7 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 					 const void *event, int length)
 {
 	union omx_evt *slot;
-	uint32_t index;
+	omx_eventq_index_t index;
 
 	spin_lock_bh(&endpoint->event_lock);
 
@@ -329,7 +331,7 @@ void
 omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
 {
 	union omx_evt *slot;
-	uint32_t index;
+	omx_eventq_index_t index;
 
 	spin_lock_bh(&endpoint->event_lock);
 

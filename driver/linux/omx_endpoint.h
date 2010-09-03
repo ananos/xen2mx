@@ -47,6 +47,8 @@ enum omx_endpoint_status {
 	OMX_ENDPOINT_STATUS_CLOSING,
 };
 
+typedef uint32_t omx_eventq_index_t;
+
 struct omx_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
@@ -64,8 +66,8 @@ struct omx_endpoint {
 	struct omx_iface * iface;
 
 	void * sendq, * recvq, * exp_eventq, * unexp_eventq;
-	unsigned long nextfree_exp_eventq_index, nextreleased_exp_eventq_index;
-	unsigned long nextfree_unexp_eventq_index, nextreserved_unexp_eventq_index, nextreleased_unexp_eventq_index;
+	omx_eventq_index_t nextfree_exp_eventq_index, nextreleased_exp_eventq_index;
+	omx_eventq_index_t nextfree_unexp_eventq_index, nextreserved_unexp_eventq_index, nextreleased_unexp_eventq_index;
 	unsigned long next_recvq_offset;
 	struct list_head waiters;
 	spinlock_t event_lock, release_exp_lock, release_unexp_lock;

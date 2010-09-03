@@ -1,7 +1,6 @@
 * improve the update of the next event ids in the lib
 * make sure we don't need to release slots before posting a request that will need an exp slot
 * sort endpoint eventq fields for better locality
-* omx_eventq_slot_index_t and check that it's strict a multiple of exp/unexp eventq entry nr
 * update wait eventq status to use index instead of offset
 
 * dynamically alloc the sendq_map index array out of the medium request?
