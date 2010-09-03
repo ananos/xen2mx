@@ -250,7 +250,7 @@ omx__progress(struct omx_endpoint * ep)
     ep->next_unexp_event = (void *) evt;
 
     /* Acknowledgement per batch of event slots */
-    BUILD_BUG_ON(OMX_UNEXP_EVENTQ_ENTRY_NR<4); /* we release by quarter, make sure it's not 0 slot */
+    BUILD_BUG_ON(OMX_UNEXP_RELEASE_SLOTS_BATCH_NR < 1); /* make sure we release something */
     if (unlikely(evt_offset % (OMX_UNEXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
       ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_SLOTS);
     }
@@ -281,7 +281,7 @@ omx__progress(struct omx_endpoint * ep)
     ep->next_exp_event = (void *) evt;
 
     /* Acknowledgement per batch of event slots */
-    BUILD_BUG_ON(OMX_EXP_EVENTQ_ENTRY_NR<4); /* we release by quarter, make sure it's not 0 slot */
+    BUILD_BUG_ON(OMX_EXP_RELEASE_SLOTS_BATCH_NR < 1); /* make sure we release something */
     if (unlikely(evt_offset % (OMX_EXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
       ioctl(ep->fd, OMX_CMD_RELEASE_EXP_SLOTS);
     }
