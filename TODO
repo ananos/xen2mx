@@ -1,7 +1,8 @@
-* improve the update of the next event ids in the lib
+* change BUILD_BUG_ON on eventq_nr > 4 into batch_nr > 0
 * make sure we don't need to release slots before posting a request that will need an exp slot
 * sort endpoint eventq fields for better locality
 * update wait eventq status to use index instead of offset
+* factorize the updating of ep->next_{exp,unexp}_event{,_id}
 
 * dynamically alloc the sendq_map index array out of the medium request?
 
