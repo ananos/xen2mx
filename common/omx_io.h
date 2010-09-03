@@ -81,8 +81,11 @@
 #define OMX_EXP_RELEASE_SLOTS_BATCH_NR		(OMX_EXP_EVENTQ_ENTRY_NR/4)
 #define OMX_UNEXP_RELEASE_SLOTS_BATCH_NR	(OMX_UNEXP_EVENTQ_ENTRY_NR/4)
 
-/* Event ids go from 1 to a power-of-two, 0 means unused yet. */
-#define OMX_EVENT_ID_MAX		7
+/* Event ids go from 1 to a power-of-two, 0 means unused yet.
+ * This ensures that the same slot of the eventq will not use the same id
+ * during two consecutive fills of the eventq.
+ */
+#define OMX_EVENT_ID_MAX		255
 
 #define OMX_TINY_MSG_LENGTH_MAX		32
 #define OMX_SMALL_MSG_LENGTH_MAX	128
