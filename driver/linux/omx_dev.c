@@ -760,9 +760,13 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 		return omx_remap_vmalloc_range(vma, endpoint->userdesc, 0);
 
 	} else if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE) {
+		if (vma->vm_flags & VM_READ) /* may open for reading but cannot mmap for reading */
+			return -EPERM;
 		return omx_remap_vmalloc_range(vma, endpoint->sendq, 0);
 
 	} else if (offset == OMX_RECVQ_FILE_OFFSET && size == OMX_RECVQ_SIZE) {
+		if (vma->vm_flags & VM_WRITE) /* may open for writing but cannot mmap for writing */
+			return -EPERM;
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
 					       OMX_SENDQ_SIZE >> PAGE_SHIFT);
 

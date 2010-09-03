@@ -248,7 +248,8 @@ struct omx_endpoint {
 #ifdef OMX_LIB_DEBUG
   uint64_t last_progress_jiffies;
 #endif
-  void * recvq, * sendq;
+  void * sendq;
+  const void * recvq;
   const void * exp_eventq, * unexp_eventq;
   const void * next_exp_event, * next_unexp_event;
   uint32_t  next_exp_event_id, next_unexp_event_id;

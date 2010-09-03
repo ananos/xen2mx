@@ -56,7 +56,7 @@ omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
 
   case OMX_EVT_RECV_SMALL: {
     const struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    char * recvq_buffer = ep->recvq + msg->specific.small.recvq_offset;
+    const char * recvq_buffer = ep->recvq + msg->specific.small.recvq_offset;
     omx__process_recv(ep,
 		      msg, recvq_buffer, msg->specific.small.length,
 		      omx__process_recv_small);
@@ -65,7 +65,7 @@ omx__process_event(struct omx_endpoint * ep, const union omx_evt * evt)
 
   case OMX_EVT_RECV_MEDIUM_FRAG: {
     const struct omx_evt_recv_msg * msg = &evt->recv_msg;
-    char * recvq_buffer = ep->recvq + msg->specific.medium_frag.recvq_offset;
+    const char * recvq_buffer = ep->recvq + msg->specific.medium_frag.recvq_offset;
     omx__process_recv(ep,
 		      msg, recvq_buffer, msg->specific.medium_frag.msg_length,
 		      omx__process_recv_medium_frag);

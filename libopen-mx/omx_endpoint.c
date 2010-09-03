@@ -459,14 +459,14 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   }
   ep->desc = desc;
   /* mmap sendq */
-  sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
+  sendq = mmap(0, OMX_SENDQ_SIZE, PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
   if (sendq == MAP_FAILED) {
     ret = omx__check_mmap("endpoint send queue");
     goto out_with_desc;
   }
   ep->sendq = sendq;
   /* mmap recvq */
-  recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
+  recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
   if (recvq == MAP_FAILED) {
     ret = omx__check_mmap("endpoint recv queue");
     goto out_with_sendq;
@@ -609,7 +609,7 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
  out_with_exp_eventq:
   munmap((void *) ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
  out_with_recvq:
-  munmap(ep->recvq, OMX_RECVQ_SIZE);
+  munmap((void *) ep->recvq, OMX_RECVQ_SIZE);
  out_with_sendq:
   munmap(ep->sendq, OMX_SENDQ_SIZE);
  out_with_desc:
@@ -663,7 +663,7 @@ omx_close_endpoint(struct omx_endpoint *ep)
   omx_free_ep(ep, ep->message_prefix);
   munmap((void *) ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
   munmap((void *) ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
-  munmap(ep->recvq, OMX_RECVQ_SIZE);
+  munmap((void *) ep->recvq, OMX_RECVQ_SIZE);
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
   omx__endpoint_sendq_map_exit(ep);

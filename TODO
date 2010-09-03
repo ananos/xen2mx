@@ -2,9 +2,6 @@
 * sort endpoint eventq fields for better locality
 * update wait eventq status to use index instead of offset
 
-* mmap the recvq in RO
-* mmap the sendq in WO
-
 * dynamically alloc the sendq_map index array out of the medium request?
 
 * drop the mmapped jiffies
