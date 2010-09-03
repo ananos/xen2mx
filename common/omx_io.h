@@ -39,7 +39,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x20d
+#define OMX_DRIVER_ABI_VERSION		0x20e
 
 /************************
  * Common parameters or IOCTL subtypes
