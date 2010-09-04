@@ -753,17 +753,18 @@ omx_strevt(unsigned type)
 union omx_evt {
 	/* generic event */
 	struct omx_evt_generic {
-		char    pad[62];
-		uint8_t id;
+		uint8_t pad[62];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} generic;
 
 	/* send medium frag done */
 	struct omx_evt_send_mediumsq_frag_done {
 		uint32_t sendq_offset;
-		char pad[59];
+		uint8_t pad[58];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} send_mediumsq_frag_done;
 
@@ -774,8 +775,9 @@ union omx_evt {
 		uint8_t status;
 		uint8_t pad1[3];
 		/* 16 */
-		uint8_t pad2[47];
+		uint8_t pad2[46];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} pull_done;
 
@@ -793,8 +795,9 @@ union omx_evt {
 		uint8_t connect_seqnum;
 		uint8_t pad2[5];
 		/* 24 */
-		uint8_t pad3[39];
+		uint8_t pad3[38];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_connect_request;
 
@@ -813,8 +816,9 @@ union omx_evt {
 		uint8_t connect_status_code;
 		uint32_t pad2;
 		/* 24 */
-		uint8_t pad3[39];
+		uint8_t pad3[38];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_connect_reply;
 
@@ -828,8 +832,9 @@ union omx_evt {
 		uint16_t send_seq;
 		/* 16 */
 		uint8_t resent;
-		uint8_t pad2[46];
+		uint8_t pad2[45];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_liback;
 
@@ -840,8 +845,9 @@ union omx_evt {
 		uint16_t seqnum;
 		uint16_t pad1;
 		/* 8 */
-		uint8_t pad3[55];
+		uint8_t pad3[54];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_nack_lib;
 
@@ -909,8 +915,9 @@ union omx_evt {
 			/* 40 */
 		} specific;
 		/* 56 */
-		uint8_t pad3[7];
+		uint8_t pad3[6];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_msg;
 
