@@ -459,35 +459,36 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   }
   ep->desc = desc;
   /* mmap sendq */
-  sendq = mmap(0, OMX_SENDQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
+  sendq = mmap(0, OMX_SENDQ_SIZE, PROT_WRITE, MAP_SHARED, fd, OMX_SENDQ_FILE_OFFSET);
   if (sendq == MAP_FAILED) {
     ret = omx__check_mmap("endpoint send queue");
     goto out_with_desc;
   }
   ep->sendq = sendq;
   /* mmap recvq */
-  recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
+  recvq = mmap(0, OMX_RECVQ_SIZE, PROT_READ, MAP_SHARED, fd, OMX_RECVQ_FILE_OFFSET);
   if (recvq == MAP_FAILED) {
     ret = omx__check_mmap("endpoint recv queue");
     goto out_with_sendq;
   }
   ep->recvq = recvq;
   /* mmap exp eventq */
-  exp_eventq = mmap(0, OMX_EXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_EXP_EVENTQ_FILE_OFFSET);
+  exp_eventq = mmap(0, OMX_EXP_EVENTQ_SIZE, PROT_READ, MAP_SHARED, fd, OMX_EXP_EVENTQ_FILE_OFFSET);
   if (exp_eventq == MAP_FAILED) {
     ret = omx__check_mmap("endpoint expected event queue");
     goto out_with_recvq;
   }
   ep->exp_eventq = ep->next_exp_event = exp_eventq;
-  ep->next_exp_event_id = ep->next_unexp_event_id = 1;
+  ep->next_exp_event_id = 1;
 
   /* mmap unexp eventq */
-  unexp_eventq = mmap(0, OMX_UNEXP_EVENTQ_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, fd, OMX_UNEXP_EVENTQ_FILE_OFFSET);
+  unexp_eventq = mmap(0, OMX_UNEXP_EVENTQ_SIZE, PROT_READ, MAP_SHARED, fd, OMX_UNEXP_EVENTQ_FILE_OFFSET);
   if (unexp_eventq == MAP_FAILED) {
     ret = omx__check_mmap("endpoint unexpected event queue");
     goto out_with_exp_eventq;
   }
   ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
+  ep->next_unexp_event_id = 1;
 
   BUILD_BUG_ON(sizeof(struct omx_evt_recv_msg) != OMX_EVENTQ_ENTRY_SIZE);
   BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);
@@ -604,11 +605,11 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   omx__endpoint_large_region_map_exit(ep);
  out_with_message_prefix:
   omx_free(ep->message_prefix);
-  munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
+  munmap((void *) ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
  out_with_exp_eventq:
-  munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
+  munmap((void *) ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
  out_with_recvq:
-  munmap(ep->recvq, OMX_RECVQ_SIZE);
+  munmap((void *) ep->recvq, OMX_RECVQ_SIZE);
  out_with_sendq:
   munmap(ep->sendq, OMX_SENDQ_SIZE);
  out_with_desc:
@@ -660,9 +661,9 @@ omx_close_endpoint(struct omx_endpoint *ep)
   omx_free_ep(ep, ep->partners);
   omx__endpoint_large_region_map_exit(ep);
   omx_free_ep(ep, ep->message_prefix);
-  munmap(ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
-  munmap(ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
-  munmap(ep->recvq, OMX_RECVQ_SIZE);
+  munmap((void *) ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
+  munmap((void *) ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
+  munmap((void *) ep->recvq, OMX_RECVQ_SIZE);
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
   omx__endpoint_sendq_map_exit(ep);

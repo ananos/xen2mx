@@ -39,7 +39,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x20d
+#define OMX_DRIVER_ABI_VERSION		0x20e
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -81,8 +81,11 @@
 #define OMX_EXP_RELEASE_SLOTS_BATCH_NR		(OMX_EXP_EVENTQ_ENTRY_NR/4)
 #define OMX_UNEXP_RELEASE_SLOTS_BATCH_NR	(OMX_UNEXP_EVENTQ_ENTRY_NR/4)
 
-/* Please make it non power of two*/
-#define OMX_EVENTQ_MAX_ID               7
+/* Event ids go from 1 to a power-of-two, 0 means unused yet.
+ * This ensures that the same slot of the eventq will not use the same id
+ * during two consecutive fills of the eventq.
+ */
+#define OMX_EVENT_ID_MAX		255
 
 #define OMX_TINY_MSG_LENGTH_MAX		32
 #define OMX_SMALL_MSG_LENGTH_MAX	128
@@ -745,17 +748,18 @@ omx_strevt(unsigned type)
 union omx_evt {
 	/* generic event */
 	struct omx_evt_generic {
-		char    pad[62];
-		uint8_t id;
+		uint8_t pad[62];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} generic;
 
 	/* send medium frag done */
 	struct omx_evt_send_mediumsq_frag_done {
 		uint32_t sendq_offset;
-		char pad[59];
+		uint8_t pad[58];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} send_mediumsq_frag_done;
 
@@ -766,8 +770,9 @@ union omx_evt {
 		uint8_t status;
 		uint8_t pad1[3];
 		/* 16 */
-		uint8_t pad2[47];
+		uint8_t pad2[46];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} pull_done;
 
@@ -785,8 +790,9 @@ union omx_evt {
 		uint8_t connect_seqnum;
 		uint8_t pad2[5];
 		/* 24 */
-		uint8_t pad3[39];
+		uint8_t pad3[38];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_connect_request;
 
@@ -805,8 +811,9 @@ union omx_evt {
 		uint8_t connect_status_code;
 		uint32_t pad2;
 		/* 24 */
-		uint8_t pad3[39];
+		uint8_t pad3[38];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_connect_reply;
 
@@ -820,8 +827,9 @@ union omx_evt {
 		uint16_t send_seq;
 		/* 16 */
 		uint8_t resent;
-		uint8_t pad2[46];
+		uint8_t pad2[45];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_liback;
 
@@ -832,8 +840,9 @@ union omx_evt {
 		uint16_t seqnum;
 		uint16_t pad1;
 		/* 8 */
-		uint8_t pad3[55];
+		uint8_t pad3[54];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_nack_lib;
 
@@ -901,8 +910,9 @@ union omx_evt {
 			/* 40 */
 		} specific;
 		/* 56 */
-		uint8_t pad3[7];
+		uint8_t pad3[6];
 		uint8_t type;
+		uint8_t id;
 		/* 64 */
 	} recv_msg;
 
