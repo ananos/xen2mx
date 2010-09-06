@@ -1,3 +1,8 @@
+* check that the total size of each ring is a multiple of PAGE_SIZE
+  during initialization, otherwise mmap would fail
+* make sure the number of expected slots is larger than what each
+  single request may generate
+
 * dynamically alloc the sendq_map index array out of the medium request?
 
 * drop the mmapped jiffies
