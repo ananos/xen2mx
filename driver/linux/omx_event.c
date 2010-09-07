@@ -349,7 +349,7 @@ omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
 	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 
 	/* store the event with an ignored id first */
-	((struct omx_evt_generic *) event)->id = 0;
+	((struct omx_evt_generic *) slot)->id = 0;
 	((struct omx_evt_generic *) slot)->type = OMX_EVT_IGNORE;
 	wmb();
 	/* write the actual id now that the whole event has been written to memory */
