@@ -504,10 +504,10 @@ omx_ioctl_release_unexp_slots(struct omx_endpoint *endpoint, void __user *uparam
 	int err = 0;
 	spin_lock(&endpoint->release_unexp_lock);
 	if (endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
-	    <= OMX_EXP_RELEASE_SLOTS_BATCH_NR)
+	    <= OMX_UNEXP_RELEASE_SLOTS_BATCH_NR)
 		err = -EINVAL;
 	else
-		endpoint->nextreleased_unexp_eventq_index += OMX_EXP_RELEASE_SLOTS_BATCH_NR;
+		endpoint->nextreleased_unexp_eventq_index += OMX_UNEXP_RELEASE_SLOTS_BATCH_NR;
 	spin_unlock(&endpoint->release_unexp_lock);
 	return err;
 }
