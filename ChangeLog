@@ -5,6 +5,8 @@ Bug fixes:
 * Make omx_set_error_handler() work before omx_init().
 * Do not mix expected and unexpected event queue full in the counters.
 
+Other improvements from previous release:
+* Update documentation about the switch from SVN to GIT.
 
 Caveats:
 * No background progression or retransmission is done if the application
