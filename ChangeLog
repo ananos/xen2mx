@@ -3,6 +3,8 @@ Open-MX 1.3.3
 
 Bug fixes:
 * Make omx_set_error_handler() work before omx_init().
+* Initialize the error handler early in omx_init() so as to use the
+  normal error handler as soon possible.
 * Do not mix expected and unexpected event queue full in the counters.
 
 Other improvements from previous release:
