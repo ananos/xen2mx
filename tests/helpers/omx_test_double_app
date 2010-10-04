@@ -78,11 +78,30 @@ parse_cli()
     while [ $# -gt 0 ] ; do sender_opts="$sender_opts $1"; shift; done
 }
 
+bind_processes_on_multicore()
+{
+    __core=$(cat /proc/cpuinfo	\
+           | grep processor	\
+	   | tail -n 1		\
+	   | sed -re 's/^processor\s*:\s*([0-9]+)\s*$/\1/')
+
+    __core=$(expr $__core + 1)
+
+    case $__core in
+        1) ;;
+        *) export OMX_PROCESS_BINDING=0,,,1
+    esac
+
+    unset __core
+}
+
 do_run()
 {
+    [ "$OMX_TEST_VERBOSE" = 2 ] && bind_processes_on_multicore
+
     $app $opts & __pid=$!
 
-    # I think this a bit dirty but I currently have not better...
+    # I think this is a bit dirty but I currently have not better...
     sleep 1
     { ps | grep -q $__pid; } || exit 1
 
