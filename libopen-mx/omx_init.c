@@ -129,6 +129,25 @@ omx__init_api(int app_api)
 			  omx__globals.abort_sleeps);
   }
 
+  /*************************
+   * Error Handler Behavior
+   */
+  omx__globals.fatal_errors = 1;
+  env = getenv("OMX_FATAL_ERRORS");
+#ifdef OMX_MX_ABI_COMPAT
+  if (!omx__globals.ignore_mx_env && !env) {
+    env = getenv("MX_ERRORS_ARE_FATAL");
+    if (env)
+      omx__verbose_printf(NULL, "Emulating MX_ERRORS_ARE_FATAL as OMX_FATAL_ERRORS\n");
+  }
+#endif /* OMX_MX_ABI_COMPAT */
+  if (env) {
+    omx__globals.fatal_errors = atoi(env);
+    omx__verbose_printf(NULL, "Forcing errors to %s\n",
+			omx__globals.fatal_errors ? "be fatal" : "not be fatal");
+  }
+  omx__init_error_handler();
+
   /*******************************
    * Check if already initialized
    */
@@ -203,29 +222,10 @@ omx__init_api(int app_api)
     goto out_with_fd;
   }
 
-  /*************************
-   * Error Handler Behavior
-   */
-  omx__globals.fatal_errors = 1;
-  env = getenv("OMX_FATAL_ERRORS");
-#ifdef OMX_MX_ABI_COMPAT
-  if (!omx__globals.ignore_mx_env && !env) {
-    env = getenv("MX_ERRORS_ARE_FATAL");
-    if (env)
-      omx__verbose_printf(NULL, "Emulating MX_ERRORS_ARE_FATAL as OMX_FATAL_ERRORS\n");
-  }
-#endif /* OMX_MX_ABI_COMPAT */
-  if (env) {
-    omx__globals.fatal_errors = atoi(env);
-    omx__verbose_printf(NULL, "Forcing errors to %s\n",
-			omx__globals.fatal_errors ? "be fatal" : "not be fatal");
-  }
-
   /***************************
    * Terminate initialization
    */
 
-  omx__init_error_handler();
   omx__globals.initialized = 1;
   return OMX_SUCCESS;
 
