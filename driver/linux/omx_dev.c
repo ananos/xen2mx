@@ -757,24 +757,24 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 	if (offset == OMX_ENDPOINT_DESC_FILE_OFFSET && size == PAGE_ALIGN(OMX_ENDPOINT_DESC_SIZE)) {
 		return omx_remap_vmalloc_range(vma, endpoint->userdesc, 0);
 
-	} else if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE) {
+	} else if (offset == OMX_SENDQ_FILE_OFFSET && size == OMX_SENDQ_SIZE) { /* page-alignment enforced at init */
 		if (vma->vm_flags & VM_READ) /* may open for reading but cannot mmap for reading */
 			return -EPERM;
 		return omx_remap_vmalloc_range(vma, endpoint->sendq, 0);
 
-	} else if (offset == OMX_RECVQ_FILE_OFFSET && size == OMX_RECVQ_SIZE) {
+	} else if (offset == OMX_RECVQ_FILE_OFFSET && size == OMX_RECVQ_SIZE) { /* page-alignment enforced at init */
 		if (vma->vm_flags & VM_WRITE) /* may open for writing but cannot mmap for writing */
 			return -EPERM;
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
 					       OMX_SENDQ_SIZE >> PAGE_SHIFT);
 
-	} else if (offset == OMX_EXP_EVENTQ_FILE_OFFSET && size == OMX_EXP_EVENTQ_SIZE) {
+	} else if (offset == OMX_EXP_EVENTQ_FILE_OFFSET && size == OMX_EXP_EVENTQ_SIZE) { /* page-alignment enforced at init */
 		if (vma->vm_flags & VM_WRITE) /* may open for writing but cannot mmap for writing */
 			return -EPERM;
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
 					       (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE) >> PAGE_SHIFT);
 
-	} else if (offset == OMX_UNEXP_EVENTQ_FILE_OFFSET && size == OMX_UNEXP_EVENTQ_SIZE) {
+	} else if (offset == OMX_UNEXP_EVENTQ_FILE_OFFSET && size == OMX_UNEXP_EVENTQ_SIZE) { /* page-alignment enforced at init */
 		if (vma->vm_flags & VM_WRITE) /* may open for writing but cannot mmap for writing */
 			return -EPERM;
 		return omx_remap_vmalloc_range(vma, endpoint->sendq,
@@ -855,6 +855,24 @@ omx_dev_init(void)
 			return -EINVAL;
 		}
 #endif
+
+	/* check that mmap will work. we cannot page-align these since there are allocated all at once */
+	if (OMX_SENDQ_SIZE & ~PAGE_MASK) {
+		printk(KERN_ERR "Open-MX: Cannot use sendq with non-page-aligned size %lx\n", OMX_SENDQ_SIZE);
+		return -EINVAL;
+	}
+	if (OMX_RECVQ_SIZE & ~PAGE_MASK) {
+		printk(KERN_ERR "Open-MX: Cannot use recvq with non-page-aligned size %lx\n", OMX_RECVQ_SIZE);
+		return -EINVAL;
+	}
+	if (OMX_EXP_EVENTQ_SIZE & ~PAGE_MASK) {
+		printk(KERN_ERR "Open-MX: Cannot use exp eventq with non-page-aligned size %lx\n", OMX_EXP_EVENTQ_SIZE);
+		return -EINVAL;
+	}
+	if (OMX_UNEXP_EVENTQ_SIZE & ~PAGE_MASK) {
+		printk(KERN_ERR "Open-MX: Cannot use unexp eventq with non-page-aligned size %lx\n", OMX_UNEXP_EVENTQ_SIZE);
+		return -EINVAL;
+	}
 
 	ret = misc_register(&omx_miscdev);
 	if (ret < 0) {
