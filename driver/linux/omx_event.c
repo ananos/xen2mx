@@ -305,7 +305,8 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	spin_lock_bh(&endpoint->event_lock);
 
 	/* the caller should have called prepare() earlier */
-	BUG_ON(endpoint->nextreserved_unexp_eventq_index >= endpoint->nextfree_unexp_eventq_index);
+	BUG_ON(endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+	       >= endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index);
 
 	/* update the next reserved slot in the queue */
 	index = endpoint->nextreserved_unexp_eventq_index++;
@@ -339,7 +340,8 @@ omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
 	spin_lock_bh(&endpoint->event_lock);
 
 	/* the caller should have called prepare() earlier */
-	BUG_ON(endpoint->nextreserved_unexp_eventq_index >= endpoint->nextfree_unexp_eventq_index);
+	BUG_ON(endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+	       >= endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index);
 
 	/* update the next reserved slot in the queue */
 	index = endpoint->nextreserved_unexp_eventq_index++;
