@@ -147,8 +147,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int lengt
 	index = endpoint->nextfree_exp_eventq_index++;
 	slot = endpoint->exp_eventq + (index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 
-	/* store the event with an ignored id first */
-	((struct omx_evt_generic *) event)->id = 0;
+	/* store the event without setting the id first */
 	memcpy(slot, event, length);
 	wmb();
 	/* write the actual id now that the whole event has been written to memory */
@@ -193,8 +192,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int len
 	index = endpoint->nextreserved_unexp_eventq_index++;
 	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 
-	/* store the event with an ignored id first */
-	((struct omx_evt_generic *) event)->id = 0;
+	/* store the event without setting the id first */
 	memcpy(slot, event, length);
 	wmb();
 	/* write the actual id now that the whole event has been written to memory */
@@ -307,14 +305,14 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	spin_lock_bh(&endpoint->event_lock);
 
 	/* the caller should have called prepare() earlier */
-	BUG_ON(endpoint->nextreserved_unexp_eventq_index >= endpoint->nextfree_unexp_eventq_index);
+	BUG_ON(endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+	       >= endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index);
 
 	/* update the next reserved slot in the queue */
 	index = endpoint->nextreserved_unexp_eventq_index++;
 	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 
-	/* store the event with an ignored id first */
-	((struct omx_evt_generic *) event)->id = 0;
+	/* store the event without setting the id first */
 	memcpy(slot, event, length);
 	wmb();
 	/* write the actual id now that the whole event has been written to memory */
@@ -342,13 +340,14 @@ omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
 	spin_lock_bh(&endpoint->event_lock);
 
 	/* the caller should have called prepare() earlier */
-	BUG_ON(endpoint->nextreserved_unexp_eventq_index >= endpoint->nextfree_unexp_eventq_index);
+	BUG_ON(endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+	       >= endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index);
 
 	/* update the next reserved slot in the queue */
 	index = endpoint->nextreserved_unexp_eventq_index++;
 	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 
-	/* store the event with an ignored id first */
+	/* store the event without setting the id first */
 	((struct omx_evt_generic *) slot)->id = 0;
 	((struct omx_evt_generic *) slot)->type = OMX_EVT_IGNORE;
 	wmb();
@@ -498,7 +497,7 @@ omx_ioctl_release_exp_slots(struct omx_endpoint *endpoint, void __user *uparam)
 	int err = 0;
 	spin_lock(&endpoint->release_exp_lock);
 	if (endpoint->nextfree_exp_eventq_index - endpoint->nextreleased_exp_eventq_index
-	    <= OMX_EXP_RELEASE_SLOTS_BATCH_NR)
+	    < OMX_EXP_RELEASE_SLOTS_BATCH_NR)
 		err = -EINVAL;
 	else
 		endpoint->nextreleased_exp_eventq_index += OMX_EXP_RELEASE_SLOTS_BATCH_NR;
@@ -512,7 +511,7 @@ omx_ioctl_release_unexp_slots(struct omx_endpoint *endpoint, void __user *uparam
 	int err = 0;
 	spin_lock(&endpoint->release_unexp_lock);
 	if (endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
-	    <= OMX_UNEXP_RELEASE_SLOTS_BATCH_NR)
+	    < OMX_UNEXP_RELEASE_SLOTS_BATCH_NR)
 		err = -EINVAL;
 	else
 		endpoint->nextreleased_unexp_eventq_index += OMX_UNEXP_RELEASE_SLOTS_BATCH_NR;

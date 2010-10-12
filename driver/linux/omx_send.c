@@ -583,6 +583,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 		/* prepare the deferred event now that we cannot fail anymore */
 		omx_endpoint_reacquire(endpoint); /* keep a reference in the defevent */
 		defevent->endpoint = endpoint;
+		defevent->evt.id = 0;
 		defevent->evt.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 		defevent->evt.sendq_offset = cmd.sendq_offset;
 		omx_set_skb_destructor(skb, omx_medium_frag_skb_destructor, defevent);
@@ -621,6 +622,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 		memcpy(data, endpoint->sendq + sendq_offset, frag_length);
 
 		/* notify the event right now */
+		evt.id = 0;
 		evt.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 		evt.sendq_offset = cmd.sendq_offset;
 		omx_notify_exp_event(endpoint,
@@ -1267,6 +1269,7 @@ omx_ioctl_bench(struct omx_endpoint * endpoint, void __user * uparam)
 	if (cmd.type == OMX_CMD_BENCH_TYPE_RECV_ACQU)
 		goto out_with_endpoint;
 
+	event.generic.id = 0;
 	event.generic.type = OMX_EVT_NONE;
 	omx_notify_exp_event(endpoint, &event, 0);
 

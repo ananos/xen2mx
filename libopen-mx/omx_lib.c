@@ -212,6 +212,7 @@ omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
   const volatile union omx_evt * evt;
+  int err;
   int id;
 
   if (unlikely(ep->progression_disabled))
@@ -246,7 +247,9 @@ omx__progress(struct omx_endpoint * ep)
     /* Acknowledgement per batch of event slots */
     BUILD_BUG_ON(OMX_UNEXP_RELEASE_SLOTS_BATCH_NR < 1); /* make sure we release something */
     if (unlikely(evt_offset % (OMX_UNEXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
-      ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_SLOTS);
+      err = ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_SLOTS);
+      if (err < 0)
+	omx__abort(ep, "Failed to release a batch of unexpected slots\n");
     }
   }
   ep->next_unexp_event = (void *) evt;
@@ -277,7 +280,9 @@ omx__progress(struct omx_endpoint * ep)
     /* Acknowledgement per batch of event slots */
     BUILD_BUG_ON(OMX_EXP_RELEASE_SLOTS_BATCH_NR < 1); /* make sure we release something */
     if (unlikely(evt_offset % (OMX_EXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
-      ioctl(ep->fd, OMX_CMD_RELEASE_EXP_SLOTS);
+      err = ioctl(ep->fd, OMX_CMD_RELEASE_EXP_SLOTS);
+      if (err < 0)
+	omx__abort(ep, "Failed to release a batch of expected slots\n");
     }
   }
   ep->next_exp_event = (void *) evt;

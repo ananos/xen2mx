@@ -78,6 +78,7 @@ omx_shared_notify_nack(struct omx_endpoint *src_endpoint,
 {
 	struct omx_evt_recv_nack_lib event;
 
+	event.id = 0;
 	event.type = OMX_EVT_RECV_NACK_LIB;
 	event.peer_index = dst_peer_index;
 	event.src_endpoint = dst_endpoint_index;
@@ -150,6 +151,7 @@ omx_shared_try_send_connect_request(struct omx_endpoint *src_endpoint,
 	/* no session to check for connect */
 
 	/* feel the event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_CONNECT_REQUEST;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
@@ -201,6 +203,7 @@ omx_shared_try_send_connect_reply(struct omx_endpoint *src_endpoint,
 	/* no session to check for connect */
 
 	/* feel the event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_CONNECT_REPLY;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
@@ -248,6 +251,7 @@ omx_shared_send_tiny(struct omx_endpoint *src_endpoint,
 		return 0;
 
 	/* fill the event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_TINY;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
@@ -321,6 +325,7 @@ omx_shared_send_small(struct omx_endpoint *src_endpoint,
 #endif
 
 	/* fill and notify the event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_SMALL;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
@@ -418,6 +423,7 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 #endif
 
 	/* fill the dst event */
+	dst_event.id = 0;
 	dst_event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 	dst_event.peer_index = src_endpoint->iface->peer.index;
 	dst_event.src_endpoint = src_endpoint->endpoint_index;
@@ -446,6 +452,7 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 	omx_commit_notify_unexp_event_with_recvq(dst_endpoint, &dst_event, sizeof(dst_event));
 
 	/* fill and notify the src event */
+	src_event.id = 0;
 	src_event.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 	src_event.sendq_offset = hdr->sendq_offset;
 	omx_notify_exp_event(src_endpoint, &src_event, sizeof(src_event));
@@ -457,6 +464,7 @@ omx_shared_send_mediumsq_frag(struct omx_endpoint *src_endpoint,
 
  out_with_endpoint:
 	/* fill and notify the src event anyway, so that the sender doesn't leak eventq slots */
+	src_event.id = 0;
 	src_event.type = OMX_EVT_SEND_MEDIUMSQ_FRAG_DONE;
 	src_event.sendq_offset = hdr->sendq_offset;
 	omx_notify_exp_event(src_endpoint, &src_event, sizeof(src_event));
@@ -589,6 +597,7 @@ omx_shared_send_mediumva(struct omx_endpoint *src_endpoint,
 	for(i=0; i<frags_nr; i++) {
 		uint16_t frag_length = remaining > OMX_RECVQ_ENTRY_SIZE ? OMX_RECVQ_ENTRY_SIZE : remaining;
 		/* notify the dst event */
+		dst_event.id = 0;
 		dst_event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 		dst_event.specific.medium_frag.frag_length = frag_length;
 		dst_event.specific.medium_frag.frag_seqnum = i;
@@ -633,6 +642,7 @@ omx_shared_send_rndv(struct omx_endpoint *src_endpoint,
 		return 0;
 
 	/* fill the event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_RNDV;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
@@ -756,6 +766,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
 	omx_user_region_release(src_region);
 
 	/* fill and notify the event */
+	event.id = 0;
 	event.type = OMX_EVT_PULL_DONE;
 	event.lib_cookie = hdr->lib_cookie;
 	event.puller_rdma_id = hdr->puller_rdma_id;
@@ -770,6 +781,7 @@ omx_shared_pull(struct omx_endpoint *src_endpoint,
  out_notify_nack:
 	omx_user_region_release(src_region);
 
+	event.id = 0;
 	event.type = OMX_EVT_PULL_DONE;
 	event.lib_cookie = hdr->lib_cookie;
 	event.puller_rdma_id = hdr->puller_rdma_id;
@@ -795,6 +807,7 @@ omx_shared_send_notify(struct omx_endpoint *src_endpoint,
 		return 0;
 
 	/* fill the event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_NOTIFY;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
@@ -838,6 +851,7 @@ omx_shared_send_liback(struct omx_endpoint *src_endpoint,
 		return 0;
 
 	/* fill the event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_LIBACK;
 	event.peer_index = src_endpoint->iface->peer.index;
 	event.src_endpoint = src_endpoint->endpoint_index;
