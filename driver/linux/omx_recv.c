@@ -104,6 +104,7 @@ omx_recv_connect(struct omx_iface * iface,
 	if (!is_reply) {
 		struct omx_evt_recv_connect_request request_event;
 
+		request_event.id = 0;
 		request_event.type = OMX_EVT_RECV_CONNECT_REQUEST;
 		request_event.peer_index = peer_index;
 		request_event.src_endpoint = src_endpoint;
@@ -120,6 +121,7 @@ omx_recv_connect(struct omx_iface * iface,
 	} else {
 		struct omx_evt_recv_connect_reply reply_event;
 
+		reply_event.id = 0;
 		reply_event.type = OMX_EVT_RECV_CONNECT_REPLY;
 		reply_event.peer_index = peer_index;
 		reply_event.src_endpoint = src_endpoint;
@@ -235,6 +237,7 @@ omx_recv_tiny(struct omx_iface * iface,
 	omx_recv_dprintk(eh, "TINY length %ld", (unsigned long) length);
 
 	/* fill event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_TINY;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
@@ -355,6 +358,7 @@ omx_recv_small(struct omx_iface * iface,
 	}
 
 	/* fill event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_SMALL;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
@@ -506,6 +510,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 #endif
 
 	/* fill event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
@@ -619,6 +624,7 @@ omx_recv_rndv(struct omx_iface * iface,
 	}
 
 	/* fill event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_RNDV;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
@@ -705,6 +711,7 @@ omx_recv_notify(struct omx_iface * iface,
 	omx_recv_dprintk(eh, "NOTIFY");
 
 	/* fill event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_NOTIFY;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
@@ -801,6 +808,7 @@ omx_recv_truc(struct omx_iface * iface,
 		}
 
 		/* fill event */
+		liback_event.id = 0;
 		liback_event.type = OMX_EVT_RECV_LIBACK;
 		liback_event.peer_index = peer_index;
 		liback_event.src_endpoint = src_endpoint;
@@ -901,6 +909,7 @@ omx_recv_nack_lib(struct omx_iface * iface,
 			 omx_strnacktype(nack_type));
 
 	/* fill event */
+	event.id = 0;
 	event.type = OMX_EVT_RECV_NACK_LIB;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
