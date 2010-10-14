@@ -2,9 +2,6 @@
   + keep something large enough to avoid wrap-arounds
 * sort endpoint eventq fields for better locality
 
-* make sure the number of expected slots is larger than what each
-  single request may generate
-
 * split the allocating of sendq/recvq/eventqs into separated vmalloc
   and page-align them to remove restrictions on mmapping length
   + and this will slightly reduce vmalloc requirements

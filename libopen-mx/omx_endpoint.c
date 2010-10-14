@@ -502,6 +502,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   /* init most of the endpoint state */
   ep->avail_exp_events = OMX_EXP_EVENTQ_ENTRY_NR - (OMX_EXP_RELEASE_SLOTS_BATCH_NR - 1); /* up to BATCH_NR-1 event slots may have been
 											  * processed but not released to the kernel yet */
+  BUILD_BUG_ON(OMX_EXP_EVENTQ_ENTRY_NR - (OMX_EXP_RELEASE_SLOTS_BATCH_NR - 1)
+	       < OMX_MEDIUM_FRAGS_MAX); /* make sure a single request has enough expected event slots in the ring */
   ep->req_resends_max = omx__globals.req_resends_max;
   ep->pull_resend_timeout_jiffies = omx__globals.resend_delay_jiffies * omx__globals.req_resends_max;
   ep->check_status_delay_jiffies = omx__driver_desc->hz; /* once per second */
