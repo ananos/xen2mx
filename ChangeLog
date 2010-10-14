@@ -1,6 +1,10 @@
 Open-MX 1.3.901 (aka 1.4-rc1)
 ======================================
 
+Major improvements from previous release:
+* Rework the event delivery from the driver to the user-space library
+  so as to reduce cache invalidation.
+
 Bug fixes:
 * Make omx_set_error_handler() work before omx_init().
 * Initialize the error handler early in omx_init() so as to use the
