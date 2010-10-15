@@ -45,8 +45,9 @@ AC_CANONICAL_TARGET
 
 
 # Guess the arch size (temporary hack before finding a cleaner solution)
-AC_COMPILE_IFELSE([int a [[sizeof(void *)-7]];],
-		  [NATARCHSIZE=64; ALTARCHSIZE=32], [NATARCHSIZE=32; ALTARCHSIZE=64])
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([int a [[sizeof(void *)-7]];])],
+                  [NATARCHSIZE=64; ALTARCHSIZE=32], [NATARCHSIZE=32; ALTARCHSIZE=64])
+
 AC_SUBST(NATARCHSIZE)
 AC_SUBST(ALTARCHSIZE)
 AM_CONDITIONAL(ON_ARCHSIZE_64, test x$NATARCHSIZE = x64)

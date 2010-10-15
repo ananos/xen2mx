@@ -260,14 +260,14 @@ AC_DEFUN([OMX_CHECK_VALGRIND_HEADERS],
 [
 AC_MSG_CHECKING(whether Valgrind headers are available)
 
-AC_PREPROC_IFELSE(
+AC_PREPROC_IFELSE([AC_LANG_SOURCE(
 [
 #include <valgrind/memcheck.h>
 #ifndef VALGRIND_MAKE_MEM_NOACCESS
 #error  VALGRIND_MAKE_MEM_NOACCESS not defined
 #endif
-],
-__valgrind_available=yes)
+]),
+__valgrind_available=yes])
 
 if test x$__valgrind_available = xyes ; then
    AC_MSG_RESULT(yes)
