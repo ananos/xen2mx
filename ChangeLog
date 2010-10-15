@@ -5,6 +5,13 @@ Major improvements from previous release:
 * Rework the event delivery from the driver to the user-space library
   so as to reduce cache invalidation.
 
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
+Open-MX 1.3.3 (October 15th 2010)
+=================================
+
 Bug fixes:
 * Make omx_set_error_handler() work before omx_init().
 * Initialize the error handler early in omx_init() so as to use the
@@ -14,12 +21,8 @@ Bug fixes:
 Other improvements from previous release:
 * Update documentation about the switch from SVN to GIT.
 
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
-
-Open-MX 1.3.2 (August 25th, svn r3177)
-======================================
+Open-MX 1.3.2 (August 25th 2010, svn r3177)
+===========================================
 The no-kernel-thread release.
 
 Bug fixes:
