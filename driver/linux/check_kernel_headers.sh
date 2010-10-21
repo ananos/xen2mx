@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Open-MX
 # Copyright © INRIA 2007-2010 (see AUTHORS file)
 #
