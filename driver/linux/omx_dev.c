@@ -45,7 +45,6 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 {
 	struct page ** sendq_pages, ** recvq_pages;
 	struct omx_endpoint_desc *userdesc;
-	char * buffer;
 	int i;
 	int ret;
 
@@ -65,20 +64,31 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 
 	/* alloc and init user queues */
 	ret = -ENOMEM;
-	buffer = omx_vmalloc_user(OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EXP_EVENTQ_SIZE + OMX_UNEXP_EVENTQ_SIZE);
-	if (!buffer) {
-		printk(KERN_ERR "Open-MX: failed to allocate queues\n");
+	endpoint->sendq = omx_vmalloc_user(OMX_SENDQ_SIZE);
+	if (!endpoint->sendq) {
+		printk(KERN_ERR "Open-MX: failed to allocate sendq\n");
 		goto out_with_desc;
 	}
-	endpoint->sendq = buffer;
-	endpoint->recvq = endpoint->sendq + OMX_SENDQ_SIZE;
-	endpoint->exp_eventq = endpoint->recvq + OMX_RECVQ_SIZE;
-	endpoint->unexp_eventq = endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE;
+	endpoint->recvq = omx_vmalloc_user(OMX_RECVQ_SIZE);
+	if (!endpoint->recvq) {
+		printk(KERN_ERR "Open-MX: failed to allocate recvq\n");
+		goto out_with_sendq;
+	}
+	endpoint->exp_eventq = omx_vmalloc_user(OMX_EXP_EVENTQ_SIZE);
+	if (!endpoint->exp_eventq) {
+		printk(KERN_ERR "Open-MX: failed to allocate exp eventq\n");
+		goto out_with_recvq;
+	}
+	endpoint->unexp_eventq = omx_vmalloc_user(OMX_UNEXP_EVENTQ_SIZE);
+	if (!endpoint->unexp_eventq) {
+		printk(KERN_ERR "Open-MX: failed to allocate unexp eventq\n");
+		goto out_with_exp_eventq;
+	}
 
 	sendq_pages = kmalloc(OMX_SENDQ_SIZE/PAGE_SIZE * sizeof(struct page *), GFP_KERNEL);
 	if (!sendq_pages) {
 		printk(KERN_ERR "Open-MX: failed to allocate sendq pages array\n");
-		goto out_with_userq;
+		goto out_with_unexp_eventq;
 	}
 	for(i=0; i<OMX_SENDQ_SIZE/PAGE_SIZE; i++) {
 		struct page * page;
@@ -119,8 +129,14 @@ omx_endpoint_alloc_resources(struct omx_endpoint * endpoint)
 
  out_with_sendq_pages:
 	kfree(endpoint->sendq_pages);
- out_with_userq:
-	vfree(endpoint->sendq); /* recvq and eventq are in the same buffer */
+ out_with_unexp_eventq:
+	vfree(endpoint->unexp_eventq);
+ out_with_exp_eventq:
+	vfree(endpoint->exp_eventq);
+ out_with_recvq:
+	vfree(endpoint->recvq);
+ out_with_sendq:
+	vfree(endpoint->sendq);
  out_with_desc:
 	vfree(endpoint->userdesc);
  out:
@@ -136,7 +152,10 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 
 	kfree(endpoint->recvq_pages);
 	kfree(endpoint->sendq_pages);
-	vfree(endpoint->sendq); /* recvq, exp_eventq and unexp_eventq are in the same buffer */
+	vfree(endpoint->unexp_eventq);
+	vfree(endpoint->exp_eventq);
+	vfree(endpoint->recvq);
+	vfree(endpoint->sendq);
 	vfree(endpoint->userdesc);
 
 #ifdef OMX_HAVE_DMA_ENGINE
@@ -765,20 +784,17 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 	} else if (offset == OMX_RECVQ_FILE_OFFSET && size == OMX_RECVQ_SIZE) { /* page-alignment enforced at init */
 		if (vma->vm_flags & VM_WRITE) /* may open for writing but cannot mmap for writing */
 			return -EPERM;
-		return omx_remap_vmalloc_range(vma, endpoint->sendq,
-					       OMX_SENDQ_SIZE >> PAGE_SHIFT);
+		return omx_remap_vmalloc_range(vma, endpoint->recvq, 0);
 
 	} else if (offset == OMX_EXP_EVENTQ_FILE_OFFSET && size == OMX_EXP_EVENTQ_SIZE) { /* page-alignment enforced at init */
 		if (vma->vm_flags & VM_WRITE) /* may open for writing but cannot mmap for writing */
 			return -EPERM;
-		return omx_remap_vmalloc_range(vma, endpoint->sendq,
-					       (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE) >> PAGE_SHIFT);
+		return omx_remap_vmalloc_range(vma, endpoint->exp_eventq, 0);
 
 	} else if (offset == OMX_UNEXP_EVENTQ_FILE_OFFSET && size == OMX_UNEXP_EVENTQ_SIZE) { /* page-alignment enforced at init */
 		if (vma->vm_flags & VM_WRITE) /* may open for writing but cannot mmap for writing */
 			return -EPERM;
-		return omx_remap_vmalloc_range(vma, endpoint->sendq,
-					       (OMX_SENDQ_SIZE + OMX_RECVQ_SIZE + OMX_EXP_EVENTQ_SIZE) >> PAGE_SHIFT);
+		return omx_remap_vmalloc_range(vma, endpoint->unexp_eventq, 0);
 
 	} else {
 		printk(KERN_ERR "Open-MX: Cannot mmap 0x%lx at 0x%lx\n", size, offset);
