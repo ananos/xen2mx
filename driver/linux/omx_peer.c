@@ -589,7 +589,7 @@ omx_set_target_peer(struct omx_pkt_head *ph, struct omx_iface *iface, uint16_t i
 		goto out_with_lock;
 
 	omx_board_addr_to_ethhdr_dst(&ph->eth, peer->board_addr);
-	OMX_PKT_FIELD_FROM(ph->dst_src_peer_index, iface->reverse_peer_indexes[index]);
+	OMX_HTON_16(ph->dst_src_peer_index, iface->reverse_peer_indexes[index]);
 
 	rcu_read_unlock();
 	return 0;
@@ -835,9 +835,9 @@ omx_peer_host_query(const struct omx_peer *peer)
 	query_n = (struct omx_pkt_host_query *) (ph + 1);
 
 	/* fill query */
-	OMX_PKT_FIELD_FROM(query_n->ptype, OMX_PKT_TYPE_HOST_QUERY);
-	OMX_PKT_FIELD_FROM(query_n->src_dst_peer_index, peer_index);
-	OMX_PKT_FIELD_FROM(query_n->magic, omx_host_query_magic);
+	OMX_HTON_8(query_n->ptype, OMX_PKT_TYPE_HOST_QUERY);
+	OMX_HTON_16(query_n->src_dst_peer_index, peer_index);
+	OMX_HTON_32(query_n->magic, omx_host_query_magic);
 
 	/* fill ethernet header, except the source for now */
         eh->h_proto = __constant_cpu_to_be16(ETH_P_OMX);
@@ -895,7 +895,7 @@ omx_recv_host_query(struct omx_iface * iface,
 	ph = &mh->head;
 	eh = &ph->eth;
 	query_n = (struct omx_pkt_host_query *) (ph + 1);
-	magic = OMX_FROM_PKT_FIELD(query_n->magic);
+	magic = OMX_NTOH_32(query_n->magic);
 
 	if (memcmp(&eh->h_dest, ifp->dev_addr, sizeof (eh->h_dest))) {
 		/* not for this iface, ignore */
@@ -927,7 +927,7 @@ omx_recv_host_reply(struct omx_iface * iface,
 	ph = &mh->head;
 	eh = &ph->eth;
 	reply_n = (struct omx_pkt_host_reply *) (ph + 1);
-	magic = OMX_FROM_PKT_FIELD(reply_n->magic);
+	magic = OMX_NTOH_32(reply_n->magic);
 
 	if (magic != omx_host_query_magic) {
 		omx_counter_inc(iface, DROP_HOST_REPLY_BAD_MAGIC);
@@ -980,7 +980,7 @@ omx_process_host_queries_and_replies_workfunc(omx_work_struct_data_t data)
 			uint16_t reverse_peer_index;
 
 			/* create the new hostname */
-			new_hostnamelen = OMX_FROM_PKT_FIELD(reply_n->length);
+			new_hostnamelen = OMX_NTOH_8(reply_n->length);
 			new_hostname = kmalloc(new_hostnamelen, GFP_KERNEL);
 			if (!new_hostname)
 				goto out;
@@ -1000,7 +1000,7 @@ omx_process_host_queries_and_replies_workfunc(omx_work_struct_data_t data)
 			kfree(old_hostname);
 
 			/* update the peer reverse index */
-			reverse_peer_index = OMX_FROM_PKT_FIELD(reply_n->src_dst_peer_index);
+			reverse_peer_index = OMX_NTOH_16(reply_n->src_dst_peer_index);
 			omx_peer_set_reverse_index(peer, iface, reverse_peer_index);
 
 		} else {
@@ -1036,7 +1036,7 @@ omx_process_host_queries_and_replies_workfunc(omx_work_struct_data_t data)
 		in_eh = &in_ph->eth;
 		src_addr = omx_board_addr_from_ethhdr_src(in_eh);
 		query_n = (struct omx_pkt_host_query *) (in_ph + 1);
-		reverse_peer_index = OMX_FROM_PKT_FIELD(query_n->src_dst_peer_index);
+		reverse_peer_index = OMX_NTOH_16(query_n->src_dst_peer_index);
 
 		hostname = iface->peer.hostname;
 		hostnamelen = strlen(hostname) + 1;
@@ -1070,9 +1070,9 @@ omx_process_host_queries_and_replies_workfunc(omx_work_struct_data_t data)
 		reply_n = (struct omx_pkt_host_reply *) (out_ph + 1);
 		out_data = (char *)(reply_n + 1);
 
-		OMX_PKT_FIELD_FROM(reply_n->ptype, OMX_PKT_TYPE_HOST_REPLY);
-		OMX_PKT_FIELD_FROM(reply_n->length, hostnamelen);
-		OMX_PKT_FIELD_FROM(reply_n->src_dst_peer_index, peer->index);
+		OMX_HTON_8(reply_n->ptype, OMX_PKT_TYPE_HOST_REPLY);
+		OMX_HTON_8(reply_n->length, hostnamelen);
+		OMX_HTON_16(reply_n->src_dst_peer_index, peer->index);
 		reply_n->magic = query_n->magic;
 		memcpy(out_data, hostname, hostnamelen);
 

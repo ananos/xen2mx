@@ -45,12 +45,12 @@ omx_recv_connect(struct omx_iface * iface,
 	struct omx_peer *peer;
 	uint32_t peer_index;
 	struct omx_pkt_connect *connect_n = &mh->body.connect;
-	uint8_t connect_data_length = OMX_FROM_PKT_FIELD(connect_n->length);
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(connect_n->dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(connect_n->src_endpoint);
-	uint16_t reverse_peer_index = OMX_FROM_PKT_FIELD(connect_n->src_dst_peer_index);
-	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(connect_n->lib_seqnum);
-	uint8_t is_reply = OMX_FROM_PKT_FIELD(connect_n->generic.is_reply);
+	uint8_t connect_data_length = OMX_NTOH_8(connect_n->length);
+	uint8_t dst_endpoint = OMX_NTOH_8(connect_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_NTOH_8(connect_n->src_endpoint);
+	uint16_t reverse_peer_index = OMX_NTOH_16(connect_n->src_dst_peer_index);
+	uint16_t lib_seqnum = OMX_NTOH_16(connect_n->lib_seqnum);
+	uint8_t is_reply = OMX_NTOH_8(connect_n->generic.is_reply);
 	int err = 0;
 
 	/* check the connect data length */
@@ -110,10 +110,10 @@ omx_recv_connect(struct omx_iface * iface,
 		request_event.src_endpoint = src_endpoint;
 		request_event.shared = 0;
 		request_event.seqnum = lib_seqnum;
-		request_event.src_session_id = OMX_FROM_PKT_FIELD(connect_n->request.src_session_id);
-		request_event.app_key = OMX_FROM_PKT_FIELD(connect_n->request.app_key);
-		request_event.target_recv_seqnum_start = OMX_FROM_PKT_FIELD(connect_n->request.target_recv_seqnum_start);
-		request_event.connect_seqnum = OMX_FROM_PKT_FIELD(connect_n->request.connect_seqnum);
+		request_event.src_session_id = OMX_NTOH_32(connect_n->request.src_session_id);
+		request_event.app_key = OMX_NTOH_32(connect_n->request.app_key);
+		request_event.target_recv_seqnum_start = OMX_NTOH_16(connect_n->request.target_recv_seqnum_start);
+		request_event.connect_seqnum = OMX_NTOH_8(connect_n->request.connect_seqnum);
 
 		/* notify the event */
 		err = omx_notify_unexp_event(endpoint, &request_event, sizeof(request_event));
@@ -127,11 +127,11 @@ omx_recv_connect(struct omx_iface * iface,
 		reply_event.src_endpoint = src_endpoint;
 		reply_event.shared = 0;
 		reply_event.seqnum = lib_seqnum;
-		reply_event.src_session_id = OMX_FROM_PKT_FIELD(connect_n->reply.src_session_id);
-		reply_event.target_session_id = OMX_FROM_PKT_FIELD(connect_n->reply.target_session_id);
-		reply_event.target_recv_seqnum_start = OMX_FROM_PKT_FIELD(connect_n->reply.target_recv_seqnum_start);
-		reply_event.connect_seqnum = OMX_FROM_PKT_FIELD(connect_n->reply.connect_seqnum);
-		reply_event.connect_status_code = OMX_FROM_PKT_FIELD(connect_n->reply.connect_status_code);
+		reply_event.src_session_id = OMX_NTOH_32(connect_n->reply.src_session_id);
+		reply_event.target_session_id = OMX_NTOH_32(connect_n->reply.target_session_id);
+		reply_event.target_recv_seqnum_start = OMX_NTOH_16(connect_n->reply.target_recv_seqnum_start);
+		reply_event.connect_seqnum = OMX_NTOH_8(connect_n->reply.connect_seqnum);
+		reply_event.connect_status_code = OMX_NTOH_8(connect_n->reply.connect_status_code);
 		BUILD_BUG_ON(OMX_CONNECT_STATUS_SUCCESS != OMX_PKT_CONNECT_STATUS_SUCCESS);
 		BUILD_BUG_ON(OMX_CONNECT_STATUS_BAD_KEY != OMX_PKT_CONNECT_STATUS_BAD_KEY);
 
@@ -168,15 +168,15 @@ omx_recv_tiny(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	uint16_t peer_index = OMX_NTOH_16(mh->head.dst_src_peer_index);
 	struct omx_pkt_msg *tiny_n = &mh->body.tiny;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
-	uint16_t length = OMX_FROM_PKT_FIELD(tiny_n->length);
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(tiny_n->dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(tiny_n->src_endpoint);
-	uint32_t session_id = OMX_FROM_PKT_FIELD(tiny_n->session);
-	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(tiny_n->lib_seqnum);
-	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(tiny_n->lib_piggyack);
+	uint16_t length = OMX_NTOH_16(tiny_n->length);
+	uint8_t dst_endpoint = OMX_NTOH_8(tiny_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_NTOH_8(tiny_n->src_endpoint);
+	uint32_t session_id = OMX_NTOH_32(tiny_n->session);
+	uint16_t lib_seqnum = OMX_NTOH_16(tiny_n->lib_seqnum);
+	uint16_t lib_piggyack = OMX_NTOH_16(tiny_n->lib_piggyack);
 
 	struct omx_evt_recv_msg event;
 	int err = 0;
@@ -241,11 +241,11 @@ omx_recv_tiny(struct omx_iface * iface,
 	event.type = OMX_EVT_RECV_TINY;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
-	event.match_info = OMX_FROM_PKT_MATCH_INFO(tiny_n);
+	event.match_info = OMX_NTOH_MATCH_INFO(tiny_n);
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
 	event.specific.tiny.length = length;
-	event.specific.tiny.checksum = OMX_FROM_PKT_FIELD(tiny_n->checksum);
+	event.specific.tiny.checksum = OMX_NTOH_16(tiny_n->checksum);
 
 #ifndef OMX_NORECVCOPY
 	/* copy data in event data */
@@ -281,15 +281,15 @@ omx_recv_small(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	uint16_t peer_index = OMX_NTOH_16(mh->head.dst_src_peer_index);
 	struct omx_pkt_msg *small_n = &mh->body.small;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_msg);
-	uint16_t length =  OMX_FROM_PKT_FIELD(small_n->length);
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(small_n->dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(small_n->src_endpoint);
-	uint32_t session_id = OMX_FROM_PKT_FIELD(small_n->session);
-	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(small_n->lib_seqnum);
-	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(small_n->lib_piggyack);
+	uint16_t length =  OMX_NTOH_16(small_n->length);
+	uint8_t dst_endpoint = OMX_NTOH_8(small_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_NTOH_8(small_n->src_endpoint);
+	uint32_t session_id = OMX_NTOH_32(small_n->session);
+	uint16_t lib_seqnum = OMX_NTOH_16(small_n->lib_seqnum);
+	uint16_t lib_piggyack = OMX_NTOH_16(small_n->lib_piggyack);
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
 	int err;
@@ -362,12 +362,12 @@ omx_recv_small(struct omx_iface * iface,
 	event.type = OMX_EVT_RECV_SMALL;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
-	event.match_info = OMX_FROM_PKT_MATCH_INFO(small_n);
+	event.match_info = OMX_NTOH_MATCH_INFO(small_n);
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
 	event.specific.small.length = length;
 	event.specific.small.recvq_offset = recvq_offset;
-	event.specific.small.checksum = OMX_FROM_PKT_FIELD(small_n->checksum);
+	event.specific.small.checksum = OMX_NTOH_16(small_n->checksum);
 
 	omx_recv_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
@@ -400,15 +400,15 @@ omx_recv_medium_frag(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	uint16_t peer_index = OMX_NTOH_16(mh->head.dst_src_peer_index);
 	struct omx_pkt_medium_frag *medium_n = &mh->body.medium;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_medium_frag);
-	uint16_t frag_length = OMX_FROM_PKT_FIELD(medium_n->frag_length);
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(medium_n->dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(medium_n->src_endpoint);
-	uint32_t session_id = OMX_FROM_PKT_FIELD(medium_n->session);
-	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(medium_n->lib_seqnum);
-	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(medium_n->lib_piggyack);
+	uint16_t frag_length = OMX_NTOH_16(medium_n->frag_length);
+	uint8_t dst_endpoint = OMX_NTOH_8(medium_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_NTOH_8(medium_n->src_endpoint);
+	uint32_t session_id = OMX_NTOH_32(medium_n->session);
+	uint16_t lib_seqnum = OMX_NTOH_16(medium_n->lib_seqnum);
+	uint16_t lib_piggyack = OMX_NTOH_16(medium_n->lib_piggyack);
 
 	struct omx_evt_recv_msg event;
 	unsigned long recvq_offset;
@@ -514,16 +514,18 @@ omx_recv_medium_frag(struct omx_iface * iface,
 	event.type = OMX_EVT_RECV_MEDIUM_FRAG;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
-	event.match_info = OMX_FROM_PKT_MATCH_INFO(medium_n);
+	event.match_info = OMX_NTOH_MATCH_INFO(medium_n);
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
-	event.specific.medium_frag.msg_length = OMX_FROM_PKT_FIELD(medium_n->length);
-	event.specific.medium_frag.frag_length = frag_length;
-	event.specific.medium_frag.frag_seqnum = OMX_FROM_PKT_FIELD(medium_n->frag_seqnum);
-	event.specific.medium_frag.checksum = OMX_FROM_PKT_FIELD(medium_n->checksum);
 #ifdef OMX_MX_WIRE_COMPAT
-	event.specific.medium_frag.frag_pipeline = OMX_FROM_PKT_FIELD(medium_n->frag_pipeline);
+	event.specific.medium_frag.msg_length = OMX_NTOH_16(medium_n->length);
+	event.specific.medium_frag.frag_pipeline = OMX_NTOH_8(medium_n->frag_pipeline);
+#else
+	event.specific.medium_frag.msg_length = OMX_NTOH_32(medium_n->length);
 #endif
+	event.specific.medium_frag.frag_length = frag_length;
+	event.specific.medium_frag.frag_seqnum = OMX_NTOH_8(medium_n->frag_seqnum);
+	event.specific.medium_frag.checksum = OMX_NTOH_16(medium_n->checksum);
 	event.specific.medium_frag.recvq_offset = recvq_offset;
 
 	omx_recv_dprintk(eh, "MEDIUM_FRAG length %ld", (unsigned long) frag_length);
@@ -569,14 +571,14 @@ omx_recv_rndv(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	uint16_t peer_index = OMX_NTOH_16(mh->head.dst_src_peer_index);
 	struct omx_pkt_rndv *rndv_n = &mh->body.rndv;
-	uint16_t rndv_data_length = OMX_FROM_PKT_FIELD(rndv_n->msg.length);
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(rndv_n->msg.dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(rndv_n->msg.src_endpoint);
-	uint32_t session_id = OMX_FROM_PKT_FIELD(rndv_n->msg.session);
-	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(rndv_n->msg.lib_seqnum);
-	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(rndv_n->msg.lib_piggyack);
+	uint16_t rndv_data_length = OMX_NTOH_16(rndv_n->msg.length);
+	uint8_t dst_endpoint = OMX_NTOH_8(rndv_n->msg.dst_endpoint);
+	uint8_t src_endpoint = OMX_NTOH_8(rndv_n->msg.src_endpoint);
+	uint32_t session_id = OMX_NTOH_32(rndv_n->msg.session);
+	uint16_t lib_seqnum = OMX_NTOH_16(rndv_n->msg.lib_seqnum);
+	uint16_t lib_piggyack = OMX_NTOH_16(rndv_n->msg.lib_piggyack);
 	struct omx_evt_recv_msg event;
 	int err = 0;
 
@@ -628,14 +630,14 @@ omx_recv_rndv(struct omx_iface * iface,
 	event.type = OMX_EVT_RECV_RNDV;
 	event.peer_index = peer_index;
 	event.src_endpoint = src_endpoint;
-	event.match_info = OMX_FROM_PKT_MATCH_INFO(&rndv_n->msg);
+	event.match_info = OMX_NTOH_MATCH_INFO(&rndv_n->msg);
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
-	event.specific.rndv.msg_length = OMX_FROM_PKT_FIELD(rndv_n->msg_length);
-	event.specific.rndv.pulled_rdma_id = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_id);
-	event.specific.rndv.pulled_rdma_seqnum = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_seqnum);
-	event.specific.rndv.pulled_rdma_offset = OMX_FROM_PKT_FIELD(rndv_n->pulled_rdma_offset);
-	event.specific.rndv.checksum = OMX_FROM_PKT_FIELD(rndv_n->msg.checksum);
+	event.specific.rndv.msg_length = OMX_NTOH_32(rndv_n->msg_length);
+	event.specific.rndv.pulled_rdma_id = OMX_NTOH_8(rndv_n->pulled_rdma_id);
+	event.specific.rndv.pulled_rdma_seqnum = OMX_NTOH_8(rndv_n->pulled_rdma_seqnum);
+	event.specific.rndv.pulled_rdma_offset = OMX_NTOH_16(rndv_n->pulled_rdma_offset);
+	event.specific.rndv.checksum = OMX_NTOH_16(rndv_n->msg.checksum);
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, &event, sizeof(event));
@@ -664,13 +666,13 @@ omx_recv_notify(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	uint16_t peer_index = OMX_NTOH_16(mh->head.dst_src_peer_index);
 	struct omx_pkt_notify *notify_n = &mh->body.notify;
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(notify_n->dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(notify_n->src_endpoint);
-	uint32_t session_id = OMX_FROM_PKT_FIELD(notify_n->session);
-	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(notify_n->lib_seqnum);
-	uint16_t lib_piggyack = OMX_FROM_PKT_FIELD(notify_n->lib_piggyack);
+	uint8_t dst_endpoint = OMX_NTOH_8(notify_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_NTOH_8(notify_n->src_endpoint);
+	uint32_t session_id = OMX_NTOH_32(notify_n->session);
+	uint16_t lib_seqnum = OMX_NTOH_16(notify_n->lib_seqnum);
+	uint16_t lib_piggyack = OMX_NTOH_16(notify_n->lib_piggyack);
 	struct omx_evt_recv_msg event;
 	int err = 0;
 
@@ -717,9 +719,9 @@ omx_recv_notify(struct omx_iface * iface,
 	event.src_endpoint = src_endpoint;
 	event.seqnum = lib_seqnum;
 	event.piggyack = lib_piggyack;
-	event.specific.notify.length = OMX_FROM_PKT_FIELD(notify_n->total_length);
-	event.specific.notify.pulled_rdma_id = OMX_FROM_PKT_FIELD(notify_n->pulled_rdma_id);
-	event.specific.notify.pulled_rdma_seqnum = OMX_FROM_PKT_FIELD(notify_n->pulled_rdma_seqnum);
+	event.specific.notify.length = OMX_NTOH_32(notify_n->total_length);
+	event.specific.notify.pulled_rdma_id = OMX_NTOH_8(notify_n->pulled_rdma_id);
+	event.specific.notify.pulled_rdma_seqnum = OMX_NTOH_8(notify_n->pulled_rdma_seqnum);
 
 	/* notify the event */
 	err = omx_notify_unexp_event(endpoint, &event, sizeof(event));
@@ -748,13 +750,13 @@ omx_recv_truc(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	uint16_t peer_index = OMX_NTOH_16(mh->head.dst_src_peer_index);
 	struct omx_pkt_truc *truc_n = &mh->body.truc;
-	uint8_t data_length = OMX_FROM_PKT_FIELD(truc_n->length);
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(truc_n->dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(truc_n->src_endpoint);
-	uint32_t session_id = OMX_FROM_PKT_FIELD(truc_n->session);
-	uint8_t truc_type = OMX_FROM_PKT_FIELD(truc_n->type);
+	uint8_t data_length = OMX_NTOH_8(truc_n->length);
+	uint8_t dst_endpoint = OMX_NTOH_8(truc_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_NTOH_8(truc_n->src_endpoint);
+	uint32_t session_id = OMX_NTOH_32(truc_n->session);
+	uint8_t truc_type = OMX_NTOH_8(truc_n->type);
 	int err = 0;
 
 	/* check the peer index */
@@ -799,7 +801,7 @@ omx_recv_truc(struct omx_iface * iface,
 			goto out_with_endpoint;
 		}
 
-		if (unlikely(session_id != OMX_FROM_PKT_FIELD(truc_n->liback.session_id))) {
+		if (unlikely(session_id != OMX_NTOH_32(truc_n->liback.session_id))) {
 			omx_counter_inc(iface, DROP_BAD_SESSION);
 			omx_drop_dprintk(eh, "TRUC LIBACK packet with bad session");
 			/* no nack for truc messages, just drop */
@@ -812,10 +814,10 @@ omx_recv_truc(struct omx_iface * iface,
 		liback_event.type = OMX_EVT_RECV_LIBACK;
 		liback_event.peer_index = peer_index;
 		liback_event.src_endpoint = src_endpoint;
-		liback_event.lib_seqnum = OMX_FROM_PKT_FIELD(truc_n->liback.lib_seqnum);
-		liback_event.acknum = OMX_FROM_PKT_FIELD(truc_n->liback.acknum);
-		liback_event.send_seq = OMX_FROM_PKT_FIELD(truc_n->liback.send_seq);
-		liback_event.resent = OMX_FROM_PKT_FIELD(truc_n->liback.resent);
+		liback_event.lib_seqnum = OMX_NTOH_16(truc_n->liback.lib_seqnum);
+		liback_event.acknum = OMX_NTOH_32(truc_n->liback.acknum);
+		liback_event.send_seq = OMX_NTOH_16(truc_n->liback.send_seq);
+		liback_event.resent = OMX_NTOH_8(truc_n->liback.resent);
 
 		/* notify the event */
 		err = omx_notify_unexp_event(endpoint, &liback_event, sizeof(liback_event));
@@ -852,12 +854,12 @@ omx_recv_nack_lib(struct omx_iface * iface,
 {
 	struct omx_endpoint * endpoint;
 	struct ethhdr *eh = &mh->head.eth;
-	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	uint16_t peer_index = OMX_NTOH_16(mh->head.dst_src_peer_index);
 	struct omx_pkt_nack_lib *nack_lib_n = &mh->body.nack_lib;
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(nack_lib_n->src_endpoint);
-	enum omx_nack_type nack_type = OMX_FROM_PKT_FIELD(nack_lib_n->nack_type);
-	uint16_t lib_seqnum = OMX_FROM_PKT_FIELD(nack_lib_n->lib_seqnum);
+	uint8_t dst_endpoint = OMX_NTOH_8(nack_lib_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_NTOH_8(nack_lib_n->src_endpoint);
+	enum omx_nack_type nack_type = OMX_NTOH_8(nack_lib_n->nack_type);
+	uint16_t lib_seqnum = OMX_NTOH_16(nack_lib_n->lib_seqnum);
 	struct omx_evt_recv_nack_lib event;
 	int err = 0;
 

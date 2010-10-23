@@ -183,17 +183,17 @@ omx_ioctl_send_connect_request(struct omx_endpoint * endpoint,
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(connect_n->src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(connect_n->dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(connect_n->ptype, OMX_PKT_TYPE_CONNECT);
-	OMX_PKT_FIELD_FROM(connect_n->length, OMX_PKT_CONNECT_REQUEST_DATA_LENGTH);
-	OMX_PKT_FIELD_FROM(connect_n->lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(connect_n->src_dst_peer_index, cmd.peer_index);
-	OMX_PKT_FIELD_FROM(connect_n->request.is_reply, 0);
-	OMX_PKT_FIELD_FROM(connect_n->request.src_session_id, cmd.src_session_id);
-	OMX_PKT_FIELD_FROM(connect_n->request.app_key, cmd.app_key);
-	OMX_PKT_FIELD_FROM(connect_n->request.target_recv_seqnum_start, cmd.target_recv_seqnum_start);
-	OMX_PKT_FIELD_FROM(connect_n->request.connect_seqnum, cmd.connect_seqnum);
+	OMX_HTON_8(connect_n->src_endpoint, endpoint->endpoint_index);
+	OMX_HTON_8(connect_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_HTON_8(connect_n->ptype, OMX_PKT_TYPE_CONNECT);
+	OMX_HTON_8(connect_n->length, OMX_PKT_CONNECT_REQUEST_DATA_LENGTH);
+	OMX_HTON_16(connect_n->lib_seqnum, cmd.seqnum);
+	OMX_HTON_16(connect_n->src_dst_peer_index, cmd.peer_index);
+	OMX_HTON_8(connect_n->request.is_reply, 0);
+	OMX_HTON_32(connect_n->request.src_session_id, cmd.src_session_id);
+	OMX_HTON_32(connect_n->request.app_key, cmd.app_key);
+	OMX_HTON_16(connect_n->request.target_recv_seqnum_start, cmd.target_recv_seqnum_start);
+	OMX_HTON_8(connect_n->request.connect_seqnum, cmd.connect_seqnum);
 
 	omx_queue_xmit(iface, skb, CONNECT_REQUEST);
 
@@ -261,18 +261,18 @@ omx_ioctl_send_connect_reply(struct omx_endpoint * endpoint,
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(connect_n->src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(connect_n->dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(connect_n->ptype, OMX_PKT_TYPE_CONNECT);
-	OMX_PKT_FIELD_FROM(connect_n->length, OMX_PKT_CONNECT_REPLY_DATA_LENGTH);
-	OMX_PKT_FIELD_FROM(connect_n->lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(connect_n->src_dst_peer_index, cmd.peer_index);
-	OMX_PKT_FIELD_FROM(connect_n->reply.is_reply, 1);
-	OMX_PKT_FIELD_FROM(connect_n->reply.src_session_id, cmd.src_session_id);
-	OMX_PKT_FIELD_FROM(connect_n->reply.target_session_id, cmd.target_session_id);
-	OMX_PKT_FIELD_FROM(connect_n->reply.target_recv_seqnum_start, cmd.target_recv_seqnum_start);
-	OMX_PKT_FIELD_FROM(connect_n->reply.connect_seqnum, cmd.connect_seqnum);
-	OMX_PKT_FIELD_FROM(connect_n->reply.connect_status_code, cmd.connect_status_code);
+	OMX_HTON_8(connect_n->src_endpoint, endpoint->endpoint_index);
+	OMX_HTON_8(connect_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_HTON_8(connect_n->ptype, OMX_PKT_TYPE_CONNECT);
+	OMX_HTON_8(connect_n->length, OMX_PKT_CONNECT_REPLY_DATA_LENGTH);
+	OMX_HTON_16(connect_n->lib_seqnum, cmd.seqnum);
+	OMX_HTON_16(connect_n->src_dst_peer_index, cmd.peer_index);
+	OMX_HTON_8(connect_n->reply.is_reply, 1);
+	OMX_HTON_32(connect_n->reply.src_session_id, cmd.src_session_id);
+	OMX_HTON_32(connect_n->reply.target_session_id, cmd.target_session_id);
+	OMX_HTON_16(connect_n->reply.target_recv_seqnum_start, cmd.target_recv_seqnum_start);
+	OMX_HTON_8(connect_n->reply.connect_seqnum, cmd.connect_seqnum);
+	OMX_HTON_8(connect_n->reply.connect_status_code, cmd.connect_status_code);
 
 	omx_queue_xmit(iface, skb, CONNECT_REPLY);
 
@@ -347,15 +347,15 @@ omx_ioctl_send_tiny(struct omx_endpoint * endpoint,
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(tiny_n->src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(tiny_n->dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(tiny_n->ptype, OMX_PKT_TYPE_TINY);
-	OMX_PKT_FIELD_FROM(tiny_n->length, length);
-	OMX_PKT_FIELD_FROM(tiny_n->lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(tiny_n->lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(tiny_n->session, cmd.session_id);
-	OMX_PKT_FIELD_FROM(tiny_n->checksum, cmd.checksum);
-	OMX_PKT_MATCH_INFO_FROM(tiny_n, cmd.match_info);
+	OMX_HTON_8(tiny_n->src_endpoint, endpoint->endpoint_index);
+	OMX_HTON_8(tiny_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_HTON_8(tiny_n->ptype, OMX_PKT_TYPE_TINY);
+	OMX_HTON_16(tiny_n->length, length);
+	OMX_HTON_16(tiny_n->lib_seqnum, cmd.seqnum);
+	OMX_HTON_16(tiny_n->lib_piggyack, cmd.piggyack);
+	OMX_HTON_32(tiny_n->session, cmd.session_id);
+	OMX_HTON_16(tiny_n->checksum, cmd.checksum);
+	OMX_HTON_MATCH_INFO(tiny_n, cmd.match_info);
 
 	omx_send_dprintk(eh, "TINY length %ld", (unsigned long) length);
 
@@ -446,15 +446,15 @@ omx_ioctl_send_small(struct omx_endpoint * endpoint,
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(small_n->src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(small_n->dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(small_n->ptype, OMX_PKT_TYPE_SMALL);
-	OMX_PKT_FIELD_FROM(small_n->length, length);
-	OMX_PKT_FIELD_FROM(small_n->lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(small_n->lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(small_n->session, cmd.session_id);
-	OMX_PKT_FIELD_FROM(small_n->checksum, cmd.checksum);
-	OMX_PKT_MATCH_INFO_FROM(small_n, cmd.match_info);
+	OMX_HTON_8(small_n->src_endpoint, endpoint->endpoint_index);
+	OMX_HTON_8(small_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_HTON_8(small_n->ptype, OMX_PKT_TYPE_SMALL);
+	OMX_HTON_16(small_n->length, length);
+	OMX_HTON_16(small_n->lib_seqnum, cmd.seqnum);
+	OMX_HTON_16(small_n->lib_piggyack, cmd.piggyack);
+	OMX_HTON_32(small_n->session, cmd.session_id);
+	OMX_HTON_16(small_n->checksum, cmd.checksum);
+	OMX_HTON_MATCH_INFO(small_n, cmd.match_info);
 
 	omx_send_dprintk(eh, "SMALL length %ld", (unsigned long) length);
 
@@ -634,20 +634,22 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 	memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(medium_n->src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(medium_n->dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(medium_n->ptype, OMX_PKT_TYPE_MEDIUM);
-	OMX_PKT_FIELD_FROM(medium_n->length, cmd.msg_length);
-	OMX_PKT_FIELD_FROM(medium_n->lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(medium_n->lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(medium_n->session, cmd.session_id);
-	OMX_PKT_MATCH_INFO_FROM(medium_n, cmd.match_info);
-	OMX_PKT_FIELD_FROM(medium_n->frag_length, frag_length);
-	OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, cmd.frag_seqnum);
-	OMX_PKT_FIELD_FROM(medium_n->checksum, cmd.checksum);
+	OMX_HTON_8(medium_n->src_endpoint, endpoint->endpoint_index);
+	OMX_HTON_8(medium_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_HTON_8(medium_n->ptype, OMX_PKT_TYPE_MEDIUM);
 #ifdef OMX_MX_WIRE_COMPAT
-	OMX_PKT_FIELD_FROM(medium_n->frag_pipeline, cmd.frag_pipeline);
+	OMX_HTON_16(medium_n->length, cmd.msg_length);
+	OMX_HTON_8(medium_n->frag_pipeline, cmd.frag_pipeline);
+#else
+	OMX_HTON_32(medium_n->length, cmd.msg_length);
 #endif
+	OMX_HTON_16(medium_n->lib_seqnum, cmd.seqnum);
+	OMX_HTON_16(medium_n->lib_piggyack, cmd.piggyack);
+	OMX_HTON_32(medium_n->session, cmd.session_id);
+	OMX_HTON_MATCH_INFO(medium_n, cmd.match_info);
+	OMX_HTON_16(medium_n->frag_length, frag_length);
+	OMX_HTON_8(medium_n->frag_seqnum, cmd.frag_seqnum);
+	OMX_HTON_16(medium_n->checksum, cmd.checksum);
 
 	omx_send_dprintk(eh, "MEDIUMSQ FRAG length %ld", (unsigned long) frag_length);
 
@@ -768,19 +770,21 @@ omx_ioctl_send_mediumva(struct omx_endpoint * endpoint,
 		memcpy(eh->h_source, ifp->dev_addr, sizeof (eh->h_source));
 
 		/* fill omx header */
-		OMX_PKT_FIELD_FROM(medium_n->src_endpoint, endpoint->endpoint_index);
-		OMX_PKT_FIELD_FROM(medium_n->dst_endpoint, cmd.dest_endpoint);
-		OMX_PKT_FIELD_FROM(medium_n->ptype, OMX_PKT_TYPE_MEDIUM);
-		OMX_PKT_FIELD_FROM(medium_n->length, msg_length);
-		OMX_PKT_FIELD_FROM(medium_n->lib_seqnum, cmd.seqnum);
-		OMX_PKT_FIELD_FROM(medium_n->lib_piggyack, cmd.piggyack);
-		OMX_PKT_FIELD_FROM(medium_n->session, cmd.session_id);
-		OMX_PKT_MATCH_INFO_FROM(medium_n, cmd.match_info);
-		OMX_PKT_FIELD_FROM(medium_n->frag_length, frag_length);
-		OMX_PKT_FIELD_FROM(medium_n->frag_seqnum, i);
+		OMX_HTON_8(medium_n->src_endpoint, endpoint->endpoint_index);
+		OMX_HTON_8(medium_n->dst_endpoint, cmd.dest_endpoint);
+		OMX_HTON_8(medium_n->ptype, OMX_PKT_TYPE_MEDIUM);
 #ifdef OMX_MX_WIRE_COMPAT
-		OMX_PKT_FIELD_FROM(medium_n->frag_pipeline, OMX_MEDIUM_FRAG_LENGTH_SHIFT);
+		OMX_HTON_16(medium_n->length, msg_length);
+		OMX_HTON_8(medium_n->frag_pipeline, OMX_MEDIUM_FRAG_LENGTH_SHIFT);
+#else
+		OMX_HTON_32(medium_n->length, msg_length);
 #endif
+		OMX_HTON_16(medium_n->lib_seqnum, cmd.seqnum);
+		OMX_HTON_16(medium_n->lib_piggyack, cmd.piggyack);
+		OMX_HTON_32(medium_n->session, cmd.session_id);
+		OMX_HTON_MATCH_INFO(medium_n, cmd.match_info);
+		OMX_HTON_16(medium_n->frag_length, frag_length);
+		OMX_HTON_8(medium_n->frag_seqnum, i);
 
 		omx_send_dprintk(eh, "MEDIUMVA length %ld", (unsigned long) frag_length);
 
@@ -895,19 +899,19 @@ omx_ioctl_send_rndv(struct omx_endpoint * endpoint,
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(rndv_n->msg.src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(rndv_n->msg.dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(rndv_n->msg.ptype, OMX_PKT_TYPE_RNDV);
-	OMX_PKT_FIELD_FROM(rndv_n->msg.length, OMX_PKT_RNDV_DATA_LENGTH);
-	OMX_PKT_FIELD_FROM(rndv_n->msg.lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(rndv_n->msg.lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(rndv_n->msg.session, cmd.session_id);
-	OMX_PKT_MATCH_INFO_FROM(&rndv_n->msg, cmd.match_info);
-	OMX_PKT_FIELD_FROM(rndv_n->msg_length, cmd.msg_length);
-	OMX_PKT_FIELD_FROM(rndv_n->pulled_rdma_id, cmd.pulled_rdma_id);
-	OMX_PKT_FIELD_FROM(rndv_n->pulled_rdma_seqnum, cmd.pulled_rdma_seqnum);
-	OMX_PKT_FIELD_FROM(rndv_n->msg.checksum, cmd.checksum);
-	OMX_PKT_FIELD_FROM(rndv_n->pulled_rdma_offset, 0); /* not needed for Open-MX */
+	OMX_HTON_8(rndv_n->msg.src_endpoint, endpoint->endpoint_index);
+	OMX_HTON_8(rndv_n->msg.dst_endpoint, cmd.dest_endpoint);
+	OMX_HTON_8(rndv_n->msg.ptype, OMX_PKT_TYPE_RNDV);
+	OMX_HTON_16(rndv_n->msg.length, OMX_PKT_RNDV_DATA_LENGTH);
+	OMX_HTON_16(rndv_n->msg.lib_seqnum, cmd.seqnum);
+	OMX_HTON_16(rndv_n->msg.lib_piggyack, cmd.piggyack);
+	OMX_HTON_32(rndv_n->msg.session, cmd.session_id);
+	OMX_HTON_MATCH_INFO(&rndv_n->msg, cmd.match_info);
+	OMX_HTON_32(rndv_n->msg_length, cmd.msg_length);
+	OMX_HTON_8(rndv_n->pulled_rdma_id, cmd.pulled_rdma_id);
+	OMX_HTON_8(rndv_n->pulled_rdma_seqnum, cmd.pulled_rdma_seqnum);
+	OMX_HTON_16(rndv_n->msg.checksum, cmd.checksum);
+	OMX_HTON_16(rndv_n->pulled_rdma_offset, 0); /* not needed for Open-MX */
 
 	omx_queue_xmit(iface, skb, RNDV);
 
@@ -970,15 +974,15 @@ omx_ioctl_send_notify(struct omx_endpoint * endpoint,
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(notify_n->src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(notify_n->dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(notify_n->ptype, OMX_PKT_TYPE_NOTIFY);
-	OMX_PKT_FIELD_FROM(notify_n->total_length, cmd.total_length);
-	OMX_PKT_FIELD_FROM(notify_n->lib_seqnum, cmd.seqnum);
-	OMX_PKT_FIELD_FROM(notify_n->lib_piggyack, cmd.piggyack);
-	OMX_PKT_FIELD_FROM(notify_n->session, cmd.session_id);
-	OMX_PKT_FIELD_FROM(notify_n->pulled_rdma_id, cmd.pulled_rdma_id);
-	OMX_PKT_FIELD_FROM(notify_n->pulled_rdma_seqnum, cmd.pulled_rdma_seqnum);
+	OMX_HTON_8(notify_n->src_endpoint, endpoint->endpoint_index);
+	OMX_HTON_8(notify_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_HTON_8(notify_n->ptype, OMX_PKT_TYPE_NOTIFY);
+	OMX_HTON_32(notify_n->total_length, cmd.total_length);
+	OMX_HTON_16(notify_n->lib_seqnum, cmd.seqnum);
+	OMX_HTON_16(notify_n->lib_piggyack, cmd.piggyack);
+	OMX_HTON_32(notify_n->session, cmd.session_id);
+	OMX_HTON_8(notify_n->pulled_rdma_id, cmd.pulled_rdma_id);
+	OMX_HTON_8(notify_n->pulled_rdma_seqnum, cmd.pulled_rdma_seqnum);
 
 	omx_send_dprintk(eh, "NOTIFY");
 
@@ -1044,17 +1048,17 @@ omx_ioctl_send_liback(struct omx_endpoint * endpoint,
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(truc_n->src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(truc_n->dst_endpoint, cmd.dest_endpoint);
-	OMX_PKT_FIELD_FROM(truc_n->ptype, OMX_PKT_TYPE_TRUC);
-	OMX_PKT_FIELD_FROM(truc_n->length, OMX_PKT_TRUC_LIBACK_DATA_LENGTH);
-	OMX_PKT_FIELD_FROM(truc_n->session, cmd.session_id);
-	OMX_PKT_FIELD_FROM(truc_n->type, OMX_PKT_TRUC_DATA_TYPE_ACK);
-	OMX_PKT_FIELD_FROM(truc_n->liback.lib_seqnum, cmd.lib_seqnum);
-	OMX_PKT_FIELD_FROM(truc_n->liback.session_id, cmd.session_id);
-	OMX_PKT_FIELD_FROM(truc_n->liback.acknum, cmd.acknum);
-	OMX_PKT_FIELD_FROM(truc_n->liback.send_seq, cmd.send_seq);
-	OMX_PKT_FIELD_FROM(truc_n->liback.resent, cmd.resent);
+	OMX_HTON_8(truc_n->src_endpoint, endpoint->endpoint_index);
+	OMX_HTON_8(truc_n->dst_endpoint, cmd.dest_endpoint);
+	OMX_HTON_8(truc_n->ptype, OMX_PKT_TYPE_TRUC);
+	OMX_HTON_8(truc_n->length, OMX_PKT_TRUC_LIBACK_DATA_LENGTH);
+	OMX_HTON_32(truc_n->session, cmd.session_id);
+	OMX_HTON_8(truc_n->type, OMX_PKT_TRUC_DATA_TYPE_ACK);
+	OMX_HTON_16(truc_n->liback.lib_seqnum, cmd.lib_seqnum);
+	OMX_HTON_32(truc_n->liback.session_id, cmd.session_id);
+	OMX_HTON_32(truc_n->liback.acknum, cmd.acknum);
+	OMX_HTON_16(truc_n->liback.send_seq, cmd.send_seq);
+	OMX_HTON_8(truc_n->liback.resent, cmd.resent);
 
 	omx_queue_xmit(iface, skb, LIBACK);
 
@@ -1108,11 +1112,11 @@ omx_send_nack_lib(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	nack_lib_n->dst_src_peer_index = ph->dst_src_peer_index;
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(nack_lib_n->src_endpoint, src_endpoint);
-	OMX_PKT_FIELD_FROM(nack_lib_n->dst_endpoint, dst_endpoint);
-	OMX_PKT_FIELD_FROM(nack_lib_n->ptype, OMX_PKT_TYPE_NACK_LIB);
-	OMX_PKT_FIELD_FROM(nack_lib_n->nack_type, nack_type);
-	OMX_PKT_FIELD_FROM(nack_lib_n->lib_seqnum, lib_seqnum);
+	OMX_HTON_8(nack_lib_n->src_endpoint, src_endpoint);
+	OMX_HTON_8(nack_lib_n->dst_endpoint, dst_endpoint);
+	OMX_HTON_8(nack_lib_n->ptype, OMX_PKT_TYPE_NACK_LIB);
+	OMX_HTON_8(nack_lib_n->nack_type, nack_type);
+	OMX_HTON_16(nack_lib_n->lib_seqnum, lib_seqnum);
 
 	omx_send_dprintk(eh, "NACK LIB type %d", nack_type);
 
@@ -1169,11 +1173,11 @@ omx_send_nack_mcp(struct omx_iface * iface, uint32_t peer_index, enum omx_nack_t
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(nack_mcp_n->src_endpoint, src_endpoint);
-	OMX_PKT_FIELD_FROM(nack_mcp_n->ptype, OMX_PKT_TYPE_NACK_MCP);
-	OMX_PKT_FIELD_FROM(nack_mcp_n->nack_type, nack_type);
-	OMX_PKT_FIELD_FROM(nack_mcp_n->src_pull_handle, src_pull_handle);
-	OMX_PKT_FIELD_FROM(nack_mcp_n->src_magic, src_magic);
+	OMX_HTON_8(nack_mcp_n->src_endpoint, src_endpoint);
+	OMX_HTON_8(nack_mcp_n->ptype, OMX_PKT_TYPE_NACK_MCP);
+	OMX_HTON_8(nack_mcp_n->nack_type, nack_type);
+	OMX_HTON_32(nack_mcp_n->src_pull_handle, src_pull_handle);
+	OMX_HTON_32(nack_mcp_n->src_magic, src_magic);
 
 	omx_send_dprintk(eh, "NACK MCP type %d", nack_type);
 

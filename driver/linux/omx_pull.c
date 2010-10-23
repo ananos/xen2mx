@@ -544,16 +544,21 @@ omx_pull_handle_pkt_hdr_fill(const struct omx_endpoint * endpoint,
 	}
 
 	/* fill omx header */
-	OMX_PKT_FIELD_FROM(pull_n->ptype, OMX_PKT_TYPE_PULL);
-	OMX_PKT_FIELD_FROM(pull_n->src_endpoint, endpoint->endpoint_index);
-	OMX_PKT_FIELD_FROM(pull_n->dst_endpoint, cmd->dest_endpoint);
-	OMX_PKT_FIELD_FROM(pull_n->session, cmd->session_id);
-	OMX_PKT_FIELD_FROM(pull_n->total_length, handle->total_length);
-	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_id, cmd->pulled_rdma_id);
-	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_seqnum, cmd->pulled_rdma_seqnum);
-	OMX_PKT_FIELD_FROM(pull_n->pulled_rdma_offset, handle->pulled_rdma_offset);
-	OMX_PKT_FIELD_FROM(pull_n->src_pull_handle, handle->slot_id);
-	OMX_PKT_FIELD_FROM(pull_n->src_magic, endpoint->endpoint_index ^ OMX_ENDPOINT_PULL_MAGIC_XOR);
+	OMX_HTON_8(pull_n->ptype, OMX_PKT_TYPE_PULL);
+	OMX_HTON_8(pull_n->src_endpoint, endpoint->endpoint_index);
+	OMX_HTON_8(pull_n->dst_endpoint, cmd->dest_endpoint);
+	OMX_HTON_32(pull_n->session, cmd->session_id);
+	OMX_HTON_32(pull_n->total_length, handle->total_length);
+#ifdef OMX_MX_WIRE_COMPAT
+	OMX_HTON_8(pull_n->pulled_rdma_id, cmd->pulled_rdma_id);
+	OMX_HTON_16(pull_n->pulled_rdma_offset, handle->pulled_rdma_offset);
+#else
+	OMX_HTON_32(pull_n->pulled_rdma_id, cmd->pulled_rdma_id);
+	OMX_HTON_32(pull_n->pulled_rdma_offset, handle->pulled_rdma_offset);
+#endif
+	OMX_HTON_8(pull_n->pulled_rdma_seqnum, cmd->pulled_rdma_seqnum);
+	OMX_HTON_32(pull_n->src_pull_handle, handle->slot_id);
+	OMX_HTON_32(pull_n->src_magic, endpoint->endpoint_index ^ OMX_ENDPOINT_PULL_MAGIC_XOR);
 
 	/* block_length, frame_index, and first_frame_offset filled at actual send */
 
@@ -834,15 +839,20 @@ omx_fill_pull_block_request(const struct omx_pull_handle * handle, int desc_nr)
 	/* copy common pkt hdrs from the handle */
 	memcpy(mh, &handle->pkt_hdr, sizeof(handle->pkt_hdr));
 
-	OMX_PKT_FIELD_FROM(pull_n->block_length, block_length);
-	OMX_PKT_FIELD_FROM(pull_n->first_frame_offset, first_frame_offset);
-	OMX_PKT_FIELD_FROM(pull_n->frame_index, frame_index);
+#ifdef OMX_MX_WIRE_COMPAT
+	OMX_HTON_16(pull_n->block_length, block_length);
+	OMX_HTON_16(pull_n->first_frame_offset, first_frame_offset);
+#else
+	OMX_HTON_32(pull_n->block_length, block_length);
+	OMX_HTON_32(pull_n->first_frame_offset, first_frame_offset);
+#endif
+	OMX_HTON_32(pull_n->frame_index, frame_index);
 
 	omx_send_dprintk(&mh->head.eth, "PULL handle %lx magic %lx length %ld out of %ld, frame index %ld first_frame_offset %ld",
-			 (unsigned long) OMX_FROM_PKT_FIELD(pull_n->src_pull_handle),
-			 (unsigned long) OMX_FROM_PKT_FIELD(pull_n->src_magic),
+			 (unsigned long) OMX_NTOH_32(pull_n->src_pull_handle),
+			 (unsigned long) OMX_NTOH_32(pull_n->src_magic),
 			 (unsigned long) block_length,
-			 (unsigned long) OMX_FROM_PKT_FIELD(pull_n->total_length),
+			 (unsigned long) OMX_NTOH_32(pull_n->total_length),
 			 (unsigned long) frame_index,
 			 (unsigned long) first_frame_offset);
 
@@ -1120,17 +1130,24 @@ omx_recv_pull_request(struct omx_iface * iface,
 	struct omx_pkt_head *pull_ph = &pull_mh->head;
 	struct ethhdr *pull_eh = &pull_ph->eth;
 	struct omx_pkt_pull_request *pull_request_n = &pull_mh->body.pull;
-	uint8_t dst_endpoint = OMX_FROM_PKT_FIELD(pull_request_n->dst_endpoint);
-	uint8_t src_endpoint = OMX_FROM_PKT_FIELD(pull_request_n->src_endpoint);
-	uint32_t session_id = OMX_FROM_PKT_FIELD(pull_request_n->session);
-	uint32_t block_length = OMX_FROM_PKT_FIELD(pull_request_n->block_length);
-	uint32_t src_pull_handle = OMX_FROM_PKT_FIELD(pull_request_n->src_pull_handle);
-	uint32_t src_magic = OMX_FROM_PKT_FIELD(pull_request_n->src_magic);
-	uint32_t frame_index = OMX_FROM_PKT_FIELD(pull_request_n->frame_index);
-	uint32_t first_frame_offset = OMX_FROM_PKT_FIELD(pull_request_n->first_frame_offset);
-	uint32_t pulled_rdma_id = OMX_FROM_PKT_FIELD(pull_request_n->pulled_rdma_id);
-	uint32_t pulled_rdma_offset = OMX_FROM_PKT_FIELD(pull_request_n->pulled_rdma_offset);
-	uint16_t peer_index = OMX_FROM_PKT_FIELD(pull_mh->head.dst_src_peer_index);
+	uint8_t dst_endpoint = OMX_NTOH_8(pull_request_n->dst_endpoint);
+	uint8_t src_endpoint = OMX_NTOH_8(pull_request_n->src_endpoint);
+	uint32_t session_id = OMX_NTOH_32(pull_request_n->session);
+#ifdef OMX_MX_WIRE_COMPAT
+	uint32_t block_length = OMX_NTOH_16(pull_request_n->block_length);
+	uint32_t first_frame_offset = OMX_NTOH_16(pull_request_n->first_frame_offset);
+	uint32_t pulled_rdma_id = OMX_NTOH_8(pull_request_n->pulled_rdma_id);
+	uint32_t pulled_rdma_offset = OMX_NTOH_16(pull_request_n->pulled_rdma_offset);
+#else
+	uint32_t block_length = OMX_NTOH_32(pull_request_n->block_length);
+	uint32_t first_frame_offset = OMX_NTOH_32(pull_request_n->first_frame_offset);
+	uint32_t pulled_rdma_id = OMX_NTOH_32(pull_request_n->pulled_rdma_id);
+	uint32_t pulled_rdma_offset = OMX_NTOH_32(pull_request_n->pulled_rdma_offset);
+#endif
+	uint32_t src_pull_handle = OMX_NTOH_32(pull_request_n->src_pull_handle);
+	uint32_t src_magic = OMX_NTOH_32(pull_request_n->src_magic);
+	uint32_t frame_index = OMX_NTOH_32(pull_request_n->frame_index);
+	uint16_t peer_index = OMX_NTOH_16(pull_mh->head.dst_src_peer_index);
 	struct omx_user_region_offset_cache region_cache;
 	struct omx_pkt_pull_reply *pull_reply_n;
 	struct omx_hdr *reply_mh;
@@ -1184,7 +1201,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 			 (unsigned long) src_pull_handle,
 			 (unsigned long) src_magic,
 			 (unsigned long) block_length,
-			 (unsigned long) OMX_FROM_PKT_FIELD(pull_request_n->total_length),
+			 (unsigned long) OMX_NTOH_32(pull_request_n->total_length),
 			 (unsigned long) frame_index,
 			 (unsigned long) first_frame_offset);
 
@@ -1306,12 +1323,12 @@ omx_recv_pull_request(struct omx_iface * iface,
 
 		/* fill omx header */
 		pull_reply_n = &reply_mh->body.pull_reply;
-		OMX_PKT_FIELD_FROM(pull_reply_n->msg_offset, current_msg_offset);
-		OMX_PKT_FIELD_FROM(pull_reply_n->frame_seqnum, current_frame_seqnum);
-		OMX_PKT_FIELD_FROM(pull_reply_n->frame_length, frame_length);
-		OMX_PKT_FIELD_FROM(pull_reply_n->ptype, OMX_PKT_TYPE_PULL_REPLY);
-		OMX_PKT_FIELD_FROM(pull_reply_n->dst_pull_handle, src_pull_handle);
-		OMX_PKT_FIELD_FROM(pull_reply_n->dst_magic, src_magic);
+		OMX_HTON_32(pull_reply_n->msg_offset, current_msg_offset);
+		OMX_HTON_8(pull_reply_n->frame_seqnum, current_frame_seqnum);
+		OMX_HTON_16(pull_reply_n->frame_length, frame_length);
+		OMX_HTON_8(pull_reply_n->ptype, OMX_PKT_TYPE_PULL_REPLY);
+		OMX_HTON_32(pull_reply_n->dst_pull_handle, src_pull_handle);
+		OMX_HTON_32(pull_reply_n->dst_magic, src_magic);
 
 		omx_send_dprintk(reply_eh, "PULL REPLY #%d handle %lx magic %lx frame seqnum %ld length %ld offset %ld", i,
 				 (unsigned long) src_pull_handle,
@@ -1660,11 +1677,11 @@ omx_recv_pull_reply(struct omx_iface * iface,
 {
 	struct omx_pkt_pull_reply *pull_reply_n = &mh->body.pull_reply;
 	size_t hdr_len = sizeof(struct omx_pkt_head) + sizeof(struct omx_pkt_pull_reply);
-	uint32_t dst_pull_handle = OMX_FROM_PKT_FIELD(pull_reply_n->dst_pull_handle);
-	uint32_t dst_magic = OMX_FROM_PKT_FIELD(pull_reply_n->dst_magic);
-	uint32_t frame_length = OMX_FROM_PKT_FIELD(pull_reply_n->frame_length);
-	uint32_t frame_seqnum = OMX_FROM_PKT_FIELD(pull_reply_n->frame_seqnum);
-	uint32_t msg_offset = OMX_FROM_PKT_FIELD(pull_reply_n->msg_offset);
+	uint32_t dst_pull_handle = OMX_NTOH_32(pull_reply_n->dst_pull_handle);
+	uint32_t dst_magic = OMX_NTOH_32(pull_reply_n->dst_magic);
+	uint32_t frame_length = OMX_NTOH_16(pull_reply_n->frame_length);
+	uint32_t frame_seqnum = OMX_NTOH_8(pull_reply_n->frame_seqnum);
+	uint32_t msg_offset = OMX_NTOH_32(pull_reply_n->msg_offset);
 	uint32_t frame_seqnum_offset; /* unsigned to make seqnum offset easy to check */
 	int idesc;
 	struct omx_endpoint * endpoint;
@@ -1879,11 +1896,11 @@ omx_recv_nack_mcp(struct omx_iface * iface,
 		  struct sk_buff * skb)
 {
 	struct ethhdr *eh = &mh->head.eth;
-	uint16_t peer_index = OMX_FROM_PKT_FIELD(mh->head.dst_src_peer_index);
+	uint16_t peer_index = OMX_NTOH_16(mh->head.dst_src_peer_index);
 	struct omx_pkt_nack_mcp *nack_mcp_n = &mh->body.nack_mcp;
-	enum omx_nack_type nack_type = OMX_FROM_PKT_FIELD(nack_mcp_n->nack_type);
-	uint32_t dst_pull_handle = OMX_FROM_PKT_FIELD(nack_mcp_n->src_pull_handle);
-	uint32_t dst_magic = OMX_FROM_PKT_FIELD(nack_mcp_n->src_magic);
+	enum omx_nack_type nack_type = OMX_NTOH_8(nack_mcp_n->nack_type);
+	uint32_t dst_pull_handle = OMX_NTOH_32(nack_mcp_n->src_pull_handle);
+	uint32_t dst_magic = OMX_NTOH_32(nack_mcp_n->src_magic);
 	struct omx_endpoint * endpoint;
 	struct omx_pull_handle * handle;
 	int err = 0;
