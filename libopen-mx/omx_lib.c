@@ -211,9 +211,8 @@ omx__check_enough_progression(struct omx_endpoint * ep)
 omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
-  const volatile union omx_evt * evt;
+  uint32_t index;
   int err;
-  int id;
 
   if (unlikely(ep->progression_disabled))
     return OMX_SUCCESS;
@@ -223,70 +222,52 @@ omx__progress(struct omx_endpoint * ep)
   /* process unexpected events first,
    * to release the pressure coming from the network
    */
-  evt = ep->next_unexp_event;
-  id = ep->next_unexp_event_id;
+  index = ep->next_unexp_event_index;
   while (1) {
-    unsigned long evt_offset;
+    const volatile union omx_evt * evt = ep->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
+    int id = 1 + (index % OMX_EVENT_ID_MAX);
 
     if (unlikely(evt->generic.id != id))
       break;
 
     omx__process_event(ep, (union omx_evt *) evt);
 
-    /* next event id */
-    id++;
-    if (id == OMX_EVENT_ID_MAX + 1)
-      id = 1;
-
-    /* next event slot */
-    evt++;
-    evt_offset = (void *) evt - ep->unexp_eventq;
-    if (unlikely(evt_offset == OMX_UNEXP_EVENTQ_SIZE))
-      evt = ep->unexp_eventq;
+    /* next event */
+    index++;
 
     /* Acknowledgement per batch of event slots */
     BUILD_BUG_ON(OMX_UNEXP_RELEASE_SLOTS_BATCH_NR < 1); /* make sure we release something */
-    if (unlikely(evt_offset % (OMX_UNEXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
+    if (unlikely(index % OMX_UNEXP_RELEASE_SLOTS_BATCH_NR == 0)) {
       err = ioctl(ep->fd, OMX_CMD_RELEASE_UNEXP_SLOTS);
       if (err < 0)
 	omx__abort(ep, "Failed to release a batch of unexpected slots\n");
     }
   }
-  ep->next_unexp_event = (void *) evt;
-  ep->next_unexp_event_id = id;
+  ep->next_unexp_event_index = index;
 
   /* process expected events then */
-  evt = ep->next_exp_event;
-  id = ep->next_exp_event_id;
+  index = ep->next_exp_event_index;
   while (1) {
-    unsigned long evt_offset;
+    const volatile union omx_evt * evt = ep->exp_eventq + (index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
+    int id = 1 + (index % OMX_EVENT_ID_MAX);
 
     if (unlikely(evt->generic.id != id))
       break;
 
     omx__process_event(ep, (union omx_evt *) evt);
 
-    /* next event id */
-    id++;
-    if (id == OMX_EVENT_ID_MAX + 1)
-      id = 1;
-
-    /* next event slot */
-    evt++;
-    evt_offset = (void *) evt - ep->exp_eventq;
-    if (unlikely(evt_offset == OMX_EXP_EVENTQ_SIZE))
-      evt = ep->exp_eventq;
+    /* next event */
+    index++;
 
     /* Acknowledgement per batch of event slots */
     BUILD_BUG_ON(OMX_EXP_RELEASE_SLOTS_BATCH_NR < 1); /* make sure we release something */
-    if (unlikely(evt_offset % (OMX_EXP_RELEASE_SLOTS_BATCH_NR*sizeof(union omx_evt)) == 0)) {
+    if (unlikely(index % OMX_EXP_RELEASE_SLOTS_BATCH_NR == 0)) {
       err = ioctl(ep->fd, OMX_CMD_RELEASE_EXP_SLOTS);
       if (err < 0)
 	omx__abort(ep, "Failed to release a batch of expected slots\n");
     }
   }
-  ep->next_exp_event = (void *) evt;
-  ep->next_exp_event_id = id;
+  ep->next_exp_event_index = index;
 
   /* resend requests that didn't get acked/replied */
   omx__process_resend_requests(ep);

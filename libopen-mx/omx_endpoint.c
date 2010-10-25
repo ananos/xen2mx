@@ -478,8 +478,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = omx__check_mmap("endpoint expected event queue");
     goto out_with_recvq;
   }
-  ep->exp_eventq = ep->next_exp_event = exp_eventq;
-  ep->next_exp_event_id = 1;
+  ep->exp_eventq = exp_eventq;
+  ep->next_exp_event_index = 0;
 
   /* mmap unexp eventq */
   unexp_eventq = mmap(0, OMX_UNEXP_EVENTQ_SIZE, PROT_READ, MAP_SHARED, fd, OMX_UNEXP_EVENTQ_FILE_OFFSET);
@@ -487,8 +487,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     ret = omx__check_mmap("endpoint unexpected event queue");
     goto out_with_exp_eventq;
   }
-  ep->unexp_eventq = ep->next_unexp_event = unexp_eventq;
-  ep->next_unexp_event_id = 1;
+  ep->unexp_eventq = unexp_eventq;
+  ep->next_unexp_event_index = 0;
 
   BUILD_BUG_ON(sizeof(struct omx_evt_recv_msg) != OMX_EVENTQ_ENTRY_SIZE);
   BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);

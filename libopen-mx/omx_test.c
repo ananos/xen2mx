@@ -56,8 +56,8 @@ omx__wait(struct omx_endpoint *ep,
 		      (unsigned long long) omx__driver_desc->jiffies,
 		      (unsigned long long) wait_param->jiffies_expire);
 
-  wait_param->next_exp_event_offset = ep->next_exp_event - ep->exp_eventq;
-  wait_param->next_unexp_event_offset = ep->next_unexp_event - ep->unexp_eventq;
+  wait_param->next_exp_event_offset = (ep->next_exp_event_index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
+  wait_param->next_unexp_event_offset = (ep->next_unexp_event_index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
   wait_param->user_event_index = ep->desc->user_event_index;
   omx__prepare_progress_wakeup(ep);
 
