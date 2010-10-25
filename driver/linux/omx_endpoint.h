@@ -47,8 +47,6 @@ enum omx_endpoint_status {
 	OMX_ENDPOINT_STATUS_CLOSING,
 };
 
-typedef uint32_t omx_eventq_index_t;
-
 struct omx_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;

@@ -45,6 +45,11 @@
  * Common parameters or IOCTL subtypes
  */
 
+/* both lib and driver store event index as 32bit unsigned
+ * (they are compared in the wait ioctl)
+ */
+typedef uint32_t omx_eventq_index_t;
+
 /* sendq: where outgoing packet payload is stored */
 #ifdef OMX_SHARED_RING_ENTRY_NR
 #define OMX_SENDQ_ENTRY_NR	OMX_SHARED_RING_ENTRY_NR

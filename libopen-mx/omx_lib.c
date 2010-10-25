@@ -211,7 +211,7 @@ omx__check_enough_progression(struct omx_endpoint * ep)
 omx_return_t
 omx__progress(struct omx_endpoint * ep)
 {
-  uint32_t index;
+  omx_eventq_index_t index;
   int err;
 
   if (unlikely(ep->progression_disabled))
