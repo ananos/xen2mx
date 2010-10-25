@@ -44,7 +44,7 @@ static void __omx_iface_last_release(struct kref *kref);
 /*
  * Array, number and lock for the list of ifaces
  */
-struct omx_iface ** omx_ifaces = NULL; /* must be NULL during init so that module param are delayed */
+struct omx_iface __rcu ** omx_ifaces = NULL; /* must be NULL during init so that module param are delayed */
 static unsigned omx_iface_nr = 0;
 struct omx_iface * omx_shared_fake_iface = NULL; /* only used for shared communication counters */
 
@@ -63,7 +63,7 @@ omx_iface_find_by_index_lock(int board_index)
 		return NULL;
 	}
 
-	iface = omx_ifaces[board_index];
+	iface = rcu_dereference_protected(omx_ifaces[board_index], 1);
 	if (!iface)
 		omx_ifaces_peers_unlock();
 
@@ -83,7 +83,7 @@ omx_iface_find_by_ifp(const struct net_device *ifp)
 	 * need to lock the iface array or to hold a reference on the iface.
 	 */
 	for (i=0; i<omx_iface_max; i++) {
-		struct omx_iface * iface = omx_ifaces[i];
+		struct omx_iface * iface = rcu_dereference_protected(omx_ifaces[i], 1);
 		if (likely(iface && iface->eth_ifp == ifp))
 			return iface;
 	}
@@ -128,7 +128,7 @@ omx_ifaces_get_count(void)
 	 * and we don't access the internals of the ifaces
 	 */
 	for (i=0; i<omx_iface_max; i++)
-		if (omx_ifaces[i] != NULL)
+		if (rcu_access_pointer(omx_ifaces[i]) != NULL)
 			count++;
 
 	return count;
@@ -430,7 +430,7 @@ omx_iface_attach(struct net_device * ifp)
 	}
 
 	for(i=0; i<omx_iface_max; i++)
-		if (omx_ifaces[i] == NULL)
+		if (rcu_access_pointer(omx_ifaces[i]) == NULL)
 			break;
 
 	iface = kzalloc(sizeof(struct omx_iface), GFP_KERNEL);
@@ -561,7 +561,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	int ret;
 	int i;
 
-	BUG_ON(omx_ifaces[iface->index] == NULL);
+	BUG_ON(rcu_access_pointer(omx_ifaces[iface->index]) == NULL);
 
 	/* take the lock before changing/restoring the status to support concurrent tries */
 	mutex_lock(&iface->endpoints_mutex);
@@ -585,7 +585,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	iface->status = OMX_IFACE_STATUS_CLOSING;
 
 	for(i=0; i<omx_endpoint_max; i++) {
-		struct omx_endpoint * endpoint = iface->endpoints[i];
+		struct omx_endpoint * endpoint = rcu_dereference_protected(iface->endpoints[i], 1);
 		if (!endpoint)
 			continue;
 
@@ -707,7 +707,7 @@ omx_ifaces_store_one(const char *buf)
 
 		omx_ifaces_peers_lock();
 		for(i=0; i<omx_iface_max; i++) {
-			struct omx_iface * iface = omx_ifaces[i];
+			struct omx_iface * iface = rcu_dereference_protected(omx_ifaces[i], 1);
 			struct net_device * ifp;
 
 			if (iface == NULL)
@@ -852,7 +852,7 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 
 	/* add the endpoint */
 	ret = -EBUSY;
-	if (iface->endpoints[endpoint->endpoint_index] != NULL) {
+	if (rcu_dereference_protected(iface->endpoints[endpoint->endpoint_index], 1) != NULL) {
 		dprintk(IOCTL, "endpoint already open\n");
 		goto out_with_endpoints_locked;
 	}
@@ -903,7 +903,7 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 	if (!ifacelocked)
 		mutex_lock(&iface->endpoints_mutex);
 
-	BUG_ON(iface->endpoints[endpoint->endpoint_index] != endpoint);
+	BUG_ON(rcu_access_pointer(iface->endpoints[endpoint->endpoint_index]) != endpoint);
 	rcu_assign_pointer(iface->endpoints[endpoint->endpoint_index], NULL);
 	/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
 	synchronize_rcu();
@@ -1224,7 +1224,7 @@ omx_net_exit(void)
 	omx_ifaces_peers_lock();
 
 	for (i=0; i<omx_iface_max; i++) {
-		struct omx_iface * iface = omx_ifaces[i];
+		struct omx_iface * iface = rcu_dereference_protected(omx_ifaces[i], 1);
 		if (iface != NULL) {
 			int ret;
 

@@ -68,7 +68,7 @@ struct omx_iface {
 	enum omx_iface_status status;
 	struct kref refcount;
 	int endpoint_nr;
-	struct omx_endpoint ** endpoints;
+	struct omx_endpoint __rcu ** endpoints;
 	struct omx_iface_raw raw;
 
 	uint32_t counters[OMX_COUNTER_INDEX_MAX];
@@ -77,7 +77,7 @@ struct omx_iface {
 extern int omx_net_init(void);
 extern void omx_net_exit(void);
 
-extern struct omx_iface ** omx_ifaces;
+extern struct omx_iface __rcu ** omx_ifaces;
 
 extern void omx_iface_release(struct omx_iface * iface);
 

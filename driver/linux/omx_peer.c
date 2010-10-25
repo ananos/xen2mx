@@ -36,7 +36,7 @@
 #include "omx_hal.h"
 #include "omx_wire_access.h"
 
-static struct omx_peer ** omx_peer_array;
+static struct omx_peer __rcu ** omx_peer_array;
 static struct list_head * omx_peer_addr_hash_array;
 static int omx_peer_next_nr;
 static int omx_peer_table_full;
@@ -158,7 +158,7 @@ omx_peers_clear(int local)
 	omx_ifaces_peers_lock();
 
 	for(i=0; i<omx_peer_max; i++) {
-		struct omx_peer * peer = omx_peer_array[i];
+		struct omx_peer * peer = rcu_dereference_protected(omx_peer_array[i], 1);
 		struct omx_iface * iface;
 
 		if (!peer)
@@ -205,7 +205,7 @@ omx_peers_clear(int local)
 	if (!local) {
 		/* move local ifaces back to the beginning */
 		for(i=0; i<omx_peer_max; i++) {
-			struct omx_peer * peer = omx_peer_array[i];
+			struct omx_peer * peer = rcu_dereference_protected(omx_peer_array[i], 1);
 			if (!peer)
 				continue;
 			if (i != omx_peer_next_nr) {
@@ -660,7 +660,7 @@ omx_peer_lookup_by_index(uint32_t index,
 
 	omx_ifaces_peers_lock();
 
-	peer = omx_peer_array[index];
+	peer = rcu_dereference_protected(omx_peer_array[index], 1);
 	if (!peer)
 		goto out_with_lock;
 
@@ -760,7 +760,7 @@ omx_peer_lookup_by_hostname(const char *hostname,
 	omx_ifaces_peers_lock();
 
 	for(i=0; i<omx_peer_max; i++) {
-		struct omx_peer *peer = omx_peer_array[i];
+		struct omx_peer *peer = rcu_dereference_protected(omx_peer_array[i], 1);
 		if (!peer || !peer->hostname)
 			continue;
 
@@ -1107,7 +1107,7 @@ omx_peers_clear_names(void)
 		struct omx_peer *peer;
 		char *hostname;
 
-		peer =  omx_peer_array[i];
+		peer =  rcu_dereference_protected(omx_peer_array[i], 1);
 		if (!peer || !peer->hostname || peer->local_iface)
 			continue;
 
@@ -1185,7 +1185,7 @@ omx_peers_init(void)
 		goto out;
 	}
 	for(i=0; i<omx_peer_max; i++)
-		omx_peer_array[i] = NULL;
+		RCU_INIT_POINTER(omx_peer_array[i], NULL);
 
 	omx_peer_addr_hash_array = kmalloc(OMX_PEER_ADDR_HASH_NR * sizeof(*omx_peer_addr_hash_array), GFP_KERNEL);
 	if (!omx_peer_addr_hash_array) {

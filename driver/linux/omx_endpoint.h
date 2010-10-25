@@ -74,7 +74,7 @@ struct omx_endpoint {
 	struct page ** recvq_pages;
 
 	spinlock_t user_regions_lock;
-	struct omx_user_region * user_regions[OMX_USER_REGION_MAX];
+	struct omx_user_region __rcu * user_regions[OMX_USER_REGION_MAX];
 
 	struct list_head pull_handles_list;
 	struct list_head pull_handle_slots_free_list;

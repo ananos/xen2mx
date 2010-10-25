@@ -261,7 +261,7 @@ omx_pull_handle_release(struct omx_pull_handle * handle)
  */
 
 struct omx_pull_handle_slot {
-	struct omx_pull_handle *handle;
+	struct omx_pull_handle __rcu *handle;
 	uint32_t id; /* index in SLOTS_BITS + a generation number in GENERATION_BITS */
 	struct list_head list_elt;
 };

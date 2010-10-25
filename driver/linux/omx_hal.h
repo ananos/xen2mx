@@ -241,6 +241,24 @@ typedef struct work_struct * omx_work_struct_data_t;
 #define omx_mod_timer_pending __mod_timer
 #endif
 
+/* rcu helpers added in 2.6.34 */
+#ifndef rcu_dereference_protected
+#define rcu_dereference_protected(x, c) (x)
+#endif
+#ifndef rcu_access_pointer
+#define rcu_access_pointer(x) (x)
+#endif
+
+/* rcu helper added in 2.6.37 */
+#ifndef RCU_INIT_POINTER
+#define RCU_INIT_POINTER(p, v) p = (typeof(*v) __force __rcu *)(v)
+#endif
+
+/* sparse rcu pointer dereferencing check added in 2.6.37 */
+#ifndef __rcu
+#define __rcu
+#endif
+
 #endif /* __omx_hal_h__ */
 
 /*
