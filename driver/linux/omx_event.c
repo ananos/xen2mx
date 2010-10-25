@@ -394,15 +394,18 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	spin_lock_bh(&endpoint->event_lock);
 
 	/* did we deposit an event before the lib decided to go to sleep ? */
-	if ((cmd.next_exp_event_offset != (endpoint->nextfree_exp_eventq_index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE)
-	    || (cmd.next_unexp_event_offset != (endpoint->nextreserved_unexp_eventq_index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE)
-	    || (cmd.user_event_index != endpoint->userdesc->user_event_index)) {
+	BUILD_BUG_ON(sizeof(cmd.next_exp_event_index) != sizeof(endpoint->nextfree_exp_eventq_index));
+	BUILD_BUG_ON(sizeof(cmd.next_unexp_event_index) != sizeof(endpoint->nextreserved_unexp_eventq_index));
+	BUILD_BUG_ON(sizeof(cmd.user_event_index) != sizeof(endpoint->userdesc->user_event_index));
+	if (cmd.next_exp_event_index != endpoint->nextfree_exp_eventq_index
+	    || cmd.next_unexp_event_index != endpoint->nextreserved_unexp_eventq_index
+	    || cmd.user_event_index != endpoint->userdesc->user_event_index) {
 		dprintk(EVENT, "wait event race (%ld,%ld,%ld) != (%ld,%ld,%ld)\n",
-			(unsigned long) cmd.next_exp_event_offset,
-			(unsigned long) cmd.next_unexp_event_offset,
+			(unsigned long) cmd.next_exp_event_index,
+			(unsigned long) cmd.next_unexp_event_index,
 			(unsigned long) cmd.user_event_index,
-			(unsigned long) (endpoint->nextfree_exp_eventq_index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE,
-			(unsigned long) (endpoint->nextreserved_unexp_eventq_index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE,
+			(unsigned long) endpoint->nextfree_exp_eventq_index,
+			(unsigned long) endpoint->nextreserved_unexp_eventq_index,
 			(unsigned long) endpoint->userdesc->user_event_index);
 		spin_unlock_bh(&endpoint->event_lock);
 		cmd.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;

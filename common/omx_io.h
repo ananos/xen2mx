@@ -39,7 +39,7 @@
  * or modified, or when the user-mapped driver- and endpoint-descriptors
  * are modified.
  */
-#define OMX_DRIVER_ABI_VERSION		0x20e
+#define OMX_DRIVER_ABI_VERSION		0x20f
 
 /************************
  * Common parameters or IOCTL subtypes
@@ -524,8 +524,8 @@ struct omx_cmd_wait_event {
 	uint8_t pad[3];
 	/* 4 */
 	uint32_t user_event_index;
-	uint32_t next_exp_event_offset;
-	uint32_t next_unexp_event_offset;
+	uint32_t next_exp_event_index;
+	uint32_t next_unexp_event_index;
 	/* 16 */
 	uint64_t jiffies_expire; /* absolute jiffies where to wakeup, or OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE */
 	/* 24 */

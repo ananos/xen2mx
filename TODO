@@ -1,5 +1,3 @@
-* update wait eventq status to use index instead of offset
-  + keep something large enough to avoid wrap-arounds
 * sort endpoint eventq fields for better locality
 
 * dynamically alloc the sendq_map index array out of the medium request?
