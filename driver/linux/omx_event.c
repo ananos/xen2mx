@@ -43,13 +43,15 @@ static INLINE void
 omx_wakeup_waiter_list(struct omx_endpoint *endpoint,
 		       uint32_t status)
 {
-	struct omx_event_waiter *waiter, *next;
+	struct omx_event_waiter *waiter;
 
 	/* wake up everybody with the event status */
-	list_for_each_entry_safe(waiter, next, &endpoint->waiters, list_elt) {
+	rcu_read_lock();
+	list_for_each_entry_rcu(waiter, &endpoint->waiters, list_elt) {
 		waiter->status = status;
 		wake_up_process(waiter->task);
 	}
+	rcu_read_unlock();
 }
 
 static void
@@ -147,6 +149,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int lengt
 
 	/* take the next slot and update the queue */
 	index = endpoint->nextfree_exp_eventq_index++;
+
 	slot = endpoint->exp_eventq + (index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 
 	/* store the event without setting the id first */
@@ -157,9 +160,10 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int lengt
 
 	/* wake up waiters */
 	dprintk(EVENT, "notify_exp waking up everybody\n");
-	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	spin_unlock_bh(&endpoint->event_lock);
+
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	return 0;
 }
@@ -191,6 +195,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int len
 
 	/* take the next slot and update the queue */
 	endpoint->nextfree_unexp_eventq_index++;
+
 	index = endpoint->nextreserved_unexp_eventq_index++;
 	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 
@@ -202,9 +207,10 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int len
 
 	/* wake up waiters */
 	dprintk(EVENT, "notify_unexp waking up everybody\n");
-	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	spin_unlock_bh(&endpoint->event_lock);
+
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	return 0;
 }
@@ -322,9 +328,10 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 
 	/* wake up waiters */
 	dprintk(EVENT, "commit_notify_unexp waking up everybody\n");
-	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	spin_unlock_bh(&endpoint->event_lock);
+
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 }
 
 /*
@@ -547,9 +554,7 @@ omx_ioctl_wakeup(struct omx_endpoint * endpoint, void __user * uparam)
 		goto out;
 	}
 
-	spin_lock_bh(&endpoint->event_lock);
 	omx_wakeup_waiter_list(endpoint, cmd.status);
-	spin_unlock_bh(&endpoint->event_lock);
 
 	return 0;
 
