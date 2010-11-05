@@ -405,6 +405,13 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 		goto out;
 	}
 
+	waiter = kmalloc(sizeof(struct omx_event_waiter), GFP_KERNEL);
+	if (!waiter) {
+		printk(KERN_ERR "Open-MX: failed to allocate waiter");
+		err = -ENOMEM;
+		goto out;
+	}
+
 	/* FIXME: wait on some event type only */
 
 	spin_lock_bh(&endpoint->event_lock);
@@ -429,7 +436,6 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	}
 
 	/* queue ourself on the wait queue */
-	waiter = kmalloc(sizeof(struct omx_event_waiter), GFP_KERNEL);
 	list_add_rcu(&waiter->list_elt, &endpoint->waiters);
 	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
 	waiter->task = current;
