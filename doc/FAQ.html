@@ -250,11 +250,11 @@
 <li><a href="#perf-regcache">
   Is there a registration cache in Open-MX?
 </a></li>
-<li><a href="#perf-intrcoal">
-  What is the interrupt coalescing impact on Open-MX' performance?
-</a></li>
 <li><a href="#perf-shared-self">
   What if I do not need shared or self communications?
+</a></li>
+<li><a href="#perf-intrcoal">
+  What is the interrupt coalescing impact on Open-MX' performance?
 </a></li>
 <li><a href="#perf-binding">
   Is process and interrupt binding important for Open-MX?
@@ -1740,6 +1740,26 @@ to the OpenMPI process launcher.
 </p>
 
 
+<h4><a id="perf-shared-self" href="#perf-shared-self">
+  What if I do not need shared or self communications?
+</a></h4>
+<p>
+Open-MX may use a software loopback to send messages from one endpoint to
+itself (self communications) or to another endpoint of any interface of the
+same host (shared communications).
+If these shared/self communication are useless, the library overhead may be
+slightly reduced by disabling them at runtime by setting OMX_DISABLE_SELF=1 or
+OMX_DISABLE_SHARED=1 in the environment.
+Note that some MPI layers such as OpenMPI already set these environment
+variables by default.
+</p>
+<p>
+This is especially the case if there is a single process on each node and
+it does not talk to itself, or if multiple processes of the same do not talk
+to each other.
+</p>
+
+
 <h4><a id="perf-intrcoal" href="#perf-intrcoal">
   What is the interrupt coalescing impact on Open-MX' performance?
 </a></h4>
@@ -1776,26 +1796,6 @@ $ ethtool -C eth2 rx-usecs &lt;N-1&gt;
 <p>
 See also <a href="#hardware-adaptive-coal">How to use adaptive interrupt coalescing?</a>.
 <p>
-
-
-<h4><a id="perf-shared-self" href="#perf-shared-self">
-  What if I do not need shared or self communications?
-</a></h4>
-<p>
-Open-MX may use a software loopback to send messages from one endpoint to
-itself (self communications) or to another endpoint of any interface of the
-same host (shared communications).
-If these shared/self communication are useless, the library overhead may be
-slightly reduced by disabling them at runtime by setting OMX_DISABLE_SELF=1 or
-OMX_DISABLE_SHARED=1 in the environment.
-Note that some MPI layers such as OpenMPI already set these environment
-variables by default.
-</p>
-<p>
-This is especially the case if there is a single process on each node and
-it does not talk to itself, or if multiple processes of the same do not talk
-to each other.
-</p>
 
 
 <h4><a id="perf-binding" href="#perf-binding">
