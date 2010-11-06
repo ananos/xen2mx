@@ -1745,7 +1745,7 @@ to the OpenMPI process launcher.
 </a></h4>
 <p>
 Most Ethernet drivers use interrupt coalescing to avoid interrupting the
-host once per incoming packet. While this is good for the throughput, it
+host once per incoming packet. While this may be good for the throughput, it
 increase the latency a lot, up to several dozens of microseconds.
 </p>
 <p>
@@ -1756,8 +1756,16 @@ The easiest way to do so is to disable it completely.
 $ ethtool -C eth2 rx-usecs 0
 </pre>
 <p>
-However, it is often better to set it close to the latency so that the
-observed latency is as optimal while there is still a bit of coalescing
+Disabling coalescing entirely may be bad for throughput since it increases
+the host per-packet overhead. However, a very high coalescing delay
+(several tens of microseconds) is mostly useful for the throughput of
+unidirectional streams, which is not the case of Open-MX. In most cases,
+a small but non-null delay (five to twenty microseconds) should be a good
+idea to get satisfying Open-MX throughput and latency.
+</p>
+<p>
+A good compromise is to set the delay close to the best latency so that the
+observed latency is almost optimal while there is still a bit of coalescing
 for consecutive packets. So, assuming that you observe a N usecs latency
 with Open-MX when interrupt coalescing is disabled, a nice configuration
 would to set coalescing to N or N-1 usecs:
@@ -3011,7 +3019,7 @@ Open-MX thanks to the following changes in the HP-MPI configuration file:
 
 
 <p class="updated">
-  Last updated on 2010/08/24.
+  Last updated on 2010/11/06.
 </p>
 
 <script type="text/javascript">
