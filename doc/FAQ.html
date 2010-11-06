@@ -2028,6 +2028,12 @@ $ ethtool -C eth2 rx-usecs-low 0
   How do I bind my processes near Open-MX receive multiqueues?
 </a></h4>
 <p>
+  <em>
+    This section only matters if the NIC has multiqueue support and
+    if this multiqueue support knows how to filter Open-MX packets.
+  </em>
+</p>
+<p>
   As explained in <a href="#config-runtime">What are Open-MX runtime configuration options?</a>,
   the <tt>OMX_PROCESS_BINDING</tt> environment variable may be used to
   bind Open-MX processes depending on their endpoint number.
@@ -2046,6 +2052,10 @@ $ ethtool -C eth2 rx-usecs-low 0
   binding hints will be read from <tt>/tmp/open-mx.bindings.dat</tt>.
   To generate this file (once Open-MX is loaded and the interface(s)
   are attached), run the <tt>omx_prepare_binding</tt> tool (as root).
+  <em>
+    Again, this is only useful if your NIC multiqueue support knows
+    how to filter Open-MX packets.
+  </em>
 </p>
 <pre>
 $ sudo omx_prepare_binding
