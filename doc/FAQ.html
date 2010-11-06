@@ -286,6 +286,12 @@
 <li><a href="#hardware-multiq-bind">
     How do I bind my processes near Open-MX receive multiqueues?
 </a></li>
+<li><a href="#hardware-irqline">
+    How do I find out which interrupt line my interfaces use?
+</a></li>
+<li><a href="#hardware-irq-binding">
+    How do I find out and change the binding of an interrupt line?
+</a></li>
 </ul>
 
 <p><a href="#compat">
@@ -1608,8 +1614,8 @@ application would do.
 To reduce cache-effects without sharing a single core power between bottom
 halves and the main process, bind the process on one core (close to the
 network interface, with numactl or taskset), and bind the interrupts of the
-Ethernet interface on a very close core (by writing the corresponding mask
-into /proc/irq/&lt;n&gt;/smp_affinity).
+Ethernet interface on a very close core
+(see <a href="#hardware-irq-binding">How do I find out and change the binding of an interrupt line?</a>).
 </li>
 </ul>
 <p>
@@ -1618,7 +1624,7 @@ using <tt>omx_perf</tt>
 (see <a href="#perf-omxperf">How do I measure performance with <tt>omx_perf</tt>?</a>).
 </p>
 <p>
-You may also want to enable some hardware-specific <a href="#hardware">features</a>.
+You may also want to look at some <a href="#hardware">hardware-specific features</a>.
 </p>
 
 
@@ -1816,18 +1822,10 @@ performance degradation caused by idle cores going to sleep and thus
 taking more time to process incoming IRQs. A dirty way to work around
 this problem is to prevent core from sleeping by booting the kernel
 with the idle=poll parameter.
-</p>
-<p>
 Or you may restrict the IRQs coming from the NIC to the subset of cores
 that run the Open-MX processes. For instance, if your processes are bound
-to core #0-1, the IRQ affinity mask should be set
-to 3 using:
-</p>
-<pre>
-$ echo 3 &gt; /proc/irq/&lt;irq&gt;/smp_affinity
-</pre>
-<p>
-where &lt;irq&gt; is the IRQ line of the NIC.
+to core #0-1, the IRQ affinity bitmask should be set to 3
+(see <a href="#hardware-irq-binding">How do I find out and change the binding of an interrupt line?</a>).
 </p>
 <p>
 Under extreme circumstances, for instance for benchmarking purpose, you
@@ -2037,8 +2035,9 @@ $ ethtool -C eth2 rx-usecs-low 0
   queues, you may setup this variable manually.
   You need to know which interrupt line is used for each endpoint
   number and where these interrupts are sent
-  (see the contents of <tt>/proc/interrupts</tt>
-  and <tt>/proc/irq/.../smp_affinity</tt>).
+  (see also <a href="#hardware-irqline">How do I find out which interrupt line my interfaces use?</a>
+  and <a href="#hardware-irq-binding">How do I find out and change the binding of an interrupt line?</a>
+  for more information).
 </p>
 <p>
   But an easier solution consists in having Open-MX gather binding
@@ -2091,6 +2090,92 @@ board 00:60:dd:47:c4:75 ep 3 irq 1266 mask 00000008
   Please report such cases to the
   <a href="http://lists.gforge.inria.fr/cgi-bin/mailman/listinfo/open-mx-devel">open-mx-devel mailing list</a>
   so that a special case is added.
+</p>
+
+
+<h4><a id="hardware-irqline" href="#hardware-irqline">
+    How do I find out which interrupt line my interfaces use?
+</a></h4>
+<p>
+  You may need to know which interrupt line number is used by a NIC
+  in order to be able to bind processes near the cores that process
+  incoming interrupts and packets.
+  To do so, look in the <tt>/proc/interrupts</tt> file and search for
+  the line that corresponds to your NIC.
+  The first column contains interrupt line numbers.
+  It is followed by per-processor counters and some information.
+</p>
+<pre>
+           CPU0       CPU1       CPU2       CPU3       
+ 33:       6644       6519       6762       6623   PCI-MSI-edge      eth0
+ 36:     894478    1023337     889191    1012491   PCI-MSI-edge      iwlagn
+</pre>
+<p>
+  The last column usually contains either the interface name
+  (<tt>eth0</tt> above, which has interrupt line 33).
+  Sometimes, it contains the corresponding kernel driver name
+  (<tt>iwlagn</tt> above, which has interrupt line 36) or something derived from it.
+  The Open-MX driver displays the driver name of each interface during attach,
+  so it may help finding the irq line as well.
+</p>
+<pre>
+[53318.466750] Open-MX: Attaching Ethernet interface 'wlan0' as #1, MTU=1500
+[53318.466756] Open-MX:   Interface 'wlan0' is PCI device '0000:02:00.0' managed by driver 'iwlagn'
+</pre>
+<p>
+  Finally, since the <tt>/proc/interrupts</tt> file contains interrupt
+  counters, the interrupt line may be found by comparing counters before
+  and after the run of an Open-MX application.
+</p>
+
+
+<h4><a id="hardware-irq-binding" href="#hardware-irq-binding">
+    How do I find out and change the binding of an interrupt line?
+</a></h4>
+<p>
+  First, to find out an interrupt line number, see
+  <a href="#hardware-irqline">How do I find out which interrupt line my interfaces use?</a>
+</p>
+<p>
+  The binding (or affinity) of an interrupt line
+  (where these interrupts will be processed) may be read from the file
+  <tt>/proc/irq/&lt;number&gt;/smp_affinity</tt>.
+  It contains a hexadecimal bitmask listing the indexes of processors
+  that will receive interrupts (usually in a round-robin manner).
+</p>
+<pre>
+  # cat /proc/irq/57/smp_affinity 
+  ffffffff
+</pre>
+<p>
+  To force interrupt on the 11th physical processor, write a bitmask
+  where only bit #10 is set:
+</p>
+<pre>
+  # echo 400 > /proc/irq/57/smp_affinity
+  # cat /proc/irq/57/smp_affinity 
+  00000400
+</pre>
+<p>
+  Make sure you always read the file again to check that your request
+  was accepted. Indeed, some hardware and/or kernel constraints may
+  have to be applied in the meantime.
+  Also, be aware that some kernel require careful formatting of the
+  bitmask, with the right numbers of digits and commas (which depends
+  on the kernel configuration).
+</p>
+<pre>
+  # cat /proc/irq/4334/smp_affinity 
+  00000000,ffffffff,ffffffff,ffffffff
+  # echo 00000000,00000003,00000000,00000000 > /proc/irq/4334/smp_affinity
+  # cat /proc/irq/4334/smp_affinity 
+  00000000,00000003,00000000,00000000
+</pre>
+<p>
+  Once the binding is in place, you should see in <tt>/proc/interrupts</tt>
+  that only the selected processors have increasing counters on the interrupt line.
+  See also <a href="#hardware-irqline">How do I find out which interrupt line my interfaces use?</a>
+  for more information about this file.
 </p>
 
 
