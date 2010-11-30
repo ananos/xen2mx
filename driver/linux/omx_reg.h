@@ -39,6 +39,7 @@ enum omx_user_region_status {
 struct omx_user_region {
 	uint32_t id;
 
+	unsigned dirty : 1;
 	struct kref refcount;
 	struct omx_endpoint *endpoint;
 

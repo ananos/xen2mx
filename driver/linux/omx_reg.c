@@ -370,6 +370,7 @@ omx_ioctl_user_region_create(struct omx_endpoint * endpoint,
 
 	region->endpoint = endpoint;
 	region->id = cmd.id;
+	region->dirty = 0;
 	rcu_assign_pointer(endpoint->user_regions[cmd.id], region);
 
 	spin_unlock(&endpoint->user_regions_lock);
@@ -531,6 +532,8 @@ omx_invalidate_region(const struct omx_endpoint *endpoint,
 		for(i=0; i<region->nr_segments; i++) {
 			struct omx_user_region_segment * segment = &region->segments[i];
 			for(j=0; j<segment->pinned_pages; j++) {
+				if (region->dirty)
+					set_page_dirty_lock(segment->pages[j]);
 				put_page(segment->pages[j]);
 				segment->pinned_pages = 0;
 			}

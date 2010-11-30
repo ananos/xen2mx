@@ -890,6 +890,8 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		goto out;
 	}
 
+	region->dirty = 1;
+
 	if (!omx_pin_synchronous) {
 		/* make sure the region is pinned */
 		struct omx_user_region_pin_state pinstate;
