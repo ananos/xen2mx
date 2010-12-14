@@ -42,7 +42,7 @@ static struct omx__lock omx_endpoints_list_lock;
 static void
 omx__init_endpoint_list(void)
 {
-  INIT_LIST_HEAD(&omx_endpoints_list);
+  list_head_init(&omx_endpoints_list);
   omx__lock_init(&omx_endpoints_list_lock);
 }
 
@@ -559,36 +559,36 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->unexp_handler = NULL;
   ep->progression_disabled = 0;
 
-  INIT_LIST_HEAD(&ep->anyctxid.done_req_q);
-  INIT_LIST_HEAD(&ep->anyctxid.unexp_req_q);
+  list_head_init(&ep->anyctxid.done_req_q);
+  list_head_init(&ep->anyctxid.unexp_req_q);
 
   for(i=0; i<ep->ctxid_max; i++) {
-    INIT_LIST_HEAD(&ep->ctxid[i].unexp_req_q);
-    INIT_LIST_HEAD(&ep->ctxid[i].recv_req_q);
-    INIT_LIST_HEAD(&ep->ctxid[i].done_req_q);
+    list_head_init(&ep->ctxid[i].unexp_req_q);
+    list_head_init(&ep->ctxid[i].recv_req_q);
+    list_head_init(&ep->ctxid[i].done_req_q);
   }
 
-  INIT_LIST_HEAD(&ep->need_resources_send_req_q);
-  INIT_LIST_HEAD(&ep->driver_mediumsq_sending_req_q);
-  INIT_LIST_HEAD(&ep->large_send_need_reply_req_q);
-  INIT_LIST_HEAD(&ep->driver_pulling_req_q);
-  INIT_LIST_HEAD(&ep->connect_req_q);
-  INIT_LIST_HEAD(&ep->non_acked_req_q);
-  INIT_LIST_HEAD(&ep->unexp_self_send_req_q);
+  list_head_init(&ep->need_resources_send_req_q);
+  list_head_init(&ep->driver_mediumsq_sending_req_q);
+  list_head_init(&ep->large_send_need_reply_req_q);
+  list_head_init(&ep->driver_pulling_req_q);
+  list_head_init(&ep->connect_req_q);
+  list_head_init(&ep->non_acked_req_q);
+  list_head_init(&ep->unexp_self_send_req_q);
 
 #ifdef OMX_LIB_DEBUG
-  INIT_LIST_HEAD(&ep->partial_medium_recv_req_q);
-  INIT_LIST_HEAD(&ep->need_seqnum_send_req_q);
-  INIT_LIST_HEAD(&ep->really_done_req_q);
-  INIT_LIST_HEAD(&ep->internal_done_req_q);
+  list_head_init(&ep->partial_medium_recv_req_q);
+  list_head_init(&ep->need_seqnum_send_req_q);
+  list_head_init(&ep->really_done_req_q);
+  list_head_init(&ep->internal_done_req_q);
 #endif
 
-  INIT_LIST_HEAD(&ep->partners_to_ack_immediate_list);
+  list_head_init(&ep->partners_to_ack_immediate_list);
   ep->last_partners_acking_jiffies = 0;
-  INIT_LIST_HEAD(&ep->partners_to_ack_delayed_list);
-  INIT_LIST_HEAD(&ep->throttling_partners_list);
+  list_head_init(&ep->partners_to_ack_delayed_list);
+  list_head_init(&ep->throttling_partners_list);
 
-  INIT_LIST_HEAD(&ep->sleepers);
+  list_head_init(&ep->sleepers);
 
   ep->desc->user_event_index = 0;
 

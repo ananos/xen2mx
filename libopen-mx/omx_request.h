@@ -94,7 +94,7 @@ static inline void
 omx__requeue_request(struct list_head *head,
 		     union omx_request *req)
 {
-  list_add(&req->generic.queue_elt, head);
+  list_add_after(&req->generic.queue_elt, head);
 }
 
 static inline void
@@ -107,16 +107,9 @@ static inline void
 omx__dequeue_request(struct list_head *head,
 		     union omx_request *req)
 {
-#ifdef OMX_LIB_DEBUG
-  struct list_head *e;
-  list_for_each(e, head)
-    if (req == list_entry(e, union omx_request, generic.queue_elt))
-      goto found;
+    list_check_elt(head, &req->generic.queue_elt,
+		   NULL, "Failed to find request in queue for dequeueing\n");
 
-  omx__abort(NULL, "Failed to find request in queue for dequeueing\n");
-
- found:
-#endif /* OMX_LIB_DEBUG */
   omx___dequeue_request(req);
 }
 
@@ -135,11 +128,7 @@ omx__empty_queue(const struct list_head *head)
 static inline unsigned
 omx__queue_count(const struct list_head *head)
 {
-  struct list_head *elt;
-  unsigned i=0;
-  list_for_each(elt, head)
-    i++;
-  return i;
+  return list_count(head);
 }
 
 #define omx__foreach_request(head, req)		\
@@ -169,17 +158,10 @@ static inline void
 omx__dequeue_ctxid_request(struct list_head *head,
 			   union omx_request *req)
 {
-#ifdef OMX_LIB_DEBUG
-  struct list_head *e;
-  list_for_each(e, head)
-    if (req == list_entry(e, union omx_request, generic.ctxid_elt))
-      goto found;
+    list_check_elt(head, &req->generic.ctxid_elt,
+		   NULL, "Failed to find request in ctxid queue for dequeueing\n");
 
-  omx__abort(NULL, "Failed to find request in ctxid queue for dequeueing\n");
-
- found:
-#endif /* OMX_LIB_DEBUG */
-  omx___dequeue_ctxid_request(req);
+    omx___dequeue_ctxid_request(req);
 }
 
 #define omx__foreach_ctxid_request(head, req)	\
@@ -259,21 +241,13 @@ omx__dequeue_done_request(struct omx_endpoint *ep,
 {
 #ifdef OMX_LIB_DEBUG
   uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->generic.status.match_info);
-  struct list_head *e;
 
-  list_for_each(e, &ep->anyctxid.done_req_q)
-    if (req == list_entry(e, union omx_request, generic.done_elt))
-      goto found2;
-  omx__abort(ep, "Failed to find request in anyctxid done queue for dequeueing\n");
- found2:
+  list_check_elt(&ep->anyctxid.done_req_q, &req->generic.done_elt,
+		 ep, "Failed to find request in anyctxid done queue for dequeueing\n");
 
-  if (unlikely(HAS_CTXIDS(ep))) {
-    list_for_each(e, &ep->ctxid[ctxid].done_req_q)
-      if (req == list_entry(e, union omx_request, generic.ctxid_elt))
-	goto found;
-    omx__abort(ep, "Failed to find request in ctxid done queue for dequeueing\n");
-  }
- found:
+  if (unlikely(HAS_CTXIDS(ep)))
+      list_check_elt(&ep->ctxid[ctxid].done_req_q, &req->generic.ctxid_elt,
+		     ep, "Failed to find request in ctxid done queue for dequeueing\n");
 
   if (req->generic.state == OMX_REQUEST_STATE_DONE)
     omx__dequeue_request(&ep->really_done_req_q, req);
@@ -331,17 +305,10 @@ static inline void
 omx__dequeue_partner_request(struct list_head *head,
 			     union omx_request *req)
 {
-#ifdef OMX_LIB_DEBUG
-  struct list_head *e;
-  list_for_each(e, head)
-    if (req == list_entry(e, union omx_request, generic.partner_elt))
-      goto found;
+    list_check_elt(head, &req->generic.partner_elt,
+		   NULL, "Failed to find request in partner queue for dequeueing\n");
 
-  omx__abort(NULL, "Failed to find request in partner queue for dequeueing\n");
-
- found:
-#endif /* OMX_LIB_DEBUG */
-  omx___dequeue_partner_request(req);
+    omx___dequeue_partner_request(req);
 }
 
 static inline int

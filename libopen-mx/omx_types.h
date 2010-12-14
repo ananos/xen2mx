@@ -24,12 +24,18 @@
 #include <stdint.h>
 
 #include "omx_io.h"
-#include "omx_list.h"
 #include "omx_threads.h"
+
 
 /*****************
  * Internal types
  */
+
+struct list_head
+{
+  struct list_head *prv;
+  struct list_head *nxt;
+};
 
 struct omx__req_segs {
   struct omx_cmd_user_segment single; /* optimization to store the single segment */

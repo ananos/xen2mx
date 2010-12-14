@@ -56,9 +56,9 @@ omx__endpoint_large_region_map_init(struct omx_endpoint * ep)
   ep->large_region_map.first_free = 0;
   ep->large_region_map.nr_free = OMX_USER_REGION_MAX;
 
-  INIT_LIST_HEAD(&ep->reg_list);
-  INIT_LIST_HEAD(&ep->reg_unused_list);
-  INIT_LIST_HEAD(&ep->reg_vect_list);
+  list_head_init(&ep->reg_list);
+  list_head_init(&ep->reg_unused_list);
+  list_head_init(&ep->reg_vect_list);
   ep->large_sends_avail_nr = OMX_USER_REGION_MAX/2;
 
   return OMX_SUCCESS;

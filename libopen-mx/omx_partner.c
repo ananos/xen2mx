@@ -110,11 +110,11 @@ omx_decompose_endpoint_addr_with_session(omx_endpoint_addr_t endpoint_addr,
 static void
 omx__partner_reset(struct omx__partner *partner)
 {
-  INIT_LIST_HEAD(&partner->non_acked_req_q);
-  INIT_LIST_HEAD(&partner->connect_req_q);
-  INIT_LIST_HEAD(&partner->partial_medium_recv_req_q);
-  INIT_LIST_HEAD(&partner->early_recv_q);
-  INIT_LIST_HEAD(&partner->need_seqnum_send_req_q);
+  list_head_init(&partner->non_acked_req_q);
+  list_head_init(&partner->connect_req_q);
+  list_head_init(&partner->partial_medium_recv_req_q);
+  list_head_init(&partner->early_recv_q);
+  list_head_init(&partner->need_seqnum_send_req_q);
 
   BUILD_BUG_ON(sizeof(omx__seqnum_t) != sizeof(((struct omx_pkt_msg *)NULL)->lib_seqnum));
   BUILD_BUG_ON(OMX__SESNUM_BITS+OMX__SEQNUM_BITS > 8*sizeof(omx__seqnum_t));

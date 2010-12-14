@@ -21,6 +21,7 @@
 #include <sys/ioctl.h>
 
 #include "omx_lib.h"
+#include "omx_list.h"
 #include "omx_segments.h"
 #include "omx_request.h"
 
@@ -1417,7 +1418,9 @@ omx__process_resend_requests(struct omx_endpoint *ep)
 {
   union omx_request *req, *next;
   uint64_t now = omx__driver_desc->jiffies;
-  LIST_HEAD(tmp_req_q);
+  struct list_head tmp_req_q;
+
+  list_head_init(&tmp_req_q);
 
   /* resend the first requests from the non_acked queue */
  start_resending:
@@ -1499,7 +1502,8 @@ omx__process_resend_requests(struct omx_endpoint *ep)
   }
  done_resending:
   /* requeue requests at the end */
-  list_splice_init(&tmp_req_q, ep->non_acked_req_q.prev);
+  list_spliceall_tail(&tmp_req_q, &ep->non_acked_req_q);
+  list_head_init(&tmp_req_q);
 
   /* resend non-replied connect requests */
  start_reconnecting:
@@ -1528,7 +1532,7 @@ omx__process_resend_requests(struct omx_endpoint *ep)
   }
  done_reconnecting:
   /* requeue requests at the end */
-  list_splice(&tmp_req_q, ep->connect_req_q.prev);
+  list_spliceall_tail(&tmp_req_q, &ep->connect_req_q);
 }
 
 /* vim: shiftwidth=2 softtabstop=2

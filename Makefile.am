@@ -40,7 +40,7 @@ include_HEADERS    += common/mx/mx_extensions.h common/mx/mx_raw.h common/mx/myr
 		      common/mx/mx_io.h
 incinternal_HEADERS = common/mx/mx_internals/mx__fops.h common/mx/mx_internals/mx__driver_interface.h
 endif
-noinst_HEADERS  = common/omx_io.h common/omx_list.h common/omx_wire.h			\
+noinst_HEADERS  = common/omx_io.h common/omx_wire.h						\
 		  common/mx/translate/mx_extensions.h common/mx/translate/myriexpress.h
 
 

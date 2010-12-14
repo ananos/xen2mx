@@ -40,7 +40,7 @@ else
 if OMX_LIB_DEBUG
   SUBDIRS += lib64-debug
 endif
-
+	
 # arch=64 / no multilib / release build
 if OMX_LIB_RELEASE
   SUBDIRS += lib64
@@ -67,6 +67,6 @@ endif
 
 noinst_HEADERS = dlmalloc.h omx_hal.h omx_lib.h	omx__mx_compat.h	\
 		 omx_raw.h omx_request.h omx_segments.h omx_threads.h	\
-		 omx_types.h omx_valgrind.h
+		 omx_types.h omx_valgrind.h omx_list.h omx_debug.h
 
 EXTRA_DIST = omx__mx_lib.version

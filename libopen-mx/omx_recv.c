@@ -221,7 +221,7 @@ omx__postpone_early_packet(struct omx_endpoint *ep, struct omx__partner * partne
 		    (unsigned) OMX__SEQNUM(msg->seqnum),
 		    (unsigned) OMX__SESNUM_SHIFTED(msg->seqnum));
 
-  list_add(&early->partner_elt, prev);
+  list_add_after(&early->partner_elt, prev);
 }
 
 /*****************************************
