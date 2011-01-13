@@ -1,0 +1,175 @@
+#!/usr/bin/perl
+
+# Open-MX
+# Copyright © INRIA 2007-2010 (see AUTHORS file)
+#
+# The development of this software has been funded by Myricom, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU General Public License in COPYING.GPL for more details.
+
+
+use strict;
+use warnings;
+
+use Digest::MD5 ();
+use Getopt::Long ();
+use Pod::Usage ();
+
+
+my @bool_opts = qw(--disable-counters
+		   --disable-driver-build
+		   --disable-library-build
+		   --disable-internal-malloc
+		   --disable-threads
+		   --enable-debug
+		   --disable-debug
+		   --disable-valgrind
+		   --disable-endian
+		   --enable-mx-wire
+		   --disable-mx-abi
+		   --disable-fma
+		   --enable-static-peers
+		   --with-mtu=1500);
+
+
+my %deps      = ( '--enable-mx-wire' => [qw(--disable-fma)],
+		  '--disable-mx-abi' => [qw(--disable-fma)]);
+
+my %conflicts = ( '--enable-mx-wire' => [qw(--disable-endian)],
+		  '--enable-debug'   => [qw(--disable-debug )]);
+
+my %opts = ();
+
+
+# Check for a help request
+Pod::Usage::pod2usage(-exitstatus => 0,
+		      -verbose    => 0) if not @ARGV;
+
+# Parse commandline
+my $ret = Getopt::Long::GetOptions(64 => \$opts{64});
+
+exit 1 if $ret eq 0;
+
+if (not @ARGV) {
+    die 'Missing number of profiles to generate';
+} elsif (scalar @ARGV gt 1) {
+    die 'Too many number profiles given';
+} else {
+    $opts{nb_profiles} = pop @ARGV;
+}
+
+# Check for the 64 bits option
+if ($opts{64}) {
+    push @bool_opts, '--enable-multilib';
+}
+
+my $nb_opts       = scalar @bool_opts;
+
+my $left_profiles = $opts{nb_profiles};
+my %profiles      = ();
+
+
+while ($left_profiles) {
+    my @profile = gen_rnd_profile();
+
+    my $profile_hash = Digest::MD5::md5_hex(join ' ', sort(@profile));
+    unless (($profiles{$profile_hash}) or have_conflicts(@profile)) {
+	$profiles{$profile_hash} = 1;
+	output_profile($profile_hash, @profile);
+	$left_profiles--;
+    }
+}
+
+
+sub gen_rnd_profile {
+    my $nb_opts   = int(rand $nb_opts)+1;
+    my @init_list = @bool_opts;
+
+    my @profile = ();
+
+    while ($nb_opts > 0) {
+	my $idx          = int(rand scalar(@init_list));
+	my $profile_name = $init_list[$idx];
+
+	push @profile, $profile_name;
+	splice @init_list, $idx, 1;
+	$nb_opts--;
+
+	# Check for dependencies
+	if ($deps{$profile_name}) {
+	    foreach (@{$deps{$profile_name}}) {
+		my $idx = get_idx_in_list($_, @init_list);
+		if ($idx) {
+		    push @profile, $init_list[$idx];
+		    splice @init_list, $idx, 1;
+		    $nb_opts--;
+		}
+	    }
+	}
+    }
+
+    return @profile;
+}
+
+
+sub output_profile {
+    my $profile_hash = shift;
+
+    print ((join " ",  @_)."\n");
+}
+
+
+sub get_idx_in_list {
+    my $elt  = shift;
+    my @list = @_;
+
+    foreach (0 .. (scalar @list)-1) {
+	if ($list[$_] eq $elt) {
+	    return $_;
+	}
+    }
+
+    return undef;
+}
+
+
+sub have_conflicts {
+    my @list = @_;
+
+    foreach (@list) {
+	if ($conflicts{$_}) {
+	    foreach (@{$conflicts{$_}}) {
+		my $elt = $_;
+		return 1 if (grep { $elt = $_ } @list);
+	    }
+	}
+    }
+
+    return 0;
+}
+
+
+__END__
+
+=head1 NAME
+
+omx-configure-gen - A random 'configure' profil generator
+
+=head1 SYNOPSIS
+
+ omx-configure-gen [options] <number of profiles>
+
+ Options:
+	--64
+	 -64		Allow the --enable-multilib option in the profiles
+
+=cut
