@@ -328,8 +328,8 @@ int main(int argc, char *argv[])
     }
 
     if (verbose)
-      printf("Sent parameters (iter=%d, warmup=%d, min=%lld, max=%lld, mult=%lld, incr=%lld, unidir=%d)\n",
-	     iter, warmup, min, max, multiplier, increment, unidir);
+      printf("Sent parameters (iter=%d, warmup=%d, min=%lld, max=%lld, mult=%lld, incr=%lld, unidir=%d) to peer %s\n",
+	     iter, warmup, min, max, multiplier, increment, unidir, dest_hostname);
 
     /* wait for the ok message */
     ret = omx_irecv(ep, NULL, 0,
@@ -444,6 +444,7 @@ int main(int argc, char *argv[])
     uint32_t result;
     struct param param;
     omx_endpoint_addr_t addr;
+    char src_hostname[OMX_HOSTNAMELEN_MAX];
     uint64_t board_addr;
     uint32_t endpoint_index;
     unsigned long long length;
@@ -494,13 +495,13 @@ int main(int argc, char *argv[])
       goto out_with_ep;
     }
 
-    ret = omx_nic_id_to_hostname(board_addr, dest_hostname);
+    ret = omx_nic_id_to_hostname(board_addr, src_hostname);
     if (ret != OMX_SUCCESS)
-      strcpy(dest_hostname, "<unknown peer>");
+      strcpy(src_hostname, "<unknown peer>");
 
     if (verbose)
       printf("Got parameters (iter=%d, warmup=%d, min=%lld, max=%lld, mult=%lld, incr=%lld, unidir=%d) from peer %s\n",
-	     iter, warmup, min, max, multiplier, increment, unidir, dest_hostname);
+	     iter, warmup, min, max, multiplier, increment, unidir, src_hostname);
 
     /* connect back, using iconnect for fun */
     ret = omx_iconnect(ep, board_addr, endpoint_index, 0x12345678,
