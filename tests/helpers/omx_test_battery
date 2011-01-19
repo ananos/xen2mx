@@ -2,18 +2,18 @@
 
 # Open-MX
 # Copyright © INRIA 2007-2010 (see AUTHORS file)
-# 
+#
 # The development of this software has been funded by Myricom, Inc.
-# 
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2 of the License, or (at
 # your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but
 # WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# 
+#
 # See the GNU General Public License in COPYING.GPL for more details.
 
 scriptdir=`dirname $0`
@@ -51,7 +51,7 @@ do_test_verbose()
     __testname="$1"
     __msg="TEST $__testname"
     __lng=`expr length "$__msg"`
-    
+
     echo `seq -s- 0  $__lng | tr -d '0-9'`
     echo "$__msg"
     echo `seq -s- 0  $__lng | tr -d '0-9'`
@@ -83,7 +83,7 @@ do_test_verbose()
 	    echoerr "$__msg"
 	    echoerr `seq -sx 0  $__lng | tr -d '0-9'`
     esac
-    
+
     echo
     echo
 
@@ -125,6 +125,7 @@ case $batteryname in
 	do_test 'cancel'				$launcherdir/cancel
 	do_test 'wakeup'				$launcherdir/wakeup
 	do_test 'multirails'				$launcherdir/multirails
+	do_test 'multithread_wait_any'			$laucnherdir/multithread_wait_any
 	;;
     vect)
 	do_test 'vectorials with native networking'	$launcherdir/vect_native

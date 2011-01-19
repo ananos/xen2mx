@@ -45,7 +45,7 @@ $1="`id -run 2>/dev/null`@`uname -n`:`cd ${srcdir} && pwd` `date`"
 ])
 
 
-# OMX_ENABLE(ARGNAME, SHELLVAR, DESC, MSG) 
+# OMX_ENABLE(ARGNAME, SHELLVAR, DESC, MSG)
 # ----------------------------------------
 # Convenience wrapper over AC_ARG_ENABLE with the option deactivated by default
 AC_DEFUN([OMX_ENABLE],
@@ -61,7 +61,7 @@ fi
 ])
 
 
-# OMX_DISABLE(ARGNAME, SHELLVAR, DESC, MSG) 
+# OMX_DISABLE(ARGNAME, SHELLVAR, DESC, MSG)
 # -----------------------------------------
 # Convenience wrapper over AC_ARG_ENABLE with the option activated by default
 AC_DEFUN([OMX_DISABLE],
@@ -293,7 +293,7 @@ fi
 
 # OMX_SYMLINK_TESTS()
 # ----------------------------
-# Symlink teststo omx_test_launcher
+# Symlink tests to omx_test_launcher
 AC_DEFUN([OMX_SYMLINK_TESTS],
 [
 mkdir -p tests/helpers
