@@ -76,7 +76,7 @@ case $testname in
     wakeup)			$helperdir/omx_test_double_app -s $MXTESTS_DIR/mx_wakeup_test ;;
     multirails)			$helperdir/omx_test_double_app $TESTS_DIR/omx_rails -R 3 -- \
 				-d localhost:0,localhost:1,localhost:2 ;;
-    multithread_wait_any)	$helperdir/omx_test_double_app $TESTS_DIR/multithread_wait_any -- \
+    multithread_wait_any)	$helperdir/omx_test_double_app $TESTS_DIR/omx_multithread_wait_any -- \
 				-d localhost ;;
     vect_native)		$TESTS_DIR/omx_vect_test ;;
     vect_shared)		$TESTS_DIR/omx_vect_test -s ;;
