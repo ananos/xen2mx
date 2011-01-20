@@ -40,6 +40,7 @@
 #define RECV_NB_THREADS 4
 #define SEND_NB_PROCESSES 4
 #define ITER 1000
+#define DELAY 5
 
 typedef struct cl_req
 {
@@ -59,6 +60,7 @@ typedef struct cl_req
 
 	struct {
 	    char dest_hostname[OMX_HOSTNAMELEN_MAX];
+	    int delay;
 	} send;
     } side;
 
@@ -138,6 +140,7 @@ usage(int argc, char *argv[])
 
     fprintf(stderr, "Sender options:\n");
     fprintf(stderr, " -d <hostname>\tset remote peer name and switch to sender mode\n");
+    fprintf(stderr, " -D <n>\tset the delay (in microseconds) between message sendings [%d]\n", DELAY);
     fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
     fprintf(stderr, " -t <n>\tchange the number of receiver threads [%d]\n", RECV_NB_THREADS);
     fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
@@ -148,7 +151,7 @@ int parse_cl (int argc, char *argv[], cl_req_t *cl_req)
 {
     int c;
 
-    while ((c = getopt (argc, argv, "b:d:r:t:p:N:hv")) != -1)
+    while ((c = getopt (argc, argv, "b:d:D:r:t:p:N:hv")) != -1)
 	switch (c) {
 	case 'b':
 	    cl_req->bid = atoi(optarg);
@@ -157,6 +160,9 @@ int parse_cl (int argc, char *argv[], cl_req_t *cl_req)
 	    cl_req->sender = 1;
 	    strncpy (cl_req->side.send.dest_hostname, optarg, OMX_HOSTNAMELEN_MAX);
 	    cl_req->eid = OMX_ANY_ENDPOINT;
+	    break;
+	case 'D':
+	    cl_req->side.send.delay = atoi(optarg);
 	    break;
 	case 'v':
 	    cl_req->verbose = 1;
@@ -276,6 +282,7 @@ void fork_sender (cl_req_t *cl_req)
 
     /* Send the cl_req->iter null messages */
     for (i = 0; i < cl_req->iter; i++) {
+	usleep (cl_req->side.send.delay);
     	try_omx (ret = omx_isend (ep, NULL, 0, dest_ep, 0x1234567887654321ULL, NULL, &req),
     		 fprintf(stderr, "Failed to isend void message %d (%s)\n", i, omx_strerror(ret)),
     		 out_with_ep);
