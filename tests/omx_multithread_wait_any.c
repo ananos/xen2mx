@@ -60,7 +60,8 @@ typedef struct cl_req
 
 	struct {
 	    char dest_hostname[OMX_HOSTNAMELEN_MAX];
-	    int delay;
+	    int constant_delay;
+	    unsigned delay;
 	} send;
     } side;
 
@@ -162,7 +163,8 @@ int parse_cl (int argc, char *argv[], cl_req_t *cl_req)
 	    cl_req->eid = OMX_ANY_ENDPOINT;
 	    break;
 	case 'D':
-	    cl_req->side.send.delay = atoi(optarg);
+	    cl_req->side.send.delay	     = atoi(optarg);
+	    cl_req->side.send.constant_delay = 1;
 	    break;
 	case 'v':
 	    cl_req->verbose = 1;
@@ -215,6 +217,23 @@ out_with_ep:
 }
 
 
+inline int send_null_message (omx_endpoint_t ep, omx_endpoint_addr_t dest_ep)
+{
+    omx_request_t req;
+    omx_status_t status;
+    omx_return_t ret;
+    uint32_t result;
+
+    check_omx (ret = omx_isend (ep, NULL, 0, dest_ep, 0x1234567887654321ULL, NULL, &req),
+	       fprintf(stderr, "Failed to isend void message (%s)\n", omx_strerror(ret)), -1);
+
+    check_omx (ret = omx_wait (ep, &req, &status, &result, OMX_TIMEOUT_INFINITE),
+	       fprintf(stderr, "Failed to wait isend param message (%s)\n", omx_strerror(ret)), -1);
+
+    return 0;
+}
+
+
 void fork_sender (cl_req_t *cl_req)
 {
     char my_hostname[OMX_HOSTNAMELEN_MAX];
@@ -228,7 +247,7 @@ void fork_sender (cl_req_t *cl_req)
     param_msg_t param_msg;
     uint64_t dest_addr;
     omx_endpoint_addr_t dest_ep;
-    int i;
+    int i, j;
 
     pid_t cpid = fork();
 
@@ -246,7 +265,6 @@ void fork_sender (cl_req_t *cl_req)
     try_omx (ret = omx_connect (ep, dest_addr, cl_req->rid, 0x12345678, OMX_TIMEOUT_INFINITE,
 				&dest_ep),
 	     fprintf (stderr, "Failed to connect (%s)\n", omx_strerror(ret)), out_with_ep);
-
 
     /* Send the param message */
     param_msg.iter = htonl (cl_req->iter);
@@ -281,15 +299,34 @@ void fork_sender (cl_req_t *cl_req)
 
 
     /* Send the cl_req->iter null messages */
-    for (i = 0; i < cl_req->iter; i++) {
-	usleep (cl_req->side.send.delay);
-    	try_omx (ret = omx_isend (ep, NULL, 0, dest_ep, 0x1234567887654321ULL, NULL, &req),
-    		 fprintf(stderr, "Failed to isend void message %d (%s)\n", i, omx_strerror(ret)),
-    		 out_with_ep);
 
-    	try_omx (ret = omx_wait (ep, &req, &status, &result, OMX_TIMEOUT_INFINITE),
-    		 fprintf(stderr, "Failed to wait isend param message (%s)\n", omx_strerror(ret)),
-    		 out_with_ep);
+    /* with a constant delay */
+    if (cl_req->side.send.constant_delay)
+	for (i = 0; i < cl_req->iter; i++) {
+	    usleep (cl_req->side.send.delay);
+	    try (send_null_message (ep, dest_ep),
+		 fprintf (stderr, "failed to send a null message.\n"), out_with_ep)
+	}
+
+    /* with a variable delay */
+    else {
+	div_t slice_spec = div (cl_req->iter, 10);
+	unsigned delays[10] = { 0,
+				1, 1<<1, 1<<2, 1<<3, 1<<4, 1<<5, 1<<6, 1<<7,
+				1000 };
+
+	for (i = 0; i < 9; i++)
+	    for (j = 0; j < slice_spec.quot; j++) {
+		usleep (delays[i]);
+		try (send_null_message (ep, dest_ep),
+		     fprintf (stderr, "failed to send a null message.\n"), out_with_ep);
+	    }
+
+	for (j = 0; j < (slice_spec.quot + slice_spec.rem); j++) {
+	    usleep (delays[9]);
+	    try (send_null_message (ep, dest_ep),
+		 fprintf (stderr, "failed to send a null message.\n"), out_with_ep);
+	}
     }
 
 
@@ -359,6 +396,8 @@ int main (int argc, char *argv[])
 			.iter		= ITER,
 			.sender		= 0,
 			.nb_processes   = SEND_NB_PROCESSES,
+			.side.send	= { .delay	    = DELAY,
+					    .constant_delay = 0 },
 			.side.recv	= { .nb_threads = RECV_NB_THREADS } };
 
     parse_cl (argc, argv, &cl_req);
