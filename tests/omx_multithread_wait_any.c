@@ -143,8 +143,10 @@ usage(int argc, char *argv[])
     fprintf(stderr, " -d <hostname>\tset remote peer name and switch to sender mode\n");
     fprintf(stderr, " -D <n>\tset the delay (in microseconds) between message sendings [%d]\n", DELAY);
     fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
-    fprintf(stderr, " -t <n>\tchange the number of receiver threads [%d]\n", RECV_NB_THREADS);
     fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
+
+    fprintf(stderr, "Receiver options:\n");
+    fprintf(stderr, " -t <n>\tchange the number of receiver threads [%d]\n", RECV_NB_THREADS);
 }
 
 
@@ -355,7 +357,7 @@ out_with_ep:
 out:
     omx_finalize ();
 
-    exit (-1);
+    exit (1);
 }
 
 
