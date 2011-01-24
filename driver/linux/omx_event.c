@@ -436,7 +436,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	}
 
 	/* queue ourself on the wait queue */
-	list_add_rcu(&waiter->list_elt, &endpoint->waiters);
+	list_add_tail_rcu(&waiter->list_elt, &endpoint->waiters);
 	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
 	waiter->task = current;
 	set_current_state(TASK_INTERRUPTIBLE);
