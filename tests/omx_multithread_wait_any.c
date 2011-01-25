@@ -219,7 +219,7 @@ out_with_ep:
 }
 
 
-inline int send_null_message (omx_endpoint_t ep, omx_endpoint_addr_t dest_ep)
+static inline int send_null_message (omx_endpoint_t ep, omx_endpoint_addr_t dest_ep)
 {
     omx_request_t req;
     omx_status_t status;

@@ -89,8 +89,9 @@ omx__wait(struct omx_endpoint *ep,
 		    (unsigned long long) omx__driver_desc->jiffies);
 
   if (unlikely(err < 0))
-    omx__ioctl_errno_to_return_checked(OMX_SUCCESS,
-				       "wait event in the driver");
+      omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
+					 OMX_SUCCESS,
+					 "wait event in the driver");
 
   omx__debug_printf(WAIT, ep, "%s wait event result %d\n",
 		    caller,

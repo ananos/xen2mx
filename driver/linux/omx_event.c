@@ -20,6 +20,7 @@
 #include <linux/sched.h>
 #include <linux/timer.h>
 #include <linux/list.h>
+#include <linux/rcupdate.h>
 
 #include "omx_io.h"
 #include "omx_common.h"
@@ -33,6 +34,7 @@
 struct omx_event_waiter {
 	struct list_head list_elt;
 	struct task_struct *task;
+	struct rcu_head rcu_head;
 	uint8_t status;
 };
 
@@ -41,13 +43,15 @@ static INLINE void
 omx_wakeup_waiter_list(struct omx_endpoint *endpoint,
 		       uint32_t status)
 {
-	struct omx_event_waiter *waiter, *next;
+	struct omx_event_waiter *waiter;
 
 	/* wake up everybody with the event status */
-	list_for_each_entry_safe(waiter, next, &endpoint->waiters, list_elt) {
+	rcu_read_lock();
+	list_for_each_entry_rcu(waiter, &endpoint->waiters, list_elt) {
 		waiter->status = status;
 		wake_up_process(waiter->task);
 	}
+	rcu_read_unlock();
 }
 
 static void
@@ -145,6 +149,7 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int lengt
 
 	/* take the next slot and update the queue */
 	index = endpoint->nextfree_exp_eventq_index++;
+
 	slot = endpoint->exp_eventq + (index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 
 	/* store the event without setting the id first */
@@ -155,9 +160,10 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int lengt
 
 	/* wake up waiters */
 	dprintk(EVENT, "notify_exp waking up everybody\n");
-	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	spin_unlock_bh(&endpoint->event_lock);
+
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	return 0;
 }
@@ -189,6 +195,7 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int len
 
 	/* take the next slot and update the queue */
 	endpoint->nextfree_unexp_eventq_index++;
+
 	index = endpoint->nextreserved_unexp_eventq_index++;
 	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 
@@ -200,9 +207,10 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int len
 
 	/* wake up waiters */
 	dprintk(EVENT, "notify_unexp waking up everybody\n");
-	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	spin_unlock_bh(&endpoint->event_lock);
+
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	return 0;
 }
@@ -320,9 +328,10 @@ omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 
 	/* wake up waiters */
 	dprintk(EVENT, "commit_notify_unexp waking up everybody\n");
-	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 
 	spin_unlock_bh(&endpoint->event_lock);
+
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
 }
 
 /*
@@ -363,12 +372,19 @@ omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
  * Sleeping
  */
 
+static void
+__omx_event_waiter_rcu_free_callback(struct rcu_head *rcu_head)
+{
+	struct omx_event_waiter * waiter = container_of(rcu_head, struct omx_event_waiter, rcu_head);
+	kfree(waiter);
+}
+
 /* FIXME: this is for when the application waits, not when the progression thread does */
 int
 omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 {
 	struct omx_cmd_wait_event cmd;
-	struct omx_event_waiter waiter;
+	struct omx_event_waiter * waiter;
 	struct timer_list timer;
 	int err = 0;
 
@@ -386,6 +402,13 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	if (unlikely(err != 0)) {
 		printk(KERN_ERR "Open-MX: Failed to read wait event cmd hdr\n");
 		err = -EFAULT;
+		goto out;
+	}
+
+	waiter = kmalloc(sizeof(struct omx_event_waiter), GFP_KERNEL);
+	if (!waiter) {
+		printk(KERN_ERR "Open-MX: failed to allocate waiter");
+		err = -ENOMEM;
 		goto out;
 	}
 
@@ -413,9 +436,9 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	}
 
 	/* queue ourself on the wait queue */
-	list_add_tail(&waiter.list_elt, &endpoint->waiters);
-	waiter.status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
-	waiter.task = current;
+	list_add_tail_rcu(&waiter->list_elt, &endpoint->waiters);
+	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
+	waiter->task = current;
 	set_current_state(TASK_INTERRUPTIBLE);
 
 	spin_unlock_bh(&endpoint->event_lock);
@@ -441,17 +464,17 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 		if (time_after_eq64(current_jiffies, timer_jiffies)) {
 			dprintk(EVENT, "wait event expire %lld has passed (now is %lld), not sleeping\n",
 				(unsigned long long) cmd.jiffies_expire, (unsigned long long) current_jiffies);
-			waiter.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
+			waiter->status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
 			goto wakeup;
 		}
-		setup_timer(&timer, timer_handler, (unsigned long) &waiter);
+		setup_timer(&timer, timer_handler, (unsigned long) waiter);
 		/* timer not pending yet, use the regular mod_timer() */
 		mod_timer(&timer, timer_jiffies);
 		dprintk(EVENT, "wait event timer setup at %lld (now is %lld)\n",
 			(unsigned long long) timer_jiffies, (unsigned long long) current_jiffies);
 	}
 
-	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_NONE
+	if (waiter->status == OMX_CMD_WAIT_EVENT_STATUS_NONE
 	    && !signal_pending(current)) {
 		/* if nothing happened, let's go to sleep */
 		dprintk(EVENT, "going to sleep at %lld\n", (unsigned long long) current_jiffies);
@@ -460,7 +483,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
 	} else {
 		/* already "woken-up", no need to sleep */
-		dprintk(EVENT, "not going to sleep, status is already %d\n", (unsigned) waiter.status);
+		dprintk(EVENT, "not going to sleep, status is already %d\n", (unsigned) waiter->status);
 	}
 
 	/* remove the timer */
@@ -471,15 +494,17 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	__set_current_state(TASK_RUNNING); /* no need to serialize with below, __set is enough */
 
 	spin_lock_bh(&endpoint->event_lock);
-	list_del(&waiter.list_elt);
+	list_del_rcu(&waiter->list_elt);
 	spin_unlock_bh(&endpoint->event_lock);
 
-	if (waiter.status == OMX_CMD_WAIT_EVENT_STATUS_NONE) {
+	if (waiter->status == OMX_CMD_WAIT_EVENT_STATUS_NONE) {
 		/* status didn't changed, we have been interrupted */
-		waiter.status = OMX_CMD_WAIT_EVENT_STATUS_INTR;
+		waiter->status = OMX_CMD_WAIT_EVENT_STATUS_INTR;
 	}
 
-	cmd.status = waiter.status;
+	cmd.status = waiter->status;
+
+	call_rcu(&waiter->rcu_head, __omx_event_waiter_rcu_free_callback);
 
  race:
 	err = copy_to_user(uparam, &cmd, sizeof(cmd));
@@ -535,9 +560,7 @@ omx_ioctl_wakeup(struct omx_endpoint * endpoint, void __user * uparam)
 		goto out;
 	}
 
-	spin_lock_bh(&endpoint->event_lock);
 	omx_wakeup_waiter_list(endpoint, cmd.status);
-	spin_unlock_bh(&endpoint->event_lock);
 
 	return 0;
 
