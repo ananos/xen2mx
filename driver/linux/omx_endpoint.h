@@ -63,14 +63,36 @@ struct omx_endpoint {
 
 	struct omx_iface * iface;
 
-	void * sendq, * recvq, * exp_eventq, * unexp_eventq;
-	omx_eventq_index_t nextfree_exp_eventq_index, nextreleased_exp_eventq_index;
-	omx_eventq_index_t nextfree_unexp_eventq_index, nextreserved_unexp_eventq_index, nextreleased_unexp_eventq_index;
-	unsigned long next_recvq_offset;
-	struct list_head waiters;
-	spinlock_t event_lock, release_exp_lock, release_unexp_lock;
-
+	/* send queue stuff */
+	void * sendq;
 	struct page ** sendq_pages;
+
+	/* descriptor exported to user-space, modified by user-space and the driver,
+	 * so we can export some info to user-space by writing into it, but we
+	 * cannot rely on reading from it
+	 */
+	struct omx_endpoint_desc * userdesc;
+
+	/* common event queues stuff */
+	struct list_head waiters;
+	spinlock_t event_lock;
+
+	/* expected event queue stuff */
+	void * exp_eventq;
+	omx_eventq_index_t nextfree_exp_eventq_index;
+	omx_eventq_index_t nextreleased_exp_eventq_index;
+	spinlock_t release_exp_lock;
+
+	/* unexpected event queue stuff */
+	void * unexp_eventq;
+	omx_eventq_index_t nextfree_unexp_eventq_index;
+	omx_eventq_index_t nextreserved_unexp_eventq_index;
+	omx_eventq_index_t nextreleased_unexp_eventq_index;
+	spinlock_t release_unexp_lock;
+
+	/* receive queue stuff (used with the unexp eventq) */
+	void * recvq;
+	unsigned long next_recvq_offset;
 	struct page ** recvq_pages;
 
 	spinlock_t user_regions_lock;
@@ -80,12 +102,6 @@ struct omx_endpoint {
 	struct list_head pull_handle_slots_free_list;
 	void * pull_handle_slots_array;
 	spinlock_t pull_handles_lock;
-
-	/* descriptor exported to user-space, modified by user-space and the driver,
-	 * so we can export some info to user-space by writing into it, but we
-	 * cannot rely on reading from it
-	 */
-	struct omx_endpoint_desc * userdesc;
 
 #ifdef CONFIG_MMU_NOTIFIER
 	struct mmu_notifier mmu_notifier;
