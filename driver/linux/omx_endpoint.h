@@ -75,11 +75,12 @@ struct omx_endpoint {
 
 	/* common event queues stuff */
 	struct list_head waiters;
-	spinlock_t event_lock;
+	spinlock_t waiters_lock;
 
 	/* expected event queue stuff */
 	void * exp_eventq;
 	omx_eventq_index_t nextfree_exp_eventq_index;
+	spinlock_t exp_lock;
 	omx_eventq_index_t nextreleased_exp_eventq_index;
 	spinlock_t release_exp_lock;
 
@@ -87,6 +88,7 @@ struct omx_endpoint {
 	void * unexp_eventq;
 	omx_eventq_index_t nextfree_unexp_eventq_index;
 	omx_eventq_index_t nextreserved_unexp_eventq_index;
+	spinlock_t unexp_lock;
 	omx_eventq_index_t nextreleased_unexp_eventq_index;
 	spinlock_t release_unexp_lock;
 
