@@ -416,6 +416,12 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
 	spin_lock_bh(&endpoint->event_lock);
 
+	/* queue ourself on the wait queue first, in case a packet arrives in the meantime */
+	list_add_tail_rcu(&waiter->list_elt, &endpoint->waiters);
+	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
+	waiter->task = current;
+	set_current_state(TASK_INTERRUPTIBLE);
+
 	/* did we deposit an event before the lib decided to go to sleep ? */
 	BUILD_BUG_ON(sizeof(cmd.next_exp_event_index) != sizeof(endpoint->nextfree_exp_eventq_index));
 	BUILD_BUG_ON(sizeof(cmd.next_unexp_event_index) != sizeof(endpoint->nextreserved_unexp_eventq_index));
@@ -431,16 +437,9 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 			(unsigned long) endpoint->nextreserved_unexp_eventq_index,
 			(unsigned long) endpoint->userdesc->user_event_index);
 		spin_unlock_bh(&endpoint->event_lock);
-		kfree(waiter);
 		cmd.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
-		goto race;
+		goto wakeup;
 	}
-
-	/* queue ourself on the wait queue */
-	list_add_tail_rcu(&waiter->list_elt, &endpoint->waiters);
-	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
-	waiter->task = current;
-	set_current_state(TASK_INTERRUPTIBLE);
 
 	spin_unlock_bh(&endpoint->event_lock);
 
@@ -507,7 +506,6 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
 	call_rcu(&waiter->rcu_head, __omx_event_waiter_rcu_free_callback);
 
- race:
 	err = copy_to_user(uparam, &cmd, sizeof(cmd));
 	if (unlikely(err != 0)) {
 		err = -EFAULT;
