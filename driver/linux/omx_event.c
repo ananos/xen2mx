@@ -38,7 +38,6 @@ struct omx_event_waiter {
 	uint8_t status;
 };
 
-/* called with the endpoint waiters_lock read-held */
 static INLINE void
 omx_wakeup_waiter_list(struct omx_endpoint *endpoint,
 		       uint32_t status)
@@ -417,12 +416,12 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 	/* FIXME: wait on some event type only */
 
 	/* queue ourself on the wait queue first, in case a packet arrives in the meantime */
-	spin_lock_bh(&endpoint->waiters_lock);
 	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
 	waiter->task = current;
 	set_current_state(TASK_INTERRUPTIBLE);
+	spin_lock(&endpoint->waiters_lock);
 	list_add_tail_rcu(&waiter->list_elt, &endpoint->waiters);
-	spin_unlock_bh(&endpoint->waiters_lock);
+	spin_unlock(&endpoint->waiters_lock);
 
 	/* did we deposit an event before the lib decided to go to sleep ? */
 	BUILD_BUG_ON(sizeof(cmd.next_exp_event_index) != sizeof(endpoint->nextfree_exp_eventq_index));
@@ -493,9 +492,9 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
  wakeup:
 	__set_current_state(TASK_RUNNING); /* no need to serialize with below, __set is enough */
 
-	spin_lock_bh(&endpoint->waiters_lock);
+	spin_lock(&endpoint->waiters_lock);
 	list_del_rcu(&waiter->list_elt);
-	spin_unlock_bh(&endpoint->waiters_lock);
+	spin_unlock(&endpoint->waiters_lock);
 
 	if (waiter->status == OMX_CMD_WAIT_EVENT_STATUS_NONE) {
 		/* status didn't changed, we have been interrupted */
