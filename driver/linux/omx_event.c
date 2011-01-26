@@ -431,6 +431,7 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 			(unsigned long) endpoint->nextreserved_unexp_eventq_index,
 			(unsigned long) endpoint->userdesc->user_event_index);
 		spin_unlock_bh(&endpoint->event_lock);
+		kfree(waiter);
 		cmd.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
 		goto race;
 	}
