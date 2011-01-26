@@ -418,10 +418,10 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
 	/* queue ourself on the wait queue first, in case a packet arrives in the meantime */
 	spin_lock_bh(&endpoint->waiters_lock);
-	list_add_tail_rcu(&waiter->list_elt, &endpoint->waiters);
 	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
 	waiter->task = current;
 	set_current_state(TASK_INTERRUPTIBLE);
+	list_add_tail_rcu(&waiter->list_elt, &endpoint->waiters);
 	spin_unlock_bh(&endpoint->waiters_lock);
 
 	/* did we deposit an event before the lib decided to go to sleep ? */
