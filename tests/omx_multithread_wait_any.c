@@ -37,8 +37,6 @@
 #define BID 0
 #define EID 0
 #define RID 0
-#define RECV_NB_THREADS 4
-#define SEND_NB_PROCESSES 4
 #define ITER 1000
 #define DELAY 5
 
@@ -136,7 +134,7 @@ usage(int argc, char *argv[])
 
     fprintf(stderr, "Common options:\n");
     fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
-    fprintf(stderr, " -p <n>\tchange the number of sender processes [%d]\n", SEND_NB_PROCESSES);
+    fprintf(stderr, " -p <n>\tchange the number of sender processes [nbprocs/2]\n");
     fprintf(stderr, " -v\tverbose\n");
 
     fprintf(stderr, "Sender options:\n");
@@ -146,7 +144,7 @@ usage(int argc, char *argv[])
     fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
 
     fprintf(stderr, "Receiver options:\n");
-    fprintf(stderr, " -t <n>\tchange the number of receiver threads [%d]\n", RECV_NB_THREADS);
+    fprintf(stderr, " -t <n>\tchange the number of receiver threads [2*nbprocs]\n");
 }
 
 
@@ -390,6 +388,7 @@ int main (int argc, char *argv[])
 {
     int i;
     int child_status;
+    long nbprocs = sysconf(_SC_NPROCESSORS_ONLN);
 
     cl_req_t cl_req = { .verbose	= 0,
 			.eid		= EID,
@@ -397,10 +396,10 @@ int main (int argc, char *argv[])
 			.rid		= RID,
 			.iter		= ITER,
 			.sender		= 0,
-			.nb_processes   = SEND_NB_PROCESSES,
+			.nb_processes   = (nbprocs+1)/2,
 			.side.send	= { .delay	    = DELAY,
 					    .constant_delay = 0 },
-			.side.recv	= { .nb_threads = RECV_NB_THREADS } };
+			.side.recv	= { .nb_threads = 2*nbprocs } };
 
     parse_cl (argc, argv, &cl_req);
 
