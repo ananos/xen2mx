@@ -532,6 +532,41 @@ AC_SUBST(BATTERY_LIST)
 
 
 
+
+
+# External dependencies
+########################
+AC_ARG_ENABLE(hwloc,
+	      [AS_HELP_STRING([--disable-hwloc], [disable hwloc in the user-space tools])],
+	      enable_hwloc=$enableval, enable_hwloc=yes)
+if test x$enable_hwloc = xyes; then
+  PKG_CHECK_MODULES(HWLOC, hwloc >= 1.0, :, enable_hwloc=no)
+  if test x$enable_hwloc = xyes; then
+    # use pkg-config result to check that headers and libs are usable
+    # (in case it's a cross compilation environment)
+    omx_cflags_save="$CFLAGS"
+    omx_libs_save="$LIBS"
+    CFLAGS="$CFLAGS $HWLOC_CFLAGS"
+    LIBS="$LIBS $HWLOC_LIBS"
+    AC_CHECK_FUNC(hwloc_topology_init, :, enable_hwloc=no)
+    CFLAGS="$omx_cflags_save"
+    LIBS="$omx_libs_save"
+    if test x$enable_hwloc = xno; then
+      # clear pkg-config result if hwloc isn't actually usable
+      HWLOC_CFLAGS=
+      HWLOC_LIBS=
+    fi
+  fi
+fi
+AM_CONDITIONAL(OMX_HAVE_HWLOC, test x$enable_hwloc = xyes)
+if test x$enable_hwloc = xyes; then
+  AC_DEFINE(OMX_HAVE_HWLOC, 1, [Define to enable hwloc in user-space tools])
+fi
+
+
+
+
+
 # Here is the list of configured files
 AC_CONFIG_FILES(Makefile
 		driver/linux/Makefile
