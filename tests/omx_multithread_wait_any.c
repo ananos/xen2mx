@@ -50,7 +50,7 @@ typedef struct cl_req
 
     int sender;
 
-    union {
+    struct {
 	struct {
 	    unsigned nb_threads;
 	} recv;
@@ -407,6 +407,9 @@ int main (int argc, char *argv[])
 
     if (cl_req.sender) {
 	/* Sender */
+
+	printf("Starting %u sender processes\n", cl_req.side.send.nb_processes);
+
 	for (i = 0; i < cl_req.side.send.nb_processes; i++)
 	    fork_sender (&cl_req);
 
@@ -498,6 +501,7 @@ int main (int argc, char *argv[])
 		     fprintf (stderr, "Failed to irecv null message %d (%s)\n", i, omx_strerror(ret)),
 		     out);
 
+	printf("Starting %u receiver threads\n", cl_req.side.recv.nb_threads);
 
 	div_t nb_thread_iter = div (param_msg.nbsender * param_msg.iter,
 				    cl_req.side.recv.nb_threads);
