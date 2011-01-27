@@ -142,7 +142,7 @@ usage(int argc, char *argv[])
     fprintf(stderr, " -D <n>\tset the delay (in microseconds) between message sendings [%d]\n", DELAY);
     fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
     fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
-    fprintf(stderr, " -p <n>\tchange the number of sender processes [nbprocs/2]\n");
+    fprintf(stderr, " -p <n>\tchange the number of sender processes [nbcores]\n");
 
     fprintf(stderr, "Receiver options:\n");
     fprintf(stderr, " -t <n>\tchange the number of receiver threads [2*nbprocs]\n");
@@ -385,12 +385,52 @@ out:
     pthread_exit (NULL);
 }
 
+#ifdef OMX_HAVE_HWLOC
+#include <hwloc.h>
+
+static hwloc_topology_t topology = NULL;
+
+static void
+topology_init(void)
+{
+  if (!topology) {
+    hwloc_topology_init(&topology);
+    hwloc_topology_load(topology);
+  }
+}
+
+static unsigned
+get_nbcores(void)
+{
+  topology_init();
+  return hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+}
+
+static unsigned
+get_nbthreads(void)
+{
+  topology_init();
+  return hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
+}
+
+static void
+topology_exit(void)
+{
+  if (topology)
+    hwloc_topology_destroy(topology);
+}
+#else
+#define get_nbcores() sysconf(_SC_NPROCESSORS_ONLN)
+#define get_nbthreads() sysconf(_SC_NPROCESSORS_ONLN)
+#define topology_exit() /* nothing to do */
+#endif
 
 int main (int argc, char *argv[])
 {
     int i;
     int child_status;
-    long nbprocs = sysconf(_SC_NPROCESSORS_ONLN);
+    unsigned nbcores = get_nbcores();
+    unsigned nbthreads = get_nbthreads();
 
     cl_req_t cl_req = { .verbose	= 0,
 			.eid		= EID,
@@ -400,8 +440,8 @@ int main (int argc, char *argv[])
 			.sender		= 0,
 			.side.send	= { .delay	    = DELAY,
 					    .constant_delay = 0,
-					    .nb_processes   = (nbprocs+1)/2 },
-			.side.recv	= { .nb_threads = 2*nbprocs } };
+					    .nb_processes   = nbcores },
+			.side.recv	= { .nb_threads = 2*nbthreads } };
 
     parse_cl (argc, argv, &cl_req);
 
@@ -533,16 +573,17 @@ int main (int argc, char *argv[])
 
 	omx_close_endpoint (ep);
 	omx_finalize ();
-
+	topology_exit();
 	return 0;
 
     out_with_ep:
 	omx_close_endpoint (ep);
     out:
 	omx_finalize ();
-
+	topology_exit();
 	return 1;
     }
 
+    topology_exit();
     return 0;
 }
