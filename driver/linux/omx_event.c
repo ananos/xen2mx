@@ -133,10 +133,16 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int lengt
 	union omx_evt *slot;
 	omx_eventq_index_t index;
 
+	/* take the next slot and update the queue */
 	spin_lock_bh(&endpoint->exp_lock);
+	index = endpoint->nextfree_exp_eventq_index++;
+	spin_unlock_bh(&endpoint->exp_lock);
 
 	if (unlikely(endpoint->nextfree_exp_eventq_index - endpoint->nextreleased_exp_eventq_index
-		     >= OMX_EXP_EVENTQ_ENTRY_NR)) {
+		     > OMX_EXP_EVENTQ_ENTRY_NR)) {
+		/* we went too far, rollback */
+		spin_lock_bh(&endpoint->exp_lock);
+		index = endpoint->nextfree_exp_eventq_index--;
 		spin_unlock_bh(&endpoint->exp_lock);
 		/* the application sucks, it did not check
 		 * the expected eventq before posting requests
@@ -148,11 +154,6 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int lengt
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL;
 		return -EBUSY;
 	}
-
-	/* take the next slot and update the queue */
-	index = endpoint->nextfree_exp_eventq_index++;
-
-	spin_unlock_bh(&endpoint->exp_lock);
 
 	slot = endpoint->exp_eventq + (index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 	/* store the event without setting the id first */
@@ -180,10 +181,18 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int len
 	union omx_evt *slot;
 	omx_eventq_index_t index;
 
+	/* take the next slot and update the queue */
 	spin_lock_bh(&endpoint->unexp_lock);
+	endpoint->nextfree_unexp_eventq_index++;
+	index = endpoint->nextreserved_unexp_eventq_index++;
+	spin_unlock_bh(&endpoint->unexp_lock);
 
 	if (unlikely(endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
-		     >= OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+		     > OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+		/* we went too far, rollback */
+		spin_lock_bh(&endpoint->unexp_lock);
+		endpoint->nextfree_unexp_eventq_index--;
+		index = endpoint->nextreserved_unexp_eventq_index--;
 		spin_unlock_bh(&endpoint->unexp_lock);
 		/* the application did not process the unexpected queue and release slots fast enough */
 		dprintk(EVENT,
@@ -193,12 +202,6 @@ omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int len
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
 		return -EBUSY;
 	}
-
-	/* take the next slot and update the queue */
-	endpoint->nextfree_unexp_eventq_index++;
-	index = endpoint->nextreserved_unexp_eventq_index++;
-
-	spin_unlock_bh(&endpoint->unexp_lock);
 
 	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
 	/* store the event without setting the id first */
@@ -235,9 +238,18 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 	omx_eventq_index_t recvq_index;
 
 	spin_lock_bh(&endpoint->unexp_lock);
+	/* reserve the next slot and update the queue */
+	endpoint->nextfree_unexp_eventq_index++;
+	/* take the next recvq slot and return it now */
+	recvq_index = endpoint->next_recvq_index++;
+	spin_unlock_bh(&endpoint->unexp_lock);
 
 	if (unlikely(endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
-		     >= OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+		     > OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+		/* we went too far, rollback */
+		spin_lock_bh(&endpoint->unexp_lock);
+		endpoint->nextfree_unexp_eventq_index--;
+		recvq_index = endpoint->next_recvq_index--;
 		spin_unlock_bh(&endpoint->unexp_lock);
 		/* the application did not process the unexpected queue and release slots fast enough */
 		dprintk(EVENT,
@@ -247,13 +259,6 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
 		return -EBUSY;
 	}
-
-	/* reserve the next slot and update the queue */
-	endpoint->nextfree_unexp_eventq_index++;
-	/* take the next recvq slot and return it now */
-	recvq_index = endpoint->next_recvq_index++;
-
-	spin_unlock_bh(&endpoint->unexp_lock);
 
 	*recvq_offset_p = (recvq_index % OMX_RECVQ_ENTRY_NR) * OMX_RECVQ_ENTRY_SIZE;
 	return 0;
@@ -269,9 +274,17 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
 	int i;
 
 	spin_lock_bh(&endpoint->unexp_lock);
+	endpoint->nextfree_unexp_eventq_index += nr;
+	first_recvq_index = endpoint->next_recvq_index;
+	endpoint->next_recvq_index += nr;
+	spin_unlock_bh(&endpoint->unexp_lock);
 
-	if (unlikely(endpoint->nextfree_unexp_eventq_index + nr - 1 - endpoint->nextreleased_unexp_eventq_index
-		     >= OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+	if (unlikely(endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+		     > OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+		/* we went too far, rollback */
+		spin_lock_bh(&endpoint->unexp_lock);
+		endpoint->nextfree_unexp_eventq_index -= nr;
+		endpoint->next_recvq_index -= nr;
 		spin_unlock_bh(&endpoint->unexp_lock);
 		/* the application did not process the unexpected queue and release slots fast enough */
 		dprintk(EVENT,
@@ -281,14 +294,6 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
 		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
 		return -EBUSY;
 	}
-
-	/* reserve the next slots and update the queue */
-	endpoint->nextfree_unexp_eventq_index += nr;
-	/* take the next recvq slots and return them now */
-	first_recvq_index = endpoint->next_recvq_index;
-	endpoint->next_recvq_index += nr;
-
-	spin_unlock_bh(&endpoint->unexp_lock);
 
 	for(i=0; i<nr; i++)
 		recvq_offset_p[i] = ((first_recvq_index+i) % OMX_RECVQ_ENTRY_NR) * OMX_RECVQ_ENTRY_SIZE;
