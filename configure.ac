@@ -519,7 +519,7 @@ AC_SUBST(OMX_RAW_DEVICE_MODE)
 
 # Test configuration
 # Do not use multiline for the both following variables
-TEST_LIST='loopback_native loopback_shared loopback_self unexpected unexpected_with_ctxids unexpected_handler truncated wait_any cancel wakeup multirails multithread_wait_any vect_native vect_shared vect_self pingpong_native pingpong_shared randomloop'
+TEST_LIST='loopback_native loopback_shared loopback_self unexpected unexpected_with_ctxids unexpected_handler truncated wait_any cancel wakeup multirails monothread_wait_any multithread_wait_any vect_native vect_shared vect_self pingpong_native pingpong_shared randomloop'
 
 BATTERY_LIST='loopback misc vect pingpong'
 
@@ -529,6 +529,41 @@ for t in $TEST_LIST ; do FINAL_TEST_LIST="$FINAL_TEST_LIST launchers/$t" ; done
 AC_SUBST(TEST_LIST)
 AC_SUBST(FINAL_TEST_LIST)
 AC_SUBST(BATTERY_LIST)
+
+
+
+
+
+# External dependencies
+########################
+AC_ARG_ENABLE(hwloc,
+	      [AS_HELP_STRING([--disable-hwloc], [disable hwloc in the user-space tools])],
+	      enable_hwloc=$enableval, enable_hwloc=yes)
+if test x$enable_hwloc = xyes; then
+  PKG_CHECK_MODULES(HWLOC, hwloc >= 1.0, :, enable_hwloc=no)
+  if test x$enable_hwloc = xyes; then
+    # use pkg-config result to check that headers and libs are usable
+    # (in case it's a cross compilation environment)
+    omx_cflags_save="$CFLAGS"
+    omx_libs_save="$LIBS"
+    CFLAGS="$CFLAGS $HWLOC_CFLAGS"
+    LIBS="$LIBS $HWLOC_LIBS"
+    AC_CHECK_FUNC(hwloc_topology_init, :, enable_hwloc=no)
+    CFLAGS="$omx_cflags_save"
+    LIBS="$omx_libs_save"
+    if test x$enable_hwloc = xno; then
+      # clear pkg-config result if hwloc isn't actually usable
+      HWLOC_CFLAGS=
+      HWLOC_LIBS=
+    fi
+  fi
+fi
+AM_CONDITIONAL(OMX_HAVE_HWLOC, test x$enable_hwloc = xyes)
+if test x$enable_hwloc = xyes; then
+  AC_DEFINE(OMX_HAVE_HWLOC, 1, [Define to enable hwloc in user-space tools])
+fi
+
+
 
 
 

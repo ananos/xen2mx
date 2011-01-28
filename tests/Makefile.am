@@ -41,7 +41,8 @@ omx_cmd_bench_CPPFLAGS	= -I$(abs_top_srcdir)/libopen-mx $(AM_CPPFLAGS)
 
 LDADD = $(abs_top_builddir)/libopen-mx/$(DEFAULT_LIBDIR)/libopen-mx.la
 
-omx_multithread_wait_any_LDADD	= -lpthread $(LDADD)
+omx_multithread_wait_any_CFLAGS	= $(HWLOC_CFLAGS)
+omx_multithread_wait_any_LDADD	= $(HWLOC_LIBS) -lpthread $(LDADD)
 
 install-data-hook:
 	@mkdir -p $(DESTDIR)$(launchersdir)

@@ -37,8 +37,6 @@
 #define BID 0
 #define EID 0
 #define RID 0
-#define RECV_NB_THREADS 4
-#define SEND_NB_PROCESSES 4
 #define ITER 1000
 #define DELAY 5
 
@@ -51,9 +49,8 @@ typedef struct cl_req
     int iter;
 
     int sender;
-    unsigned nb_processes;
 
-    union {
+    struct {
 	struct {
 	    unsigned nb_threads;
 	} recv;
@@ -62,6 +59,7 @@ typedef struct cl_req
 	    char dest_hostname[OMX_HOSTNAMELEN_MAX];
 	    int constant_delay;
 	    unsigned delay;
+	    unsigned nb_processes;
 	} send;
     } side;
 
@@ -70,6 +68,7 @@ typedef struct cl_req
 
 typedef struct param_msg {
   uint32_t iter;
+  uint32_t nbsender;
 } param_msg_t;
 
 
@@ -136,7 +135,6 @@ usage(int argc, char *argv[])
 
     fprintf(stderr, "Common options:\n");
     fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
-    fprintf(stderr, " -p <n>\tchange the number of sender processes [%d]\n", SEND_NB_PROCESSES);
     fprintf(stderr, " -v\tverbose\n");
 
     fprintf(stderr, "Sender options:\n");
@@ -144,9 +142,10 @@ usage(int argc, char *argv[])
     fprintf(stderr, " -D <n>\tset the delay (in microseconds) between message sendings [%d]\n", DELAY);
     fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
     fprintf(stderr, " -N <n>\tchange number of iterations [%d]\n", ITER);
+    fprintf(stderr, " -p <n>\tchange the number of sender processes [nbcores]\n");
 
     fprintf(stderr, "Receiver options:\n");
-    fprintf(stderr, " -t <n>\tchange the number of receiver threads [%d]\n", RECV_NB_THREADS);
+    fprintf(stderr, " -t <n>\tchange the number of receiver threads [2*nbprocs]\n");
 }
 
 
@@ -178,7 +177,7 @@ int parse_cl (int argc, char *argv[], cl_req_t *cl_req)
 	    cl_req->side.recv.nb_threads = atoi(optarg);
 	    break;
 	case 'p':
-	    cl_req->nb_processes = atoi(optarg);
+	    cl_req->side.send.nb_processes = atoi(optarg);
 	    break;
 	case 'N':
 	    cl_req->iter = atoi (optarg);
@@ -270,6 +269,7 @@ void fork_sender (cl_req_t *cl_req)
 
     /* Send the param message */
     param_msg.iter = htonl (cl_req->iter);
+    param_msg.nbsender = htonl (cl_req->side.send.nb_processes);
     try_omx (ret = omx_issend (ep, &param_msg, sizeof(param_msg), dest_ep, 0x1234567887654321ULL, NULL,
 			       &req),
 	     fprintf(stderr, "Failed to isend param message (%s)\n", omx_strerror(ret)), out_with_ep);
@@ -385,11 +385,52 @@ out:
     pthread_exit (NULL);
 }
 
+#ifdef OMX_HAVE_HWLOC
+#include <hwloc.h>
+
+static hwloc_topology_t topology = NULL;
+
+static void
+topology_init(void)
+{
+  if (!topology) {
+    hwloc_topology_init(&topology);
+    hwloc_topology_load(topology);
+  }
+}
+
+static unsigned
+get_nbcores(void)
+{
+  topology_init();
+  return hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+}
+
+static unsigned
+get_nbthreads(void)
+{
+  topology_init();
+  return hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
+}
+
+static void
+topology_exit(void)
+{
+  if (topology)
+    hwloc_topology_destroy(topology);
+}
+#else
+#define get_nbcores() sysconf(_SC_NPROCESSORS_ONLN)
+#define get_nbthreads() sysconf(_SC_NPROCESSORS_ONLN)
+#define topology_exit() /* nothing to do */
+#endif
 
 int main (int argc, char *argv[])
 {
     int i;
     int child_status;
+    unsigned nbcores = get_nbcores();
+    unsigned nbthreads = get_nbthreads();
 
     cl_req_t cl_req = { .verbose	= 0,
 			.eid		= EID,
@@ -397,16 +438,19 @@ int main (int argc, char *argv[])
 			.rid		= RID,
 			.iter		= ITER,
 			.sender		= 0,
-			.nb_processes   = SEND_NB_PROCESSES,
 			.side.send	= { .delay	    = DELAY,
-					    .constant_delay = 0 },
-			.side.recv	= { .nb_threads = RECV_NB_THREADS } };
+					    .constant_delay = 0,
+					    .nb_processes   = nbcores },
+			.side.recv	= { .nb_threads = 2*nbthreads } };
 
     parse_cl (argc, argv, &cl_req);
 
     if (cl_req.sender) {
 	/* Sender */
-	for (i = 0; i < cl_req.nb_processes; i++)
+
+	printf("Starting %u sender processes\n", cl_req.side.send.nb_processes);
+
+	for (i = 0; i < cl_req.side.send.nb_processes; i++)
 	    fork_sender (&cl_req);
 
 	while (-1 != wait (&child_status)) {
@@ -426,15 +470,18 @@ int main (int argc, char *argv[])
 	omx_status_t status;
 	omx_return_t ret;
 	param_msg_t param_msg;
+        param_msg.nbsender = 0;
+	peer_t *peers;
 
-	peer_t peers[cl_req.nb_processes];
 	pthread_t threads[cl_req.side.recv.nb_threads];
+
+	param_msg.nbsender = 0; /* default value until we receive an actual value from senders */
 
 	try (init_omx (&cl_req, &ep, my_hostname, my_ifacename),
 	     fprintf (stderr, "Failed to initialize Open-MX subsystem."), out);
 
 	/* Wait for the param messages */
-	for (i = 0; i < cl_req.nb_processes; i++) {
+	for (i = 0; i == 0 /* need one client to initialize param_msg.nbsender */ || i < param_msg.nbsender; i++) {
 	    try_omx (ret = omx_irecv (ep, &param_msg, sizeof(param_msg), 0, 0, NULL, &req),
 		     fprintf (stderr, "Failed to irecv null message %d (%s)\n", i, omx_strerror(ret)),
 		     out);
@@ -449,6 +496,9 @@ int main (int argc, char *argv[])
 
 	    /* Retrieve parameters */
 	    param_msg.iter = ntohl (param_msg.iter);
+	    param_msg.nbsender = ntohl (param_msg.nbsender);
+	    if (i == 0)
+		peers = malloc(param_msg.nbsender * sizeof(peer_t));
 
 	    try_omx (ret = omx_decompose_endpoint_addr (status.addr, &peers[i].addr,
 							&peers[i].rid),
@@ -465,7 +515,7 @@ int main (int argc, char *argv[])
 
 
 	/* Send the param ack messages */
-	for (i = 0; i < cl_req.nb_processes; i++) {
+	for (i = 0; i < param_msg.nbsender; i++) {
 	    try_omx (ret = omx_connect(ep, peers[i].addr, peers[i].rid, 0x12345678,
 				       OMX_TIMEOUT_INFINITE, &peers[i].ep_addr),
 		     fprintf (stderr, "Failed to connect back to client (%s)\n", omx_strerror(ret)),
@@ -485,14 +535,15 @@ int main (int argc, char *argv[])
 	}
 
 
-	/* Post the (req.nb_processes * iter) receives */
-	for (i = 0; i < cl_req.nb_processes * param_msg.iter; i++)
+	/* Post the (nb_processes * iter) receives */
+	for (i = 0; i < param_msg.nbsender * param_msg.iter; i++)
 	    try_omx (ret = omx_irecv (ep, NULL, 0, 0, 0, NULL, &req),
 		     fprintf (stderr, "Failed to irecv null message %d (%s)\n", i, omx_strerror(ret)),
 		     out);
 
+	printf("Starting %u receiver threads\n", cl_req.side.recv.nb_threads);
 
-	div_t nb_thread_iter = div (cl_req.nb_processes * param_msg.iter,
+	div_t nb_thread_iter = div (param_msg.nbsender * param_msg.iter,
 				    cl_req.side.recv.nb_threads);
 	thread_param_t thread_param = { .ep		= ep,
 					.nb_thread_iter = nb_thread_iter.quot };
@@ -504,7 +555,7 @@ int main (int argc, char *argv[])
 
 
 	/* Send the 'goodbye' messages */
-	for (i = 0; i < cl_req.nb_processes; i++) {
+	for (i = 0; i < param_msg.nbsender; i++) {
 	    try_omx (ret = omx_issend (ep, NULL, 0, peers[i].ep_addr, 0, NULL, &req),
 		     fprintf (stderr, "Failed to isend goodbye message (%s)\n", omx_strerror(ret)),
 		     out_with_ep);
@@ -518,19 +569,21 @@ int main (int argc, char *argv[])
 			      omx_strerror(status.code)), out_with_ep);
 	}
 
+        free(peers);
 
 	omx_close_endpoint (ep);
 	omx_finalize ();
-
+	topology_exit();
 	return 0;
 
     out_with_ep:
 	omx_close_endpoint (ep);
     out:
 	omx_finalize ();
-
+	topology_exit();
 	return 1;
     }
 
+    topology_exit();
     return 0;
 }

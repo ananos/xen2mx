@@ -94,7 +94,7 @@ struct omx_endpoint {
 
 	/* receive queue stuff (used with the unexp eventq) */
 	void * recvq;
-	unsigned long next_recvq_offset;
+	omx_eventq_index_t next_recvq_index;
 	struct page ** recvq_pages;
 
 	spinlock_t user_regions_lock;
