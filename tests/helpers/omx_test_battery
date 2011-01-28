@@ -125,7 +125,7 @@ case $batteryname in
 	do_test 'cancel'				$launcherdir/cancel
 	do_test 'wakeup'				$launcherdir/wakeup
 	do_test 'multirails'				$launcherdir/multirails
-	do_test 'multithread_wait_any'			$laucnherdir/multithread_wait_any
+	do_test 'multithread_wait_any'			$launcherdir/multithread_wait_any
 	;;
     vect)
 	do_test 'vectorials with native networking'	$launcherdir/vect_native
