@@ -79,8 +79,7 @@ struct omx_endpoint {
 
 	/* expected event queue stuff */
 	void * exp_eventq;
-	omx_eventq_index_t nextfree_exp_eventq_index;
-	spinlock_t exp_lock;
+	omx_eventq_index_t nextfree_exp_eventq_index; /* modified with atomics instead of protected by exp_lock */
 	omx_eventq_index_t nextreleased_exp_eventq_index;
 	spinlock_t release_exp_lock;
 

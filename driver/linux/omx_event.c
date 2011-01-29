@@ -167,7 +167,6 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 
 	INIT_LIST_HEAD(&endpoint->waiters);
 	spin_lock_init(&endpoint->waiters_lock);
-	spin_lock_init(&endpoint->exp_lock);
 	spin_lock_init(&endpoint->unexp_lock);
 	spin_lock_init(&endpoint->release_exp_lock);
 	spin_lock_init(&endpoint->release_unexp_lock);
@@ -184,16 +183,12 @@ omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int lengt
 	omx_eventq_index_t index;
 
 	/* take the next slot and update the queue */
-	spin_lock_bh(&endpoint->exp_lock);
-	index = endpoint->nextfree_exp_eventq_index++;
-	spin_unlock_bh(&endpoint->exp_lock);
+	index = atomic_inc_return((atomic_t *) &endpoint->nextfree_exp_eventq_index) - 1;
 
 	if (unlikely(endpoint->nextfree_exp_eventq_index - endpoint->nextreleased_exp_eventq_index
 		     > OMX_EXP_EVENTQ_ENTRY_NR)) {
 		/* we went too far, rollback */
-		spin_lock_bh(&endpoint->exp_lock);
-		index = endpoint->nextfree_exp_eventq_index--;
-		spin_unlock_bh(&endpoint->exp_lock);
+		atomic_dec((atomic_t *) &endpoint->nextfree_exp_eventq_index);
 		/* the application sucks, it did not check
 		 * the expected eventq before posting requests
 		 */
