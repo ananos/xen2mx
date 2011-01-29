@@ -396,6 +396,10 @@ omx_init(void)
 
 	printk(KERN_INFO "Open-MX " OMX_DRIVER_VERSION " initializing...\n");
 
+	ret = omx_event_delivery_check();
+	if (ret < 0)
+		goto out;
+
 	omx_driver_userdesc = omx_vmalloc_user(sizeof(struct omx_driver_desc));
 	if (!omx_driver_userdesc) {
 		printk(KERN_ERR "Open-MX: failed to allocate driver user descriptor\n");

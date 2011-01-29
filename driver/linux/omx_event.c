@@ -21,11 +21,61 @@
 #include <linux/timer.h>
 #include <linux/list.h>
 #include <linux/rcupdate.h>
+#include <linux/atomic.h>
 
 #include "omx_io.h"
 #include "omx_common.h"
 #include "omx_iface.h"
 #include "omx_endpoint.h"
+
+/*******************
+ * Check that atomics work on omx_eventq_index_t as expected
+ */
+
+static int
+omx_atomic_check(omx_eventq_index_t input)
+{
+  omx_eventq_index_t atomic = input;
+  omx_eventq_index_t output;
+
+  output = (omx_eventq_index_t) atomic_read((atomic_t *) &atomic);
+  if (output != input) {
+    printk("read of got %x instead of %x\n", (unsigned) output, (unsigned) input);
+    return -1;
+  }
+
+  output = (omx_eventq_index_t) atomic_inc_return((atomic_t *) &atomic);
+  if (output != input + 1) {
+    printk("inc_return of got %x instead of %x\n", (unsigned) output, (unsigned) input+1);
+    return -1;
+  }
+
+  atomic_dec((atomic_t *) &atomic);
+  atomic_dec((atomic_t *) &atomic);
+  output = (omx_eventq_index_t) atomic_read((atomic_t *) &atomic);
+  if (output != input - 1) {
+    printk("dec+read of got %x instead of %x\n", (unsigned) output, (unsigned) input);
+    return -1;
+  }
+
+  return 0;
+}
+
+int
+omx_event_delivery_check(void)
+{
+  if (omx_atomic_check((omx_eventq_index_t) 0) < 0)
+    return -ENOSYS;
+  if (omx_atomic_check((omx_eventq_index_t) 1) < 0)
+    return -ENOSYS;
+  if (omx_atomic_check((omx_eventq_index_t) -1) < 0)
+    return -ENOSYS;
+  if (omx_atomic_check(((omx_eventq_index_t) -1)/2) < 0)
+    return -ENOSYS;
+  if (omx_atomic_check(((omx_eventq_index_t) -1)/2 + 1) < 0)
+    return -ENOSYS;
+  return 0;
+}
 
 /*************************
  * Wait Queues and Wakeup

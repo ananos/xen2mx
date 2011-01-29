@@ -49,6 +49,7 @@ extern int omx_pin_invalidate;
 extern unsigned long omx_user_rights;
 
 /* events */
+extern int omx_event_delivery_check(void);
 extern void omx_endpoint_queues_init(struct omx_endpoint *endpoint);
 extern int omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int length);
 extern int omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int length);
