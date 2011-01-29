@@ -21,7 +21,7 @@
 #include <linux/timer.h>
 #include <linux/list.h>
 #include <linux/rcupdate.h>
-#include <linux/atomic.h>
+#include <asm/atomic.h>
 
 #include "omx_io.h"
 #include "omx_common.h"
