@@ -110,10 +110,9 @@ usage () {
 	echo "  --dynamic-peers		Force dynamic peer discovery"
 	echo "  --dynamic-peers=<prog>	Force <prog> as the peer discovery tool instead of $OMX_PEER_DISCOVERY"
 	echo "  --static-peers		Force static peers from $OMX_PEERS_FILE"
-	echo "  --static-peers=<file>	Force static peers from <file>"
+	echo "  --static-peers=<file>		Force static peers from <file>"
 	echo "  --module=<file>		Use kernel module from <file>"
-	echo "  --retry=<nb>		If a module is already loaded, sleep 10s and retry to load our module."
-	echo "				Do this <nb> times"
+	echo "  --retry=<nb>			If a module is already loaded, sleep 10s and retry to load our module. Do this <nb> times"
 	exit 1
 }
 
