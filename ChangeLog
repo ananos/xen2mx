@@ -3,7 +3,7 @@ Open-MX 1.3.901 (aka 1.4-rc1)
 
 Major improvements from previous release:
 * Rework the event delivery from the driver to the user-space library
-  so as to reduce cache invalidation.
+  so as to reduce cache invalidation and locking.
 
 Caveats:
 * No background progression or retransmission is done if the application

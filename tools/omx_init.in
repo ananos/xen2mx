@@ -55,6 +55,7 @@ OMX_PEER_DISCOVERY=@OMX_PEER_DISCOVERY@
 OMX_PEERS_FILE=@OMX_PEERS_FILE@
 FMS_RUN=@OMX_FMS_RUN@
 FMS_SERVER=@OMX_FMS_SERVER@
+OMX_RETRY=0
 
 UDEV=1
 UDEV_RULES_SRC=10-open-mx.rules
@@ -111,6 +112,7 @@ usage () {
 	echo "  --static-peers		Force static peers from $OMX_PEERS_FILE"
 	echo "  --static-peers=<file>		Force static peers from <file>"
 	echo "  --module=<file>		Use kernel module from <file>"
+	echo "  --retry=<nb>			If a module is already loaded, sleep 10s and retry to load our module. Do this <nb> times"
 	exit 1
 }
 
@@ -120,23 +122,25 @@ module_params=
 while [ $# -ne 0 ] ; do
     if [ $1 = "--dynamic-peers" ] ; then
 	OMX_STATIC_MAPPING=0
-    else if [ ${1##--dynamic-peers=} != $1 ] ; then
+    elif [ ${1##--dynamic-peers=} != $1 ] ; then
 	OMX_STATIC_MAPPING=0
 	OMX_PEER_DISCOVERY=${1##--dynamic-peers=}
-    else if [ $1 = "--static-peers" ] ; then
+    elif [ $1 = "--static-peers" ] ; then
 	OMX_STATIC_MAPPING=1
-    else if [ ${1##--static-peers=} != $1 ] ; then
+    elif [ ${1##--static-peers=} != $1 ] ; then
 	OMX_STATIC_MAPPING=1
 	OMX_PEERS_FILE=${1##--static-peers=}
-    else if [ ${1##--module=} != $1 ] ; then
+    elif [ ${1##--module=} != $1 ] ; then
 	OMX_MODULE=${1##--module=}
-    else if [ ${1##--} != $1 ] ; then
+    elif [ ${1##--retry=} != $1 ] ; then
+	OMX_RETRY=${1##--retry=}
+    elif [ ${1##--} != $1 ] ; then
 	usage
-    else if [ -z "$cmd" ] ; then
+    elif [ -z "$cmd" ] ; then
 	cmd=$1
     else
 	module_params="$module_params $1"
-    fi fi fi fi fi fi fi
+    fi
     shift
 done
 
@@ -210,8 +214,20 @@ load_omx() {
 	    echo "Loading dependency module: $depend"
 	    /sbin/modprobe $depend
 	done
+
 	# load the driver
-	/sbin/insmod $module $params
+	for i in $(seq 0 $OMX_RETRY) ; do
+	    if ! /sbin/insmod $module $params ; then
+		if [ $i != $OMX_RETRY ] ; then
+		    echoerr "[ERROR] Failed to load the module. Sleeping (10s) then retrying"
+		    sleep 10
+		else
+		    exit 1
+		fi
+	    else
+		break
+	    fi
+	done
     else
 	# module not found, the kernel probably changed since we installed Open-MX
 	# try modprobe in case DKMS rebuilt the driver for the new kernel
