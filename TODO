@@ -1,4 +1,6 @@
-* sort endpoint eventq fields for better locality
+* sort/align endpoint eventq fields for better locality
+* group similar fields in user structure for cache effects, cache-align some fields?
+  + add a counter per list and group them as well to reduce the progression loop overhead
 
 * dynamically alloc the sendq_map index array out of the medium request?
 
@@ -7,8 +9,6 @@
     it has the HZ resolution and cost about 10ns
   * use clock_gettime(CLOCK_MONOTONIC) otherwise,
     but it costs about 30ns
-
-* merge the endpoint management stuff from the kernel-matching branch?
 
 * switch to another malloc library with smaller locking overhead
   + use per-endpoint pools (no need to be thread-safe there) ?
@@ -46,9 +46,7 @@
 * when invalidating a pinned region, change its status first, with a memory barrier
   and rcu_synchronize if possible so that people using it are gone and won't come back
 
-* update all thresholds in non-wire-compat
-  + make them configurable?
-  + push-based model for large
+* push-based model for large
 
 * make omx_prepare_binding more flexible:
   + work on a single board, with --append or --clearfile
@@ -94,9 +92,9 @@
   + what about check endpoint desc ?
   + make request_alloc_check() called in debug only
 
+* merge the endpoint management stuff from the kernel-matching branch?
 * endpoint_close cannot be called from interrupt context
   + we can destroy region at first closing too?
-
 * cleanup endpoint acquiring/locking/closing again
   + synchronize_rcu before freeing after unlinking
   + rcu_deference+acquire+check status during ioctl and network
@@ -157,18 +155,8 @@
   + add a last_poll_jiffies so that the driver knows if the progress thread is needed after a timeout
 
 * unlockify the ring management in the driver event reporting code
-  + use rcu to avoid having to lock the waiter's queue
-    - allocate the waiter struct and free it with a rcu_call
   + atomic_test_and_set instead of spinlock to get a event slot? what about recv slot?
     ok if lots of slices in parallel ?
-  + add a driver-private field in event where the reporter will test_and_set BUSY
-    before posting the event and finally posting the type and removing BUSY
-  + per cpu rings? not scalable with number of cups
-  + prefetch non-temporal from the event ring ro prevent cache line bounces?
-  + or write event with non-temporal? hard in the kernel
-
-* group similar fields in structure for cache effects, cache-align some fields?
-  + add a counter per list and group them as well to reduce the progression loop overhead
 
 * skb_clone and alloc_skb_fclone for pull and pull replies?
 
@@ -215,3 +203,7 @@
 * regcache malloc hook (if no driver feature flag)
 * merge small/tiny and change the packet type in the driver to TINY only in wire-compat mode?
   + putting the data inside the request/event really helps performance, cannot remove this path
+* improve event delivery
+  + per cpu rings? not scalable with number of cups
+  + prefetch non-temporal from the event ring ro prevent cache line bounces?
+  + or write event with non-temporal? hard in the kernel

@@ -113,7 +113,8 @@ omx_endpoint_queues_init(struct omx_endpoint *endpoint)
 	BUILD_BUG_ON((omx_eventq_index_t) -1 <= OMX_UNEXP_EVENTQ_ENTRY_NR);
 
 	/* set the first recvq slot */
-	endpoint->next_recvq_offset = 0;
+	endpoint->next_recvq_index = 0;
+	BUILD_BUG_ON((omx_eventq_index_t) -1 <= OMX_RECVQ_ENTRY_NR);
 
 	INIT_LIST_HEAD(&endpoint->waiters);
 	spin_lock_init(&endpoint->event_lock);
@@ -230,6 +231,8 @@ int
 omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 					  unsigned long *recvq_offset_p)
 {
+	omx_eventq_index_t recvq_index;
+
 	spin_lock_bh(&endpoint->event_lock);
 
 	if (unlikely(endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
@@ -246,15 +249,12 @@ omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
 
 	/* reserve the next slot and update the queue */
 	endpoint->nextfree_unexp_eventq_index++;
-
 	/* take the next recvq slot and return it now */
-	*recvq_offset_p = endpoint->next_recvq_offset;
-	endpoint->next_recvq_offset += OMX_RECVQ_ENTRY_SIZE;
-	if (unlikely(endpoint->next_recvq_offset >= OMX_RECVQ_SIZE))
-		/* all slots have the same size, so there can't be a slot that wraps around the end */
-		endpoint->next_recvq_offset = 0;
+	recvq_index = endpoint->next_recvq_index++;
 
 	spin_unlock_bh(&endpoint->event_lock);
+
+	*recvq_offset_p = (recvq_index % OMX_RECVQ_ENTRY_NR) * OMX_RECVQ_ENTRY_SIZE;
 	return 0;
 }
 
@@ -264,6 +264,7 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
 					   int nr,
 					   unsigned long *recvq_offset_p)
 {
+	omx_eventq_index_t first_recvq_index;
 	int i;
 
 	spin_lock_bh(&endpoint->event_lock);
@@ -282,17 +283,14 @@ omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
 
 	/* reserve the next slots and update the queue */
 	endpoint->nextfree_unexp_eventq_index += nr;
-
 	/* take the next recvq slots and return them now */
-	for(i=0; i<nr; i++) {
-		recvq_offset_p[i] = endpoint->next_recvq_offset;
-		endpoint->next_recvq_offset += OMX_RECVQ_ENTRY_SIZE;
-		if (unlikely(endpoint->next_recvq_offset >= OMX_RECVQ_SIZE))
-			/* all slots have the same size, so there can't be a slot that wraps around the end */
-			endpoint->next_recvq_offset = 0;
-	}
+	first_recvq_index = endpoint->next_recvq_index;
+	endpoint->next_recvq_index += nr;
 
 	spin_unlock_bh(&endpoint->event_lock);
+
+	for(i=0; i<nr; i++)
+		recvq_offset_p[i] = ((first_recvq_index+i) % OMX_RECVQ_ENTRY_NR) * OMX_RECVQ_ENTRY_SIZE;
 	return 0;
 }
 
