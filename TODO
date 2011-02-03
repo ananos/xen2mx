@@ -28,8 +28,6 @@
 
 * add restrict when c99 is enabled?
 
-* try get_user_pages_fast() with 32pages chunks or so
-
 * stop supporting mtu!=1500/9000 ?
   + go back to mtu/wire-compat indep library, with send
     function pointers initialized at connect
