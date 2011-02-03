@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
       break;
     }
 
-  fd = open(OMX_MAIN_DEVICE_NAME, O_RDWR);
+  fd = open("/dev/" OMX_MAIN_DEVICE_NAME, O_RDWR);
   if (fd < 0) {
     perror("open");
     goto out;
