@@ -191,7 +191,7 @@ omx__user_region_pin_add_chunk(struct omx_user_region_pin_state *pinstate)
 	/* compute the actual corresponding number of pages to pin */
 	chunk_pages = (chunk_offset + chunk_length + PAGE_SIZE-1) >> PAGE_SHIFT;
 
-	ret = get_user_pages(current, current->mm, aligned_vaddr, chunk_pages, 1, 0, pages, NULL);
+	ret = omx_get_user_pages_fast(aligned_vaddr, chunk_pages, 1, pages);
 	if (unlikely(ret != chunk_pages)) {
 		printk(KERN_ERR "Open-MX: Failed to pin user buffer (%d pages at 0x%lx), get_user_pages returned %d\n",
 		       chunk_pages, aligned_vaddr, ret);

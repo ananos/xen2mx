@@ -259,6 +259,49 @@ typedef struct work_struct * omx_work_struct_data_t;
 #define __rcu
 #endif
 
+#ifdef OMX_HAVE_GET_USER_PAGES_FAST
+/* get_user_pages_fast doesn't like large regions, so split it into batches */
+static inline int
+omx_get_user_pages_fast(unsigned long start, int nr_pages, int write, struct page **pages)
+{
+	int ret;
+	int done;
+
+	done = 0;
+	while (nr_pages) {
+#define OMX_GET_USER_PAGES_FAST_BATCH 32
+		int chunk = nr_pages > OMX_GET_USER_PAGES_FAST_BATCH ? OMX_GET_USER_PAGES_FAST_BATCH : nr_pages;
+		ret = get_user_pages_fast(start, chunk, write, pages);
+		if (ret != chunk) {
+			ret = done + (ret < 0 ? 0 : ret);
+			goto out;
+		}
+		pages += chunk;
+		start += chunk << PAGE_SHIFT;
+		done += chunk;
+		nr_pages -= chunk;
+	}
+	ret = done;
+
+ out:
+	return ret;
+}
+#else /* !OMX_HAVE_GET_USER_PAGES_FAST */
+/* revert to the old locked get_user_pages */
+static inline int
+omx_get_user_pages_fast(unsigned long start, int nr_pages, int write, struct page **pages)
+{
+	struct mm_struct *mm = current->mm;
+	int ret;
+
+	down_read(&mm->mmap_sem);
+	ret = get_user_pages(current, mm, start, nr_pages, write, 0, pages, NULL);
+	up_read(&mm->mmap_sem);
+
+	return ret;
+}
+#endif /* !OMX_HAVE_GET_USER_PAGES_FAST */
+
 #endif /* __omx_hal_h__ */
 
 /*

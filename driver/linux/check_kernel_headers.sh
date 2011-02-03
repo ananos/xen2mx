@@ -239,6 +239,15 @@ else
   echo no
 fi
 
+# get_user_pages_fast added in 2.6.27
+echo -n "  checking (in kernel headers) get_user_pages_fast availability ... "
+if grep get_user_pages_fast ${LINUX_HDR}/include/linux/mm.h > /dev/null ; then
+  echo "#define OMX_HAVE_GET_USER_PAGES_FAST 1" >> ${TMP_CHECKS_NAME}
+  echo yes
+else
+  echo no
+fi
+
 
 # add the footer
 echo "" >> ${TMP_CHECKS_NAME}

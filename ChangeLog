@@ -5,6 +5,9 @@ Major improvements from previous release:
 * Rework the event delivery from the driver to the user-space library
   so as to reduce cache invalidation and locking.
 
+Other improvements from previous release:
+* Use get_user_pages_fast() to slightly improve memory pinning performance.
+
 Caveats:
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
