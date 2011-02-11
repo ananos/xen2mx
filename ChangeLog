@@ -78,7 +78,7 @@ Bug fixes:
 
 Other improvements from previous release:
 * Install more internal MX API compatibility headers so that OpenMPI
-  enables MX internal symbols when configured on top of Open-MX. 
+  enables MX internal symbols when configured on top of Open-MX.
 * Miscellaneous minor fixes.
 
 Open-MX 1.2.903 aka 1.3-rc3 (June 24th 2010, svn r3060)

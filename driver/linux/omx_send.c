@@ -539,7 +539,7 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 			ret = -ENOMEM;
 			goto out;
 		}
- 
+
 		defevent = kmalloc(sizeof(*defevent), GFP_KERNEL);
 		if (unlikely(!defevent)) {
 			omx_counter_inc(iface, SEND_NOMEM_MEDIUM_DEFEVENT);

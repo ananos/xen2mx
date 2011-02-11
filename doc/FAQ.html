@@ -2116,7 +2116,7 @@ board 00:60:dd:47:c4:75 ep 3 irq 1266 mask 00000008
   It is followed by per-processor counters and some information.
 </p>
 <pre>
-           CPU0       CPU1       CPU2       CPU3       
+           CPU0       CPU1       CPU2       CPU3
  33:       6644       6519       6762       6623   PCI-MSI-edge      eth0
  36:     894478    1023337     889191    1012491   PCI-MSI-edge      iwlagn
 </pre>
@@ -2154,7 +2154,7 @@ board 00:60:dd:47:c4:75 ep 3 irq 1266 mask 00000008
   that will receive interrupts (usually in a round-robin manner).
 </p>
 <pre>
-  # cat /proc/irq/57/smp_affinity 
+  # cat /proc/irq/57/smp_affinity
   ffffffff
 </pre>
 <p>
@@ -2163,7 +2163,7 @@ board 00:60:dd:47:c4:75 ep 3 irq 1266 mask 00000008
 </p>
 <pre>
   # echo 400 > /proc/irq/57/smp_affinity
-  # cat /proc/irq/57/smp_affinity 
+  # cat /proc/irq/57/smp_affinity
   00000400
 </pre>
 <p>
@@ -2175,10 +2175,10 @@ board 00:60:dd:47:c4:75 ep 3 irq 1266 mask 00000008
   on the kernel configuration).
 </p>
 <pre>
-  # cat /proc/irq/4334/smp_affinity 
+  # cat /proc/irq/4334/smp_affinity
   00000000,ffffffff,ffffffff,ffffffff
   # echo 00000000,00000003,00000000,00000000 > /proc/irq/4334/smp_affinity
-  # cat /proc/irq/4334/smp_affinity 
+  # cat /proc/irq/4334/smp_affinity
   00000000,00000003,00000000,00000000
 </pre>
 <p>
