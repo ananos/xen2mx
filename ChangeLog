@@ -1,5 +1,5 @@
-Open-MX 1.3.901 (aka 1.4-rc1)
-======================================
+Open-MX 1.3.901 aka 1.4-rc1 (February 14th 2011)
+================================================
 
 Major improvements from previous release:
 * Rework the event delivery from the driver to the user-space library
