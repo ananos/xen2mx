@@ -1,3 +1,13 @@
+Open-MX 1.3.902 aka 1.4-rc2 ()
+==============================
+
+Improvements from previous release:
+* Fix the management of the driver build against a non-running kernel.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.3.901 aka 1.4-rc1 (February 14th 2011)
 ================================================
 
@@ -7,10 +17,6 @@ Major improvements from previous release:
 
 Other improvements from previous release:
 * Use get_user_pages_fast() to slightly improve memory pinning performance.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.3.4 (December 16th 2010)
 ==================================
