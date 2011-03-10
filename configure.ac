@@ -144,12 +144,19 @@ if test x$enable_driver_build = xyes ; then
   OMX_FIND_KBUILD_CFLAGS_ARG(OMX_KBUILD_CFLAGS_ARG, $OMX_LINUX_BUILD)
   OMX_GET_KERNEL_RELEASE(OMX_LINUX_REAL_RELEASE, $OMX_LINUX_BUILD)
 
+  if $linux_release_set ; then
+    AC_MSG_NOTICE(using the Linux kernel release $OMX_LINUX_RELEASE)
+  fi
   AC_MSG_NOTICE(using the Linux kernel sources in $OMX_LINUX_SRC)
   AC_MSG_NOTICE(using the Linux kernel build tree $OMX_LINUX_BUILD)
-  AC_MSG_NOTICE(using the Linux kernel release $OMX_LINUX_REAL_RELEASE)
+  AC_MSG_NOTICE(found Linux kernel release $OMX_LINUX_REAL_RELEASE in build tree)
 
-  if $linux_release_set && test x$OMX_LINUX_RELEASE != x$OMX_LINUX_REAL_RELEASE ; then
-     AC_MSG_ERROR(kernel build reports $OMX_LINUX_REAL_RELEASE instead of $OMX_LINUX_RELEASE)
+
+  if test x$OMX_LINUX_RELEASE != x$OMX_LINUX_REAL_RELEASE ; then
+     if $linux_release_set ; then
+	AC_MSG_ERROR(kernel build reports $OMX_LINUX_REAL_RELEASE instead of $OMX_LINUX_RELEASE)
+     fi
+     OMX_LINUX_RELEASE="$OMX_LINUX_REAL_RELEASE"
   fi
 
   { ! test -z $KCC && _kcc=$KCC; } || _kcc=$CC
