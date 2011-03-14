@@ -56,6 +56,9 @@ OMX_PEERS_FILE=@OMX_PEERS_FILE@
 FMS_RUN=@OMX_FMS_RUN@
 FMS_SERVER=@OMX_FMS_SERVER@
 OMX_RETRY=0
+MODPROBE_PATH=@MODPROBE_PATH@
+MODINFO_PATH=@MODINFO_PATH@
+INSMOD_PATH=@INSMOD_PATH@
 
 UDEV=1
 UDEV_RULES_SRC=10-open-mx.rules
@@ -209,15 +212,15 @@ load_omx() {
 
     if test -f $module; then
 	# modprobe the dependencies
-	depends="$(/sbin/modinfo $module 2>/dev/null | grep ^depends | awk '{print $2}' | sed 's/,/ /') $OMX_MODULE_DEPENDS"
+	depends="$($MODINFO_PATH $module 2>/dev/null | grep ^depends | awk '{print $2}' | sed 's/,/ /') $OMX_MODULE_DEPENDS"
 	for depend in $depends ; do
 	    echo "Loading dependency module: $depend"
-	    /sbin/modprobe $depend
+	    $MODPROBE_PATH $depend
 	done
 
 	# load the driver
 	for i in $(seq 0 $OMX_RETRY) ; do
-	    if ! /sbin/insmod $module $params ; then
+	    if ! $INSMOD_PATH $module $params ; then
 		if [ $i != $OMX_RETRY ] ; then
 		    echoerr "[ERROR] Failed to load the module. Sleeping (10s) then retrying"
 		    sleep 10
@@ -232,7 +235,7 @@ load_omx() {
 	# module not found, the kernel probably changed since we installed Open-MX
 	# try modprobe in case DKMS rebuilt the driver for the new kernel
 	echoerr "[WARNING] Failed to find module $module, trying modprobe..."
-	if /sbin/modprobe open-mx ; then
+	if $MODPROBE_PATH open-mx ; then
 	    # looks good, let's hope DKMS compiled the module from the right source tree
 	    # and with the right configure options
 	    echoerr "[WARNING] Assuming modprobe loaded the right module"

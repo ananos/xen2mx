@@ -570,8 +570,23 @@ if test x$enable_hwloc = xyes; then
   AC_DEFINE(OMX_HAVE_HWLOC, 1, [Define to enable hwloc in user-space tools])
 fi
 
+AC_PATH_PROG(modprobe_path, modprobe)
+AC_PATH_PROG(modinfo_path, modinfo)
+AC_PATH_PROG(insmod_path, insmod)
 
+if test x$modprobe_path = x ; then
+   AC_MSG_ERROR([No modprobe executable found])
+fi
+if test x$modinfo_path = x ; then
+   AC_MSG_ERROR([No modinfo executable found])
+fi
+if test x$insmod_path, = x ; then
+   AC_MSG_ERROR([No insmod executable found])
+fi
 
+AC_SUBST(MODPROBE_PATH, $modprobe_path)
+AC_SUBST(MODINFO_PATH, $modinfo_path)
+AC_SUBST(INSMOD_PATH, $insmod_path)
 
 
 # Here is the list of configured files
