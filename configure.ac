@@ -543,6 +543,11 @@ AC_SUBST(BATTERY_LIST)
 
 # External dependencies
 ########################
+
+# hwloc support relies on the PKG_CHECK_MODULE macro which is usually shipped
+# with pkgconfig. So, if pkgconfig is not installed, just skip all the hwloc
+# stuff.
+m4_ifdef([PKG_CHECK_MODULES], [
 AC_ARG_ENABLE(hwloc,
 	      [AS_HELP_STRING([--disable-hwloc], [disable hwloc in the user-space tools])],
 	      enable_hwloc=$enableval, enable_hwloc=yes)
@@ -569,6 +574,8 @@ AM_CONDITIONAL(OMX_HAVE_HWLOC, test x$enable_hwloc = xyes)
 if test x$enable_hwloc = xyes; then
   AC_DEFINE(OMX_HAVE_HWLOC, 1, [Define to enable hwloc in user-space tools])
 fi
+])
+
 
 AC_PATH_PROG(modprobe_path, modprobe)
 AC_PATH_PROG(modinfo_path, modinfo)
