@@ -59,6 +59,7 @@ OMX_RETRY=0
 MODPROBE_PATH=@MODPROBE_PATH@
 MODINFO_PATH=@MODINFO_PATH@
 INSMOD_PATH=@INSMOD_PATH@
+RMMOD_PATH=@RMMOD_PATH@
 
 UDEV=1
 UDEV_RULES_SRC=10-open-mx.rules
@@ -155,7 +156,7 @@ OMX_MODULE_PARAMS="${OMX_MODULE_PARAMS} ifnames=${OMX_IFACES}"
 unload_omx() {
     if grep -E 'open(-|_)mx' /proc/modules > /dev/null; then
         echo "Removing Open-MX driver"
-        /sbin/rmmod open-mx
+        @RMMOD_PATH@ open-mx
     fi
 
     # always remove device nodes, even if udev wasn't used.
