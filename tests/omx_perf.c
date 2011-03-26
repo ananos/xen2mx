@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <malloc.h>	/* memalign() */
 #include <arpa/inet.h>	/* htonl() */
+#include <sched.h>	/* sched_yield() */
 
 #include "open-mx.h"
 
@@ -42,6 +43,7 @@
 #define BUFFER_ALIGN (64*1024) /* page-aligned on any arch */
 #define UNIDIR 0
 #define SYNC 0
+#define YIELD 0
 #define PAUSE_MS 100
 
 static unsigned long long
@@ -56,7 +58,7 @@ next_length(unsigned long long length, unsigned long long multiplier, unsigned l
 }
 
 static inline omx_return_t
-omx_test_or_wait(int wait,
+omx_test_or_wait(int wait, int yield,
 		 omx_endpoint_t ep, omx_request_t * request,
 		 struct omx_status *status, uint32_t * result)
 {
@@ -68,6 +70,8 @@ omx_test_or_wait(int wait,
       ret = omx_test(ep, request, status, result);
       if (ret != OMX_SUCCESS)
 	return ret;
+      if (yield)
+	sched_yield();
     } while (!*result);
     return OMX_SUCCESS;
   }
@@ -96,6 +100,7 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
   fprintf(stderr, " -s\tswitch to slave receiver mode\n");
   fprintf(stderr, " -w\tsleep instead of busy polling\n");
+  fprintf(stderr, " -y\tyield the processor between busy polling loops\n");
   fprintf(stderr, " -v\tverbose\n");
   fprintf(stderr, "Sender options:\n");
   fprintf(stderr, " -a\tuse page-aligned buffers on both hosts\n");
@@ -152,6 +157,7 @@ int main(int argc, char *argv[])
   unsigned long long increment = INCREMENT;
   int unidir = UNIDIR;
   int sync = SYNC;
+  int yield = YIELD;
   int slave = 0;
   char my_hostname[OMX_HOSTNAMELEN_MAX];
   char my_ifacename[OMX_BOARD_ADDR_STRLEN];
@@ -165,7 +171,7 @@ int main(int argc, char *argv[])
   int wait = 0;
   int pause_ms = PAUSE_MS;
 
-  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:P:swUYvah")) != -1)
+  while ((c = getopt(argc, argv, "e:r:d:b:S:E:M:I:N:W:P:swUYyvah")) != -1)
     switch (c) {
     case 'b':
       bid = atoi(optarg);
@@ -219,6 +225,9 @@ int main(int argc, char *argv[])
       break;
     case 'Y':
       sync = 1;
+      break;
+    case 'y':
+      yield = 1;
       break;
     default:
       fprintf(stderr, "Unknown option -%c\n", c);
@@ -385,7 +394,7 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = omx_test_or_wait(wait, ep, &req, &status, &result);
+	ret = omx_test_or_wait(wait, yield, ep, &req, &status, &result);
 	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));
@@ -406,7 +415,7 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = omx_test_or_wait(wait, ep, &req, &status, &result);
+	ret = omx_test_or_wait(wait, yield, ep, &req, &status, &result);
 	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));
@@ -571,7 +580,7 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = omx_test_or_wait(wait, ep, &req, &status, &result);
+	ret = omx_test_or_wait(wait, yield, ep, &req, &status, &result);
 	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));
@@ -593,7 +602,7 @@ int main(int argc, char *argv[])
 		  omx_strerror(ret));
 	  goto out_with_ep;
 	}
-	ret = omx_test_or_wait(wait, ep, &req, &status, &result);
+	ret = omx_test_or_wait(wait, yield, ep, &req, &status, &result);
 	if (ret != OMX_SUCCESS || !result) {
 	  fprintf(stderr, "Failed to wait (%s)\n",
 		  omx_strerror(ret));

@@ -84,8 +84,8 @@ case $testname in
     vect_shared)		$TESTS_DIR/omx_vect_test -s ;;
     vect_self)			$TESTS_DIR/omx_vect_test -S ;;
     pingpong_native)		OMX_DISABLE_SHARED=1 $helperdir/omx_test_double_app \
-				$TESTS_DIR/omx_perf ;;
-    pingpong_shared)		$helperdir/omx_test_double_app $TESTS_DIR/omx_perf ;;
+				$TESTS_DIR/omx_perf -y ;;
+    pingpong_shared)		$helperdir/omx_test_double_app $TESTS_DIR/omx_perf -y ;;
     randomloop)
 	$MXTESTS_DIR/mx_msg_loop -R -P 11 & _pid=$!
 	sleep 20
