@@ -105,17 +105,13 @@ AC_ARG_WITH(linux-release,
 	    AC_HELP_STRING(--with-linux-release=<version>, release number of the target kernel),
 	    OMX_LINUX_RELEASE=$withval   ; linux_release_set=true,
 	    OMX_LINUX_RELEASE=`uname -r` ; linux_release_set=false)
-
-
-# TODO : clean these two items
 AC_ARG_WITH(linux,
 	    AC_HELP_STRING(--with-linux=<dir>, location of the Linux kernel sources),
-	    OMX_LINUX_SRC=$withval; OMX_LINUX_BUILD=$withval,
-	    OMX_LINUX_SRC=/lib/modules/$OMX_LINUX_RELEASE/source)
-
+	    test x$linux_release_set = xfalse && AC_MSG_ERROR(--with-linux requires --with-linux-release first); OMX_LINUX_SRC=$withval; OMX_LINUX_BUILD=$withval)
 AC_ARG_WITH(linux-build,
 	    AC_HELP_STRING(--with-linux-build=<dir>, location of the Linux kernel build tree),
-	    OMX_LINUX_BUILD=$withval)
+	    test x$linux_release_set = xfalse && AC_MSG_ERROR(--with-linux-build requires --with-linux-release first); OMX_LINUX_BUILD=$withval)
+test -z $OMX_LINUX_SRC && OMX_LINUX_SRC=/lib/modules/$OMX_LINUX_RELEASE/source
 test -z $OMX_LINUX_BUILD && OMX_LINUX_BUILD=/lib/modules/$OMX_LINUX_RELEASE/build
 
 OMX_WITH(shared-ring-entries, n, OMX_SHARED_RING_ENTRIES,
@@ -142,35 +138,35 @@ if test x$enable_driver_build = xyes ; then
   OMX_FIND_KERNEL_AUTOCONF_HEADER(OMX_LINUX_AUTOCONF_DIR, $OMX_LINUX_BUILD $OMX_LINUX_SRC)
   OMX_CHECK_KBUILD_MAKEFILE($OMX_LINUX_BUILD)
   OMX_FIND_KBUILD_CFLAGS_ARG(OMX_KBUILD_CFLAGS_ARG, $OMX_LINUX_BUILD)
-  OMX_GET_KERNEL_RELEASE(OMX_LINUX_REAL_RELEASE, $OMX_LINUX_BUILD)
 
-  if $linux_release_set ; then
-    AC_MSG_NOTICE(using the Linux kernel release $OMX_LINUX_RELEASE)
-  fi
+  AC_MSG_NOTICE(using the Linux kernel release $OMX_LINUX_RELEASE)
   AC_MSG_NOTICE(using the Linux kernel sources in $OMX_LINUX_SRC)
   AC_MSG_NOTICE(using the Linux kernel build tree $OMX_LINUX_BUILD)
+
+  OMX_GET_KERNEL_RELEASE(OMX_LINUX_REAL_RELEASE, $OMX_LINUX_BUILD)
   AC_MSG_NOTICE(found Linux kernel release $OMX_LINUX_REAL_RELEASE in build tree)
-
-
   if test x$OMX_LINUX_RELEASE != x$OMX_LINUX_REAL_RELEASE ; then
-     if $linux_release_set ; then
-	AC_MSG_ERROR(kernel build reports $OMX_LINUX_REAL_RELEASE instead of $OMX_LINUX_RELEASE)
-     fi
-     OMX_LINUX_RELEASE="$OMX_LINUX_REAL_RELEASE"
+    # Some kernel have a buggy make kernelrelease that forgets some suffixes.
+    # What's important to us is the output of uname -r, not make kernelrelease,
+    # because we use uname -r to find the right module in omx_init.
+    # So we still install the module with the user-specified kernel release
+    # even if make release disagrees.
+    AC_MSG_WARN(kernel build reports $OMX_LINUX_REAL_RELEASE instead of $OMX_LINUX_RELEASE)
+    AC_MSG_WARN(installing in $OMX_LINUX_RELEASE as requested)
   fi
 
   { ! test -z $KCC && _kcc=$KCC; } || _kcc=$CC
   OMX_GET_GCC_VERSION(GCC_VERSION, $_kcc)
   OMX_GET_KERNEL_GCC_VERSION(KERNEL_GCC_VERSION)
 
-  if test "x$OMX_LINUX_REAL_RELEASE" = x`uname -r` ; then
+  if test "x$OMX_LINUX_RELEASE" = x`uname -r` ; then
       if test "x$GCC_VERSION" != "x$KERNEL_GCC_VERSION" ; then
 	  AC_MSG_WARN(kernel built with gcc $KERNEL_GCC_VERSION and Open-MX with $GCC_VERSION)
       fi
   fi
 
   OMX_SYMLINK_DRIVER_SOURCES
-  OMX_CHECK_KERNEL_HEADERS($OMX_LINUX_BUILD, $OMX_LINUX_HDR, $OMX_LINUX_REAL_RELEASE)
+  OMX_CHECK_KERNEL_HEADERS($OMX_LINUX_BUILD, $OMX_LINUX_HDR, $OMX_LINUX_RELEASE)
 
   AC_SUBST(OMX_KBUILD_CFLAGS_ARG)
   AC_SUBST(OMX_LINUX_RELEASE)

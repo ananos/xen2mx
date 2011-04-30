@@ -112,17 +112,17 @@ During configure, Open-MX checks the running kernel with 'uname -r' and
 builds the open-mx module against it, using its headers and build tree
 in /lib/modules/`uname -r`/{source,build}.
 
-To build for another kernel, use either
+To build for another kernel, use
     $ ./configure --with-linux-release=2.6.x-y
-or
-    $ ./configure --with-linux=/path/to/kernel/headers/
-
-To build using another kernel build tree, use
-    $ ./configure --with-linux=/path/to/kernel/headers/ --with-linux-build=/path/to/kernel/build/tree/
-This may be useful on distribution such as Suse where kernel headers
-and build tools are not in the same directory:
-    $ ./configure --with-linux=/usr/src/linux-2.6.16.60-0.34
+If needed, you may also specify your kernel header directory
+    $ ./configure --with-linux-release=2.6.x-y \
+		  --with-linux=/path/to/kernel/headers/
+and maybe even your kernel build directory
+    $ ./configure --with-linux-release=2.6.16.60-0.34 \
+		  --with-linux=/usr/src/linux-2.6.16.60-0.34 \
 		  --with-linux-build=/usr/src/linux-2.6.16.60-0.34-obj/x86_64/smp/
+This may be useful on distribution such as Suse where kernel headers
+and build tools are not in the same directory.
 
 The 'open-mx' kernel module should be loaded prior to any user-space
 usage of Open-MX. If not loaded, a "No device" error will be returned.

@@ -1070,22 +1070,26 @@ builds the open-mx module against it, using its headers and build tree
 in /lib/modules/&rsquo;uname -r&rsquo;/&#123;source,build&#125;.
 </p>
 <p>
-To build for another kernel, you may pass its release name so that Open-MX
-finds the corresponding header directories from <tt>/lib/modules/<name>/</tt>:
+To build for another kernel, you must first pass its release name so that Open-MX
+knows where to install the kernel module.
 </p>
 <pre>
 $ ./configure --with-linux-release=2.6.x-y
 </pre>
-It is also possible to directly define the kernel header directory:
+the <tt>--with-linux-release</tt> option also lets Open-MX find the corresponding
+kernel header directory from <tt>/lib/modules/<name>/</tt>.
+It is possible to override this directory in case <tt>/lib/modules/<name>/</tt>
+does not contain the right symlinks:
 <pre>
-$ ./configure --with-linux=/path/to/kernel/headers/
+$ ./configure --with-linux-release=2.6.x-y --with-linux=/path/to/kernel/headers/
 </pre>
 <p>
-If using a distribution such as Suse where kernel headers and build tools are
-split into multiple directories, you may also need to define the build directory:
+Additionally, if your distribution installs kernel headers and build tools into different
+directories, you may also need to override the build directory:
 </p>
 <pre>
-$ ./configure --with-linux=/usr/src/linux-2.6.16.60-0.34 \
+$ ./configure --with-linux-release=2.6.16.60-0.34 \
+              --with-linux=/usr/src/linux-2.6.16.60-0.34 \
               --with-linux-build=/usr/src/linux-2.6.16.60-0.34-obj/x86_64/smp/
 </pre>
 
