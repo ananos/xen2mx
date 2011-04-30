@@ -295,11 +295,10 @@ omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
 			    int nr, const omx_sendq_map_index_t * indexes)
 {
   struct omx__sendq_entry * array = ep->sendq_map.array;
-  void * user;
   int i;
 
-  user = array[indexes[0]].user;
 #ifdef OMX_LIB_DEBUG
+  void * user = array[indexes[0]].user;
   for(i=1; i<nr; i++)
     if (user != array[indexes[i]].user)
       omx__abort(ep, "Tried to put some unrelated sendq map entries\n");

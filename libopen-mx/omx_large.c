@@ -622,7 +622,7 @@ omx__process_pull_done(struct omx_endpoint * ep,
     req->generic.status.xfer_length = 0;
   }
 
-  omx__put_region(ep, req->recv.specific.large.local_region, NULL);
+  omx__put_region(ep, region, NULL);
   omx__dequeue_request(&ep->driver_pulling_req_q, req);
   req->generic.state &= ~(OMX_REQUEST_STATE_DRIVER_PULLING | OMX_REQUEST_STATE_RECV_PARTIAL);
 

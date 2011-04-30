@@ -817,14 +817,13 @@ omx_peer_host_query(const struct omx_peer *peer)
 	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
 	struct omx_pkt_host_query *query_n;
-	int ret = 0;
 
 	dprintk(QUERY, "sending host query for peer %d\n", peer_index);
 
 	skb = omx_new_skb(ETH_ZLEN);
 	if (unlikely(skb == NULL)) {
 		printk(KERN_INFO "Open-MX: Failed to create host query skb\n");
-		ret = -ENOMEM;
+		/* will retry later */
  		goto out;
 	}
 
@@ -888,14 +887,10 @@ omx_recv_host_query(struct omx_iface * iface,
 	struct net_device * ifp = iface->eth_ifp;
 	struct omx_pkt_head *ph;
 	struct ethhdr *eh;
-	struct omx_pkt_host_query *query_n;
-	uint32_t magic;
 
 	/* locate headers */
 	ph = &mh->head;
 	eh = &ph->eth;
-	query_n = (struct omx_pkt_host_query *) (ph + 1);
-	magic = OMX_NTOH_32(query_n->magic);
 
 	if (memcmp(&eh->h_dest, ifp->dev_addr, sizeof (eh->h_dest))) {
 		/* not for this iface, ignore */
@@ -919,13 +914,11 @@ omx_recv_host_reply(struct omx_iface * iface,
 		    struct sk_buff * skb)
 {
 	struct omx_pkt_head *ph;
-	struct ethhdr *eh;
 	struct omx_pkt_host_reply *reply_n;
 	uint32_t magic;
 
 	/* locate headers */
 	ph = &mh->head;
-	eh = &ph->eth;
 	reply_n = (struct omx_pkt_host_reply *) (ph + 1);
 	magic = OMX_NTOH_32(reply_n->magic);
 

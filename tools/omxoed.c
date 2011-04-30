@@ -162,7 +162,6 @@ check_for_packet(
   int timeout;
   omx_raw_status_t status;
   omx_return_t ret;
-  uint32_t length;
   int rc;
 
   gettimeofday(&before, NULL);
@@ -173,10 +172,8 @@ check_for_packet(
   } else {
     timeout = 0;
   }
-
-  length = sizeof(nip->mxoepkt);
   ret = omx_raw_next_event(nip->raw_ep,
-			   &nip->mxoepkt, &length,
+			   &nip->mxoepkt, &len,
 			   timeout, &status);
   if (ret != OMX_SUCCESS) {
     fprintf(stderr, "Error from omx_raw_next_event: %s\n", omx_strerror(ret));
@@ -283,7 +280,6 @@ fill_nic_info(
 {
   omx_return_t omxrc;
   uint32_t nic_half;
-  uint32_t board_num;
 
   omxrc = omx_board_number_to_nic_id(nip->nic_index, &nip->my_nic_id);
   if (omxrc != OMX_SUCCESS) {
@@ -310,8 +306,6 @@ fill_nic_info(
   /* assign a random serial number for this invocation */
   nip->my_serial = random();
   nip->outpkt.serial = htonl(nip->my_serial);
-
-  board_num = nip->nic_index;
 }
 
 void *
