@@ -45,6 +45,9 @@ if test "$FORCE" != 1 && grep "$CONFIG_LINE" "$CHECKS_NAME" >/dev/null 2>&1; the
   exit 0
 fi
 
+# create destination directory if needed
+mkdir -p `dirname ${CHECKS_NAME}`
+
 # create the output file
 CHECKS_DATE_PREFIX="This file has been first generated on "
 TMP_CHECKS_NAME=${CHECKS_NAME}.tmp
