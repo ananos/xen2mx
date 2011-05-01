@@ -924,7 +924,7 @@ omx_recv_host_reply(struct omx_iface * iface,
 
 	if (magic != omx_host_query_magic) {
 		omx_counter_inc(iface, DROP_HOST_REPLY_BAD_MAGIC);
-		omx_drop_dprintk(eh, "HOST REPLY packet with bad magic %lx instead of %lx\n",
+		omx_drop_dprintk(&ph->eth, "HOST REPLY packet with bad magic %lx instead of %lx\n",
 				 (unsigned long) magic, (unsigned long) omx_host_query_magic);
 		dev_kfree_skb(skb);
 		return -EINVAL;
