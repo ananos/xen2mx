@@ -144,7 +144,7 @@ if test x$enable_driver_build = xyes ; then
 
   OMX_GET_KERNEL_RELEASE(OMX_LINUX_REAL_RELEASE, $OMX_LINUX_BUILD)
   AC_MSG_NOTICE(found Linux kernel release $OMX_LINUX_REAL_RELEASE in build tree)
-  if test x$OMX_LINUX_RELEASE != x$OMX_LINUX_REAL_RELEASE ; then
+  if test x$OMX_LINUX_RELEASE != "x$OMX_LINUX_REAL_RELEASE" ; then
     # Some kernel have a buggy make kernelrelease that forgets some suffixes.
     # What's important to us is the output of uname -r, not make kernelrelease,
     # because we use uname -r to find the right module in omx_init.
