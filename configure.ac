@@ -138,10 +138,6 @@ if test x$enable_driver_build = xyes ; then
   OMX_FIND_KERNEL_AUTOCONF_HEADER(OMX_LINUX_AUTOCONF_DIR, $OMX_LINUX_BUILD $OMX_LINUX_SRC)
   OMX_CHECK_KBUILD_MAKEFILE($OMX_LINUX_BUILD)
 
-  AC_MSG_NOTICE(using the Linux kernel release $OMX_LINUX_RELEASE)
-  AC_MSG_NOTICE(using the Linux kernel sources in $OMX_LINUX_SRC)
-  AC_MSG_NOTICE(using the Linux kernel build tree $OMX_LINUX_BUILD)
-
   OMX_GET_KERNEL_RELEASE(OMX_LINUX_REAL_RELEASE, $OMX_LINUX_BUILD)
   AC_MSG_NOTICE(found Linux kernel release $OMX_LINUX_REAL_RELEASE in build tree)
   if test x$OMX_LINUX_RELEASE != "x$OMX_LINUX_REAL_RELEASE" ; then
@@ -636,4 +632,13 @@ cat >configure-dkms <<EOF
 $srcdir/configure $(./config.status --config) "\$@"
 EOF
 chmod ugo+x configure-dkms
+
+cat <<EOF
+
+SUMMARY
+*******
+Linux kernel release:	 $OMX_LINUX_RELEASE
+Linux kernel sources:	 $OMX_LINUX_SRC
+Linux kernel build tree: $OMX_LINUX_BUILD
+EOF
 
