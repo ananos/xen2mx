@@ -107,10 +107,14 @@ AC_ARG_WITH(linux-release,
 	    OMX_LINUX_RELEASE=`uname -r` ; linux_release_set=false)
 AC_ARG_WITH(linux,
 	    AC_HELP_STRING(--with-linux=<dir>, location of the Linux kernel sources),
-	    test x$linux_release_set = xfalse && AC_MSG_ERROR(--with-linux requires --with-linux-release first); OMX_LINUX_SRC=$withval; OMX_LINUX_BUILD=$withval)
+	    linux_build_set=true ; OMX_LINUX_SRC=$withval; OMX_LINUX_BUILD=$withval,
+	    linux_build_set=false)
 AC_ARG_WITH(linux-build,
 	    AC_HELP_STRING(--with-linux-build=<dir>, location of the Linux kernel build tree),
-	    test x$linux_release_set = xfalse && AC_MSG_ERROR(--with-linux-build requires --with-linux-release first); OMX_LINUX_BUILD=$withval)
+	    linux_build_set=true ; OMX_LINUX_BUILD=$withval,
+	    linux_build_set=false)
+
+
 test -z $OMX_LINUX_SRC && OMX_LINUX_SRC=/lib/modules/$OMX_LINUX_RELEASE/source
 test -z $OMX_LINUX_BUILD && OMX_LINUX_BUILD=/lib/modules/$OMX_LINUX_RELEASE/build
 
@@ -140,14 +144,42 @@ if test x$enable_driver_build = xyes ; then
 
   OMX_GET_KERNEL_RELEASE(OMX_LINUX_REAL_RELEASE, $OMX_LINUX_BUILD)
   AC_MSG_NOTICE(found Linux kernel release $OMX_LINUX_REAL_RELEASE in build tree)
-  if test x$OMX_LINUX_RELEASE != "x$OMX_LINUX_REAL_RELEASE" ; then
-    # Some kernel have a buggy make kernelrelease that forgets some suffixes.
-    # What's important to us is the output of uname -r, not make kernelrelease,
-    # because we use uname -r to find the right module in omx_init.
-    # So we still install the module with the user-specified kernel release
-    # even if make release disagrees.
-    AC_MSG_WARN(kernel build reports $OMX_LINUX_REAL_RELEASE instead of $OMX_LINUX_RELEASE)
-    AC_MSG_WARN(installing in $OMX_LINUX_RELEASE as requested)
+
+  # If the user forces the Linux release, this will be the value used when
+  # installing the module.
+  #
+  # Else, Linux release tries to be inferred from the Linux build tree (if this
+  # one has been forced. Else `uname -r` is used). See the comments below.
+  warn_about_kernelrelease=false
+  if $linux_release_set ; then
+    if test x$OMX_LINUX_RELEASE != "x$OMX_LINUX_REAL_RELEASE" ; then
+      # Here, the user forces the Linux release but this value conflicts with
+      # the one inferred from the build tree. We keep the user value because the
+      # autodetected one can be buggy (see the comment below).
+      # Nonetheless, we issue a warning related to this conflict.
+      AC_MSG_WARN(kernel build reports $OMX_LINUX_REAL_RELEASE instead of $OMX_LINUX_RELEASE)
+      AC_MSG_WARN(installing in $OMX_LINUX_RELEASE as requested)
+    fi
+  else
+    if $linux_build_set ; then
+      # Here, Linux release has not been specified but the build tree has
+      # been. So, the only usable value is the one inferred from the build
+      # tree. Most of the time, this value will matches the `uname -r` value
+      # when running this kernel. So things work well because we use `uname -r`
+      # in omx_init to find the module location.
+      #
+      # But sometimes, some kernels (like some Debian ones) have a buggy 'make
+      # kernelrelease' which differs from the `uname -r` of this kernel. Such
+      # case will lead to omx_init being unable to find the kernel module.
+      #
+      # Whatever, we have no choice here to keep the 'make kernelrelease'
+      # value. But, we inform the user at the end of the configure with an
+      # emphasized message about this possible issue as well as with the
+      # associated workaround: force the Linux release to match `uname -r`.
+      AC_MSG_NOTICE(installing in $OMX_LINUX_REAL_RELEASE as detected in the build tree)
+      OMX_LINUX_RELEASE="$OMX_LINUX_REAL_RELEASE"
+      warn_about_kernelrelease=true
+    fi
   fi
 
   { ! test -z $KCC && _kcc=$KCC; } || _kcc=$CC
@@ -630,15 +662,33 @@ AC_OUTPUT
 AC_MSG_NOTICE(Creating the DKMS quick configure script)
 cat >configure-dkms <<EOF
 $srcdir/configure $(./config.status --config) "\$@"
-EOF
+		  EOF
 chmod ugo+x configure-dkms
+EOF
 
 cat <<EOF
 
 SUMMARY
 *******
-Linux kernel release:	 $OMX_LINUX_RELEASE
 Linux kernel sources:	 $OMX_LINUX_SRC
 Linux kernel build tree: $OMX_LINUX_BUILD
+Linux kernel release:	 $OMX_LINUX_RELEASE
 EOF
 
+if $warn_about_kernelrelease ; then
+cat <<EOF
+
+WARNING
+*******
+You specified a Linux build tree (through --with-linux or --with-linux-build)
+without having specified a Linux release (with --with-linux-release).
+Most of the time, this will work as the kernel release inferred from the build
+tree will match the \`uname -r\` (which is used at runtime) one when running this
+kernel.
+But some buggy kernels (like some Debian ones) report a wrong kernel release
+from their build tree. This will lead to omx_init being unable to find the
+kernel module location.
+If this happen, rebuild Open-MX by forcing the Linux release
+(using --with-linux-release) so that it matches the \`uname -r\` value of this kernel.
+EOF
+fi
