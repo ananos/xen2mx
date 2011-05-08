@@ -668,6 +668,7 @@ $srcdir/configure $(./config.status --config) "\$@"
 EOF
 chmod ugo+x configure-dkms
 
+if test x$enable_driver_build = xyes ; then
 cat <<EOF
 
 Driver Configuration Summary
@@ -689,4 +690,5 @@ wrong, leading to omx_init being unable to find the kernel module location.
 If this happen, add --with-linux-release to your configure line so that the
 release string matches the \`uname -r\` value of this kernel.
 EOF
+fi
 fi
