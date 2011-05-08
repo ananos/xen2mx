@@ -145,6 +145,10 @@ if test x$enable_driver_build = xyes ; then
   OMX_GET_KERNEL_RELEASE(OMX_LINUX_REAL_RELEASE, $OMX_LINUX_BUILD)
   AC_MSG_NOTICE(found Linux kernel release $OMX_LINUX_REAL_RELEASE in build tree)
 
+  # The kernel module gets installed in $prefix/modules/$OMX_LINUX_RELEASE
+  # and omx_init loads it from $prefix/modules/`uname -r`,
+  # so we must make sure that those release string match.
+  #
   # If the user forces the Linux release, this will be the value used when
   # installing the module.
   #
@@ -164,12 +168,11 @@ if test x$enable_driver_build = xyes ; then
     if $linux_build_set ; then
       # Here, Linux release has not been specified but the build tree has
       # been. So, the only usable value is the one inferred from the build
-      # tree. Most of the time, this value will matches the `uname -r` value
-      # when running this kernel. So things work well because we use `uname -r`
-      # in omx_init to find the module location.
+      # tree. Most of the time, this value will match the `uname -r` value
+      # when running this kernel. So things work well.
       #
-      # But sometimes, some kernels (like some Debian ones) have a buggy 'make
-      # kernelrelease' which differs from the `uname -r` of this kernel. Such
+      # But sometimes, some kernel headers have a buggy 'make kernelrelease'
+      # whose output differs from their `uname -r` output. Such
       # case will lead to omx_init being unable to find the kernel module.
       #
       # Whatever, we have no choice here to keep the 'make kernelrelease'
@@ -667,9 +670,9 @@ chmod ugo+x configure-dkms
 
 cat <<EOF
 
-SUMMARY
-*******
-Linux kernel sources:	 $OMX_LINUX_SRC
+Driver Configuration Summary
+****************************
+Linux kernel headers:	 $OMX_LINUX_HDR
 Linux kernel build tree: $OMX_LINUX_BUILD
 Linux kernel release:	 $OMX_LINUX_RELEASE
 EOF
@@ -681,13 +684,9 @@ WARNING
 *******
 You specified a Linux build tree (through --with-linux or --with-linux-build)
 without having specified a Linux release (with --with-linux-release).
-Most of the time, this will work as the kernel release inferred from the build
-tree will match the \`uname -r\` (which is used at runtime) one when running this
-kernel.
-But some buggy kernels (like some Debian ones) report a wrong kernel release
-from their build tree. This will lead to omx_init being unable to find the
-kernel module location.
-If this happen, rebuild Open-MX by forcing the Linux release
-(using --with-linux-release) so that it matches the \`uname -r\` value of this kernel.
+The above Linux kernel release was inferred from the build tree. It may be
+wrong, leading to omx_init being unable to find the kernel module location.
+If this happen, add --with-linux-release to your configure line so that the
+release string matches the \`uname -r\` value of this kernel.
 EOF
 fi
