@@ -662,9 +662,8 @@ AC_OUTPUT
 AC_MSG_NOTICE(Creating the DKMS quick configure script)
 cat >configure-dkms <<EOF
 $srcdir/configure $(./config.status --config) "\$@"
-		  EOF
-chmod ugo+x configure-dkms
 EOF
+chmod ugo+x configure-dkms
 
 cat <<EOF
 
