@@ -74,6 +74,7 @@ case $testname in
 				$MXTESTS_DIR/mx_wait_any_test ;;
     cancel)			$helperdir/omx_test_double_app -s $TESTS_DIR/omx_cancel_test ;;
     wakeup)			$helperdir/omx_test_double_app -s $MXTESTS_DIR/mx_wakeup_test ;;
+    addr_context)		$helperdir/omx_test_double_app $TESTS_DIR/omx_endpoint_addr_context_test ;;
     multirails)			$helperdir/omx_test_double_app $TESTS_DIR/omx_rails -R 3 -- \
 				-d localhost:0,localhost:1,localhost:2 ;;
     monothread_wait_any)	$helperdir/omx_test_double_app $TESTS_DIR/omx_multithread_wait_any -p 1 -t 1 -- \

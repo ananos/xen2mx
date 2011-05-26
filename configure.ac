@@ -552,7 +552,7 @@ AC_SUBST(OMX_RAW_DEVICE_MODE)
 
 # Test configuration
 # Do not use multiline for the both following variables
-TEST_LIST='loopback_native loopback_shared loopback_self unexpected unexpected_with_ctxids unexpected_handler truncated wait_any cancel wakeup multirails monothread_wait_any multithread_wait_any vect_native vect_shared vect_self pingpong_native pingpong_shared randomloop'
+TEST_LIST='loopback_native loopback_shared loopback_self unexpected unexpected_with_ctxids unexpected_handler truncated wait_any cancel wakeup addr_context multirails monothread_wait_any multithread_wait_any vect_native vect_shared vect_self pingpong_native pingpong_shared randomloop'
 
 BATTERY_LIST='loopback misc vect pingpong'
 

@@ -124,6 +124,7 @@ case $batteryname in
 	do_test 'wait_any'				$launcherdir/wait_any
 	do_test 'cancel'				$launcherdir/cancel
 	do_test 'wakeup'				$launcherdir/wakeup
+	do_test 'addr_context'				$launcherdir/addr_context
 	do_test 'multirails'				$launcherdir/multirails
 	do_test 'monothread_wait_any'			$launcherdir/monothread_wait_any
 	do_test 'multithread_wait_any'			$launcherdir/multithread_wait_any
