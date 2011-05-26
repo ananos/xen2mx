@@ -37,7 +37,7 @@ usage(int argc, char *argv[])
   fprintf(stderr, " -b <n>\tchange local board id [%d]\n", BID);
   fprintf(stderr, " -r <n>\tchange remote endpoint id [%d]\n", RID);
   fprintf(stderr, " -e <n>\tchange local endpoint id [%d]\n", EID);
-  fprintf(stderr, "-h - help\n");
+  fprintf(stderr, " -h\thelp\n");
 }
 
 int main(int argc, char *argv[])
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
   omx_return_t ret;
   int c;
 
-  while ((c = getopt(argc, argv, "hd:b:e:r:")) != EOF) switch(c) {
+  while ((c = getopt(argc, argv, "d:b:e:r:h")) != EOF) switch(c) {
   case 'd':
     dest_hostname = strdup(optarg);
     break;

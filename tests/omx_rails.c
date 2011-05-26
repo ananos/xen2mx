@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
   char *dest_hostname = NULL;
   char *buffer;
 
-  while ((c = getopt(argc, argv, "R:d:vh")) != -1)
+  while ((c = getopt(argc, argv, "R:d:h")) != -1)
     switch (c) {
     case 'd':
       dest_hostname = strdup(optarg);
