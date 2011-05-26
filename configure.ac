@@ -101,19 +101,18 @@ OMX_DISABLE(driver-build, enable_driver_build,
 	    do not build the driver,
 	    whether the driver has to be built)
 
+linux_release_set=false
+linux_build_set=false
 AC_ARG_WITH(linux-release,
 	    AC_HELP_STRING(--with-linux-release=<version>, release number of the target kernel),
-	    OMX_LINUX_RELEASE=$withval   ; linux_release_set=true,
-	    OMX_LINUX_RELEASE=`uname -r` ; linux_release_set=false)
+	    OMX_LINUX_RELEASE=$withval  ; linux_release_set=true,
+	    OMX_LINUX_RELEASE=`uname -r`)
 AC_ARG_WITH(linux,
 	    AC_HELP_STRING(--with-linux=<dir>, location of the Linux kernel sources),
-	    linux_build_set=true ; OMX_LINUX_SRC=$withval; OMX_LINUX_BUILD=$withval,
-	    linux_build_set=false)
+	    linux_build_set=true ; OMX_LINUX_SRC=$withval; OMX_LINUX_BUILD=$withval)
 AC_ARG_WITH(linux-build,
 	    AC_HELP_STRING(--with-linux-build=<dir>, location of the Linux kernel build tree),
-	    linux_build_set=true ; OMX_LINUX_BUILD=$withval,
-	    linux_build_set=false)
-
+	    linux_build_set=true ; OMX_LINUX_BUILD=$withval)
 
 test -z $OMX_LINUX_SRC && OMX_LINUX_SRC=/lib/modules/$OMX_LINUX_RELEASE/source
 test -z $OMX_LINUX_BUILD && OMX_LINUX_BUILD=/lib/modules/$OMX_LINUX_RELEASE/build
