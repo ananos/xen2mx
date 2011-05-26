@@ -108,7 +108,8 @@ do_run()
     $suspend && kill -STOP $__pid
     sleep 1
 
-    $app $opts $sender_opts && __ret=$?
+    $app $opts $sender_opts
+    __ret=$?
 
     if $suspend ; then
 	kill -9    $__pid
