@@ -251,6 +251,14 @@ else
   echo no
 fi
 
+# kfree_rcu added in 2.6.40
+echo -n "  checking (in kernel headers) kfree_rcu availability ... "
+if grep kfree_rcu ${LINUX_HDR}/include/linux/rcupdate.h > /dev/null ; then
+  echo "#define OMX_HAVE_KFREE_RCU 1" >> ${TMP_CHECKS_NAME}
+  echo yes
+else
+  echo no
+fi
 
 # add the footer
 echo "" >> ${TMP_CHECKS_NAME}

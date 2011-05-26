@@ -419,12 +419,14 @@ omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
  * Sleeping
  */
 
+#ifndef OMX_HAVE_KFREE_RCU
 static void
 __omx_event_waiter_rcu_free_callback(struct rcu_head *rcu_head)
 {
 	struct omx_event_waiter * waiter = container_of(rcu_head, struct omx_event_waiter, rcu_head);
 	kfree(waiter);
 }
+#endif /* !OMX_HAVE_KFREE_RCU */
 
 /* FIXME: this is for when the application waits, not when the progression thread does */
 int
@@ -549,7 +551,11 @@ omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
 
 	cmd.status = waiter->status;
 
+#ifdef OMX_HAVE_KFREE_RCU
+	kfree_rcu(waiter, rcu_head);
+#else
 	call_rcu(&waiter->rcu_head, __omx_event_waiter_rcu_free_callback);
+#endif /* !OMX_HAVE_KFREE_RCU */
 
 	err = copy_to_user(uparam, &cmd, sizeof(cmd));
 	if (unlikely(err != 0)) {
