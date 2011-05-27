@@ -19,24 +19,6 @@
 #ifndef __omx_lib_h__
 #define __omx_lib_h__
 
-#if OMX_LIB_DLMALLOC
-#define USE_DL_PREFIX 1
-#include "dlmalloc.h"
-#define omx_malloc dlmalloc
-#define omx_calloc dlcalloc
-#define omx_free   dlfree
-#define omx_malloc_ep(ep,size) dlmalloc(size)
-#define omx_calloc_ep(ep,nb_elt,size_elt) dlcalloc(nb_elt,size_elt)
-#define omx_free_ep(ep,ptr) dlfree(ptr)
-#else /* !OMX_LIB_DLMALLOC */
-#define omx_malloc malloc
-#define omx_calloc calloc
-#define omx_free   free
-#define omx_malloc_ep(ep,size) malloc(size)
-#define omx_calloc_ep(ep,nb_elt,size_elt) calloc(nb_elt,size_elt)
-#define omx_free_ep(ep,ptr) free(ptr)
-#endif /* !OMX_LIB_DLMALLOC */
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -49,6 +31,32 @@
 #include "omx_valgrind.h"
 #include "omx_debug.h"
 #include "omx_list.h"
+
+/********************
+ * Memory management
+ */
+
+#if OMX_LIB_DLMALLOC
+#define USE_DL_PREFIX 1
+#include "dlmalloc.h"
+#define omx_malloc dlmalloc
+#define omx_calloc dlcalloc
+#define omx_free   dlfree
+static inline omx_return_t omx__init_ep_malloc(struct omx_endpoint *ep) { return OMX_SUCCESS; }
+#define omx__exit_ep_malloc(ep) do { /* nothing */ } while (0)
+#define omx_malloc_ep(ep,size) dlmalloc(size)
+#define omx_calloc_ep(ep,nb_elt,size_elt) dlcalloc(nb_elt,size_elt)
+#define omx_free_ep(ep,ptr) dlfree(ptr)
+#else /* !OMX_LIB_DLMALLOC */
+#define omx_malloc malloc
+#define omx_calloc calloc
+#define omx_free   free
+static inline int omx__init_ep_malloc(struct omx_endpoint *ep) { return OMX_SUCCESS; }
+#define omx__exit_ep_malloc(ep) do { /* nothing */ } while (0)
+#define omx_malloc_ep(ep,size) malloc(size)
+#define omx_calloc_ep(ep,nb_elt,size_elt) calloc(nb_elt,size_elt)
+#define omx_free_ep(ep,ptr) free(ptr)
+#endif /* !OMX_LIB_DLMALLOC */
 
 /*************
  * Optimizing

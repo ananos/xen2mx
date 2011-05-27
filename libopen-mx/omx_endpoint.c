@@ -444,11 +444,18 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   if (omx__globals.process_binding)
     omx__endpoint_bind_process(ep, omx__globals.process_binding);
 
+  /* create the endpoint malloc data */
+  ret = omx__init_ep_malloc(ep);
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error(ret, "Creating new endpoint memory space");
+    goto out_with_attached;
+  }
+
   /* prepare the sendq */
   ret = omx__endpoint_sendq_map_init(ep);
   if (ret != OMX_SUCCESS) {
     ret = omx__error(ret, "Initializing new endpoint send queue map");
-    goto out_with_attached;
+    goto out_with_ep_malloc;
   }
 
   /* mmap desc */
@@ -619,6 +626,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
  out_with_sendq_map:
   omx__endpoint_sendq_map_exit(ep);
+ out_with_ep_malloc:
+  omx__exit_ep_malloc(ep);
  out_with_attached:
   /* nothing to do for detach, close will do it */
  out_with_fd:
@@ -670,6 +679,7 @@ omx_close_endpoint(struct omx_endpoint *ep)
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
   omx__endpoint_sendq_map_exit(ep);
+  omx__exit_ep_malloc(ep);
   /* nothing to do for detach, close will do it */
   close(ep->fd);
   omx__lock_destroy(&ep->lock);
