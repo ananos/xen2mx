@@ -270,6 +270,11 @@ OMX_DEFINE(OMX_LIB_DLMALLOC, 1, Define to enable the internal dlmalloc,
 OMX_DEFINE(OMX_LIB_THREAD_SAFETY, 1, Define to enable thread safety support in the library,
  	   test x$enable_lib_threads = xyes)
 
+if test x$enable_lib_threads = xyes ; then
+    AC_SUBST(OMX_LIB_THREAD_SAFETY, 1)
+else
+    AC_SUBST(OMX_LIB_THREAD_SAFETY, 0)
+fi
 
 
 # Library debugging configuration
