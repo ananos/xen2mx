@@ -663,7 +663,7 @@ omx_close_endpoint(struct omx_endpoint *ep)
       omx_free_ep(ep, ep->partners[i]);
   omx_free_ep(ep, ep->partners);
   omx__endpoint_large_region_map_exit(ep);
-  omx_free_ep(ep, ep->message_prefix);
+  omx_free(ep->message_prefix);
   munmap((void *) ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
   munmap((void *) ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
   munmap((void *) ep->recvq, OMX_RECVQ_SIZE);
