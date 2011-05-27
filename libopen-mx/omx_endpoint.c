@@ -529,8 +529,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   }
 
   /* allocate partners */
-  ep->partners = omx_calloc(omx__driver_desc->peer_max * omx__driver_desc->endpoint_max,
-			    sizeof(*ep->partners));
+  ep->partners = omx_calloc_ep(ep, omx__driver_desc->peer_max * omx__driver_desc->endpoint_max,
+			       sizeof(*ep->partners));
   if (!ep->partners) {
     ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint partners array");
     goto out_with_large_regions;
