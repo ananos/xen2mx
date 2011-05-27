@@ -29,7 +29,7 @@ launchersdir	= $(testdir)/launchers
 test_PROGRAMS		= omx_cancel_test omx_cmd_bench omx_loopback_test omx_many	\
 			  omx_perf omx_rails omx_rcache_test omx_reg omx_truncated_test	\
 			  omx_unexp_handler_test omx_unexp_test omx_vect_test		\
-			  omx_multithread_wait_any omx_endpoint_addr_context_test
+			  omx_endpoint_addr_context_test
 
 dist_helpers_SCRIPTS	= helpers/omx_test_double_app helpers/omx_test_battery
 nodist_helpers_SCRIPTS	= helpers/omx_test_launcher
@@ -41,8 +41,11 @@ omx_cmd_bench_CPPFLAGS	= -I$(abs_top_srcdir)/libopen-mx $(AM_CPPFLAGS)
 
 LDADD = $(abs_top_builddir)/libopen-mx/$(DEFAULT_LIBDIR)/libopen-mx.la
 
-omx_multithread_wait_any_CFLAGS	= $(HWLOC_CFLAGS)
-omx_multithread_wait_any_LDADD	= $(HWLOC_LIBS) -lpthread $(LDADD)
+if OMX_LIB_THREAD_SAFETY
+  test_PROGRAMS				+= omx_multithread_wait_any
+  omx_multithread_wait_any_CFLAGS	= $(HWLOC_CFLAGS)
+  omx_multithread_wait_any_LDADD	= $(HWLOC_LIBS) -lpthread $(LDADD)
+endif
 
 install-data-hook:
 	@mkdir -p $(DESTDIR)$(launchersdir)
