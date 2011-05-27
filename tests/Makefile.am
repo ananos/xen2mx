@@ -42,9 +42,11 @@ omx_cmd_bench_CPPFLAGS	= -I$(abs_top_srcdir)/libopen-mx $(AM_CPPFLAGS)
 LDADD = $(abs_top_builddir)/libopen-mx/$(DEFAULT_LIBDIR)/libopen-mx.la
 
 if OMX_LIB_THREAD_SAFETY
-  test_PROGRAMS				+= omx_multithread_wait_any
+  test_PROGRAMS				+= omx_multithread_wait_any omx_multithread_ep_test
   omx_multithread_wait_any_CFLAGS	= $(HWLOC_CFLAGS)
   omx_multithread_wait_any_LDADD	= $(HWLOC_LIBS) -lpthread $(LDADD)
+  omx_multithread_ep_test CFLAGS	= $(HWLOC_CFLAGS)
+  omx_multithread_ep_test_LDADD		= $(HWLOC_LIBS) -lpthread $(LDADD)
 endif
 
 install-data-hook:

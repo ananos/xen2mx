@@ -85,6 +85,8 @@ case $testname in
     multithread_wait_any)	test x$threadsafe = x0 || \
 				$helperdir/omx_test_double_app $TESTS_DIR/omx_multithread_wait_any -- \
 				-d localhost ;;
+    multithread_ep)		test x$threadsafe = x0 || \
+				$TESTS_DIR/omx_multithread_ep_test ;;
     vect_native)		$TESTS_DIR/omx_vect_test ;;
     vect_shared)		$TESTS_DIR/omx_vect_test -s ;;
     vect_self)			$TESTS_DIR/omx_vect_test -S ;;
