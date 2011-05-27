@@ -21,6 +21,7 @@ scriptpath=`readlink -f $0`
 scriptdir=`dirname $scriptpath`
 testdir=$scriptdir/..
 helperdir=$testdir/helpers
+threadsafe=@OMX_LIB_THREAD_SAFETY@
 
 find_programs()
 {
@@ -73,13 +74,16 @@ case $testname in
     wait_any)			OMX_DISABLED_SHARED=1 $helperdir/omx_test_double_app \
 				$MXTESTS_DIR/mx_wait_any_test ;;
     cancel)			$helperdir/omx_test_double_app -s $TESTS_DIR/omx_cancel_test ;;
-    wakeup)			$helperdir/omx_test_double_app -s $MXTESTS_DIR/mx_wakeup_test ;;
+    wakeup)			test x$threadsafe = x0 || \
+				$helperdir/omx_test_double_app -s $MXTESTS_DIR/mx_wakeup_test ;;
     addr_context)		$helperdir/omx_test_double_app $TESTS_DIR/omx_endpoint_addr_context_test ;;
     multirails)			$helperdir/omx_test_double_app $TESTS_DIR/omx_rails -R 3 -- \
 				-d localhost:0,localhost:1,localhost:2 ;;
-    monothread_wait_any)	$helperdir/omx_test_double_app $TESTS_DIR/omx_multithread_wait_any -p 1 -t 1 -- \
+    monothread_wait_any)	test x$threadsafe = x0 || \
+				$helperdir/omx_test_double_app $TESTS_DIR/omx_multithread_wait_any -p 1 -t 1 -- \
 				-d localhost ;;
-    multithread_wait_any)	$helperdir/omx_test_double_app $TESTS_DIR/omx_multithread_wait_any -- \
+    multithread_wait_any)	test x$threadsafe = x0 || \
+				$helperdir/omx_test_double_app $TESTS_DIR/omx_multithread_wait_any -- \
 				-d localhost ;;
     vect_native)		$TESTS_DIR/omx_vect_test ;;
     vect_shared)		$TESTS_DIR/omx_vect_test -s ;;
