@@ -38,15 +38,19 @@
 
 #if OMX_LIB_DLMALLOC
 #define USE_DL_PREFIX 1
+#define MSPACES 1
 #include "dlmalloc.h"
 #define omx_malloc dlmalloc
 #define omx_calloc dlcalloc
 #define omx_free   dlfree
-static inline omx_return_t omx__init_ep_malloc(struct omx_endpoint *ep) { return OMX_SUCCESS; }
-#define omx__exit_ep_malloc(ep) do { /* nothing */ } while (0)
-#define omx_malloc_ep(ep,size) dlmalloc(size)
-#define omx_calloc_ep(ep,nb_elt,size_elt) dlcalloc(nb_elt,size_elt)
-#define omx_free_ep(ep,ptr) dlfree(ptr)
+static inline omx_return_t omx__init_ep_malloc(struct omx_endpoint *ep) {
+  ep->malloc_data = create_mspace(0, 0);
+  return ep->malloc_data != NULL ? OMX_SUCCESS : OMX_NO_RESOURCES;
+}
+#define omx__exit_ep_malloc(ep) destroy_mspace((ep)->malloc_data)
+#define omx_malloc_ep(ep,size) mspace_malloc((ep)->malloc_data, size)
+#define omx_calloc_ep(ep,nb_elt,size_elt) mspace_calloc((ep)->malloc_data, nb_elt, size_elt)
+#define omx_free_ep(ep,ptr) mspace_free((ep)->malloc_data, ptr)
 #else /* !OMX_LIB_DLMALLOC */
 #define omx_malloc malloc
 #define omx_calloc calloc
