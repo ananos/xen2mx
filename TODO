@@ -10,10 +10,6 @@
   * use clock_gettime(CLOCK_MONOTONIC) otherwise,
     but it costs about 30ns
 
-* switch to another malloc library with smaller locking overhead
-  + use per-endpoint pools (no need to be thread-safe there) ?
-  + thread-safe global pool for non-endpoint-specific allocations
-
 * Symlinks for both the static and shared libraries are
   created even if --disable-shared and/or --disable-static
   is given
