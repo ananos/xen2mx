@@ -29,6 +29,10 @@
 
 #define OMX_ZOMBIE_MAX_DEFAULT 512
 
+#ifdef OMX_LIB_THREAD_SAFETY
+struct omx__lock omx__global_lock = OMX__LOCK_INITIALIZER;
+#endif
+
 struct omx__globals omx__globals;
 volatile struct omx_driver_desc * omx__driver_desc = NULL;
 

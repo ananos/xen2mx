@@ -35,9 +35,6 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep);
  */
 
 static struct list_head omx_endpoints_list;
-#ifdef OMX_LIB_THREAD_SAFETY
-static struct omx__lock omx_endpoints_list_lock = OMX__LOCK_INITIALIZER;
-#endif
 
 static void
 omx__init_endpoint_list(void)
@@ -48,9 +45,9 @@ omx__init_endpoint_list(void)
 static INLINE void
 omx__add_endpoint_to_list(struct omx_endpoint *endpoint)
 {
-  omx__lock(&omx_endpoints_list_lock);
+  omx__lock(&omx__global_lock);
   list_add_tail(&endpoint->omx_endpoints_list_elt, &omx_endpoints_list);
-  omx__unlock(&omx_endpoints_list_lock);
+  omx__unlock(&omx__global_lock);
 }
 
 static INLINE omx_return_t
@@ -59,7 +56,7 @@ omx__remove_endpoint_from_list(struct omx_endpoint *endpoint)
   struct omx_endpoint *current;
   omx_return_t ret = OMX_BAD_ENDPOINT;
 
-  omx__lock(&omx_endpoints_list_lock);
+  omx__lock(&omx__global_lock);
 
   list_for_each_entry(current, &omx_endpoints_list, omx_endpoints_list_elt)
     if (current == endpoint) {
@@ -68,7 +65,7 @@ omx__remove_endpoint_from_list(struct omx_endpoint *endpoint)
       break;
     }
 
-  omx__unlock(&omx_endpoints_list_lock);
+  omx__unlock(&omx__global_lock);
 
   /* let the caller handle errors */
   return ret;
@@ -79,10 +76,10 @@ omx__foreach_endpoint(void (*func)(struct omx_endpoint *, void *), void *data)
 {
   struct omx_endpoint *current;
 
-  omx__lock(&omx_endpoints_list_lock);
+  omx__lock(&omx__global_lock);
   list_for_each_entry(current, &omx_endpoints_list, omx_endpoints_list_elt)
     func(current, data);
-  omx__unlock(&omx_endpoints_list_lock);
+  omx__unlock(&omx__global_lock);
 }
 
 /************************

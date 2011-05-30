@@ -31,6 +31,7 @@
 #include "omx_valgrind.h"
 #include "omx_debug.h"
 #include "omx_list.h"
+#include "omx_threads.h"
 
 /********************
  * Memory management
@@ -78,6 +79,9 @@ static inline int omx__init_ep_malloc(struct omx_endpoint *ep) { return OMX_SUCC
  * Various globals
  */
 
+#ifdef OMX_LIB_THREAD_SAFETY
+extern struct omx__lock omx__global_lock;
+#endif
 extern struct omx__globals omx__globals;
 extern volatile struct omx_driver_desc * omx__driver_desc;
 
