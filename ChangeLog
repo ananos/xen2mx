@@ -8,6 +8,7 @@ Improvements other previous release:
   cope with current distribution kernels.
 * Show driver configuration summary at the end of configure.
 * Add support for DMA engine on RHEL/CentOS 5 kernels.
+* Fix support for Linux kernel 3.x releases.
 * Several minor fixes.
 
 Caveats:

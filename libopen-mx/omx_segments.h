@@ -42,7 +42,7 @@ omx_cache_single_segment(struct omx__req_segs * reqsegs, const void * buffer, ui
 }
 
 static inline omx_return_t
-omx_cache_segments(struct omx__req_segs * reqsegs, const omx_seg_t * segs, uint32_t nseg)
+omx_cache_segments(struct omx_endpoint *ep, struct omx__req_segs * reqsegs, const omx_seg_t * segs, uint32_t nseg)
 {
 
   if (nseg == 0) {
@@ -59,7 +59,7 @@ omx_cache_segments(struct omx__req_segs * reqsegs, const omx_seg_t * segs, uint3
       /* the caller checks error codes */
       return OMX_SEGMENTS_BAD_COUNT;
 
-    reqsegs->segs = omx_malloc(nseg * sizeof(struct omx_cmd_user_segment));
+    reqsegs->segs = omx_malloc_ep(ep, nseg * sizeof(struct omx_cmd_user_segment));
     if (!reqsegs->segs)
       /* the caller checks error codes */
       return OMX_NO_RESOURCES;
@@ -77,10 +77,10 @@ omx_cache_segments(struct omx__req_segs * reqsegs, const omx_seg_t * segs, uint3
 }
 
 static inline void
-omx_free_segments(struct omx__req_segs * reqsegs)
+omx_free_segments(struct omx_endpoint *ep, struct omx__req_segs * reqsegs)
 {
   if (unlikely(reqsegs->nseg > 1))
-    omx_free(reqsegs->segs);
+    omx_free_ep(ep, reqsegs->segs);
 }
 
 static inline void
