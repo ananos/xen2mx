@@ -31,6 +31,7 @@ struct omx__cond {
   pthread_cond_t _cond;
 };
 
+#define OMX__LOCK_INITIALIZER { PTHREAD_MUTEX_INITIALIZER }
 #define omx__lock_init(lock) pthread_mutex_init(&(lock)->_mutex, NULL)
 #define omx__lock_destroy(lock) pthread_mutex_destroy(&(lock)->_mutex)
 #define omx__lock(lock) pthread_mutex_lock(&(lock)->_mutex)

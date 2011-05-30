@@ -36,14 +36,13 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep);
 
 static struct list_head omx_endpoints_list;
 #ifdef OMX_LIB_THREAD_SAFETY
-static struct omx__lock omx_endpoints_list_lock;
+static struct omx__lock omx_endpoints_list_lock = OMX__LOCK_INITIALIZER;
 #endif
 
 static void
 omx__init_endpoint_list(void)
 {
   list_head_init(&omx_endpoints_list);
-  omx__lock_init(&omx_endpoints_list_lock);
 }
 
 static INLINE void
