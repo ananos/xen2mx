@@ -278,7 +278,7 @@ omx__cancel_common(omx_endpoint_t ep,
       /* not matched, still in the recv queue */
       uint32_t ctxid = CTXID_FROM_MATCHING(ep, req->recv.match_info);
       omx__dequeue_request(&ep->ctxid[ctxid].recv_req_q, req);
-      omx_free_segments(&req->send.segs);
+      omx_free_segments(ep, &req->send.segs);
       req->generic.state &= ~OMX_REQUEST_STATE_RECV_NEED_MATCHING;
       *result = 1;
     } else {

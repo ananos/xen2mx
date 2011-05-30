@@ -714,28 +714,28 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
     break;
 
   case OMX_REQUEST_TYPE_SEND_TINY:
-    omx_free_segments(&req->send.segs);
+    omx_free_segments(ep, &req->send.segs);
     break;
 
   case OMX_REQUEST_TYPE_SEND_SMALL:
     omx_free_ep(ep, req->send.specific.small.copy);
-    omx_free_segments(&req->send.segs);
+    omx_free_segments(ep, &req->send.segs);
     break;
 
   case OMX_REQUEST_TYPE_SEND_MEDIUMSQ:
     /* don't care about releasing sendq_map */
-    omx_free_segments(&req->send.segs);
+    omx_free_segments(ep, &req->send.segs);
     break;
 
   case OMX_REQUEST_TYPE_SEND_MEDIUMVA:
-    omx_free_segments(&req->send.segs);
+    omx_free_segments(ep, &req->send.segs);
     break;
 
   case OMX_REQUEST_TYPE_SEND_LARGE:
     if (!(resources & OMX_REQUEST_RESOURCE_LARGE_REGION)
 	&& (state & OMX_REQUEST_STATE_NEED_REPLY))
       omx__put_region(ep, req->send.specific.large.region, req);
-    omx_free_segments(&req->send.segs);
+    omx_free_segments(ep, &req->send.segs);
     break;
 
   case OMX_REQUEST_TYPE_RECV_LARGE:
@@ -745,7 +745,7 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
       if (!(resources & OMX_REQUEST_RESOURCE_LARGE_REGION)
 	  && (state & OMX_REQUEST_STATE_RECV_PARTIAL))
 	omx__put_region(ep, req->recv.specific.large.local_region, NULL);
-      omx_free_segments(&req->send.segs);
+      omx_free_segments(ep, &req->send.segs);
     }
     break;
 
@@ -754,18 +754,18 @@ omx__destroy_unlinked_request_on_close(struct omx_endpoint *ep, union omx_reques
       if (req->generic.status.msg_length)
 	omx_free_ep(ep, OMX_SEG_PTR(&req->recv.segs.single));
     } else {
-      omx_free_segments(&req->send.segs);
+      omx_free_segments(ep, &req->send.segs);
     }
     break;
 
   case OMX_REQUEST_TYPE_SEND_SELF:
-    omx_free_segments(&req->send.segs);
+    omx_free_segments(ep, &req->send.segs);
     break;
 
   case OMX_REQUEST_TYPE_RECV_SELF_UNEXPECTED:
     if (req->generic.status.msg_length)
       omx_free_ep(ep, OMX_SEG_PTR(&req->recv.segs.single));
-    omx_free_segments(&req->send.segs);
+    omx_free_segments(ep, &req->send.segs);
     break;
 
   default:

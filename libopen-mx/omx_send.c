@@ -65,7 +65,7 @@ omx__send_complete(struct omx_endpoint *ep, union omx_request *req,
  nothing_specific:
 
   /* the request is acked, we can free the segments */
-  omx_free_segments(&req->send.segs);
+  omx_free_segments(ep, &req->send.segs);
 
   omx__notify_request_done(ep, ctxid, req);
 }
@@ -1044,7 +1044,7 @@ omx_isend(struct omx_endpoint *ep,
 
   ret = omx__isend_req(ep, partner, req, requestp);
   if (likely(ret != OMX_SUCCESS)) {
-    omx_free_segments(&req->send.segs);
+    omx_free_segments(ep, &req->send.segs);
     omx__request_free(ep, req);
   }
 
@@ -1073,7 +1073,7 @@ omx_isendv(omx_endpoint_t ep,
     goto out_with_lock;
   }
 
-  ret = omx_cache_segments(&req->send.segs, segs, nseg);
+  ret = omx_cache_segments(ep, &req->send.segs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS)) {
     /* the callee let us check errors */
     ret = omx__error_with_ep(ep, ret,
@@ -1090,7 +1090,7 @@ omx_isendv(omx_endpoint_t ep,
 
   ret = omx__isend_req(ep, partner, req, requestp);
   if (likely(ret != OMX_SUCCESS)) {
-    omx_free_segments(&req->send.segs);
+    omx_free_segments(ep, &req->send.segs);
     omx__request_free(ep, req);
   }
 
@@ -1181,7 +1181,7 @@ omx_issendv(omx_endpoint_t ep,
     goto out_with_lock;
   }
 
-  ret = omx_cache_segments(&req->send.segs, segs, nseg);
+  ret = omx_cache_segments(ep, &req->send.segs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS)) {
     /* the callee let us check errors */
     ret = omx__error_with_ep(ep, ret,

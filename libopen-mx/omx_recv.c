@@ -46,7 +46,7 @@ omx__recv_complete(struct omx_endpoint *ep, union omx_request *req,
   }
 
   /* the request is done, we can free the segments */
-  omx_free_segments(&req->send.segs);
+  omx_free_segments(ep, &req->send.segs);
 
   omx__notify_request_done(ep, ctxid, req);
 }
@@ -1292,7 +1292,7 @@ omx_irecv(struct omx_endpoint *ep,
 
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
-  omx_free_segments(&reqsegs);
+  omx_free_segments(ep, &reqsegs);
  out:
   return ret;
 }
@@ -1322,7 +1322,7 @@ omx_irecvv(omx_endpoint_t ep,
     goto out;
   }
 
-  ret = omx_cache_segments(&reqsegs, segs, nseg);
+  ret = omx_cache_segments(ep, &reqsegs, segs, nseg);
   if (unlikely(ret != OMX_SUCCESS)) {
     /* the callee let us check errors */
     ret = omx__error_with_ep(ep, ret,
@@ -1342,7 +1342,7 @@ omx_irecvv(omx_endpoint_t ep,
 
  out_with_lock:
   OMX__ENDPOINT_UNLOCK(ep);
-  omx_free_segments(&reqsegs);
+  omx_free_segments(ep, &reqsegs);
  out:
   return ret;
 }
