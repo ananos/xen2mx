@@ -396,7 +396,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out;
   }
 
+  omx__lock(&omx__global_lock);
   ep = omx_malloc(sizeof(struct omx_endpoint));
+  omx__unlock(&omx__global_lock);
   if (!ep) {
     ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint");
     goto out;
@@ -517,7 +519,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->zombie_max = omx__globals.zombie_max;
   ep->zombies = 0;
   ep->error_handler = error_handler;
+  omx__lock(&omx__global_lock);
   ep->message_prefix = omx__create_message_prefix(ep); /* needs endpoint_index to be set */
+  omx__unlock(&omx__global_lock);
 
   /* initialize some sub-structures */
   omx__request_alloc_init(ep);
@@ -610,7 +614,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
  out_with_large_regions:
   omx__endpoint_large_region_map_exit(ep);
  out_with_message_prefix:
+  omx__lock(&omx__global_lock);
   omx_free(ep->message_prefix);
+  omx__unlock(&omx__global_lock);
   munmap((void *) ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
  out_with_exp_eventq:
   munmap((void *) ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
@@ -631,7 +637,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
  out_with_ep:
   omx__lock_destroy(&ep->lock);
   omx__cond_destroy(&ep->in_handler_cond);
+  omx__lock(&omx__global_lock);
   omx_free(ep);
+  omx__unlock(&omx__global_lock);
  out:
   return ret;
 }
@@ -668,7 +676,9 @@ omx_close_endpoint(struct omx_endpoint *ep)
       omx_free_ep(ep, ep->partners[i]);
   omx_free_ep(ep, ep->partners);
   omx__endpoint_large_region_map_exit(ep);
+  omx__lock(&omx__global_lock);
   omx_free(ep->message_prefix);
+  omx__unlock(&omx__global_lock);
   munmap((void *) ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
   munmap((void *) ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
   munmap((void *) ep->recvq, OMX_RECVQ_SIZE);
@@ -680,7 +690,9 @@ omx_close_endpoint(struct omx_endpoint *ep)
   close(ep->fd);
   omx__lock_destroy(&ep->lock);
   omx__cond_destroy(&ep->in_handler_cond);
+  omx__lock(&omx__global_lock);
   omx_free(ep);
+  omx__unlock(&omx__global_lock);
 
   return OMX_SUCCESS;
 

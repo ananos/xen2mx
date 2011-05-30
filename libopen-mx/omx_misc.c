@@ -371,6 +371,7 @@ omx_cancel_notest(omx_endpoint_t ep,
 
 #define OMX_MESSAGE_PREFIX_LENGTH_MAX 256
 #define OMX_MESSAGE_PREFIX_HOSTNAME_MAX 20
+/* must be called with the global lock held */
 __malloc char *
 omx__create_message_prefix(const struct omx_endpoint *ep)
 {

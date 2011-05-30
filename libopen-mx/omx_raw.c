@@ -61,7 +61,9 @@ omx_raw_open_endpoint(uint32_t board_number,
     return ret;
   }
 
+  omx__lock(&omx__global_lock);
   ep = omx_malloc(sizeof(*ep));
+  omx__unlock(&omx__global_lock);
   if (!ep)
     return OMX_NO_RESOURCES;
 
@@ -76,7 +78,9 @@ omx_return_t
 omx_raw_close_endpoint(struct omx_raw_endpoint * endpoint)
 {
   close(endpoint->fd);
+  omx__lock(&omx__global_lock);
   omx_free(endpoint);
+  omx__unlock(&omx__global_lock);
   return OMX_SUCCESS;
 }
 
