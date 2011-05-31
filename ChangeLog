@@ -4,6 +4,8 @@ Open-MX 1.5.0 (June .... 2011)
 Improvements other previous release:
 * Initialize endpoint address context to NULL to match MX behavior
   (required for PVFS2).
+* Make the library thread-safe even when multiple threads manipulate
+  different endpoints simultaneously.
 * Modify the requirements on the target kernel configuration to better
   cope with current distribution kernels.
 * Show driver configuration summary at the end of configure.
