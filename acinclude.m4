@@ -194,7 +194,7 @@ fi
 # Store in VAR the real Linux kernel release pointed by BUILD_TREE
 AC_DEFUN([OMX_GET_KERNEL_RELEASE],
 [
-$1=$(make kernelrelease -C $2 M=dummy | grep -e '^[[23]]\.[[0-9]]\+\.')
+$1=$(make kernelrelease -C $2 M=dummy | grep -e '^[[0-9]]\+\.[[0-9]]\+')
 ])
 
 
