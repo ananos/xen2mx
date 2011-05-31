@@ -35,23 +35,19 @@ omx__destroy_requests_on_close(struct omx_endpoint *ep);
  */
 
 static struct list_head omx_endpoints_list;
-#ifdef OMX_LIB_THREAD_SAFETY
-static struct omx__lock omx_endpoints_list_lock;
-#endif
 
 static void
 omx__init_endpoint_list(void)
 {
   list_head_init(&omx_endpoints_list);
-  omx__lock_init(&omx_endpoints_list_lock);
 }
 
 static INLINE void
 omx__add_endpoint_to_list(struct omx_endpoint *endpoint)
 {
-  omx__lock(&omx_endpoints_list_lock);
+  omx__lock(&omx__global_lock);
   list_add_tail(&endpoint->omx_endpoints_list_elt, &omx_endpoints_list);
-  omx__unlock(&omx_endpoints_list_lock);
+  omx__unlock(&omx__global_lock);
 }
 
 static INLINE omx_return_t
@@ -60,7 +56,7 @@ omx__remove_endpoint_from_list(struct omx_endpoint *endpoint)
   struct omx_endpoint *current;
   omx_return_t ret = OMX_BAD_ENDPOINT;
 
-  omx__lock(&omx_endpoints_list_lock);
+  omx__lock(&omx__global_lock);
 
   list_for_each_entry(current, &omx_endpoints_list, omx_endpoints_list_elt)
     if (current == endpoint) {
@@ -69,7 +65,7 @@ omx__remove_endpoint_from_list(struct omx_endpoint *endpoint)
       break;
     }
 
-  omx__unlock(&omx_endpoints_list_lock);
+  omx__unlock(&omx__global_lock);
 
   /* let the caller handle errors */
   return ret;
@@ -80,10 +76,10 @@ omx__foreach_endpoint(void (*func)(struct omx_endpoint *, void *), void *data)
 {
   struct omx_endpoint *current;
 
-  omx__lock(&omx_endpoints_list_lock);
+  omx__lock(&omx__global_lock);
   list_for_each_entry(current, &omx_endpoints_list, omx_endpoints_list_elt)
     func(current, data);
-  omx__unlock(&omx_endpoints_list_lock);
+  omx__unlock(&omx__global_lock);
 }
 
 /************************
@@ -400,7 +396,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
     goto out;
   }
 
+  omx__lock(&omx__global_lock);
   ep = omx_malloc(sizeof(struct omx_endpoint));
+  omx__unlock(&omx__global_lock);
   if (!ep) {
     ret = omx__error(OMX_NO_RESOURCES, "Allocating new endpoint");
     goto out;
@@ -444,11 +442,18 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   if (omx__globals.process_binding)
     omx__endpoint_bind_process(ep, omx__globals.process_binding);
 
+  /* create the endpoint malloc data */
+  ret = omx__init_ep_malloc(ep);
+  if (ret != OMX_SUCCESS) {
+    ret = omx__error(ret, "Creating new endpoint memory space");
+    goto out_with_attached;
+  }
+
   /* prepare the sendq */
   ret = omx__endpoint_sendq_map_init(ep);
   if (ret != OMX_SUCCESS) {
     ret = omx__error(ret, "Initializing new endpoint send queue map");
-    goto out_with_attached;
+    goto out_with_ep_malloc;
   }
 
   /* mmap desc */
@@ -514,7 +519,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   ep->zombie_max = omx__globals.zombie_max;
   ep->zombies = 0;
   ep->error_handler = error_handler;
+  omx__lock(&omx__global_lock);
   ep->message_prefix = omx__create_message_prefix(ep); /* needs endpoint_index to be set */
+  omx__unlock(&omx__global_lock);
 
   /* initialize some sub-structures */
   omx__request_alloc_init(ep);
@@ -607,7 +614,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
  out_with_large_regions:
   omx__endpoint_large_region_map_exit(ep);
  out_with_message_prefix:
+  omx__lock(&omx__global_lock);
   omx_free(ep->message_prefix);
+  omx__unlock(&omx__global_lock);
   munmap((void *) ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
  out_with_exp_eventq:
   munmap((void *) ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
@@ -619,6 +628,8 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
   munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
  out_with_sendq_map:
   omx__endpoint_sendq_map_exit(ep);
+ out_with_ep_malloc:
+  omx__exit_ep_malloc(ep);
  out_with_attached:
   /* nothing to do for detach, close will do it */
  out_with_fd:
@@ -626,7 +637,9 @@ omx_open_endpoint(uint32_t board_index, uint32_t endpoint_index, uint32_t key,
  out_with_ep:
   omx__lock_destroy(&ep->lock);
   omx__cond_destroy(&ep->in_handler_cond);
+  omx__lock(&omx__global_lock);
   omx_free(ep);
+  omx__unlock(&omx__global_lock);
  out:
   return ret;
 }
@@ -663,18 +676,23 @@ omx_close_endpoint(struct omx_endpoint *ep)
       omx_free_ep(ep, ep->partners[i]);
   omx_free_ep(ep, ep->partners);
   omx__endpoint_large_region_map_exit(ep);
+  omx__lock(&omx__global_lock);
   omx_free(ep->message_prefix);
+  omx__unlock(&omx__global_lock);
   munmap((void *) ep->unexp_eventq, OMX_UNEXP_EVENTQ_SIZE);
   munmap((void *) ep->exp_eventq, OMX_EXP_EVENTQ_SIZE);
   munmap((void *) ep->recvq, OMX_RECVQ_SIZE);
   munmap(ep->sendq, OMX_SENDQ_SIZE);
   munmap(ep->desc, OMX_ENDPOINT_DESC_SIZE);
   omx__endpoint_sendq_map_exit(ep);
+  omx__exit_ep_malloc(ep);
   /* nothing to do for detach, close will do it */
   close(ep->fd);
   omx__lock_destroy(&ep->lock);
   omx__cond_destroy(&ep->in_handler_cond);
+  omx__lock(&omx__global_lock);
   omx_free(ep);
+  omx__unlock(&omx__global_lock);
 
   return OMX_SUCCESS;
 

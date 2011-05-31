@@ -244,6 +244,9 @@ struct omx_endpoint {
   char board_addr_str[OMX_BOARD_ADDR_STRLEN];
   uint32_t app_key;
   struct omx__lock lock;
+#if OMX_LIB_DLMALLOC
+  void * malloc_data;
+#endif
   int progression_disabled;
   struct omx__cond in_handler_cond;
   omx_unexp_handler_t unexp_handler;

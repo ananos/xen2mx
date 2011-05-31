@@ -29,6 +29,10 @@
 
 #define OMX_ZOMBIE_MAX_DEFAULT 512
 
+#ifdef OMX_LIB_THREAD_SAFETY
+struct omx__lock omx__global_lock = OMX__LOCK_INITIALIZER;
+#endif
+
 struct omx__globals omx__globals;
 volatile struct omx_driver_desc * omx__driver_desc = NULL;
 
@@ -41,6 +45,8 @@ omx__init_api(int app_api)
   omx_return_t ret;
   char *env;
   int err;
+
+  omx__lock(&omx__global_lock);
 
   /* initialize all globals to 0 */
   memset(&omx__globals, 0, sizeof(omx__globals));
@@ -227,12 +233,16 @@ omx__init_api(int app_api)
    */
 
   omx__globals.initialized = 1;
+
+  omx__unlock(&omx__global_lock);
   return OMX_SUCCESS;
 
  out_with_fd:
   close(omx__globals.control_fd);
  out_with_message_prefix:
   omx_free(omx__globals.message_prefix);
+
+  omx__unlock(&omx__global_lock);
   return ret;
 }
 
@@ -542,6 +552,8 @@ omx__init_comms(void)
 omx_return_t
 omx_finalize(void)
 {
+  omx__lock(&omx__global_lock);
+
   /* FIXME: check that it is initialized */
 
   /* FIXME: check that no endpoint is still open */
@@ -549,6 +561,8 @@ omx_finalize(void)
   close(omx__globals.control_fd);
   omx_free(omx__globals.message_prefix);
   omx__globals.initialized = 0;
+
+  omx__unlock(&omx__global_lock);
   return OMX_SUCCESS;
 }
 
