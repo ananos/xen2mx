@@ -1,5 +1,5 @@
-Open-MX 1.5.0 (June .... 2011)
-==============================
+Open-MX 1.4.901 aka 1.5-rc1 (June 8th 2011)
+===========================================
 
 Improvements other previous release:
 * Initialize endpoint address context to NULL to match MX behavior
