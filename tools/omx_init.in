@@ -167,7 +167,7 @@ unload_omx() {
 
 # Check whether udev is running
 udev_is_active() {
-    test x$UDEV = x1 && ( test -d /dev/.udev || test -e /dev/.udev.tdb || test -d /dev/.udevdb )
+    test x$UDEV = x1 && ( test -d /run/udev || test -d /dev/.udev || test -e /dev/.udev.tdb || test -d /dev/.udevdb )
 }
 
 # Create device node file if necessary
