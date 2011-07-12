@@ -786,15 +786,13 @@ omx__process_recv(struct omx_endpoint *ep,
   frag_index_max = OMX__SEQNUM(old_next_match_recv_seq - partner->next_frag_recv_seq);
 
   if (likely(frag_index <= frag_index_max)) {
-    omx_return_t ret;
-
     /* either the new expected seqnum (to match)
      * or a incomplete previous multi-fragment medium messages (to accumulate)
      * or an old obsolete duplicate packet (to drop)
      */
-    ret = omx__process_partner_ordered_recv(ep, partner, seqnum,
-					    msg, data, msg_length,
-					    recv_func);
+    omx__process_partner_ordered_recv(ep, partner, seqnum,
+				      msg, data, msg_length,
+				      recv_func);
     /* ignore errors, the packet will be resent anyway, the recv seqnums didn't increase */
 
     /* process early packets in case they match the new expected seqnum */
@@ -809,9 +807,9 @@ omx__process_recv(struct omx_endpoint *ep,
 			    (unsigned) OMX__SEQNUM(early->msg.seqnum),
 			    (unsigned) OMX__SESNUM_SHIFTED(early->msg.seqnum));
 
-	  ret = omx__process_partner_ordered_recv(ep, partner, early->msg.seqnum,
-						  &early->msg, early->data, early->msg_length,
-						  early->recv_func);
+	  omx__process_partner_ordered_recv(ep, partner, early->msg.seqnum,
+					    &early->msg, early->data, early->msg_length,
+					    early->recv_func);
 	  /* ignore errors, the packet will be resent anyway, the recv seqnums didn't increase */
 
 	  omx_free_ep(ep, early->data);

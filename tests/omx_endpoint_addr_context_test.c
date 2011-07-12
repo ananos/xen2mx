@@ -64,7 +64,6 @@ int main(int argc, char *argv[])
 {
   omx_return_t ret;
   int c;
-  int sender = 0;
   char *dest_hostname = NULL;
   omx_endpoint_t ep;
   omx_endpoint_addr_t myaddr, dest_addr;
@@ -81,7 +80,6 @@ int main(int argc, char *argv[])
     switch (c) {
     case 'd':
       dest_hostname = strdup(optarg);
-      sender = 1;
       eid = OMX_ANY_ENDPOINT;
       break;
     case 'e':

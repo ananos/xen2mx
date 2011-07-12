@@ -33,7 +33,6 @@ unexp_handler(void *context, omx_endpoint_addr_t source,
 	      void * data_if_available)
 {
   omx_endpoint_t ep = context;
-  omx_return_t ret;
 
   /* check the message length */
   assert(msg_length == length);
@@ -55,7 +54,7 @@ unexp_handler(void *context, omx_endpoint_addr_t source,
     return OMX_UNEXP_HANDLER_RECV_FINISHED;
   } else {
     printf("handler discarding through a forgotten receive\n");
-    ret = omx_irecv(ep, NULL, 0, 0, 0, NULL, NULL);
+    omx_irecv(ep, NULL, 0, 0, 0, NULL, NULL);
     return OMX_UNEXP_HANDLER_RECV_CONTINUE;
   }
 }
