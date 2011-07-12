@@ -297,10 +297,8 @@ omx__mx_error_handler_wrapper(char *buffer, omx_return_t ret)
 mx_error_handler_t
 mx_set_error_handler(mx_error_handler_t new_mxhdlr)
 {
-  mx_error_handler_t old_mxhldr;
   omx_error_handler_t old_omxhdlr;
 
-  old_mxhldr = omx__mx_error_handler;
   omx__mx_error_handler = new_mxhdlr;
   old_omxhdlr = omx_set_error_handler(NULL, omx__mx_error_handler_wrapper);
 
