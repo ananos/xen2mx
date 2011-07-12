@@ -64,7 +64,7 @@
 #else /* !OMX_LIB_DEBUG */
 
 #define INLINE inline
-#define omx__debug_assert(x) do { /* nothing */ } while (0)
+#define omx__debug_assert(x) (void)(x)
 #define omx__debug_instr(x) do { /* nothing */ } while (0)
 #define omx__debug_printf(type, format, ...) do { /* nothing */ } while (0)
 

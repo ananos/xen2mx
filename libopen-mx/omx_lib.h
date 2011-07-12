@@ -318,9 +318,10 @@ omx__endpoint_sendq_map_put(struct omx_endpoint * ep,
   for(i=1; i<nr; i++)
     if (user != array[indexes[i]].user)
       omx__abort(ep, "Tried to put some unrelated sendq map entries\n");
-#endif
 
   omx__debug_assert(user != NULL);
+#endif
+
 
   for(i=0; i<nr; i++) {
     omx__debug_assert(array[indexes[i]].next_free == -1);
