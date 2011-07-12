@@ -1,3 +1,14 @@
+Open-MX 1.4.902
+===========================================
+
+Improvements other previous release:
+* Fix udev detection when /run is available.
+* Several minor fixes.
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.4.901 aka 1.5-rc1 (June 8th 2011)
 ===========================================
 
@@ -12,10 +23,6 @@ Improvements other previous release:
 * Add support for DMA engine on RHEL/CentOS 5 kernels.
 * Fix support for Linux kernel 3.x releases.
 * Several minor fixes.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.4.0 (March 22nd 2011)
 ===============================
