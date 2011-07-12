@@ -184,13 +184,20 @@ if test x$enable_driver_build = xyes ; then
     fi
   fi
 
-  { ! test -z $KCC && _kcc=$KCC; } || _kcc=$CC
-  OMX_GET_GCC_VERSION(GCC_VERSION, $_kcc)
-  OMX_GET_KERNEL_GCC_VERSION(KERNEL_GCC_VERSION)
-
   if test "x$OMX_LINUX_RELEASE" = x`uname -r` ; then
+      # Look at the compiler version.
+      # Kbuild uses gcc by default (unless the distribution overrides it,
+      # but we cannot easily detect it). If KCC isn't forced here, check
+      # the default gcc version.
+      { ! test -z $KCC && _kcc=$KCC; } || _kcc=gcc
+      OMX_GET_GCC_VERSION(GCC_VERSION, $_kcc)
+      OMX_GET_KERNEL_GCC_VERSION(KERNEL_GCC_VERSION)
       if test "x$GCC_VERSION" != "x$KERNEL_GCC_VERSION" ; then
-	  AC_MSG_WARN(kernel built with gcc $KERNEL_GCC_VERSION and Open-MX with $GCC_VERSION)
+	if test -z $KCC ; then
+	  AC_MSG_WARN(kernel built with gcc $KERNEL_GCC_VERSION while Open-MX driver may use default $GCC_VERSION)
+	else
+	  AC_MSG_WARN(kernel built with gcc $KERNEL_GCC_VERSION while Open-MX driver will use $GCC_VERSION)
+	fi
       fi
   fi
 
