@@ -58,8 +58,10 @@ main(int argc, char *argv[])
   assert(ret == OMX_SUCCESS);
 
   gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++)
+  for(i=0; i<ITER; i++) {
     err = ioctl(ep->fd, OMX_CMD_BENCH, NULL);
+    assert(!err);
+  }
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
@@ -68,8 +70,10 @@ main(int argc, char *argv[])
 
   cmd.hdr.type = OMX_CMD_BENCH_TYPE_PARAMS;
   gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++)
+  for(i=0; i<ITER; i++) {
     err = ioctl(ep->fd, OMX_CMD_BENCH, &cmd);
+    assert(!err);
+  }
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
@@ -78,8 +82,10 @@ main(int argc, char *argv[])
 
   cmd.hdr.type = OMX_CMD_BENCH_TYPE_SEND_ALLOC;
   gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++)
+  for(i=0; i<ITER; i++) {
     err = ioctl(ep->fd, OMX_CMD_BENCH, &cmd);
+    assert(!err);
+  }
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
@@ -88,8 +94,10 @@ main(int argc, char *argv[])
 
   cmd.hdr.type = OMX_CMD_BENCH_TYPE_SEND_PREP;
   gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++)
+  for(i=0; i<ITER; i++) {
     err = ioctl(ep->fd, OMX_CMD_BENCH, &cmd);
+    assert(!err);
+  }
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
@@ -98,8 +106,10 @@ main(int argc, char *argv[])
 
   cmd.hdr.type = OMX_CMD_BENCH_TYPE_SEND_FILL;
   gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++)
+  for(i=0; i<ITER; i++) {
     err = ioctl(ep->fd, OMX_CMD_BENCH, &cmd);
+    assert(!err);
+  }
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
@@ -108,8 +118,10 @@ main(int argc, char *argv[])
 
   cmd.hdr.type = OMX_CMD_BENCH_TYPE_SEND_DONE;
   gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++)
+  for(i=0; i<ITER; i++) {
     err = ioctl(ep->fd, OMX_CMD_BENCH, &cmd);
+    assert(!err);
+  }
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
@@ -118,8 +130,10 @@ main(int argc, char *argv[])
 
   cmd.hdr.type = OMX_CMD_BENCH_TYPE_RECV_ACQU;
   gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++)
+  for(i=0; i<ITER; i++) {
     err = ioctl(ep->fd, OMX_CMD_BENCH, &cmd);
+    assert(!err);
+  }
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
@@ -128,8 +142,10 @@ main(int argc, char *argv[])
 
   cmd.hdr.type = OMX_CMD_BENCH_TYPE_RECV_NOTIFY;
   gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++)
+  for(i=0; i<ITER; i++) {
     err = ioctl(ep->fd, OMX_CMD_BENCH, &cmd);
+    assert(!err);
+  }
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
@@ -138,8 +154,10 @@ main(int argc, char *argv[])
 
   cmd.hdr.type = OMX_CMD_BENCH_TYPE_RECV_DONE;
   gettimeofday(&tv1, NULL);
-  for(i=0; i<ITER; i++)
+  for(i=0; i<ITER; i++) {
     err = ioctl(ep->fd, OMX_CMD_BENCH, &cmd);
+    assert(!err);
+  }
   gettimeofday(&tv2, NULL);
   total = (tv2.tv_sec-tv1.tv_sec)*1000000ULL+(tv2.tv_usec-tv1.tv_usec);
   delay = total*1000ULL/ITER;
