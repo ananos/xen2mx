@@ -301,7 +301,7 @@ omx_raw_attach_iface(uint32_t board_index, struct file * filp)
 		goto out_with_lock;
 
 	omx_iface_reacquire(iface);
-	rcu_assign_pointer(iface->raw.opener_file, filp);
+	iface->raw.opener_file = filp;
 	rcu_assign_pointer(filp->private_data, iface);
 	iface->raw.opener_pid = current->pid;
 	strncpy(iface->raw.opener_comm, current->comm, TASK_COMM_LEN);
