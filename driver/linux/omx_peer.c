@@ -94,7 +94,7 @@ omx_init_peer_reverse_indexes(uint16_t index, int local)
 	int i;
 	for(i=0; i<omx_iface_max; i++)
 		if (omx_ifaces[i])
-			omx_ifaces[i]->reverse_peer_indexes[index] = reverse;
+			rcu_dereference_protected(omx_ifaces[i], 1)->reverse_peer_indexes[index] = reverse;
 }
 
 /*
@@ -114,7 +114,7 @@ omx_init_iface_reverse_indexes(struct omx_iface *iface)
 		iface->reverse_peer_indexes[i] = OMX_UNKNOWN_REVERSE_PEER_INDEX;
 	for(i=0; i<omx_iface_max; i++)
 		if (omx_ifaces[i]) {
-			uint16_t index = omx_ifaces[i]->peer.index;
+			uint16_t index = rcu_dereference_protected(omx_ifaces[i], 1)->peer.index;
 			iface->reverse_peer_indexes[index] = index;
 		}
 
