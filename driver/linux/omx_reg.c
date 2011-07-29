@@ -1356,7 +1356,6 @@ omx__user_region_segment_fill_pages(const struct omx_user_region_segment * segme
 
 	for(i=first_page; ; i++) {
 		void *kvaddr;
-		int err;
 
 		/* compute chunk to take in this page */
 		unsigned long chunk = PAGE_SIZE-page_offset;
@@ -1365,7 +1364,7 @@ omx__user_region_segment_fill_pages(const struct omx_user_region_segment * segme
 
 		/* fill the page */
 		kvaddr = kmap_atomic(segment->pages[i], KM_USER0);
-		err = skb_copy_bits(skb, skb_offset, kvaddr+page_offset, chunk);
+		(void) skb_copy_bits(skb, skb_offset, kvaddr+page_offset, chunk);
 		kunmap_atomic(kvaddr, KM_USER0);
 		dprintk(REG,
 			"filling page #%ld offset %ld from skb offset %ld with length %ld\n",
