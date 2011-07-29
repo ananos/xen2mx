@@ -285,6 +285,7 @@ omx_raw_get_event(struct omx_iface * iface, void __user * uparam)
 static int
 omx_raw_attach_iface(uint32_t board_index, struct file * filp)
 {
+	struct omx_iface __rcu ** file_iface_rcu_p = (struct omx_iface __rcu __force **) &filp->private_data;
 	struct omx_iface * iface;
 	int err;
 
@@ -294,7 +295,7 @@ omx_raw_attach_iface(uint32_t board_index, struct file * filp)
 		goto out;
 
 	err = -EBUSY;
-	if (filp->private_data)
+	if (rcu_dereference_protected(*file_iface_rcu_p, 1))
 		goto out_with_lock;
 
 	if (iface->raw.opener_file)
@@ -302,7 +303,7 @@ omx_raw_attach_iface(uint32_t board_index, struct file * filp)
 
 	omx_iface_reacquire(iface);
 	iface->raw.opener_file = filp;
-	rcu_assign_pointer(filp->private_data, iface);
+	rcu_assign_pointer(*file_iface_rcu_p, iface);
 	iface->raw.opener_pid = current->pid;
 	strncpy(iface->raw.opener_comm, current->comm, TASK_COMM_LEN);
 
@@ -322,7 +323,8 @@ omx__raw_detach_iface_locked(struct omx_iface *iface)
 	struct file *filp = iface->raw.opener_file;
 
 	if (filp) {
-		filp->private_data = NULL;
+		struct omx_iface __rcu ** file_iface_rcu_p = (struct omx_iface __rcu __force **) &filp->private_data;
+		rcu_assign_pointer(*file_iface_rcu_p, NULL);
 		iface->raw.opener_file = NULL;
 		omx_raw_wakeup(iface);
 
@@ -336,13 +338,14 @@ omx__raw_detach_iface_locked(struct omx_iface *iface)
 static int
 omx_raw_detach_iface(struct file *filp)
 {
+	struct omx_iface __rcu ** file_iface_rcu_p = (struct omx_iface __rcu __force **) &filp->private_data;
 	struct omx_iface * iface;
 	int err;
 
 	omx_ifaces_peers_lock();
 
 	err = -EINVAL;
-	iface = filp->private_data;
+	iface = rcu_dereference_protected(*file_iface_rcu_p, 1);
 	if (!iface)
 		goto out_with_lock;
 
@@ -364,11 +367,12 @@ omx_raw_detach_iface(struct file *filp)
 static struct omx_iface *
 omx_acquire_iface_from_raw_file(const struct file * file)
 {
+	struct omx_iface __rcu ** file_iface_rcu_p = (struct omx_iface __rcu __force **) &file->private_data;
 	struct omx_iface * iface;
 
 	rcu_read_lock();
 
-	iface = rcu_dereference(file->private_data);
+	iface = rcu_dereference(*file_iface_rcu_p);
 	if (unlikely(!iface || iface->status != OMX_IFACE_STATUS_OK)) {
 		rcu_read_unlock();
 		return NULL;
@@ -383,7 +387,8 @@ omx_acquire_iface_from_raw_file(const struct file * file)
 static int
 omx_raw_miscdev_open(struct inode * inode, struct file * file)
 {
-	file->private_data = NULL;
+	struct omx_iface __rcu ** file_iface_rcu_p = (struct omx_iface __rcu __force **) &file->private_data;
+	RCU_INIT_POINTER(*file_iface_rcu_p, NULL);
 	return 0;
 }
 
