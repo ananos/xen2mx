@@ -509,8 +509,8 @@ omx_iface_attach(struct net_device * ifp)
 		goto out_with_raw;
 
 	iface->index = i;
-	omx_iface_nr++;
 	rcu_assign_pointer(omx_ifaces[i], iface);
+	omx_iface_nr++;
 
 	return 0;
 
@@ -857,9 +857,9 @@ omx_iface_attach_endpoint(struct omx_endpoint * endpoint)
 		goto out_with_endpoints_locked;
 	}
 
+	endpoint->iface = iface;
 	rcu_assign_pointer(iface->endpoints[endpoint->endpoint_index], endpoint);
 	iface->endpoint_nr++;
-	endpoint->iface = iface;
 
 	/* mark the endpoint as open here so that anybody removing this
 	 * iface never sees any endpoint in status INIT in the iface list

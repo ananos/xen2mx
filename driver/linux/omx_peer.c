@@ -209,8 +209,8 @@ omx_peers_clear(int local)
 			if (!peer)
 				continue;
 			if (i != omx_peer_next_nr) {
-				rcu_assign_pointer(omx_peer_array[omx_peer_next_nr], peer);
 				peer->index = omx_peer_next_nr;
+				rcu_assign_pointer(omx_peer_array[omx_peer_next_nr], peer);
 				RCU_INIT_POINTER(omx_peer_array[i], NULL);
 			}
 			omx_peer_next_nr++;
@@ -438,8 +438,8 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 					del_timer(&omx_host_query_timer);
 			}
 
-			rcu_assign_pointer(omx_peer_array[index], ifacepeer);
 			list_replace_rcu(&oldpeer->addr_hash_elt, &ifacepeer->addr_hash_elt);
+			rcu_assign_pointer(omx_peer_array[index], ifacepeer);
 			call_rcu(&oldpeer->rcu_head, __omx_peer_rcu_free_callback);
 
 			return 0;
@@ -460,9 +460,6 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 
 	/* this is a new peer, allocate an index and hash it */
 	index = omx_peer_next_nr;
-	list_add_tail_rcu(&ifacepeer->addr_hash_elt, &omx_peer_addr_hash_array[hash]);
-	rcu_assign_pointer(omx_peer_array[omx_peer_next_nr], ifacepeer);
-	omx_peer_next_nr++;
 
 	/* board_addr already set */
 	ifacepeer->local_iface = iface;
@@ -477,7 +474,9 @@ omx_peers_notify_iface_attach(struct omx_iface * iface)
 
 	/* no need to host query */
 
+	list_add_tail_rcu(&ifacepeer->addr_hash_elt, &omx_peer_addr_hash_array[hash]);
 	rcu_assign_pointer(omx_peer_array[index], ifacepeer);
+	omx_peer_next_nr++;
 
 	return 0;
 

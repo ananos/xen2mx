@@ -2,6 +2,8 @@
 * group similar fields in user structure for cache effects, cache-align some fields?
   + add a counter per list and group them as well to reduce the progression loop overhead
 
+* idr for the peer table
+
 * dynamically alloc the sendq_map index array out of the medium request?
 
 * drop the mmapped jiffies

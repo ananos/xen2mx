@@ -342,8 +342,8 @@ omx_pull_handle_alloc_slot(struct omx_endpoint *endpoint,
 	 */
 	spin_lock(&handle->lock);
 
-	rcu_assign_pointer(slot->handle, handle);
 	handle->slot_id = slot->id;
+	rcu_assign_pointer(slot->handle, handle);
 
 	dprintk(PULL, "allocating slot index %d generation %d for pull handle %p\n",
 		(unsigned) OMX_PULL_HANDLE_SLOT_INDEX_FROM_ID(slot->id),
