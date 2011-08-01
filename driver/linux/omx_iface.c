@@ -618,7 +618,7 @@ omx_iface_detach(struct omx_iface * iface, int force)
 	omx_peers_notify_iface_detach(iface);
 
 	/* remove the iface from the array */
-	rcu_assign_pointer(omx_ifaces[iface->index], NULL);
+	RCU_INIT_POINTER(omx_ifaces[iface->index], NULL);
 	omx_iface_nr--;
 	/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
 	synchronize_rcu();
@@ -904,7 +904,7 @@ omx_iface_detach_endpoint(struct omx_endpoint * endpoint,
 		mutex_lock(&iface->endpoints_mutex);
 
 	BUG_ON(rcu_access_pointer(iface->endpoints[endpoint->endpoint_index]) != endpoint);
-	rcu_assign_pointer(iface->endpoints[endpoint->endpoint_index], NULL);
+	RCU_INIT_POINTER(iface->endpoints[endpoint->endpoint_index], NULL);
 	/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
 	synchronize_rcu();
 

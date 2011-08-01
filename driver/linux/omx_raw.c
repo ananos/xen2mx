@@ -324,7 +324,7 @@ omx__raw_detach_iface_locked(struct omx_iface *iface)
 
 	if (filp) {
 		struct omx_iface __rcu ** file_iface_rcu_p = (struct omx_iface __rcu __force **) &filp->private_data;
-		rcu_assign_pointer(*file_iface_rcu_p, NULL);
+		RCU_INIT_POINTER(*file_iface_rcu_p, NULL);
 		iface->raw.opener_file = NULL;
 		omx_raw_wakeup(iface);
 

@@ -172,7 +172,7 @@ omx_peers_clear(int local)
 		}
 
 		list_del_rcu(&peer->addr_hash_elt);
-		rcu_assign_pointer(omx_peer_array[i], NULL);
+		RCU_INIT_POINTER(omx_peer_array[i], NULL);
 
 		if (iface) {
 			dprintk(PEER, "detaching iface %s (%s) peer #%d\n",
@@ -211,7 +211,7 @@ omx_peers_clear(int local)
 			if (i != omx_peer_next_nr) {
 				rcu_assign_pointer(omx_peer_array[omx_peer_next_nr], peer);
 				peer->index = omx_peer_next_nr;
-				rcu_assign_pointer(omx_peer_array[i], NULL);
+				RCU_INIT_POINTER(omx_peer_array[i], NULL);
 			}
 			omx_peer_next_nr++;
 		}
@@ -501,7 +501,7 @@ omx_peers_notify_iface_detach(struct omx_iface * iface)
 
 		/* the iface is in the array, just remove it, we don't really care about still having it in the peer table */
 		list_del_rcu(&peer->addr_hash_elt);
-		rcu_assign_pointer(omx_peer_array[index], NULL);
+		RCU_INIT_POINTER(omx_peer_array[index], NULL);
 		/* no need to bother using call_rcu() here, waiting a bit long in synchronize_rcu() is ok */
 		synchronize_rcu();
 

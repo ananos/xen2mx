@@ -458,7 +458,7 @@ omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint,
 		goto out_with_endpoint_lock;
 	}
 
-	rcu_assign_pointer(endpoint->user_regions[cmd.id], NULL);
+	RCU_INIT_POINTER(endpoint->user_regions[cmd.id], NULL);
 	/*
 	 * since synchronize_rcu() is too expensive in this critical path,
 	 * just defer the actual releasing after the grace period
@@ -663,7 +663,7 @@ omx_endpoint_user_regions_exit(struct omx_endpoint * endpoint)
 		dprintk(REG, "forcing destroy of window %d on endpoint %d board %d\n",
 			i, endpoint->endpoint_index, endpoint->board_index);
 
-		rcu_assign_pointer(endpoint->user_regions[i], NULL);
+		RCU_INIT_POINTER(endpoint->user_regions[i], NULL);
 		/* just defer the actual releasing after the grace period */
 		call_rcu(&region->rcu_head, __omx_user_region_rcu_release_callback);
 	}

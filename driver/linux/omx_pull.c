@@ -374,7 +374,7 @@ omx_pull_handle_free_slot(struct omx_endpoint *endpoint,
 		(unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot->id),
 		handle);
 
-	rcu_assign_pointer(slot->handle, NULL);
+	RCU_INIT_POINTER(slot->handle, NULL);
 	list_add_tail(&slot->list_elt, &endpoint->pull_handle_slots_free_list);
 	/* FIXME: wakeup one sleeper */
 
