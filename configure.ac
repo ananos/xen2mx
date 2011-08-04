@@ -122,9 +122,10 @@ OMX_WITH(shared-ring-entries, n, OMX_SHARED_RING_ENTRIES,
 	 setting the number of shared ring entries to $OMX_SHARED_RING_ENTRIES,
 	 default)
 
-AC_ARG_VAR(KCC,	    Compiler used for building the driver)
-AC_ARG_VAR(KCFLAGS, Additional kernel compiler flags)
-AC_ARG_VAR(KARCH,   Architecture used to build the driver)
+AC_ARG_VAR(KCC,	        Compiler (and optional flags) used for building the driver)
+AC_ARG_VAR(KCFLAGS,     Additional kernel compiler flags)
+AC_ARG_VAR(KARCH,       Architecture used to build the driver)
+AC_ARG_VAR(KBUILD_ARGS, Additional parameters to build the driver)
 
 
 AM_CONDITIONAL(OMX_BUILD_DRIVER, test x$enable_driver_build = xyes)
@@ -212,9 +213,9 @@ if test x$enable_driver_build = xyes ; then
 fi
 
 
-test -z $KCC   || OMX_KBUILD_ARGS="$OMX_KBUILD_ARGS CC=\"$KCC $KCFLAGS\""
-test -z $KARCH || OMX_KBUILD_ARGS="$OMX_KBUILD_ARGS ARCH=\"$KARCH\""
-AC_SUBST(OMX_KBUILD_ARGS)
+test -z $KCC   || KBUILD_ARGS="$KBUILD_ARGS CC=\"$KCC $KCFLAGS\""
+test -z $KARCH || KBUILD_ARGS="$KBUILD_ARGS ARCH=\"$KARCH\""
+AC_SUBST(KBUILD_ARGS)
 
 
 

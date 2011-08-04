@@ -44,7 +44,7 @@ EXTRA_DIST	= check_kernel_headers.sh				\
 # So make install as root does not fail, and we still do not ignore build failures
 # as the normal user.
 open-mx.ko:
-	+$(MAKE) -C $(OMX_LINUX_BUILD) M=$(OPEN_MX_DIR) $(OMX_KBUILD_ARGS) || test x`id -u` != x`stat -c %u Kbuild`
+	+$(MAKE) -C $(OMX_LINUX_BUILD) M=$(OPEN_MX_DIR) $(KBUILD_ARGS) || test x`id -u` != x`stat -c %u Kbuild`
 
 clean-local:
 	+$(MAKE) -C $(OMX_LINUX_BUILD) M=$(OPEN_MX_DIR) clean
