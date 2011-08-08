@@ -1149,7 +1149,10 @@ $ ./configure --with-linux-release=2.6.16.60-0.34 \
 <p>
 The kernel module should preferably be compiled with the same compiler
 than the kernel has been. To change the compiler for the kernel module,
-pass KCC=&lt;othercompiler&gt; on the configure or make command line.
+pass KCC=&lt;othercompiler&gt; on the configure command line.
+It is also possible to specify additional command-line options for this
+kernel compiler by passing them in KCFLAGS=&lt;options...&gt; at configure
+time.
 See also <a href="#kernel-arch">How do I change the target architecture of the kernel driver?</a>.
 </p>
 
@@ -1161,9 +1164,9 @@ See also <a href="#kernel-arch">How do I change the target architecture of the k
 By default the kernel module is built for the currently running architecture.
 If the target kernel was built for another architecture, the kernel module
 build should be modified accordingly.
-For instance, to build for i386 machines, pass KCFLAGS="-m32" and KARCH="i386"
-on the configure command-line.
-These variables will be passed as CC and ARCH to the kernel build command line.
+For instance, to build for i386 machines, pass KARCH=i386 on the configure
+command-line.
+This variable will be passed as ARCH to the kernel build command line.
 See also <a href="#kernel-compiler">How do I change the compiler for the kernel driver?</a>.
 </p>
 
