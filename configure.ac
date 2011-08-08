@@ -213,9 +213,10 @@ if test x$enable_driver_build = xyes ; then
 fi
 
 
-test -z $KCC   || KBUILD_ARGS="$KBUILD_ARGS CC=\"$KCC $KCFLAGS\""
+test -z $KCC   || KBUILD_ARGS="$KBUILD_ARGS CC=\"$KCC\""
 test -z $KARCH || KBUILD_ARGS="$KBUILD_ARGS ARCH=\"$KARCH\""
 AC_SUBST(KBUILD_ARGS)
+AC_SUBST(KCFLAGS)
 
 
 

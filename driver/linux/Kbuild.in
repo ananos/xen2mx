@@ -35,6 +35,8 @@ ifeq (@OMX_DRIVER_DEBUG@,1)
   @OMX_KBUILD_CFLAGS_ARG@	+= @DBGCPPFLAGS@ @DBGCFLAGS@ @DBGLDFLAGS@
 endif
 
+@OMX_KBUILD_CFLAGS_ARG@		+= @KCFLAGS@
+
 obj-m		+= open-mx.o
 open-mx-objs	:= omx_main.o omx_dev.o omx_peer.o omx_raw.o	\
 		   omx_iface.o omx_send.o omx_recv.o		\
