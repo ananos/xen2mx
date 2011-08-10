@@ -42,6 +42,16 @@ struct omx__cond {
 #define omx__cond_signal(cond) pthread_cond_signal(&(cond)->_cond)
 #define omx__cond_wait(cond, lock) pthread_cond_wait(&(cond)->_cond, &(lock)->_mutex)
 
+#pragma weak pthread_mutex_init
+#pragma weak pthread_mutex_destroy
+#pragma weak pthread_mutex_lock
+#pragma weak pthread_mutex_unlock
+
+#pragma weak pthread_cond_init
+#pragma weak pthread_cond_destroy
+#pragma weak pthread_cond_signal
+#pragma weak pthread_cond_wait
+
 #else /* !OMX_LIB_THREAD_SAFETY */
 
 struct omx__lock { /* nothing */ };
