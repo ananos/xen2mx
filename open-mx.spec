@@ -18,7 +18,7 @@
 
 Summary: Open-MX: Myrinet Express over Generic Ethernet Hardware
 Name: open-mx
-Version: 1.4.901
+Version: 1.5.0
 Release: 0
 License: GPL
 Group: System Environment/Libraries
