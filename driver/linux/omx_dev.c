@@ -802,7 +802,7 @@ omx_miscdev_mmap(struct file * file, struct vm_area_struct * vma)
 }
 
 ssize_t
-omx_miscdev_read(struct file* filp, char* buff, size_t count, loff_t* offp)
+static omx_miscdev_read(struct file* filp, char __user * buff, size_t count, loff_t* offp)
 {
 	ssize_t ret = 0;
 	char * buffer;
