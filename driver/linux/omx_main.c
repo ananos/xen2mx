@@ -127,10 +127,6 @@ omx_unavail_module_param(dmaasyncmin, "kernel has " OMX_DMA_ENGINE_CONFIG_STR);
 omx_unavail_module_param(dmasyncmin, "kernel has " OMX_DMA_ENGINE_CONFIG_STR);
 #endif /* !OMX_HAVE_DMA_ENGINE */
 
-int omx_copybench = 0;
-module_param_named(copybench, omx_copybench, uint, S_IRUGO);
-MODULE_PARM_DESC(copybench, "Enable copy benchmark on startup");
-
 #ifdef OMX_DRIVER_DEBUG
 unsigned long omx_debug = 0;
 module_param_named(debug, omx_debug, ulong, S_IRUGO|S_IWUSR);

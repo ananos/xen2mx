@@ -40,7 +40,6 @@ extern int omx_endpoint_max;
 extern int omx_peer_max;
 extern int omx_skb_frags;
 extern int omx_skb_copy_max;
-extern int omx_copybench;
 extern int omx_pin_synchronous;
 extern int omx_pin_progressive;
 extern int omx_pin_chunk_pages_min;
