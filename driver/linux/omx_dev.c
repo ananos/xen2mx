@@ -422,26 +422,25 @@ omx_miscdev_release(struct inode * inode, struct file * file)
  */
 
 #define OMX_CMD_HANDLER_SHIFT(index) (index - OMX_CMD_INDEX(OMX_CMD_BENCH))
-#define OMX_CMD_HANDLER_OFFSET(cmd) OMX_CMD_HANDLER_SHIFT(OMX_CMD_INDEX(cmd))
 
 static int (*omx_ioctl_with_endpoint_handlers[])(struct omx_endpoint * endpoint, void __user * uparam) = {
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_BENCH)]			= omx_ioctl_bench,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_TINY)]		= omx_ioctl_send_tiny,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_SMALL)]		= omx_ioctl_send_small,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_MEDIUMSQ_FRAG)]	= omx_ioctl_send_mediumsq_frag,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_MEDIUMVA)]		= omx_ioctl_send_mediumva,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_RNDV)]		= omx_ioctl_send_rndv,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_PULL)]			= omx_ioctl_pull,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_NOTIFY)]		= omx_ioctl_send_notify,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_CONNECT_REQUEST)]	= omx_ioctl_send_connect_request,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_CONNECT_REPLY)]	= omx_ioctl_send_connect_reply,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_SEND_LIBACK)]		= omx_ioctl_send_liback,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_CREATE_USER_REGION)]   	= omx_ioctl_user_region_create,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_DESTROY_USER_REGION)]	= omx_ioctl_user_region_destroy,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAIT_EVENT)]		= omx_ioctl_wait_event,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_WAKEUP)]		= omx_ioctl_wakeup,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_RELEASE_EXP_SLOTS)]     = omx_ioctl_release_exp_slots,
-	[OMX_CMD_HANDLER_OFFSET(OMX_CMD_RELEASE_UNEXP_SLOTS)]   = omx_ioctl_release_unexp_slots,
+	[OMX_EPCMD_BENCH]			= omx_ioctl_bench,
+	[OMX_EPCMD_SEND_TINY]			= omx_ioctl_send_tiny,
+	[OMX_EPCMD_SEND_SMALL]			= omx_ioctl_send_small,
+	[OMX_EPCMD_SEND_MEDIUMSQ_FRAG]		= omx_ioctl_send_mediumsq_frag,
+	[OMX_EPCMD_SEND_MEDIUMVA]		= omx_ioctl_send_mediumva,
+	[OMX_EPCMD_SEND_RNDV]			= omx_ioctl_send_rndv,
+	[OMX_EPCMD_PULL]			= omx_ioctl_pull,
+	[OMX_EPCMD_SEND_NOTIFY]			= omx_ioctl_send_notify,
+	[OMX_EPCMD_SEND_CONNECT_REQUEST]	= omx_ioctl_send_connect_request,
+	[OMX_EPCMD_SEND_CONNECT_REPLY]		= omx_ioctl_send_connect_reply,
+	[OMX_EPCMD_SEND_LIBACK]			= omx_ioctl_send_liback,
+	[OMX_EPCMD_CREATE_USER_REGION]		= omx_ioctl_user_region_create,
+	[OMX_EPCMD_DESTROY_USER_REGION]		= omx_ioctl_user_region_destroy,
+	[OMX_EPCMD_WAIT_EVENT]			= omx_ioctl_wait_event,
+	[OMX_EPCMD_WAKEUP]			= omx_ioctl_wakeup,
+	[OMX_EPCMD_RELEASE_EXP_SLOTS]		= omx_ioctl_release_exp_slots,
+	[OMX_EPCMD_RELEASE_UNEXP_SLOTS]		= omx_ioctl_release_unexp_slots,
 };
 
 /*

@@ -582,24 +582,43 @@ struct omx_cmd_bench {
 #define OMX_CMD_RAW_SEND		_IOR(OMX_CMD_MAGIC, 0x31, struct omx_cmd_raw_send)
 #define OMX_CMD_RAW_GET_EVENT		_IOWR(OMX_CMD_MAGIC, 0x32, struct omx_cmd_raw_get_event)
 #define OMX_CMD_OPEN_ENDPOINT		_IOR(OMX_CMD_MAGIC, 0x71, struct omx_cmd_open_endpoint)
-/* WARNING: endpoint-based cmd numbers must start at OMX_CMD_BENCH and remain consecutive */
-#define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x80, struct omx_cmd_bench)
-#define OMX_CMD_SEND_TINY		_IOR(OMX_CMD_MAGIC, 0x81, struct omx_cmd_send_tiny)
-#define OMX_CMD_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x82, struct omx_cmd_send_small)
-#define OMX_CMD_SEND_MEDIUMSQ_FRAG	_IOR(OMX_CMD_MAGIC, 0x83, struct omx_cmd_send_mediumsq_frag)
-#define OMX_CMD_SEND_MEDIUMVA		_IOR(OMX_CMD_MAGIC, 0x84, struct omx_cmd_send_mediumva)
-#define OMX_CMD_SEND_RNDV		_IOR(OMX_CMD_MAGIC, 0x85, struct omx_cmd_send_rndv)
-#define OMX_CMD_PULL			_IOR(OMX_CMD_MAGIC, 0x86, struct omx_cmd_pull)
-#define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x87, struct omx_cmd_send_notify)
-#define OMX_CMD_SEND_CONNECT_REQUEST	_IOR(OMX_CMD_MAGIC, 0x88, struct omx_cmd_send_connect_request)
-#define OMX_CMD_SEND_CONNECT_REPLY	_IOR(OMX_CMD_MAGIC, 0x89, struct omx_cmd_send_connect_reply)
-#define OMX_CMD_SEND_LIBACK		_IOR(OMX_CMD_MAGIC, 0x8a, struct omx_cmd_send_liback)
-#define OMX_CMD_CREATE_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8b, struct omx_cmd_create_user_region)
-#define OMX_CMD_DESTROY_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x8c, struct omx_cmd_destroy_user_region)
-#define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x8d, struct omx_cmd_wait_event)
-#define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x8e, struct omx_cmd_wakeup)
-#define OMX_CMD_RELEASE_EXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x8f)
-#define OMX_CMD_RELEASE_UNEXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x90)
+/* WARNING: endpoint-based cmd numbers must start at OMX_CMD_BENCH and remain consecutive,
+ * and we need an sub-index within this range for the epoint-based ioctl handlers array
+ */
+#define OMX_EPCMD_BENCH			0x0
+#define OMX_EPCMD_SEND_TINY		0x1
+#define OMX_EPCMD_SEND_SMALL		0x2
+#define OMX_EPCMD_SEND_MEDIUMSQ_FRAG	0x3
+#define OMX_EPCMD_SEND_MEDIUMVA		0x4
+#define OMX_EPCMD_SEND_RNDV		0x5
+#define OMX_EPCMD_PULL			0x6
+#define OMX_EPCMD_SEND_NOTIFY		0x7
+#define OMX_EPCMD_SEND_CONNECT_REQUEST	0x8
+#define OMX_EPCMD_SEND_CONNECT_REPLY	0x9
+#define OMX_EPCMD_SEND_LIBACK		0xa
+#define OMX_EPCMD_CREATE_USER_REGION	0xb
+#define OMX_EPCMD_DESTROY_USER_REGION	0xc
+#define OMX_EPCMD_WAIT_EVENT		0xd
+#define OMX_EPCMD_WAKEUP		0xe
+#define OMX_EPCMD_RELEASE_EXP_SLOTS	0xf
+#define OMX_EPCMD_RELEASE_UNEXP_SLOTS	0x10
+#define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_BENCH, struct omx_cmd_bench)
+#define OMX_CMD_SEND_TINY		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_TINY, struct omx_cmd_send_tiny)
+#define OMX_CMD_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_SMALL, struct omx_cmd_send_small)
+#define OMX_CMD_SEND_MEDIUMSQ_FRAG	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_MEDIUMSQ_FRAG, struct omx_cmd_send_mediumsq_frag)
+#define OMX_CMD_SEND_MEDIUMVA		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_MEDIUMVA, struct omx_cmd_send_mediumva)
+#define OMX_CMD_SEND_RNDV		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_RNDV, struct omx_cmd_send_rndv)
+#define OMX_CMD_PULL			_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_PULL, struct omx_cmd_pull)
+#define OMX_CMD_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_NOTIFY, struct omx_cmd_send_notify)
+#define OMX_CMD_SEND_CONNECT_REQUEST	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_CONNECT_REQUEST, struct omx_cmd_send_connect_request)
+#define OMX_CMD_SEND_CONNECT_REPLY	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_CONNECT_REPLY, struct omx_cmd_send_connect_reply)
+#define OMX_CMD_SEND_LIBACK		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_LIBACK, struct omx_cmd_send_liback)
+#define OMX_CMD_CREATE_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_CREATE_USER_REGION, struct omx_cmd_create_user_region)
+#define OMX_CMD_DESTROY_USER_REGION	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_DESTROY_USER_REGION, struct omx_cmd_destroy_user_region)
+#define OMX_CMD_WAIT_EVENT		_IOWR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_WAIT_EVENT, struct omx_cmd_wait_event)
+#define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_WAKEUP, struct omx_cmd_wakeup)
+#define OMX_CMD_RELEASE_EXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_RELEASE_EXP_SLOTS)
+#define OMX_CMD_RELEASE_UNEXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_RELEASE_UNEXP_SLOTS)
 
 static inline __pure const char *
 omx_strcmd(unsigned cmd)
