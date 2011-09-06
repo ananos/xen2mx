@@ -802,6 +802,11 @@ omx_ifnames_set_kp(const char *buf, struct kernel_param *kp)
 		/* module parameter values are guaranteed to be \0-terminated */
 		omx_ifaces_store(buf);
 	} else {
+		/* If the 'ifnames' module parameter is given several times, we must first
+		 * free the allocated memory before reallocating it. */
+		if (omx_delayed_ifnames)
+			kfree (omx_delayed_ifnames);
+
 		/* the module init isn't done yet, let the string be parsed later */
 		omx_delayed_ifnames = kstrdup(buf, GFP_KERNEL);
 	}
