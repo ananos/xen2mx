@@ -148,6 +148,9 @@ omx_endpoint_free_resources(struct omx_endpoint * endpoint)
 {
 	might_sleep();
 
+	/* destroy all pending pull handles */
+	omx_endpoint_pull_handles_exit(endpoint);
+
 	omx_endpoint_user_regions_exit(endpoint);
 
 	kfree(endpoint->recvq_pages);
@@ -311,9 +314,6 @@ omx_endpoint_close(struct omx_endpoint * endpoint,
 	/* detach from the iface now so that nobody can acquire it */
 	omx_iface_detach_endpoint(endpoint, ifacelocked);
 	/* but keep the endpoint->iface valid until everybody releases the endpoint */
-
-	/* destroy all pending pull handles */
-	omx_endpoint_pull_handles_exit(endpoint);
 
 	/*
 	 * current users may be:
