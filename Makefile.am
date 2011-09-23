@@ -15,6 +15,8 @@
 # See the GNU General Public License in COPYING.GPL for more details.
 
 MAKE = make
+RM_F = rm -f
+MKDIR_P = mkdir -p
 
 ACLOCAL_AMFLAGS = -I ./build-aux
 
