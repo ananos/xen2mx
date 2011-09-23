@@ -40,7 +40,7 @@ else
 if OMX_LIB_DEBUG
   SUBDIRS += lib64-debug
 endif
-	
+
 # arch=64 / no multilib / release build
 if OMX_LIB_RELEASE
   SUBDIRS += lib64

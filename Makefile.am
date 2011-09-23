@@ -58,7 +58,7 @@ EXTRA_DIST = AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL		\
 dist-hook:
 	@$(distdir)/autogen.sh
 
-DISTCLEANFILES	=	configure-dkms
+DISTCLEANFILES = configure-dkms
 
 if OMX_BUILD_LIBRARY
 if OMX_USE_FMA
