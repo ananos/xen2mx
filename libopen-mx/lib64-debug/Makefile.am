@@ -20,6 +20,10 @@ AM_CPPFLAGS_SPEC = -DOMX_LIB_DEBUG=1 $(DBGCPPFLAGS)
 AM_CFLAGS_SPEC   = -O0 -g -gdwarf-2 -g3 $(DBGCFLAGS)
 AM_LDFLAGS_SPEC  = $(DBGLDFLAGS)
 
+if OMX_LIB_COVERAGE
+  AM_CFLAGS_SPEC   += -ftest-coverage -fprofile-arcs
+endif
+
 
 if OMX_MULTILIB
   AM_CFLAGS_SPEC   += -m64

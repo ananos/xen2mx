@@ -298,9 +298,14 @@ AC_ARG_ENABLE(valgrind,
 	      enable_valgrind=$enableval,
 	      enable_valgrind=maybe)
 
+OMX_ENABLE(coverage, enable_coverage,
+	   enable GCOV code coverage in the debug library,
+	   whether GCOV code coverage is enabled in the debug library)
+
 
 AM_CONDITIONAL(OMX_LIB_DEBUG,   test x$enable_debug    = xyes || test x$enable_debug = xboth)
 AM_CONDITIONAL(OMX_LIB_RELEASE, test x$enable_debug    = xno  || test x$enable_debug = xboth)
+AM_CONDITIONAL(OMX_LIB_COVERAGE,test x$enable_coverage = xyes)
 
 OMX_DRIVER_DEBUG=0
 DEFAULT_LIBDIR=lib$NATARCHSIZE
