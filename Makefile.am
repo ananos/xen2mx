@@ -69,6 +69,22 @@ install-exec-local: fma-install
 endif
 endif
 
+if OMX_LIB_COVERAGE
+COV_DIR = coverage
+
+cov-reset:
+	@$(RM_F) -r $(COV_DIR)
+	@lcov --directory . --zerocounters
+
+cov:
+	@$(MKDIR_P) $(COV_DIR)
+	@lcov --compat-libtool --directory . --capture -o $(COV_DIR)/cov.info
+	@genhtml -o $(COV_DIR) $(COV_DIR)/cov.info
+
+clean-local: cov-reset
+endif
+
+
 .PHONY: fma fma-clean fma-distclean
 
 fma:
