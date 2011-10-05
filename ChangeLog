@@ -1,28 +1,27 @@
-Open-MX 1.5.1 (September ... 2011)
-==================================
+Open-MX 1.5.1 (October 5th 2011)
+================================
 The Ludovic release.
 
-Improvements other previous release:
+Improvements from previous release:
 * Fix a memory leak when trying to open a busy endpoint.
 * Fix a memory leak when passing the ifnames module parameter
   multiple times.
-
 
 Caveats:
 * No background progression or retransmission is done if the application
   does not invoke an Open-MX routine explicitly.
 
-Open-MX 1.5 (August 11th 2011)
-==============================
+Open-MX 1.5.0 (August 11th 2011)
+================================
 
-Improvements other previous release:
+Improvements from previous release:
 * Fix udev detection when /run is available.
 * Several minor fixes.
 
 Open-MX 1.4.901 aka 1.5-rc1 (June 8th 2011)
 ===========================================
 
-Improvements other previous release:
+Improvements from previous release:
 * Initialize endpoint address context to NULL to match MX behavior
   (required for PVFS2).
 * Make the library thread-safe even when multiple threads manipulate
