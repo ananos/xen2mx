@@ -1,3 +1,11 @@
+Open-MX
+=======================
+
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.5.1 (October 5th 2011)
 ================================
 The Ludovic release.
@@ -6,10 +14,6 @@ Improvements from previous release:
 * Fix a memory leak when trying to open a busy endpoint.
 * Fix a memory leak when passing the ifnames module parameter
   multiple times.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.5.0 (August 11th 2011)
 ================================
