@@ -37,6 +37,8 @@ sed -e 's/^PACKAGE_VERSION=.*/PACKAGE_VERSION=\"'${version}'\"/' -i dkms.conf
 
 echo "Creating the build-aux directory if necessary..."
 mkdir -p build-aux
+echo "Creating the macro directory if necessary..."
+mkdir -p m4
 echo "Running aclocal..."
 aclocal --force || exit 1
 echo "Running autoheader..."

@@ -18,7 +18,7 @@ MAKE = make
 RM_F = rm -f
 MKDIR_P = mkdir -p
 
-ACLOCAL_AMFLAGS = -I ./build-aux
+ACLOCAL_AMFLAGS = -I ./m4
 
 SUBDIRS =
 

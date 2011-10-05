@@ -26,7 +26,7 @@ AC_PREREQ(2.65)
 AC_PREFIX_DEFAULT(/opt/open-mx)
 AC_CONFIG_SRCDIR(./configure.ac)
 AC_CONFIG_AUX_DIR(./build-aux)
-AC_CONFIG_MACRO_DIR(./build-aux)
+AC_CONFIG_MACRO_DIR(./m4)
 
 # Make the build output less verbose
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
