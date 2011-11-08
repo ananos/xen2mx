@@ -1,6 +1,9 @@
 Open-MX
 =======================
 
+Improvements from previous release:
+* Fix build on Linux 3.2 kernel.
+
 
 Caveats:
 * No background progression or retransmission is done if the application
