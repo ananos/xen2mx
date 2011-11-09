@@ -82,8 +82,6 @@ omx__find_previous_early_packet(const struct omx_endpoint *ep, struct omx__partn
     return &partner->early_recv_q;
   }
 
-  new_index = OMX__SEQNUM(seqnum - next_match_recv_seq);
-
   /* general case, add at the right position, and drop if duplicate */
   omx__foreach_partner_early_packet_reverse(partner, current) {
     omx__seqnum_t current_index = OMX__SEQNUM(current->msg.seqnum - next_match_recv_seq);
