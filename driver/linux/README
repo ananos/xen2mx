@@ -38,7 +38,7 @@ No need to disable bottom halves since it never scans the array of ifaces
 
 The endpoint region list and the peer table are protected by RCU locks.
 The per-endpoint region list uses call_rcu() to defer deletion of the
-region after the grace period instea of having the very expensive
+region after the grace period instead of having the very expensive
 synchronize_rcu() in the critical path of large messages.
 All other RCU users (ifaces array, per-iface endpoints array, peers table)
 use synchronize_rcu() to wait for readers to exit before deleting an object,
