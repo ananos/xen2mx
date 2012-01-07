@@ -504,7 +504,7 @@ omx_exit(void)
 	omx_dma_exit();
 	del_timer_sync(&omx_driver_userdesc_update_timer);
 	vfree(omx_driver_userdesc);
-	synchronize_rcu();
+	rcu_barrier();
 	flush_scheduled_work();
 	printk(KERN_INFO "Open-MX " OMX_DRIVER_VERSION " terminated\n");
 }
