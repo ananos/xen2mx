@@ -13,7 +13,7 @@
  *************************************************************************/
 
 /* This file was originally contributed by
- * Brice.Goglin@ens-lyon.org (LIP/INRIA/ENS-Lyon) */
+ * Brice.Goglin@ens-lyon.org (LIP/inria/ENS-Lyon) */
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -1,6 +1,6 @@
 /*
  * Open-MX
- * Copyright © INRIA 2007-2009
+ * Copyright © inria 2007-2009
  * Copyright © CNRS 2009
  * (see AUTHORS file)
  *
