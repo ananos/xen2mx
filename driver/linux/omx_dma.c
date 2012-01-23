@@ -79,7 +79,7 @@ omx_dma_skb_copy_datagram_to_pages(struct dma_chan *chan, dma_cookie_t *cookiep,
 	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
 		int end;
 		skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
-		struct page *page = frag->page;
+		struct page *page = skb_frag_page(frag);
 
 		BUG_ON(start > offset + len);
 
@@ -186,7 +186,7 @@ omx__dma_skb_copy_datagram_to_user_region(struct omx_user_region_offset_cache *r
 		copy = end - skboff;
 		if (copy > 0) {
 			skb_frag_t *frag = &skb_shinfo(skb)->frags[i];
-			struct page *page = frag->page;
+			struct page *page = skb_frag_page(frag);
 
 			if (copy > len)
 				copy = len;

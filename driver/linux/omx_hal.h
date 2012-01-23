@@ -302,6 +302,11 @@ omx_get_user_pages_fast(unsigned long start, int nr_pages, int write, struct pag
 }
 #endif /* !OMX_HAVE_GET_USER_PAGES_FAST */
 
+/* skb_frag_page() added in 3.2 */
+#ifndef OMX_HAVE_SKB_FRAG_PAGE
+static inline struct page *skb_frag_page(const skb_frag_t *frag) { return frag->page; }
+#endif
+
 #endif /* __omx_hal_h__ */
 
 /*

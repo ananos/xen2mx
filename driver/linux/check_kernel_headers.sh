@@ -260,6 +260,15 @@ else
   echo no
 fi
 
+# skb_frag_page added in 3.2
+echo -n "  checking (in kernel headers) skb_frag_page availability ... "
+if grep skb_frag_page ${LINUX_HDR}/include/linux/skbuff.h > /dev/null ; then
+  echo "#define OMX_HAVE_SKB_FRAG_PAGE 1" >> ${TMP_CHECKS_NAME}
+  echo yes
+else
+  echo no
+fi
+
 # add the footer
 echo "" >> ${TMP_CHECKS_NAME}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_NAME}
