@@ -893,7 +893,7 @@ union omx_evt {
 				uint32_t recvq_offset;
 				uint16_t length;
 				uint16_t checksum;
-				uint16_t pad[15];
+				uint32_t pad[8];
 				/* 40 */
 			} small;
 
@@ -906,7 +906,7 @@ union omx_evt {
 				uint8_t frag_pipeline;
 				/* 12 */
 				uint16_t checksum;
-				uint16_t pad2[12];
+				uint16_t pad2[13];
 				/* 40 */
 			} medium_frag;
 
