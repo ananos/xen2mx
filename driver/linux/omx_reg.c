@@ -844,9 +844,9 @@ omx_user_region_offset_cache_contig_copy_callback(struct omx_user_region_offset_
 			chunk = PAGE_SIZE - pageoff;
 
 		/* append the page */
-		kpaddr = kmap_atomic(*page, KM_SKB_DATA_SOFTIRQ);
+		kpaddr = omx_kmap_atomic(*page, KM_SKB_DATA_SOFTIRQ);
 		memcpy(buffer, kpaddr + pageoff, chunk);
-		kunmap_atomic(kpaddr, KM_SKB_DATA_SOFTIRQ);
+		omx_kunmap_atomic(kpaddr, KM_SKB_DATA_SOFTIRQ);
 		dprintk(REG, "copying %d from kmapped page\n", chunk);
 
 		/* update the status */
@@ -901,9 +901,9 @@ omx_user_region_offset_cache_vect_copy_callback(struct omx_user_region_offset_ca
 			chunk = seglen - segoff;
 
 		/* append the page */
-		kpaddr = kmap_atomic(*page, KM_SKB_DATA_SOFTIRQ);
+		kpaddr = omx_kmap_atomic(*page, KM_SKB_DATA_SOFTIRQ);
 		memcpy(buffer, kpaddr + pageoff, chunk);
-		kunmap_atomic(kpaddr, KM_SKB_DATA_SOFTIRQ);
+		omx_kunmap_atomic(kpaddr, KM_SKB_DATA_SOFTIRQ);
 		dprintk(REG, "copying %d from kmapped page\n", chunk);
 
 		/* update the status */
@@ -1363,9 +1363,9 @@ omx__user_region_segment_fill_pages(const struct omx_user_region_segment * segme
 			chunk = remaining;
 
 		/* fill the page */
-		kvaddr = kmap_atomic(segment->pages[i], KM_USER0);
+		kvaddr = omx_kmap_atomic(segment->pages[i], KM_USER0);
 		(void) skb_copy_bits(skb, skb_offset, kvaddr+page_offset, chunk);
-		kunmap_atomic(kvaddr, KM_USER0);
+		omx_kunmap_atomic(kvaddr, KM_USER0);
 		dprintk(REG,
 			"filling page #%ld offset %ld from skb offset %ld with length %ld\n",
 			i, page_offset, skb_offset, chunk);

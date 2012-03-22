@@ -307,6 +307,15 @@ omx_get_user_pages_fast(unsigned long start, int nr_pages, int write, struct pag
 static inline struct page *skb_frag_page(const skb_frag_t *frag) { return frag->page; }
 #endif
 
+/* k[un]map_atomic doesn't want a type since 3.4 */
+#ifdef OMX_HAVE_KMAP_ATOMIC_TYPE
+#define omx_kmap_atomic kmap_atomic
+#define omx_kunmap_atomic kunmap_atomic
+#else
+#define omx_kmap_atomic(x,type) kmap_atomic(x)
+#define omx_kunmap_atomic(x,type) kunmap_atomic(x)
+#endif
+
 #endif /* __omx_hal_h__ */
 
 /*

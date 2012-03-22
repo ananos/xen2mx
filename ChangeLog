@@ -1,13 +1,20 @@
+Open-MX 1.5.3 ()
+==================================
+
+Improvements from previous release:
+* Fix build with 3.5+ kernels where kmap_atomic changed.
+
+
+Caveats:
+* No background progression or retransmission is done if the application
+  does not invoke an Open-MX routine explicitly.
+
 Open-MX 1.5.2 (February 21st 2012)
 ==================================
 
 Improvements from previous release:
 * Fix build on Linux 3.2 kernel.
 * Misc minor improvements in the driver.
-
-Caveats:
-* No background progression or retransmission is done if the application
-  does not invoke an Open-MX routine explicitly.
 
 Open-MX 1.5.1 (October 5th 2011)
 ================================

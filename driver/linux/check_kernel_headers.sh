@@ -269,6 +269,15 @@ else
   echo no
 fi
 
+# k[un]map_atomic doesn't want a type since 3.4
+echo -n "  checking (in kernel headers) whether kmap_atomic needs a type ... "
+if grep KM_USER1 ${LINUX_HDR}/include/linux/highmem.h > /dev/null ; then
+  echo "#define OMX_HAVE_KMAP_ATOMIC_TYPE 1" >> ${TMP_CHECKS_NAME}
+  echo yes
+else
+  echo no
+fi
+
 # add the footer
 echo "" >> ${TMP_CHECKS_NAME}
 echo "#endif /* __omx_checks_h__ */" >> ${TMP_CHECKS_NAME}
