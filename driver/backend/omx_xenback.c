@@ -600,35 +600,6 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 
 		spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 		switch (func) {
-		/* FIXME: We used to want this, I'm not sure if we do any more */
-		case OMX_CMD_RELEASE_UNEXP_SLOTS:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_endpoint *endpoint;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_RELEASE_UNEXP_SLOTS, param=%lx\n",
-				     sizeof(struct omx_ring_msg_endpoint));
-				bi = req->data.endpoint.board_index;
-				eid = req->data.endpoint.endpoint_index;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-#if 0
-				ret =
-				    omx_ioctl_xen_release_unexp_slots(endpoint,
-								      NULL);
-#endif
-
-				//memset(&resp->data.pull, 0, sizeof(resp->data.pull));
-				resp->func = OMX_CMD_RELEASE_UNEXP_SLOTS;
-				resp->data.endpoint.endpoint_index = eid;
-				resp->data.endpoint.board_index = bi;
-				resp->data.endpoint.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-
-				break;
-			}
 		case OMX_CMD_PULL:{
 				uint32_t bi, eid;
 				int ret = 0;

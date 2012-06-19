@@ -30,8 +30,6 @@
 #include "omx_endpoint.h"
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
-#include "omx_xen.h"
-#include "omx_xenfront.h"
 
 /*******************
  * Check that atomics work on omx_eventq_index_t as expected
@@ -652,9 +650,6 @@ int
 omx_ioctl_release_unexp_slots(struct omx_endpoint *endpoint, void __user *uparam)
 {
 	int err = 0;
-	struct omx_xenfront_info *fe = endpoint->fe;
-	struct omx_xenif_request *ring_req;
-
 	dprintk_in();
 	spin_lock(&endpoint->release_unexp_lock);
 	if (endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
@@ -663,12 +658,6 @@ omx_ioctl_release_unexp_slots(struct omx_endpoint *endpoint, void __user *uparam
 	else
 		endpoint->nextreleased_unexp_eventq_index += OMX_UNEXP_RELEASE_SLOTS_BATCH_NR;
 	spin_unlock(&endpoint->release_unexp_lock);
-
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
-	ring_req->func = OMX_CMD_RELEASE_UNEXP_SLOTS;
-	ring_req->data.endpoint.board_index = endpoint->board_index;
-	ring_req->data.endpoint.endpoint_index = endpoint->endpoint_index;
-	omx_poke_dom0(endpoint->fe, OMX_CMD_RELEASE_UNEXP_SLOTS, ring_req);
 	dprintk_out();
 	return err;
 }

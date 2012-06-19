@@ -806,32 +806,6 @@ again_send:
 				break;
 			}
 
-
-		case OMX_CMD_RELEASE_UNEXP_SLOTS:{
-				struct omx_endpoint *endpoint;
-				int16_t ret = 0;
-				dprintk_deb
-				    ("received backend request: OMX_CMD_RELEASE_UNEXP_SLOTS, param=%lx\n",
-				     sizeof(struct omx_ring_msg_endpoint));
-
-				bidx = resp->data.endpoint.board_index;
-				idx = resp->data.endpoint.endpoint_index;
-				ret = resp->data.endpoint.ret;
-
-				endpoint = fe->endpoints[idx];
-				if (!endpoint) {
-					printk_err
-					    ("Endpoint is null:S, ret = %d\n",
-					     ret);
-					//goto out;
-					break;
-				}
-
-				dprintk_deb("%s: ret = %d\n", __func__, ret);
-
-				break;
-			}
-
 		case OMX_CMD_PULL:{
 				struct omx_endpoint *endpoint;
 				struct omx_cmd_xen_pull pull;
