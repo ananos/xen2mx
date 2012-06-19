@@ -1130,6 +1130,10 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 				memcpy(&resp->data.pts.state, &state,
 				       sizeof(state));
 
+				dprintk_deb("status= %#lx, version=%#lx, size=%lx"
+				            " mapper_id = %llx\n",
+				            state->status, state->version,
+				            state->size, state->mapper_id);
 				resp->func = OMX_CMD_XEN_PEER_TABLE_GET_STATE;
 				resp->data.pts.board_index = bi;
 				resp->data.pts.ret = ret;
