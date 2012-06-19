@@ -1,0 +1,727 @@
+/*
+ * Open-MX
+ * Copyright © inria 2007-2011 (see AUTHORS file)
+ * Copyright © Anastassios Nanos 2012
+ *
+ * The development of this software has been funded by Myricom, Inc.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or (at
+ * your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *
+ * See the GNU General Public License in COPYING.GPL for more details.
+ */
+
+#include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/timer.h>
+#include <linux/list.h>
+#include <linux/rcupdate.h>
+#include <asm/atomic.h>
+
+#include "omx_io.h"
+#include "omx_common.h"
+#include "omx_iface.h"
+#include "omx_endpoint.h"
+//#define EXTRA_DEBUG_OMX
+#include "omx_xen_debug.h"
+#include "omx_xen.h"
+#include "omx_xenback.h"
+
+/*******************
+ * Check that atomics work on omx_eventq_index_t as expected
+ */
+
+static int
+omx_atomic_check(omx_eventq_index_t input)
+{
+  omx_eventq_index_t atomic = input;
+  omx_eventq_index_t output;
+  int ret = 0;
+
+  dprintk_in();
+
+  output = (omx_eventq_index_t) atomic_read((atomic_t *) &atomic);
+  if (output != input) {
+    printk("read of got %x instead of %x\n", (unsigned) output, (unsigned) input);
+    ret = -1;
+    goto out;
+  }
+
+  output = (omx_eventq_index_t) atomic_inc_return((atomic_t *) &atomic);
+  if (output != input + 1) {
+    printk("inc_return of got %x instead of %x\n", (unsigned) output, (unsigned) input+1);
+    ret = -1;
+    goto out;
+  }
+
+  atomic_dec((atomic_t *) &atomic);
+  atomic_dec((atomic_t *) &atomic);
+  output = (omx_eventq_index_t) atomic_read((atomic_t *) &atomic);
+  if (output != input - 1) {
+    printk("dec+read of got %x instead of %x\n", (unsigned) output, (unsigned) input);
+    ret = -1;
+    goto out;
+  }
+
+out:
+  dprintk_out();
+  return ret;
+}
+
+int
+omx_event_delivery_check(void)
+{
+  int ret = -ENOSYS;
+
+  dprintk_in();
+  if (omx_atomic_check((omx_eventq_index_t) 0) < 0)
+    goto out;
+  if (omx_atomic_check((omx_eventq_index_t) 1) < 0)
+    goto out;
+  if (omx_atomic_check((omx_eventq_index_t) -1) < 0)
+    goto out;
+  if (omx_atomic_check(((omx_eventq_index_t) -1)/2) < 0)
+    goto out;
+  if (omx_atomic_check(((omx_eventq_index_t) -1)/2 + 1) < 0)
+    goto out;
+
+  ret = 0;
+
+out:
+  dprintk_out();
+  return ret;
+}
+
+/*************************
+ * Wait Queues and Wakeup
+ */
+
+struct omx_event_waiter {
+	struct list_head list_elt;
+	struct task_struct *task;
+	struct rcu_head rcu_head;
+	uint8_t status;
+};
+
+static INLINE void
+omx_wakeup_waiter_list(struct omx_endpoint *endpoint,
+		       uint32_t status)
+{
+	struct omx_event_waiter *waiter;
+
+	dprintk_in();
+	/* wake up everybody with the event status */
+	rcu_read_lock();
+	list_for_each_entry_rcu(waiter, &endpoint->waiters, list_elt) {
+		waiter->status = status;
+		wake_up_process(waiter->task);
+	}
+	rcu_read_unlock();
+	dprintk_out();
+}
+
+static void
+omx_wakeup_on_timeout_handler(unsigned long data)
+{
+	struct omx_event_waiter *waiter = (struct omx_event_waiter*) data;
+
+	dprintk_in();
+	/* wakeup with the timeout status */
+	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_TIMEOUT;
+	wake_up_process(waiter->task);
+	dprintk_out();
+}
+
+static void
+omx_wakeup_on_progress_timeout_handler(unsigned long data)
+{
+	struct omx_event_waiter *waiter = (struct omx_event_waiter*) data;
+
+	dprintk_in();
+	/* wakeup with the progress status */
+	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_PROGRESS;
+	wake_up_process(waiter->task);
+	dprintk_out();
+}
+
+/*****************
+ * Initialization
+ */
+
+void
+omx_endpoint_queues_init(struct omx_endpoint *endpoint)
+{
+	union omx_evt * evt;
+
+	dprintk_in();
+	/* sanity checks */
+	BUILD_BUG_ON(PAGE_SIZE%OMX_SENDQ_ENTRY_SIZE != 0 && OMX_SENDQ_ENTRY_SIZE%PAGE_SIZE != 0);
+	BUILD_BUG_ON(PAGE_SIZE%OMX_RECVQ_ENTRY_SIZE != 0 && OMX_RECVQ_ENTRY_SIZE%PAGE_SIZE != 0);
+	BUILD_BUG_ON(sizeof(union omx_evt) != OMX_EVENTQ_ENTRY_SIZE);
+	BUILD_BUG_ON(OMX_UNEXP_EVENTQ_ENTRY_NR != OMX_RECVQ_ENTRY_NR);
+
+	/* initialize all expected events */
+	for(evt = endpoint->exp_eventq;
+	    (void *) evt < endpoint->exp_eventq + OMX_EXP_EVENTQ_SIZE;
+	    evt++)
+		evt->generic.id = 0;
+
+	/* initialize indexes */
+	endpoint->nextfree_exp_eventq_index = 0;
+	endpoint->nextreleased_exp_eventq_index = 0;
+	BUILD_BUG_ON((omx_eventq_index_t) -1 <= OMX_EXP_EVENTQ_ENTRY_NR);
+
+	/* initialize all unexpected events */
+	for(evt = endpoint->unexp_eventq;
+	    (void *) evt < endpoint->unexp_eventq + OMX_UNEXP_EVENTQ_SIZE;
+	    evt++)
+		evt->generic.id = 0;
+
+	/* set the first free and reserved unexpected event slot */
+	endpoint->nextfree_unexp_eventq_index = 0;
+	endpoint->nextreserved_unexp_eventq_index = 0;
+	endpoint->nextreleased_unexp_eventq_index = 0;
+	BUILD_BUG_ON((omx_eventq_index_t) -1 <= OMX_UNEXP_EVENTQ_ENTRY_NR);
+
+	/* set the first recvq slot */
+	endpoint->next_recvq_index = 0;
+	BUILD_BUG_ON((omx_eventq_index_t) -1 <= OMX_RECVQ_ENTRY_NR);
+
+	INIT_LIST_HEAD(&endpoint->waiters);
+	spin_lock_init(&endpoint->waiters_lock);
+	spin_lock_init(&endpoint->unexp_lock);
+	spin_lock_init(&endpoint->release_exp_lock);
+	spin_lock_init(&endpoint->release_unexp_lock);
+	dprintk_out();
+}
+
+/******************************************
+ * Report an expected event to users-space
+ */
+
+int
+omx_notify_exp_event(struct omx_endpoint *endpoint, const void *event, int length)
+{
+	union omx_evt *slot;
+	omx_eventq_index_t index;
+	int ret = 0;
+
+	dprintk_in();
+	/* take the next slot and update the queue */
+	index = atomic_inc_return((atomic_t *) &endpoint->nextfree_exp_eventq_index) - 1;
+
+	if (unlikely(endpoint->nextfree_exp_eventq_index - endpoint->nextreleased_exp_eventq_index
+		     > OMX_EXP_EVENTQ_ENTRY_NR)) {
+		/* we went too far, rollback */
+		atomic_dec((atomic_t *) &endpoint->nextfree_exp_eventq_index);
+		/* the application sucks, it did not check
+		 * the expected eventq before posting requests
+		 */
+		dprintk(EVENT,
+			"Open-MX: Expected event queue full, no event slot available for endpoint %d\n",
+			endpoint->endpoint_index);
+		omx_counter_inc(endpoint->iface, EXP_EVENTQ_FULL);
+		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_EXP_EVENTQ_FULL;
+		ret = -EBUSY;
+		goto out;
+	}
+
+	slot = endpoint->exp_eventq + (index % OMX_EXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
+	/* store the event without setting the id first */
+	memcpy(slot, event, length);
+	wmb();
+	/* write the actual id now that the whole event has been written to memory */
+	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENT_ID_MAX);
+
+	/* wake up waiters */
+	dprintk(EVENT, "notify_exp waking up everybody\n");
+
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+	ret = 0;
+	goto out;
+
+out:
+	dprintk_in();
+	return ret;
+}
+
+/********************************************
+ * Report an unexpected event to users-space
+ * without any recvq slot needed
+ */
+
+int
+omx_notify_unexp_event(struct omx_endpoint *endpoint, const void *event, int length)
+{
+	union omx_evt *slot;
+	omx_eventq_index_t index;
+	int ret = 0;
+
+	dprintk_in();
+	/* take the next slot and update the queue */
+	spin_lock_bh(&endpoint->unexp_lock);
+	endpoint->nextfree_unexp_eventq_index++;
+	index = endpoint->nextreserved_unexp_eventq_index++;
+	spin_unlock_bh(&endpoint->unexp_lock);
+
+	if (unlikely(endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+		     > OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+		/* we went too far, rollback */
+		spin_lock_bh(&endpoint->unexp_lock);
+		endpoint->nextfree_unexp_eventq_index--;
+		index = endpoint->nextreserved_unexp_eventq_index--;
+		spin_unlock_bh(&endpoint->unexp_lock);
+		/* the application did not process the unexpected queue and release slots fast enough */
+		dprintk(EVENT,
+			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
+			endpoint->endpoint_index);
+		omx_counter_inc(endpoint->iface, UNEXP_EVENTQ_FULL);
+		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
+		ret = -EBUSY;
+		goto out;
+	}
+
+	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
+	/* store the event without setting the id first */
+	memcpy(slot, event, length);
+	wmb();
+	/* write the actual id now that the whole event has been written to memory */
+	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENT_ID_MAX);
+
+	/* wake up waiters */
+	dprintk(EVENT, "notify_unexp waking up everybody\n");
+
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+
+out:
+	dprintk_out();
+	return ret;
+}
+
+/********************************************
+ * Report an unexpected event to users-space
+ * with a recvq slot needed
+ */
+
+/*
+ * The recvq accounting is trivial since there are as many recvq slots
+ * than unexp event slots, the latter are accounted, and we allocate only
+ * one recvq slot per prepare()/commit() functions below (and no slot
+ * in notify() above).
+ */
+
+/* Reserve one more slot and returns the corresponding recvq slot to the caller */
+int
+omx_prepare_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
+					  unsigned long *recvq_offset_p)
+{
+	omx_eventq_index_t recvq_index;
+	struct omx_endpoint *frontend_endpoint = endpoint->fe_endpoint;
+	int ret = 0;
+
+	dprintk_in();
+	if (endpoint->xen) {
+		spin_lock_bh(&endpoint->unexp_lock);
+		/* reserve the next slot and update the queue */
+		//endpoint->nextfree_unexp_eventq_index++;
+		rmb();
+		frontend_endpoint->nextfree_unexp_eventq_index++;
+		wmb();
+		/* take the next recvq slot and return it now */
+		//recvq_index = endpoint->next_recvq_index++;
+		rmb();
+		recvq_index = frontend_endpoint->next_recvq_index++;
+		wmb();
+		spin_unlock_bh(&endpoint->unexp_lock);
+
+		if (unlikely(frontend_endpoint->nextfree_unexp_eventq_index - frontend_endpoint->nextreleased_unexp_eventq_index > OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+			/* we went too far, rollback */
+			spin_lock_bh(&endpoint->unexp_lock);
+			rmb();
+			frontend_endpoint->nextfree_unexp_eventq_index--;
+			recvq_index = frontend_endpoint->next_recvq_index--;
+			wmb();
+			spin_unlock_bh(&endpoint->unexp_lock);
+			/* the application did not process the unexpected queue and release slots fast enough */
+			dprintk(EVENT,
+				"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
+				frontend_endpoint->endpoint_index);
+			omx_counter_inc(endpoint->iface, UNEXP_EVENTQ_FULL);
+			frontend_endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
+			wmb();
+			ret = -EBUSY;
+			goto out;
+		}
+
+		*recvq_offset_p = (recvq_index % OMX_RECVQ_ENTRY_NR) * OMX_RECVQ_ENTRY_SIZE;
+	}
+out:
+	dprintk_out();
+	return ret;
+}
+
+/* Reserve nr more slots and returns the corresponding recvq slots to the caller */
+int
+omx_prepare_notify_unexp_events_with_recvq(struct omx_endpoint *endpoint,
+					   int nr,
+					   unsigned long *recvq_offset_p)
+{
+	omx_eventq_index_t first_recvq_index;
+	int i, ret = 0;
+
+	dprintk_in();
+	spin_lock_bh(&endpoint->unexp_lock);
+	endpoint->nextfree_unexp_eventq_index += nr;
+	first_recvq_index = endpoint->next_recvq_index;
+	endpoint->next_recvq_index += nr;
+	spin_unlock_bh(&endpoint->unexp_lock);
+
+	if (unlikely(endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+		     > OMX_UNEXP_EVENTQ_ENTRY_NR)) {
+		/* we went too far, rollback */
+		spin_lock_bh(&endpoint->unexp_lock);
+		endpoint->nextfree_unexp_eventq_index -= nr;
+		endpoint->next_recvq_index -= nr;
+		spin_unlock_bh(&endpoint->unexp_lock);
+		/* the application did not process the unexpected queue and release slots fast enough */
+		dprintk(EVENT,
+			"Open-MX: Unexpected event queue full, no event slot available for endpoint %d\n",
+			endpoint->endpoint_index);
+		omx_counter_inc(endpoint->iface, UNEXP_EVENTQ_FULL);
+		endpoint->userdesc->status |= OMX_ENDPOINT_DESC_STATUS_UNEXP_EVENTQ_FULL;
+		ret = -EBUSY;
+		goto out;
+	}
+
+	for(i=0; i<nr; i++)
+		recvq_offset_p[i] = ((first_recvq_index+i) % OMX_RECVQ_ENTRY_NR) * OMX_RECVQ_ENTRY_SIZE;
+out:
+	dprintk_out();
+	return ret;
+}
+
+/*
+ * Store the event in the next reserved slot
+ * (not always the one reserved during omx_commit_notify_unexp_event()
+ *  since prepare/commit calls could have been overlapped).
+ */
+void
+omx_commit_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint,
+					 const void *event, int length)
+{
+	union omx_evt *slot;
+	omx_eventq_index_t index;
+
+	dprintk_in();
+
+	spin_lock_bh(&endpoint->unexp_lock);
+
+	/* the caller should have called prepare() earlier */
+	BUG_ON(endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+	       >= endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index);
+
+	/* update the next reserved slot in the queue */
+	index = endpoint->nextreserved_unexp_eventq_index++;
+
+	spin_unlock_bh(&endpoint->unexp_lock);
+
+	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
+	/* store the event without setting the id first */
+	memcpy(slot, event, length);
+	wmb();
+	/* write the actual id now that the whole event has been written to memory */
+	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENT_ID_MAX);
+
+	/* wake up waiters */
+	dprintk(EVENT, "commit_notify_unexp waking up everybody\n");
+
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_EVENT);
+
+	dprintk_out();
+}
+
+/*
+ * Store an dummy "ignored" event in the next reserved slot
+ * (not always the one reserved during omx_commit_notify_unexp_event()
+ *  since prepare/commit calls could have been overlapped).
+ * We can't cancel for real since the recvq slot could not be the last one.
+ */
+void
+omx_cancel_notify_unexp_event_with_recvq(struct omx_endpoint *endpoint)
+{
+	union omx_evt *slot;
+	omx_eventq_index_t index;
+
+	dprintk_in();
+	spin_lock_bh(&endpoint->unexp_lock);
+
+	/* the caller should have called prepare() earlier */
+	BUG_ON(endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+	       >= endpoint->nextfree_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index);
+
+	/* update the next reserved slot in the queue */
+	index = endpoint->nextreserved_unexp_eventq_index++;
+
+	spin_unlock_bh(&endpoint->unexp_lock);
+
+	slot = endpoint->unexp_eventq + (index % OMX_UNEXP_EVENTQ_ENTRY_NR) * OMX_EVENTQ_ENTRY_SIZE;
+	/* store the event without setting the id first */
+	((struct omx_evt_generic *) slot)->id = 0;
+	((struct omx_evt_generic *) slot)->type = OMX_EVT_IGNORE;
+	wmb();
+	/* write the actual id now that the whole event has been written to memory */
+	((struct omx_evt_generic *) slot)->id = 1 + (index % OMX_EVENT_ID_MAX);
+
+	/* no need to wakeup people */
+	dprintk_out();
+}
+
+/***********
+ * Sleeping
+ */
+
+#ifndef OMX_HAVE_KFREE_RCU
+static void
+__omx_event_waiter_rcu_free_callback(struct rcu_head *rcu_head)
+{
+	struct omx_event_waiter * waiter = container_of(rcu_head, struct omx_event_waiter, rcu_head);
+	dprintk_in();
+	kfree(waiter);
+	dprintk_out();
+}
+#endif /* !OMX_HAVE_KFREE_RCU */
+
+/* FIXME: this is for when the application waits, not when the progression thread does */
+int
+omx_ioctl_wait_event(struct omx_endpoint * endpoint, void __user * uparam)
+{
+	struct omx_cmd_wait_event cmd;
+	struct omx_event_waiter * waiter;
+	struct timer_list timer;
+	int err = 0;
+
+	/* lib-progression-requested timeout */
+	uint64_t wakeup_jiffies = endpoint->userdesc->wakeup_jiffies;
+
+	/* timer, either from the ioctl or from the lib-progression-requested timeout */
+	void (*timer_handler)(unsigned long) = NULL;
+	uint64_t timer_jiffies = 0;
+
+	/* cache current jiffies */
+	u64 current_jiffies;
+
+	dprintk_in();
+	err = copy_from_user(&cmd, uparam, sizeof(cmd));
+	if (unlikely(err != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read wait event cmd hdr\n");
+		err = -EFAULT;
+		goto out;
+	}
+
+	waiter = kmalloc(sizeof(struct omx_event_waiter), GFP_KERNEL);
+	if (!waiter) {
+		printk(KERN_ERR "Open-MX: failed to allocate waiter");
+		err = -ENOMEM;
+		goto out;
+	}
+
+	/* FIXME: wait on some event type only */
+
+	/* queue ourself on the wait queue first, in case a packet arrives in the meantime */
+	waiter->status = OMX_CMD_WAIT_EVENT_STATUS_NONE;
+	waiter->task = current;
+	set_current_state(TASK_INTERRUPTIBLE);
+	spin_lock(&endpoint->waiters_lock);
+	list_add_tail_rcu(&waiter->list_elt, &endpoint->waiters);
+	spin_unlock(&endpoint->waiters_lock);
+
+	/* did we deposit an event before the lib decided to go to sleep ? */
+	BUILD_BUG_ON(sizeof(cmd.next_exp_event_index) != sizeof(endpoint->nextfree_exp_eventq_index));
+	BUILD_BUG_ON(sizeof(cmd.next_unexp_event_index) != sizeof(endpoint->nextreserved_unexp_eventq_index));
+	BUILD_BUG_ON(sizeof(cmd.user_event_index) != sizeof(endpoint->userdesc->user_event_index));
+	/* no need to lock exp_lock and unexp_lock since we are simply reading their single values */
+	if (cmd.next_exp_event_index != endpoint->nextfree_exp_eventq_index
+	    || cmd.next_unexp_event_index != endpoint->nextreserved_unexp_eventq_index
+	    || cmd.user_event_index != endpoint->userdesc->user_event_index) {
+		dprintk(EVENT, "wait event race (%ld,%ld,%ld) != (%ld,%ld,%ld)\n",
+			(unsigned long) cmd.next_exp_event_index,
+			(unsigned long) cmd.next_unexp_event_index,
+			(unsigned long) cmd.user_event_index,
+			(unsigned long) endpoint->nextfree_exp_eventq_index,
+			(unsigned long) endpoint->nextreserved_unexp_eventq_index,
+			(unsigned long) endpoint->userdesc->user_event_index);
+		cmd.status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
+		goto wakeup;
+	}
+
+	/* setup the timer if needed by an application timeout */
+	if (cmd.jiffies_expire != OMX_CMD_WAIT_EVENT_TIMEOUT_INFINITE) {
+		timer_handler = omx_wakeup_on_timeout_handler;
+		timer_jiffies = cmd.jiffies_expire;
+	}
+	/* setup the timer if needed by a progress timeout */
+	if (wakeup_jiffies != OMX_NO_WAKEUP_JIFFIES
+	    && (!timer_handler || time_before64(wakeup_jiffies, timer_jiffies))) {
+		timer_handler = omx_wakeup_on_progress_timeout_handler;
+		timer_jiffies = wakeup_jiffies;
+	}
+
+	/* cache jiffies for multiple later use */
+	current_jiffies = get_jiffies_64();
+
+	/* setup the timer for real now */
+	if (timer_handler) {
+		/* check timer races */
+		if (time_after_eq64(current_jiffies, timer_jiffies)) {
+			dprintk(EVENT, "wait event expire %lld has passed (now is %lld), not sleeping\n",
+				(unsigned long long) cmd.jiffies_expire, (unsigned long long) current_jiffies);
+			waiter->status = OMX_CMD_WAIT_EVENT_STATUS_RACE;
+			goto wakeup;
+		}
+		setup_timer(&timer, timer_handler, (unsigned long) waiter);
+		/* timer not pending yet, use the regular mod_timer() */
+		mod_timer(&timer, timer_jiffies);
+		dprintk(EVENT, "wait event timer setup at %lld (now is %lld)\n",
+			(unsigned long long) timer_jiffies, (unsigned long long) current_jiffies);
+	}
+
+	if (waiter->status == OMX_CMD_WAIT_EVENT_STATUS_NONE
+	    && !signal_pending(current)) {
+		/* if nothing happened, let's go to sleep */
+		dprintk(EVENT, "going to sleep at %lld\n", (unsigned long long) current_jiffies);
+		schedule();
+		dprintk(EVENT, "waking up from sleep at %lld\n", (unsigned long long) current_jiffies);
+
+	} else {
+		/* already "woken-up", no need to sleep */
+		dprintk(EVENT, "not going to sleep, status is already %d\n", (unsigned) waiter->status);
+	}
+
+	/* remove the timer */
+	if (timer_handler)
+		del_singleshot_timer_sync(&timer);
+
+ wakeup:
+	__set_current_state(TASK_RUNNING); /* no need to serialize with below, __set is enough */
+
+	spin_lock(&endpoint->waiters_lock);
+	list_del_rcu(&waiter->list_elt);
+	spin_unlock(&endpoint->waiters_lock);
+
+	if (waiter->status == OMX_CMD_WAIT_EVENT_STATUS_NONE) {
+		/* status didn't changed, we have been interrupted */
+		waiter->status = OMX_CMD_WAIT_EVENT_STATUS_INTR;
+	}
+
+	cmd.status = waiter->status;
+
+#ifdef OMX_HAVE_KFREE_RCU
+	kfree_rcu(waiter, rcu_head);
+#else
+	call_rcu(&waiter->rcu_head, __omx_event_waiter_rcu_free_callback);
+#endif /* !OMX_HAVE_KFREE_RCU */
+
+	err = copy_to_user(uparam, &cmd, sizeof(cmd));
+	if (unlikely(err != 0)) {
+		err = -EFAULT;
+		printk(KERN_ERR "Open-MX: Failed to write wait event cmd result\n");
+	}
+
+	err = 0;
+	goto out;
+
+ out:
+	dprintk_out();
+	return err;
+}
+
+int
+omx_ioctl_release_exp_slots(struct omx_endpoint *endpoint, void __user *uparam)
+{
+	int err = 0;
+	dprintk_in();
+	spin_lock(&endpoint->release_exp_lock);
+	if (endpoint->nextfree_exp_eventq_index - endpoint->nextreleased_exp_eventq_index
+	    < OMX_EXP_RELEASE_SLOTS_BATCH_NR)
+		err = -EINVAL;
+	else
+		endpoint->nextreleased_exp_eventq_index += OMX_EXP_RELEASE_SLOTS_BATCH_NR;
+	spin_unlock(&endpoint->release_exp_lock);
+	dprintk_out();
+	return err;
+}
+
+int
+omx_ioctl_release_unexp_slots(struct omx_endpoint *endpoint, void __user *uparam)
+{
+	int err = 0;
+	dprintk_in();
+	spin_lock(&endpoint->release_unexp_lock);
+	if (endpoint->nextreserved_unexp_eventq_index - endpoint->nextreleased_unexp_eventq_index
+	    < OMX_UNEXP_RELEASE_SLOTS_BATCH_NR)
+		err = -EINVAL;
+	else
+		endpoint->nextreleased_unexp_eventq_index += OMX_UNEXP_RELEASE_SLOTS_BATCH_NR;
+	spin_unlock(&endpoint->release_unexp_lock);
+	dprintk_out();
+	return err;
+}
+
+int
+omx_ioctl_xen_release_unexp_slots(struct omx_endpoint *endpoint, void __user *uparam)
+{
+	int err = 0;
+	dprintk_in();
+	spin_lock(&endpoint->release_unexp_lock);
+	if (endpoint->xen_nextreserved_unexp_eventq_index - endpoint->xen_nextreleased_unexp_eventq_index
+	    < OMX_UNEXP_RELEASE_SLOTS_BATCH_NR)
+		err = -EINVAL;
+	else
+		endpoint->xen_nextreleased_unexp_eventq_index += OMX_UNEXP_RELEASE_SLOTS_BATCH_NR;
+	spin_unlock(&endpoint->release_unexp_lock);
+	dprintk_out();
+	return err;
+}
+
+int
+omx_ioctl_wakeup(struct omx_endpoint * endpoint, void __user * uparam)
+{
+	struct omx_cmd_wakeup cmd;
+	int err = 0;
+	dprintk_in();
+
+	err = copy_from_user(&cmd, uparam, sizeof(cmd));
+	if (unlikely(err != 0)) {
+		printk(KERN_ERR "Open-MX: Failed to read wakeup cmd hdr\n");
+		err = -EFAULT;
+		goto out;
+	}
+
+	omx_wakeup_waiter_list(endpoint, cmd.status);
+
+ out:
+	dprintk_in();
+	return err;
+}
+
+void
+omx_wakeup_endpoint_on_close(struct omx_endpoint * endpoint)
+{
+	dprintk_in();
+	omx_wakeup_waiter_list(endpoint, OMX_CMD_WAIT_EVENT_STATUS_WAKEUP);
+	dprintk_out();
+}
+
+/*
+ * Local variables:
+ *  tab-width: 8
+ *  c-basic-offset: 8
+ *  c-indent-level: 8
+ * End:
+ */

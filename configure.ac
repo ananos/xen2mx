@@ -652,6 +652,8 @@ AC_SUBST(RMMOD_PATH, $rmmod_path)
 
 # Here is the list of configured files
 AC_CONFIG_FILES(Makefile
+		driver/backend/Makefile
+		driver/backend/Kbuild
 		driver/linux/Makefile
 		driver/linux/Kbuild
 		libopen-mx/Makefile
@@ -669,7 +671,7 @@ AC_CONFIG_FILES(Makefile
 		tests/helpers/omx_test_launcher)
 
 AC_SUBST(CONFIG_STATUS_DEPENDENCIES,
-	'$(top_srcdir)/driver/linux/Kbuild.in $(top_srcdir)/driver/linux/check_kernel_headers.sh')
+	'$(top_srcdir)/driver/linux/Kbuild.in $(top_srcdir)/driver/backend/Kbuild.in $(top_srcdir)/driver/linux/check_kernel_headers.sh')
 
 AC_CONFIG_COMMANDS(chmoding-omx_check,		chmod ugo+x tools/omx_check)
 AC_CONFIG_COMMANDS(chmoding-omx_init,		chmod ugo+x tools/omx_init)

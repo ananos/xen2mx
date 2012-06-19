@@ -25,6 +25,7 @@ SUBDIRS =
 # Driver
 if OMX_BUILD_DRIVER
   SUBDIRS += driver/linux
+  SUBDIRS += driver/backend
 endif
 
 # Library
@@ -55,7 +56,7 @@ dist_pkgdata_DATA = doc/FAQ.html
 
 EXTRA_DIST = AUTHORS ChangeLog COPYING COPYING.GPL COPYING.LGPL		\
 	     README README.devel REPORTING-BUGS TODO open-mx.spec	\
-	     autogen.sh dkms.conf
+	     autogen.sh dkms.conf README.xen
 
 dist-hook:
 	@$(distdir)/autogen.sh

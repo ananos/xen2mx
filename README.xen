@@ -1,0 +1,74 @@
+++================++
+|| Open-MX in Xen ||
+++================++
+
+Assuming you want to connect 2 nodes using their 'eth2' interface:
+
+a. Clone the repository: https://github.com/ananos/xen2mx.git
+
+b. Build and install Xen2MX
+
+     $ ./configure --prefix=/opt/xen2mx --with-shared-ring-entries=256
+     $ make
+     $ make install
+
+   If building from GIT, note that several files such as the
+   configure script and some .in files must be generated first.
+   autoconf, autoheader, automake and libtool 2 are required
+   to do so.
+     $ ./autogen.sh
+     $ ./configure
+     [...]
+
+c. Make sure the backend interface is up with a large MTU
+     $ ifconfig eth2 up mtu 9000
+
+d. Load the open-mx kernel module and start omxoed in the backend
+     $ insmod /opt/xen2mx/modules/`uname -r`/open-mx-backend.ko
+     $ /opt/xen2mx/bin/omxoed &
+
+e. Load the open-mx kernel module in the frontend
+     $ insmod /opt/xen2mx/modules/`uname -r`/open-mx-frontend.ko
+
+f. Kick the "hotplug" script to connect the frontend and the backend based on
+   the guest's domain ID.
+     $ xl list
+     Name        ID   Mem VCPUs      State    Time(s)
+     Domain-0     0 43207    24     r-----     691.5
+     guest1       1  2048     4     -b----     504.0
+     guest2       2  2048     4     -b----     100.9
+
+     $ /opt/open-mx-backend/tools/trigger.sh omx 1
+
+g. Wait a couple of seconds and run /opt/open-mx-frontend/bin/omx_info in
+   the guest to check that all peers are seeing each other.
+   See Open-MX README Section IV (Peer Discovery) for details.
+     $ omx_info
+     [...]
+     Peer table is ready, mapper is 01:02:03:04:05:06
+     ================================================
+       0) 01:02:03:04:05:06 node1:0
+       1) a0:b0:c0:d0:e0:f0 guest1:0
+
+h. Use omx_perf to test actual communications, on the external node:
+     node1 $ omx_perf
+     Successfully attached endpoint #0 on board #0 (hostname 'node1:0', name 'eth2', addr 01:02:03:04:05:06)
+     Starting receiver...
+   then on the guest:
+     guest1 $ LD_LIBRARY_PATH=/opt/xen2mx/lib/xen2mx mx_perf -d node1:0
+     Successfully attached endpoint #0 on board #0 (hostname 'guest1:0', name 'eth2', addr a0:b0:c0:d0:e0:f0)
+     Starting sender to node1:0...
+   You should get performance numbers such as
+     length         0:       7.970 us   0.00 MB/s        0.00 MiB/s
+     length         1:       7.950 us   0.00 MB/s        0.00 MiB/s
+     [...]
+     length   4194304:       8388.608 us   500.00 MB/s       476.83 MiB/s
+   See the the omx_perf.1 manpage for more details.
+
+++===========++
+|| ATTENTION ||
+++===========++
+
+In order to use the Xen specific IOCTLs in the guest, the xen2mx library must be used which resides in
+<INSTALL_PREFIX>/lib/xen2mx. Thus, when calling omx_perf/mx_pingpong etc. from the guest, the command line arguments
+must include LD_LIBRARY_PATH=<INSTALL_PREFIX>/lib/xen2mx (see (h))

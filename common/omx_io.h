@@ -2,6 +2,7 @@
  * Open-MX
  * Copyright © inria 2007-2010
  * Copyright © CNRS 2009
+ * Copyright © Anastassios Nanos 2012
  * (see AUTHORS file)
  *
  * The development of this software has been funded by Myricom, Inc.
@@ -164,12 +165,21 @@ struct omx_endpoint_desc {
 #define OMX_ENDPOINT_DESC_SIZE	sizeof(struct omx_endpoint_desc)
 
 /* fake mmap file offsets (anything unique, multiple of page size) */
+#if 0
 #define OMX_SENDQ_FILE_OFFSET		0
 #define OMX_RECVQ_FILE_OFFSET		(1024*1024)
 #define OMX_EXP_EVENTQ_FILE_OFFSET	(2*1024*1024)
 #define OMX_UNEXP_EVENTQ_FILE_OFFSET	(3*1024*1024)
 #define OMX_DRIVER_DESC_FILE_OFFSET	(4*1024*1024)
 #define OMX_ENDPOINT_DESC_FILE_OFFSET	(5*1024*1024)
+#endif
+
+#define OMX_SENDQ_FILE_OFFSET		(4096)
+#define OMX_RECVQ_FILE_OFFSET		(2*4096)
+#define OMX_EXP_EVENTQ_FILE_OFFSET	(3*4096)
+#define OMX_UNEXP_EVENTQ_FILE_OFFSET	(4*4096)
+#define OMX_DRIVER_DESC_FILE_OFFSET	(5*4096)
+#define OMX_ENDPOINT_DESC_FILE_OFFSET	(6*4096)
 
 #define OMX_NO_WAKEUP_JIFFIES 0
 
@@ -547,6 +557,25 @@ struct omx_cmd_wakeup {
 #define OMX_CMD_BENCH_TYPE_RECV_NOTIFY	0x12
 #define OMX_CMD_BENCH_TYPE_RECV_DONE	0x13
 
+#define OMX_CMD_XEN_REGISTER_USER_SEGMENT	0xf1
+#define OMX_CMD_XEN_DEREGISTER_USER_SEGMENT 	0xf2
+#define OMX_CMD_XEN_GET_ENDPOINT_INFO		0xf3
+#define OMX_CMD_XEN_PEER_FROM_INDEX		0xf4
+#define OMX_CMD_XEN_PEER_FROM_ADDR		0xf5
+#define OMX_CMD_XEN_PEER_FROM_HOSTNAME		0xf6
+#define OMX_CMD_RECV_CONNECT_REQUEST		0xf7
+#define OMX_CMD_RECV_CONNECT_REPLY		0xf8
+#define OMX_CMD_RECV_RNDV			0xf9
+#define OMX_CMD_RECV_PULL_REQUEST		0xfa
+#define OMX_CMD_XEN_RECV_PULL_DONE		0xfb
+#define OMX_CMD_RECV_NOTIFY                     0xfc
+#define OMX_CMD_RECV_LIBACK                     0xfd
+#define OMX_CMD_RECV_TINY                       0xfe
+#define OMX_CMD_RECV_SMALL			0xff
+#define OMX_CMD_RECV_MEDIUM_FRAG		0xe0
+#define OMX_CMD_XEN_SEND_MEDIUMSQ_DONE          0xe1
+#define OMX_CMD_XEN_DUMMY                       0xe2
+
 struct omx_cmd_bench {
 	struct omx_cmd_bench_hdr {
 		uint8_t type;
@@ -582,6 +611,9 @@ struct omx_cmd_bench {
 #define OMX_CMD_RAW_SEND		_IOR(OMX_CMD_MAGIC, 0x31, struct omx_cmd_raw_send)
 #define OMX_CMD_RAW_GET_EVENT		_IOWR(OMX_CMD_MAGIC, 0x32, struct omx_cmd_raw_get_event)
 #define OMX_CMD_OPEN_ENDPOINT		_IOR(OMX_CMD_MAGIC, 0x71, struct omx_cmd_open_endpoint)
+#define OMX_CMD_XEN_PEER_TABLE_GET_STATE        _IOR(OMX_CMD_MAGIC, 0xa0, struct omx_cmd_peer_table_state)
+#define OMX_CMD_XEN_GET_BOARD_COUNT		_IOW(OMX_CMD_MAGIC, 0xa2, uint32_t)
+
 /* WARNING: endpoint-based cmd numbers must start at OMX_CMD_BENCH and remain consecutive,
  * and we need an sub-index within this range for the epoint-based ioctl handlers array
  */
@@ -602,6 +634,21 @@ struct omx_cmd_bench {
 #define OMX_EPCMD_WAKEUP		0xe
 #define OMX_EPCMD_RELEASE_EXP_SLOTS	0xf
 #define OMX_EPCMD_RELEASE_UNEXP_SLOTS	0x10
+#define OMX_EPCMD_XEN_OPEN_ENDPOINT	0x11
+#define OMX_EPCMD_XEN_CLOSE_ENDPOINT	0x12
+#define OMX_EPCMD_XEN_CREATE_USER_REGION	0x13
+#define OMX_EPCMD_XEN_DESTROY_USER_REGION	0x14
+#define OMX_EPCMD_XEN_GET_BOARD_INFO		0x15
+#define OMX_EPCMD_XEN_SEND_NOTIFY		0x16
+#define OMX_EPCMD_XEN_SEND_CONNECT_REQUEST	0x17
+#define OMX_EPCMD_XEN_SEND_CONNECT_REPLY	0x18
+#define OMX_EPCMD_XEN_SEND_LIBACK		0x19
+#define OMX_EPCMD_XEN_SEND_RNDV			0x1a
+#define OMX_EPCMD_XEN_SEND_TINY			0x1b
+#define OMX_EPCMD_XEN_PULL			0x1c
+#define OMX_EPCMD_XEN_SEND_SMALL		0x1d
+#define OMX_EPCMD_XEN_SEND_MEDIUMVA		0x1e
+#define OMX_EPCMD_XEN_SEND_MEDIUMSQ_FRAG	0x1f
 #define OMX_CMD_BENCH			_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_BENCH, struct omx_cmd_bench)
 #define OMX_CMD_SEND_TINY		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_TINY, struct omx_cmd_send_tiny)
 #define OMX_CMD_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_SEND_SMALL, struct omx_cmd_send_small)
@@ -619,6 +666,22 @@ struct omx_cmd_bench {
 #define OMX_CMD_WAKEUP			_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_WAKEUP, struct omx_cmd_wakeup)
 #define OMX_CMD_RELEASE_EXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_RELEASE_EXP_SLOTS)
 #define OMX_CMD_RELEASE_UNEXP_SLOTS	_IO(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_RELEASE_UNEXP_SLOTS)
+#define OMX_CMD_XEN_OPEN_ENDPOINT	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_OPEN_ENDPOINT, struct omx_cmd_open_endpoint)
+#define OMX_CMD_XEN_CLOSE_ENDPOINT	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_CLOSE_ENDPOINT, struct omx_cmd_open_endpoint)
+#define OMX_CMD_XEN_CREATE_USER_REGION  _IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_CREATE_USER_REGION, struct omx_cmd_create_user_region)
+#define OMX_CMD_XEN_DESTROY_USER_REGION _IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_DESTROY_USER_REGION, struct omx_cmd_destroy_user_region)
+#define OMX_CMD_XEN_GET_BOARD_INFO	_IOWR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_GET_BOARD_INFO, struct omx_cmd_get_board_info)
+#define OMX_CMD_XEN_SEND_NOTIFY		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_SEND_NOTIFY, struct omx_cmd_send_notify)
+#define OMX_CMD_XEN_SEND_CONNECT_REQUEST	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_SEND_CONNECT_REQUEST, struct omx_cmd_send_connect_request)
+#define OMX_CMD_XEN_SEND_CONNECT_REPLY	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_SEND_CONNECT_REPLY, struct omx_cmd_send_connect_reply)
+#define OMX_CMD_XEN_SEND_LIBACK		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_SEND_LIBACK, struct omx_cmd_send_liback)
+#define OMX_CMD_XEN_SEND_RNDV		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_SEND_RNDV, struct omx_cmd_send_rndv)
+#define OMX_CMD_XEN_SEND_TINY		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_SEND_TINY, struct omx_cmd_send_tiny)
+#define OMX_CMD_XEN_PULL		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_PULL, struct omx_cmd_pull)
+#define OMX_CMD_XEN_SEND_SMALL		_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_SEND_SMALL, struct omx_cmd_send_small)
+#define OMX_CMD_XEN_SEND_MEDIUMVA	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_SEND_MEDIUMVA, struct omx_cmd_send_mediumva)
+#define OMX_CMD_XEN_SEND_MEDIUMSQ_FRAG	_IOR(OMX_CMD_MAGIC, 0x80 + OMX_EPCMD_XEN_SEND_MEDIUMSQ_FRAG, struct omx_cmd_send_mediumsq_frag)
+
 
 static inline __pure const char *
 omx_strcmd(unsigned cmd)
@@ -692,6 +755,14 @@ omx_strcmd(unsigned cmd)
 		return "Release Expected Event Slots";
 	case OMX_CMD_RELEASE_UNEXP_SLOTS:
 		return "Release Unexpected Event Slots";
+	case OMX_CMD_XEN_OPEN_ENDPOINT:
+		return "Xen Open Endpoint";
+	case OMX_CMD_XEN_CLOSE_ENDPOINT:
+		return "Xen Close Endpoint";
+	case OMX_CMD_XEN_CREATE_USER_REGION:
+		return "Xen Create User Region";
+	case OMX_CMD_XEN_DESTROY_USER_REGION:
+		return "Xen Destroy User Region";
 	default:
 		return "** Unknown **";
 	}
