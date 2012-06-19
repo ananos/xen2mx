@@ -636,7 +636,7 @@ void omx_xenif_interrupt(struct work_struct *work)
 
 	//spin_lock_irqsave(&fe->msg_handler_lock, flags);
 	if (unlikely(fe->connected != OMXIF_STATE_CONNECTED)) {
-		dprintk_warn("probably wrong variable, state disconnected\n");
+		dprintk_deb("probably wrong variable, state disconnected\n");
 		goto out;
 	}
 	/* dprintk_deb("ev_id %#lx omxbe=%#lx\n", (unsigned long)data, (unsigned long)fe); */
