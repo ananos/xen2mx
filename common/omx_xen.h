@@ -212,7 +212,7 @@ struct omx_cmd_xen_get_board_count {
 struct omx_cmd_xen_set_hostname {
 	uint32_t board_index;
 	uint32_t pad;
-	uint32_t pad2;
+	uint32_t ret;
 	char hostname[OMX_HOSTNAMELEN_MAX];
 } __attribute__ ((__packed__));
 

@@ -614,6 +614,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_XEN_PEER_TABLE_GET_STATE        _IOR(OMX_CMD_MAGIC, 0xa0, struct omx_cmd_peer_table_state)
 #define OMX_CMD_XEN_PEER_TABLE_SET_STATE        _IOR(OMX_CMD_MAGIC, 0xa1, struct omx_cmd_peer_table_state)
 #define OMX_CMD_XEN_GET_BOARD_COUNT		_IOW(OMX_CMD_MAGIC, 0xa2, uint32_t)
+#define OMX_CMD_XEN_SET_HOSTNAME		_IOW(OMX_CMD_MAGIC, 0xa3, struct omx_cmd_set_hostname)
 
 /* WARNING: endpoint-based cmd numbers must start at OMX_CMD_BENCH and remain consecutive,
  * and we need an sub-index within this range for the epoint-based ioctl handlers array

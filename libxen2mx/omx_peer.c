@@ -35,7 +35,7 @@ omx__driver_set_hostname(uint32_t board_index, const char *hostname)
   strncpy(set_hostname.hostname, hostname, OMX_HOSTNAMELEN_MAX);
   set_hostname.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 
-  err = ioctl(omx__globals.control_fd, OMX_CMD_SET_HOSTNAME, &set_hostname);
+  err = ioctl(omx__globals.control_fd, OMX_CMD_XEN_SET_HOSTNAME, &set_hostname);
   if (err < 0) {
     omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_NO_SYSTEM_RESOURCES,
 							  OMX_INTERNAL_MISC_EINVAL,

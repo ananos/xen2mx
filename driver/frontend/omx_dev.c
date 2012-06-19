@@ -705,6 +705,31 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			ret = omx_xen_peer_table_set_state(&state);
 			break;
 		}
+	case OMX_CMD_XEN_SET_HOSTNAME:{
+			struct omx_cmd_set_hostname set_hostname;
+
+			ret = copy_from_user(&set_hostname, (void __user *)arg,
+					     sizeof(set_hostname));
+			if (unlikely(ret != 0)) {
+				ret = -EFAULT;
+				printk(KERN_ERR
+				       "Open-MX: Failed to read set_hostname command argument, error %d\n",
+				       ret);
+				goto out;
+			}
+
+			ret = -EPERM;
+			if (!OMX_HAS_USER_RIGHT(HOSTNAME))
+				goto out;
+
+			set_hostname.hostname[OMX_HOSTNAMELEN_MAX - 1] = '\0';
+			dprintk_deb("hostname = %s\n", set_hostname.hostname);
+
+			ret = omx_xen_set_hostname(set_hostname.board_index,
+						     set_hostname.hostname);
+
+			break;
+		}
 
 	case OMX_CMD_GET_BOARD_INFO:{
 			struct omx_endpoint *endpoint = file->private_data;

@@ -1093,6 +1093,28 @@ again_send:
 				break;
 
 			}
+		case OMX_CMD_XEN_PEER_TABLE_SET_STATE:{
+				int16_t ret = 0;
+				dprintk_deb
+				    ("received backend request: OMX_CMD_PEER_TABLE_SET_STATE, param=%lx\n",
+				     sizeof(struct
+					    omx_cmd_xen_peer_table_state));
+
+				bidx = resp->data.pts.board_index;
+				ret = resp->data.pts.ret;
+
+				spin_lock(&fe->status_lock);
+				if (!ret)
+					fe->status =
+					    OMX_XEN_FRONTEND_STATUS_DONE;
+				else
+					fe->status =
+					    OMX_XEN_FRONTEND_STATUS_FAILED;
+				spin_unlock(&fe->status_lock);
+
+				break;
+
+			}
 		case OMX_CMD_XEN_PEER_TABLE_GET_STATE:{
 				int16_t ret = 0;
 				dprintk_deb
@@ -1105,6 +1127,28 @@ again_send:
 
 				memcpy(&fe->state, &resp->data.pts.state,
 				       sizeof(struct omx_cmd_peer_table_state));
+
+				spin_lock(&fe->status_lock);
+				if (!ret)
+					fe->status =
+					    OMX_XEN_FRONTEND_STATUS_DONE;
+				else
+					fe->status =
+					    OMX_XEN_FRONTEND_STATUS_FAILED;
+				spin_unlock(&fe->status_lock);
+
+				break;
+
+			}
+		case OMX_CMD_XEN_SET_HOSTNAME:{
+				int16_t ret = 0;
+				dprintk_deb
+				    ("received backend request: OMX_CMD_XEN_SET_HOSTNAME, param=%lx\n",
+				     sizeof(struct
+					    omx_cmd_xen_set_hostname));
+
+				bidx = resp->data.sh.board_index;
+				ret = resp->data.sh.ret;
 
 				spin_lock(&fe->status_lock);
 				if (!ret)
@@ -1462,6 +1506,41 @@ int omx_xen_peer_table_set_state(struct omx_cmd_peer_table_state *state)
 	ring_req->data.pts.board_index = 0;
 	memcpy(&ring_req->data.pts.state, &fe->state, sizeof(*state));
 	omx_poke_dom0(fe, OMX_CMD_XEN_PEER_TABLE_SET_STATE, ring_req);
+
+	if (wait_for_backend_response
+	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+		printk_err("Failed to wait\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (fe->status == OMX_XEN_FRONTEND_STATUS_FAILED) {
+		ret = -EINVAL;
+		goto out;
+	}
+
+out:
+	dprintk_out();
+	return ret;
+}
+
+int omx_xen_set_hostname(uint32_t board_index, const char *hostname)
+{
+	struct omx_xenfront_info *fe = __omx_xen_frontend;
+	struct omx_xenif_request *ring_req;
+	int ret = 0;
+
+	dprintk_in();
+
+	spin_lock(&fe->status_lock);
+	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
+	spin_unlock(&fe->status_lock);
+	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req->func = OMX_CMD_XEN_SET_HOSTNAME;
+	ring_req->data.sh.board_index = board_index;
+	memcpy(ring_req->data.sh.hostname, hostname, OMX_HOSTNAMELEN_MAX);
+
+	omx_poke_dom0(fe, OMX_CMD_XEN_SET_HOSTNAME, ring_req);
 
 	if (wait_for_backend_response
 	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {

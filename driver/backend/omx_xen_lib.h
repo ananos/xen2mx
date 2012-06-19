@@ -53,7 +53,7 @@ void dump_xen_get_endpoint_info(struct omx_cmd_xen_get_endpoint_info *info);
 void dump_xen_set_hostname(struct omx_cmd_xen_set_hostname *info);
 void dump_xen_misc_peer_info(struct omx_cmd_xen_misc_peer_info *info);
 void dump_xen_bench(struct omx_cmd_xen_bench *info);
-void dump_xen_peer_table_state(struct omx_cmd_xen_peer_table_get_state *info);
+void dump_xen_peer_table_state(struct omx_cmd_xen_peer_table_state *info);
 void dump_xen_ring_msg_register_user_segment(struct
 					     omx_ring_msg_register_user_segment
 					     *info);

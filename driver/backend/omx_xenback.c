@@ -1032,9 +1032,9 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 					     &peer_info.board_addr,
 					     &peer_info.index);
 
-				//memset(&resp->data.mpi, 0, sizeof(resp->data.mpi));
+				/* It's OK if we return an error, just send the response */
 				if (ret < 0) {
-					printk_err
+					dprintk_deb
 					    ("Failed to execute cmd=%lx\n",
 					     (unsigned long)func);
 				} else {
@@ -1160,6 +1160,34 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 
 				break;
 			}
+		case OMX_CMD_XEN_SET_HOSTNAME:{
+				uint32_t bi;
+				struct omx_cmd_set_hostname set_hostname;
+				int ret = 0;
+				dprintk_deb
+				    ("received frontend request: OMX_CMD_XEN_SET_HOSTNAME, param=%lx\n",
+				     sizeof(struct
+					    omx_cmd_xen_set_hostname));
+
+				bi = req->data.sh.board_index;
+
+				dprintk_deb("got (%d)\n", bi);
+
+
+				/* FIXME: Now that we've got the frontend's hostname,
+				 * figure out what to do next ;-) Leaving it blank atm */
+
+				//memcpy(set_hostname.hostname, req->data.sh.hostname, OMX_HOSTNAMELEN_MAX);
+				ret = omx_iface_set_hostname(bi, req->data.sh.hostname);
+				if (ret) {
+					printk_err("Cannot set hostname %s for board id=%#lx\n", req->data.sh.hostname, bi);
+				}
+				resp->func = OMX_CMD_XEN_SET_HOSTNAME;
+				resp->data.pts.board_index = bi;
+				resp->data.pts.ret = ret;
+
+				break;
+			}
 		case OMX_CMD_GET_BOARD_INFO:{
 				uint32_t bi, eid;
 				struct omx_endpoint *endpoint;
@@ -1179,14 +1207,16 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 					    (unsigned long)endpoint);
 				BUG_ON(!endpoint);
 				ret = omx_iface_get_info(bi, &get_board_info);
-				if (ret < 0)
+
+				if (ret < 0) {
 					printk_err
 					    ("Failed to execute cmd=%lx\n",
 					     (unsigned long)func);
-
-				//memset(&resp->data.gbi, 0, sizeof(resp->data.gbi));
-				memcpy(&resp->data.gbi.info, &get_board_info,
-				       sizeof(struct omx_board_info));
+				} else {
+					//memset(&resp->data.gbi, 0, sizeof(resp->data.gbi));
+					memcpy(&resp->data.gbi.info, &get_board_info,
+					       sizeof(struct omx_board_info));
+				}
 
 				resp->func = OMX_CMD_GET_BOARD_INFO;
 				resp->data.gbi.board_index =

@@ -127,8 +127,9 @@ void omx_xenif_interrupt_recv(struct work_struct *work);
 
 int omx_xen_peer_table_get_state(struct omx_cmd_peer_table_state *state);
 int omx_xen_peer_table_set_state(struct omx_cmd_peer_table_state *state);
-
 int omx_xen_ifaces_get_count(uint32_t *count);
+int omx_xen_set_hostname(uint32_t board_index, const char *hostname);
+
 #endif				/* __omx_xenfront_h__ */
 
 /*
