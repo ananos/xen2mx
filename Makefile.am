@@ -26,11 +26,12 @@ SUBDIRS =
 if OMX_BUILD_DRIVER
   SUBDIRS += driver/linux
   SUBDIRS += driver/backend
+  SUBDIRS += driver/frontend
 endif
 
 # Library
 if OMX_BUILD_LIBRARY
-  SUBDIRS += libopen-mx tools tests tests/mx
+  SUBDIRS += libopen-mx libxen2mx tools tests tests/mx
 endif
 
 

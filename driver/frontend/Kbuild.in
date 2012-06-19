@@ -1,0 +1,50 @@
+# Open-MX
+# Copyright © inria, CNRS 2007-2010 (see AUTHORS file)
+# Copyright © Anastassios Nanos 2012
+#
+# The development of this software has been funded by Myricom, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#
+# See the GNU General Public License in COPYING.GPL for more details.
+# General informations on the project
+
+OMX_GIT_REVISION = $(shell GIT_DIR=@abs_top_srcdir@/.git/ git show-ref -s HEAD --abbrev 2>/dev/null)
+ifneq ($(OMX_GIT_REVISION),)
+	OMX_SRC_VERSION	=	git$(shell date +%Y%m%d).$(OMX_GIT_REVISION)
+endif
+
+OMX_CYCLES_PER_SEC = $(shell cat /proc/cpuinfo |grep cpu\ MHz | head -1 | cut -d\: -f2 | awk '{ print $$1 * 1000 }')
+
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -include @abs_top_builddir@/common/config.h
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -include @abs_top_builddir@/driver/linux/omx_checks.h
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -include @abs_top_builddir@/driver/linux/omx_debug.h
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -I@abs_srcdir@/
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -I@abs_top_srcdir@/common/
+@OMX_KBUILD_CFLAGS_ARG@ 	+= -DCYCLES_PER_SEC=$(OMX_CYCLES_PER_SEC)
+
+ifneq ($(OMX_SRC_VERSION),)
+  @OMX_KBUILD_CFLAGS_ARG@	+= -DOMX_SRC_VERSION="\"$(OMX_SRC_VERSION)\""
+endif
+
+ifeq (@OMX_DRIVER_DEBUG@,1)
+  @OMX_KBUILD_CFLAGS_ARG@	+= -g -Os
+  @OMX_KBUILD_CFLAGS_ARG@	+= @DBGCPPFLAGS@ @DBGCFLAGS@ @DBGLDFLAGS@
+endif
+
+@OMX_KBUILD_CFLAGS_ARG@		+= @KCFLAGS@
+
+obj-m		+= open-mx-frontend.o
+open-mx-frontend-objs	:= omx_main.o omx_dev.o omx_peer.o omx_raw.o	\
+		   omx_iface.o omx_send.o omx_recv.o		\
+		   omx_reg.o omx_pull.o omx_event.o		\
+		   omx_dma.o omx_shared.o omx_xen.o omx_xenfront.o \
+		   omx_xenfront_endpoint.o omx_xenfront_reg.o   \
+		   omx_xenfront_send.o omx_xen_lib.o

@@ -1,0 +1,21 @@
+MX_0.0 {
+};
+
+MX_0.9 {
+  global:
+	mx_open_endpoint;
+	mx_decompose_endpoint_addr;
+};
+
+MX_0.91 {
+  global:
+	mx_get_info;
+	mx_test;
+	mx_wait;
+	mx_iprobe;
+} MX_0.9;
+
+MX_0.92 {
+  global:
+	mx__init_api;
+} MX_0.91;
