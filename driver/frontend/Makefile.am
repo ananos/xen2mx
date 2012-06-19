@@ -28,7 +28,7 @@ nodist_installmod_DATA = open-mx-frontend.ko
 noinst_HEADERS	= omx_common.h omx_debug.h omx_dma.h omx_endpoint.h	\
 		  omx_hal.h omx_iface.h omx_misc.h omx_peer.h omx_reg.h	\
 		  omx_shared.h omx_wire_access.h omx_xenfront.h	        \
-		  omx_xenfront_helper.h omx_xen.h omx_xenfront_endpoint.h \
+		  omx_xenfront_helper.h omx_xenfront_endpoint.h         \
 		  omx_xenfront_reg.h omx_xenfront_send.h                \
 		  omx_xen_lib.h
 

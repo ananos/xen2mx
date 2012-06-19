@@ -26,10 +26,10 @@ nodist_installmod_DATA = open-mx-backend.ko
 
 noinst_HEADERS	= omx_common.h omx_debug.h omx_dma.h omx_endpoint.h	\
 		  omx_hal.h omx_iface.h omx_misc.h omx_peer.h omx_reg.h	\
-		  omx_shared.h omx_wire_access.h omx_xen.h              \
+		  omx_shared.h omx_wire_access.h 			\
 		  omx_xenback.h omx_xenback_helper.h omx_xen_lib.h      \
 		  omx_xenback_endpoint.h omx_xenback_reg.h              \
-		  omx_xenback_event.h omx_xen_timers.h omx_xen_debug.h
+		  omx_xenback_event.h
 
 EXTRA_DIST	= check_kernel_headers.sh				\
 		  omx_dev.c omx_dma.c omx_event.c omx_iface.c		\
