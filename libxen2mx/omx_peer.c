@@ -151,7 +151,7 @@ omx__driver_set_peer_table_state(uint32_t configured, uint32_t version,
   state.size = size;
   state.mapper_id = mapper_id;
 
-  err = ioctl(omx__globals.control_fd, OMX_CMD_PEER_TABLE_SET_STATE, &state);
+  err = ioctl(omx__globals.control_fd, OMX_CMD_XEN_PEER_TABLE_SET_STATE, &state);
   if (err < 0) {
     omx_return_t ret = omx__ioctl_errno_to_return_checked(OMX_ACCESS_DENIED,
 							  OMX_SUCCESS,

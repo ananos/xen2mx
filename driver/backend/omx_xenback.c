@@ -1119,21 +1119,44 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 				dprintk_deb
 				    ("received frontend request: OMX_CMD_PEER_TABLE_GET_STATE, param=%lx\n",
 				     sizeof(struct
-					    omx_cmd_xen_peer_table_get_state));
+					    omx_cmd_xen_peer_table_state));
 
-				bi = req->data.ptgs.board_index;
+				bi = req->data.pts.board_index;
 
 				dprintk_deb("got (%d)\n", bi);
 
 				omx_peer_table_get_state(&state);
 
-				//memset(&resp->data.gbi, 0, sizeof(resp->data.gbi));
-				memcpy(&resp->data.ptgs.state, &state,
+				memcpy(&resp->data.pts.state, &state,
 				       sizeof(state));
 
 				resp->func = OMX_CMD_XEN_PEER_TABLE_GET_STATE;
-				resp->data.ptgs.board_index = bi;
-				resp->data.ptgs.ret = ret;
+				resp->data.pts.board_index = bi;
+				resp->data.pts.ret = ret;
+
+				break;
+			}
+		case OMX_CMD_XEN_PEER_TABLE_SET_STATE:{
+				uint32_t bi;
+				struct omx_cmd_peer_table_state state;
+				int ret = 0;
+				dprintk_deb
+				    ("received frontend request: OMX_CMD_PEER_TABLE_SET_STATE, param=%lx\n",
+				     sizeof(struct
+					    omx_cmd_xen_peer_table_state));
+
+				bi = req->data.pts.board_index;
+
+				dprintk_deb("got (%d)\n", bi);
+
+				memcpy(&state, &req->data.pts.state, sizeof(state));
+
+				/* FIXME: Now that we've got the frontend's peer table state,
+				 * figure out what to do next ;-) Leaving it blank atm */
+
+				resp->func = OMX_CMD_XEN_PEER_TABLE_SET_STATE;
+				resp->data.pts.board_index = bi;
+				resp->data.pts.ret = ret;
 
 				break;
 			}

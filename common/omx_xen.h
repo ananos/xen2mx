@@ -216,7 +216,7 @@ struct omx_cmd_xen_set_hostname {
 	char hostname[OMX_HOSTNAMELEN_MAX];
 } __attribute__ ((__packed__));
 
-struct omx_cmd_xen_peer_table_get_state {
+struct omx_cmd_xen_peer_table_state {
 	uint32_t board_index;
 	int ret;
 	struct omx_cmd_peer_table_state state;
@@ -342,7 +342,7 @@ struct omx_xenif_request {
 		struct omx_cmd_xen_misc_peer_info mpi;
 		struct omx_cmd_xen_bench cxb;
 		struct omx_cmd_xen_get_board_count gbc;
-		struct omx_cmd_xen_peer_table_get_state ptgs;
+		struct omx_cmd_xen_peer_table_state pts;
 		struct omx_cmd_xen_send_connect_request send_connect_request;
 		struct omx_cmd_xen_send_connect_reply send_connect_reply;
 		struct omx_cmd_xen_send_notify send_notify;
@@ -380,7 +380,7 @@ struct omx_xenif_response {
 		struct omx_cmd_xen_misc_peer_info mpi;
 		struct omx_cmd_xen_bench cxb;
 		struct omx_cmd_xen_get_board_count gbc;
-		struct omx_cmd_xen_peer_table_get_state ptgs;
+		struct omx_cmd_xen_peer_table_state pts;
 		struct omx_cmd_xen_send_connect_request send_connect_request;
 		struct omx_cmd_xen_send_connect_reply send_connect_reply;
 		struct omx_cmd_xen_send_notify send_notify;

@@ -599,7 +599,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		set_hostname.hostname[OMX_HOSTNAMELEN_MAX-1] = '\0';
 
 		ret = omx_iface_set_hostname(set_hostname.board_index,
-					     "myrixen2");
+					     set_hostname.hostname);
 
 		break;
 	}

@@ -1098,12 +1098,12 @@ again_send:
 				dprintk_deb
 				    ("received backend request: OMX_CMD_PEER_TABLE_GET_STATE, param=%lx\n",
 				     sizeof(struct
-					    omx_cmd_xen_peer_table_get_state));
+					    omx_cmd_xen_peer_table_state));
 
-				bidx = resp->data.ptgs.board_index;
-				ret = resp->data.ptgs.ret;
+				bidx = resp->data.pts.board_index;
+				ret = resp->data.pts.ret;
 
-				memcpy(&fe->state, &resp->data.ptgs.state,
+				memcpy(&fe->state, &resp->data.pts.state,
 				       sizeof(struct omx_cmd_peer_table_state));
 
 				spin_lock(&fe->status_lock);
@@ -1390,7 +1390,6 @@ int omx_xen_ifaces_get_count(uint32_t * count)
 	spin_unlock(&fe->status_lock);
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_XEN_GET_BOARD_COUNT;
-	//ring_req->data.ptgs.board_index = 0;
 	omx_poke_dom0(fe, OMX_CMD_XEN_GET_BOARD_COUNT, ring_req);
 
 	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_FREE); */
@@ -1413,7 +1412,7 @@ out:
 	return ret;
 }
 
-int omx_xen_peer_table_state(struct omx_cmd_peer_table_state *state)
+int omx_xen_peer_table_get_state(struct omx_cmd_peer_table_state *state)
 {
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
 	struct omx_xenif_request *ring_req;
@@ -1426,10 +1425,9 @@ int omx_xen_peer_table_state(struct omx_cmd_peer_table_state *state)
 	spin_unlock(&fe->status_lock);
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_XEN_PEER_TABLE_GET_STATE;
-	ring_req->data.ptgs.board_index = 0;
+	ring_req->data.pts.board_index = 0;
 	omx_poke_dom0(fe, OMX_CMD_XEN_PEER_TABLE_GET_STATE, ring_req);
 
-	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_FREE); */
 	if (wait_for_backend_response
 	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
 		printk_err("Failed to wait\n");
@@ -1442,6 +1440,40 @@ int omx_xen_peer_table_state(struct omx_cmd_peer_table_state *state)
 		goto out;
 	}
 	memcpy(state, &fe->state, sizeof(*state));
+
+out:
+	dprintk_out();
+	return ret;
+}
+
+int omx_xen_peer_table_set_state(struct omx_cmd_peer_table_state *state)
+{
+	struct omx_xenfront_info *fe = __omx_xen_frontend;
+	struct omx_xenif_request *ring_req;
+	int ret = 0;
+
+	dprintk_in();
+
+	spin_lock(&fe->status_lock);
+	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
+	spin_unlock(&fe->status_lock);
+	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req->func = OMX_CMD_XEN_PEER_TABLE_SET_STATE;
+	ring_req->data.pts.board_index = 0;
+	memcpy(&ring_req->data.pts.state, &fe->state, sizeof(*state));
+	omx_poke_dom0(fe, OMX_CMD_XEN_PEER_TABLE_SET_STATE, ring_req);
+
+	if (wait_for_backend_response
+	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+		printk_err("Failed to wait\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (fe->status == OMX_XEN_FRONTEND_STATUS_FAILED) {
+		ret = -EINVAL;
+		goto out;
+	}
 
 out:
 	dprintk_out();

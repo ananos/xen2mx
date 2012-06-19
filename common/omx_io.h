@@ -612,6 +612,7 @@ struct omx_cmd_bench {
 #define OMX_CMD_RAW_GET_EVENT		_IOWR(OMX_CMD_MAGIC, 0x32, struct omx_cmd_raw_get_event)
 #define OMX_CMD_OPEN_ENDPOINT		_IOR(OMX_CMD_MAGIC, 0x71, struct omx_cmd_open_endpoint)
 #define OMX_CMD_XEN_PEER_TABLE_GET_STATE        _IOR(OMX_CMD_MAGIC, 0xa0, struct omx_cmd_peer_table_state)
+#define OMX_CMD_XEN_PEER_TABLE_SET_STATE        _IOR(OMX_CMD_MAGIC, 0xa1, struct omx_cmd_peer_table_state)
 #define OMX_CMD_XEN_GET_BOARD_COUNT		_IOW(OMX_CMD_MAGIC, 0xa2, uint32_t)
 
 /* WARNING: endpoint-based cmd numbers must start at OMX_CMD_BENCH and remain consecutive,

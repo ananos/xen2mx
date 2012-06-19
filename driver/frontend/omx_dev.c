@@ -674,7 +674,7 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			struct omx_cmd_peer_table_state state;
 
 			ret =
-			    omx_xen_peer_table_state(&state);
+			    omx_xen_peer_table_get_state(&state);
 
 			if (ret < 0) {printk_err ("unable to get peer_table_state!\n");
 				break; }
@@ -689,6 +689,23 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 			}
 			break;
 		}
+	case OMX_CMD_XEN_PEER_TABLE_SET_STATE:{
+			struct omx_cmd_peer_table_state state;
+
+			ret = copy_from_user(&state, (void __user *)arg,
+					     sizeof(state));
+			if (unlikely(ret != 0)) {
+				ret = -EFAULT;
+				printk(KERN_ERR
+				       "Open-MX: Failed to read set peer table state command argument, error %d\n",
+				       ret);
+				goto out;
+			}
+
+			ret = omx_xen_peer_table_set_state(&state);
+			break;
+		}
+
 	case OMX_CMD_GET_BOARD_INFO:{
 			struct omx_endpoint *endpoint = file->private_data;
 			struct omx_cmd_get_board_info get_board_info;
@@ -832,7 +849,6 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_PEER_TABLE_GET_STATE:{
 			struct omx_cmd_peer_table_state state;
 
-			dprintk_inf("get_state");
 			omx_peer_table_get_state(&state);
 
 			ret = copy_to_user((void __user *)arg, &state,
@@ -849,7 +865,6 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 	case OMX_CMD_PEER_TABLE_SET_STATE:{
 			struct omx_cmd_peer_table_state state;
 
-			dprintk_inf("set_state");
 			ret = copy_from_user(&state, (void __user *)arg,
 					     sizeof(state));
 			if (unlikely(ret != 0)) {
