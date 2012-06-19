@@ -29,6 +29,7 @@
 #include <xen/events.h>
 #include "omx_reg.h"
 
+#include "omx_xen_timers.h"
 #include "omx_xen.h"
 
 enum backend_status {
@@ -170,6 +171,9 @@ int omx_poke_domU(omx_xenif_t *omx_xenif, int msg_id, struct omx_xenif_response 
 
 irqreturn_t omx_xenif_be_int(int irq, void *data);
 
+extern timers_t t_recv, t_rndv, t_notify, t_small, t_tiny, t_medium, t_connect, t_truc;
+extern timers_t t_pull_request, t_pull_reply, t_pull, t_handle;
+extern timers_t t_send_tiny, t_send_small, t_send_medium, t_send_connect, t_send_notify, t_send_connect_reply, t_send_rndv, t_send_liback;
 
 #endif				/* __omx_xenback_h__ */
 
