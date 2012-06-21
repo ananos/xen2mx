@@ -404,6 +404,7 @@ void msg_workq_handler(struct work_struct *work)
 	int ret = 0;
 	struct omx_xenif_back_ring *ring;
 	int notify;
+	int i = 0;
 
 	dprintk_in();
 
@@ -421,30 +422,44 @@ void msg_workq_handler(struct work_struct *work)
 		goto out;
 	}
 
-again:
-	ring = &omx_xenif->ring;
-	if (RING_HAS_UNCONSUMED_REQUESTS(ring)) {
-		/* FIXME: We have to find a way to properly lock
-		 * when calling process_incoming_response */
-		spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
-		ret = omx_xen_process_message(omx_xenif, ring);
-		spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+	spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 
-		RING_PUSH_RESPONSES_AND_CHECK_NOTIFY(ring, notify);
-		if (notify) {
-			event.port = omx_xenif->be->evtchn.port;
-			if (HYPERVISOR_event_channel_op(EVTCHNOP_send, &event) != 0) {
-				printk_err("error sending response\n");
+again:
+	while (1) {
+		//spin_lock_irqrestore(&omx_xenif->omx_ring_lock, flags);
+		ring = &omx_xenif->ring;
+		if (RING_HAS_UNCONSUMED_REQUESTS(ring)) {
+			/* FIXME: We have to find a way to properly lock
+			 * when calling process_incoming_response */
+			//spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
+			ret = omx_xen_process_message(omx_xenif, ring);
+			//spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+
+			RING_PUSH_RESPONSES_AND_CHECK_NOTIFY(ring, notify);
+			if (notify) {
+				event.port = omx_xenif->be->evtchn.port;
+				if (HYPERVISOR_event_channel_op(EVTCHNOP_send, &event) != 0) {
+					printk_err("error sending response\n");
+				}
 			}
+		} else {
+			//spin_unlock_irqsave(&omx_xenif->omx_ring_lock, flags);
+			i++;
+			if (i> 10000) {
+				break;
+			}
+			cpu_relax();
 		}
+
 	}
 
 	RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
 	if (more_to_do) {
 		goto again;
 	}
+
 out:
-	spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
+	//spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 	dprintk_out();
 
 }
