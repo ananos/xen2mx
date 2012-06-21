@@ -269,41 +269,45 @@ out:
 	return ret;
 }
 
-int
-omx_poke_domU(omx_xenif_t * omx_xenif, int msg_id,
-	      struct omx_xenif_response *ring_resp)
+/* Function to poke the guest with a filled response.
+ * We only use recv_ring, as this is the only ring
+ * we can use to notify the guest */
+int omx_poke_domU(omx_xenif_t * omx_xenif, struct omx_xenif_response *ring_resp)
 {
 	int err = 0;
-	//unsigned long flags;
+	unsigned long flags;
 	struct evtchn_send event;
 	int notify;
+	struct omx_xenif_back_ring *ring;
 
 	dprintk_in();
 
-	//spin_lock_irqsave(&omx_xenif->omx_resp_lock, flags);
+	spin_lock_irqsave(&omx_xenif->omx_resp_lock, flags);
 
-	if (!ring_resp) {
+	if (unlikely(!ring_resp)) {
+		/* If our ring buffer is null, then we fail ungracefully */
 		printk_err("Null ring_resp\n");
-	} else {
-		ring_resp->func = msg_id;
-		ring_resp->id = 1;
+		err = -EINVAL;
+		goto out;
 	}
+	ring = &omx_xenif->recv_ring;
 	dprintk_deb
-	    ("Poke domU func = %#x, response_produced_private = %d, requests_produced = %d, responses= %d\n",
-	     msg_id, omx_xenif->recv_ring.rsp_prod_pvt,
-	     omx_xenif->recv_ring.sring->req_prod,
-	     omx_xenif->recv_ring.sring->rsp_prod);
-	wmb();
-	RING_PUSH_RESPONSES_AND_CHECK_NOTIFY(&(omx_xenif->recv_ring), notify);
+	    ("Poke domU func = %#x, response_produced_private = %d, "
+	     "requests_produced = %d, responses= %d\n",
+	     ring_resp->func, ring->rsp_prod_pvt, ring->sring->req_prod,
+	     ring->sring->rsp_prod);
+
+	RING_PUSH_RESPONSES_AND_CHECK_NOTIFY(ring, notify);
 	if (notify) {
 		event.port = omx_xenif->be->evtchn.port;
-		if (HYPERVISOR_event_channel_op(EVTCHNOP_send, &event) != 0) {
-			dprintk_deb("Failed to send event!\n");
+		err = HYPERVISOR_event_channel_op(EVTCHNOP_send, &event);
+		if (err) {
+			printk_err("Failed to send event, err = %d", err);
 			goto out;
 		}
 	}
 out:
-	//spin_unlock_irqrestore(&omx_xenif->omx_resp_lock, flags);
+	spin_unlock_irqrestore(&omx_xenif->omx_resp_lock, flags);
 	dprintk_out();
 	return err;
 }
@@ -335,7 +339,10 @@ irqreturn_t omx_xenif_be_int(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-/* something like the "bottom half" for responses (recv_ring) */
+/* something like the "bottom half" for responses (recv_ring).
+ * We only use it for Xen's perverted idea of balanced
+ * requests and responses. We'll have to dig into it a bit
+ * more to figure out if we actually need to do this ;-) */
 void response_workq_handler(struct work_struct *work)
 {
 	omx_xenif_t *omx_xenif;
@@ -363,17 +370,15 @@ void response_workq_handler(struct work_struct *work)
 
 again:
 
-	rmb();
-
 	ring = &omx_xenif->recv_ring;
 	if (RING_HAS_UNCONSUMED_REQUESTS(ring)) {
-		rmb();
+		/* FIXME: We have to find a way to properly lock
+		 * when calling process_incoming_response */
 		spin_unlock_irqrestore(&omx_xenif->omx_recv_ring_lock, flags);
 		ret =
 		    omx_xen_process_incoming_response(omx_xenif, ring,
 						      &ring->req_cons,
-						      &ring->sring->
-						      req_prod);
+						      &ring->sring->req_prod);
 		spin_lock_irqsave(&omx_xenif->omx_recv_ring_lock, flags);
 	}
 
@@ -419,9 +424,10 @@ void msg_workq_handler(struct work_struct *work)
 again:
 	ring = &omx_xenif->ring;
 	if (RING_HAS_UNCONSUMED_REQUESTS(ring)) {
+		/* FIXME: We have to find a way to properly lock
+		 * when calling process_incoming_response */
 		spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 		ret = omx_xen_process_message(omx_xenif, ring);
-
 		spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
 
 		RING_PUSH_RESPONSES_AND_CHECK_NOTIFY(ring, notify);
@@ -496,7 +502,6 @@ int omx_xen_process_incoming_response(omx_xenif_t * omx_xenif,
 			dprintk_deb("req_cons=%d, produced=%d\n", cons, prod);
 			goto out;
 		}
-		//printk(KERN_INFO "func = %#x, requests_produced= %d\n", func, omx_xenif->ring.sring->req_prod);
 
 		switch (func) {
 		case OMX_CMD_RECV_CONNECT_REPLY:
@@ -708,7 +713,6 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 				ret =
 				    omx_xen_setup_and_send_mediumsq_frag
 				    (endpoint, &xen_send_mediumsq_frag);
-				//ret = omx_xen_setup_and_send_mediumva(endpoint, &req->data.send_mediumva);
 
 				if (ret) {
 					printk_err("Medium SQ_FRAG error\n");
@@ -757,7 +761,6 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 				ret =
 				    omx_xen_setup_and_send_mediumva(endpoint,
 								    &xen_send_mediumva);
-				//ret = omx_xen_setup_and_send_mediumva(endpoint, &req->data.send_mediumva);
 #else
 				checksum =
 				    req->data.send_mediumva.mediumva.checksum;
@@ -1056,7 +1059,7 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 					     resp->data.mpi.info.hostname);
 				}
 
-				resp->func = func;
+				resp->func = req->func;
 				resp->data.mpi.ret = ret;
 
 				break;
@@ -1130,6 +1133,10 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 				memcpy(&resp->data.pts.state, &state,
 				       sizeof(state));
 
+				dprintk_deb("status= %#lx, version=%#lx, size=%lx"
+				            " mapper_id = %llx\n",
+				            state.status, state.version,
+				            state.size, state.mapper_id);
 				resp->func = OMX_CMD_XEN_PEER_TABLE_GET_STATE;
 				resp->data.pts.board_index = bi;
 				resp->data.pts.ret = ret;
@@ -1271,7 +1278,8 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 				resp->data.endpoint.endpoint_index =
 				    req->data.endpoint.endpoint_index;
 				resp->data.endpoint.board_index =
-				    resp->data.endpoint.ret = ret;
+				    req->data.endpoint.board_index;
+				resp->data.endpoint.ret = ret;
 
 				break;
 			}
@@ -1334,6 +1342,15 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 				else
 					resp->data.cur.status = 0x0;
 				rmb();
+				/* FIXME: Really buggy/experimental stuff!!
+				 * We actually dereference the frontend's endpoint
+				 * structure to notify the frontend that the region
+				 * is ready and let the IOCTL return, to proceed with
+				 * the rest of the operations (sending/receiving etc.)
+				 * If we don't do it like this, the only thing that's
+				 * left to be done for the region to be marked ready is
+				 * to push a response from here and let it reach the frontend.
+				 * why wait for so long ?*/
 				if (endpoint->fe_endpoint->special_status == 3)
 					endpoint->fe_endpoint->special_status = 4;
 				else

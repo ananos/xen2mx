@@ -139,7 +139,7 @@ omx_recv_connect(struct omx_iface * iface,
 
 			memcpy(&ring_resp->data.recv_connect_request.request, &request_event, sizeof(request_event));
 			dump_xen_recv_connect_request(&ring_resp->data.recv_connect_request);
-			omx_poke_domU(omx_xenif, OMX_CMD_RECV_CONNECT_REQUEST, ring_resp);
+			omx_poke_domU(omx_xenif, ring_resp);
 
 		} else {
 			struct omx_evt_recv_connect_reply reply_event;
@@ -163,7 +163,7 @@ omx_recv_connect(struct omx_iface * iface,
 
 			memcpy(&ring_resp->data.recv_connect_reply.reply, &reply_event, sizeof(reply_event));
 			dump_xen_recv_connect_reply(&ring_resp->data.recv_connect_reply);
-			omx_poke_domU(omx_xenif, OMX_CMD_RECV_CONNECT_REPLY, ring_resp);
+			omx_poke_domU(omx_xenif, ring_resp);
 		}
 
 
@@ -352,7 +352,7 @@ omx_recv_tiny(struct omx_iface * iface,
 		//memcpy(ring_resp->data.recv_msg.msg.specific.tiny.data, event.specific.tiny.data, length);
 
 		//dump_xen_recv_tiny(&ring_resp->data.recv_msg);
-		omx_poke_domU(omx_xenif, OMX_CMD_RECV_TINY, ring_resp);
+		omx_poke_domU(omx_xenif, ring_resp);
 		goto xen_out;
 	}
 	/* fill event */
@@ -533,7 +533,7 @@ omx_recv_small(struct omx_iface * iface,
 		BUG_ON(err < 0);
 #endif
 
-                omx_poke_domU(omx_xenif, OMX_CMD_RECV_SMALL, ring_resp);
+                omx_poke_domU(omx_xenif, ring_resp);
                 goto xen_out;
         }
 	else
@@ -754,7 +754,7 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		}
 		kfree(staging);
 #endif
-                omx_poke_domU(omx_xenif, OMX_CMD_RECV_MEDIUM_FRAG, ring_resp);
+                omx_poke_domU(omx_xenif, ring_resp);
 		goto xen_out;
 
 	}
@@ -949,7 +949,7 @@ omx_recv_rndv(struct omx_iface * iface,
 		memcpy(&ring_resp->data.recv_msg.msg.specific.rndv, &event.specific.rndv, sizeof(event.specific.rndv));
 
 		dump_xen_recv_msg(&ring_resp->data.recv_msg);
-		omx_poke_domU(omx_xenif, OMX_CMD_RECV_RNDV, ring_resp);
+		omx_poke_domU(omx_xenif, ring_resp);
 		goto xen_out;
 	}
 	/* fill event */
@@ -1072,7 +1072,7 @@ omx_recv_notify(struct omx_iface * iface,
 		memcpy(&ring_resp->data.recv_msg.msg.specific.notify, &event.specific.notify, sizeof(event.specific.notify));
 
 		dump_xen_recv_notify(&ring_resp->data.recv_msg);
-		omx_poke_domU(omx_xenif, OMX_CMD_RECV_NOTIFY, ring_resp);
+		omx_poke_domU(omx_xenif, ring_resp);
 		goto xen_out;
 	}
 
@@ -1203,7 +1203,7 @@ omx_recv_truc(struct omx_iface * iface,
 
 			memcpy(&ring_resp->data.recv_liback.liback, &liback_event, sizeof(liback_event));
 			dump_xen_recv_liback(&ring_resp->data.recv_liback);
-			omx_poke_domU(omx_xenif, OMX_CMD_RECV_LIBACK, ring_resp);
+			omx_poke_domU(omx_xenif, ring_resp);
 			break;
 		}
 		else

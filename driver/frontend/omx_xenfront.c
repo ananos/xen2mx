@@ -107,24 +107,27 @@ out:
 
 /* Xen related stuff */
 int
-omx_poke_dom0(struct omx_xenfront_info *fe, int msg_id,
-	      struct omx_xenif_request *ring_req)
+omx_poke_dom0(struct omx_xenfront_info *fe, struct omx_xenif_request *ring_req)
 {
 
 	int notify;
 	int err = 0;
 	unsigned long flags;
 	struct evtchn_send event;
+	struct omx_xenif_front_ring *ring;
 
 	dprintk_in();
 
 	spin_lock_irqsave(&fe->lock, flags);
-	if (ring_req) {
-		ring_req->func = msg_id;
-		ring_req->id = 1;
+	if (unlikely(!ring_req)) {
+		/* If our ring buffer is null, then we fail ungracefully */
+		printk_err("Null ring_resp\n");
+		err = -EINVAL;
+		goto out;
 	}
-	wmb();
-	switch (msg_id) {
+
+	/* Choose the ring to shovel the request */
+	switch (ring_req->func) {
 	case OMX_CMD_XEN_DUMMY:
 	case OMX_CMD_RECV_CONNECT_REPLY:
 	case OMX_CMD_RECV_CONNECT_REQUEST:
@@ -134,24 +137,20 @@ omx_poke_dom0(struct omx_xenfront_info *fe, int msg_id,
 	case OMX_CMD_RECV_MEDIUM_FRAG:
 	case OMX_CMD_RECV_SMALL:
 	case OMX_CMD_RECV_TINY:{
-			//RING_PUSH_REQUESTS(&(fe->recv_ring));
-			RING_PUSH_REQUESTS_AND_CHECK_NOTIFY(&(fe->recv_ring), notify);
-			dprintk_deb
-			    ("after push: Poke dom0 with func = %#x, requests_produced_private= %d, requests_produced = %d\n",
-			     msg_id, fe->recv_ring.req_prod_pvt,
-			     fe->recv_ring.sring->req_prod);
+			ring = &fe->recv_ring;
 			break;
 		}
 	default:{
-			dprintk_deb
-			    ("Poke dom0 with func = %#x, requests_produced_private= %d, requests_produced = %d\n",
-			     msg_id, fe->ring.req_prod_pvt,
-			     fe->ring.sring->req_prod);
-			//RING_PUSH_REQUESTS(&(fe->ring));
-			RING_PUSH_REQUESTS_AND_CHECK_NOTIFY(&(fe->ring), notify);
+			ring = &fe->ring;
 			break;
 		}
 	}
+	//RING_PUSH_REQUESTS(&(fe->recv_ring));
+	RING_PUSH_REQUESTS_AND_CHECK_NOTIFY(ring, notify);
+	dprintk_deb
+	    ("after push: Poke dom0 with func = %#x, requests_produced_private= %d, "
+	     "requests_produced = %d\n",
+	     ring_req->func, ring->req_prod_pvt, ring->sring->req_prod);
 
 	if (notify) {
 		event.port = fe->evtchn.local_port;
@@ -249,8 +248,7 @@ again_recv:
 				    RING_GET_REQUEST(ring,
 						     ring->req_prod_pvt++);
 				ring_req->func = OMX_CMD_XEN_DUMMY;
-				omx_poke_dom0(endpoint->fe, OMX_CMD_XEN_DUMMY,
-					      ring_req);
+				omx_poke_dom0(endpoint->fe, ring_req);
 
 				break;
 			}
@@ -288,8 +286,7 @@ again_recv:
 				    RING_GET_REQUEST(ring,
 						     ring->req_prod_pvt++);
 				ring_req->func = OMX_CMD_XEN_DUMMY;
-				omx_poke_dom0(endpoint->fe, OMX_CMD_XEN_DUMMY,
-					      ring_req);
+				omx_poke_dom0(endpoint->fe, ring_req);
 				break;
 			}
 		case OMX_CMD_RECV_MEDIUM_FRAG:
@@ -345,8 +342,7 @@ again_recv:
 				dprintk_deb("%s: ret = %d, recvq=%#x\n",
 					    __func__, ret, recvq_offset);
 
-				omx_poke_dom0(endpoint->fe, resp->func,
-					      ring_req);
+				omx_poke_dom0(endpoint->fe, ring_req);
 				TIMER_STOP(&t2);
 
 				break;
@@ -388,8 +384,7 @@ again_recv:
 						     ring->req_prod_pvt++);
 				ring_req->func = resp->func;
 
-				omx_poke_dom0(endpoint->fe, resp->func,
-					      ring_req);
+				omx_poke_dom0(endpoint->fe, ring_req);
 
 				break;
 			}
@@ -428,8 +423,7 @@ again_recv:
 				    RING_GET_REQUEST(ring,
 						     ring->req_prod_pvt++);
 				ring_req->func = resp->func;
-				omx_poke_dom0(endpoint->fe, resp->func,
-					      ring_req);
+				omx_poke_dom0(endpoint->fe, ring_req);
 
 				break;
 			}
@@ -468,8 +462,7 @@ again_recv:
 				    RING_GET_REQUEST(ring,
 						     ring->req_prod_pvt++);
 				ring_req->func = resp->func;
-				omx_poke_dom0(endpoint->fe, resp->func,
-					      ring_req);
+				omx_poke_dom0(endpoint->fe, ring_req);
 
 				break;
 			}
@@ -510,8 +503,7 @@ again_recv:
 				    RING_GET_REQUEST(ring,
 						     ring->req_prod_pvt++);
 				ring_req->func = resp->func;
-				omx_poke_dom0(endpoint->fe, resp->func,
-					      ring_req);
+				omx_poke_dom0(endpoint->fe, ring_req);
 				break;
 			}
 		case OMX_CMD_RECV_CONNECT_REPLY:{
@@ -550,8 +542,7 @@ again_recv:
 				    RING_GET_REQUEST(ring,
 						     ring->req_prod_pvt++);
 				ring_req->func = resp->func;
-				omx_poke_dom0(endpoint->fe, resp->func,
-					      ring_req);
+				omx_poke_dom0(endpoint->fe, ring_req);
 				break;
 			}
 			case OMX_CMD_XEN_SEND_MEDIUMSQ_DONE:{
@@ -587,8 +578,7 @@ again_recv:
 				    RING_GET_REQUEST(ring,
 						     ring->req_prod_pvt++);
 				ring_req->func = OMX_CMD_XEN_DUMMY;
-				omx_poke_dom0(endpoint->fe, OMX_CMD_XEN_DUMMY,
-					      ring_req);
+				omx_poke_dom0(endpoint->fe, ring_req);
 
 				break;
 			}
@@ -880,7 +870,7 @@ again_send:
 				struct omx_endpoint *endpoint;
 				int16_t ret = 0;
 				dprintk_deb
-				    ("received backend request: OMX_CMD_SEND_CONNECT_RNDV, param=%lx\n",
+				    ("received backend request: OMX_CMD_SEND_RNDV, param=%lx\n",
 				     sizeof(struct
 					    omx_cmd_xen_send_connect_request));
 
@@ -1230,7 +1220,11 @@ again_send:
 				}
 				dump_xen_ring_msg_endpoint(&resp->
 							   data.endpoint);
-				endpoint->status = OMX_ENDPOINT_STATUS_OK;	/* FIXME */
+				if (!ret) {
+					endpoint->status = OMX_ENDPOINT_STATUS_OK;	/* FIXME */
+				} else {
+					endpoint->status = OMX_ENDPOINT_STATUS_FREE;	/* FIXME */
+				}
 
 				dprintk_deb
 				    ("board %#lx, endpoint %#lx is READY\n",
@@ -1434,7 +1428,7 @@ int omx_xen_ifaces_get_count(uint32_t * count)
 	spin_unlock(&fe->status_lock);
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_XEN_GET_BOARD_COUNT;
-	omx_poke_dom0(fe, OMX_CMD_XEN_GET_BOARD_COUNT, ring_req);
+	omx_poke_dom0(fe, ring_req);
 
 	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_FREE); */
 	if (wait_for_backend_response
@@ -1470,7 +1464,7 @@ int omx_xen_peer_table_get_state(struct omx_cmd_peer_table_state *state)
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_XEN_PEER_TABLE_GET_STATE;
 	ring_req->data.pts.board_index = 0;
-	omx_poke_dom0(fe, OMX_CMD_XEN_PEER_TABLE_GET_STATE, ring_req);
+	omx_poke_dom0(fe, ring_req);
 
 	if (wait_for_backend_response
 	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
@@ -1505,7 +1499,7 @@ int omx_xen_peer_table_set_state(struct omx_cmd_peer_table_state *state)
 	ring_req->func = OMX_CMD_XEN_PEER_TABLE_SET_STATE;
 	ring_req->data.pts.board_index = 0;
 	memcpy(&ring_req->data.pts.state, &fe->state, sizeof(*state));
-	omx_poke_dom0(fe, OMX_CMD_XEN_PEER_TABLE_SET_STATE, ring_req);
+	omx_poke_dom0(fe, ring_req);
 
 	if (wait_for_backend_response
 	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
@@ -1540,7 +1534,7 @@ int omx_xen_set_hostname(uint32_t board_index, const char *hostname)
 	ring_req->data.sh.board_index = board_index;
 	memcpy(ring_req->data.sh.hostname, hostname, OMX_HOSTNAMELEN_MAX);
 
-	omx_poke_dom0(fe, OMX_CMD_XEN_SET_HOSTNAME, ring_req);
+	omx_poke_dom0(fe, ring_req);
 
 	if (wait_for_backend_response
 	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
@@ -1602,7 +1596,7 @@ int omx_ioctl_xen_get_board_info(struct omx_endpoint *endpoint,
 	ring_req->data.gbi.board_index = get_board_info.board_index;
 	ring_req->data.gbi.eid = endpoint->endpoint_index;
 	dump_xen_get_board_info(&ring_req->data.gbi);
-	omx_poke_dom0(endpoint->fe, OMX_CMD_GET_BOARD_INFO, ring_req);
+	omx_poke_dom0(endpoint->fe, ring_req);
 	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_FREE); */
 	if (wait_for_backend_response
 	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
@@ -1664,7 +1658,7 @@ omx_xen_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 	ring_req->data.gei.board_index = endpoint->board_index;
 	ring_req->data.gei.eid = endpoint->endpoint_index;
 	dump_xen_get_endpoint_info(&ring_req->data.gei);
-	omx_poke_dom0(endpoint->fe, OMX_CMD_GET_ENDPOINT_INFO, ring_req);
+	omx_poke_dom0(endpoint->fe, ring_req);
 	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_DONE); */
 	if (wait_for_backend_response
 	    (&endpoint->info_status, OMX_ENDPOINT_STATUS_DOING,
@@ -1725,7 +1719,7 @@ omx_xen_peer_lookup(uint32_t * index,
 	}
 
 	dump_xen_misc_peer_info(&ring_req->data.mpi);
-	omx_poke_dom0(fe, cmd, ring_req);
+	omx_poke_dom0(fe, ring_req);
 	if (wait_for_backend_response
 	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
 		printk_err("Failed to wait\n");

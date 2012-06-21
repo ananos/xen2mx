@@ -376,7 +376,7 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 
 	dump_xen_ring_msg_endpoint(&ring_req->data.endpoint);
 
-	omx_poke_dom0(endpoint->fe, OMX_CMD_XEN_OPEN_ENDPOINT, ring_req);
+	omx_poke_dom0(endpoint->fe, ring_req);
 	/* FIXME: find a better way to get notified that a backend response has come */
 	if (wait_for_backend_response
 	    (&endpoint->status, OMX_ENDPOINT_STATUS_INITIALIZING,
@@ -384,6 +384,11 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
+	}
+	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
+		printk_err("Endpoint is busy\n");
+		ret = -EBUSY;
+		goto out_with_alloc;
 	}
 
 	ret = 0;
@@ -476,6 +481,7 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 
 	if (endpoint->status == OMX_ENDPOINT_STATUS_FREE) {
 		/* not open, just free the structure */
+		printk_err("Endpoint already free:S\n");
 		spin_unlock(&endpoint->status_lock);
 		kfree(endpoint);
 		/* FIXME: maybe this is where MPI gets stuck! */
@@ -503,7 +509,7 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 	ring_req->data.endpoint.recvq_gref_size = endpoint->recvq_gref_size;
 	fe->endpoints[param.endpoint_index] = endpoint;
 	//dump_xen_ring_msg_endpoint(&ring_req->data.endpoint);
-	omx_poke_dom0(endpoint->fe, OMX_CMD_XEN_CLOSE_ENDPOINT, ring_req);
+	omx_poke_dom0(endpoint->fe, ring_req);
 
 	/* FIXME: find a better way to get notified that a backend response has come */
 	if (wait_for_backend_response

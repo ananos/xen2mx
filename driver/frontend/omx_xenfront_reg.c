@@ -835,7 +835,7 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 	TIMER_START(&t6);
 	//dump_xen_ring_msg_create_user_region(&ring_req->data.cur);
-	omx_poke_dom0(fe, OMX_CMD_XEN_CREATE_USER_REGION, ring_req);
+	omx_poke_dom0(fe, ring_req);
 	TIMER_STOP(&t6);
 	TIMER_START(&t7);
 	rmb();
@@ -1258,7 +1258,7 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 	dprintk_deb("send request to de-register region id=%d\n", cmd.id);
 	//dump_xen_ring_msg_destroy_user_region(&ring_req->data.dur);
 
-	omx_poke_dom0(fe, OMX_CMD_XEN_DESTROY_USER_REGION, ring_req);
+	omx_poke_dom0(fe, ring_req);
 
 	call_rcu(&region->xen_rcu_head, __omx_xen_user_region_rcu_release_callback);
 
