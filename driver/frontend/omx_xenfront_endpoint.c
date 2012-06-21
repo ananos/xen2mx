@@ -405,13 +405,6 @@ out_with_init:
 
 out:
 	dprintk_out();
-	TIMER_RESET(&t1);
-	TIMER_RESET(&t2);
-	TIMER_RESET(&t3);
-	TIMER_RESET(&t4);
-	TIMER_RESET(&t5);
-	TIMER_RESET(&t6);
-	TIMER_RESET(&t7);
 	return ret;
 
 }
@@ -533,22 +526,6 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 
 out:
 	dprintk_out();
-	if (TIMER_COUNT(&t1))
-		dprintk_inf("timer1 = %lu, count=%lu, usec=%lu\n", TIMER_TOTAL(&t1),
-TIMER_COUNT(&t1), TICKS_TO_USEC(TIMER_TOTAL(&t1)/TIMER_COUNT(&t1)));
-	if (TIMER_COUNT(&t2))
-		dprintk_inf("timer2 = %lu, count=%lu, usec=%lu\n", TIMER_TOTAL(&t2), TIMER_COUNT(&t2), TICKS_TO_USEC(TIMER_TOTAL(&t2)/TIMER_COUNT(&t2)));
-	if (TIMER_COUNT(&t3))
-		dprintk_inf("timer3 = %lu, count=%lu, usec=%lu\n", TIMER_TOTAL(&t3), TIMER_COUNT(&t3), TICKS_TO_USEC(TIMER_TOTAL(&t3)/TIMER_COUNT(&t3)));
-	if (TIMER_COUNT(&t4))
-		dprintk_inf("timer4 = %lu, count=%lu, usec=%lu\n", TIMER_TOTAL(&t4), TIMER_COUNT(&t4), TICKS_TO_USEC(TIMER_TOTAL(&t4)/TIMER_COUNT(&t4)));
-	if (TIMER_COUNT(&t5))
-		dprintk_inf("timer5 = %lu, count=%lu, usec=%lu\n", TIMER_TOTAL(&t5), TIMER_COUNT(&t5), TICKS_TO_USEC(TIMER_TOTAL(&t5)/TIMER_COUNT(&t5)));
-	if (TIMER_COUNT(&t6))
-		dprintk_inf("timer6 = %lu, count=%lu, usec=%lu\n", TIMER_TOTAL(&t6), TIMER_COUNT(&t6), TICKS_TO_USEC(TIMER_TOTAL(&t6)/TIMER_COUNT(&t6)));
-	if (TIMER_COUNT(&t7))
-		dprintk_inf("timer7 = %lu, count=%lu, usec=%lu\n", TIMER_TOTAL(&t7), TIMER_COUNT(&t7), TICKS_TO_USEC(TIMER_TOTAL(&t7)/TIMER_COUNT(&t7)));
-
 	return ret;
 }
 

@@ -31,7 +31,7 @@
 #include "omx_endpoint.h"
 #include "omx_dma.h"
 
-//#define TIMERS_ENABLED
+#define TIMERS_ENABLED
 #include "omx_xen_timers.h"
 
 //#define EXTRA_DEBUG_OMX

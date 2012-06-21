@@ -38,7 +38,7 @@
 #include "omx_reg.h"
 #include "omx_endpoint.h"
 
-//#define TIMERS_ENABLED
+#define TIMERS_ENABLED
 #include "omx_xen_timers.h"
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
@@ -48,7 +48,7 @@
 #include "omx_xenfront_endpoint.h"
 #include "omx_xenfront_reg.h"
 
-extern timers_t t1,t2,t3,t4,t5,t6,t7;
+timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg;
 /* FIXME: Get rid of these copied functions from omx_reg.c */
 static int
 omx_wrapper_user_region_add_segment(const struct omx_cmd_user_segment *useg,
@@ -331,6 +331,7 @@ omx_ioctl_wrapper_user_region_create(struct omx_endpoint *endpoint,
 	int ret, i;
 
 	dprintk_in();
+	TIMER_START(&t_create_reg);
 	if (unlikely(current->mm != endpoint->opener_mm)) {
 		printk(KERN_ERR "Tried to register from another process\n");
 		ret = -EFAULT;	/* the application does crap, behave as if it was a segfault */
@@ -449,6 +450,7 @@ out_with_region:
 out_with_usegs:
 	kfree(usegs);
 out:
+	TIMER_STOP(&t_create_reg);
 	dprintk_out();
 	return ret;
 }
@@ -642,7 +644,6 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 	dprintk_in();
 
-	TIMER_START(&t3);
 	fe = endpoint->fe;
 	BUG_ON(!fe);
 
@@ -656,7 +657,6 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 		goto out;
 	}
 
-	TIMER_START(&t4);
 	/* Create the frontend user region */
 	ret = omx_ioctl_wrapper_user_region_create(endpoint, uparam);
 	if (unlikely(ret < 0)) {
@@ -665,7 +665,6 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 		ret = -EINVAL;
 		goto out;
 	}
-	TIMER_STOP(&t4);
 
 	/* Get a hold on the region pointer */
 	spin_lock(&endpoint->user_regions_lock);
@@ -702,7 +701,6 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	ring_req->data.cur.id = cmd.id;
 	ring_req->data.cur.eid = endpoint->endpoint_index;
 
-	TIMER_START(&t5);
 	/* Handle each segment separately */
 	for (i = 0, seg = &region->segments[0]; i < cmd.nr_segments; i++) {
 		int j;
@@ -831,13 +829,9 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 		seg++;
 	}
-	TIMER_STOP(&t5);
 
-	TIMER_START(&t6);
 	//dump_xen_ring_msg_create_user_region(&ring_req->data.cur);
 	omx_poke_dom0(fe, ring_req);
-	TIMER_STOP(&t6);
-	TIMER_START(&t7);
 	rmb();
 	//ndelay(1000);
 	/* FIXME: find a better way to get notified that a backend response has come */
@@ -856,12 +850,10 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 		ret = -EINVAL;
 		goto out;
 	}
-	TIMER_STOP(&t7);
 
 
 	ret = 0;
 out:
-	TIMER_STOP(&t3);
 	dprintk_out();
 	return ret;
 }
@@ -1203,7 +1195,7 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 	struct omx_ring_msg_deregister_user_segment *ring_seg;
 	dprintk_in();
 
-	TIMER_START(&t2);
+	TIMER_START(&t_destroy_reg);
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
 		printk(KERN_ERR "Failed to read create region cmd\n");
@@ -1263,10 +1255,10 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 	call_rcu(&region->xen_rcu_head, __omx_xen_user_region_rcu_release_callback);
 
         RCU_INIT_POINTER(endpoint->user_regions[cmd.id], NULL);
-	TIMER_STOP(&t2);
 
 	ret = 0;
 out:
+	TIMER_STOP(&t_destroy_reg);
 	dprintk_out();
 	return ret;
 }

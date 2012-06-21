@@ -47,7 +47,7 @@
 #include "omx_iface.h"
 #include "omx_endpoint.h"
 
-//#define TIMERS_ENABLED
+#define TIMERS_ENABLED
 #include "omx_xen_timers.h"
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
@@ -56,7 +56,7 @@
 #include "omx_xenback_reg.h"
 #include "omx_xenback_event.h"
 
-extern timers_t t1,t2,t3,t4,t5,t6;
+timers_t t_reg_seg, t_create_reg, t_dereg_seg, t_destroy_reg;
 
 int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 				    uint32_t sid, uint8_t eid)
@@ -72,6 +72,7 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 
 	dprintk_in();
 
+	TIMER_START(&t_dereg_seg);
 	if (eid < 0 && eid >= 255) {
 		printk_err
 		    ("Wrong endpoint number (%u) check your frontend/backend communication!\n",
@@ -162,6 +163,7 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 #endif
 
 out:
+	TIMER_STOP(&t_dereg_seg);
 	dprintk_out();
 	return ret;
 
@@ -178,6 +180,7 @@ int omx_xen_destroy_user_region(omx_xenif_t * omx_xenif, uint32_t id,
 
 	dprintk_in();
 
+	TIMER_START(&t_destroy_reg);
 	if (eid >= 0 && eid < 255) {
 		endpoint = dev->endpoints[eid];
 	} else {
@@ -200,6 +203,7 @@ int omx_xen_destroy_user_region(omx_xenif_t * omx_xenif, uint32_t id,
 	//omx_xen_user_region_release(region);
 	kfree(region);
 out:
+	TIMER_STOP(&t_destroy_reg);
 	dprintk_out();
 	return ret;
 
@@ -428,6 +432,7 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 
 	dprintk_in();
 
+	TIMER_START(&t_reg_seg);
 	sid = req->sid;
 	id = req->rid;
 	eid = req->eid;
@@ -591,6 +596,7 @@ out:
 	printk_err("error registering, try to debug MORE!!!!\n");
 
 all_ok:
+	TIMER_STOP(&t_reg_seg);
 	dprintk_out();
 	return ret;
 }
@@ -608,6 +614,7 @@ int omx_xen_create_user_region(omx_xenif_t * omx_xenif, uint32_t id,
 	int ret = 0;
 
 	dprintk_in();
+	TIMER_START(&t_create_reg);
 	//udelay(1000);
 	/* allocate the relevant region */
 	region =
@@ -644,6 +651,7 @@ int omx_xen_create_user_region(omx_xenif_t * omx_xenif, uint32_t id,
 	rcu_assign_pointer(endpoint->xen_regions[id], region);
 
 out:
+	TIMER_STOP(&t_create_reg);
 	dprintk_out();
 	return ret;
 }

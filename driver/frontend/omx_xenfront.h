@@ -27,6 +27,8 @@
 #include <linux/cdev.h>
 #include <xen/xenbus.h>
 #include <xen/events.h>
+
+#include "omx_xen_timers.h"
 #include "omx_xen.h"
 
 enum frontend_status {
@@ -129,6 +131,16 @@ int omx_xen_peer_table_set_state(struct omx_cmd_peer_table_state *state);
 int omx_xen_ifaces_get_count(uint32_t *count);
 int omx_xen_set_hostname(uint32_t board_index, const char *hostname);
 
+//extern timers_t t_recv, t_rndv, t_notify, t_small, t_tiny, t_medium, t_connect, t_truc;
+//extern timers_t t_pull_request, t_pull_reply, t_pull, t_handle;
+//extern timers_t t_send_tiny, t_send_small, t_send_medium, t_send_connect, t_send_notify, t_send_connect_reply, t_send_rndv, t_send_liback;
+
+
+extern timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg;
+extern timers_t t_pull;
+extern timers_t t_send_tiny, t_send_small, t_send_mediumva,
+    t_send_mediumsq_frag, t_send_connect_request, t_send_notify,
+    t_send_connect_reply, t_send_rndv, t_send_liback;
 #endif				/* __omx_xenfront_h__ */
 
 /*

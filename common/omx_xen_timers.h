@@ -16,14 +16,15 @@
 
 #define _GNU_SOURCE
 
-#ifndef __slurpoe_timers_h__
-#define __slurpoe_timers_h__
+#ifndef __omx_xen_timers_h__
+#define __omx_xen_timers_h__
 
 typedef struct timers {
 	unsigned long long total;
 	unsigned long long val;
 	unsigned long cnt;
 } timers_t;
+
 
 #ifdef TIMERS_ENABLED
 
@@ -50,4 +51,6 @@ typedef struct timers {
 
 #endif	/* TIMERS_ENABLED */
 
-#endif	/* __slurpoe_timers_h__ */
+#define var_name(x) #x
+#define omx_xen_timer_reset(x) TIMER_RESET(x);
+#endif	/* __omx_xen_timers_h__ */

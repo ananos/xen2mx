@@ -34,7 +34,7 @@
 #include "omx_iface.h"
 #include "omx_endpoint.h"
 
-//#define TIMERS_ENABLED
+#define TIMERS_ENABLED
 #include "omx_xen_timers.h"
 
 #define OMX_XEN_POLL_HARD_LIMIT 5000000UL
@@ -46,8 +46,6 @@
 #include "omx_xenback_reg.h"
 #include "omx_xenback_endpoint.h"
 #include "omx_xenback_event.h"
-#define var_name(x) #x
-#define omx_xen_timer_reset(x) TIMER_RESET(x);
 
 
 //timers_t t1,t2,t3,t4,t5,t6,t7,t8;
@@ -73,6 +71,10 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_send_connect_reply);
 	omx_xen_timer_reset(&t_send_rndv);
 	omx_xen_timer_reset(&t_send_liback);
+	omx_xen_timer_reset(&t_create_reg);
+	omx_xen_timer_reset(&t_destroy_reg);
+	omx_xen_timer_reset(&t_reg_seg);
+	omx_xen_timer_reset(&t_dereg_seg);
 }
 
 static void printk_timer(timers_t * timer, char *name)
@@ -109,6 +111,10 @@ static void printk_timers(void)
 	printk_timer(&t_send_connect_reply, var_name(t_send_connect_reply));
 	printk_timer(&t_send_rndv, var_name(t_send_rndv));
 	printk_timer(&t_send_liback, var_name(t_send_liback));
+	printk_timer(&t_create_reg, var_name(t_create_reg));
+	printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
+	printk_timer(&t_reg_seg, var_name(t_reg_seg));
+	printk_timer(&t_dereg_seg, var_name(t_dereg_seg));
 }
 
 int omx_xen_process_incoming_response(omx_xenif_t * omx_xenif,

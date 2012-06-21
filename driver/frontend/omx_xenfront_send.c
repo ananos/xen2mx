@@ -37,7 +37,7 @@
 #include "omx_reg.h"
 #include "omx_endpoint.h"
 
-//#define TIMERS_ENABLED
+#define TIMERS_ENABLED
 #include "omx_xen_timers.h"
 //#define OMX_XEN_NOWAIT
 //#define EXTRA_DEBUG_OMX
@@ -47,7 +47,14 @@
 #include "omx_xenfront.h"
 #include "omx_xenfront_send.h"
 
-extern timers_t t1,t2,t3,t4;
+//extern timers_t t1,t2,t3,t4;
+
+timers_t t_pull;
+
+timers_t t_send_tiny, t_send_small, t_send_mediumva, t_send_mediumsq_frag,
+    t_send_connect_request, t_send_notify, t_send_connect_reply, t_send_rndv,
+    t_send_liback;
+
 /* In this set of functions, we copy user data directly to the ring structure.
  * FIXME: There's a lot of testing to be done, to make sure that there are no
  * corruption or concurrency issues
@@ -62,7 +69,7 @@ int omx_ioctl_xen_send_tiny(struct omx_endpoint *endpoint, void __user * uparam)
 
 	dprintk_in();
 
-	//TIMER_START(&t1);
+	TIMER_START(&t_send_tiny);
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
 	spin_unlock(&fe->status_lock);
@@ -123,7 +130,7 @@ int omx_ioctl_xen_send_tiny(struct omx_endpoint *endpoint, void __user * uparam)
 	}
 #endif
 out:
-	//TIMER_STOP(&t1);
+	TIMER_STOP(&t_send_tiny);
 	dprintk_out();
 	return ret;
 }
@@ -150,6 +157,7 @@ int omx_ioctl_xen_send_mediumva(struct omx_endpoint *endpoint,
 
 	dprintk_in();
 
+	TIMER_START(&t_send_mediumva);
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
 	spin_unlock(&fe->status_lock);
@@ -374,6 +382,7 @@ int omx_ioctl_xen_send_mediumva(struct omx_endpoint *endpoint,
 	kfree(usegs);
 
 out:
+	TIMER_STOP(&t_send_mediumva);
 	dprintk_out();
 	return ret;
 }
@@ -391,6 +400,7 @@ int omx_ioctl_xen_send_mediumsq_frag(struct omx_endpoint *endpoint,
 
 	dprintk_in();
 
+	TIMER_START(&t_send_mediumsq_frag);
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
 	spin_unlock(&fe->status_lock);
@@ -448,6 +458,7 @@ int omx_ioctl_xen_send_mediumsq_frag(struct omx_endpoint *endpoint,
 	}
 #endif
 out:
+	TIMER_STOP(&t_send_mediumsq_frag);
 	dprintk_out();
 	return ret;
 }
@@ -463,6 +474,7 @@ int omx_ioctl_xen_send_small(struct omx_endpoint *endpoint,
 
 	dprintk_in();
 
+	TIMER_START(&t_send_small);
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
 	spin_unlock(&fe->status_lock);
@@ -524,6 +536,7 @@ int omx_ioctl_xen_send_small(struct omx_endpoint *endpoint,
 	}
 #endif
 out:
+	TIMER_STOP(&t_send_small);
 	dprintk_out();
 	return ret;
 }
@@ -537,6 +550,7 @@ int omx_ioctl_xen_send_notify(struct omx_endpoint *endpoint,
 	int ret = 0;
 
 	dprintk_in();
+	TIMER_START(&t_send_notify);
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
 	spin_unlock(&fe->status_lock);
@@ -563,6 +577,7 @@ int omx_ioctl_xen_send_notify(struct omx_endpoint *endpoint,
 
 	dump_xen_send_notify(cmd);
 	omx_poke_dom0(endpoint->fe, ring_req);
+#if 0
 	if (wait_for_backend_response
 	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
 		printk_err("Failed to wait\n");
@@ -574,7 +589,9 @@ int omx_ioctl_xen_send_notify(struct omx_endpoint *endpoint,
 		ret = 0;
 	else
 		ret = -EFAULT;
+#endif
 out:
+	TIMER_STOP(&t_send_notify);
 	dprintk_out();
 	return ret;
 }
@@ -589,6 +606,7 @@ int omx_ioctl_xen_send_connect_request(struct omx_endpoint *endpoint,
 
 	dprintk_in();
 
+	TIMER_START(&t_send_connect_request);
 	/* fill omx header */
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
@@ -631,6 +649,7 @@ int omx_ioctl_xen_send_connect_request(struct omx_endpoint *endpoint,
 	}
 
 out:
+	TIMER_STOP(&t_send_connect_request);
 	dprintk_out();
 	return ret;
 }
@@ -645,6 +664,7 @@ int omx_ioctl_xen_send_connect_reply(struct omx_endpoint *endpoint,
 
 	dprintk_in();
 
+	TIMER_START(&t_send_connect_reply);
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
 	spin_unlock(&fe->status_lock);
@@ -685,7 +705,7 @@ int omx_ioctl_xen_send_connect_reply(struct omx_endpoint *endpoint,
 		printk_err("Backend failed to ACK send connect reply\n");
 	}
 out:
-
+	TIMER_STOP(&t_send_connect_reply);
 	dprintk_out();
 	return ret;
 }
@@ -698,6 +718,7 @@ int omx_ioctl_xen_pull(struct omx_endpoint *endpoint, void __user * uparam)
 	int ret = 0;
 
 	dprintk_in();
+	TIMER_START(&t_pull);
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
 	spin_unlock(&fe->status_lock);
@@ -736,6 +757,7 @@ int omx_ioctl_xen_pull(struct omx_endpoint *endpoint, void __user * uparam)
 #endif
 
 out:
+	TIMER_STOP(&t_pull);
 	dprintk_out();
 	return ret;
 }
@@ -748,6 +770,7 @@ int omx_ioctl_xen_send_rndv(struct omx_endpoint *endpoint, void __user * uparam)
 	int ret = 0;
 
 	dprintk_in();
+	TIMER_START(&t_send_rndv);
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
 	spin_unlock(&fe->status_lock);
@@ -797,6 +820,7 @@ int omx_ioctl_xen_send_rndv(struct omx_endpoint *endpoint, void __user * uparam)
 #endif
 
 out:
+	TIMER_STOP(&t_send_rndv);
 	dprintk_out();
 	return ret;
 }
@@ -810,6 +834,7 @@ int omx_ioctl_xen_send_liback(struct omx_endpoint *endpoint,
 	int ret = 0;
 
 	dprintk_in();
+	TIMER_START(&t_send_liback);
 	spin_lock(&fe->status_lock);
 	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
 	spin_unlock(&fe->status_lock);
@@ -852,6 +877,7 @@ int omx_ioctl_xen_send_liback(struct omx_endpoint *endpoint,
 		printk_err("Backend failed to ACK send liback \n");
 	}
 out:
+	TIMER_STOP(&t_send_liback);
 	dprintk_out();
 	return ret;
 }
