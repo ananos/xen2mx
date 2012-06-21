@@ -811,7 +811,7 @@ omx_pull_handle_notify(struct omx_pull_handle * handle)
 		//omx_xen_user_region_destroy_segments(handle->xregion, endpoint);
 		//rcu_assign_pointer(endpoint->xen_regions[handle->xregion->id], NULL);
 		//kfree(handle->xregion);
-		omx_poke_domU(omx_xenif, OMX_CMD_XEN_RECV_PULL_DONE, ring_resp);
+		omx_poke_domU(omx_xenif, ring_resp);
 	} else
 
 	{

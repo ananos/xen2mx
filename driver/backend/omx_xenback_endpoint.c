@@ -637,14 +637,14 @@ int omx_xen_endpoint_open(struct backend_info *be,
 	spin_unlock_irq(&endpoint->status_lock);
 	/* alloc internal fields  */
 	if ((ret = omx_endpoint_alloc_resources(endpoint)) < 0) {
-		dprintk_deb("Something went wrong with "
+		printk_err("Something went wrong with "
 			    "allocating endpoint resources, ret = %d\n", ret);
 		ret = -EFAULT;
 		goto out;
 	}
 
 	if ((ret = omx_xen_endpoint_accept_resources(endpoint, req)) < 0) {
-		dprintk_deb("Something went wrong with "
+		printk_err("Something went wrong with "
 			    "accepting endpoint resources, ret = %d\n", ret);
 		ret = -EFAULT;
 		goto out;
@@ -656,7 +656,7 @@ int omx_xen_endpoint_open(struct backend_info *be,
 	spin_lock_irq(&endpoint->status_lock);
 	ret = omx_iface_attach_endpoint(endpoint);
 	if (ret < 0) {
-		dprintk_deb("Something went wrong with "
+		printk_err("Something went wrong with "
 			    "attaching endpoint to iface\n");
 		spin_unlock_irq(&endpoint->status_lock);
 		goto out;
@@ -748,7 +748,7 @@ int omx_xen_endpoint_close(struct backend_info *be,
 	endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;
 	spin_unlock_irq(&endpoint->status_lock);
 	if ((ret = omx_xen_endpoint_release_resources(endpoint, req)) < 0) {
-		dprintk_deb("Something went wrong with "
+		printk_err("Something went wrong with "
 			    "releasing endpoint resources, ret = %d\n", ret);
 		goto out;
 	}
@@ -756,7 +756,8 @@ int omx_xen_endpoint_close(struct backend_info *be,
 
 	omx_wakeup_endpoint_on_close(endpoint);
 	omx_iface_detach_endpoint(endpoint, 0);	/*ifacelocked */
-	kref_put(&endpoint->refcount, __omx_xen_endpoint_last_release);
+	//kref_put(&endpoint->refcount, __omx_xen_endpoint_last_release);
+	__omx_xen_endpoint_last_release(&endpoint->refcount);
 
 	spin_lock_irq(&endpoint->status_lock);
 	endpoint->status = OMX_ENDPOINT_STATUS_FREE;

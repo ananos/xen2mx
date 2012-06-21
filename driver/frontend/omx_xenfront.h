@@ -108,8 +108,7 @@ int omx_xen_user_region_release(struct omx_endpoint *endpoint,
 int omx_ioctl_xen_get_board_info(struct omx_endpoint *endpoint,
 				 void __user * uparam);
 
-int omx_poke_dom0(struct omx_xenfront_info *fe, int msg_id,
-		  struct omx_xenif_request *ring_req);
+int omx_poke_dom0(struct omx_xenfront_info *fe, struct omx_xenif_request *ring_req);
 
 int wait_for_backend_response(unsigned int *poll_var, unsigned int status,
 			      spinlock_t * spin);

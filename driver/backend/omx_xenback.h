@@ -167,7 +167,7 @@ void omx_xenback_exit(void);
 void msg_workq_handler(struct work_struct *work);
 void response_workq_handler(struct work_struct *work);
 
-int omx_poke_domU(omx_xenif_t *omx_xenif, int msg_id, struct omx_xenif_response *ring_resp);
+int omx_poke_domU(omx_xenif_t *omx_xenif, struct omx_xenif_response *ring_resp);
 
 irqreturn_t omx_xenif_be_int(int irq, void *data);
 
