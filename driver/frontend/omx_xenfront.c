@@ -33,12 +33,13 @@
 #include <xen/grant_table.h>
 #include <xen/page.h>
 
+//#define TIMERS_ENABLED
+#include "omx_xen_timers.h"
+
 #include "omx_common.h"
 #include "omx_reg.h"
 #include "omx_endpoint.h"
 
-#define TIMERS_ENABLED
-#include "omx_xen_timers.h"
 
 #define OMX_XEN_POLL_HARD_LIMIT 50000000UL
 //#define EXTRA_DEBUG_OMX
@@ -49,61 +50,10 @@
 #include "omx_xenfront_endpoint.h"
 #include "omx_xenfront_reg.h"
 
-static void omx_xen_timers_reset(void)
-{
-	//omx_xen_timer_reset(&t_recv);
-	//omx_xen_timer_reset(&t_notify);
-	//omx_xen_timer_reset(&t_connect);
-	//omx_xen_timer_reset(&t_truc);
-	omx_xen_timer_reset(&t_send_rndv);
-	//omx_xen_timer_reset(&t_tiny);
-	//omx_xen_timer_reset(&t_small);
-	//omx_xen_timer_reset(&t_medium);
-	omx_xen_timer_reset(&t_pull);
-	//omx_xen_timer_reset(&t_pull_request);
-	//omx_xen_timer_reset(&t_pull_reply);
-	omx_xen_timer_reset(&t_send_tiny);
-	omx_xen_timer_reset(&t_send_small);
-	omx_xen_timer_reset(&t_send_mediumva);
-	omx_xen_timer_reset(&t_send_mediumsq_frag);
-	omx_xen_timer_reset(&t_send_connect_request);
-	omx_xen_timer_reset(&t_send_notify);
-	omx_xen_timer_reset(&t_send_connect_reply);
-	omx_xen_timer_reset(&t_send_rndv);
-	omx_xen_timer_reset(&t_send_liback);
-        omx_xen_timer_reset(&t_create_reg);
-        omx_xen_timer_reset(&t_destroy_reg);
-        omx_xen_timer_reset(&t_reg_seg);
-        omx_xen_timer_reset(&t_dereg_seg);
-}
-
-static void printk_timer(timers_t * timer, char *name)
-{
-	if (TIMER_COUNT(timer)) {
-		dprintk_inf("%s=%llu count=%lu total_usecs=%llu usec=%llu\n",
-			    name, TIMER_TOTAL(timer), TIMER_COUNT(timer),
-			    TICKS_TO_USEC(TIMER_TOTAL(timer)),
-			    TICKS_TO_USEC(TIMER_TOTAL(timer) /
-					  TIMER_COUNT(timer)));
-	}
-}
-
-static void printk_timers(void)
-{
-	printk_timer(&t_pull, var_name(t_pull));
-	printk_timer(&t_send_tiny, var_name(t_send_tiny));
-	printk_timer(&t_send_small, var_name(t_send_small));
-	printk_timer(&t_send_mediumva, var_name(t_send_mediumva));
-	printk_timer(&t_send_mediumsq_frag, var_name(t_send_mediumsq_frag));
-	printk_timer(&t_send_connect_request, var_name(t_send_connect_request));
-	printk_timer(&t_send_connect_reply, var_name(t_send_connect_reply));
-	printk_timer(&t_send_notify, var_name(t_send_notify));
-	printk_timer(&t_send_rndv, var_name(t_send_rndv));
-	printk_timer(&t_send_liback, var_name(t_send_liback));
-        printk_timer(&t_create_reg, var_name(t_create_reg));
-        printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
-
-}
+timers_t t_poke_dom0;
+timers_t t_recv_rndv, t_recv_medsmall, t_recv_tiny, t_recv_connect_request,
+    t_recv_connect_reply, t_recv_liback, t_recv_notify, t_pull_request,
+    t_pull_done, t_recv_mediumsq;
 
 void dump_ring_req(struct omx_xenif_request *req)
 {
@@ -174,6 +124,7 @@ omx_poke_dom0(struct omx_xenfront_info *fe, struct omx_xenif_request *ring_req)
 
 	dprintk_in();
 
+	TIMER_START(&t_poke_dom0);
 	spin_lock_irqsave(&fe->lock, flags);
 	if (unlikely(!ring_req)) {
 		/* If our ring buffer is null, then we fail ungracefully */
@@ -217,6 +168,7 @@ omx_poke_dom0(struct omx_xenfront_info *fe, struct omx_xenif_request *ring_req)
 	}
 out:
 	spin_unlock_irqrestore(&fe->lock, flags);
+	TIMER_STOP(&t_poke_dom0);
 	dprintk_out();
 	return err;
 }
@@ -293,12 +245,14 @@ again_recv:
 					break;
 				}
 
+				TIMER_START(&t_pull_done);
 				omx_notify_exp_event(endpoint,
 						     &resp->data.
 						     recv_pull_done.pull_done,
 						     sizeof(struct
 							    omx_evt_pull_done));
 				//omx_xen_user_region_release(endpoint, rid);
+				TIMER_STOP(&t_pull_done);
 
 				ring_req =
 				    RING_GET_REQUEST(ring,
@@ -332,9 +286,11 @@ again_recv:
 					break;
 				}
 
+				TIMER_START(&t_pull_request);
 				memcpy(&pull_request,
 				       &resp->data.recv_pull_request.pull_req,
 				       sizeof(pull_request));
+				TIMER_STOP(&t_pull_request);
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
@@ -375,6 +331,8 @@ again_recv:
 						     ring->req_prod_pvt++);
 				ring_req->func = resp->func;
 				if (resp->func == OMX_CMD_RECV_TINY) {
+					TIMER_STOP(&endpoint->otherway);
+					TIMER_START(&t_recv_tiny);
 					/* notify the event */
 					ret =
 					    omx_notify_unexp_event(endpoint,
@@ -383,15 +341,18 @@ again_recv:
 								   msg,
 								   sizeof(struct
 									  omx_evt_recv_msg));
+					TIMER_STOP(&t_recv_tiny);
 				} else {
 
 					dprintk_deb("%s: ret = %d, recvq=%#x\n",
 						    __func__, ret,
 						    recvq_offset);
 
+					TIMER_START(&t_recv_medsmall);
 					omx_commit_notify_unexp_event_with_recvq
 					    (endpoint, &resp->data.recv_msg.msg,
 					     sizeof(struct omx_evt_recv_msg));
+					TIMER_STOP(&t_recv_medsmall);
 				}
 
 				dprintk_deb("%s: ret = %d, recvq=%#x\n",
@@ -422,6 +383,7 @@ again_recv:
 					break;
 				}
 
+				TIMER_START(&t_recv_liback);
 				/* notify the event */
 				ret =
 				    omx_notify_unexp_event(endpoint,
@@ -430,6 +392,7 @@ again_recv:
 							   liback,
 							   sizeof(struct
 								  omx_evt_recv_liback));
+				TIMER_STOP(&t_recv_liback);
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
@@ -463,6 +426,7 @@ again_recv:
 					break;
 				}
 
+				TIMER_START(&t_recv_notify);
 				/* notify the event */
 				ret =
 				    omx_notify_unexp_event(endpoint,
@@ -470,6 +434,7 @@ again_recv:
 							   recv_msg.msg,
 							   sizeof(struct
 								  omx_evt_recv_msg));
+				TIMER_STOP(&t_recv_notify);
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
@@ -502,6 +467,7 @@ again_recv:
 					break;
 				}
 
+				TIMER_START(&t_recv_rndv);
 				/* notify the event */
 				ret =
 				    omx_notify_unexp_event(endpoint,
@@ -509,6 +475,7 @@ again_recv:
 							   recv_msg.msg,
 							   sizeof(struct
 								  omx_evt_recv_msg));
+				TIMER_STOP(&t_recv_rndv);
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
@@ -543,6 +510,7 @@ again_recv:
 					break;
 				}
 
+				TIMER_START(&t_recv_connect_request);
 				/* notify the event */
 				ret =
 				    omx_notify_unexp_event(endpoint,
@@ -550,6 +518,7 @@ again_recv:
 							   data.recv_connect_request.request,
 							   sizeof(struct
 								  omx_evt_recv_connect_request));
+				TIMER_STOP(&t_recv_connect_request);
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
@@ -583,6 +552,7 @@ again_recv:
 					break;
 				}
 
+				TIMER_START(&t_recv_connect_reply);
 				/* notify the event */
 				ret =
 				    omx_notify_unexp_event(endpoint,
@@ -590,6 +560,7 @@ again_recv:
 							   data.recv_connect_reply.reply,
 							   sizeof(struct
 								  omx_evt_recv_connect_reply));
+				TIMER_STOP(&t_recv_connect_reply);
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 				ring_req =
@@ -622,11 +593,13 @@ again_recv:
 					break;
 				}
 
+				TIMER_START(&t_recv_mediumsq);
 				omx_notify_exp_event(endpoint,
 						     &resp->data.
 						     send_mediumsq_frag_done.sq_frag_done,
 						     sizeof(struct
 							    omx_evt_send_mediumsq_frag_done));
+				TIMER_STOP(&t_recv_mediumsq);
 
 				ring_req =
 				    RING_GET_REQUEST(ring,
@@ -1279,7 +1252,6 @@ again_send:
 				} else {
 					endpoint->status = OMX_ENDPOINT_STATUS_FREE;	/* FIXME */
 				}
-				omx_xen_timers_reset();
 
 				dprintk_deb
 				    ("board %#lx, endpoint %#lx is READY\n",
@@ -1311,7 +1283,6 @@ again_send:
 							   data.endpoint);
 				endpoint->status = OMX_ENDPOINT_STATUS_OK;
 
-				printk_timers();
 				dprintk_deb
 				    ("board %#lx, endpoint %#lx is CLOSED\n",
 				     bidx, idx);

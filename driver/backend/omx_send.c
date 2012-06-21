@@ -24,6 +24,9 @@
 #include <linux/slab.h>
 #include <linux/mm.h>
 
+//#define TIMERS_ENABLED
+#include "omx_xen_timers.h"
+
 #include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_wire_access.h"
@@ -34,8 +37,6 @@
 #include "omx_endpoint.h"
 #include "omx_shared.h"
 
-#define TIMERS_ENABLED
-#include "omx_xen_timers.h"
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
 #include "omx_xen.h"

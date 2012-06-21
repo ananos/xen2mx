@@ -24,6 +24,9 @@
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 
+//#define TIMERS_ENABLED
+#include "omx_xen_timers.h"
+
 #include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_wire_access.h"
@@ -35,8 +38,6 @@
 #include "omx_dma.h"
 #include "omx_shared.h"
 
-#define TIMERS_ENABLED
-#include "omx_xen_timers.h"
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
 #include "omx_xen.h"
@@ -49,7 +50,7 @@
 
 timers_t t_pull_request, t_pull_reply, t_pull, t_handle;
 #define OMX_PULL_RETRANSMIT_TIMEOUT_MS	1000
-#define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES (OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
+#define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES 1 //(OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
 
 #ifdef OMX_MX_WIRE_COMPAT
 #if OMX_PULL_REPLY_LENGTH_MAX >= 65536
@@ -1309,10 +1310,7 @@ omx_recv_pull_request(struct omx_iface * iface,
 
 	dprintk_in();
 	TIMER_START(&t_pull_request);
-#if 0
-	dprintk_deb("%s: delaying on purpose to understand what is going on!\n", __func__);
-	udelay(10000);
-#endif
+
 	BUILD_BUG_ON(OMX_PULL_REPLY_PACKET_SIZE_OF_PAYLOAD(OMX_PULL_REPLY_LENGTH_MAX) > OMX_MTU);
 
 	omx_counter_inc(iface, RECV_PULL_REQ);

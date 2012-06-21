@@ -34,12 +34,13 @@
 #include <xen/grant_table.h>
 #include <xen/page.h>
 
+//#define TIMERS_ENABLED
+#include "omx_xen_timers.h"
+
 #include "omx_common.h"
 #include "omx_reg.h"
 #include "omx_endpoint.h"
 
-#define TIMERS_ENABLED
-#include "omx_xen_timers.h"
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
 #include "omx_xen.h"

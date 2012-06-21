@@ -33,12 +33,13 @@
 #include <xen/grant_table.h>
 #include <xen/page.h>
 
+//#define TIMERS_ENABLED
+#include "omx_xen_timers.h"
+
 #include "omx_common.h"
 #include "omx_reg.h"
 #include "omx_endpoint.h"
 
-#define TIMERS_ENABLED
-#include "omx_xen_timers.h"
 //#define OMX_XEN_NOWAIT
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
@@ -113,6 +114,7 @@ int omx_ioctl_xen_send_tiny(struct omx_endpoint *endpoint, void __user * uparam)
 		cmd->tiny.hdr.shared = 0;
 	}
 	//dump_xen_send_tiny(cmd);
+	TIMER_START(&endpoint->oneway);
 	omx_poke_dom0(endpoint->fe, ring_req);
 #ifndef OMX_XEN_NOWAIT
 	if (wait_for_backend_response
@@ -577,7 +579,6 @@ int omx_ioctl_xen_send_notify(struct omx_endpoint *endpoint,
 
 	dump_xen_send_notify(cmd);
 	omx_poke_dom0(endpoint->fe, ring_req);
-#if 0
 	if (wait_for_backend_response
 	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
 		printk_err("Failed to wait\n");
@@ -589,7 +590,6 @@ int omx_ioctl_xen_send_notify(struct omx_endpoint *endpoint,
 		ret = 0;
 	else
 		ret = -EFAULT;
-#endif
 out:
 	TIMER_STOP(&t_send_notify);
 	dprintk_out();

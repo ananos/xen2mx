@@ -33,12 +33,13 @@
 #include <xen/grant_table.h>
 #include <xen/page.h>
 
+//#define TIMERS_ENABLED
+#include "omx_xen_timers.h"
+
 #include "omx_common.h"
 #include "omx_reg.h"
 #include "omx_endpoint.h"
 
-#define TIMERS_ENABLED
-#include "omx_xen_timers.h"
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
 #include "omx_xen.h"
@@ -47,6 +48,90 @@
 #include "omx_xenfront_endpoint.h"
 
 extern timers_t t1,t2,t3,t4,t5,t6,t7;
+
+static void omx_xen_timers_reset(void)
+{
+	//omx_xen_timer_reset(&t_recv);
+	//omx_xen_timer_reset(&t_notify);
+	//omx_xen_timer_reset(&t_connect);
+	//omx_xen_timer_reset(&t_truc);
+	omx_xen_timer_reset(&t_send_rndv);
+	//omx_xen_timer_reset(&t_tiny);
+	//omx_xen_timer_reset(&t_small);
+	//omx_xen_timer_reset(&t_medium);
+	omx_xen_timer_reset(&t_pull);
+	//omx_xen_timer_reset(&t_pull_request);
+	//omx_xen_timer_reset(&t_pull_reply);
+	omx_xen_timer_reset(&t_send_tiny);
+	omx_xen_timer_reset(&t_send_small);
+	omx_xen_timer_reset(&t_send_mediumva);
+	omx_xen_timer_reset(&t_send_mediumsq_frag);
+	omx_xen_timer_reset(&t_send_connect_request);
+	omx_xen_timer_reset(&t_send_notify);
+	omx_xen_timer_reset(&t_send_connect_reply);
+	omx_xen_timer_reset(&t_send_rndv);
+	omx_xen_timer_reset(&t_send_liback);
+        omx_xen_timer_reset(&t_create_reg);
+        omx_xen_timer_reset(&t_destroy_reg);
+        omx_xen_timer_reset(&t_reg_seg);
+        omx_xen_timer_reset(&t_dereg_seg);
+        omx_xen_timer_reset(&t_poke_dom0);
+
+	omx_xen_timer_reset(&t_recv_tiny);
+	omx_xen_timer_reset(&t_recv_medsmall);
+	omx_xen_timer_reset(&t_recv_mediumsq);
+	omx_xen_timer_reset(&t_recv_connect_request);
+	omx_xen_timer_reset(&t_recv_connect_reply);
+	omx_xen_timer_reset(&t_recv_notify);
+	omx_xen_timer_reset(&t_recv_rndv);
+	omx_xen_timer_reset(&t_recv_liback);
+	omx_xen_timer_reset(&t_pull_done);
+	omx_xen_timer_reset(&t_pull_request);
+
+}
+
+static void printk_timer(timers_t * timer, char *name)
+{
+	if (TIMER_COUNT(timer)) {
+		dprintk_inf("%s=%llu count=%lu total_usecs=%llu usec=%llu\n",
+			    name, TIMER_TOTAL(timer), TIMER_COUNT(timer),
+			    TICKS_TO_USEC(TIMER_TOTAL(timer)),
+			    TICKS_TO_USEC(TIMER_TOTAL(timer) /
+					  TIMER_COUNT(timer)));
+	}
+}
+
+static void printk_timers(void)
+{
+	printk_timer(&t_pull, var_name(t_pull));
+	printk_timer(&t_send_tiny, var_name(t_send_tiny));
+	printk_timer(&t_send_small, var_name(t_send_small));
+	printk_timer(&t_send_mediumva, var_name(t_send_mediumva));
+	printk_timer(&t_send_mediumsq_frag, var_name(t_send_mediumsq_frag));
+	printk_timer(&t_send_connect_request, var_name(t_send_connect_request));
+	printk_timer(&t_send_connect_reply, var_name(t_send_connect_reply));
+	printk_timer(&t_send_notify, var_name(t_send_notify));
+	printk_timer(&t_send_rndv, var_name(t_send_rndv));
+	printk_timer(&t_send_liback, var_name(t_send_liback));
+        printk_timer(&t_create_reg, var_name(t_create_reg));
+        printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
+        printk_timer(&t_poke_dom0, var_name(t_poke_dom0));
+
+	printk_timer(&t_recv_tiny, var_name(t_recv_tiny));
+	printk_timer(&t_recv_medsmall, var_name(t_recv_medsmall));
+	printk_timer(&t_recv_mediumsq, var_name(t_recv_mediumsq));
+	printk_timer(&t_recv_connect_request, var_name(t_recv_connect_request));
+	printk_timer(&t_recv_connect_reply, var_name(t_recv_connect_reply));
+	printk_timer(&t_recv_notify, var_name(t_recv_notify));
+	printk_timer(&t_recv_rndv, var_name(t_recv_rndv));
+	printk_timer(&t_recv_liback, var_name(t_recv_liback));
+	printk_timer(&t_pull_done, var_name(t_pull_done));
+	printk_timer(&t_pull_request, var_name(t_pull_request));
+
+}
+
+
+
 /* Grant send/recv queue space as long as the endpoint itself
  * FIXME: Lots of local vars, needs major cleanup! */
 int omx_xen_endpoint_grant_resources(struct omx_endpoint *endpoint)
@@ -391,6 +476,9 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 		goto out_with_alloc;
 	}
 
+	omx_xen_timer_reset(&endpoint->oneway);
+	omx_xen_timer_reset(&endpoint->otherway);
+
 	ret = 0;
 	goto out;
 
@@ -404,6 +492,7 @@ out_with_init:
 	spin_unlock(&endpoint->status_lock);
 
 out:
+	omx_xen_timers_reset();
 	dprintk_out();
 	return ret;
 
@@ -525,6 +614,9 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 	goto out;
 
 out:
+	printk_timers();
+	printk_timer(&endpoint->oneway, var_name(endpoint->oneway));
+	printk_timer(&endpoint->otherway, var_name(endpoint->otherway));
 	dprintk_out();
 	return ret;
 }

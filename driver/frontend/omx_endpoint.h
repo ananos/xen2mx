@@ -36,6 +36,8 @@
 #include "omx_xen.h"
 #include "omx_reg.h"
 
+#include "omx_xen_timers.h"
+
 struct omx_iface;
 struct page;
 
@@ -117,6 +119,8 @@ struct omx_endpoint {
 #endif
 
 	struct work_struct destroy_work;
+	timers_t	oneway;
+	timers_t	otherway;
 
 /* Xen related stuff */
 	uint8_t xen:1;

@@ -22,6 +22,9 @@
 #include <linux/kernel.h>
 #include <linux/skbuff.h>
 
+//#define TIMERS_ENABLED
+#include "omx_xen_timers.h"
+
 #include "omx_misc.h"
 #include "omx_hal.h"
 #include "omx_wire_access.h"
@@ -31,8 +34,6 @@
 #include "omx_endpoint.h"
 #include "omx_dma.h"
 
-#define TIMERS_ENABLED
-#include "omx_xen_timers.h"
 
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
@@ -352,6 +353,7 @@ omx_recv_tiny(struct omx_iface * iface,
 		//memcpy(ring_resp->data.recv_msg.msg.specific.tiny.data, event.specific.tiny.data, length);
 
 		//dump_xen_recv_tiny(&ring_resp->data.recv_msg);
+		TIMER_START(&endpoint->fe_endpoint->otherway);
 		omx_poke_domU(omx_xenif, ring_resp);
 		goto xen_out;
 	}

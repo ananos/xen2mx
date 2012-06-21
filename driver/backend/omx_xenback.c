@@ -29,13 +29,14 @@
 #include <xen/interface/io/ring.h>
 #include <xen/interface/io/xenbus.h>
 
+//#define TIMERS_ENABLED
+#include "omx_xen_timers.h"
+
 #include "omx_reg.h"
 #include "omx_common.h"
 #include "omx_iface.h"
 #include "omx_endpoint.h"
 
-#define TIMERS_ENABLED
-#include "omx_xen_timers.h"
 
 #define OMX_XEN_POLL_HARD_LIMIT 5000000UL
 //#define EXTRA_DEBUG_OMX
@@ -845,6 +846,7 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 				bi = req->data.send_tiny.board_index;
 				eid = req->data.send_tiny.eid;
 				endpoint = be->omxdev->endpoints[eid];
+				TIMER_STOP(&endpoint->fe_endpoint->oneway);
 				dprintk_deb("got (%d,%d)\n", bi, eid);
 
 				//dump_xen_send_tiny(&req->data.send_tiny);
