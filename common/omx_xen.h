@@ -123,12 +123,6 @@ struct omx_cmd_xen_recv_msg {
 	uint32_t eid;
 	int ret;
 	struct omx_evt_recv_msg msg;
-	uint32_t recvq_offset;
-	uint32_t sendq_offset;
-	omx_eventq_index_t xen_next_recvq_index;
-	omx_eventq_index_t xen_nextfree_unexp_eventq_index;
-	omx_eventq_index_t xen_nextreserved_unexp_eventq_index;
-	omx_eventq_index_t xen_nextreleased_unexp_eventq_index;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_rndv {
