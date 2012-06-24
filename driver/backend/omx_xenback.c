@@ -329,9 +329,12 @@ irqreturn_t omx_xenif_be_int(int irq, void *data)
 	}
 
 	if (RING_HAS_UNCONSUMED_REQUESTS(&omx_xenif->recv_ring)) {
-		queue_work(omx_xenif->response_msg_workq,
-			   &omx_xenif->response_workq_task);
-		//response_workq_handler(&omx_xenif->response_workq_task);
+		/* Since we don't really do anythine else than
+		 * keeping a balance on the ring, we just call the
+		 * function, without the workqueue */
+		//queue_work(omx_xenif->response_msg_workq,
+		//	   &omx_xenif->response_workq_task);
+		response_workq_handler(&omx_xenif->response_workq_task);
 	}
 
 	spin_unlock_irqrestore(&omx_xenif->omx_be_lock, flags);
@@ -351,6 +354,7 @@ void response_workq_handler(struct work_struct *work)
 	int more_to_do = 0;
 	int ret = 0;
 	struct omx_xenif_back_ring *ring;
+	int i=0;
 
 	dprintk_in();
 
@@ -368,18 +372,18 @@ void response_workq_handler(struct work_struct *work)
 		goto out;
 	}
 
+	spin_unlock_irqrestore(&omx_xenif->omx_recv_ring_lock, flags);
 again:
-
 	ring = &omx_xenif->recv_ring;
 	if (RING_HAS_UNCONSUMED_REQUESTS(ring)) {
 		/* FIXME: We have to find a way to properly lock
 		 * when calling process_incoming_response */
-		spin_unlock_irqrestore(&omx_xenif->omx_recv_ring_lock, flags);
+	//	spin_unlock_irqrestore(&omx_xenif->omx_recv_ring_lock, flags);
 		ret =
 		    omx_xen_process_incoming_response(omx_xenif, ring,
 						      &ring->req_cons,
 						      &ring->sring->req_prod);
-		spin_lock_irqsave(&omx_xenif->omx_recv_ring_lock, flags);
+	//	spin_lock_irqsave(&omx_xenif->omx_recv_ring_lock, flags);
 	}
 
 	RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
@@ -388,7 +392,7 @@ again:
 	}
 
 out:
-	spin_unlock_irqrestore(&omx_xenif->omx_recv_ring_lock, flags);
+	//spin_unlock_irqrestore(&omx_xenif->omx_recv_ring_lock, flags);
 	dprintk_out();
 
 }
@@ -448,7 +452,7 @@ again:
 			if (i> 10000) {
 				break;
 			}
-			cpu_relax();
+			//cpu_relax();
 		}
 
 	}
@@ -547,6 +551,638 @@ out:
 	return ret;
 }
 
+
+static struct omx_endpoint *omx_xenback_get_endpoint(struct backend_info *be, struct omx_xenif_request *req)
+{
+	uint32_t bi, eid;
+	struct omx_endpoint *endpoint = NULL;
+
+	dprintk_in();
+
+	bi = req->board_index;
+	eid = req->eid;
+	endpoint = be->omxdev->endpoints[eid];
+
+	dprintk_deb("got (%d,%d)\n", bi, eid);
+
+	dprintk_out();
+	return endpoint;
+}
+
+static void omx_xenback_prepare_response(struct omx_endpoint *endpoint,
+					 struct omx_xenif_request *req,
+					 struct omx_xenif_response * resp, int ret)
+{
+	dprintk_in();
+
+	resp->func = req->func;
+	resp->eid = endpoint->endpoint_index;
+	resp->board_index = endpoint->board_index;
+	resp->ret = ret;
+	dprintk_out();
+
+}
+
+int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
+				 omx_xenif_request *req,
+				 struct omx_xenif_response *resp)
+{
+	struct backend_info *be = omx_xenif->be;
+	unsigned long flags;
+	int ret = 0;
+
+	dprintk_in();
+
+	switch (func) {
+	case OMX_CMD_PEER_FROM_INDEX:
+	case OMX_CMD_PEER_FROM_ADDR:
+	case OMX_CMD_PEER_FROM_HOSTNAME:{
+			struct omx_cmd_misc_peer_info peer_info;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_GET_PEER_FROM_%#lx, param=%lx\n",
+			     req->func,
+			     sizeof(struct omx_cmd_xen_misc_peer_info));
+
+			memcpy(&peer_info, &req->data.mpi.info,
+			       sizeof(struct omx_cmd_misc_peer_info));
+			memcpy(peer_info.hostname,
+			       req->data.mpi.info.hostname,
+			       sizeof(req->data.mpi.info.hostname));
+			dprintk_deb("peer_info.index = %lx\n",
+				    (unsigned long)peer_info.index);
+			dprintk_deb("peer_info.board_addr = %#llx\n",
+				    peer_info.board_addr);
+			dprintk_deb("peer_info.hostname =  %s\n",
+				    peer_info.hostname);
+			if (func == OMX_CMD_PEER_FROM_INDEX)
+				ret =
+				    omx_peer_lookup_by_index
+				    (peer_info.index,
+				     &peer_info.board_addr, peer_info.hostname);
+			else if (func == OMX_CMD_PEER_FROM_ADDR)
+				ret =
+				    omx_peer_lookup_by_addr
+				    (peer_info.board_addr,
+				     peer_info.hostname, &peer_info.index);
+			else if (func == OMX_CMD_PEER_FROM_HOSTNAME)
+				ret =
+				    omx_peer_lookup_by_hostname
+				    (peer_info.hostname,
+				     &peer_info.board_addr, &peer_info.index);
+
+			/* It's OK if we return an error, just send the response */
+			if (ret < 0) {
+				dprintk_deb
+				    ("Failed to execute cmd=%lx\n",
+				     (unsigned long)func);
+			} else {
+				memcpy(&resp->data.mpi.info, &peer_info,
+				       sizeof(struct omx_cmd_misc_peer_info));
+				memcpy(resp->data.mpi.info.hostname,
+				       peer_info.hostname,
+				       sizeof(peer_info.hostname));
+				dprintk_deb
+				    ("peer_info.index = %#lx, ret = %d\n",
+				     (unsigned long)resp->data.mpi.info.index,
+				     resp->data.mpi.ret);
+				dprintk_deb("peer_info.board_addr = %#llx\n",
+					    resp->data.mpi.info.board_addr);
+				dprintk_deb("peer_info.hostname =  %s\n",
+					    resp->data.mpi.info.hostname);
+			}
+
+			resp->func = req->func;
+			resp->ret = ret;
+
+			break;
+		}
+
+	case OMX_CMD_GET_ENDPOINT_INFO:{
+			struct omx_endpoint *endpoint;
+			struct omx_endpoint_info get_endpoint_info;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_GET_ENDPOINT_INFO, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_get_board_info));
+
+			endpoint = omx_xenback_get_endpoint(be, req);
+
+			//memset(&resp->data.gei, 0, sizeof(resp->data.gei));
+			dprintk_deb("Got endpoint %d @ %#lx\n", eid,
+				    (unsigned long)endpoint);
+			BUG_ON(!endpoint);
+			omx_endpoint_get_info(endpoint->board_index,
+					      endpoint->endpoint_index,
+					      &get_endpoint_info);
+			memcpy(&resp->data.gei.info, &get_endpoint_info,
+			       sizeof(struct omx_endpoint_info));
+
+			omx_xenback_prepare_response(endpoint, req, resp, 0);
+
+			break;
+		}
+	case OMX_CMD_XEN_GET_BOARD_COUNT:{
+			uint32_t count;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_GET_BOARD_COUNT, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_get_board_count));
+
+			count = omx_ifaces_get_count();
+
+			resp->func = OMX_CMD_XEN_GET_BOARD_COUNT;
+			resp->data.gbc.board_count = count;
+
+			break;
+		}
+	case OMX_CMD_XEN_PEER_TABLE_GET_STATE:{
+			uint32_t bi;
+			struct omx_cmd_peer_table_state state;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_PEER_TABLE_GET_STATE, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_peer_table_state));
+
+			bi = req->board_index;
+
+			dprintk_deb("got (%d)\n", bi);
+
+			omx_peer_table_get_state(&state);
+
+			memcpy(&resp->data.pts.state, &state, sizeof(state));
+
+			dprintk_deb("status= %#lx, version=%#lx, size=%lx"
+				    " mapper_id = %llx\n",
+				    state.status, state.version,
+				    state.size, state.mapper_id);
+			resp->func = OMX_CMD_XEN_PEER_TABLE_GET_STATE;
+			resp->board_index = bi;
+			resp->ret = ret;
+
+			break;
+		}
+	case OMX_CMD_XEN_PEER_TABLE_SET_STATE:{
+			uint32_t bi;
+			struct omx_cmd_peer_table_state state;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_PEER_TABLE_SET_STATE, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_peer_table_state));
+
+			bi = req->board_index;
+
+			dprintk_deb("got (%d)\n", bi);
+
+			memcpy(&state, &req->data.pts.state, sizeof(state));
+
+			/* FIXME: Now that we've got the frontend's peer table state,
+			 * figure out what to do next ;-) Leaving it blank atm */
+
+			resp->func = OMX_CMD_XEN_PEER_TABLE_SET_STATE;
+			resp->board_index = bi;
+			resp->ret = ret;
+
+			break;
+		}
+	case OMX_CMD_XEN_SET_HOSTNAME:{
+			uint32_t bi;
+			struct omx_cmd_set_hostname set_hostname;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_XEN_SET_HOSTNAME, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_set_hostname));
+
+			bi = req->board_index;
+
+			dprintk_deb("got (%d)\n", bi);
+
+			/* FIXME: Now that we've got the frontend's hostname,
+			 * figure out what to do next ;-) Leaving it blank atm */
+
+			//memcpy(set_hostname.hostname, req->data.sh.hostname, OMX_HOSTNAMELEN_MAX);
+			ret = omx_iface_set_hostname(bi, req->data.sh.hostname);
+			if (ret) {
+				printk_err
+				    ("Cannot set hostname %s for board id=%#lx\n",
+				     req->data.sh.hostname, bi);
+			}
+			resp->func = OMX_CMD_XEN_SET_HOSTNAME;
+			resp->board_index = bi;
+			resp->ret = ret;
+
+			break;
+		}
+	case OMX_CMD_GET_BOARD_INFO:{
+			struct omx_endpoint *endpoint;
+			struct omx_board_info get_board_info;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_GET_BOARD_INFO, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_get_board_info));
+
+			endpoint = omx_xenback_get_endpoint(be, req);
+			BUG_ON(!endpoint);
+			ret =
+			    omx_iface_get_info(endpoint->board_index,
+					       &get_board_info);
+
+			if (ret < 0) {
+				printk_err
+				    ("Failed to execute cmd=%lx\n",
+				     (unsigned long)func);
+			} else {
+				//memset(&resp->data.gbi, 0, sizeof(resp->data.gbi));
+				memcpy(&resp->data.gbi.info, &get_board_info,
+				       sizeof(struct omx_board_info));
+			}
+
+			omx_xenback_prepare_response(endpoint, req, resp, ret);
+
+			break;
+		}
+	case OMX_CMD_XEN_OPEN_ENDPOINT:{
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_XEN_OPEN_ENDPOINT, param=%lx\n",
+			     sizeof(struct omx_ring_msg_endpoint));
+			ret = omx_xen_endpoint_open(be, req);
+			if (ret < 0) {
+				printk_err
+				    ("Endpoint could not be opened ret = %d!\n",
+				     ret);
+			}
+			//memset(&resp->data.endpoint, 0, sizeof(resp->data.endpoint));
+			resp->func = OMX_CMD_XEN_OPEN_ENDPOINT;
+			resp->data.endpoint.endpoint =
+			    req->data.endpoint.endpoint;
+			resp->eid = req->eid;
+			resp->board_index = req->board_index;
+			resp->ret = ret;
+
+			omx_xen_timers_reset();
+			break;
+		}
+	case OMX_CMD_XEN_CLOSE_ENDPOINT:{
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_XEN_CLOSE_ENDPOINT, param=%lx\n",
+			     sizeof(struct omx_ring_msg_endpoint));
+			printk_timers();
+			ret = omx_xen_endpoint_close(be, req);
+			if (ret < 0) {
+				printk_err
+				    ("Endpoint could not be Closed ret = %d!\n",
+				     ret);
+				//goto out;
+			}
+			//memset(&resp->data.endpoint, 0, sizeof(resp->data.endpoint));
+			resp->func = OMX_CMD_XEN_CLOSE_ENDPOINT;
+			resp->eid = req->eid;
+			resp->board_index = req->board_index;
+			resp->ret = ret;
+
+			break;
+		}
+	case OMX_CMD_XEN_CREATE_USER_REGION:{
+			uint8_t eid;
+			uint32_t nr_segments, id, nr_grefs, nr_pages, sid;
+			uint64_t vaddr;
+			int i;
+			struct omx_endpoint *endpoint;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_XEN_CREATE_USER_REGION, param=%lx\n",
+			     sizeof(struct omx_ring_msg_create_user_region));
+			id = req->data.cur.id;
+			eid = req->data.cur.eid;
+			vaddr = req->data.cur.vaddr;
+			nr_grefs = req->data.cur.nr_grefs;
+			nr_pages = req->data.cur.nr_pages;
+			nr_segments = req->data.cur.nr_segments;
+			endpoint = omx_xenif->be->omxdev->endpoints[eid];
+
+			dprintk_deb("reg id=%u, nr_segments=%u, eid=%u"
+				    " vaddr=%#lx, nr_pages=%lu, nr_grefs=%u",
+				    id, nr_segments, eid,
+				    (unsigned long)vaddr, (unsigned long)
+				    nr_pages, nr_grefs);
+
+			ret =
+			    omx_xen_create_user_region(omx_xenif, id,
+						       vaddr,
+						       nr_segments,
+						       nr_pages, nr_grefs, eid);
+
+			for (i = 0; i < nr_segments; i++) {
+				struct omx_ring_msg_register_user_segment *seg;
+				seg = &req->data.cur.segs[i];
+
+				sid = seg->sid;
+				id = seg->rid;
+				eid = seg->eid;
+
+				ret =
+				    omx_xen_register_user_segment(omx_xenif,
+								  seg);
+
+				if (ret)
+					printk_err
+					    ("Failed to register user segment %u\n",
+					     sid);
+			}
+			resp->func = OMX_CMD_XEN_CREATE_USER_REGION;
+			resp->data.cur.id = id;
+			resp->data.cur.eid = eid;
+
+			if (ret < 0) {
+				printk_err("Failed to reg\n");
+				resp->data.cur.status = 0x1;
+			}
+			else
+				resp->data.cur.status = 0x0;
+			rmb();
+			/* FIXME: Really buggy/experimental stuff!!
+			 * We actually dereference the frontend's endpoint
+			 * structure to notify the frontend that the region
+			 * is ready and let the IOCTL return, to proceed with
+			 * the rest of the operations (sending/receiving etc.)
+			 * If we don't do it like this, the only thing that's
+			 * left to be done for the region to be marked ready is
+			 * to push a response from here and let it reach the frontend.
+			 * why wait for so long ?*/
+			if (endpoint->fe_endpoint->special_status == 3)
+				endpoint->fe_endpoint->special_status = 4;
+			else
+				printk_err("status is invalid, %u\n",
+					   endpoint->
+					   fe_endpoint->special_status);
+
+			wmb();
+			break;
+		}
+	case OMX_CMD_XEN_DESTROY_USER_REGION:{
+			uint32_t id, seqnum;
+			uint8_t eid;
+			uint32_t sid;
+			int i;
+
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_XEN_DESTROY_USER_REGION, param=%lx\n",
+			     sizeof(struct omx_ring_msg_destroy_user_region));
+			id = req->data.dur.id;
+			seqnum = req->data.dur.seqnum;
+			eid = req->data.dur.eid;
+
+			for (i = 0; i < req->data.dur.nr_segments; i++) {
+				struct omx_ring_msg_deregister_user_segment
+				*seg;
+				seg = &req->data.dur.segs[i];
+
+				sid = seg->sid;
+				id = seg->rid;
+				eid = seg->eid;
+				dprintk_deb("reg id=%u, sid=%u, eid=%u\n",
+					    id, sid, eid);
+				ret =
+				    omx_xen_deregister_user_segment(omx_xenif,
+								    id, sid,
+								    eid);
+
+				if (ret)
+					dprintk_deb
+					    ("Failed to deregister user segment %u\n",
+					     sid);
+			}
+
+			dprintk_deb
+			    ("de-reg id=%lx, seqnum=%lx, eid=%u\n",
+			     (unsigned long)id, (unsigned long)seqnum, eid);
+
+			ret =
+			    omx_xen_destroy_user_region(omx_xenif, id,
+							seqnum, eid);
+			//memset(&resp->data.dur, 0, sizeof(resp->data.dur));
+			resp->func = OMX_CMD_XEN_DESTROY_USER_REGION;
+			resp->data.dur.id = id;
+			resp->data.dur.eid = eid;
+			resp->data.dur.region = req->data.dur.region;
+			if (ret < 0) {
+				printk_err("Failed to dereg\n");
+				resp->data.dur.status = 0x1;
+			}
+			else
+				resp->data.dur.status = 0x0;
+
+			break;
+		}
+	default:{
+			printk_err("No usefull command received: %x\n", func);
+			break;
+
+		}
+	}
+out:
+	dprintk_out();
+	return ret;
+}
+
+int omx_xenback_process_specific(omx_xenif_t * omx_xenif, uint32_t func, struct
+				 omx_xenif_request *req,
+				 struct omx_xenif_response *resp)
+{
+	struct backend_info *be = omx_xenif->be;
+	struct omx_endpoint *endpoint;
+	unsigned long flags;
+	int ret = 0;
+
+	dprintk_in();
+	spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+	endpoint = omx_xenback_get_endpoint(be, req);
+	spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
+
+	switch (func) {
+	case OMX_CMD_PULL:{
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_PULL, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_pull));
+			ret = omx_ioctl_pull(endpoint, &req->data.pull.pull);
+
+			break;
+		}
+	case OMX_CMD_SEND_RNDV:{
+			struct omx_cmd_send_rndv send_rndv;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_SEND_RNDV, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_send_rndv));
+			spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+
+			/* getting connect request structure */
+			memcpy(&send_rndv, &req->data.send_rndv.rndv,
+			       sizeof(send_rndv));
+
+			//ret = omx_ioctl_send_rndv(endpoint, &req->data.send_rndv.rndv);
+			spin_unlock_irqrestore
+			    (&omx_xenif->omx_ring_lock, flags);
+			ret = omx_ioctl_send_rndv(endpoint, &send_rndv);
+
+			//memset(&resp->data.send_rndv, 0, sizeof(resp->data.send_rndv));
+			break;
+		}
+	case OMX_CMD_SEND_MEDIUMSQ_FRAG:{
+			struct omx_cmd_xen_send_mediumsq_frag
+			    xen_send_mediumsq_frag;
+			struct omx_cmd_send_mediumsq_frag send_mediumsq_frag;
+			//uint16_t checksum = 0;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_SEND_MEDIUMSQ_FRAG, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_send_mediumva));
+			memcpy(&xen_send_mediumsq_frag,
+			       &req->data.send_mediumsq_frag,
+			       sizeof(xen_send_mediumsq_frag));
+			memcpy(&xen_send_mediumsq_frag.mediumsq_frag,
+			       &req->data.send_mediumsq_frag.mediumsq_frag,
+			       sizeof(send_mediumsq_frag));
+			ret =
+			    omx_xen_setup_and_send_mediumsq_frag
+			    (endpoint, &xen_send_mediumsq_frag);
+
+			if (ret) {
+				printk_err("Medium SQ_FRAG error\n");
+			}
+			//memset(&resp->data.send_small, 0, sizeof(resp->data.send_small));
+
+			break;
+		}
+	case OMX_CMD_SEND_MEDIUMVA:{
+			struct omx_cmd_xen_send_mediumva xen_send_mediumva;
+			struct omx_cmd_send_mediumva send_mediumva;
+			//uint16_t checksum = 0;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_SEND_MEDIUMVA, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_send_mediumva));
+#if !MEDIUMVA_FAKE
+			memcpy(&xen_send_mediumva,
+			       &req->data.send_mediumva,
+			       sizeof(xen_send_mediumva));
+			memcpy(&xen_send_mediumva.mediumva,
+			       &req->data.send_mediumva.mediumva,
+			       sizeof(send_mediumva));
+			ret =
+			    omx_xen_setup_and_send_mediumva(endpoint,
+							    &xen_send_mediumva);
+#else
+			checksum = req->data.send_mediumva.mediumva.checksum;
+			req->data.send_small.small.length = 128;
+			req->data.send_small.small.checksum = checksum;
+			req->data.send_small.small.vaddr =
+			    (uint64_t) req->data.send_small.data;
+			ret =
+			    omx_ioctl_send_small(endpoint,
+						 &req->data.send_small.small);
+#endif
+			if (ret) {
+				printk_err("Medium VA error\n");
+			}
+			//memset(&resp->data.send_small, 0, sizeof(resp->data.send_small));
+
+			break;
+		}
+	case OMX_CMD_SEND_SMALL:{
+			int ret = 0;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_SEND_SMALL, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_send_small));
+			spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+			req->data.send_small.small.vaddr =
+			    (uint64_t) req->data.send_small.data;
+			spin_unlock_irqrestore
+			    (&omx_xenif->omx_ring_lock, flags);
+			//dump_xen_send_small(&req->data.send_small);
+			ret =
+			    omx_ioctl_send_small(endpoint,
+						 &req->data.send_small.small);
+			//memset(&resp->data.send_small, 0, sizeof(resp->data.send_small));
+			break;
+		}
+	case OMX_CMD_SEND_TINY:{
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_SEND_TINY, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_send_tiny));
+			ret = omx_ioctl_send_tiny(endpoint, &req->data.send_tiny.tiny);	//&tiny.tiny);
+			//memset(&resp->data.send_tiny, 0, sizeof(resp->data.send_tiny));
+			break;
+		}
+	case OMX_CMD_SEND_NOTIFY:{
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_SEND_NOTIFY, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_send_notify));
+
+			//dprintk(SEND, "Sending Notifies\n");
+			ret =
+			    omx_ioctl_send_notify(endpoint,
+						  &req->data.send_notify.
+						  notify);
+
+			//memset(&resp->data.send_notify, 0, sizeof(resp->data.send_notify));
+
+			break;
+		}
+	case OMX_CMD_SEND_LIBACK:{
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_SEND_LIBACK, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_send_liback));
+
+			//dump_xen_send_liback(&req->data.send_liback);
+			ret =
+			    omx_ioctl_send_liback(endpoint,
+						  &req->data.send_liback.
+						  liback);
+
+			//memset(&resp->data.send_liback, 0, sizeof(resp->data.send_liback));
+
+			break;
+		}
+	case OMX_CMD_SEND_CONNECT_REQUEST:{
+			struct omx_cmd_send_connect_request connect;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_SEND_CONNECT_REQUEST, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_send_connect_request));
+			spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+			/* getting connect request structure */
+			//dump_xen_send_connect_request(&req-> data.send_connect_request);
+			memcpy(&connect,
+			       &req->data.send_connect_request.request,
+			       sizeof(connect));
+			spin_unlock_irqrestore(&omx_xenif->omx_ring_lock,
+					       flags);
+			ret =
+			    omx_ioctl_send_connect_request(endpoint, &connect);
+			//memset(&resp->data.send_connect_request, 0, sizeof(resp->data.send_connect_request));
+			break;
+		}
+	case OMX_CMD_SEND_CONNECT_REPLY:{
+			struct omx_cmd_send_connect_reply reply;
+			dprintk_deb
+			    ("received frontend request: OMX_CMD_SEND_CONNECT_REPLY, param=%lx\n",
+			     sizeof(struct omx_cmd_xen_send_connect_reply));
+			spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+			/* getting connect request structure */
+			//dump_xen_send_connect_reply(&req->data.send_connect_reply);
+			memcpy(&reply,
+			       &req->data.send_connect_reply.reply,
+			       sizeof(reply));
+			spin_unlock_irqrestore
+			    (&omx_xenif->omx_ring_lock, flags);
+			ret = omx_ioctl_send_connect_reply(endpoint, &reply);
+			break;
+		}
+	default:{
+			printk_err("No usefull command received: %x\n", func);
+			break;
+
+		}
+	}
+
+	spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+	omx_xenback_prepare_response(endpoint, req, resp, ret);
+	spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
+
+out:
+	dprintk_out();
+	return ret;
+
+}
 int omx_xen_process_message(omx_xenif_t * omx_xenif,
 			    struct omx_xenif_back_ring *ring)
 {
@@ -620,833 +1256,28 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 
 		spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 		switch (func) {
-		case OMX_CMD_PULL:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_endpoint *endpoint;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_PULL, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_pull));
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				bi = req->data.pull.board_index;
-				eid = req->data.pull.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				dump_xen_pull(&req->data.pull);
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-				ret =
-				    omx_ioctl_pull(endpoint,
-						   &req->data.pull.pull);
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-
-				//memset(&resp->data.pull, 0, sizeof(resp->data.pull));
-				resp->func = OMX_CMD_PULL;
-				resp->data.pull.eid = eid;
-				resp->data.pull.board_index = bi;
-				resp->data.pull.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-
+			case OMX_CMD_PEER_FROM_INDEX:
+			case OMX_CMD_PEER_FROM_ADDR:
+			case OMX_CMD_PEER_FROM_HOSTNAME:
+			case OMX_CMD_GET_ENDPOINT_INFO:
+			case OMX_CMD_XEN_GET_BOARD_COUNT:
+			case OMX_CMD_XEN_PEER_TABLE_GET_STATE:
+			case OMX_CMD_XEN_PEER_TABLE_SET_STATE:
+			case OMX_CMD_XEN_SET_HOSTNAME:
+			case OMX_CMD_GET_BOARD_INFO:
+			case OMX_CMD_XEN_OPEN_ENDPOINT:
+			case OMX_CMD_XEN_CLOSE_ENDPOINT:
+			case OMX_CMD_XEN_CREATE_USER_REGION:
+			case OMX_CMD_XEN_DESTROY_USER_REGION:
+				ret = omx_xenback_process_misc(omx_xenif, func, req, resp);
 				break;
-			}
-		case OMX_CMD_SEND_RNDV:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_endpoint *endpoint;
-				struct omx_cmd_send_rndv send_rndv;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_SEND_RNDV, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_send_rndv));
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				bi = req->data.send_rndv.board_index;
-				eid = req->data.send_rndv.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d), shared = %d\n", bi,
-					    eid,
-					    req->data.send_rndv.rndv.shared);
-				if (req->data.send_rndv.rndv.shared)
-					req->data.send_rndv.rndv.shared = 0;
-
-				/* getting connect request structure */
-				memcpy(&send_rndv, &req->data.send_rndv.rndv,
-				       sizeof(send_rndv));
-
-				//ret = omx_ioctl_send_rndv(endpoint, &req->data.send_rndv.rndv);
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-				ret = omx_ioctl_send_rndv(endpoint, &send_rndv);
-
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				//memset(&resp->data.send_rndv, 0, sizeof(resp->data.send_rndv));
-				resp->func = OMX_CMD_SEND_RNDV;
-				resp->data.send_rndv.eid = eid;
-				resp->data.send_rndv.board_index = bi;
-				resp->data.send_rndv.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-
-				break;
-			}
-		case OMX_CMD_SEND_MEDIUMSQ_FRAG:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_cmd_xen_send_mediumsq_frag
-				    xen_send_mediumsq_frag;
-				struct omx_cmd_send_mediumsq_frag
-				    send_mediumsq_frag;
-				struct omx_endpoint *endpoint;
-				//uint16_t checksum = 0;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_SEND_MEDIUMSQ_FRAG, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_send_mediumva));
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				bi = req->data.send_mediumva.board_index;
-				eid = req->data.send_mediumva.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-				memcpy(&xen_send_mediumsq_frag,
-				       &req->data.send_mediumsq_frag,
-				       sizeof(xen_send_mediumsq_frag));
-				memcpy(&xen_send_mediumsq_frag.mediumsq_frag,
-				       &req->data.send_mediumsq_frag.
-				       mediumsq_frag,
-				       sizeof(send_mediumsq_frag));
-				ret =
-				    omx_xen_setup_and_send_mediumsq_frag
-				    (endpoint, &xen_send_mediumsq_frag);
-
-				if (ret) {
-					printk_err("Medium SQ_FRAG error\n");
-				}
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				//memset(&resp->data.send_small, 0, sizeof(resp->data.send_small));
-				resp->func = OMX_CMD_SEND_MEDIUMSQ_FRAG;
-				resp->data.send_mediumsq_frag.eid = eid;
-				resp->data.send_mediumsq_frag.board_index = bi;
-				resp->data.send_mediumsq_frag.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-
-				break;
-			}
-		case OMX_CMD_SEND_MEDIUMVA:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_cmd_xen_send_mediumva
-				    xen_send_mediumva;
-				struct omx_cmd_send_mediumva send_mediumva;
-				struct omx_endpoint *endpoint;
-				//uint16_t checksum = 0;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_SEND_MEDIUMVA, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_send_mediumva));
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				bi = req->data.send_mediumva.board_index;
-				eid = req->data.send_mediumva.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-#if !MEDIUMVA_FAKE
-				memcpy(&xen_send_mediumva,
-				       &req->data.send_mediumva,
-				       sizeof(xen_send_mediumva));
-				memcpy(&xen_send_mediumva.mediumva,
-				       &req->data.send_mediumva.mediumva,
-				       sizeof(send_mediumva));
-				ret =
-				    omx_xen_setup_and_send_mediumva(endpoint,
-								    &xen_send_mediumva);
-#else
-				checksum =
-				    req->data.send_mediumva.mediumva.checksum;
-				req->data.send_small.small.length = 128;
-				req->data.send_small.small.checksum = checksum;
-				req->data.send_small.small.vaddr =
-				    (uint64_t) req->data.send_small.data;
-				ret =
-				    omx_ioctl_send_small(endpoint,
-							 &req->data.
-							 send_small.small);
-#endif
-				if (ret) {
-					printk_err("Medium VA error\n");
-				}
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				//memset(&resp->data.send_small, 0, sizeof(resp->data.send_small));
-				resp->func = OMX_CMD_SEND_MEDIUMVA;
-				resp->data.send_mediumva.eid = eid;
-				resp->data.send_mediumva.board_index = bi;
-				resp->data.send_mediumva.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-
-				break;
-			}
-		case OMX_CMD_SEND_SMALL:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_endpoint *endpoint;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_SEND_SMALL, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_send_small));
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				bi = req->data.send_small.board_index;
-				eid = req->data.send_small.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				req->data.send_small.small.vaddr =
-				    (uint64_t) req->data.send_small.data;
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-				//dump_xen_send_small(&req->data.send_small);
-				ret =
-				    omx_ioctl_send_small(endpoint,
-							 &req->data.
-							 send_small.small);
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-
-				//memset(&resp->data.send_small, 0, sizeof(resp->data.send_small));
-				resp->func = OMX_CMD_SEND_SMALL;
-				resp->data.send_small.eid = eid;
-				resp->data.send_small.board_index = bi;
-				resp->data.send_small.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-				break;
-			}
-		case OMX_CMD_SEND_TINY:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_endpoint *endpoint;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_SEND_TINY, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_send_tiny));
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
-				bi = req->data.send_tiny.board_index;
-				eid = req->data.send_tiny.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				//dump_xen_send_tiny(&req->data.send_tiny);
-				spin_unlock_irqrestore (&omx_xenif->omx_ring_lock, flags);
-				ret = omx_ioctl_send_tiny(endpoint, &req->data.send_tiny.tiny);	//&tiny.tiny);
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
-
-				//memset(&resp->data.send_tiny, 0, sizeof(resp->data.send_tiny));
-				resp->func = OMX_CMD_SEND_TINY;
-				resp->data.send_tiny.eid = eid;
-				resp->data.send_tiny.board_index = bi;
-				resp->data.send_tiny.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-
-				spin_unlock_irqrestore (&omx_xenif->omx_ring_lock, flags);
-				break;
-			}
-		case OMX_CMD_SEND_NOTIFY:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_endpoint *endpoint;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_SEND_NOTIFY, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_send_notify));
-				bi = req->data.send_notify.board_index;
-				eid = req->data.send_notify.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				dprintk(SEND, "Sending Notifies\n");
-				ret =
-				    omx_ioctl_send_notify(endpoint,
-							  &req->
-							  data.send_notify.
-							  notify);
-
-				//memset(&resp->data.send_notify, 0, sizeof(resp->data.send_notify));
-				resp->func = OMX_CMD_SEND_NOTIFY;
-				resp->data.send_notify.eid = eid;
-				resp->data.send_notify.board_index = bi;
-				resp->data.send_notify.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-
-				break;
-			}
-		case OMX_CMD_SEND_LIBACK:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_endpoint *endpoint;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_SEND_LIBACK, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_send_liback));
-				bi = req->data.send_liback.board_index;
-				eid = req->data.send_liback.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				dump_xen_send_liback(&req->data.send_liback);
-				ret =
-				    omx_ioctl_send_liback(endpoint,
-							  &req->
-							  data.send_liback.
-							  liback);
-
-				//memset(&resp->data.send_liback, 0, sizeof(resp->data.send_liback));
-				resp->func = OMX_CMD_SEND_LIBACK;
-				resp->data.send_liback.eid = eid;
-				resp->data.send_liback.board_index = bi;
-				resp->data.send_liback.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-
-				break;
-			}
-		case OMX_CMD_SEND_CONNECT_REQUEST:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_cmd_send_connect_request connect;
-				struct omx_endpoint *endpoint;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_SEND_CONNECT_REQUEST, param=%lx\n",
-				     sizeof(struct
-					    omx_cmd_xen_send_connect_request));
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				bi = req->data.send_connect_request.board_index;
-				eid = req->data.send_connect_request.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				/* getting connect request structure */
-				dump_xen_send_connect_request(&req->
-							      data.send_connect_request);
-				memcpy(&connect,
-				       &req->data.send_connect_request.request,
-				       sizeof(connect));
-				spin_unlock_irqrestore (&omx_xenif->omx_ring_lock, flags);
-				ret =
-				    omx_ioctl_send_connect_request(endpoint,
-								   &connect);
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
-
-				//memset(&resp->data.send_connect_request, 0, sizeof(resp->data.send_connect_request));
-				resp->func = OMX_CMD_SEND_CONNECT_REQUEST;
-				resp->data.send_connect_request.eid = eid;
-				resp->data.send_connect_request.board_index =
-				    bi;
-				resp->data.send_connect_request.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-				break;
-			}
-		case OMX_CMD_SEND_CONNECT_REPLY:{
-				uint32_t bi, eid;
-				int ret = 0;
-				struct omx_cmd_send_connect_reply reply;
-				struct omx_endpoint *endpoint;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_SEND_CONNECT_REPLY, param=%lx\n",
-				     sizeof(struct
-					    omx_cmd_xen_send_connect_reply));
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-				bi = req->data.send_connect_reply.board_index;
-				eid = req->data.send_connect_reply.eid;
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				/* getting connect request structure */
-				//dump_xen_send_connect_reply(&req->data.send_connect_reply);
-				memcpy(&reply,
-				       &req->data.send_connect_reply.reply,
-				       sizeof(reply));
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-				ret =
-				    omx_ioctl_send_connect_reply(endpoint,
-								 &reply);
-				spin_lock_irqsave(&omx_xenif->omx_ring_lock,
-						  flags);
-
-				//memset(&resp->data.send_connect_reply, 0, sizeof(resp->data.send_connect_reply));
-				resp->func = OMX_CMD_SEND_CONNECT_REPLY;
-				resp->data.send_connect_reply.eid = eid;
-				resp->data.send_connect_reply.board_index = bi;
-				resp->data.send_connect_reply.ret = ret;
-				dprintk_deb("got (%d,%d), ret = %d\n", bi, eid,
-					    ret);
-				spin_unlock_irqrestore
-				    (&omx_xenif->omx_ring_lock, flags);
-				break;
-			}
-		case OMX_CMD_PEER_FROM_INDEX:
-		case OMX_CMD_PEER_FROM_ADDR:
-		case OMX_CMD_PEER_FROM_HOSTNAME:{
-				struct omx_cmd_misc_peer_info peer_info;
-				int ret = 0;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_GET_PEER_FROM_%#lx, param=%lx\n",
-				     req->func,
-				     sizeof(struct omx_cmd_xen_misc_peer_info));
-
-				memcpy(&peer_info, &req->data.mpi.info,
-				       sizeof(struct omx_cmd_misc_peer_info));
-				memcpy(peer_info.hostname,
-				       req->data.mpi.info.hostname,
-				       sizeof(req->data.mpi.info.hostname));
-				dprintk_deb("peer_info.index = %lx\n",
-					    (unsigned long)peer_info.index);
-				dprintk_deb("peer_info.board_addr = %#llx\n",
-					    peer_info.board_addr);
-				dprintk_deb("peer_info.hostname =  %s\n",
-					    peer_info.hostname);
-				if (func == OMX_CMD_PEER_FROM_INDEX)
-					ret =
-					    omx_peer_lookup_by_index
-					    (peer_info.index,
-					     &peer_info.board_addr,
-					     peer_info.hostname);
-				else if (func == OMX_CMD_PEER_FROM_ADDR)
-					ret =
-					    omx_peer_lookup_by_addr
-					    (peer_info.board_addr,
-					     peer_info.hostname,
-					     &peer_info.index);
-				else if (func == OMX_CMD_PEER_FROM_HOSTNAME)
-					ret =
-					    omx_peer_lookup_by_hostname
-					    (peer_info.hostname,
-					     &peer_info.board_addr,
-					     &peer_info.index);
-
-				/* It's OK if we return an error, just send the response */
-				if (ret < 0) {
-					dprintk_deb
-					    ("Failed to execute cmd=%lx\n",
-					     (unsigned long)func);
-				} else {
-					memcpy(&resp->data.mpi.info, &peer_info,
-					       sizeof(struct
-						      omx_cmd_misc_peer_info));
-					memcpy(resp->data.mpi.info.hostname,
-					       peer_info.hostname,
-					       sizeof(peer_info.hostname));
-					dprintk_deb
-					    ("peer_info.index = %#lx, ret = %d\n",
-					     (unsigned long)resp->data.mpi.info.
-					     index, resp->data.mpi.ret);
-					dprintk_deb
-					    ("peer_info.board_addr = %#llx\n",
-					     resp->data.mpi.info.board_addr);
-					dprintk_deb
-					    ("peer_info.hostname =  %s\n",
-					     resp->data.mpi.info.hostname);
-				}
-
-				resp->func = req->func;
-				resp->data.mpi.ret = ret;
-
-				break;
-			}
-
-		case OMX_CMD_GET_ENDPOINT_INFO:{
-				uint32_t bi, eid;
-				struct omx_endpoint *endpoint;
-				struct omx_endpoint_info get_endpoint_info;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_GET_ENDPOINT_INFO, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_get_board_info));
-				bi = req->data.gei.board_index;
-				eid = req->data.gei.eid;
-
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				endpoint = be->omxdev->endpoints[eid];
-				//memset(&resp->data.gei, 0, sizeof(resp->data.gei));
-				dprintk_deb("Got endpoint %d @ %#lx\n", eid,
-					    (unsigned long)endpoint);
-				BUG_ON(!endpoint);
-				if (ret < 0) {
-					printk_err
-					    ("Endpoint could not be found\n");
-				} else {
-					omx_endpoint_get_info(bi, eid,
-							      &get_endpoint_info);
-					memcpy(&resp->data.gei.info,
-					       &get_endpoint_info,
-					       sizeof(struct
-						      omx_endpoint_info));
-				}
-
-				resp->func = OMX_CMD_GET_ENDPOINT_INFO;
-				resp->data.gei.board_index =
-				    req->data.gei.board_index;
-				resp->data.gei.eid = req->data.gei.eid;
-
-				break;
-			}
-		case OMX_CMD_XEN_GET_BOARD_COUNT:{
-				uint32_t count;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_GET_BOARD_COUNT, param=%lx\n",
-				     sizeof(struct
-					    omx_cmd_xen_get_board_count));
-
-				count = omx_ifaces_get_count();
-
-				resp->func = OMX_CMD_XEN_GET_BOARD_COUNT;
-				resp->data.gbc.board_count = count;
-
-				break;
-			}
-		case OMX_CMD_XEN_PEER_TABLE_GET_STATE:{
-				uint32_t bi;
-				struct omx_cmd_peer_table_state state;
-				int ret = 0;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_PEER_TABLE_GET_STATE, param=%lx\n",
-				     sizeof(struct
-					    omx_cmd_xen_peer_table_state));
-
-				bi = req->data.pts.board_index;
-
-				dprintk_deb("got (%d)\n", bi);
-
-				omx_peer_table_get_state(&state);
-
-				memcpy(&resp->data.pts.state, &state,
-				       sizeof(state));
-
-				dprintk_deb("status= %#lx, version=%#lx, size=%lx"
-				            " mapper_id = %llx\n",
-				            state.status, state.version,
-				            state.size, state.mapper_id);
-				resp->func = OMX_CMD_XEN_PEER_TABLE_GET_STATE;
-				resp->data.pts.board_index = bi;
-				resp->data.pts.ret = ret;
-
-				break;
-			}
-		case OMX_CMD_XEN_PEER_TABLE_SET_STATE:{
-				uint32_t bi;
-				struct omx_cmd_peer_table_state state;
-				int ret = 0;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_PEER_TABLE_SET_STATE, param=%lx\n",
-				     sizeof(struct
-					    omx_cmd_xen_peer_table_state));
-
-				bi = req->data.pts.board_index;
-
-				dprintk_deb("got (%d)\n", bi);
-
-				memcpy(&state, &req->data.pts.state, sizeof(state));
-
-				/* FIXME: Now that we've got the frontend's peer table state,
-				 * figure out what to do next ;-) Leaving it blank atm */
-
-				resp->func = OMX_CMD_XEN_PEER_TABLE_SET_STATE;
-				resp->data.pts.board_index = bi;
-				resp->data.pts.ret = ret;
-
-				break;
-			}
-		case OMX_CMD_XEN_SET_HOSTNAME:{
-				uint32_t bi;
-				struct omx_cmd_set_hostname set_hostname;
-				int ret = 0;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_XEN_SET_HOSTNAME, param=%lx\n",
-				     sizeof(struct
-					    omx_cmd_xen_set_hostname));
-
-				bi = req->data.sh.board_index;
-
-				dprintk_deb("got (%d)\n", bi);
-
-
-				/* FIXME: Now that we've got the frontend's hostname,
-				 * figure out what to do next ;-) Leaving it blank atm */
-
-				//memcpy(set_hostname.hostname, req->data.sh.hostname, OMX_HOSTNAMELEN_MAX);
-				ret = omx_iface_set_hostname(bi, req->data.sh.hostname);
-				if (ret) {
-					printk_err("Cannot set hostname %s for board id=%#lx\n", req->data.sh.hostname, bi);
-				}
-				resp->func = OMX_CMD_XEN_SET_HOSTNAME;
-				resp->data.pts.board_index = bi;
-				resp->data.pts.ret = ret;
-
-				break;
-			}
-		case OMX_CMD_GET_BOARD_INFO:{
-				uint32_t bi, eid;
-				struct omx_endpoint *endpoint;
-				struct omx_board_info get_board_info;
-				int ret = 0;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_GET_BOARD_INFO, param=%lx\n",
-				     sizeof(struct omx_cmd_xen_get_board_info));
-
-				bi = req->data.gbi.board_index;
-				eid = req->data.gbi.eid;
-
-				dprintk_deb("got (%d,%d)\n", bi, eid);
-
-				endpoint = be->omxdev->endpoints[eid];
-				dprintk_deb("Got endpoint %d @ %#lx\n", eid,
-					    (unsigned long)endpoint);
-				BUG_ON(!endpoint);
-				ret = omx_iface_get_info(bi, &get_board_info);
-
-				if (ret < 0) {
-					printk_err
-					    ("Failed to execute cmd=%lx\n",
-					     (unsigned long)func);
-				} else {
-					//memset(&resp->data.gbi, 0, sizeof(resp->data.gbi));
-					memcpy(&resp->data.gbi.info, &get_board_info,
-					       sizeof(struct omx_board_info));
-				}
-
-				resp->func = OMX_CMD_GET_BOARD_INFO;
-				resp->data.gbi.board_index =
-				    req->data.gbi.board_index;
-				resp->data.gbi.eid = req->data.gbi.eid;
-				resp->data.gbi.ret = ret;
-				dprintk_deb
-				    ("copying board_info back to response addr= %#llx\n",
-				     get_board_info.addr);
-				dprintk_deb("response contains addr= %#llx\n",
-					    resp->data.gbi.info.addr);
-
-				break;
-			}
-		case OMX_CMD_XEN_OPEN_ENDPOINT:{
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_XEN_OPEN_ENDPOINT, param=%lx\n",
-				     sizeof(struct omx_ring_msg_endpoint));
-				ret = omx_xen_endpoint_open(be, req);
-				if (ret < 0) {
-					printk_err
-					    ("Endpoint could not be opened ret = %d!\n",
-					     ret);
-				}
-				//memset(&resp->data.endpoint, 0, sizeof(resp->data.endpoint));
-				resp->func = OMX_CMD_XEN_OPEN_ENDPOINT;
-				resp->data.endpoint.endpoint =
-				    req->data.endpoint.endpoint;
-				resp->data.endpoint.endpoint_index =
-				    req->data.endpoint.endpoint_index;
-				resp->data.endpoint.board_index =
-				    req->data.endpoint.board_index;
-				resp->data.endpoint.ret = ret;
-
-				omx_xen_timers_reset();
-				break;
-			}
-		case OMX_CMD_XEN_CLOSE_ENDPOINT:{
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_XEN_CLOSE_ENDPOINT, param=%lx\n",
-				     sizeof(struct omx_ring_msg_endpoint));
-				printk_timers();
-				ret = omx_xen_endpoint_close(be, req);
-				if (ret < 0) {
-					printk_err
-					    ("Endpoint could not be Closed ret = %d!\n",
-					     ret);
-					//goto out;
-				}
-				//memset(&resp->data.endpoint, 0, sizeof(resp->data.endpoint));
-				resp->func = OMX_CMD_XEN_CLOSE_ENDPOINT;
-				resp->data.endpoint.endpoint_index =
-				    req->data.endpoint.endpoint_index;
-				resp->data.endpoint.board_index =
-				    req->data.endpoint.board_index;
-				resp->data.endpoint.ret = ret;
-
-				break;
-			}
-		case OMX_CMD_XEN_CREATE_USER_REGION:{
-				uint8_t eid;
-				uint32_t nr_segments, id, nr_grefs, nr_pages, sid;
-				uint64_t vaddr;
-				int i;
-				struct omx_endpoint *endpoint;
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_XEN_CREATE_USER_REGION, param=%lx\n",
-				     sizeof(struct
-					    omx_ring_msg_create_user_region));
-				id = req->data.cur.id;
-				eid = req->data.cur.eid;
-				vaddr = req->data.cur.vaddr;
-				nr_grefs = req->data.cur.nr_grefs;
-				nr_pages = req->data.cur.nr_pages;
-				nr_segments = req->data.cur.nr_segments;
-			        endpoint = omx_xenif->be->omxdev->endpoints[eid];
-
-
-				dprintk_deb("reg id=%u, nr_segments=%u, eid=%u"
-					    " vaddr=%#lx, nr_pages=%lu, nr_grefs=%u",
-					    id, nr_segments, eid,
-					    (unsigned long)vaddr,
-					    (unsigned long)
-					    nr_pages, nr_grefs);
-
-				ret =
-				    omx_xen_create_user_region(omx_xenif, id,
-							       vaddr,
-							       nr_segments,
-							       nr_pages,
-							       nr_grefs, eid);
-
-				for (i=0;i<nr_segments;i++) {
-					struct omx_ring_msg_register_user_segment *seg;
-					seg = &req->data.cur.segs[i];
-
-					sid = seg->sid;
-					id = seg->rid;
-					eid = seg->eid;
-
-					ret =
-					    omx_xen_register_user_segment(omx_xenif,
-									  seg);
-
-					if (ret)
-						printk_err
-						    ("Failed to register user segment %u\n",
-						     sid);
-				}
-				resp->func = OMX_CMD_XEN_CREATE_USER_REGION;
-				resp->data.cur.id = id;
-				resp->data.cur.eid = eid;
-
-				if (ret < 0)
-					resp->data.cur.status = 0x1;
-				else
-					resp->data.cur.status = 0x0;
-				rmb();
-				/* FIXME: Really buggy/experimental stuff!!
-				 * We actually dereference the frontend's endpoint
-				 * structure to notify the frontend that the region
-				 * is ready and let the IOCTL return, to proceed with
-				 * the rest of the operations (sending/receiving etc.)
-				 * If we don't do it like this, the only thing that's
-				 * left to be done for the region to be marked ready is
-				 * to push a response from here and let it reach the frontend.
-				 * why wait for so long ?*/
-				if (endpoint->fe_endpoint->special_status == 3)
-					endpoint->fe_endpoint->special_status = 4;
-				else
-					printk_err("status is invalid, %u\n", endpoint->fe_endpoint->special_status);
-
-				wmb();
-				break;
-			}
-		case OMX_CMD_XEN_DESTROY_USER_REGION:{
-				uint32_t id, seqnum;
-				uint8_t eid;
-				uint32_t sid;
-				int i;
-
-				dprintk_deb
-				    ("received frontend request: OMX_CMD_XEN_DESTROY_USER_REGION, param=%lx\n",
-				     sizeof(struct
-					    omx_ring_msg_destroy_user_region));
-				id = req->data.dur.id;
-				seqnum = req->data.dur.seqnum;
-				eid = req->data.dur.eid;
-
-				for (i=0;i<req->data.dur.nr_segments;i++) {
-					struct omx_ring_msg_deregister_user_segment *seg;
-					seg = &req->data.dur.segs[i];
-
-					sid = seg->sid;
-					id = seg->rid;
-					eid = seg->eid;
-				dprintk_deb("reg id=%u, sid=%u, eid=%u\n",
-					    id, sid, eid);
-				ret =
-				    omx_xen_deregister_user_segment(omx_xenif,
-								    id, sid,
-								    eid);
-
-				if (ret)
-					dprintk_deb
-					    ("Failed to deregister user segment %u\n",
-					     sid);
-				}
-
-				dprintk_deb
-				    ("de-reg id=%lx, seqnum=%lx, eid=%u\n",
-				     (unsigned long)id, (unsigned long)seqnum,
-				     eid);
-
-				ret =
-				    omx_xen_destroy_user_region(omx_xenif, id,
-								seqnum, eid);
-				//memset(&resp->data.dur, 0, sizeof(resp->data.dur));
-				resp->func = OMX_CMD_XEN_DESTROY_USER_REGION;
-				resp->data.dur.id = id;
-				resp->data.dur.eid = eid;
-				resp->data.dur.region = req->data.dur.region;
-				if (ret < 0)
-					resp->data.dur.status = 0x1;
-				else
-					resp->data.dur.status = 0x0;
-
-				break;
-			}
-
-		case OMX_CMD_XEN_DUMMY:{
-				printk_err("Never get in Here!!!\n");
-				break;
-			}
-		default:{
-				printk_err("No usefull command received: %x\n",
-					   func);
-				printk_err
-				    ("rspvt = %d, cons = %d, prod =%d, requests_consumed = %d, "
-				     "requests_produced = %d\n", cons, prod,
-				     omx_xenif->ring.rsp_prod_pvt,
-				     omx_xenif->ring.req_cons,
-				     omx_xenif->ring.sring->req_prod);
-				ret = -EINVAL;
-				break;
-
-			}
+			default:
+				ret = omx_xenback_process_specific(omx_xenif, func, req, resp);
 		}
+		if (ret) {
+			printk_err("Failed, ret = %d\n", ret);
+		}
+
 		dprintk_deb("response ready (%#llx), id=%#x sending to %u\n",
 			    (unsigned long long)resp, resp->func,
 			    omx_xenif->be->evtchn.port);

@@ -605,8 +605,8 @@ int omx_xen_endpoint_open(struct backend_info *be,
 	BUG_ON(!req);
 	BUG_ON(!be);
 
-	bidx = req->data.endpoint.board_index;
-	idx = req->data.endpoint.endpoint_index;
+	bidx = req->board_index;
+	idx = req->eid;
 	session_id = req->data.endpoint.session_id;
 
 	omxdev = be->omxdev;
@@ -720,8 +720,8 @@ int omx_xen_endpoint_close(struct backend_info *be,
 	BUG_ON(!req);
 	BUG_ON(!be);
 
-	bidx = req->data.endpoint.board_index;
-	idx = req->data.endpoint.endpoint_index;
+	bidx = req->board_index;
+	idx = req->eid;
 
 	omxdev = be->omxdev;
 

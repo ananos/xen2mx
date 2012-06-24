@@ -165,6 +165,42 @@ out:
 	return err;
 }
 
+static struct omx_endpoint *omx_xenfront_get_endpoint(struct omx_xenfront_info *fe,
+						     struct omx_xenif_response
+						     *resp)
+{
+	uint32_t bi, eid;
+	struct omx_endpoint *endpoint = NULL;
+
+	dprintk_in();
+
+	bi = resp->board_index;
+	eid = resp->eid;
+	endpoint = fe->endpoints[eid];
+
+	dprintk_deb("got (%d,%d)\n", bi, eid);
+
+	dprintk_out();
+	return endpoint;
+}
+
+static void omx_xenfront_ack(struct omx_endpoint *endpoint, uint32_t func)
+{
+	struct omx_xenfront_info *fe = endpoint->fe;
+	struct omx_xenif_front_ring *ring = &fe->recv_ring;
+	struct omx_xenif_request *ring_req;
+	dprintk_in();
+
+	ring_req =
+	    RING_GET_REQUEST(ring,
+			     ring->req_prod_pvt++);
+	ring_req->func = func;
+	omx_poke_dom0(endpoint->fe, ring_req);
+
+	dprintk_out();
+
+}
+
 void omx_xenif_interrupt_recv(struct work_struct *work)
 {
 	struct omx_xenfront_info *fe;
@@ -221,14 +257,9 @@ again_recv:
 				    ("received backend request: OMX_CMD_XEN_RECV_PULL_DONE, param=%lx\n",
 				     sizeof(struct omx_cmd_xen_recv_pull_done));
 
-				dump_xen_recv_pull_done(&resp->
-							data.recv_pull_done);
-				bidx = resp->data.recv_pull_done.board_index;
-				idx = resp->data.recv_pull_done.eid;
-				ret = resp->data.recv_pull_done.ret;
-				rid = resp->data.recv_pull_done.rid;
+				//dump_xen_recv_pull_done(&resp->data.recv_pull_done);
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 
-				endpoint = fe->endpoints[idx];
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -236,6 +267,7 @@ again_recv:
 					//goto out;
 					break;
 				}
+				rid = resp->data.recv_pull_done.rid;
 
 				omx_notify_exp_event(endpoint,
 						     &resp->data.
@@ -243,12 +275,7 @@ again_recv:
 						     sizeof(struct
 							    omx_evt_pull_done));
 				//omx_xen_user_region_release(endpoint, rid);
-
-				ring_req =
-				    RING_GET_REQUEST(ring,
-						     ring->req_prod_pvt++);
-				ring_req->func = OMX_CMD_XEN_DUMMY;
-				omx_poke_dom0(endpoint->fe, ring_req);
+				omx_xenfront_ack(endpoint, OMX_CMD_XEN_DUMMY);
 
 				break;
 			}
@@ -261,13 +288,8 @@ again_recv:
 				     sizeof(struct
 					    omx_cmd_xen_recv_pull_request));
 
-				dump_xen_recv_pull_request(&resp->
-							   data.recv_pull_request);
-				bidx = resp->data.recv_pull_request.board_index;
-				idx = resp->data.recv_pull_request.eid;
-				ret = resp->data.recv_pull_request.ret;
-
-				endpoint = fe->endpoints[idx];
+				//dump_xen_recv_pull_request(&resp-> data.recv_pull_request);
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -282,11 +304,7 @@ again_recv:
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
-				ring_req =
-				    RING_GET_REQUEST(ring,
-						     ring->req_prod_pvt++);
-				ring_req->func = OMX_CMD_XEN_DUMMY;
-				omx_poke_dom0(endpoint->fe, ring_req);
+				omx_xenfront_ack(endpoint, OMX_CMD_XEN_DUMMY);
 				break;
 			}
 		case OMX_CMD_RECV_MEDIUM_FRAG:
@@ -300,11 +318,7 @@ again_recv:
 				     resp->func,
 				     sizeof(struct omx_cmd_xen_recv_msg));
 
-				bidx = resp->data.recv_msg.board_index;
-				idx = resp->data.recv_msg.eid;
-				ret = resp->data.recv_msg.ret;
-
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -313,10 +327,6 @@ again_recv:
 					break;
 				}
 
-				ring_req =
-				    RING_GET_REQUEST(ring,
-						     ring->req_prod_pvt++);
-				ring_req->func = resp->func;
 				if (resp->func == OMX_CMD_RECV_TINY) {
 					/* notify the event */
 					ret =
@@ -339,8 +349,9 @@ again_recv:
 				dprintk_deb("%s: ret = %d, recvq=%#x\n",
 					    __func__, ret, recvq_offset);
 
-				omx_poke_dom0(endpoint->fe, ring_req);
+				omx_xenfront_ack(endpoint, resp->func);
 				TIMER_STOP(&t2);
+
 
 				break;
 			}
@@ -352,11 +363,7 @@ again_recv:
 				     sizeof(struct omx_cmd_xen_recv_liback));
 				//dump_xen_recv_liback(&resp->data.recv_liback);
 
-				bidx = resp->data.recv_liback.board_index;
-				idx = resp->data.recv_liback.eid;
-				ret = resp->data.recv_liback.ret;
-
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -376,12 +383,7 @@ again_recv:
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
-				ring_req =
-				    RING_GET_REQUEST(ring,
-						     ring->req_prod_pvt++);
-				ring_req->func = resp->func;
-
-				omx_poke_dom0(endpoint->fe, ring_req);
+				omx_xenfront_ack(endpoint, resp->func);
 
 				break;
 			}
@@ -393,11 +395,7 @@ again_recv:
 				     sizeof(struct omx_cmd_xen_recv_msg));
 				dump_xen_recv_notify(&resp->data.recv_msg);
 
-				bidx = resp->data.recv_msg.board_index;
-				idx = resp->data.recv_msg.eid;
-				ret = resp->data.recv_msg.ret;
-
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -416,11 +414,7 @@ again_recv:
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
-				ring_req =
-				    RING_GET_REQUEST(ring,
-						     ring->req_prod_pvt++);
-				ring_req->func = resp->func;
-				omx_poke_dom0(endpoint->fe, ring_req);
+				omx_xenfront_ack(endpoint, resp->func);
 
 				break;
 			}
@@ -432,11 +426,7 @@ again_recv:
 				     sizeof(struct omx_cmd_xen_recv_msg));
 
 				dump_xen_recv_msg(&resp->data.recv_msg);
-				bidx = resp->data.recv_msg.board_index;
-				idx = resp->data.recv_msg.eid;
-				ret = resp->data.recv_msg.ret;
-
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -455,11 +445,7 @@ again_recv:
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
-				ring_req =
-				    RING_GET_REQUEST(ring,
-						     ring->req_prod_pvt++);
-				ring_req->func = resp->func;
-				omx_poke_dom0(endpoint->fe, ring_req);
+				omx_xenfront_ack(endpoint, resp->func);
 
 				break;
 			}
@@ -473,11 +459,7 @@ again_recv:
 				dump_xen_recv_connect_request(&resp->
 							      data.recv_connect_request);
 
-				bidx =
-				    resp->data.recv_connect_request.board_index;
-				idx = resp->data.recv_connect_request.eid;
-				ret = resp->data.recv_connect_request.ret;
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -496,11 +478,7 @@ again_recv:
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
-				ring_req =
-				    RING_GET_REQUEST(ring,
-						     ring->req_prod_pvt++);
-				ring_req->func = resp->func;
-				omx_poke_dom0(endpoint->fe, ring_req);
+				omx_xenfront_ack(endpoint, resp->func);
 				break;
 			}
 		case OMX_CMD_RECV_CONNECT_REPLY:{
@@ -512,12 +490,7 @@ again_recv:
 					    omx_cmd_xen_recv_connect_request));
 				dump_xen_recv_connect_reply(&resp->
 							    data.recv_connect_reply);
-
-				bidx =
-				    resp->data.recv_connect_reply.board_index;
-				idx = resp->data.recv_connect_reply.eid;
-				ret = resp->data.recv_connect_reply.ret;
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -535,11 +508,7 @@ again_recv:
 								  omx_evt_recv_connect_reply));
 
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
-				ring_req =
-				    RING_GET_REQUEST(ring,
-						     ring->req_prod_pvt++);
-				ring_req->func = resp->func;
-				omx_poke_dom0(endpoint->fe, ring_req);
+				omx_xenfront_ack(endpoint, resp->func);
 				break;
 			}
 			case OMX_CMD_XEN_SEND_MEDIUMSQ_DONE:{
@@ -550,13 +519,7 @@ again_recv:
 				     sizeof(struct
 					    omx_cmd_xen_send_mediumsq_frag_done));
 
-				bidx =
-				    resp->data.send_mediumsq_frag_done.
-				    board_index;
-				idx = resp->data.send_mediumsq_frag_done.eid;
-				ret = resp->data.send_mediumsq_frag_done.ret;
-
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -571,11 +534,7 @@ again_recv:
 						     sizeof(struct
 							    omx_evt_send_mediumsq_frag_done));
 
-				ring_req =
-				    RING_GET_REQUEST(ring,
-						     ring->req_prod_pvt++);
-				ring_req->func = OMX_CMD_XEN_DUMMY;
-				omx_poke_dom0(endpoint->fe, ring_req);
+				omx_xenfront_ack(endpoint, OMX_CMD_XEN_DUMMY);
 
 				break;
 			}
@@ -667,12 +626,9 @@ again_send:
 				     sizeof(struct
 					    omx_cmd_xen_send_mediumsq_frag));
 
-				bidx =
-				    resp->data.send_mediumsq_frag.board_index;
-				idx = resp->data.send_mediumsq_frag.eid;
-				ret = resp->data.send_mediumsq_frag.ret;
+				ret = resp->ret;
 
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -700,11 +656,9 @@ again_send:
 				    ("received backend request: OMX_CMD_SEND_MEDIUMVA, param=%lx\n",
 				     sizeof(struct omx_cmd_xen_send_mediumva));
 
-				bidx = resp->data.send_mediumva.board_index;
-				idx = resp->data.send_mediumva.eid;
-				ret = resp->data.send_mediumva.ret;
+				ret = resp->ret;
 
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -733,11 +687,9 @@ again_send:
 				    ("received backend request: OMX_CMD_SEND_SMALL, param=%lx\n",
 				     sizeof(struct omx_cmd_xen_send_small));
 
-				bidx = resp->data.send_small.board_index;
-				idx = resp->data.send_small.eid;
-				ret = resp->data.send_small.ret;
+				ret = resp->ret;
 
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -767,11 +719,9 @@ again_send:
 				    ("received backend request: OMX_CMD_SEND_TINY, param=%lx\n",
 				     sizeof(struct omx_cmd_xen_send_tiny));
 
-				bidx = resp->data.send_tiny.board_index;
-				idx = resp->data.send_tiny.eid;
-				ret = resp->data.send_tiny.ret;
+				ret = resp->ret;
 
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -802,11 +752,9 @@ again_send:
 				     sizeof(struct omx_cmd_xen_pull));
 
 				dump_xen_pull(&resp->data.pull);
-				bidx = resp->data.pull.board_index;
-				idx = resp->data.pull.eid;
-				ret = resp->data.pull.ret;
+				ret = resp->ret;
 
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -837,11 +785,9 @@ again_send:
 				    ("received backend request: OMX_CMD_SEND_NOTIFY, param=%lx\n",
 				     sizeof(struct omx_cmd_xen_send_notify));
 
-				bidx = resp->data.send_notify.board_index;
-				idx = resp->data.send_notify.eid;
-				ret = resp->data.send_notify.ret;
+				ret = resp->ret;
 
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -871,11 +817,8 @@ again_send:
 				     sizeof(struct
 					    omx_cmd_xen_send_connect_request));
 
-				bidx = resp->data.send_rndv.board_index;
-				idx = resp->data.send_rndv.eid;
-				ret = resp->data.send_rndv.ret;
-				dprintk_deb("bidx=%lu, idx=%lu\n", bidx, idx);
-				endpoint = fe->endpoints[idx];
+				ret = resp->ret;
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -903,11 +846,8 @@ again_send:
 				    ("received backend request: OMX_CMD_SEND_LIBACK, param=%lx\n",
 				     sizeof(struct omx_cmd_xen_send_liback));
 
-				bidx = resp->data.send_liback.board_index;
-				idx = resp->data.send_liback.eid;
-				ret = resp->data.send_liback.ret;
-				dprintk_deb("bidx=%lu, idx=%lu\n", bidx, idx);
-				endpoint = fe->endpoints[idx];
+				ret = resp->ret;
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -935,12 +875,8 @@ again_send:
 				     sizeof(struct
 					    omx_cmd_xen_send_connect_request));
 
-				bidx =
-				    resp->data.send_connect_request.board_index;
-				idx = resp->data.send_connect_request.eid;
-				ret = resp->data.send_connect_request.ret;
-				dprintk_deb("bidx=%lu, idx=%lu\n", bidx, idx);
-				endpoint = fe->endpoints[idx];
+				ret = resp->ret;
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -969,12 +905,8 @@ again_send:
 				     sizeof(struct
 					    omx_cmd_xen_send_connect_reply));
 
-				bidx =
-				    resp->data.send_connect_reply.board_index;
-				idx = resp->data.send_connect_reply.eid;
-				ret = resp->data.send_connect_reply.ret;
-				dprintk_deb("bidx=%lu, idx=%lu\n", bidx, idx);
-				endpoint = fe->endpoints[idx];
+				ret = resp->ret;
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -1004,7 +936,7 @@ again_send:
 				     (unsigned long)resp->func,
 				     sizeof(struct omx_cmd_xen_misc_peer_info));
 
-				ret = resp->data.mpi.ret;
+				ret = resp->ret;
 				//dump_xen_misc_peer_info(&resp->data.mpi);
 				spin_lock(&fe->status_lock);
 				if (!ret) {
@@ -1032,11 +964,8 @@ again_send:
 				     sizeof(struct
 					    omx_cmd_xen_get_endpoint_info));
 
-				bidx = resp->data.gei.board_index;
-				idx = resp->data.gei.eid;
-				ret = resp->data.gei.ret;
-				dprintk_deb("bidx=%lu, idx=%lu\n", bidx, idx);
-				endpoint = fe->endpoints[idx];
+				ret = resp->ret;
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -1051,10 +980,6 @@ again_send:
 				endpoint->info_status =
 				    OMX_ENDPOINT_STATUS_DONE;
 
-				dprintk_deb
-				    ("board %#lx, endpoint %#lx gave us endpoint info!\n",
-				     bidx, idx);
-
 				break;
 			}
 		case OMX_CMD_XEN_GET_BOARD_COUNT:{
@@ -1064,7 +989,7 @@ again_send:
 				     sizeof(struct
 					    omx_cmd_xen_get_board_count));
 
-				ret = resp->data.gbc.ret;
+				ret = resp->ret;
 
 				fe->board_count = resp->data.gbc.board_count;
 
@@ -1087,8 +1012,8 @@ again_send:
 				     sizeof(struct
 					    omx_cmd_xen_peer_table_state));
 
-				bidx = resp->data.pts.board_index;
-				ret = resp->data.pts.ret;
+				bidx = resp->board_index;
+				ret = resp->ret;
 
 				spin_lock(&fe->status_lock);
 				if (!ret)
@@ -1109,8 +1034,8 @@ again_send:
 				     sizeof(struct
 					    omx_cmd_xen_peer_table_state));
 
-				bidx = resp->data.pts.board_index;
-				ret = resp->data.pts.ret;
+				bidx = resp->board_index;
+				ret = resp->ret;
 
 				memcpy(&fe->state, &resp->data.pts.state,
 				       sizeof(struct omx_cmd_peer_table_state));
@@ -1134,8 +1059,8 @@ again_send:
 				     sizeof(struct
 					    omx_cmd_xen_set_hostname));
 
-				bidx = resp->data.sh.board_index;
-				ret = resp->data.sh.ret;
+				bidx = resp->board_index;
+				ret = resp->ret;
 
 				spin_lock(&fe->status_lock);
 				if (!ret)
@@ -1156,9 +1081,9 @@ again_send:
 				    ("received backend request: OMX_CMD_GET_BOARD_INFO, param=%lx\n",
 				     sizeof(struct omx_cmd_xen_get_board_info));
 
-				bidx = resp->data.gbi.board_index;
-				idx = resp->data.gbi.eid;
-				ret = resp->data.gbi.ret;
+				bidx = resp->board_index;
+				idx = resp->eid;
+				ret = resp->ret;
 
 				dprintk_deb("board_addr = %#llx\n",
 					    resp->data.gbi.info.addr);
@@ -1190,14 +1115,12 @@ again_send:
 				dprintk_deb
 				    ("received backend request: OMX_CMD_XEN_OPEN_ENDPOINT, param=%lx\n",
 				     sizeof(struct omx_ring_msg_endpoint));
-				bidx = resp->data.endpoint.board_index;
-				idx = resp->data.endpoint.endpoint_index;
-				ret = resp->data.endpoint.ret;
+				ret = resp->ret;
 				dprintk_deb
 				    ("board %#lx, endpoint %#lx, backend ret=%d\n",
 				     bidx, idx, ret);
 
-				endpoint = fe->endpoints[idx];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (!endpoint) {
 					printk_err
 					    ("Endpoint is null:S, ret = %d\n",
@@ -1208,8 +1131,8 @@ again_send:
 				//endpoint = resp->data.endpoint.endpoint;
 				if (ret || !endpoint) {
 					printk_err
-					    ("endpoint %#lx, is not READY (ret = %d, closing)\n",
-					     idx, ret);
+					    ("endpoint is not READY (ret = %d, closing)\n",
+					     ret);
 					endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;	/* FIXME */
 					omx_endpoint_close(endpoint, 0);
 					//goto out;
@@ -1223,10 +1146,6 @@ again_send:
 					endpoint->status = OMX_ENDPOINT_STATUS_FREE;	/* FIXME */
 				}
 
-				dprintk_deb
-				    ("board %#lx, endpoint %#lx is READY\n",
-				     bidx, idx);
-
 				break;
 			}
 		case OMX_CMD_XEN_CLOSE_ENDPOINT:
@@ -1236,14 +1155,12 @@ again_send:
 				dprintk_deb
 				    ("received backend request: OMX_CMD_XEN_CLOSE_ENDPOINT, param=%lx\n",
 				     sizeof(struct omx_ring_msg_endpoint));
-				bidx = resp->data.endpoint.board_index;
-				idx = resp->data.endpoint.endpoint_index;
-				ret = resp->data.endpoint.ret;
-				endpoint = fe->endpoints[idx];
+				ret = resp->ret;
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (ret || !endpoint) {
 					printk_err
-					    ("endpoint %#lx, is not READY (ret = %d, closing)\n",
-					     idx, ret);
+					    ("endpoint is not READY (ret = %d, closing)\n",
+					     ret);
 					endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;	/* FIXME */
 					omx_endpoint_close(endpoint, 0);
 					//goto out;
@@ -1252,9 +1169,6 @@ again_send:
 				dump_xen_ring_msg_endpoint(&resp->
 							   data.endpoint);
 				endpoint->status = OMX_ENDPOINT_STATUS_OK;
-				dprintk_deb
-				    ("board %#lx, endpoint %#lx is CLOSED\n",
-				     bidx, idx);
 				break;
 			}
 		case OMX_CMD_XEN_CREATE_USER_REGION:
@@ -1267,18 +1181,17 @@ again_send:
 				    ("received backend request: OMX_CMD_XEN_CREATE_USER_REGION, param=%lx\n",
 				     sizeof(struct
 					    omx_ring_msg_create_user_region));
-				eid = resp->data.cur.eid;
 				id = resp->data.cur.id;
 				status = resp->data.cur.status;
-				endpoint = fe->endpoints[eid];
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				spin_lock(&endpoint->user_regions_lock);
 				region =
 				    rcu_dereference_protected
 				    (endpoint->user_regions[id], 1);
 				dprintk_deb
-				    ("Region is created for endpoint idx=%d (@%#lx), region = %#lx "
+				    ("Region is created for endpoint (@%#lx), region = %#lx "
 				     "status = %d\n",
-				     eid, (unsigned long)endpoint,
+				     (unsigned long)endpoint,
 				     (unsigned long)region, region->status);
 				spin_unlock(&endpoint->user_regions_lock);
 				dump_xen_ring_msg_create_user_region
@@ -1310,7 +1223,7 @@ again_send:
 				    ("received backend request: OMX_CMD_XEN_DESTROY_USER_REGION, param=%lx\n",
 				     sizeof(struct
 					    omx_ring_msg_destroy_user_region));
-				eid = resp->data.dur.eid;
+				eid = resp->eid;
 				id = resp->data.dur.id;
 				status = resp->data.dur.status;
 				//endpoint = fe->endpoints[eid];
@@ -1460,7 +1373,7 @@ int omx_xen_peer_table_get_state(struct omx_cmd_peer_table_state *state)
 	spin_unlock(&fe->status_lock);
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_XEN_PEER_TABLE_GET_STATE;
-	ring_req->data.pts.board_index = 0;
+	ring_req->board_index = 0;
 	omx_poke_dom0(fe, ring_req);
 
 	if (wait_for_backend_response
@@ -1494,7 +1407,7 @@ int omx_xen_peer_table_set_state(struct omx_cmd_peer_table_state *state)
 	spin_unlock(&fe->status_lock);
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_XEN_PEER_TABLE_SET_STATE;
-	ring_req->data.pts.board_index = 0;
+	ring_req->board_index = 0;
 	memcpy(&ring_req->data.pts.state, &fe->state, sizeof(*state));
 	omx_poke_dom0(fe, ring_req);
 
@@ -1528,7 +1441,7 @@ int omx_xen_set_hostname(uint32_t board_index, const char *hostname)
 	spin_unlock(&fe->status_lock);
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_XEN_SET_HOSTNAME;
-	ring_req->data.sh.board_index = board_index;
+	ring_req->board_index = board_index;
 	memcpy(ring_req->data.sh.hostname, hostname, OMX_HOSTNAMELEN_MAX);
 
 	omx_poke_dom0(fe, ring_req);
@@ -1590,8 +1503,8 @@ int omx_ioctl_xen_get_board_info(struct omx_endpoint *endpoint,
 	spin_unlock(&fe->status_lock);
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_GET_BOARD_INFO;
-	ring_req->data.gbi.board_index = get_board_info.board_index;
-	ring_req->data.gbi.eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 	dump_xen_get_board_info(&ring_req->data.gbi);
 	omx_poke_dom0(endpoint->fe, ring_req);
 	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_FREE); */
@@ -1652,8 +1565,8 @@ omx_xen_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 	spin_unlock(&endpoint->status_lock);
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_GET_ENDPOINT_INFO;
-	ring_req->data.gei.board_index = endpoint->board_index;
-	ring_req->data.gei.eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 	dump_xen_get_endpoint_info(&ring_req->data.gei);
 	omx_poke_dom0(endpoint->fe, ring_req);
 	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_DONE); */

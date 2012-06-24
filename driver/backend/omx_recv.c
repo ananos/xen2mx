@@ -124,8 +124,8 @@ omx_recv_connect(struct omx_iface * iface,
 			struct omx_evt_recv_connect_request request_event;
 
 			ring_resp->func = OMX_CMD_RECV_CONNECT_REQUEST;
-			ring_resp->data.recv_connect_reply.board_index = endpoint->board_index;
-			ring_resp->data.recv_connect_reply.eid = endpoint->endpoint_index;
+			ring_resp->board_index = endpoint->board_index;
+			ring_resp->eid = endpoint->endpoint_index;
 			request_event.id = 0;
 			request_event.type = OMX_EVT_RECV_CONNECT_REQUEST;
 			request_event.peer_index = peer_index;
@@ -145,8 +145,8 @@ omx_recv_connect(struct omx_iface * iface,
 			struct omx_evt_recv_connect_reply reply_event;
 
 			ring_resp->func = OMX_CMD_RECV_CONNECT_REPLY;
-			ring_resp->data.recv_connect_reply.board_index = endpoint->board_index;
-			ring_resp->data.recv_connect_reply.eid = endpoint->endpoint_index;
+			ring_resp->board_index = endpoint->board_index;
+			ring_resp->eid = endpoint->endpoint_index;
 			reply_event.id = 0;
 			reply_event.type = OMX_EVT_RECV_CONNECT_REPLY;
 			reply_event.peer_index = peer_index;
@@ -320,8 +320,8 @@ omx_recv_tiny(struct omx_iface * iface,
 
 		ring_resp = RING_GET_RESPONSE(&(omx_xenif->recv_ring), omx_xenif->recv_ring.rsp_prod_pvt++);
 		ring_resp->func = OMX_CMD_RECV_TINY;
-		ring_resp->data.recv_msg.board_index = endpoint->board_index;
-		ring_resp->data.recv_msg.eid = endpoint->endpoint_index;
+		ring_resp->board_index = endpoint->board_index;
+		ring_resp->eid = endpoint->endpoint_index;
 		event = &ring_resp->data.recv_msg.msg;
 
 		/* fill event */
@@ -494,8 +494,8 @@ omx_recv_small(struct omx_iface * iface,
 
 		ring_resp = RING_GET_RESPONSE(&(omx_xenif->recv_ring), omx_xenif->recv_ring.rsp_prod_pvt++);
 		ring_resp->func = OMX_CMD_RECV_SMALL;
-		ring_resp->data.recv_msg.board_index = endpoint->board_index;
-		ring_resp->data.recv_msg.eid = endpoint->endpoint_index;
+		ring_resp->board_index = endpoint->board_index;
+		ring_resp->eid = endpoint->endpoint_index;
 
 		/* fill event */
 		event.id = 0;
@@ -689,8 +689,8 @@ omx_recv_medium_frag(struct omx_iface * iface,
 
 		ring_resp = RING_GET_RESPONSE(&(omx_xenif->recv_ring), omx_xenif->recv_ring.rsp_prod_pvt++);
 		ring_resp->func = OMX_CMD_RECV_MEDIUM_FRAG;
-		ring_resp->data.recv_msg.board_index = endpoint->board_index;
-		ring_resp->data.recv_msg.eid = endpoint->endpoint_index;
+		ring_resp->board_index = endpoint->board_index;
+		ring_resp->eid = endpoint->endpoint_index;
 
 		/* fill event */
 		event.id = 0;
@@ -918,8 +918,8 @@ omx_recv_rndv(struct omx_iface * iface,
 
 		ring_resp = RING_GET_RESPONSE(&(omx_xenif->recv_ring), omx_xenif->recv_ring.rsp_prod_pvt++);
 		ring_resp->func = OMX_CMD_RECV_RNDV;
-		ring_resp->data.recv_msg.board_index = endpoint->board_index;
-		ring_resp->data.recv_msg.eid = endpoint->endpoint_index;
+		ring_resp->board_index = endpoint->board_index;
+		ring_resp->eid = endpoint->endpoint_index;
 
 		event.id = 0;
 		event.type = OMX_EVT_RECV_RNDV;
@@ -1043,8 +1043,8 @@ omx_recv_notify(struct omx_iface * iface,
 
 		ring_resp = RING_GET_RESPONSE(&(omx_xenif->recv_ring), omx_xenif->recv_ring.rsp_prod_pvt++);
 		ring_resp->func = OMX_CMD_RECV_NOTIFY;
-		ring_resp->data.recv_msg.board_index = endpoint->board_index;
-		ring_resp->data.recv_msg.eid = endpoint->endpoint_index;
+		ring_resp->board_index = endpoint->board_index;
+		ring_resp->eid = endpoint->endpoint_index;
 
 		/* fill event */
 		event.id = 0;
@@ -1187,8 +1187,8 @@ omx_recv_truc(struct omx_iface * iface,
 
 			ring_resp = RING_GET_RESPONSE(&(omx_xenif->recv_ring), omx_xenif->recv_ring.rsp_prod_pvt++);
 			ring_resp->func = OMX_CMD_RECV_LIBACK;
-			ring_resp->data.recv_msg.board_index = endpoint->board_index;
-			ring_resp->data.recv_msg.eid = endpoint->endpoint_index;
+			ring_resp->board_index = endpoint->board_index;
+			ring_resp->eid = endpoint->endpoint_index;
 
 			memcpy(&ring_resp->data.recv_liback.liback, &liback_event, sizeof(liback_event));
 			dump_xen_recv_liback(&ring_resp->data.recv_liback);

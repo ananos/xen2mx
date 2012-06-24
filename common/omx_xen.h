@@ -38,23 +38,14 @@
 #define OMX_XEN_COOKIES 1
 
 struct omx_cmd_xen_send_mediumsq_frag_done {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_evt_send_mediumsq_frag_done sq_frag_done;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_mediumsq_frag {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_cmd_send_mediumsq_frag mediumsq_frag;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_mediumva {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	uint8_t nr_pages;
 	uint16_t first_page_offset;
 	struct omx_cmd_send_mediumva mediumva;
@@ -62,16 +53,10 @@ struct omx_cmd_xen_send_mediumva {
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_pull {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_cmd_pull pull;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_recv_pull_request {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_evt_recv_pull_request {
 		uint8_t dst_endpoint;
 		uint8_t src_endpoint;
@@ -90,107 +75,64 @@ struct omx_cmd_xen_recv_pull_request {
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_recv_pull_done {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_evt_pull_done pull_done;
 	uint32_t rid;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_recv_connect_request {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_evt_recv_connect_request request;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_recv_connect_reply {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_evt_recv_connect_reply reply;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_recv_liback {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_evt_recv_liback liback;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_recv_msg {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_evt_recv_msg msg;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_rndv {
-	uint32_t board_index;
-	uint32_t eid;
-	uint32_t ret;
 	struct omx_cmd_send_rndv rndv;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_small {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_cmd_send_small small;
 	char data[OMX_SMALL_MSG_LENGTH_MAX];
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_tiny {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_cmd_send_tiny tiny;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_connect_request {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_cmd_send_connect_request request;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_connect_reply {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_cmd_send_connect_reply reply;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_notify {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_cmd_send_notify notify;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_send_liback {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_cmd_send_liback liback;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_get_board_info {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_board_info info;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_get_endpoint_info {
-	uint32_t board_index;
-	uint32_t eid;
-	int ret;
 	struct omx_endpoint_info info;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_get_counters {
-	uint32_t board_index;
 	uint8_t clear;
 	uint8_t pad1[3];
 	uint64_t buffer_addr;
@@ -199,25 +141,18 @@ struct omx_cmd_xen_get_counters {
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_get_board_count {
-	int ret;
 	uint32_t board_count;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_set_hostname {
-	uint32_t board_index;
-	uint32_t pad;
-	uint32_t ret;
 	char hostname[OMX_HOSTNAMELEN_MAX];
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_peer_table_state {
-	uint32_t board_index;
-	int ret;
 	struct omx_cmd_peer_table_state state;
 } __attribute__ ((__packed__));
 
 struct omx_cmd_xen_misc_peer_info {
-	int ret;
 	struct omx_cmd_misc_peer_info info;
 } __attribute__ ((__packed__));
 
@@ -300,29 +235,23 @@ struct omx_ring_msg_destroy_user_region {
 } __attribute__ ((__packed__));
 
 struct omx_ring_msg_endpoint {
-	uint8_t board_index;
-	uint8_t endpoint_index;
-	/* 2 */
-	int16_t ret;
-	/* 4 */
 	struct omx_endpoint *endpoint;
-	/* 8 */
 	uint32_t session_id;
 	uint32_t sendq_gref_size;
 	uint32_t recvq_gref_size;
 	uint16_t egref_sendq_offset;
 	uint16_t egref_recvq_offset;
-	/* 24 */
 	grant_ref_t sendq_gref;
 	grant_ref_t recvq_gref;
-	/* 32 */
 	grant_ref_t endpoint_gref;
 	uint16_t endpoint_offset;
 } __attribute__ ((__packed__));
 
 struct omx_xenif_request {
 	uint32_t func;
-	uint8_t id;
+	uint32_t board_index;
+	uint32_t eid;
+	int ret;
 	union {
 		struct omx_ring_msg_register_user_segment cus;
 		struct omx_ring_msg_deregister_user_segment dus;
@@ -360,7 +289,9 @@ struct omx_xenif_request {
 
 struct omx_xenif_response {
 	uint32_t func;
-	uint8_t id;
+	uint32_t board_index;
+	uint32_t eid;
+	int ret;
 	union {
 		struct omx_ring_msg_register_user_segment cus;
 		struct omx_ring_msg_deregister_user_segment dus;

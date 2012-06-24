@@ -355,8 +355,8 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	/* FIXME: maybe create a static inline function for this stuff ? */
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_XEN_OPEN_ENDPOINT;
-	ring_req->data.endpoint.board_index = param.board_index;
-	ring_req->data.endpoint.endpoint_index = param.endpoint_index;
+	ring_req->board_index = param.board_index;
+	ring_req->eid = param.endpoint_index;
 	ring_req->data.endpoint.endpoint = endpoint;
 	ring_req->data.endpoint.session_id = endpoint->session_id;
 	ring_req->data.endpoint.sendq_gref = endpoint->sendq_gref;
@@ -496,8 +496,8 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 	/* FIXME: maybe create a static inline function for this stuff ? */
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_XEN_CLOSE_ENDPOINT;
-	ring_req->data.endpoint.board_index = param.board_index;
-	ring_req->data.endpoint.endpoint_index = param.endpoint_index;
+	ring_req->board_index = param.board_index;
+	ring_req->eid = param.endpoint_index;
 	ring_req->data.endpoint.endpoint = endpoint;
 	ring_req->data.endpoint.sendq_gref = endpoint->sendq_gref;
 	ring_req->data.endpoint.recvq_gref = endpoint->recvq_gref;
