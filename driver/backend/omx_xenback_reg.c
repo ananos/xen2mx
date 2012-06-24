@@ -177,7 +177,7 @@ int omx_xen_destroy_user_region(omx_xenif_t * omx_xenif, uint32_t id,
 	struct omxback_dev *dev = be->omxdev;
 	struct omx_endpoint *endpoint = dev->endpoints[eid];
 	struct omx_xen_user_region *region;
-	int ret;
+	int ret = 0;
 
 	dprintk_in();
 

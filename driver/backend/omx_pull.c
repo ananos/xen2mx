@@ -800,8 +800,8 @@ omx_pull_handle_notify(struct omx_pull_handle * handle)
 
                 ring_resp = RING_GET_RESPONSE(&(omx_xenif->recv_ring), omx_xenif->recv_ring.rsp_prod_pvt++);
 		ring_resp->func = OMX_CMD_XEN_RECV_PULL_DONE;
-		ring_resp->data.recv_pull_done.board_index = endpoint->board_index;
-		ring_resp->data.recv_pull_done.eid = endpoint->endpoint_index;
+		ring_resp->board_index = endpoint->board_index;
+		ring_resp->eid = endpoint->endpoint_index;
 		ring_resp->data.recv_pull_done.rid = handle->xregion->id;
 		//printk_inf("region id = %#x\n", handle->xregion->id);
 		memcpy(&ring_resp->data.recv_pull_done.pull_done, &handle->done_event, sizeof(handle->done_event));

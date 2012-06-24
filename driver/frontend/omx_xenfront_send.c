@@ -77,8 +77,8 @@ int omx_ioctl_xen_send_tiny(struct omx_endpoint *endpoint, void __user * uparam)
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_SEND_TINY;
 	cmd = &ring_req->data.send_tiny;
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 
 	ret =
 	    copy_from_user(&cmd->tiny.hdr,
@@ -166,8 +166,8 @@ int omx_ioctl_xen_send_mediumva(struct omx_endpoint *endpoint,
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_SEND_MEDIUMVA;
 	cmd = &ring_req->data.send_mediumva;
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 	//data = cmd->data;
 
 	ret =
@@ -409,8 +409,8 @@ int omx_ioctl_xen_send_mediumsq_frag(struct omx_endpoint *endpoint,
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_SEND_MEDIUMSQ_FRAG;
 	cmd = &ring_req->data.send_mediumsq_frag;
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 
 	ret =
 	    copy_from_user(&cmd->mediumsq_frag, uparam,
@@ -483,8 +483,8 @@ int omx_ioctl_xen_send_small(struct omx_endpoint *endpoint,
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_SEND_SMALL;
 	cmd = &ring_req->data.send_small;
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 	data = cmd->data;
 
 	ret =
@@ -559,8 +559,8 @@ int omx_ioctl_xen_send_notify(struct omx_endpoint *endpoint,
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_SEND_NOTIFY;
 	cmd = &ring_req->data.send_notify;
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 
 	ret =
 	    copy_from_user(&cmd->notify, uparam,
@@ -615,8 +615,8 @@ int omx_ioctl_xen_send_connect_request(struct omx_endpoint *endpoint,
 	ring_req->func = OMX_CMD_SEND_CONNECT_REQUEST;
 	cmd = &ring_req->data.send_connect_request;
 
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 	ret =
 	    copy_from_user(&cmd->request, uparam,
 			   sizeof(struct omx_cmd_send_connect_request));
@@ -671,8 +671,8 @@ int omx_ioctl_xen_send_connect_reply(struct omx_endpoint *endpoint,
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_SEND_CONNECT_REPLY;
 	cmd = &ring_req->data.send_connect_reply;
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 
 	ret =
 	    copy_from_user(&cmd->reply, uparam,
@@ -725,8 +725,8 @@ int omx_ioctl_xen_pull(struct omx_endpoint *endpoint, void __user * uparam)
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_PULL;
 	cmd = &ring_req->data.pull;
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 
 	ret = copy_from_user(&cmd->pull, uparam, sizeof(struct omx_cmd_pull));
 	if (unlikely(ret != 0)) {
@@ -777,8 +777,8 @@ int omx_ioctl_xen_send_rndv(struct omx_endpoint *endpoint, void __user * uparam)
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_SEND_RNDV;
 	cmd = &ring_req->data.send_rndv;
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 
 	ret =
 	    copy_from_user(&cmd->rndv, uparam,
@@ -841,8 +841,8 @@ int omx_ioctl_xen_send_liback(struct omx_endpoint *endpoint,
 	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
 	ring_req->func = OMX_CMD_SEND_LIBACK;
 	cmd = &ring_req->data.send_liback;
-	cmd->board_index = endpoint->board_index;
-	cmd->eid = endpoint->endpoint_index;
+	ring_req->board_index = endpoint->board_index;
+	ring_req->eid = endpoint->endpoint_index;
 
 	ret =
 	    copy_from_user(&cmd->liback, uparam,

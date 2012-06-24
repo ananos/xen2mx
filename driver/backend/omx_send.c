@@ -125,8 +125,8 @@ omx_medium_frag_skb_destructor(struct sk_buff *skb)
 
 			ring_resp = RING_GET_RESPONSE(&(omx_xenif->recv_ring), omx_xenif->recv_ring.rsp_prod_pvt++);
 			ring_resp->func = OMX_CMD_XEN_SEND_MEDIUMSQ_DONE;
-			ring_resp->data.send_mediumsq_frag_done.board_index = endpoint->board_index;
-			ring_resp->data.send_mediumsq_frag_done.eid = endpoint->endpoint_index;
+			ring_resp->board_index = endpoint->board_index;
+			ring_resp->eid = endpoint->endpoint_index;
 			memcpy(&ring_resp->data.send_mediumsq_frag_done.sq_frag_done, &defevent->evt, sizeof(defevent->evt));
 
 			omx_poke_domU(omx_xenif, ring_resp);
@@ -749,8 +749,8 @@ omx_ioctl_send_mediumsq_frag(struct omx_endpoint * endpoint,
 
 			ring_resp = RING_GET_RESPONSE(&(omx_xenif->recv_ring), omx_xenif->recv_ring.rsp_prod_pvt++);
 			ring_resp->func = OMX_CMD_XEN_SEND_MEDIUMSQ_DONE;
-			ring_resp->data.send_mediumsq_frag_done.board_index = endpoint->board_index;
-			ring_resp->data.send_mediumsq_frag_done.eid = endpoint->endpoint_index;
+			ring_resp->board_index = endpoint->board_index;
+			ring_resp->eid = endpoint->endpoint_index;
 			memcpy(&ring_resp->data.send_mediumsq_frag_done.sq_frag_done, &evt, sizeof(evt));
 
 			omx_poke_domU(omx_xenif, ring_resp);
