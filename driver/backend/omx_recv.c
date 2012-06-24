@@ -497,12 +497,6 @@ omx_recv_small(struct omx_iface * iface,
 		ring_resp->data.recv_msg.board_index = endpoint->board_index;
 		ring_resp->data.recv_msg.eid = endpoint->endpoint_index;
 
-		ring_resp->data.recv_msg.xen_nextfree_unexp_eventq_index = endpoint->nextfree_unexp_eventq_index;
-		ring_resp->data.recv_msg.xen_nextreserved_unexp_eventq_index = endpoint->nextreserved_unexp_eventq_index;
-		ring_resp->data.recv_msg.xen_nextreleased_unexp_eventq_index = endpoint->nextreleased_unexp_eventq_index;
-		ring_resp->data.recv_msg.xen_next_recvq_index = endpoint->next_recvq_index;
-		ring_resp->data.recv_msg.recvq_offset = recvq_offset;
-
 		/* fill event */
 		event.id = 0;
 		event.type = OMX_EVT_RECV_SMALL;
@@ -697,11 +691,6 @@ omx_recv_medium_frag(struct omx_iface * iface,
 		ring_resp->func = OMX_CMD_RECV_MEDIUM_FRAG;
 		ring_resp->data.recv_msg.board_index = endpoint->board_index;
 		ring_resp->data.recv_msg.eid = endpoint->endpoint_index;
-		ring_resp->data.recv_msg.xen_nextfree_unexp_eventq_index = endpoint->nextfree_unexp_eventq_index;
-		ring_resp->data.recv_msg.xen_nextreserved_unexp_eventq_index = endpoint->nextreserved_unexp_eventq_index;
-		ring_resp->data.recv_msg.xen_nextreleased_unexp_eventq_index = endpoint->nextreleased_unexp_eventq_index;
-		ring_resp->data.recv_msg.xen_next_recvq_index = endpoint->next_recvq_index;
-		ring_resp->data.recv_msg.recvq_offset = recvq_offset;
 
 		/* fill event */
 		event.id = 0;

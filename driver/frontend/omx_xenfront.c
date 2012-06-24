@@ -294,7 +294,6 @@ again_recv:
 		case OMX_CMD_RECV_TINY:{
 				struct omx_endpoint *endpoint;
 				int16_t ret = 0;
-				unsigned long recvq_offset = 0;
 				TIMER_START(&t2);
 				dprintk_deb
 				    ("received backend request: OMX_CMD_RECV_%#x, param=%lx\n",
@@ -304,7 +303,6 @@ again_recv:
 				bidx = resp->data.recv_msg.board_index;
 				idx = resp->data.recv_msg.eid;
 				ret = resp->data.recv_msg.ret;
-				recvq_offset = resp->data.recv_msg.recvq_offset;
 
 				endpoint = fe->endpoints[idx];
 				if (!endpoint) {
@@ -330,9 +328,8 @@ again_recv:
 									  omx_evt_recv_msg));
 				} else {
 
-					dprintk_deb("%s: ret = %d, recvq=%#x\n",
-						    __func__, ret,
-						    recvq_offset);
+					dprintk_deb("%s: ret = %d\n",
+						    __func__, ret);
 
 					omx_commit_notify_unexp_event_with_recvq
 					    (endpoint, &resp->data.recv_msg.msg,
