@@ -435,6 +435,7 @@ int omx_xenbk_thread(void *data)
 	}
 
 	while (!kthread_should_stop()) {
+		int i = 0;
 		if (try_to_freeze())
 			continue;
 		wait_event_interruptible(omx_xenif->wq, omx_xenif->waiting_reqs
@@ -442,20 +443,28 @@ int omx_xenbk_thread(void *data)
 		omx_xenif->waiting_reqs = 0;
 again:
 		ring = &omx_xenif->ring;
-		while (RING_HAS_UNCONSUMED_REQUESTS(ring)) {
-			/* FIXME: We have to find a way to properly lock
-			 * when calling process_incoming_response */
-			ret = omx_xen_process_message(omx_xenif, ring);
+		while (true) {
+			if (RING_HAS_UNCONSUMED_REQUESTS(ring)) {
+				/* FIXME: We have to find a way to properly lock
+				 * when calling process_incoming_response */
+				ret = omx_xen_process_message(omx_xenif, ring);
 
-			RING_PUSH_RESPONSES_AND_CHECK_NOTIFY(ring, notify);
-			if (notify) {
-				event.port = omx_xenif->be->evtchn.port;
-				if (HYPERVISOR_event_channel_op
-				    (EVTCHNOP_send, &event) != 0) {
-					printk_err("error sending response\n");
+				RING_PUSH_RESPONSES_AND_CHECK_NOTIFY(ring,
+								     notify);
+				if (notify) {
+					event.port = omx_xenif->be->evtchn.port;
+					if (HYPERVISOR_event_channel_op
+					    (EVTCHNOP_send, &event) != 0) {
+						printk_err
+						    ("error sending response\n");
+					}
 				}
+				mb();
+			} else {
+				if (i++ > 10000)
+					break;
+				cpu_relax();
 			}
-			mb();
 		}
 
 		RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
