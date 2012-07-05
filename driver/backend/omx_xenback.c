@@ -327,13 +327,14 @@ irqreturn_t omx_xenif_be_int(int irq, void *data)
 	omx_xenif_t *omx_xenif = (omx_xenif_t *) data;
 	//struct backend_info *be = omx_xenif->be;
 	unsigned long flags;
+	int pending_reqs;
 
 	dprintk_in();
 	spin_lock_irqsave(&omx_xenif->omx_be_lock, flags);
 
-	rmb();
 	//dprintk_deb("event_ptr=%p info=%#lx\n", data, (unsigned long)be);
-	if (RING_HAS_UNCONSUMED_REQUESTS(&omx_xenif->ring)) {
+	RING_FINAL_CHECK_FOR_REQUESTS(&omx_xenif->ring, pending_reqs);
+	if (pending_reqs) {
 #ifdef OMX_XENBACK_POLLING
 		omx_xenif->waiting_reqs=1;
 		wake_up(&omx_xenif->wq);
