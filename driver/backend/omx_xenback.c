@@ -331,6 +331,7 @@ irqreturn_t omx_xenif_be_int(int irq, void *data)
 	dprintk_in();
 	spin_lock_irqsave(&omx_xenif->omx_be_lock, flags);
 
+	rmb();
 	//dprintk_deb("event_ptr=%p info=%#lx\n", data, (unsigned long)be);
 	if (RING_HAS_UNCONSUMED_REQUESTS(&omx_xenif->ring)) {
 #ifdef OMX_XENBACK_POLLING
@@ -438,13 +439,20 @@ int omx_xenbk_thread(void *data)
 		int i = 0;
 		if (try_to_freeze())
 			continue;
-		wait_event_interruptible(omx_xenif->wq, omx_xenif->waiting_reqs
-					 || kthread_should_stop());
-		omx_xenif->waiting_reqs = 0;
-again:
 		ring = &omx_xenif->ring;
+		mb();
+		if (unlikely(!ring))
+			wait_event_interruptible(omx_xenif->wq, RING_HAS_UNCONSUMED_REQUESTS(ring)
+						 || kthread_should_stop());
+		else {
+			wait_event_interruptible(omx_xenif->wq, omx_xenif->waiting_reqs
+						 || kthread_should_stop());
+			omx_xenif->waiting_reqs = 0;
+		}
+//again:
 		while (true) {
-			if (RING_HAS_UNCONSUMED_REQUESTS(ring)) {
+			RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
+			if (more_to_do) {
 				/* FIXME: We have to find a way to properly lock
 				 * when calling process_incoming_response */
 				ret = omx_xen_process_message(omx_xenif, ring);
@@ -459,7 +467,6 @@ again:
 						    ("error sending response\n");
 					}
 				}
-				mb();
 			} else {
 				if (i++ > 10000)
 					break;
@@ -467,10 +474,6 @@ again:
 			}
 		}
 
-		RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
-		if (more_to_do) {
-			goto again;
-		}
 	}
 
 out:
