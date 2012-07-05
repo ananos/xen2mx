@@ -441,10 +441,10 @@ int omx_xenbk_thread(void *data)
 		int i = 0;
 		if (try_to_freeze())
 			continue;
-		ring = &omx_xenif->ring;
-		if (likely(ring)) {
+		if (likely(omx_xenif->ring_initialized)) {
+			ring = &omx_xenif->ring;
 			RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
-			wait_event_interruptible(omx_xenif->wq, more_to_do
+			wait_event_interruptible(omx_xenif->wq, RING_HAS_UNCONSUMED_REQUESTS(ring)
 						 || kthread_should_stop());
 		} else {
 			wait_event_interruptible(omx_xenif->wq, omx_xenif->waiting_reqs

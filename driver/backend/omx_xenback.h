@@ -78,6 +78,7 @@ typedef struct omx_xenif_st {
 	struct omx_xenif_back_ring ring;
 	struct vm_struct *omx_xenif_ring_area;
 	struct omx_xenif_back_ring recv_ring;
+	uint8_t ring_initialized;
 	struct vm_struct *recv_ring_area;
         enum backend_status status;
         spinlock_t status_lock;

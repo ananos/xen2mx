@@ -301,6 +301,7 @@ static int connect_ring(struct backend_info *be)
 
 	err = xenbus_switch_state(dev, XenbusStateConnected);
 	backend_create_omx(be);
+	omx_xenif->ring_initialized = 1;
 
 	dprintk_out();
 	return 0;
@@ -332,6 +333,8 @@ omx_xenif_t *omx_xenif_alloc(domid_t domid)
 	atomic_set(&omx_xenif->refcnt, 1);
 	init_waitqueue_head(&omx_xenif->waiting_to_free);
 	omx_xenif->waiting_reqs=0;
+
+	omx_xenif->ring_initialized = 0;
 #ifdef OMX_XENBACK_POLLING
 
         omx_xenif->xenbkd = kthread_run(omx_xenbk_thread, omx_xenif, omx_xenback_workqueue_name);
