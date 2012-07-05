@@ -441,17 +441,17 @@ int omx_xenbk_thread(void *data)
 		if (try_to_freeze())
 			continue;
 		ring = &omx_xenif->ring;
-		mb();
-		if (unlikely(!ring))
-			wait_event_interruptible(omx_xenif->wq, RING_HAS_UNCONSUMED_REQUESTS(ring)
+		if (unlikely(!ring)) {
+			RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
+			wait_event_interruptible(omx_xenif->wq, more_to_do
 						 || kthread_should_stop());
-		else {
+		} else {
 			wait_event_interruptible(omx_xenif->wq, omx_xenif->waiting_reqs
 						 || kthread_should_stop());
 			omx_xenif->waiting_reqs = 0;
 		}
 //again:
-		while (true) {
+		do {
 			RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
 			if (more_to_do) {
 				/* FIXME: We have to find a way to properly lock
@@ -468,12 +468,15 @@ int omx_xenbk_thread(void *data)
 						    ("error sending response\n");
 					}
 				}
-			} else {
+			}
+#if 0
+			else {
 				if (i++ > 10000)
 					break;
 				cpu_relax();
 			}
-		}
+#endif
+		} while (more_to_do);
 
 	}
 
