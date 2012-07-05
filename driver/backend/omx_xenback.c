@@ -21,6 +21,8 @@
 #include <linux/workqueue.h>
 #include <linux/spinlock.h>
 #include <linux/cdev.h>
+#include <linux/kthread.h>
+#include <linux/freezer.h>
 
 #include <xen/page.h>
 #include <xen/xenbus.h>
@@ -331,7 +333,12 @@ irqreturn_t omx_xenif_be_int(int irq, void *data)
 
 	//dprintk_deb("event_ptr=%p info=%#lx\n", data, (unsigned long)be);
 	if (RING_HAS_UNCONSUMED_REQUESTS(&omx_xenif->ring)) {
+#ifdef OMX_XENBACK_POLLING
+		omx_xenif->waiting_reqs=1;
+		wake_up(&omx_xenif->wq);
+#else
 		queue_work(omx_xenif->msg_workq, &omx_xenif->msg_workq_task);
+#endif
 		//msg_workq_handler(&omx_xenif->msg_workq_task);
 	}
 
@@ -404,6 +411,64 @@ out:
 
 }
 
+/* polling for requests */
+int omx_xenbk_thread(void *data)
+{
+	omx_xenif_t *omx_xenif;
+	struct evtchn_send event;
+	struct backend_info *be;
+	unsigned long flags;
+	int more_to_do = 0;
+	int ret = 0;
+	struct omx_xenif_back_ring *ring;
+	int notify;
+	int i = 0;
+
+	dprintk_in();
+
+	dprintk_deb("%s: started\n", current->comm);
+
+	omx_xenif = (omx_xenif_t *) data;
+	if (unlikely(!omx_xenif)) {
+		printk_err("Got NULL for omx_xenif, aborting!\n");
+		goto out;
+	}
+
+	while (!kthread_should_stop()) {
+		if (try_to_freeze())
+			continue;
+		wait_event_interruptible(omx_xenif->wq, omx_xenif->waiting_reqs
+					 || kthread_should_stop());
+		omx_xenif->waiting_reqs = 0;
+again:
+		ring = &omx_xenif->ring;
+		while (RING_HAS_UNCONSUMED_REQUESTS(ring)) {
+			/* FIXME: We have to find a way to properly lock
+			 * when calling process_incoming_response */
+			ret = omx_xen_process_message(omx_xenif, ring);
+
+			RING_PUSH_RESPONSES_AND_CHECK_NOTIFY(ring, notify);
+			if (notify) {
+				event.port = omx_xenif->be->evtchn.port;
+				if (HYPERVISOR_event_channel_op
+				    (EVTCHNOP_send, &event) != 0) {
+					printk_err("error sending response\n");
+				}
+			}
+			mb();
+		}
+
+		RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
+		if (more_to_do) {
+			goto again;
+		}
+	}
+
+out:
+	dprintk_out();
+	return 0;
+
+}
 /* something like the "bottom half" for requests (ring) */
 void msg_workq_handler(struct work_struct *work)
 {
@@ -908,12 +973,14 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			 * left to be done for the region to be marked ready is
 			 * to push a response from here and let it reach the frontend.
 			 * why wait for so long ?*/
+#if 0
 			if (endpoint->fe_endpoint->special_status == 3)
 				endpoint->fe_endpoint->special_status = 4;
 			else
 				printk_err("status is invalid, %u\n",
 					   endpoint->
 					   fe_endpoint->special_status);
+#endif
 
 			wmb();
 			break;
