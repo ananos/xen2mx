@@ -344,6 +344,7 @@ irqreturn_t omx_xenif_be_int(int irq, void *data)
 		//msg_workq_handler(&omx_xenif->msg_workq_task);
 	}
 
+	RING_FINAL_CHECK_FOR_REQUESTS(&omx_xenif->recv_ring, pending_reqs);
 	if (RING_HAS_UNCONSUMED_REQUESTS(&omx_xenif->recv_ring)) {
 		/* Since we don't really do anythine else than
 		 * keeping a balance on the ring, we just call the
@@ -441,7 +442,7 @@ int omx_xenbk_thread(void *data)
 		if (try_to_freeze())
 			continue;
 		ring = &omx_xenif->ring;
-		if (unlikely(!ring)) {
+		if (likely(ring)) {
 			RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
 			wait_event_interruptible(omx_xenif->wq, more_to_do
 						 || kthread_should_stop());
@@ -452,6 +453,7 @@ int omx_xenbk_thread(void *data)
 		}
 //again:
 		do {
+			ring = &omx_xenif->ring;
 			RING_FINAL_CHECK_FOR_REQUESTS(ring, more_to_do);
 			if (more_to_do) {
 				/* FIXME: We have to find a way to properly lock
