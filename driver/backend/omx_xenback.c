@@ -464,13 +464,11 @@ int omx_xenbk_thread(void *data)
 					}
 				}
 			}
-#if 1
 			else {
 				if (i++ > 10000)
 					break;
 				cpu_relax();
 			}
-#endif
 		}
 
 	}
@@ -535,7 +533,7 @@ again:
 			if (i> 10000) {
 				break;
 			}
-			//cpu_relax();
+			cpu_relax();
 		}
 
 	}
@@ -984,14 +982,12 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			 * left to be done for the region to be marked ready is
 			 * to push a response from here and let it reach the frontend.
 			 * why wait for so long ?*/
-#if 0
 			if (endpoint->fe_endpoint->special_status == 3)
 				endpoint->fe_endpoint->special_status = 4;
 			else
 				printk_err("status is invalid, %u\n",
 					   endpoint->
 					   fe_endpoint->special_status);
-#endif
 
 			wmb();
 			break;
@@ -1309,7 +1305,7 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 			    omx_xenif->ring.req_cons, omx_xenif->ring.req_cons,
 			    omx_xenif->ring.sring->req_prod);
 
-		spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+	//	spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
 		if (RING_REQUEST_CONS_OVERFLOW(ring, cons)) {
 			printk_err("Overflow!\n");
 			dprintk_inf
@@ -1339,7 +1335,7 @@ int omx_xen_process_message(omx_xenif_t * omx_xenif,
 			goto out_with_lock;
 		}
 
-		spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
+	//	spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 		switch (func) {
 			case OMX_CMD_PEER_FROM_INDEX:
 			case OMX_CMD_PEER_FROM_ADDR:
