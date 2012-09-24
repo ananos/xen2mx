@@ -648,6 +648,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 				memcpy(resp->data.mpi.info.hostname,
 				       peer_info.hostname,
 				       sizeof(peer_info.hostname));
+#if 0
 				dprintk_deb
 				    ("peer_info.index = %#lx, ret = %d\n",
 				     (unsigned long)resp->data.mpi.info.index,
@@ -656,6 +657,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 					    resp->data.mpi.info.board_addr);
 				dprintk_deb("peer_info.hostname =  %s\n",
 					    resp->data.mpi.info.hostname);
+#endif
 			}
 
 			resp->func = req->func;
@@ -674,8 +676,10 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			endpoint = omx_xenback_get_endpoint(be, req);
 
 			//memset(&resp->data.gei, 0, sizeof(resp->data.gei));
+#if 0
 			dprintk_deb("Got endpoint %d @ %#lx\n", eid,
 				    (unsigned long)endpoint);
+#endif
 			BUG_ON(!endpoint);
 			omx_endpoint_get_info(endpoint->board_index,
 					      endpoint->endpoint_index,
