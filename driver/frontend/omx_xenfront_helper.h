@@ -85,7 +85,7 @@ static int setup_ring(struct xenbus_device *dev, struct omx_xenfront_info *fe)
 	}
 
 	err = bind_evtchn_to_irqhandler(fe->evtchn.local_port,
-					omx_xenif_fe_int, IRQF_SAMPLE_RANDOM,
+					omx_xenif_fe_int, IRQF_SHARED,
 					"domU", fe);
 
 	if (err < 0) {

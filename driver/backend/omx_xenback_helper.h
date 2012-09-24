@@ -283,7 +283,7 @@ static int connect_ring(struct backend_info *be)
 
 	err =
 	    bind_evtchn_to_irqhandler(be->evtchn.port, omx_xenif_be_int,
-				      IRQF_SAMPLE_RANDOM,
+				      IRQF_SHARED,
 				      omx_xenif_backend_name, omx_xenif);
 	be->irq = err;
 	if (err < 0) {

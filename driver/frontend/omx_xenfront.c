@@ -362,8 +362,10 @@ again_recv:
 					TIMER_STOP(&t_recv_medsmall);
 				}
 
+#if 0
 				dprintk_deb("%s: ret = %d, recvq=%#x\n",
 					    __func__, ret, recvq_offset);
+#endif
 
 				omx_xenfront_ack(endpoint, resp->func);
 
