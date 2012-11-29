@@ -29,6 +29,7 @@
 #include <xen/events.h>
 #include "omx_reg.h"
 
+#define OMX_XENBACK_POLLING
 #include "omx_xen_timers.h"
 #include "omx_xen.h"
 
@@ -57,6 +58,7 @@ typedef struct omx_xenif_st {
 	wait_queue_head_t wq;
 	wait_queue_head_t resp_wq;
 	wait_queue_head_t waiting_to_free;
+	uint8_t waiting_reqs;
 
 	struct task_struct *task;
 	struct workqueue_struct *msg_workq;
@@ -82,6 +84,7 @@ typedef struct omx_xenif_st {
 	uint32_t recvq_offset;
 	uint32_t sendq_offset;
 
+	struct task_struct      *xenbkd;
 
 #ifdef OMX_XEN_COOKIES
         struct list_head page_cookies_free;
@@ -170,6 +173,8 @@ void response_workq_handler(struct work_struct *work);
 int omx_poke_domU(omx_xenif_t *omx_xenif, struct omx_xenif_response *ring_resp);
 
 irqreturn_t omx_xenif_be_int(int irq, void *data);
+
+int omx_xenbk_thread(void *data);
 
 extern timers_t t_recv, t_rndv, t_notify, t_small, t_tiny, t_medium, t_connect, t_truc;
 extern timers_t t_pull_request, t_pull_reply, t_pull, t_handle;
