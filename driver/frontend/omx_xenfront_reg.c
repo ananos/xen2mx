@@ -836,9 +836,9 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	rmb();
 	//ndelay(1000);
 	/* FIXME: find a better way to get notified that a backend response has come */
-	if (wait_for_backend_response
+	if ((ret = wait_for_backend_response
 	    (&endpoint->special_status, OMX_USER_REGION_STATUS_REGISTERING,
-	     &region->status_lock)) {
+	     &region->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
@@ -1040,9 +1040,9 @@ __omx_xen_user_region_last_release(struct kref * kref)
 	dprintk_in();
 
 	/* FIXME: find a better way to get notified that a backend response has come */
-	if (wait_for_backend_response
+	if ((ret = wait_for_backend_response
 	    (&region->status, OMX_USER_REGION_STATUS_DEREGISTERING,
-	     &region->status_lock)) {
+	     &region->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 	//	ret = -EINVAL;
 		goto out;

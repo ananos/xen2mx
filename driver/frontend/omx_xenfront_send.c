@@ -67,14 +67,14 @@ int omx_ioctl_xen_send_tiny(struct omx_endpoint *endpoint, void __user * uparam)
 	struct omx_xenif_request *ring_req;
 	uint32_t length = 0;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 
 	TIMER_START(&t_send_tiny);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_SEND_TINY;
 	cmd = &ring_req->data.send_tiny;
 	ring_req->board_index = endpoint->board_index;
@@ -117,14 +117,16 @@ int omx_ioctl_xen_send_tiny(struct omx_endpoint *endpoint, void __user * uparam)
 	TIMER_START(&endpoint->oneway);
 	omx_poke_dom0(endpoint->fe, ring_req);
 #ifndef OMX_XEN_NOWAIT
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	dprintk_deb("ret tiny = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else {
 		ret = -EINVAL;
@@ -156,14 +158,14 @@ int omx_ioctl_xen_send_mediumva(struct omx_endpoint *endpoint,
 	uint32_t aligned_vaddr;
 	grant_ref_t gref_head;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 
 	TIMER_START(&t_send_mediumva);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_SEND_MEDIUMVA;
 	cmd = &ring_req->data.send_mediumva;
 	ring_req->board_index = endpoint->board_index;
@@ -335,14 +337,16 @@ int omx_ioctl_xen_send_mediumva(struct omx_endpoint *endpoint,
 	}
 #endif
 	omx_poke_dom0(endpoint->fe, ring_req);
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	dprintk_deb("ret send_mediumva = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else {
 		ret = -EFAULT;
@@ -390,23 +394,22 @@ out:
 }
 
 int omx_ioctl_xen_send_mediumsq_frag(struct omx_endpoint *endpoint,
-			     void __user * uparam)
+				     void __user * uparam)
 {
 	struct omx_cmd_xen_send_mediumsq_frag *cmd;
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
-        uint32_t sendq_offset;
-        uint32_t frag_length;
-
+	uint32_t request_id;
+	uint32_t sendq_offset;
+	uint32_t frag_length;
 
 	dprintk_in();
 
 	TIMER_START(&t_send_mediumsq_frag);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_SEND_MEDIUMSQ_FRAG;
 	cmd = &ring_req->data.send_mediumsq_frag;
 	ring_req->board_index = endpoint->board_index;
@@ -416,43 +419,48 @@ int omx_ioctl_xen_send_mediumsq_frag(struct omx_endpoint *endpoint,
 	    copy_from_user(&cmd->mediumsq_frag, uparam,
 			   sizeof(struct omx_cmd_send_mediumsq_frag));
 	if (unlikely(ret != 0)) {
-		printk(KERN_ERR "Open-MX: Failed to read send mediumsq_frag cmd hdr\n");
+		printk(KERN_ERR
+		       "Open-MX: Failed to read send mediumsq_frag cmd hdr\n");
 		ret = -EFAULT;
 		goto out;
 	}
 
-        frag_length = cmd->mediumsq_frag.frag_length;
-        if (unlikely(frag_length > OMX_SENDQ_ENTRY_SIZE)) {
-                printk(KERN_ERR "Open-MX: Cannot send more than %ld as a mediumsq frag (tried %ld)\n",
-                       OMX_SENDQ_ENTRY_SIZE, (unsigned long) frag_length);
-                ret = -EINVAL;
-                goto out;
-        }
+	frag_length = cmd->mediumsq_frag.frag_length;
+	if (unlikely(frag_length > OMX_SENDQ_ENTRY_SIZE)) {
+		printk(KERN_ERR
+		       "Open-MX: Cannot send more than %ld as a mediumsq frag (tried %ld)\n",
+		       OMX_SENDQ_ENTRY_SIZE, (unsigned long)frag_length);
+		ret = -EINVAL;
+		goto out;
+	}
 
-        sendq_offset = cmd->mediumsq_frag.sendq_offset;
-        if (unlikely(sendq_offset >= OMX_SENDQ_SIZE)) {
-                printk(KERN_ERR "Open-MX: Cannot send mediumsq fragment from sendq offset %ld (max %ld)\n",
-                       (unsigned long) sendq_offset, (unsigned long) OMX_SENDQ_SIZE);
-                ret = -EINVAL;
-                goto out;
-        }
+	sendq_offset = cmd->mediumsq_frag.sendq_offset;
+	if (unlikely(sendq_offset >= OMX_SENDQ_SIZE)) {
+		printk(KERN_ERR
+		       "Open-MX: Cannot send mediumsq fragment from sendq offset %ld (max %ld)\n",
+		       (unsigned long)sendq_offset,
+		       (unsigned long)OMX_SENDQ_SIZE);
+		ret = -EINVAL;
+		goto out;
+	}
 
 	if (cmd->mediumsq_frag.shared) {
 		/* FIXME: handle the intra-node/VM case */
 		cmd->mediumsq_frag.shared = 0;
 	}
 
-
 	omx_poke_dom0(endpoint->fe, ring_req);
 #ifndef OMX_XEN_NOWAIT
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	dprintk_deb("ret send_mediumsq = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else {
 		ret = -EFAULT;
@@ -464,6 +472,7 @@ out:
 	dprintk_out();
 	return ret;
 }
+
 int omx_ioctl_xen_send_small(struct omx_endpoint *endpoint,
 			     void __user * uparam)
 {
@@ -472,15 +481,15 @@ int omx_ioctl_xen_send_small(struct omx_endpoint *endpoint,
 	struct omx_xenif_request *ring_req;
 	uint32_t length = 0;
 	int ret = 0;
+	uint32_t request_id;
 	char *data;
 
 	dprintk_in();
 
 	TIMER_START(&t_send_small);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_SEND_SMALL;
 	cmd = &ring_req->data.send_small;
 	ring_req->board_index = endpoint->board_index;
@@ -523,14 +532,16 @@ int omx_ioctl_xen_send_small(struct omx_endpoint *endpoint,
 
 	omx_poke_dom0(endpoint->fe, ring_req);
 #ifndef OMX_XEN_NOWAIT
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	dprintk_deb("ret send_small= %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else {
 		ret = -EFAULT;
@@ -550,13 +561,13 @@ int omx_ioctl_xen_send_notify(struct omx_endpoint *endpoint,
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 	TIMER_START(&t_send_notify);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_SEND_NOTIFY;
 	cmd = &ring_req->data.send_notify;
 	ring_req->board_index = endpoint->board_index;
@@ -579,14 +590,17 @@ int omx_ioctl_xen_send_notify(struct omx_endpoint *endpoint,
 
 	dump_xen_send_notify(cmd);
 	omx_poke_dom0(endpoint->fe, ring_req);
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	dprintk_deb("ret notify = %d\n", ret);
+
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else
 		ret = -EFAULT;
@@ -603,15 +617,15 @@ int omx_ioctl_xen_send_connect_request(struct omx_endpoint *endpoint,
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 
 	TIMER_START(&t_send_connect_request);
 	/* fill omx header */
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_SEND_CONNECT_REQUEST;
 	cmd = &ring_req->data.send_connect_request;
 
@@ -634,14 +648,16 @@ int omx_ioctl_xen_send_connect_request(struct omx_endpoint *endpoint,
 
 	dump_xen_send_connect_request(cmd);
 	omx_poke_dom0(endpoint->fe, ring_req);
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	dprintk_deb("ret connect_request = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else {
 		ret = -EFAULT;
@@ -661,14 +677,14 @@ int omx_ioctl_xen_send_connect_reply(struct omx_endpoint *endpoint,
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 
 	TIMER_START(&t_send_connect_reply);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_SEND_CONNECT_REPLY;
 	cmd = &ring_req->data.send_connect_reply;
 	ring_req->board_index = endpoint->board_index;
@@ -691,14 +707,16 @@ int omx_ioctl_xen_send_connect_reply(struct omx_endpoint *endpoint,
 
 	dump_xen_send_connect_reply(cmd);
 	omx_poke_dom0(endpoint->fe, ring_req);
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	dprintk_deb("ret connect_reply = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else {
 		ret = -EFAULT;
@@ -716,13 +734,13 @@ int omx_ioctl_xen_pull(struct omx_endpoint *endpoint, void __user * uparam)
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 	TIMER_START(&t_pull);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_PULL;
 	cmd = &ring_req->data.pull;
 	ring_req->board_index = endpoint->board_index;
@@ -743,14 +761,16 @@ int omx_ioctl_xen_pull(struct omx_endpoint *endpoint, void __user * uparam)
 	dump_xen_pull(cmd);
 	omx_poke_dom0(endpoint->fe, ring_req);
 #ifndef OMX_XEN_NOWAIT
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	dprintk_deb("ret pull = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else
 		ret = -EFAULT;
@@ -768,13 +788,13 @@ int omx_ioctl_xen_send_rndv(struct omx_endpoint *endpoint, void __user * uparam)
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 	TIMER_START(&t_send_rndv);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_SEND_RNDV;
 	cmd = &ring_req->data.send_rndv;
 	ring_req->board_index = endpoint->board_index;
@@ -798,14 +818,16 @@ int omx_ioctl_xen_send_rndv(struct omx_endpoint *endpoint, void __user * uparam)
 	dump_xen_send_rndv(cmd);
 	omx_poke_dom0(endpoint->fe, ring_req);
 #ifndef OMX_XEN_NOWAIT
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	dprintk_deb("ret send_rndv = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else {
 		ret = -EINVAL;
@@ -832,13 +854,13 @@ int omx_ioctl_xen_send_liback(struct omx_endpoint *endpoint,
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 	TIMER_START(&t_send_liback);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_SEND_LIBACK;
 	cmd = &ring_req->data.send_liback;
 	ring_req->board_index = endpoint->board_index;
@@ -863,14 +885,16 @@ int omx_ioctl_xen_send_liback(struct omx_endpoint *endpoint,
 
 	dump_xen_send_liback(cmd);
 	omx_poke_dom0(endpoint->fe, ring_req);
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	     (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	      NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	dprintk_deb("ret send_liback = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_DONE)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_DONE)
 		ret = 0;
 	else {
 		ret = -EFAULT;

@@ -63,6 +63,7 @@ static void omx_xenif_free(struct omx_xenfront_info *fe, int suspend)
 	dprintk_in();
 
 	destroy_workqueue(fe->msg_workq);
+        kfree(fe->requests);
 	kfree(fe);
 
 	dprintk_out();

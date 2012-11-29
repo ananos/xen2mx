@@ -585,6 +585,7 @@ static void omx_xenback_prepare_response(struct omx_endpoint *endpoint,
 	resp->func = req->func;
 	resp->eid = endpoint->endpoint_index;
 	resp->board_index = endpoint->board_index;
+	resp->request_id = req->request_id;
 	resp->ret = ret;
 	dprintk_out();
 

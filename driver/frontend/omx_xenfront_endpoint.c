@@ -463,13 +463,14 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 
 	omx_poke_dom0(endpoint->fe, ring_req);
 	/* FIXME: find a better way to get notified that a backend response has come */
-	if (wait_for_backend_response
+	if ((ret = wait_for_backend_response
 	    (&endpoint->status, OMX_ENDPOINT_STATUS_INITIALIZING,
-	     &endpoint->status_lock)) {
+	     &endpoint->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
 	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
 		printk_err("Endpoint is busy\n");
 		ret = -EBUSY;
@@ -594,13 +595,14 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 	omx_poke_dom0(endpoint->fe, ring_req);
 
 	/* FIXME: find a better way to get notified that a backend response has come */
-	if (wait_for_backend_response
+	if ((ret = wait_for_backend_response
 	    (&endpoint->status, OMX_ENDPOINT_STATUS_CLOSING,
-	     &endpoint->status_lock)) {
+	     &endpoint->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
 
 	/* FIXME: maybe this is where MPI gets stuck! we don't call these functions! */
 	//omx_xen_endpoint_free_resources(endpoint);

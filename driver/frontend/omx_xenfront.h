@@ -31,6 +31,8 @@
 #include "omx_xen_timers.h"
 #include "omx_xen.h"
 
+#define OMX_MAX_INFLIGHT_REQUESTS 65536
+
 enum frontend_status {
 	OMX_XEN_FRONTEND_STATUS_DONE,
 	OMX_XEN_FRONTEND_STATUS_DOING,
@@ -57,6 +59,7 @@ struct omx_xenfront_info {
 	struct omx_board_info board_info;
 	struct omx_cmd_misc_peer_info peer_info;
 	enum frontend_status status;
+	enum frontend_status *requests;
 	spinlock_t status_lock;
 	wait_queue_head_t wq;
 
@@ -120,6 +123,8 @@ int omx_xen_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 
 int omx_xen_peer_lookup(uint32_t * index, uint64_t * board_addr, char *hostname,
 			uint32_t cmd);
+
+struct omx_xenif_request *omx_ring_get_request(struct omx_xenfront_info *fe);
 
 extern struct omx_xenfront_info *__omx_xen_frontend;
 

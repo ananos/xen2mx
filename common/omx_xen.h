@@ -251,6 +251,7 @@ struct omx_xenif_request {
 	uint32_t func;
 	uint32_t board_index;
 	uint32_t eid;
+	uint32_t request_id;
 	int ret;
 	union {
 		struct omx_ring_msg_register_user_segment cus;
@@ -291,6 +292,7 @@ struct omx_xenif_response {
 	uint32_t func;
 	uint32_t board_index;
 	uint32_t eid;
+	uint32_t request_id;
 	int ret;
 	union {
 		struct omx_ring_msg_register_user_segment cus;

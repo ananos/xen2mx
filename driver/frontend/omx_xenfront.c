@@ -41,7 +41,8 @@
 #include "omx_endpoint.h"
 
 
-#define OMX_XEN_POLL_HARD_LIMIT 50000000UL
+#define OMX_XEN_DELAY	1
+#define OMX_XEN_POLL_HARD_LIMIT OMX_XEN_DELAY * 1000 * 1000 * 1000 // wait for 1s
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
 #include "omx_xen.h"
@@ -74,6 +75,26 @@ void dump_ring_req(struct omx_xenif_request *req)
 	}
 }
 
+/*
+ * We keep track of each request to handle backend's notifications and release
+ * IOCTL calls from user-space.
+ *
+ * WARNING: We can handle up to OMX_MAX_INFLIGHT_REQUESTS at the same time.
+ */
+struct omx_xenif_request *omx_ring_get_request(struct omx_xenfront_info
+						      *fe)
+{
+	struct omx_xenif_request *ring_req;
+	dprintk_in();
+
+	ring_req = RING_GET_REQUEST(&fe->ring, fe->ring.req_prod_pvt++);
+	fe->requests[(fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS] =
+	    OMX_XEN_FRONTEND_STATUS_DOING;
+
+	dprintk_out();
+	return ring_req;
+}
+
 int wait_for_backend_response(unsigned int *poll_var, unsigned int status,
 			      spinlock_t * spin)
 {
@@ -82,30 +103,24 @@ int wait_for_backend_response(unsigned int *poll_var, unsigned int status,
 	dprintk_in();
 	if (!poll_var) {
 		printk_err("Passing a null pointer to Poll on?\n");
-		ret = 1;
+		ret = -EINVAL;
 		goto out;
 	}
 	do {
-		//spin_lock(spin);
 		if (*poll_var != status) {
-			//spin_unlock(spin);
+			ret = i;
 			break;
 		}
-		//spin_unlock(spin);
+		ndelay(OMX_XEN_DELAY);
 		i++;
-		ndelay(1);
 		if (i % 1000000 == 0)
-			printk_inf("polling for %ds\n", (i - 1) / 1000);
+			printk_inf("polling for %dms\n", (i - 1) / 1000);
 		if (i > OMX_XEN_POLL_HARD_LIMIT) {
-			printk_inf("timed out after %u us\n", (i - 1));
-			ret = 1;
+			printk_inf("timed out after %u ns\n", (i - 1) / OMX_XEN_DELAY);
+			ret = -EINVAL;
 			goto out;
 		}
 	} while (1);
-#if 0
-	if (i > 0)
-		printk_inf("polling for %dus\n", (i - 1));
-#endif
 out:
 	dprintk_out();
 	return ret;
@@ -172,6 +187,29 @@ out:
 	dprintk_out();
 	return err;
 }
+
+/*
+ * Will account for an elegant solution to be notified by the backend
+ */
+#if 0
+static struct omx_xenif_request *omx_xenfront_get_request(struct omx_xenfront_info *fe,
+						     struct omx_xenif_response
+						     *resp)
+{
+	uint32_t request_id;
+	struct omx_xenif_request *request = NULL;
+
+	dprintk_in();
+
+	request_id = resp->request_id;
+	request = fe->request_list[request_id];
+
+	dprintk_deb("got req_id = %d, @%p\n", request_id, request);
+
+	dprintk_out();
+	return request;
+}
+#endif
 
 static struct omx_endpoint *omx_xenfront_get_endpoint(struct omx_xenfront_info *fe,
 						     struct omx_xenif_response
@@ -666,14 +704,12 @@ again_send:
 					break;
 				}
 
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
 				break;
@@ -697,14 +733,12 @@ again_send:
 				}
 
 				//      dump_xen_send_mediumva(&resp->data.send_mediumva);
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
 				break;
@@ -728,14 +762,12 @@ again_send:
 				}
 
 				//      dump_xen_send_small(&resp->data.send_small);
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
 				break;
@@ -759,14 +791,12 @@ again_send:
 					break;
 				}
 				//      dump_xen_send_tiny(&resp->data.send_tiny);
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
 				break;
@@ -795,14 +825,12 @@ again_send:
 				memcpy(&pull, &resp->data.pull.pull,
 				       sizeof(pull));
 
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
 				break;
@@ -826,14 +854,12 @@ again_send:
 				}
 
 				//dump_xen_send_notify(&resp->data.send_notify);
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 				dprintk_deb("%s: ret = %d\n", __func__, ret);
 
 				break;
@@ -857,20 +883,19 @@ again_send:
 				}
 				dump_xen_send_rndv(&resp->data.send_rndv);
 
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 
 				break;
 			}
 		case OMX_CMD_SEND_LIBACK:{
 				struct omx_endpoint *endpoint;
 				int16_t ret = 0;
+				uint32_t request_id = 0;
 				dprintk_deb
 				    ("received backend request: OMX_CMD_SEND_LIBACK, param=%lx\n",
 				     sizeof(struct omx_cmd_xen_send_liback));
@@ -885,15 +910,14 @@ again_send:
 					break;
 				}
 				dump_xen_send_liback(&resp->data.send_liback);
-				spin_lock(&fe->status_lock);
+				request_id = resp->request_id;
+
 				if (!ret)
-					fe->status =
+					fe->requests[request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
-
 				break;
 			}
 		case OMX_CMD_SEND_CONNECT_REQUEST:{
@@ -915,14 +939,12 @@ again_send:
 				}
 				dump_xen_send_connect_request(&resp->
 							      data.send_connect_request);
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 
 				break;
 			}
@@ -945,14 +967,12 @@ again_send:
 				}
 				dump_xen_send_connect_reply(&resp->
 							    data.send_connect_reply);
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 
 				break;
 			}
@@ -967,7 +987,6 @@ again_send:
 
 				ret = resp->ret;
 				//dump_xen_misc_peer_info(&resp->data.mpi);
-				spin_lock(&fe->status_lock);
 				if (!ret) {
 					memcpy(&fe->peer_info,
 					       &resp->data.mpi.info,
@@ -977,12 +996,11 @@ again_send:
 					       resp->data.mpi.info.hostname,
 					       sizeof(resp->data.mpi.info.
 						      hostname));
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				} else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 				break;
 			}
 		case OMX_CMD_GET_ENDPOINT_INFO:{
@@ -1022,14 +1040,12 @@ again_send:
 
 				fe->board_count = resp->data.gbc.board_count;
 
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 
 				break;
 
@@ -1044,14 +1060,12 @@ again_send:
 				bidx = resp->board_index;
 				ret = resp->ret;
 
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 
 				break;
 
@@ -1069,14 +1083,12 @@ again_send:
 				memcpy(&fe->state, &resp->data.pts.state,
 				       sizeof(struct omx_cmd_peer_table_state));
 
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 
 				break;
 
@@ -1091,14 +1103,12 @@ again_send:
 				bidx = resp->board_index;
 				ret = resp->ret;
 
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 
 				break;
 
@@ -1121,14 +1131,12 @@ again_send:
 				dprintk_deb("board_addr = %llx\n",
 					    fe->board_info.addr);
 				dump_xen_get_board_info(&resp->data.gbi);
-				spin_lock(&fe->status_lock);
 				if (!ret)
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_DONE;
 				else
-					fe->status =
+					fe->requests[resp->request_id] =
 					    OMX_XEN_FRONTEND_STATUS_FAILED;
-				spin_unlock(&fe->status_lock);
 
 				dprintk_deb
 				    ("board %#lx, endpoint %#lx gave us board info, ret = %d!\n",
@@ -1359,25 +1367,26 @@ int omx_xen_ifaces_get_count(uint32_t * count)
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+        ring_req = omx_ring_get_request(fe);
+        request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+        ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_GET_BOARD_COUNT;
 	omx_poke_dom0(fe, ring_req);
 
 	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_FREE); */
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if (ret = wait_for_backend_response
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING, NULL) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_FAILED) {
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_FAILED) {
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1394,25 +1403,26 @@ int omx_xen_peer_table_get_state(struct omx_cmd_peer_table_state *state)
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+        ring_req = omx_ring_get_request(fe);
+        request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+        ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_PEER_TABLE_GET_STATE;
 	ring_req->board_index = 0;
 	omx_poke_dom0(fe, ring_req);
 
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING, NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_FAILED) {
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_FAILED) {
 		ret = -EINVAL;
 		goto out;
 	}
@@ -1428,29 +1438,31 @@ int omx_xen_peer_table_set_state(struct omx_cmd_peer_table_state *state)
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+        ring_req = omx_ring_get_request(fe);
+        request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+        ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_PEER_TABLE_SET_STATE;
 	ring_req->board_index = 0;
 	memcpy(&ring_req->data.pts.state, &fe->state, sizeof(*state));
 	omx_poke_dom0(fe, ring_req);
 
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING, NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_FAILED) {
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_FAILED) {
 		ret = -EINVAL;
 		goto out;
 	}
+        ret = 0;
 
 out:
 	dprintk_out();
@@ -1462,30 +1474,32 @@ int omx_xen_set_hostname(uint32_t board_index, const char *hostname)
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+        ring_req = omx_ring_get_request(fe);
+        request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+        ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_SET_HOSTNAME;
 	ring_req->board_index = board_index;
 	memcpy(ring_req->data.sh.hostname, hostname, OMX_HOSTNAMELEN_MAX);
 
 	omx_poke_dom0(fe, ring_req);
 
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING, NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_FAILED) {
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_FAILED) {
 		ret = -EINVAL;
 		goto out;
 	}
+        ret = 0;
 
 out:
 	dprintk_out();
@@ -1499,6 +1513,7 @@ int omx_ioctl_xen_get_board_info(struct omx_endpoint *endpoint,
 	struct omx_xenfront_info *fe;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 #if 1
@@ -1527,31 +1542,30 @@ int omx_ioctl_xen_get_board_info(struct omx_endpoint *endpoint,
 //      get_board_info.board_index = 0;
 	fe = endpoint->fe;
 
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+        ring_req = omx_ring_get_request(fe);
+        request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+        ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_GET_BOARD_INFO;
 	ring_req->board_index = endpoint->board_index;
 	ring_req->eid = endpoint->endpoint_index;
 	dump_xen_get_board_info(&ring_req->data.gbi);
 	omx_poke_dom0(endpoint->fe, ring_req);
 	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_FREE); */
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING, NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
 
 	memcpy(&get_board_info.info, &fe->board_info,
 	       sizeof(struct omx_board_info));
 
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_FAILED) {
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_FAILED) {
 		ret = -EINVAL;
 		goto out;
 	}
-	dprintk_deb("ret =%d\n", ret);
 	dprintk_deb("board_addr = %#llx, ret = %d\n", get_board_info.info.addr,
 		    ret);
 
@@ -1581,7 +1595,8 @@ omx_xen_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
 	struct omx_xenif_request *ring_req;
 	struct omx_endpoint *endpoint;
-	int ret;
+	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 	dprintk_deb("bidx = %#lx, idx = %#lx\n", (unsigned long)board_index,
@@ -1592,21 +1607,25 @@ omx_xen_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 	spin_lock(&endpoint->status_lock);
 	endpoint->info_status = OMX_ENDPOINT_STATUS_DOING;
 	spin_unlock(&endpoint->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+        ring_req = omx_ring_get_request(fe);
+        request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+        ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_GET_ENDPOINT_INFO;
 	ring_req->board_index = endpoint->board_index;
 	ring_req->eid = endpoint->endpoint_index;
 	dump_xen_get_endpoint_info(&ring_req->data.gei);
 	omx_poke_dom0(endpoint->fe, ring_req);
 	/* dprintk_deb("waiting to become %u\n", OMX_ENDPOINT_STATUS_DONE); */
-	if (wait_for_backend_response
+	if ((ret = wait_for_backend_response
 	    (&endpoint->info_status, OMX_ENDPOINT_STATUS_DOING,
-	     &endpoint->status_lock)) {
+	     &endpoint->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
 
+        ret = 0;
 	memcpy(info, &endpoint->endpoint_info,
 	       sizeof(struct omx_endpoint_info));
 out:
@@ -1629,13 +1648,13 @@ omx_xen_peer_lookup(uint32_t * index,
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
 	struct omx_xenif_request *ring_req;
 	int ret = 0;
+	uint32_t request_id;
 
 	dprintk_in();
 	BUG_ON(!fe);
-	spin_lock(&fe->status_lock);
-	fe->status = OMX_XEN_FRONTEND_STATUS_DOING;
-	spin_unlock(&fe->status_lock);
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+        ring_req = omx_ring_get_request(fe);
+        request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+        ring_req->request_id = request_id;
 	ring_req->func = cmd;
 	if (cmd == OMX_CMD_PEER_FROM_INDEX) {
 		if (index)
@@ -1659,12 +1678,14 @@ omx_xen_peer_lookup(uint32_t * index,
 
 	dump_xen_misc_peer_info(&ring_req->data.mpi);
 	omx_poke_dom0(fe, ring_req);
-	if (wait_for_backend_response
-	    (&fe->status, OMX_XEN_FRONTEND_STATUS_DOING, &fe->status_lock)) {
+	if ((ret = wait_for_backend_response
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING, NULL)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
+        ret = 0;
 
 	if (cmd == OMX_CMD_PEER_FROM_INDEX) {
 		if (board_addr)
@@ -1689,7 +1710,7 @@ omx_xen_peer_lookup(uint32_t * index,
 	dprintk_deb("board=%#llx\n", *board_addr);
 	dprintk_deb("index =%#lx\n", (unsigned long)*index);
 	dprintk_deb("hostname=%s\n", hostname);
-	if (fe->status == OMX_XEN_FRONTEND_STATUS_FAILED)
+	if (fe->requests[request_id] == OMX_XEN_FRONTEND_STATUS_FAILED)
 		ret = -EINVAL;
 	dprintk_deb("ret =%d\n", ret);
 

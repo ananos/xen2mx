@@ -63,6 +63,7 @@ static int omx_xenfront_probe(struct xenbus_device *dev,
 		goto out;
 	}
 	__omx_xen_frontend = fe;
+        fe->requests = kzalloc(OMX_MAX_INFLIGHT_REQUESTS * sizeof(enum frontend_status), GFP_KERNEL);
 
         spin_lock_init(&fe->status_lock);
 
