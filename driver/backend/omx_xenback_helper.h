@@ -22,6 +22,7 @@
 #include <linux/scatterlist.h>
 #include <linux/workqueue.h>
 #include <linux/spinlock.h>
+#include <linux/kthread.h>
 #include <xen/interface/io/xenbus.h>
 #include <xen/interface/io/ring.h>
 #include <linux/cdev.h>
@@ -190,13 +191,19 @@ void omx_xenif_disconnect(omx_xenif_t * omx_xenif)
 		omx_xenif->irq = 0;
 	}
 
+
+#ifdef OMX_XENBACK_POLLING
+	kthread_stop(omx_xenif->xenbkd);
+	omx_xenif->xenbkd = NULL;
+#else
+	destroy_workqueue(omx_xenif->msg_workq);
+#endif
 	if (omx_xenif->ring.sring) {
 		unmap_frontend_page(omx_xenif, omx_xenif->omx_xenif_ring_area,
 				    omx_xenif->shmem_handle);
 		free_vm_area(omx_xenif->omx_xenif_ring_area);
 		omx_xenif->ring.sring = NULL;
 	}
-	destroy_workqueue(omx_xenif->msg_workq);
 	if (omx_xenif->recv_ring.sring) {
 		unmap_frontend_page(omx_xenif, omx_xenif->recv_ring_area,
 				    omx_xenif->recv_handle);
@@ -305,7 +312,7 @@ out:
 omx_xenif_t *omx_xenif_alloc(domid_t domid)
 {
 	omx_xenif_t *omx_xenif;
-	int err;
+	int err = 0;
 	char omx_xenback_workqueue_name[20];
 	char omx_xenback_workqueue_name_2[20];
 
@@ -324,27 +331,43 @@ omx_xenif_t *omx_xenif_alloc(domid_t domid)
 	init_waitqueue_head(&omx_xenif->wq);
 	atomic_set(&omx_xenif->refcnt, 1);
 	init_waitqueue_head(&omx_xenif->waiting_to_free);
+	omx_xenif->waiting_reqs=0;
+#ifdef OMX_XENBACK_POLLING
+
+        omx_xenif->xenbkd = kthread_run(omx_xenbk_thread, omx_xenif, omx_xenback_workqueue_name);
+        if (IS_ERR(omx_xenif->xenbkd)) {
+                //err = PTR_ERR(omx_xenif->xenbkd);
+                omx_xenif->xenbkd = NULL;
+		goto out;
+        }
+#else
 	omx_xenif->msg_workq =
 	    create_singlethread_workqueue(omx_xenback_workqueue_name);
 	if (unlikely(!omx_xenif->msg_workq)) {
 		printk_err("Couldn't create msg_workq!\n");
 		err = -ENOMEM;
-		return (void *)0;
+		goto out;
 	}
 
+
 	INIT_WORK(&omx_xenif->msg_workq_task, msg_workq_handler);
+#endif
 
 	omx_xenif->response_msg_workq =
 	    create_singlethread_workqueue(omx_xenback_workqueue_name_2);
 	if (unlikely(!omx_xenif->response_msg_workq)) {
 		printk_err("Couldn't create msg_workq!\n");
 		err = -ENOMEM;
-		return (void *)0;
+		goto out;
 	}
 
 	INIT_WORK(&omx_xenif->response_workq_task, response_workq_handler);
 
+out:
 	dprintk_out();
+	if (err) {
+		return ERR_PTR(err);
+	}
 	return omx_xenif;
 }
 
