@@ -456,7 +456,7 @@ again:
 		} else {
 			//spin_unlock_irqsave(&omx_xenif->omx_ring_lock, flags);
 			i++;
-			if (i> 10000) {
+			if (i> OMX_XEN_BACKEND_TIMEOUT) {
 				break;
 			}
 			//cpu_relax();

@@ -29,6 +29,8 @@
 #include <xen/events.h>
 #include "omx_reg.h"
 
+#define OMX_XEN_BACKEND_TIMEOUT 1000 * 1000
+
 #include "omx_xen_timers.h"
 #include "omx_xen.h"
 
