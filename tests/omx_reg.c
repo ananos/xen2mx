@@ -28,6 +28,8 @@
 #define ITER 10000
 #define LENGTH (1024*1024*4*4)
 
+uint8_t cmdline_xen = 0;
+
 static inline int
 do_register(int fd, int id,
 	   void * buffer1, unsigned long len1,
@@ -46,7 +48,10 @@ do_register(int fd, int id,
   reg.memory_context = 0ULL; /* unused for now */
   reg.segments = (uintptr_t) seg;
 
-  return ioctl(fd, OMX_CMD_CREATE_USER_REGION, &reg);
+  if (cmdline_xen)
+    return ioctl(fd, OMX_CMD_XEN_CREATE_USER_REGION, &reg);
+  else
+    return ioctl(fd, OMX_CMD_CREATE_USER_REGION, &reg);
 }
 
 static inline int
@@ -54,7 +59,10 @@ do_deregister(int fd, int id)
 {
   struct omx_cmd_destroy_user_region dereg;
   dereg.id = id;
-  return ioctl(fd, OMX_CMD_DESTROY_USER_REGION, &dereg);
+  if (cmdline_xen)
+    return ioctl(fd, OMX_CMD_XEN_DESTROY_USER_REGION, &dereg);
+  else
+    return ioctl(fd, OMX_CMD_DESTROY_USER_REGION, &dereg);
 }
 
 static void
@@ -76,10 +84,13 @@ int main(int argc, char *argv[])
   int length = LENGTH;
   int iter = ITER;
 
-  while ((c = getopt(argc, argv, "l:N:h")) != -1)
+  while ((c = getopt(argc, argv, "l:N:hx")) != -1)
     switch (c) {
     case 'l':
       length = atoi(optarg);
+      break;
+    case 'x':
+      cmdline_xen = 1;
       break;
     case 'N':
       iter = atoi(optarg);
@@ -100,7 +111,10 @@ int main(int argc, char *argv[])
 
   open_param.board_index = 0;
   open_param.endpoint_index = EP;
-  ret = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
+  if (cmdline_xen)
+    ret = ioctl(fd, OMX_CMD_XEN_OPEN_ENDPOINT, &open_param);
+  else
+    ret = ioctl(fd, OMX_CMD_OPEN_ENDPOINT, &open_param);
   if (ret < 0) {
     perror("attach endpoint");
     goto out_with_fd;
