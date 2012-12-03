@@ -894,6 +894,8 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 					     sid);
 			}
 			resp->func = OMX_CMD_XEN_CREATE_USER_REGION;
+			resp->eid = eid;
+			resp->request_id = req->request_id;
 			resp->data.cur.id = id;
 			resp->data.cur.eid = eid;
 
@@ -903,6 +905,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			}
 			else
 				resp->data.cur.status = 0x0;
+#if 0
 			rmb();
 			/* FIXME: Really buggy/experimental stuff!!
 			 * We actually dereference the frontend's endpoint
@@ -921,6 +924,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 					   fe_endpoint->special_status);
 
 			wmb();
+#endif
 			break;
 		}
 	case OMX_CMD_XEN_DESTROY_USER_REGION:{
@@ -966,6 +970,8 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 							seqnum, eid);
 			//memset(&resp->data.dur, 0, sizeof(resp->data.dur));
 			resp->func = OMX_CMD_XEN_DESTROY_USER_REGION;
+			resp->eid = eid;
+			resp->request_id = req->request_id;
 			resp->data.dur.id = id;
 			resp->data.dur.eid = eid;
 			resp->data.dur.region = req->data.dur.region;

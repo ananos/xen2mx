@@ -642,6 +642,7 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	struct xenbus_device *dev;
 	struct omx_xenif_request *ring_req;
 	struct omx_ring_msg_register_user_segment *ring_seg;
+	uint32_t request_id;
 
 	dprintk_in();
 
@@ -689,12 +690,16 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 	/* Prepare the message to the backend */
 
+#if 0
 	spin_lock(&region->status_lock);
 	//region->status = OMX_USER_REGION_STATUS_REGISTERING;
 	endpoint->special_status = OMX_USER_REGION_STATUS_REGISTERING;
 	spin_unlock(&region->status_lock);
-
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+#endif
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	fe->requests[request_id] = OMX_USER_REGION_STATUS_REGISTERING;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_CREATE_USER_REGION;
 	/* Ultra safe */
 	//memset(&ring_req->data.cur, 0, sizeof(ring_req->data.cur));
@@ -837,14 +842,14 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	//ndelay(1000);
 	/* FIXME: find a better way to get notified that a backend response has come */
 	if ((ret = wait_for_backend_response
-	    (&endpoint->special_status, OMX_USER_REGION_STATUS_REGISTERING,
+	    (&fe->requests[request_id], OMX_USER_REGION_STATUS_REGISTERING,
 	     &region->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
 
-	if (region->status == OMX_USER_REGION_STATUS_FAILED) {
+	if (fe->requests[request_id]== OMX_USER_REGION_STATUS_FAILED) {
 		printk_err
 		    ("Received failure from backend, will abort, status = %d\n",
 		     region->status);
@@ -1039,6 +1044,7 @@ __omx_xen_user_region_last_release(struct kref * kref)
 	struct omx_ring_msg_deregister_user_segment *ring_seg;
 	dprintk_in();
 
+#if 0
 	/* FIXME: find a better way to get notified that a backend response has come */
 	if ((ret = wait_for_backend_response
 	    (&region->status, OMX_USER_REGION_STATUS_DEREGISTERING,
@@ -1047,6 +1053,7 @@ __omx_xen_user_region_last_release(struct kref * kref)
 	//	ret = -EINVAL;
 		goto out;
 	}
+#endif
 	//dprintk_inf("%s: region = %p\n", __func__, (void*) region);
 	/* Loop around segments to release grant references */
 	for (i = 0, seg = &region->segments[0]; i < region->nr_segments; i++) {
@@ -1194,6 +1201,7 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
 	struct omx_ring_msg_deregister_user_segment *ring_seg;
+	uint32_t request_id;
 	dprintk_in();
 
 	TIMER_START(&t_destroy_reg);
@@ -1222,12 +1230,17 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 
 	//dprintk_inf("%s: region = %p\n", __func__, (void*) region);
 	/* Prepare the message to the backend */
+#if 0
 	spin_lock(&region->status_lock);
 	region->status = OMX_USER_REGION_STATUS_DEREGISTERING;
 	spin_unlock(&region->status_lock);
+#endif
 
 	/* FIXME: maybe create a static inline function for this stuff ? */
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	fe->requests[request_id] = OMX_USER_REGION_STATUS_DEREGISTERING;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_DESTROY_USER_REGION;
 	/* Ultra safe */
 	//memset(&ring_req->data.dur, 0, sizeof(ring_req->data.dur));
@@ -1253,7 +1266,25 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 
 	omx_poke_dom0(fe, ring_req);
 
-	call_rcu(&region->xen_rcu_head, __omx_xen_user_region_rcu_release_callback);
+	/* FIXME: find a better way to get notified that a backend response has come */
+	if ((ret = wait_for_backend_response
+	    (&fe->requests[request_id], OMX_USER_REGION_STATUS_DEREGISTERING,
+	     &region->status_lock)) < 0) {
+		printk_err("Failed to wait\n");
+	//	ret = -EINVAL;
+		goto out;
+	}
+
+	//call_rcu(&region->xen_rcu_head, __omx_xen_user_region_rcu_release_callback);
+
+	if (fe->requests[request_id] == OMX_USER_REGION_STATUS_FAILED) {
+		printk_err
+		    ("Received failure from backend, will abort, status = %d\n",
+		     region->status);
+		ret = -EINVAL;
+		goto out;
+	}
+	kref_put(&region->xen_refcount, __omx_xen_user_region_last_release);
 
         RCU_INIT_POINTER(endpoint->user_regions[cmd.id], NULL);
 

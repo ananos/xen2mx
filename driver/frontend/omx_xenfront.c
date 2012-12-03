@@ -1213,6 +1213,7 @@ again_send:
 				struct omx_endpoint *endpoint;
 				struct omx_user_region *region;
 				uint32_t eid, id;
+				uint32_t request_id;
 				int status;
 				dprintk_deb
 				    ("received backend request: OMX_CMD_XEN_CREATE_USER_REGION, param=%lx\n",
@@ -1220,7 +1221,12 @@ again_send:
 					    omx_ring_msg_create_user_region));
 				id = resp->data.cur.id;
 				status = resp->data.cur.status;
+				request_id = resp->request_id;
 				endpoint = omx_xenfront_get_endpoint(fe, resp);
+				if (!endpoint) {
+					printk_err("endpoint is NULL!!\n");
+					break;
+				}
 				spin_lock(&endpoint->user_regions_lock);
 				region =
 				    rcu_dereference_protected
@@ -1239,10 +1245,10 @@ again_send:
 					dprintk_deb
 					    ("Failed to deregister user region%d, will now abort\n",
 					     id);
-					region->status =
+					fe->requests[request_id] =
 					    OMX_USER_REGION_STATUS_FAILED;
 				} else
-					region->status =
+					fe->requests[request_id] =
 					    OMX_USER_REGION_STATUS_REGISTERED;
 					endpoint->special_status =
 					    OMX_USER_REGION_STATUS_REGISTERED;
@@ -1255,6 +1261,7 @@ again_send:
 				struct omx_endpoint *endpoint;
 				struct omx_user_region *region;
 				uint32_t eid, id;
+				uint32_t request_id;
 				uint8_t status;
 				dprintk_deb
 				    ("received backend request: OMX_CMD_XEN_DESTROY_USER_REGION, param=%lx\n",
@@ -1263,8 +1270,12 @@ again_send:
 				eid = resp->eid;
 				id = resp->data.dur.id;
 				status = resp->data.dur.status;
-				//endpoint = fe->endpoints[eid];
-				//spin_lock(&endpoint->user_regions_lock);
+				request_id = resp->request_id;
+				endpoint = omx_xenfront_get_endpoint(fe, resp);
+				if (!endpoint) {
+					printk_err("endpoint is NULL!!\n");
+					break;
+				}
 				region = (struct omx_user_region *) resp->data.dur.region;
 
 				if (unlikely(!region)) {
@@ -1277,22 +1288,23 @@ again_send:
 				//dprintk_inf("region = %p\n", (void*) region);
 				//spin_unlock(&endpoint->user_regions_lock);
 				//dump_xen_ring_msg_destroy_user_region (&resp->data.dur);
-				//spin_lock(&region->status_lock);
+				spin_lock(&region->status_lock);
 				if (region) {
-					if (status) {
+					if (!status) {
 						//region->granted = 0;
-						region->status =
+						fe->requests[request_id] =
 						    OMX_USER_REGION_STATUS_DEREGISTERED;
 					}
 					else {
-						region->status =
+						//region->status =
+						fe->requests[request_id] =
 						    OMX_USER_REGION_STATUS_FAILED;
 					}
 				} else {
 					printk_err("region pointer invalid!\n");
 				}
 
-				//spin_unlock(&region->status_lock);
+				spin_unlock(&region->status_lock);
 				break;
 			}
 		default:
