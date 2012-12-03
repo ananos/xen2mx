@@ -82,8 +82,10 @@ omx_user_region_add_segment(const struct omx_cmd_user_segment * useg,
 		goto out;
 	}
 
+#if 0
 #ifdef OMX_DRIVER_DEBUG
 	memset(pages, 0, nr_pages * sizeof(struct page *));
+#endif
 #endif
 
 	segment->aligned_vaddr = aligned_vaddr;

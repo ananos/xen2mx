@@ -1242,8 +1242,8 @@ again_send:
 				if (!region) {printk_err("CREATE_region is NULL!\n"); break;}
 				spin_lock(&region->status_lock);
 				if (status) {
-					dprintk_deb
-					    ("Failed to deregister user region%d, will now abort\n",
+					printk_err
+					    ("Failed to register user region%d\n",
 					     id);
 					fe->requests[request_id] =
 					    OMX_USER_REGION_STATUS_FAILED;
@@ -1296,6 +1296,9 @@ again_send:
 						    OMX_USER_REGION_STATUS_DEREGISTERED;
 					}
 					else {
+						printk_err
+						    ("Failed to de-register user region%d\n",
+						     id);
 						//region->status =
 						fe->requests[request_id] =
 						    OMX_USER_REGION_STATUS_FAILED;

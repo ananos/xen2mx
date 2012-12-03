@@ -84,8 +84,11 @@ omx_wrapper_user_region_add_segment(const struct omx_cmd_user_segment *useg,
 		ret = -ENOMEM;
 		goto out;
 	}
+#if 0
 #ifdef OMX_DRIVER_DEBUG
+	printk_err("Memsetting pages\n");
 	memset(pages, 0, nr_pages * sizeof(struct page *));
+#endif
 #endif
 
 	segment->aligned_vaddr = aligned_vaddr;
@@ -347,7 +350,7 @@ omx_ioctl_wrapper_user_region_create(struct omx_endpoint *endpoint,
 	}
 
 	if (unlikely(cmd.id >= OMX_USER_REGION_MAX)) {
-		printk(KERN_ERR "Cannot create invalid region %d\n", cmd.id);
+		printk_err("Cannot create invalid region %d\n", cmd.id);
 		ret = -EINVAL;
 		goto out;
 	}
@@ -428,7 +431,7 @@ omx_ioctl_wrapper_user_region_create(struct omx_endpoint *endpoint,
 
 	if (unlikely
 	    (rcu_access_pointer(endpoint->user_regions[cmd.id]) != NULL)) {
-		printk(KERN_ERR "Cannot create busy region %d\n", cmd.id);
+		printk_err("Cannot create busy region %d\n", cmd.id);
 		ret = -EBUSY;
 		spin_unlock(&endpoint->user_regions_lock);
 		goto out_with_region;
@@ -662,9 +665,9 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	/* Create the frontend user region */
 	ret = omx_ioctl_wrapper_user_region_create(endpoint, uparam);
 	if (unlikely(ret < 0)) {
-		printk(KERN_ERR
-		       "Cannot access a non-existing region %d\n", cmd.id);
-		ret = -EINVAL;
+		//printk_err(
+		//       "Cannot access a non-existing region %d\n", cmd.id);
+		//ret = -EINVAL;
 		goto out;
 	}
 
@@ -673,7 +676,7 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	if (unlikely
 	    ((region =
 	      rcu_access_pointer(endpoint->user_regions[cmd.id])) == NULL)) {
-		printk(KERN_ERR
+		printk_err(
 		       "Cannot access a non-existing region %d\n", cmd.id);
 		ret = -EINVAL;
 		spin_unlock(&endpoint->user_regions_lock);
@@ -1223,6 +1226,8 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 	    ((region =
 	      rcu_access_pointer(endpoint->user_regions[cmd.id])) == NULL)) {
 		spin_unlock(&endpoint->user_regions_lock);
+		printk_err("Cannot unregister unknown region %d\n", cmd.id);
+		ret = -EINVAL;
 		goto out;
 	}
 	spin_unlock(&endpoint->user_regions_lock);
