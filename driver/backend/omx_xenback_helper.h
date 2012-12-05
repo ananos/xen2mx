@@ -33,6 +33,7 @@
 #include "omx_xen_debug.h"
 #include "omx_xen.h"
 #include "omx_xenback.h"
+#include "omx_xenback_event.h"
 
 static int map_frontend_page(omx_xenif_t * omx_xenif, struct vm_struct *vm_area,
 			     grant_handle_t * handle, grant_ref_t * gref)
@@ -204,6 +205,9 @@ void omx_xenif_disconnect(omx_xenif_t * omx_xenif)
 		omx_xenif->recv_ring.sring = NULL;
 	}
 	destroy_workqueue(omx_xenif->response_msg_workq);
+#ifdef OMX_XEN_COOKIES
+		omx_xen_page_free_cookies(omx_xenif);
+#endif
 	kfree(omx_xenif);
 	dprintk_out();
 }

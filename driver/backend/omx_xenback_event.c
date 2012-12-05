@@ -24,6 +24,7 @@
 #include <linux/cdev.h>
 #include <xen/xenbus.h>
 #include <xen/events.h>
+#include <xen/balloon.h>
 #include "omx_reg.h"
 
 //#define EXTRA_DEBUG_OMX
@@ -44,16 +45,16 @@ int omx_xen_page_alloc(omx_xenif_t * omx_xenif, uint32_t count)
 	for (i = 0; i < count; i++) {
 
 		cookie =
-		    kmalloc(sizeof(struct omx_xen_page_cookie), GFP_KERNEL);
+		    kmalloc(sizeof(struct omx_xen_page_cookie), GFP_ATOMIC);
 		if (!cookie) {
 			printk_err("cannot create cookie\n");
 			err = -ENOMEM;
 			goto out;
 		}
-		page = alloc_page(GFP_KERNEL);
-		if (!page) {
-			printk_err("cannot allocate page\n");
-			err = -ENOMEM;
+		err = alloc_xenballooned_pages(1, &page, false);
+		if (!page || err) {
+			printk_err("Error allocated xenballooned page\n");
+			//err = -ENOMEM;
 			goto out;
 		}
 
@@ -80,6 +81,7 @@ void omx_xen_page_put_cookie(omx_xenif_t * omx_xenif,
 {
 	dprintk_in();
 #ifdef OMX_XEN_COOKIES
+	dprintk_deb("put it %#010lx\n", (unsigned long)cookie);
 	//write_lock(&omx_xenif->page_cookies_freelock);
 	list_move_tail(&cookie->node, &omx_xenif->page_cookies_free);
 	//write_unlock(&omx_xenif->page_cookies_freelock);
@@ -99,7 +101,7 @@ struct omx_xen_page_cookie *omx_xen_page_get_cookie(omx_xenif_t * omx_xenif)
 	if ((volatile int)(list_empty(&omx_xenif->page_cookies_free))) {
 		omx_xen_page_alloc(omx_xenif, 20);
 	}
-	// write_lock(&omx_xenif->page_cookies_freelock);
+	write_lock(&omx_xenif->page_cookies_freelock);
 
 	cookie = list_first_entry(&omx_xenif->page_cookies_free,
 				  struct omx_xen_page_cookie, node);
@@ -109,14 +111,48 @@ struct omx_xen_page_cookie *omx_xen_page_get_cookie(omx_xenif_t * omx_xenif)
 	}
 
 	list_move_tail(&cookie->node, &omx_xenif->page_cookies_inuse);
-	//  write_unlock(&omx_xenif->page_cookies_freelock);
+	write_unlock(&omx_xenif->page_cookies_freelock);
 
-	dprintk_deb("got it, %#010lx\n", (unsigned long)cookie);
+	dprintk_deb("get it, %#010lx\n", (unsigned long)cookie);
 
 out:
 #endif
 	dprintk_out();
 	return cookie;
+}
+
+int omx_xen_page_free_cookies(omx_xenif_t * omx_xenif)
+{
+	struct omx_xen_page_cookie *cookie;
+
+	dprintk_in();
+
+#ifdef OMX_XEN_COOKIES
+	//dprintk_deb("want an event cookie!\n");
+
+	while (!(list_empty(&omx_xenif->page_cookies_free))) {
+		write_lock(&omx_xenif->page_cookies_freelock);
+
+		cookie = list_first_entry(&omx_xenif->page_cookies_free,
+		       struct omx_xen_page_cookie, node);
+		if (!cookie) {
+			printk_err("Error\n");
+			goto out;
+		}
+
+		list_del(&cookie->node);
+		write_unlock(&omx_xenif->page_cookies_freelock);
+		/* If we add this one, we get slab corruption!!! */
+		//free_xenballooned_pages(1, &cookie->page);
+		dprintk_deb("will drop #010lx\n", (unsigned long)cookie);
+		kfree(cookie);
+	}
+
+
+out:
+#endif
+	dprintk_out();
+	return 0;
 }
 
 /*
