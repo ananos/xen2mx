@@ -32,6 +32,7 @@
 #include "omx_xen.h"
 
 #define OMX_MAX_INFLIGHT_REQUESTS 65536
+#define OMX_XEN_MAX_GRANT_COUNT 16384
 
 enum frontend_status {
 	OMX_XEN_FRONTEND_STATUS_DONE,

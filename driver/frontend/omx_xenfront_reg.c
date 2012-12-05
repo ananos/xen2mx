@@ -465,8 +465,8 @@ struct omx_xenfront_gref_cookie {
 	uint32_t count;
 };
 
-#if 1
-static int omx_xen_gnttab_really_alloc_grant_references(struct omx_xenfront_info *fe, uint32_t count)
+static int omx_xen_gnttab_really_alloc_grant_references(struct omx_xenfront_info
+							*fe, uint32_t count)
 {
 	int ret = 0, i = 0;
 	grant_ref_t gref;
@@ -480,95 +480,90 @@ static int omx_xen_gnttab_really_alloc_grant_references(struct omx_xenfront_info
 	}
 	ret = gnttab_alloc_grant_references(count, &cookie->gref_head);
 	if (ret) {
-		//printk_err("cannot allocate grant_references, count=%u\n", count);
-		if (!cookie) {printk_err("WTF?\n");} else
-		kfree(cookie);
-		//ret = -ENOSPC;
+		printk_err("cannot allocate grant_references, count=%u\n",
+			   count);
+		if (!cookie) {
+			printk_err("WTF?\n");
+		} else
+			kfree(cookie);
+		ret = -ENOSPC;
 		goto out;
 	}
 	cookie->count = count;
 
-        write_lock(&fe->gref_cookies_freelock);
+	write_lock(&fe->gref_cookies_freelock);
 	list_add_tail(&cookie->node, &fe->gref_cookies_free);
-        write_unlock(&fe->gref_cookies_freelock);
-	dprintk_deb
-	    ("allocated, and appended to list, %#lx, count = %u\n",
-	     (unsigned long)cookie, count);
-
+	write_unlock(&fe->gref_cookies_freelock);
+	printk
+	    (KERN_INFO
+	     "allocated, and appended to list, %#lx, count = %u (size=%u), gref_head = %#lx\n",
+	     (unsigned long)cookie, count, count * 4, cookie->gref_head);
 
 out:
 	dprintk_out();
 	return ret;
 }
-static void omx_xenfront_gref_put_cookie(struct omx_xenfront_info  * fe,
-                             void *gref_cookie)
-{
-	struct omx_xenfront_gref_cookie *cookie = gref_cookie, *toremove = NULL;
-        dprintk_in();
- //       write_lock(&fe->gref_cookies_freelock);
 
-#if 0
-	list_for_each_entry_safe(cookie, _cookie, &fe->gref_cookies_inuse, node) {
-		dprintk_deb("gref_head = %u, cookie->gref_head=%u, cookie=%p\n", *gref_head, cookie->gref_head, (void*) cookie);
-		if (*gref_head == cookie->gref_head + 1) {
-			//list_del(&cookie->node);
-			dprintk_deb("putting cookie%p with count =%u, gref_head=%u\n", (void*)cookie, cookie->count, *gref_head);
-        		//list_move_tail(&cookie->node, &fe->gref_cookies_free);
-			toremove = cookie;
-			list_del(&cookie->node);
-			break;
-		}
-	}
-#endif
-	dprintk_deb("putting gref_cookie =%p, count =%u head=%u\n", cookie, cookie->count, cookie->gref_head);
+static void omx_xenfront_gref_put_cookie(struct omx_xenfront_info *fe,
+					 void *gref_cookie)
+{
+	struct omx_xenfront_gref_cookie *cookie = gref_cookie;
+	struct omx_xenfront_gref_cookie *toremove = NULL;
+	dprintk_in();
+
 	toremove = cookie;
 	if (!toremove)
-		dprintk_deb("couldn't find cookie, with gref_head=%p\n", gref_cookie);
+		printk_err("couldn't find cookie=%p\n", gref_cookie);
 	else {
+		dprintk_deb("putting gref_cookie =%p, count =%u head=%#lx\n",
+			    cookie, cookie->count, cookie->gref_head);
 		write_lock(&fe->gref_cookies_inuselock);
-		list_del(&cookie->node);
+		list_move_tail(&cookie->node, &fe->gref_cookies_free);
 		write_unlock(&fe->gref_cookies_inuselock);
 
-		gnttab_free_grant_references(toremove->gref_head);
-		kfree(toremove);
 	}
 
-#if 0
-	if (toremove) {
-		dprintk_deb("putting cookie%p with count =%u, gref_head=%u\n", (void*)cookie, cookie->count, *gref_head);
-		list_move_tail(&toremove->node, &fe->gref_cookies_free);
-	} else
-#endif
-
-  //      write_unlock(&fe->gref_cookies_freelock);
-        dprintk_out();
+	dprintk_out();
 }
 
-static int omx_xen_gnttab_free_grant_references(struct omx_xenfront_info *fe, grant_ref_t *gref_head, void**gref_cookie)
+static int omx_xen_gnttab_free_grant_references(struct omx_xenfront_info *fe,
+						void **gref_cookie)
 {
 	int ret = 0, i = 0;
 
 	dprintk_in();
-	dprintk_deb("gref_head = %u, gref_cookie =%p\n", *gref_head, *gref_cookie);
+	dprintk_deb("gref_head = %lx, gref_cookie =%p\n",
+		    gref_cookie->gref_head, *gref_cookie);
 	omx_xenfront_gref_put_cookie(fe, *gref_cookie);
 out:
 	dprintk_out();
 	return ret;
 
 }
-#define XEN_GRANT_TIMEOUT 100000UL
-static struct omx_xenfront_gref_cookie *omx_xenfront_gref_get_cookie(struct omx_xenfront_info * fe, uint32_t count)
+
+#define XEN_GRANT_TIMEOUT 1000UL
+static struct omx_xenfront_gref_cookie *omx_xenfront_gref_get_cookie(struct
+								     omx_xenfront_info
+								     *fe,
+								     uint32_t
+								     count)
 {
-        struct omx_xenfront_gref_cookie *cookie, *_cookie, *toreturn = NULL;
+	struct omx_xenfront_gref_cookie *cookie;
+	struct omx_xenfront_gref_cookie *_cookie;
+	struct omx_xenfront_gref_cookie *toreturn = NULL;
 	int ret = 0;
-	int i = 0;
+	int i = 0, j = 0;
+	uint8_t try_again = 0;
 
-        dprintk_in();
+	dprintk_in();
 
-        dprintk_deb("want a gref cookie!\n");
+	dprintk_deb("want a gref cookie!\n");
 
-        while ((volatile int)(list_empty(&fe->gref_cookies_free))) {
-		ret = omx_xen_gnttab_really_alloc_grant_references(fe,count);
+again:
+	i = 0;
+	while ((volatile int)(list_empty(&fe->gref_cookies_free)) || try_again) {
+		dprintk_deb("Have to allocate a cookie, count= %#lx\n", count);
+		ret = omx_xen_gnttab_really_alloc_grant_references(fe, count);
 		/* if we can't alloc cookies, fail ungracefully */
 		if (ret == -ENOMEM) {
 			printk_err("we can't malloc!\n");
@@ -577,41 +572,53 @@ static struct omx_xenfront_gref_cookie *omx_xenfront_gref_get_cookie(struct omx_
 		/* if we can't alloc grant references, wait for someone to free,
 		 * die, with a timeout */
 		if (ret == -ENOSPC && i < XEN_GRANT_TIMEOUT) {
-			//write_unlock(&fe->gref_cookies_freelock);
 			cpu_relax();
 			i++;
-			//write_lock(&fe->gref_cookies_freelock);
 		}
-        }
+		try_again = 0;
+	}
 
-	//dprintk_inf("list not free, GO!\n");
+	dprintk_deb("list not free, GO!\n");
 
-        write_lock(&fe->gref_cookies_inuselock);
+	write_lock(&fe->gref_cookies_inuselock);
+	write_lock(&fe->gref_cookies_freelock);
 	list_for_each_entry_safe(cookie, _cookie, &fe->gref_cookies_free, node) {
 		if (count <= cookie->count) {
-			dprintk_deb("counts  match! %u, gref_head=%u cookie = %p\n", cookie->count, cookie->gref_head, (void*) cookie);
+			dprintk_deb
+			    ("counts  match! %u, %u, gref_head=%#lx cookie = %p\n",
+			     cookie->count, count, cookie->gref_head,
+			     (void *)cookie);
 			list_move_tail(&cookie->node, &fe->gref_cookies_inuse);
 			toreturn = cookie;
 			break;
-		}
-		else dprintk_deb("counts don't match %u %u\n", count, cookie->count);
+		} else
+			dprintk_deb("counts don't match %u %u\n", count,
+				    cookie->count);
 	}
-        write_unlock(&fe->gref_cookies_inuselock);
-        if (!toreturn) {
-                printk_err("Error\n");
-                goto out;
-        }
+	write_unlock(&fe->gref_cookies_inuselock);
+	write_unlock(&fe->gref_cookies_freelock);
+	if (!toreturn) {
+		if (j < XEN_GRANT_TIMEOUT) {
+			try_again = 1;
+			j++;
+			goto again;
+		} else {
+			printk_err("Error\n");
+			goto out;
+		}
+	}
 
-        //write_unlock(&fe->gref_cookies_freelock);
-
-        dprintk_deb("got it, %#010lx\n", (unsigned long)cookie);
+	dprintk_deb("got it, %#010lx\n", (unsigned long)cookie);
 
 out:
-        dprintk_out();
-        return toreturn;
+	dprintk_out();
+	return toreturn;
 }
 
-static int omx_xen_gnttab_alloc_grant_references(struct omx_xenfront_info *fe, uint32_t count, grant_ref_t *gref_head, void **gref_cookie)
+static int omx_xen_gnttab_alloc_grant_references(struct omx_xenfront_info *fe,
+						 uint32_t count,
+						 grant_ref_t ** gref_head,
+						 void **gref_cookie)
 {
 	int ret = 0, i = 0;
 	struct omx_xenfront_gref_cookie *cookie;
@@ -622,7 +629,7 @@ static int omx_xen_gnttab_alloc_grant_references(struct omx_xenfront_info *fe, u
 		ret = -EINVAL;
 		goto out;
 	}
-	*gref_head = cookie->gref_head;
+	*gref_head = &cookie->gref_head;
 	*gref_cookie = cookie;
 
 out:
@@ -631,7 +638,23 @@ out:
 
 }
 
-#endif
+static grant_ref_t omx_gnttab_claim_grant_reference(struct
+						    omx_xenfront_gref_cookie
+						    *cookie)
+{
+	grant_ref_t gref;
+
+	gref = gnttab_claim_grant_reference(&cookie->gref_head);
+
+	return gref;
+}
+
+static void omx_gnttab_release_grant_reference(struct omx_xenfront_gref_cookie
+					       *cookie, grant_ref_t gref)
+{
+	gnttab_release_grant_reference(&cookie->gref_head, gref);
+}
+
 /* This is where Xen2MX specific functions begin */
 int
 omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
@@ -665,8 +688,7 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	/* Create the frontend user region */
 	ret = omx_ioctl_wrapper_user_region_create(endpoint, uparam);
 	if (unlikely(ret < 0)) {
-		//printk_err(
-		//       "Cannot access a non-existing region %d\n", cmd.id);
+		printk_err("Cannot access a non-existing region %d\n", cmd.id);
 		//ret = -EINVAL;
 		goto out;
 	}
@@ -676,29 +698,14 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	if (unlikely
 	    ((region =
 	      rcu_access_pointer(endpoint->user_regions[cmd.id])) == NULL)) {
-		printk_err(
-		       "Cannot access a non-existing region %d\n", cmd.id);
+		printk_err("Cannot access a non-existing region %d\n", cmd.id);
 		ret = -EINVAL;
 		spin_unlock(&endpoint->user_regions_lock);
 		goto out;
 	}
 	spin_unlock(&endpoint->user_regions_lock);
-#if 0
-	if (cmd.nr_segments > 1) {
-		printk_err("we don't currently support more that 1 segment!, segments = %d\n", cmd.nr_segments);
-		ret = -EINVAL;
-		goto out;
-	}
-#endif
 
 	/* Prepare the message to the backend */
-
-#if 0
-	spin_lock(&region->status_lock);
-	//region->status = OMX_USER_REGION_STATUS_REGISTERING;
-	endpoint->special_status = OMX_USER_REGION_STATUS_REGISTERING;
-	spin_unlock(&region->status_lock);
-#endif
 	ring_req = omx_ring_get_request(fe);
 	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
 	fe->requests[request_id] = OMX_USER_REGION_STATUS_REGISTERING;
@@ -722,12 +729,20 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 		uint16_t gref_offset;
 		struct page *gref_page;
 
-		if (!seg) {printk_err ("seg is NULL\n"); ret = -EINVAL; goto out;}
+		if (!seg) {
+			printk_err("seg is NULL\n");
+			ret = -EINVAL;
+			goto out;
+		}
 
 		gref_size = (seg->nr_pages);
+		/* Use a proper way to calculate the nr_parts we need */
 		nr_parts =
-		    (seg->nr_pages * sizeof(uint32_t) + PAGE_SIZE -
-		     1) / PAGE_SIZE + 1;
+		    PAGE_ALIGN(seg->nr_pages * sizeof(uint32_t)) >> PAGE_SHIFT;
+
+		dprintk_deb
+		    ("seg->nr_pages = %u, sizeof=%u, PAGE_SIZE -1 = %u, nr_parts=%u\n",
+		     seg->nr_pages, sizeof(uint32_t), PAGE_SIZE - 1, nr_parts);
 
 		seg->nr_parts = nr_parts;
 #ifdef EXTRA_DEBUG_OMX
@@ -747,11 +762,16 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 		seg->gref_list = (uint32_t *) gref_vaddr;
 
-
+		dprintk_deb("count = gref_size (%d) + nr_parts (%d) = %d\n",
+			    gref_size, nr_parts, gref_size + nr_parts);
 		/* Allocate a set of grant references */
 		if ((ret =
-		     omx_xen_gnttab_alloc_grant_references(fe, gref_size + nr_parts,
-						   &seg->gref_head, &seg->gref_cookie))) {
+		     omx_xen_gnttab_alloc_grant_references(fe,
+							   gref_size +
+							   nr_parts * nr_parts,
+							   &seg->gref_head,
+							   &seg->
+							   gref_cookie))) {
 			printk_err("Cannot allocate %d grant references\n",
 				   gref_size + nr_parts);
 			goto out;
@@ -772,16 +792,28 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 			gref_page = virt_to_page(tmp_vaddr);
 
+			dprintk_deb("%s: gref_head = %#x\n", __func__,
+				    *seg->gref_head);
 			gref =
-			    gnttab_claim_grant_reference(&seg->gref_head);
+			    omx_gnttab_claim_grant_reference(seg->gref_cookie);
+			dprintk_deb("%s: all_gref[%d] = %#lx, mfn=%#lx\n",
+				    __func__, k, gref, mfn);
+			if (gref == -ENOSPC) {
+				printk_err("Out of space for grefs!\n");
+
+				ret = -ENOSPC;
+				goto out;
+			}
+
 			mfn = pfn_to_mfn(page_to_pfn(gref_page));
 
+			seg->all_gref[k] = gref;
 			gnttab_grant_foreign_access_ref(gref, 0, mfn, 0);
 
-			seg->all_gref[k] = gref;
-			dprintk_deb("gref[%d] = %#x\n", k, seg->all_gref[k]);
+			dprintk_deb("%s: all_gref[%d] = %#lx, mfn=%#lx\n",
+				    __func__, k, seg->all_gref[k], mfn);
 			dprintk_deb
-			    ("gref= %d, gref_list is @%#lx, tmp_vaddr = %#lx, page=%p, mfn=%#lx\n",
+			    ("gref_list= %#lx, gref_list is @%#lx, tmp_vaddr = %#lx, page=%p, mfn=%#lx\n",
 			     gref, (unsigned long)seg->gref_list, tmp_vaddr,
 			     (void *)gref_page, mfn);
 		}
@@ -801,7 +833,17 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 			pfn = page_to_pfn(single_page);
 			mfn = pfn_to_mfn(pfn);
 			seg->gref_list[j] =
-			    gnttab_claim_grant_reference(&seg->gref_head);
+			    omx_gnttab_claim_grant_reference(seg->gref_cookie);
+			dprintk_deb("%s: gref_list[%d] = %#x\n", __func__, j,
+				    seg->gref_list[j]);
+
+			if (seg->gref_list[j] == -ENOSPC) {
+				printk_err("Out of space for grefs!\n");
+
+				ret = -ENOSPC;
+				goto out;
+			}
+
 			if (seg->gref_list[j] <= 0)
 				printk_err("ref is %d\n", seg->gref_list[j]);
 			gnttab_grant_foreign_access_ref(seg->gref_list[j], 0,
@@ -845,21 +887,20 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	//ndelay(1000);
 	/* FIXME: find a better way to get notified that a backend response has come */
 	if ((ret = wait_for_backend_response
-	    (&fe->requests[request_id], OMX_USER_REGION_STATUS_REGISTERING,
-	     &region->status_lock)) < 0) {
+	     (&fe->requests[request_id], OMX_USER_REGION_STATUS_REGISTERING,
+	      &region->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
 
-	if (fe->requests[request_id]== OMX_USER_REGION_STATUS_FAILED) {
+	if (fe->requests[request_id] == OMX_USER_REGION_STATUS_FAILED) {
 		printk_err
 		    ("Received failure from backend, will abort, status = %d\n",
 		     region->status);
 		ret = -EINVAL;
 		goto out;
 	}
-
 
 	ret = 0;
 out:
@@ -945,8 +986,10 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 #endif
 				continue;
 			}
-			gnttab_release_grant_reference(&seg->gref_head,
-						       seg->gref_list[j]);
+			//dprintk_deb( "%s: Releasing gref_list[%d]=%#lx\n", __func__,j, seg->gref_list[j]);
+			omx_gnttab_release_grant_reference(seg->gref_cookie,
+							   seg->gref_list[j]);
+			//gnttab_release_grant_reference(&seg->gref_head, seg->gref_list[j]);
 		}
 
 #ifdef EXTRA_DEBUG_OMX
@@ -977,8 +1020,14 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 				printk_inf
 				    ("Can't end foreign access for gref_list[%d] = %u, mfn=%#lx\n",
 				     j, seg->gref_list[j], mfn);
-			gnttab_release_grant_reference(&seg->gref_head,
-						       seg->gref_list[j]);
+				dprintk_deb
+				    ("%s: Releasing gref_list[%d]=%#lx\n",
+				     __func__, j, seg->gref_list[j]);
+				omx_gnttab_release_grant_reference(seg->
+								   gref_cookie,
+								   seg->
+								   gref_list
+								   [j]);
 				/* FIXME: Do we really need to fail with -EBUSY ? */
 				ret = -EBUSY;
 				goto out;
@@ -992,7 +1041,7 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 		/* Release all gref_list pages */
 		for (k = 0; k < seg->nr_parts; k++) {
 			dprintk_deb
-			    ("ending foreign access for part = %d, gref=%#x\n",
+			    ("pending foreign access for part = %d, gref=%#lx\n",
 			     k, seg->all_gref[k]);
 			ret = gnttab_query_foreign_access(seg->all_gref[k]);
 			if (ret) {
@@ -1010,10 +1059,14 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 				ret = -EBUSY;
 				goto out;
 			}
-			gnttab_release_grant_reference(&seg->gref_head,
-						       seg->all_gref[k]);
+			dprintk_deb
+			    ("%s: Releasing gref_head=%#lx, all_gref[%d]=%#lx\n",
+			     __func__, *seg->gref_head, k, seg->all_gref[k]);
+			omx_gnttab_release_grant_reference(seg->gref_cookie,
+							   seg->all_gref[k]);
 		}
-		omx_xen_gnttab_free_grant_references(endpoint->fe, &seg->gref_head, &seg->gref_cookie);
+		omx_xen_gnttab_free_grant_references(endpoint->fe,
+						     &seg->gref_cookie);
 
 		/* Since we use __get_free_pages, we call free_pages here */
 		free_pages((unsigned long)seg->gref_list,
@@ -1033,30 +1086,21 @@ out:
 	dprintk_out();
 	return ret;
 }
-void
-__omx_xen_user_region_last_release(struct kref * kref)
+
+void __omx_xen_user_region_last_release(struct kref *kref)
 {
 	int ret = 0, i = 0;
 	struct omx_cmd_destroy_user_region cmd;
 	//struct omx_user_region *region;
 	struct omx_user_region_segment *seg;
-	struct omx_user_region * region = container_of(kref, struct omx_user_region, xen_refcount);
+	struct omx_user_region *region =
+	    container_of(kref, struct omx_user_region, xen_refcount);
 	struct omx_endpoint *endpoint = region->endpoint;
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
 	struct omx_ring_msg_deregister_user_segment *ring_seg;
 	dprintk_in();
 
-#if 0
-	/* FIXME: find a better way to get notified that a backend response has come */
-	if ((ret = wait_for_backend_response
-	    (&region->status, OMX_USER_REGION_STATUS_DEREGISTERING,
-	     &region->status_lock)) < 0) {
-		printk_err("Failed to wait\n");
-	//	ret = -EINVAL;
-		goto out;
-	}
-#endif
 	//dprintk_inf("%s: region = %p\n", __func__, (void*) region);
 	/* Loop around segments to release grant references */
 	for (i = 0, seg = &region->segments[0]; i < region->nr_segments; i++) {
@@ -1103,8 +1147,10 @@ __omx_xen_user_region_last_release(struct kref * kref)
 #endif
 				continue;
 			}
-			gnttab_release_grant_reference(&seg->gref_head,
-						       seg->gref_list[j]);
+			dprintk_deb("%s: Releasing gref_list[%d]=%#lx\n",
+				    __func__, j, seg->gref_list[j]);
+			omx_gnttab_release_grant_reference(seg->gref_cookie,
+							   seg->gref_list[j]);
 		}
 
 #ifdef EXTRA_DEBUG_OMX
@@ -1122,7 +1168,7 @@ __omx_xen_user_region_last_release(struct kref * kref)
 			vaddr = page_address(single_page);
 			mfn = virt_to_mfn(vaddr);
 
-			//dprintk_deb("gref_list[%d] = %u, mfn=%#lx\n", j, seg->gref_list[j], mfn);
+			//dprintk_deb( "%s: gref_list[%d] = %u, mfn=%#lx\n", __func__, j, seg->gref_list[j], mfn);
 			if (gnttab_query_foreign_access(seg->gref_list[j]))
 				printk_inf
 				    ("gref_list[%d] = %u, mfn=%#lx is still in use by the backend!\n",
@@ -1133,8 +1179,10 @@ __omx_xen_user_region_last_release(struct kref * kref)
 				printk_inf
 				    ("Can't end foreign access for gref_list[%d] = %u, mfn=%#lx\n",
 				     j, seg->gref_list[j], mfn);
-			gnttab_release_grant_reference(&seg->gref_head,
-						       seg->gref_list[j]);
+			dprintk_deb("%s: Releasing gref_list[%d]=%#lx\n",
+				    __func__, j, seg->gref_list[j]);
+			omx_gnttab_release_grant_reference(seg->gref_cookie,
+							   seg->gref_list[j]);
 		}
 
 		/* We no longer need this buffer space */
@@ -1144,7 +1192,7 @@ __omx_xen_user_region_last_release(struct kref * kref)
 		/* Release all gref_list pages */
 		for (k = 0; k < seg->nr_parts; k++) {
 			dprintk_deb
-			    ("ending foreign access for part = %d, gref=%#x\n",
+			    ("pending foreign access for part = %d, gref=%#lx\n",
 			     k, seg->all_gref[k]);
 			ret = gnttab_query_foreign_access(seg->all_gref[k]);
 			if (ret) {
@@ -1159,10 +1207,14 @@ __omx_xen_user_region_last_release(struct kref * kref)
 				    ("Can't end foreign access for gref_list[%d] = %u, is still in use by the backend!\n",
 				     k, seg->all_gref[k]);
 			}
-			gnttab_release_grant_reference(&seg->gref_head,
-						       seg->all_gref[k]);
+			dprintk_deb
+			    ("%s: Releasing gref_head=%#lx all_gref[%d]=%#lx\n",
+			     __func__, seg->gref_head, k, seg->all_gref[k]);
+			omx_gnttab_release_grant_reference(seg->gref_cookie,
+							   seg->all_gref[k]);
 		}
-		omx_xen_gnttab_free_grant_references(endpoint->fe, &seg->gref_head, &seg->gref_cookie);
+		omx_xen_gnttab_free_grant_references(endpoint->fe,
+						     &seg->gref_cookie);
 
 		/* Since we use __get_free_pages, we call free_pages here */
 		free_pages((unsigned long)seg->gref_list,
@@ -1178,7 +1230,7 @@ __omx_xen_user_region_last_release(struct kref * kref)
 
 out_from_backend:
 	cmd.id = region->id;
-	omx_ioctl_user_region_destroy(endpoint, &cmd);
+	omx_ioctl_user_region_destroy(endpoint, region->uparam);
 out:
 	dprintk_out();
 	//return ret;
@@ -1187,7 +1239,8 @@ out:
 static void
 __omx_xen_user_region_rcu_release_callback(struct rcu_head *xen_rcu_head)
 {
-	struct omx_user_region * region = container_of(xen_rcu_head, struct omx_user_region, xen_rcu_head);
+	struct omx_user_region *region =
+	    container_of(xen_rcu_head, struct omx_user_region, xen_rcu_head);
 	dprintk_in();
 	kref_put(&region->xen_refcount, __omx_xen_user_region_last_release);
 	dprintk_out();
@@ -1215,7 +1268,6 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 		goto out;
 	}
 
-
 	/* Get a hold on the region pointer.
 	 * FIXME: If we fail, its possible that the region
 	 * is already released by the previous function (if its a PULL request message).
@@ -1232,15 +1284,9 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 	}
 	spin_unlock(&endpoint->user_regions_lock);
 
-
 	//dprintk_inf("%s: region = %p\n", __func__, (void*) region);
-	/* Prepare the message to the backend */
-#if 0
-	spin_lock(&region->status_lock);
-	region->status = OMX_USER_REGION_STATUS_DEREGISTERING;
-	spin_unlock(&region->status_lock);
-#endif
 
+	/* Prepare the message to the backend */
 	/* FIXME: maybe create a static inline function for this stuff ? */
 	ring_req = omx_ring_get_request(fe);
 	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
@@ -1265,7 +1311,6 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 		ring_seg->eid = endpoint->endpoint_index;
 	}
 
-
 	dprintk_deb("send request to de-register region id=%d\n", cmd.id);
 	//dump_xen_ring_msg_destroy_user_region(&ring_req->data.dur);
 
@@ -1273,13 +1318,14 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 
 	/* FIXME: find a better way to get notified that a backend response has come */
 	if ((ret = wait_for_backend_response
-	    (&fe->requests[request_id], OMX_USER_REGION_STATUS_DEREGISTERING,
-	     &region->status_lock)) < 0) {
+	     (&fe->requests[request_id], OMX_USER_REGION_STATUS_DEREGISTERING,
+	      &region->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
-	//	ret = -EINVAL;
+		//      ret = -EINVAL;
 		goto out;
 	}
 
+	/* Disabling the call_rcu temporarily */
 	//call_rcu(&region->xen_rcu_head, __omx_xen_user_region_rcu_release_callback);
 
 	if (fe->requests[request_id] == OMX_USER_REGION_STATUS_FAILED) {
@@ -1289,9 +1335,11 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 		ret = -EINVAL;
 		goto out;
 	}
+	region->uparam = uparam;
 	kref_put(&region->xen_refcount, __omx_xen_user_region_last_release);
 
-        RCU_INIT_POINTER(endpoint->user_regions[cmd.id], NULL);
+	/* Let the Open-MX function handle this properly */
+	//RCU_INIT_POINTER(endpoint->user_regions[cmd.id], NULL);
 
 	ret = 0;
 out:

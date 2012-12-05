@@ -356,6 +356,9 @@ int omx_xen_endpoint_ungrant_resources(struct omx_endpoint *endpoint)
 		     endpoint->recvq_gref, recvq_mfn);
 	}
 
+	gnttab_release_grant_reference(&endpoint->gref_head,
+				       endpoint->recvq_gref);
+
 	/* Release endpoint page grant */
 	endpoint_mfn = virt_to_mfn(endpoint);
 	/* Extra check, just to be sure nothing gets corrupt */
@@ -373,7 +376,7 @@ int omx_xen_endpoint_ungrant_resources(struct omx_endpoint *endpoint)
 	gnttab_end_foreign_access_ref(endpoint->endpoint_gref, 0);
 
 	gnttab_release_grant_reference(&endpoint->gref_head,
-				       endpoint->recvq_gref);
+				       endpoint->endpoint_gref);
 
 	gnttab_free_grant_references(endpoint->gref_head);
 

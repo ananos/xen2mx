@@ -449,7 +449,7 @@ omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint,
 
 	ret = copy_from_user(&cmd, uparam, sizeof(cmd));
 	if (unlikely(ret != 0)) {
-		dprintk_deb("Open-MX: Failed to read destroy region cmd\n");
+		printk_err("Open-MX: Failed to read destroy region cmd\n");
 		ret = -EFAULT;
 		goto out;
 	}
@@ -464,7 +464,7 @@ omx_ioctl_user_region_destroy(struct omx_endpoint * endpoint,
 
 	region = rcu_dereference_protected(endpoint->user_regions[cmd.id], 1);
 	if (unlikely(!region)) {
-		//printk(KERN_ERR "Open-MX: Cannot destroy unexisting region %d\n", cmd.id);
+		printk(KERN_ERR "Open-MX: Cannot destroy unexisting region %d\n", cmd.id);
 		goto out_with_endpoint_lock;
 	}
 
