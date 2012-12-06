@@ -35,7 +35,7 @@
 
 /* FIXME: Don't miss this one!!!,
  * allocated memory in the backend rises exponentially  */
-#define OMX_XEN_COOKIES 1
+//#define OMX_XEN_COOKIES 1
 
 struct omx_cmd_xen_send_mediumsq_frag_done {
 	struct omx_evt_send_mediumsq_frag_done sq_frag_done;

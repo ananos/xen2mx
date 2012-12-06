@@ -127,8 +127,8 @@ struct omx_xen_user_region {
 		struct vm_struct *vm_gref[OMX_XEN_GRANT_PAGES_MAX];
 		grant_handle_t *handles;
 		uint8_t nr_parts;
-		//struct gnttab_map_grant_ref **map;
-		//struct gnttab_unmap_grant_ref **unmap;
+		struct gnttab_map_grant_ref *map;
+		struct gnttab_unmap_grant_ref *unmap;
 		uint32_t **gref_list;
 #ifdef OMX_XEN_COOKIES
 		struct omx_xen_page_cookie **cookies;
