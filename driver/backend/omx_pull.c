@@ -813,6 +813,7 @@ omx_pull_handle_notify(struct omx_pull_handle * handle)
 		//rcu_assign_pointer(endpoint->xen_regions[handle->xregion->id], NULL);
 		//kfree(handle->xregion);
 		omx_poke_domU(omx_xenif, ring_resp);
+		omx_pull_handle_release(handle);
 	} else
 
 	{
