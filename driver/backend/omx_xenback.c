@@ -875,6 +875,10 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 						       vaddr,
 						       nr_segments,
 						       nr_pages, nr_grefs, eid);
+			if (ret)
+				printk_err
+					("Failed to register user region %u, ret =%d\n",
+					     id, ret);
 
 			for (i = 0; i < nr_segments; i++) {
 				struct omx_ring_msg_register_user_segment *seg;
@@ -1007,14 +1011,25 @@ int omx_xenback_process_specific(omx_xenif_t * omx_xenif, uint32_t func, struct
 	dprintk_in();
 	spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
 	endpoint = omx_xenback_get_endpoint(be, req);
+	BUG_ON(!endpoint);
 	spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 
 	switch (func) {
 	case OMX_CMD_PULL:{
+			struct omx_cmd_pull pull;
 			dprintk_deb
 			    ("received frontend request: OMX_CMD_PULL, param=%lx\n",
 			     sizeof(struct omx_cmd_xen_pull));
-			ret = omx_ioctl_pull(endpoint, &req->data.pull.pull);
+			spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+
+			/* getting connect request structure */
+			memcpy(&pull, &req->data.pull.pull,
+			       sizeof(pull));
+
+			//ret = omx_ioctl_send_rndv(endpoint, &req->data.send_rndv.rndv);
+			spin_unlock_irqrestore
+			    (&omx_xenif->omx_ring_lock, flags);
+			ret = omx_ioctl_pull(endpoint, &pull);
 
 			break;
 		}
@@ -1192,9 +1207,13 @@ int omx_xenback_process_specific(omx_xenif_t * omx_xenif, uint32_t func, struct
 		}
 	}
 
+
 	spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
 	omx_xenback_prepare_response(endpoint, req, resp, ret);
 	spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
+	if (ret) {
+		printk_err("Something bad happened!, ret = %d\n");
+	}
 
 out:
 	dprintk_out();
