@@ -926,6 +926,7 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 	struct omx_user_region_segment *seg;
 	dprintk_in();
 
+	TIMER_START(&t_destroy_reg);
 	/* Get a hold on the region pointer */
 	spin_lock(&endpoint->user_regions_lock);
 	if (unlikely
@@ -1083,6 +1084,7 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 
 	ret = 0;
 out:
+	TIMER_STOP(&t_destroy_reg);
 	dprintk_out();
 	return ret;
 }
@@ -1101,6 +1103,7 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 	struct omx_ring_msg_deregister_user_segment *ring_seg;
 	dprintk_in();
 
+	//TIMER_START(&t_destroy_reg);
 	//dprintk_inf("%s: region = %p\n", __func__, (void*) region);
 	/* Loop around segments to release grant references */
 	for (i = 0, seg = &region->segments[0]; i < region->nr_segments; i++) {
@@ -1232,6 +1235,7 @@ out_from_backend:
 	cmd.id = region->id;
 	omx_ioctl_user_region_destroy(endpoint, region->uparam);
 out:
+	//TIMER_STOP(&t_destroy_reg);
 	dprintk_out();
 	//return ret;
 }
