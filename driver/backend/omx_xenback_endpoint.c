@@ -514,9 +514,6 @@ int omx_xen_endpoint_release_resources(struct omx_endpoint *endpoint,
 
         gnttab_unmap_refs(endpoint->sendq_unmap, NULL, endpoint->xen_sendq_pages, sendq_gref_size);
 
-#ifdef OMX_XEN_COOKIES
-	omx_xen_page_put_cookie(endpoint->omx_xenif, endpoint->sendq_cookie);
-#endif
 	gnttab_set_unmap_op(&ops, (unsigned long)endpoint->xen_sendq_vm->addr,
 			    GNTMAP_host_map | GNTMAP_contains_pte,
 			    endpoint->xen_sendq_handle);
@@ -548,10 +545,6 @@ int omx_xen_endpoint_release_resources(struct omx_endpoint *endpoint,
 #endif
 
         gnttab_unmap_refs(endpoint->recvq_unmap, NULL, endpoint->xen_recvq_pages, recvq_gref_size);
-
-#ifdef OMX_XEN_COOKIES
-	omx_xen_page_put_cookie(endpoint->omx_xenif, endpoint->recvq_cookie);
-#endif
 
 	gnttab_set_unmap_op(&ops, (unsigned long)endpoint->xen_recvq_vm->addr,
 			    GNTMAP_host_map | GNTMAP_contains_pte,

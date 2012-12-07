@@ -151,10 +151,11 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 	kfree(seg->map);
 	kfree(seg->unmap);
 	kfree(seg->gref_list);
+#ifdef OMX_XEN_COOKIES
+	omx_xen_page_put_cookie(omx_xenif, seg->cookie);
+#else
 	free_xenballooned_pages(seg->nr_pages, seg->pages);
 	kfree(seg->pages);
-#ifdef OMX_XEN_COOKIES
-	kfree(seg->cookies);
 #endif
 
 out:
@@ -347,22 +348,6 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 		goto out;
 	}
 
-	page_list = kzalloc(sizeof(struct page *) * nr_pages, GFP_ATOMIC);
-	if (!page_list) {
-		ret = -ENOMEM;
-		printk_err(" page list is NULL, ENOMEM!!!\n");
-		goto out;
-	}
-#ifdef OMX_XEN_COOKIES
-	seg->cookies =
-	    kzalloc(sizeof(struct omx_xen_page_cookie *) * nr_pages,
-		    GFP_ATOMIC);
-	if (!seg->cookies) {
-		ret = -ENOMEM;
-		printk_err(" seg->cookies is NULL, ENOMEM!!!\n");
-		goto out;
-	}
-#endif
 	map =
 	    kzalloc(sizeof(struct gnttab_map_grant_ref) * nr_pages,
 		    GFP_ATOMIC);
@@ -380,11 +365,27 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 		goto out;
 	}
 
+#ifdef OMX_XEN_COOKIES
+	seg->cookie = omx_xen_page_get_cookie(omx_xenif, nr_pages);
+	if (!seg->cookie) {
+		printk_err("cannot get cookie\n");
+		goto out;
+	}
+	page_list = seg->cookie->pages;
+#else
+	page_list = kzalloc(sizeof(struct page *) * nr_pages, GFP_ATOMIC);
+	if (!page_list) {
+		ret = -ENOMEM;
+		printk_err(" page list is NULL, ENOMEM!!!\n");
+		goto out;
+	}
+
 	ret = alloc_xenballooned_pages(nr_pages, page_list, false /* lowmem */);
 	if (ret) {
 		printk_err("cannot allocate xenballooned_pages\n");
 		goto out;
 	}
+#endif
 
 	for (k = 0; k < nr_parts; k++) {
 		ret =

@@ -131,7 +131,7 @@ struct omx_xen_user_region {
 		struct gnttab_unmap_grant_ref *unmap;
 		uint32_t **gref_list;
 #ifdef OMX_XEN_COOKIES
-		struct omx_xen_page_cookie **cookies;
+		struct omx_xen_page_cookie *cookie;
 #endif
 		uint16_t gref_offset;
 		struct page **pages;
