@@ -25,6 +25,7 @@
 #include <xen/page.h>
 #include <xen/xenbus.h>
 #include <xen/events.h>
+#include <xen/balloon.h>
 #include <xen/grant_table.h>
 #include <xen/interface/io/ring.h>
 #include <xen/interface/io/xenbus.h>
@@ -258,8 +259,9 @@ int omx_xen_endpoint_accept_resources(struct omx_endpoint *endpoint,
 	grant_ref_t *recvq_gref_list;
 	struct page **sendq_page_list;
 	struct page **recvq_page_list;
-	uint32_t *xen_sendq_handles;
-	uint32_t *xen_recvq_handles;
+	struct gnttab_map_grant_ref *sendq_map, *recvq_map;
+        struct gnttab_unmap_grant_ref *sendq_unmap, *recvq_unmap;
+
 	void *void_vaddr;
 
 	dprintk_in();
@@ -305,20 +307,51 @@ int omx_xen_endpoint_accept_resources(struct omx_endpoint *endpoint,
 		goto out;
 	}
 
-	xen_sendq_handles =
-	    kmalloc(sizeof(uint32_t) * sendq_gref_size, GFP_KERNEL);
-	if (!xen_sendq_handles) {
-		ret = -ENOMEM;
-		printk_err(" page list is NULL, ENOMEM!!!\n");
-		goto out;
-	}
-	xen_recvq_handles =
-	    kmalloc(sizeof(uint32_t) * recvq_gref_size, GFP_KERNEL);
-	if (!xen_recvq_handles) {
-		ret = -ENOMEM;
-		printk_err(" page list is NULL, ENOMEM!!!\n");
-		goto out;
-	}
+        ret = alloc_xenballooned_pages(sendq_gref_size, sendq_page_list, false /* lowmem */);
+        if (ret) {
+                printk_err("cannot allocate xenballooned_pages\n");
+                goto out;
+        }
+
+        ret = alloc_xenballooned_pages(recvq_gref_size, recvq_page_list, false /* lowmem */);
+        if (ret) {
+                printk_err("cannot allocate xenballooned_pages\n");
+                goto out;
+        }
+
+        sendq_map =
+            kzalloc(sizeof(struct gnttab_map_grant_ref) * sendq_gref_size,
+                    GFP_ATOMIC);
+        if (!sendq_map) {
+                ret = -ENOMEM;
+                printk_err(" map is NULL, ENOMEM!!!\n");
+                goto out;
+        }
+        sendq_unmap =
+            kzalloc(sizeof(struct gnttab_unmap_grant_ref) * sendq_gref_size,
+                    GFP_ATOMIC);
+        if (!sendq_unmap) {
+                ret = -ENOMEM;
+                printk_err(" unmap is NULL, ENOMEM!!!\n");
+                goto out;
+        }
+
+        recvq_map =
+            kzalloc(sizeof(struct gnttab_map_grant_ref) * recvq_gref_size,
+                    GFP_ATOMIC);
+        if (!recvq_map) {
+                ret = -ENOMEM;
+                printk_err(" map is NULL, ENOMEM!!!\n");
+                goto out;
+        }
+        recvq_unmap =
+            kzalloc(sizeof(struct gnttab_unmap_grant_ref) * recvq_gref_size,
+                    GFP_ATOMIC);
+        if (!recvq_unmap) {
+                ret = -ENOMEM;
+                printk_err(" unmap is NULL, ENOMEM!!!\n");
+                goto out;
+        }
 
 	ret =
 	    omx_xen_accept_queue_grefs(omx_xenif, endpoint, sendq_gref,
@@ -333,6 +366,53 @@ int omx_xen_endpoint_accept_resources(struct omx_endpoint *endpoint,
 	sendq_gref_list = (uint32_t *) void_vaddr;
 	endpoint->xen_sendq_list = sendq_gref_list;
 
+	i = 0;
+	while (i < sendq_gref_size) {
+                unsigned long addr = (unsigned long)pfn_to_kaddr(page_to_pfn(sendq_page_list[i]));
+		grant_ref_t gref;
+
+		gref = sendq_gref_list[i];
+
+                gnttab_set_map_op(&sendq_map[i], addr, GNTMAP_host_map,
+                                  gref, be->remoteDomain);
+                gnttab_set_unmap_op(&sendq_unmap[i], addr, GNTMAP_host_map, -1 /* handle */ );
+
+		dprintk_deb("gref[%d] = %#x\n", i, gref);
+
+		i++;
+	}
+        ret = gnttab_map_refs(sendq_map, NULL, sendq_page_list, sendq_gref_size);
+        if (ret) {
+                printk_err("Error mapping, ret= %d\n", ret);
+                goto out;
+        }
+
+        for (i = 0; i < sendq_gref_size; i++) {
+                if (sendq_map[i].status) {
+                        ret = -EINVAL;
+                        printk_err("idx %d, status =%d\n", i, sendq_map[i].status);
+                        goto out;
+                }
+                else {
+                        //BUG_ON(map->map_ops[i].handle == -1);
+                        sendq_unmap[i].handle = sendq_map[i].handle;
+                        dprintk_deb("map handle=%d\n", sendq_map[i].handle);
+                }
+        }
+
+	endpoint->xen_sendq_pages = sendq_page_list;
+	endpoint->sendq_map = sendq_map;
+	endpoint->sendq_unmap = sendq_unmap;
+
+	/* FIXME:
+	 * That's what we should be able to do. Map the entire set of physical pages,
+	 * holding the data from the frontend to a  virtually contiguous space, addressable
+	 * from the dom0 kernel
+	 */
+#if 0
+	endpoint->xen_sendq =
+	    vmap(sendq_page_list, sendq_gref_size, VM_MAP, PAGE_KERNEL);
+#endif
 	ret =
 	    omx_xen_accept_queue_grefs(omx_xenif, endpoint, recvq_gref,
 				       &endpoint->xen_recvq_vm,
@@ -348,81 +428,44 @@ int omx_xen_endpoint_accept_resources(struct omx_endpoint *endpoint,
 	recvq_gref_list = (uint32_t *) void_vaddr;
 	endpoint->xen_recvq_list = recvq_gref_list;
 
-	i = 0;
-	while (i < sendq_gref_size) {
-		void *tmp_vaddr;
-		struct page *page = NULL;
-		grant_ref_t gref;
-		grant_handle_t handle;
-
-		gref = sendq_gref_list[i];
-		dprintk_deb("gref[%d] = %#x\n", i, gref);
-		ret =
-		    omx_xen_map_page(be, gref, &tmp_vaddr, &handle, NULL, NULL);
-		if (ret) {
-			printk_err("map page failed!, ret = %d\n", ret);
-			goto out;
-		}
-		xen_sendq_handles[i] = handle;
-		dprintk_deb("handle[%d] = %#x\n", i, handle);
-		if (!virt_addr_valid(tmp_vaddr)) {
-			ret = -EINVAL;
-			printk_err("Virt addr invalid:(\n");
-			//goto out;
-		} else {
-			page = virt_to_page(tmp_vaddr);
-		}
-		if (!page)
-			printk_err("No page found:(\n");
-		else {
-			sendq_page_list[i] = page;
-		}
-		dprintk_deb("page[%d] = %#lx\n", i, (unsigned long)page);
-
-		i++;
-	}
-	endpoint->xen_sendq_pages = sendq_page_list;
-	endpoint->xen_sendq_handles = xen_sendq_handles;
-
-	/* FIXME:
-	 * That's what we should be able to do. Map the entire set of physical pages,
-	 * holding the data from the frontend to a  virtually contiguous space, addressable
-	 * from the dom0 kernel
-	 */
-#if 0
-	endpoint->xen_sendq =
-	    vmap(sendq_page_list, sendq_gref_size, VM_MAP, PAGE_KERNEL);
-#endif
 
 	i = 0;
 	while (i < recvq_gref_size) {
-		void *tmp_vaddr;
-		struct page *page = NULL;
+                unsigned long addr = (unsigned long)pfn_to_kaddr(page_to_pfn(recvq_page_list[i]));
+		grant_ref_t gref;
 
-		ret =
-		    omx_xen_map_page(be, recvq_gref_list[i], &tmp_vaddr,
-				     &xen_recvq_handles[i], NULL, NULL);
-		if (ret) {
-			printk_err("map page failed!, ret = %d\n", ret);
-			goto out;
-		}
-		if (!virt_addr_valid(tmp_vaddr)) {
-			ret = -EINVAL;
-			printk_err("Virt addr invalid:(\n");
-			//goto out;
-		} else {
-			page = virt_to_page(tmp_vaddr);
-		}
-		if (!page)
-			printk_err("No page found:(\n");
-		else {
-			recvq_page_list[i] = page;
-		}
+		gref = recvq_gref_list[i];
+
+                gnttab_set_map_op(&recvq_map[i], addr, GNTMAP_host_map,
+                                  gref, be->remoteDomain);
+                gnttab_set_unmap_op(&recvq_unmap[i], addr, GNTMAP_host_map, -1 /* handle */ );
+
+		dprintk_deb("gref[%d] = %#x\n", i, gref);
 
 		i++;
 	}
+        ret = gnttab_map_refs(recvq_map, NULL, recvq_page_list, recvq_gref_size);
+        if (ret) {
+                printk_err("Error mapping, ret= %d\n", ret);
+                goto out;
+        }
+
+        for (i = 0; i < recvq_gref_size; i++) {
+                if (recvq_map[i].status) {
+                        ret = -EINVAL;
+                        printk_err("idx %d, status =%d\n", i, recvq_map[i].status);
+                        goto out;
+                }
+                else {
+                        //BUG_ON(map->map_ops[i].handle == -1);
+                        recvq_unmap[i].handle = recvq_map[i].handle;
+                        dprintk_deb("map handle=%d\n", recvq_map[i].handle);
+                }
+        }
+
 	endpoint->xen_recvq_pages = recvq_page_list;
-	endpoint->xen_recvq_handles = xen_recvq_handles;
+	endpoint->recvq_map = recvq_map;
+	endpoint->recvq_unmap = recvq_unmap;
 
 	/* FIXME:
 	 * That's what we should be able to do. Map the entire set of physical pages,
@@ -469,26 +512,11 @@ int omx_xen_endpoint_release_resources(struct omx_endpoint *endpoint,
 	vunmap(endpoint->xen_sendq);
 #endif
 
-	for (i = 0; i < sendq_gref_size; i++) {
-		struct page *page;
-		grant_handle_t handle;
-		page = endpoint->xen_sendq_pages[i];
-		if (!page) {
-			printk_err("sendq_page[%d] is NULL\n", i);
-			ret = -EINVAL;
-			goto out;
-		}
-		handle = endpoint->xen_sendq_handles[i];
+        gnttab_unmap_refs(endpoint->sendq_unmap, NULL, endpoint->xen_sendq_pages, sendq_gref_size);
 
-		dprintk_deb("putting page %#lx, addr=%#lx\n",
-			    (unsigned long)page, page_address(page));
-		ret = omx_xen_unmap_page(handle, page);
-		if (ret) {
-			printk_err("sendq_page[%d] is NULL\n", i);
-			ret = -EINVAL;
-			goto out;
-		}
-	}
+#ifdef OMX_XEN_COOKIES
+	omx_xen_page_put_cookie(endpoint->omx_xenif, endpoint->sendq_cookie);
+#endif
 	gnttab_set_unmap_op(&ops, (unsigned long)endpoint->xen_sendq_vm->addr,
 			    GNTMAP_host_map | GNTMAP_contains_pte,
 			    endpoint->xen_sendq_handle);
@@ -518,26 +546,13 @@ int omx_xen_endpoint_release_resources(struct omx_endpoint *endpoint,
 	}
 	vunmap(endpoint->xen_recvq);
 #endif
-	for (i = 0; i < recvq_gref_size; i++) {
-		struct page *page;
-		grant_handle_t handle;
-		page = endpoint->xen_recvq_pages[i];
-		if (!page) {
-			printk_err("recvq_page[%d] is NULL\n", i);
-			ret = -EINVAL;
-			goto out;
-		}
-		handle = endpoint->xen_recvq_handles[i];
 
-		dprintk_deb("putting page %#lx, addr=%#lx\n",
-			    (unsigned long)page, page_address(page));
-		ret = omx_xen_unmap_page(handle, page);
-		if (ret) {
-			printk_err("sendq_page[%d] is NULL\n", i);
-			ret = -EINVAL;
-			goto out;
-		}
-	}
+        gnttab_unmap_refs(endpoint->recvq_unmap, NULL, endpoint->xen_recvq_pages, recvq_gref_size);
+
+#ifdef OMX_XEN_COOKIES
+	omx_xen_page_put_cookie(endpoint->omx_xenif, endpoint->recvq_cookie);
+#endif
+
 	gnttab_set_unmap_op(&ops, (unsigned long)endpoint->xen_recvq_vm->addr,
 			    GNTMAP_host_map | GNTMAP_contains_pte,
 			    endpoint->xen_recvq_handle);
@@ -581,10 +596,15 @@ int omx_xen_endpoint_release_resources(struct omx_endpoint *endpoint,
 		ret = ops.status;
 		goto out;
 	}
+
+	kfree(endpoint->sendq_map);
+	kfree(endpoint->sendq_unmap);
+	kfree(endpoint->recvq_map);
+	kfree(endpoint->recvq_unmap);
+	free_xenballooned_pages(sendq_gref_size, endpoint->xen_sendq_pages);
+	free_xenballooned_pages(recvq_gref_size, endpoint->xen_recvq_pages);
 	kfree(endpoint->xen_sendq_pages);
 	kfree(endpoint->xen_recvq_pages);
-	kfree(endpoint->xen_sendq_handles);
-	kfree(endpoint->xen_recvq_handles);
 	free_vm_area(endpoint->xen_sendq_vm);
 	free_vm_area(endpoint->xen_recvq_vm);
 	free_vm_area(endpoint->endpoint_vm);
@@ -705,7 +725,7 @@ static void __omx_xen_endpoint_last_release(struct kref *kref)
 		schedule_work(&endpoint->destroy_work);
 	} else {
 		omx_endpoint_free_resources(endpoint);
-		kfree(endpoint);
+		//kfree(endpoint);
 	}
 #endif
 }

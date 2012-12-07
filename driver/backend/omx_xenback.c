@@ -143,6 +143,7 @@ static int omx_xen_setup_and_send_mediumsq_frag(struct omx_endpoint *endpoint, s
 }
 
 #define MEDIUMVA_FAKE 0
+/* don't use this one for now. It's completely broken. */
 static int omx_xen_setup_and_send_mediumva(struct omx_endpoint *endpoint, struct omx_cmd_xen_send_mediumva
 					   *cmd)
 {
@@ -167,6 +168,10 @@ static int omx_xen_setup_and_send_mediumva(struct omx_endpoint *endpoint, struct
 
 	dprintk_in();
 
+	/* don't use this one for now. It's completely broken. */
+	BUG();
+
+#if 0
 	spin_lock_irqsave(&endpoint->be->omx_xenif->omx_send_lock, flags);
 	nr_pages = cmd->nr_pages;
 
@@ -270,6 +275,7 @@ static int omx_xen_setup_and_send_mediumva(struct omx_endpoint *endpoint, struct
 	}
 
 	kfree(pages);
+#endif
 
 out:
 	dprintk_out();

@@ -136,6 +136,14 @@ struct omx_endpoint {
 	uint32_t xen_sendq_handle;
 	uint32_t *xen_sendq_handles;
 
+	struct gnttab_map_grant_ref *sendq_map;
+	struct gnttab_unmap_grant_ref *sendq_unmap;
+	struct gnttab_map_grant_ref *recvq_map;
+	struct gnttab_unmap_grant_ref *recvq_unmap;
+
+	struct omx_xen_page_cookie *recvq_cookie;
+	struct omx_xen_page_cookie *sendq_cookie;
+
 	struct vm_struct *xen_recvq_vm;
 	uint32_t xen_recvq_gref_size;
 	uint32_t *xen_recvq_list;
