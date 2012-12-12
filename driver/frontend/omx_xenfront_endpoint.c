@@ -73,6 +73,7 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_send_liback);
 	omx_xen_timer_reset(&t_create_reg);
 	omx_xen_timer_reset(&t_wait_destroy_reg);
+	omx_xen_timer_reset(&t_wait_create_reg);
 	omx_xen_timer_reset(&t_destroy_reg);
 	omx_xen_timer_reset(&t_reg_seg);
 	omx_xen_timer_reset(&t_dereg_seg);
@@ -118,6 +119,7 @@ static void printk_timers(void)
 	printk_timer(&t_send_rndv, var_name(t_send_rndv));
 	printk_timer(&t_send_liback, var_name(t_send_liback));
 	printk_timer(&t_create_reg, var_name(t_create_reg));
+	printk_timer(&t_wait_create_reg, var_name(t_wait_create_reg));
 	printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
 	printk_timer(&t_wait_destroy_reg, var_name(t_wait_destroy_reg));
 	printk_timer(&t_poke_dom0, var_name(t_poke_dom0));

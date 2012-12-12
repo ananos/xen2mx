@@ -1064,8 +1064,12 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_buf_callback(struct omx_user
 			/* next page */
 			page++;
 			pageoff = 0;
-			dprintk(REG, "switching offset cache to next page #%ld\n",
-				(unsigned long) (page - &cache->seg->pages[0]));
+			if (cache->xen)
+				dprintk_deb("switching offset cache to next page #%ld\n",
+					(unsigned long) (page - &cache->xseg->pages[0]));
+			else
+				dprintk(REG, "switching offset cache to next page #%ld\n",
+					(unsigned long) (page - &cache->seg->pages[0]));
 		} else {
 			/* same page */
 			pageoff += chunk;
@@ -1220,8 +1224,12 @@ omx_user_region_offset_cache_dma_contig_memcpy_from_pg_callback(struct omx_user_
 			/* next page */
 			page++;
 			pageoff = 0;
-			dprintk(REG, "switching offset cache to next page #%ld\n",
-				(unsigned long) (page - &cache->seg->pages[0]));
+			if (cache->xen)
+				dprintk_deb("switching offset cache to next page #%ld\n",
+					(unsigned long) (page - &cache->xseg->pages[0]));
+			else
+				dprintk(REG, "switching offset cache to next page #%ld\n",
+					(unsigned long) (page - &cache->seg->pages[0]));
 		} else {
 			/* same page */
 			pageoff += chunk;
@@ -1549,7 +1557,7 @@ omx_user_region_fill_pages(const struct omx_user_region * region, const struct o
 		for(iseg=0; iseg<xregion->nr_segments; iseg++) {
 			const struct omx_xen_user_region_segment * segment = &xregion->segments[iseg];
 			dprintk(REG,
-				"looking at segment #%d length %ld for offset %ld length %ld\n",
+				"XEN looking at segment #%d length %ld for offset %ld length %ld\n",
 				iseg, (unsigned long) segment->length, segment_offset, remaining);
 
 			/* skip segment if offset is beyond it */
@@ -1564,7 +1572,7 @@ omx_user_region_fill_pages(const struct omx_user_region * region, const struct o
 				/* fill the end of this segment and jump to the next one */
 				unsigned long chunk = segment->length - segment_offset;
 				dprintk(REG,
-					"filling pages from segment #%d offset %ld length %ld\n",
+					"XEN filling pages from segment #%d offset %ld length %ld\n",
 					iseg, segment_offset, chunk);
 				omx__xen_user_region_segment_fill_pages(segment, segment_offset,
 								    skb, skb_offset,
@@ -1578,7 +1586,7 @@ omx_user_region_fill_pages(const struct omx_user_region * region, const struct o
 			} else {
 				/* the whole data is in this segment */
 				dprintk(REG,
-					"last filling pages from segment #%d offset %ld length %ld\n",
+					"XEN last filling pages from segment #%d offset %ld length %ld\n",
 					iseg, segment_offset, remaining);
 				omx__xen_user_region_segment_fill_pages(segment, segment_offset,
 								    skb, skb_offset,

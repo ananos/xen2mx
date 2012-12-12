@@ -48,5 +48,5 @@ open-mx-backend-objs	:= omx_main.o omx_dev.o omx_peer.o omx_raw.o	\
 		   omx_dma.o omx_shared.o omx_xen.o             \
 		   omx_xenback.o omx_xen_lib.o                  \
 		   omx_xenback_endpoint.o omx_xenback_reg.o     \
-		   omx_xenback_event.o
+		   omx_xenback_event.o omx_xenback_dma.o
 
