@@ -901,7 +901,7 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 		goto out;
 	}
 
-	if (fe->requests[request_id] == OMX_USER_REGION_STATUS_FAILED) {
+	if (fe->requests[request_id] != OMX_USER_REGION_STATUS_REGISTERED) {
 		printk_err
 		    ("Received failure from backend, will abort, status = %d\n",
 		     region->status);
@@ -1348,7 +1348,7 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 	/* Disabling the call_rcu temporarily */
 	//call_rcu(&region->xen_rcu_head, __omx_xen_user_region_rcu_release_callback);
 
-	if (fe->requests[request_id] == OMX_USER_REGION_STATUS_FAILED) {
+	if (fe->requests[request_id] != OMX_USER_REGION_STATUS_DEREGISTERED) {
 		printk_err
 		    ("Received failure from backend, will abort, status = %d\n",
 		     region->status);
