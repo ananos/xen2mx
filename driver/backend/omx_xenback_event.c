@@ -27,6 +27,8 @@
 #include <xen/balloon.h>
 #include "omx_reg.h"
 
+#define OMX_XEN_MAX_COOKIES 1024
+
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
 #include "omx_xen.h"
@@ -130,12 +132,15 @@ again:
 	}
 
 	if (!toreturn) {
-		printk_err("Error\n");
-		dprintk_inf("count not found, allocating one ;-) %u %u\n",
+		dprintk_deb("count not found, allocating one ;-) %u %u\n",
 			    count, cookie->count);
 		omx_xen_page_alloc(omx_xenif, count);
-		if (i++ > 10)
+		/* FIXME: This is a fucking BUG!!! We add an error message to
+		 * let us know about it! */
+		if (i++ > OMX_XEN_MAX_COOKIES) {
+			printk_err("Couldn't manage to find %d cookies, error\n", OMX_XEN_MAX_COOKIES);
 			goto out;
+		}
 		goto again;
 	}
 	//list_move_tail(&cookie->node, &omx_xenif->page_cookies_inuse);
