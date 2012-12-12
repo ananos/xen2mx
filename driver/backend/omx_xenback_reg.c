@@ -86,7 +86,7 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 
 	region = rcu_dereference_protected(endpoint->xen_regions[id], 1);
 	if (unlikely(!region)) {
-		dprintk_deb(
+		printk_err(
 		       "Open-MX: Cannot access non-existing region %d\n", id);
 		//ret = -EINVAL;
 		goto out;
@@ -567,17 +567,17 @@ omx_xen_user_region_destroy_segments(struct omx_xen_user_region *region,
 void __omx_xen_user_region_last_release(struct kref *kref)
 {
 	dprintk_in();
-#if 0
+#if 1
 	struct omx_xen_user_region *region =
 	    container_of(kref, struct omx_xen_user_region, refcount);
-	//struct omx_endpoint *endpoint = region->endpoint;
+	struct omx_endpoint *endpoint = region->endpoint;
 
 	dprintk_deb("releasing the last reference on region %p, %#x\n", region,
 		    region->id);
 
 	/* FIXME, we can't release the segments region from the backend, we need to get
 	 * a frontend kick first:S Hence, we just decrease the refcount... Really impressive huh? */
-//#if 0
+#if 0
 	if (region->nr_vmalloc_segments && in_interrupt()) {
 		OMX_INIT_WORK(&region->destroy_work,
 			      omx_region_destroy_workfunc, region);
@@ -586,7 +586,7 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 		omx_user_region_destroy_segments(region);
 		kfree(region);
 	}
-//#endif
+#endif
 	//printk(KERN_INFO "Will free now the specified region\n");
 //#if 0
 	if (endpoint) {
