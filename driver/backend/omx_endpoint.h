@@ -54,7 +54,11 @@ struct omx_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
 	uint32_t session_id;
-	uint8_t special_status;
+
+#ifdef OMX_XEN_FE_SHORTCUT
+	uint32_t special_status_reg;
+	uint32_t special_status_dereg;
+#endif
 
 	pid_t opener_pid;
 	char opener_comm[TASK_COMM_LEN];

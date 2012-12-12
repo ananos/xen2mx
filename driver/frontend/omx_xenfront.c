@@ -113,8 +113,10 @@ int wait_for_backend_response(unsigned int *poll_var, unsigned int status,
 		}
 		ndelay(OMX_XEN_DELAY);
 		i++;
+#if 0
 		if (i % 1000000 == 0)
 			printk_inf("polling for %dms\n", (i - 1) / 1000);
+#endif
 		if (i > OMX_XEN_POLL_HARD_LIMIT) {
 			printk_inf("timed out after %u ns\n", (i - 1) / OMX_XEN_DELAY);
 			ret = -EINVAL;
@@ -1237,8 +1239,10 @@ again_send:
 				} else
 					fe->requests[request_id] =
 					    OMX_USER_REGION_STATUS_REGISTERED;
-					endpoint->special_status =
+#ifdef OMX_XEN_FE_SHORTCUT
+					endpoint->special_status_reg =
 					    OMX_USER_REGION_STATUS_REGISTERED;
+#endif
 				spin_unlock(&region->status_lock);
 
 				break;
@@ -1281,6 +1285,10 @@ again_send:
 						//region->granted = 0;
 						fe->requests[request_id] =
 						    OMX_USER_REGION_STATUS_DEREGISTERED;
+#ifdef OMX_XEN_FE_SHORTCUT
+						endpoint->special_status_dereg =
+						    OMX_USER_REGION_STATUS_DEREGISTERED;
+#endif
 					}
 					else {
 						printk_err

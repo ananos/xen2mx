@@ -49,7 +49,7 @@
 #include "omx_xenfront_endpoint.h"
 #include "omx_xenfront_reg.h"
 
-timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg, t_wait_destroy_reg, t_grant, t_release_grant, t_claim, t_release;
+timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg, t_wait_destroy_reg, t_wait_create_reg, t_grant, t_release_grant, t_claim, t_release;
 static int global_region_index = 0;
 /* FIXME: Get rid of these copied functions from omx_reg.c */
 static int
@@ -727,6 +727,9 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	ring_req = omx_ring_get_request(fe);
 	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
 	fe->requests[request_id] = OMX_USER_REGION_STATUS_REGISTERING;
+#ifdef OMX_XEN_FE_SHORTCUT
+	endpoint->special_status_reg = OMX_USER_REGION_STATUS_REGISTERING;
+#endif
 	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_CREATE_USER_REGION;
 	/* Ultra safe */
@@ -908,15 +911,25 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 	rmb();
 	//ndelay(1000);
 	/* FIXME: find a better way to get notified that a backend response has come */
+	TIMER_START(&t_wait_create_reg);
 	if ((ret = wait_for_backend_response
+#ifdef OMX_XEN_FE_SHORTCUT
+	     (&endpoint->special_status_reg, OMX_USER_REGION_STATUS_REGISTERING,
+#else
 	     (&fe->requests[request_id], OMX_USER_REGION_STATUS_REGISTERING,
+#endif
 	      &region->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+	TIMER_STOP(&t_wait_create_reg);
 
+#ifdef OMX_XEN_FE_SHORTCUT
+	if (endpoint->special_status_reg != OMX_USER_REGION_STATUS_REGISTERED) {
+#else
 	if (fe->requests[request_id] != OMX_USER_REGION_STATUS_REGISTERED) {
+#endif
 		printk_err
 		    ("Received failure from backend, will abort, status = %d\n",
 		     region->status);
@@ -1326,6 +1339,9 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 	ring_req = omx_ring_get_request(fe);
 	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
 	fe->requests[request_id] = OMX_USER_REGION_STATUS_DEREGISTERING;
+#ifdef OMX_XEN_FE_SHORTCUT
+	endpoint->special_status_dereg = OMX_USER_REGION_STATUS_DEREGISTERING;
+#endif
 	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_DESTROY_USER_REGION;
 	/* Ultra safe */
@@ -1351,19 +1367,29 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 
 	omx_poke_dom0(fe, ring_req);
 
+	TIMER_START(&t_wait_destroy_reg);
 	/* FIXME: find a better way to get notified that a backend response has come */
 	if ((ret = wait_for_backend_response
+#ifdef OMX_XEN_FE_SHORTCUT
+	     (&endpoint->special_status_dereg, OMX_USER_REGION_STATUS_DEREGISTERING,
+#else
 	     (&fe->requests[request_id], OMX_USER_REGION_STATUS_DEREGISTERING,
+#endif
 	      &region->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		//      ret = -EINVAL;
 		goto out;
 	}
+	TIMER_STOP(&t_wait_destroy_reg);
 
 	/* Disabling the call_rcu temporarily */
 	//call_rcu(&region->xen_rcu_head, __omx_xen_user_region_rcu_release_callback);
 
+#ifdef OMX_XEN_FE_SHORTCUT
+	if (endpoint->special_status_dereg != OMX_USER_REGION_STATUS_DEREGISTERED) {
+#else
 	if (fe->requests[request_id] != OMX_USER_REGION_STATUS_DEREGISTERED) {
+#endif
 		printk_err
 		    ("Received failure from backend, will abort, status = %d\n",
 		     region->status);

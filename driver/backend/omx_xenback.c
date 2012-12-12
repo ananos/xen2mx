@@ -64,6 +64,17 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_pull);
 	omx_xen_timer_reset(&t_pull_request);
 	omx_xen_timer_reset(&t_pull_reply);
+	omx_xen_timer_reset(&t_try_dma);
+	omx_xen_timer_reset(&t_rem_copy);
+	omx_xen_timer_reset(&t_bh_notify);
+	omx_xen_timer_reset(&t_first_bl);
+	omx_xen_timer_reset(&t_fill_bl);
+	omx_xen_timer_reset(&t_other_bl);
+	omx_xen_timer_reset(&t_progress);
+	omx_xen_timer_reset(&t_handle_completed);
+	omx_xen_timer_reset(&t_reschedule);
+	omx_xen_timer_reset(&t_push_pending);
+	omx_xen_timer_reset(&t_poll_dma);
 	omx_xen_timer_reset(&t_send_tiny);
 	omx_xen_timer_reset(&t_send_small);
 	omx_xen_timer_reset(&t_send_medium);
@@ -110,6 +121,17 @@ static void printk_timers(void)
 	printk_timer(&t_pull, var_name(t_pull));
 	printk_timer(&t_pull_request, var_name(t_pull_request));
 	printk_timer(&t_pull_reply, var_name(t_pull_reply));
+	printk_timer(&t_try_dma, var_name(t_try_dma));
+	printk_timer(&t_rem_copy, var_name(t_rem_copy));
+	printk_timer(&t_bh_notify, var_name(t_bh_notify));
+	printk_timer(&t_first_bl, var_name(t_first_bl));
+	printk_timer(&t_fill_bl, var_name(t_fill_bl));
+	printk_timer(&t_other_bl, var_name(t_other_bl));
+	printk_timer(&t_progress, var_name(t_progress));
+	printk_timer(&t_handle_completed, var_name(t_handle_completed));
+	printk_timer(&t_reschedule, var_name(t_reschedule));
+	printk_timer(&t_push_pending, var_name(t_push_pending));
+	printk_timer(&t_poll_dma, var_name(t_poll_dma));
 	printk_timer(&t_send_tiny, var_name(t_send_tiny));
 	printk_timer(&t_send_small, var_name(t_send_small));
 	printk_timer(&t_send_medium, var_name(t_send_medium));
@@ -929,7 +951,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			}
 			else
 				resp->data.cur.status = 0x0;
-#if 0
+#ifdef OMX_XEN_FE_SHORTCUT
 			rmb();
 			/* FIXME: Really buggy/experimental stuff!!
 			 * We actually dereference the frontend's endpoint
@@ -940,12 +962,10 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			 * left to be done for the region to be marked ready is
 			 * to push a response from here and let it reach the frontend.
 			 * why wait for so long ?*/
-			if (endpoint->fe_endpoint->special_status == 3)
-				endpoint->fe_endpoint->special_status = 4;
-			else
-				printk_err("status is invalid, %u\n",
-					   endpoint->
-					   fe_endpoint->special_status);
+			spin_lock_irq(&endpoint->status_lock);
+			if (endpoint->fe_endpoint->special_status_reg == 3)
+				endpoint->fe_endpoint->special_status_reg = 4;
+			spin_unlock_irq(&endpoint->status_lock);
 
 			wmb();
 #endif
@@ -956,6 +976,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			uint8_t eid;
 			uint32_t sid;
 			int i;
+			struct omx_endpoint *endpoint;
 
 			dprintk_deb
 			    ("received frontend request: OMX_CMD_XEN_DESTROY_USER_REGION, param=%lx\n",
@@ -963,6 +984,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			id = req->data.dur.id;
 			seqnum = req->data.dur.seqnum;
 			eid = req->data.dur.eid;
+			endpoint = omx_xenif->be->omxdev->endpoints[eid];
 
 			for (i = 0; i < req->data.dur.nr_segments; i++) {
 				struct omx_ring_msg_deregister_user_segment
@@ -1005,6 +1027,25 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			}
 			else
 				resp->data.dur.status = 0x0;
+
+#ifdef OMX_XEN_FE_SHORTCUT
+			rmb();
+			/* FIXME: Really buggy/experimental stuff!!
+			 * We actually dereference the frontend's endpoint
+			 * structure to notify the frontend that the region
+			 * is destroyed and let the IOCTL return, to proceed with
+			 * the rest of the operations.
+			 * If we don't do it like this, the only thing that's
+			 * left to be done for the region to be marked clear is
+			 * to push a response from here and let it reach the frontend.
+			 * why wait for so long ?*/
+			spin_lock_irq(&endpoint->status_lock);
+			if (endpoint->fe_endpoint->special_status_dereg == 5)
+				endpoint->fe_endpoint->special_status_dereg = 6;
+			spin_unlock_irq(&endpoint->status_lock);
+
+			wmb();
+#endif
 
 			break;
 		}

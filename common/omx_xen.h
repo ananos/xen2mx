@@ -42,6 +42,15 @@
  */
 #define OMX_XEN_COOKIES
 
+/*
+ * Shortcut to region register/deregister
+ * FIXME: really buggy shortcut to poke the frontend about a region being ready
+ * for use or release. We set a status variable in the mapped instance of the
+ * endpoint structure in the backend and hope that the frontend sees that in
+ * time ;-)
+ */
+#define OMX_XEN_FE_SHORTCUT
+
 struct omx_cmd_xen_send_mediumsq_frag_done {
 	struct omx_evt_send_mediumsq_frag_done sq_frag_done;
 } __attribute__ ((__packed__));
