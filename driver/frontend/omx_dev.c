@@ -525,10 +525,16 @@ omx_miscdev_ioctl(struct file *file, unsigned cmd, unsigned long arg)
 		 * just check its status
 		 */
 		if (unlikely(endpoint->status != OMX_ENDPOINT_STATUS_OK)) {
+			uint32_t id = ((struct omx_cmd_open_endpoint*)arg)->endpoint_index;
+			if (id > OMX_XEN_MAX_ENDPOINTS) printk_err("index error\n");
 			dprintk_deb("ENDPOINT STATUS != OK, status =%d\n", endpoint->status);
 			dprintk_deb("maybe it's a XEN_OPEN/CLOSE_CMD\n");
 			if (handler_offset == OMX_EPCMD_XEN_OPEN_ENDPOINT
 			    || handler_offset == OMX_EPCMD_XEN_CLOSE_ENDPOINT) {
+				if (__omx_xen_frontend->endpoints[id]) {
+					endpoint = __omx_xen_frontend->endpoints[id];
+					printk(KERN_INFO "endpoint %d is active @%#lx\n", id, endpoint);
+				}
 				ret =
 				    omx_ioctl_with_endpoint_handlers[(unsigned
 								      char)

@@ -183,7 +183,8 @@ omx_endpoint_destroy_workfunc(omx_work_struct_data_t data)
 {
 	struct omx_endpoint * endpoint = OMX_WORK_STRUCT_DATA(data, struct omx_endpoint, destroy_work);
 	omx_endpoint_free_resources(endpoint);
-	kfree(endpoint);
+	if (!endpoint->xen)
+		kfree(endpoint);
 }
 
 /* Called when the last reference on the endpoint is released */

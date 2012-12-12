@@ -66,6 +66,17 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_pull);
 	omx_xen_timer_reset(&t_pull_request);
 	omx_xen_timer_reset(&t_pull_reply);
+	omx_xen_timer_reset(&t_try_dma);
+	omx_xen_timer_reset(&t_rem_copy);
+	omx_xen_timer_reset(&t_bh_notify);
+	omx_xen_timer_reset(&t_first_bl);
+	omx_xen_timer_reset(&t_fill_bl);
+	omx_xen_timer_reset(&t_other_bl);
+	omx_xen_timer_reset(&t_progress);
+	omx_xen_timer_reset(&t_handle_completed);
+	omx_xen_timer_reset(&t_reschedule);
+	omx_xen_timer_reset(&t_push_pending);
+	omx_xen_timer_reset(&t_poll_dma);
 	omx_xen_timer_reset(&t_send_tiny);
 	omx_xen_timer_reset(&t_send_small);
 	omx_xen_timer_reset(&t_send_medium);
@@ -78,6 +89,12 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_destroy_reg);
 	omx_xen_timer_reset(&t_reg_seg);
 	omx_xen_timer_reset(&t_dereg_seg);
+	omx_xen_timer_reset(&t_alloc_pages);
+	omx_xen_timer_reset(&t_accept_grants);
+	omx_xen_timer_reset(&t_accept_gref_list);
+	omx_xen_timer_reset(&t_release_grants);
+	omx_xen_timer_reset(&t_release_gref_list);
+	omx_xen_timer_reset(&t_free_pages);
 }
 
 static void printk_timer(timers_t * timer, char *name)
@@ -106,6 +123,17 @@ static void printk_timers(void)
 	printk_timer(&t_pull, var_name(t_pull));
 	printk_timer(&t_pull_request, var_name(t_pull_request));
 	printk_timer(&t_pull_reply, var_name(t_pull_reply));
+	printk_timer(&t_try_dma, var_name(t_try_dma));
+	printk_timer(&t_rem_copy, var_name(t_rem_copy));
+	printk_timer(&t_bh_notify, var_name(t_bh_notify));
+	printk_timer(&t_first_bl, var_name(t_first_bl));
+	printk_timer(&t_fill_bl, var_name(t_fill_bl));
+	printk_timer(&t_other_bl, var_name(t_other_bl));
+	printk_timer(&t_progress, var_name(t_progress));
+	printk_timer(&t_handle_completed, var_name(t_handle_completed));
+	printk_timer(&t_reschedule, var_name(t_reschedule));
+	printk_timer(&t_push_pending, var_name(t_push_pending));
+	printk_timer(&t_poll_dma, var_name(t_poll_dma));
 	printk_timer(&t_send_tiny, var_name(t_send_tiny));
 	printk_timer(&t_send_small, var_name(t_send_small));
 	printk_timer(&t_send_medium, var_name(t_send_medium));
@@ -118,6 +146,12 @@ static void printk_timers(void)
 	printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
 	printk_timer(&t_reg_seg, var_name(t_reg_seg));
 	printk_timer(&t_dereg_seg, var_name(t_dereg_seg));
+	printk_timer(&t_alloc_pages, var_name(t_alloc_pages));
+	printk_timer(&t_accept_grants, var_name(t_accept_grants));
+	printk_timer(&t_accept_gref_list, var_name(t_accept_gref_list));
+	printk_timer(&t_release_grants, var_name(t_release_grants));
+	printk_timer(&t_release_gref_list, var_name(t_release_gref_list));
+	printk_timer(&t_free_pages, var_name(t_free_pages));
 }
 
 int omx_xen_process_incoming_response(omx_xenif_t * omx_xenif,
@@ -145,6 +179,7 @@ static int omx_xen_setup_and_send_mediumsq_frag(struct omx_endpoint *endpoint, s
 }
 
 #define MEDIUMVA_FAKE 0
+/* don't use this one for now. It's completely broken. */
 static int omx_xen_setup_and_send_mediumva(struct omx_endpoint *endpoint, struct omx_cmd_xen_send_mediumva
 					   *cmd)
 {
@@ -169,6 +204,10 @@ static int omx_xen_setup_and_send_mediumva(struct omx_endpoint *endpoint, struct
 
 	dprintk_in();
 
+	/* don't use this one for now. It's completely broken. */
+	BUG();
+
+#if 0
 	spin_lock_irqsave(&endpoint->be->omx_xenif->omx_send_lock, flags);
 	nr_pages = cmd->nr_pages;
 
@@ -272,6 +311,7 @@ static int omx_xen_setup_and_send_mediumva(struct omx_endpoint *endpoint, struct
 	}
 
 	kfree(pages);
+#endif
 
 out:
 	dprintk_out();
@@ -530,7 +570,7 @@ again:
 		} else {
 			//spin_unlock_irqsave(&omx_xenif->omx_ring_lock, flags);
 			i++;
-			if (i> 10000) {
+			if (i> OMX_XEN_BACKEND_TIMEOUT) {
 				break;
 			}
 			//cpu_relax();
@@ -659,6 +699,7 @@ static void omx_xenback_prepare_response(struct omx_endpoint *endpoint,
 	resp->func = req->func;
 	resp->eid = endpoint->endpoint_index;
 	resp->board_index = endpoint->board_index;
+	resp->request_id = req->request_id;
 	resp->ret = ret;
 	dprintk_out();
 
@@ -894,6 +935,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			resp->data.endpoint.endpoint =
 			    req->data.endpoint.endpoint;
 			resp->eid = req->eid;
+			resp->request_id = req->request_id;
 			resp->board_index = req->board_index;
 			resp->ret = ret;
 
@@ -915,6 +957,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			//memset(&resp->data.endpoint, 0, sizeof(resp->data.endpoint));
 			resp->func = OMX_CMD_XEN_CLOSE_ENDPOINT;
 			resp->eid = req->eid;
+			resp->request_id = req->request_id;
 			resp->board_index = req->board_index;
 			resp->ret = ret;
 
@@ -948,6 +991,10 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 						       vaddr,
 						       nr_segments,
 						       nr_pages, nr_grefs, eid);
+			if (ret)
+				printk_err
+					("Failed to register user region %u, ret =%d\n",
+					     id, ret);
 
 			for (i = 0; i < nr_segments; i++) {
 				struct omx_ring_msg_register_user_segment *seg;
@@ -967,6 +1014,8 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 					     sid);
 			}
 			resp->func = OMX_CMD_XEN_CREATE_USER_REGION;
+			resp->eid = eid;
+			resp->request_id = req->request_id;
 			resp->data.cur.id = id;
 			resp->data.cur.eid = eid;
 
@@ -976,6 +1025,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			}
 			else
 				resp->data.cur.status = 0x0;
+#ifdef OMX_XEN_FE_SHORTCUT
 			rmb();
 			/* FIXME: Really buggy/experimental stuff!!
 			 * We actually dereference the frontend's endpoint
@@ -986,16 +1036,13 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			 * left to be done for the region to be marked ready is
 			 * to push a response from here and let it reach the frontend.
 			 * why wait for so long ?*/
-#if 0
-			if (endpoint->fe_endpoint->special_status == 3)
-				endpoint->fe_endpoint->special_status = 4;
-			else
-				printk_err("status is invalid, %u\n",
-					   endpoint->
-					   fe_endpoint->special_status);
-#endif
+			spin_lock_irq(&endpoint->status_lock);
+			if (endpoint->fe_endpoint->special_status_reg == 3)
+				endpoint->fe_endpoint->special_status_reg = 4;
+			spin_unlock_irq(&endpoint->status_lock);
 
 			wmb();
+#endif
 			break;
 		}
 	case OMX_CMD_XEN_DESTROY_USER_REGION:{
@@ -1003,6 +1050,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			uint8_t eid;
 			uint32_t sid;
 			int i;
+			struct omx_endpoint *endpoint;
 
 			dprintk_deb
 			    ("received frontend request: OMX_CMD_XEN_DESTROY_USER_REGION, param=%lx\n",
@@ -1010,6 +1058,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			id = req->data.dur.id;
 			seqnum = req->data.dur.seqnum;
 			eid = req->data.dur.eid;
+			endpoint = omx_xenif->be->omxdev->endpoints[eid];
 
 			for (i = 0; i < req->data.dur.nr_segments; i++) {
 				struct omx_ring_msg_deregister_user_segment
@@ -1027,7 +1076,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 								    eid);
 
 				if (ret)
-					dprintk_deb
+					printk_err
 					    ("Failed to deregister user segment %u\n",
 					     sid);
 			}
@@ -1041,6 +1090,8 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 							seqnum, eid);
 			//memset(&resp->data.dur, 0, sizeof(resp->data.dur));
 			resp->func = OMX_CMD_XEN_DESTROY_USER_REGION;
+			resp->eid = eid;
+			resp->request_id = req->request_id;
 			resp->data.dur.id = id;
 			resp->data.dur.eid = eid;
 			resp->data.dur.region = req->data.dur.region;
@@ -1050,6 +1101,25 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			}
 			else
 				resp->data.dur.status = 0x0;
+
+#ifdef OMX_XEN_FE_SHORTCUT
+			rmb();
+			/* FIXME: Really buggy/experimental stuff!!
+			 * We actually dereference the frontend's endpoint
+			 * structure to notify the frontend that the region
+			 * is destroyed and let the IOCTL return, to proceed with
+			 * the rest of the operations.
+			 * If we don't do it like this, the only thing that's
+			 * left to be done for the region to be marked clear is
+			 * to push a response from here and let it reach the frontend.
+			 * why wait for so long ?*/
+			spin_lock_irq(&endpoint->status_lock);
+			if (endpoint->fe_endpoint->special_status_dereg == 5)
+				endpoint->fe_endpoint->special_status_dereg = 6;
+			spin_unlock_irq(&endpoint->status_lock);
+
+			wmb();
+#endif
 
 			break;
 		}
@@ -1076,14 +1146,25 @@ int omx_xenback_process_specific(omx_xenif_t * omx_xenif, uint32_t func, struct
 	dprintk_in();
 	spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
 	endpoint = omx_xenback_get_endpoint(be, req);
+	BUG_ON(!endpoint);
 	spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 
 	switch (func) {
 	case OMX_CMD_PULL:{
+			struct omx_cmd_pull pull;
 			dprintk_deb
 			    ("received frontend request: OMX_CMD_PULL, param=%lx\n",
 			     sizeof(struct omx_cmd_xen_pull));
-			ret = omx_ioctl_pull(endpoint, &req->data.pull.pull);
+			spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
+
+			/* getting connect request structure */
+			memcpy(&pull, &req->data.pull.pull,
+			       sizeof(pull));
+
+			//ret = omx_ioctl_send_rndv(endpoint, &req->data.send_rndv.rndv);
+			spin_unlock_irqrestore
+			    (&omx_xenif->omx_ring_lock, flags);
+			ret = omx_ioctl_pull(endpoint, &pull);
 
 			break;
 		}
@@ -1261,9 +1342,13 @@ int omx_xenback_process_specific(omx_xenif_t * omx_xenif, uint32_t func, struct
 		}
 	}
 
+
 	spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
 	omx_xenback_prepare_response(endpoint, req, resp, ret);
 	spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
+	if (ret) {
+		printk_err("Something bad happened!, ret = %d\n");
+	}
 
 out:
 	dprintk_out();

@@ -29,7 +29,7 @@ noinst_HEADERS	= omx_common.h omx_debug.h omx_dma.h omx_endpoint.h	\
 		  omx_shared.h omx_wire_access.h 			\
 		  omx_xenback.h omx_xenback_helper.h omx_xen_lib.h      \
 		  omx_xenback_endpoint.h omx_xenback_reg.h              \
-		  omx_xenback_event.h
+		  omx_xenback_event.h omx_xenback_dma.h
 
 EXTRA_DIST	= check_kernel_headers.sh				\
 		  omx_dev.c omx_dma.c omx_event.c omx_iface.c		\
@@ -37,7 +37,7 @@ EXTRA_DIST	= check_kernel_headers.sh				\
 		  omx_reg.c omx_send.c omx_shared.c omx_xen.c           \
 		  omx_xenback.c omx_xen_lib.c                           \
 		  omx_xenback_endpoint.c omx_xenback_reg.c              \
-		  omx_xenback_event.c
+		  omx_xenback_event.c omx_xenback_dma.c
 
 # Mark open-mx.ko as .PHONY so that the rule is always re-executed
 # and let Kbuild handle dependencies.

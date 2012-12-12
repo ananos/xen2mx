@@ -64,6 +64,7 @@ struct omx_user_region {
 
 	unsigned nr_segments;
 	unsigned long total_length;
+	void __user *uparam;
 
 	enum omx_user_region_status status;
 	spinlock_t status_lock;
@@ -71,7 +72,7 @@ struct omx_user_region {
 
 	struct omx_user_region_segment {
 		unsigned long aligned_vaddr;
-		uint32_t gref_head;
+		uint32_t *gref_head;
 		void *gref_cookie;
 		enum omx_user_region_segment_status status;
 		unsigned first_page_offset;

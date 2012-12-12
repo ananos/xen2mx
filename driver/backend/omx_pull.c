@@ -37,6 +37,7 @@
 #include "omx_reg.h"
 #include "omx_dma.h"
 #include "omx_shared.h"
+#include "omx_xenback_dma.h"
 
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
@@ -48,9 +49,11 @@
  * Pull-specific Constants
  */
 
-timers_t t_pull_request, t_pull_reply, t_pull, t_handle;
-#define OMX_PULL_RETRANSMIT_TIMEOUT_MS	1000
-#define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES 1 //(OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
+timers_t t_pull_request, t_pull_reply, t_pull, t_handle, t_try_dma, t_rem_copy, t_bh_notify, t_progress, t_fill_bl, t_other_bl, t_first_bl, t_handle_completed, t_reschedule, t_push_pending, t_poll_dma;
+/* In case of very large packets, we get some retransmissions... Thus we
+ * increase the timer to make sure that it doesn't affect performance */
+#define OMX_PULL_RETRANSMIT_TIMEOUT_MS	10000
+#define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES (OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
 
 #ifdef OMX_MX_WIRE_COMPAT
 #if OMX_PULL_REPLY_LENGTH_MAX >= 65536
@@ -446,11 +449,13 @@ omx_pull_handle_acquire_from_slot(struct omx_endpoint *endpoint,
 	dprintk(PULL, "looking for slot index %d generation %d\n",
 		(unsigned) index, (unsigned) OMX_PULL_HANDLE_SLOT_GENERATION_FROM_ID(slot_id));
 
+	dprintk(PULL, "Will now get the handle\n");
 	handle = rcu_dereference(slot->handle);
 	if (!handle) {
 		dprintk(PULL, "slot index %d not used by any pull handle\n", index);
 		goto out_with_rcu;
 	}
+	dprintk(PULL, "handle = %p\n", handle);
 
 	if (slot_id != slot->id) {
 		dprintk(PULL, "slot index %d has generation %d instead of %d\n",
@@ -813,6 +818,7 @@ omx_pull_handle_notify(struct omx_pull_handle * handle)
 		//rcu_assign_pointer(endpoint->xen_regions[handle->xregion->id], NULL);
 		//kfree(handle->xregion);
 		omx_poke_domU(omx_xenif, ring_resp);
+		omx_pull_handle_release(handle);
 	} else
 
 	{
@@ -1188,6 +1194,7 @@ omx_pull_handle_timeout_handler(unsigned long data)
 
 	dprintk_in();
 	dprintk(PULL, "pull handle %p timer reached, might need to request again\n", handle);
+	//dprintk_inf("pull handle %p timer reached, might need to request again\n", handle);
 
 	spin_lock(&handle->lock);
 
@@ -1680,6 +1687,63 @@ real_out:
  * Called with the handle locked
  */
 static INLINE int
+omx_xen_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_handle *handle,
+				   struct sk_buff *skb, uint32_t regoff, uint32_t length)
+{
+	int remaining_copy = length;
+	int acquired_chan = 0;
+	struct dma_chan *dma_chan = handle->dma_copy_chan;
+
+	dprintk_in();
+	if (unlikely(!dma_chan)) {
+		dma_chan = handle->dma_copy_chan = omx_dma_chan_get();
+		acquired_chan = 1;
+	}
+
+	if (likely(dma_chan)) {
+		dma_cookie_t dma_cookie = -1;
+
+		dprintk(PULL, "xen region, proceed \n");
+		if (!handle->xregion) {
+			printk_err("WTF ? xregion is NULL!\n");
+			return -1;
+		}
+		else {
+			remaining_copy = omx_xen_dma_skb_copy_datagram_to_user_region(dma_chan, &dma_cookie, skb, handle->xregion, regoff, length);
+		}
+
+		if (unlikely(remaining_copy)) {
+			printk(KERN_INFO "Open-MX: DMA copy of pull reply partially submitted, %d/%d remaining\n",
+			       remaining_copy, (unsigned) length);
+			omx_counter_inc(iface, DMARECV_PARTIAL_PULL_REPLY);
+		} else {
+			omx_counter_inc(iface, DMARECV_PULL_REPLY);
+		}
+
+		//dprintk(DMA, "skb %p got cookie %d\n", skb, dma_cookie);
+
+		if (likely(dma_cookie > 0)) {
+			handle->dma_copy_last_cookie = dma_cookie;
+			skb->dma_cookie = dma_cookie;
+			__skb_queue_tail(&handle->dma_copy_skb_queue, skb);
+
+		} else if (acquired_chan) {
+			/* release the acquired channel, we didn't use it */
+			omx_dma_chan_put(dma_chan);
+			handle->dma_copy_chan = NULL;
+		}
+	}
+
+	dprintk_out();
+	return remaining_copy;
+}
+/*
+ * Submit an DMA-offloaded copy if possible, and return the non-copied length if any.
+ * Acquires a DMA channel first, if needed. And release it if not needed.
+ *
+ * Called with the handle locked
+ */
+static INLINE int
 omx_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_handle *handle,
 				   struct sk_buff *skb, uint32_t regoff, uint32_t length)
 {
@@ -1696,6 +1760,7 @@ omx_pull_handle_reply_try_dma_copy(struct omx_iface *iface, struct omx_pull_hand
 	if (likely(dma_chan)) {
 		dma_cookie_t dma_cookie = -1;
 
+		dprintk(PULL, "normal region, proceed \n");
 		remaining_copy = omx_dma_skb_copy_datagram_to_user_region(dma_chan, &dma_cookie, skb, handle->region, regoff, length);
 
 		if (unlikely(remaining_copy)) {
@@ -1778,9 +1843,12 @@ omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle)
 	if (unlikely(!dma_chan))
 		goto out;
 
+	TIMER_START(&t_push_pending);
 	/* Push remaining copies to the DMA hardware */
 	dma_async_memcpy_issue_pending(dma_chan);
+	TIMER_STOP(&t_push_pending);
 
+	TIMER_START(&t_poll_dma);
 	if (omx__pull_handle_poll_dma_completions(dma_chan, handle->dma_copy_last_cookie, &handle->dma_copy_skb_queue)
 	    == DMA_SUCCESS) {
 		/* All copies are already done, it's safe to free early-copied skbs now */
@@ -1790,6 +1858,7 @@ omx_pull_handle_poll_dma_completions(struct omx_pull_handle *handle)
 		handle->dma_copy_chan = NULL;
 		handle->dma_copy_last_cookie = -1;
 	}
+	TIMER_STOP(&t_poll_dma);
 out:
 	dprintk_out();
 	return;
@@ -1814,8 +1883,9 @@ omx_pull_handle_wait_dma_completions(struct omx_pull_handle *handle)
 	/* Push remaining copies to the DMA hardware */
 	dma_async_memcpy_issue_pending(dma_chan);
 
+	TIMER_START(&t_poll_dma);
 	while (omx__pull_handle_poll_dma_completions(dma_chan, handle->dma_copy_last_cookie, &handle->dma_copy_skb_queue) == DMA_IN_PROGRESS);
-
+	TIMER_STOP(&t_poll_dma);
 	/* All copies already done, it's safe to free early-copied skbs now */
 	dprintk(DMA, "all cookies are ready\n");
 	__skb_queue_purge(&handle->dma_copy_skb_queue);
@@ -1909,6 +1979,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			dprintk(PULL, "pull handle %p second block done without first, requesting first block again\n",
 				handle);
 
+			TIMER_START(&t_first_bl);
 			for(i=handle->already_rerequested_blocks; i<idesc; i++) {
 				if (handle->block_desc[i].frames_missing_bitmap) {
 					skb = omx_fill_pull_block_request(handle, i);
@@ -1921,6 +1992,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 					}
 				}
 			}
+			TIMER_STOP(&t_first_bl);
 		}
 
 	} else {
@@ -1930,6 +2002,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 
 		int first_block;
 
+		TIMER_START(&t_other_bl);
 		omx_pull_handle_first_block_done(handle);
 		/* drop next blocks if they are done */
 		for(i=1; i<OMX_PULL_BLOCK_DESCS_NR; i++) {
@@ -1953,6 +2026,7 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 
 		if (handle->nr_valid_block_descs - first_block > 1)
 			omx_counter_inc(iface, PULL_REQUEST_NOTONLYFIRST_BLOCKS);
+		TIMER_STOP(&t_other_bl);
 
 		/* try to actually request the needed new blocks */
 		for(i=first_block; i<handle->nr_valid_block_descs; i++) {
@@ -1961,7 +2035,9 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 			else
 				dprintk(PULL, "queueing next pull block request\n");
 
+			TIMER_START(&t_fill_bl);
 			skb = omx_fill_pull_block_request(handle, i);
+			TIMER_STOP(&t_fill_bl);
 			if (unlikely(IS_ERR(skb))) {
 				BUG_ON(PTR_ERR(skb) != -ENOMEM);
 				/* let the timeout expire and resend */
@@ -1974,14 +2050,18 @@ omx_progress_pull_on_recv_pull_reply_locked(struct omx_iface * iface,
 
  skbs_ready:
 	if (completed_block) {
+		TIMER_START(&t_handle_completed);
 		/* cleanup a bit of dma-offloaded copies */
 		omx_pull_handle_poll_dma_completions(handle);
+		TIMER_STOP(&t_handle_completed);
 	}
 
+	TIMER_START(&t_reschedule);
 	/* reschedule the timeout handler now that we are ready to send the requests */
 	/* timer still pending, use the mod_timer_pending() */
 	omx_mod_timer_pending(&handle->retransmit_timer,
 			      get_jiffies_64() + OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES);
+	TIMER_STOP(&t_reschedule);
 
 	/*
 	 * do not keep the lock while sending
@@ -2127,24 +2207,37 @@ omx_recv_pull_reply(struct omx_iface * iface,
 	handle->block_desc[idesc].frames_missing_bitmap &= ~bitmap_mask;
 	handle->nr_missing_frames--;
 
+	TIMER_START(&t_try_dma);
 #if (defined OMX_HAVE_DMA_ENGINE) && !(defined OMX_NORECVCOPY)
 	if (omx_dmaengine
 	    && frame_length >= omx_dma_async_frag_min
 	    && handle->total_length >= omx_dma_async_min) {
-		remaining_copy = omx_pull_handle_reply_try_dma_copy(iface, handle, skb, msg_offset, frame_length);
+		if (handle->xen) {
+			dprintk(PULL, "XEN REGION!!!\n");
+			remaining_copy = omx_xen_pull_handle_reply_try_dma_copy(iface, handle, skb, msg_offset, frame_length);
+		}
+		else
+		{
+			dprintk(PULL, "normal REGION!!!\n");
+			remaining_copy = omx_pull_handle_reply_try_dma_copy(iface, handle, skb, msg_offset, frame_length);
+		}
 		if (likely(remaining_copy != frame_length))
 			free_skb = 0;
 	}
 #endif
+	TIMER_STOP(&t_try_dma);
 
 	/* our copy is pending */
 	handle->host_copy_nr_frames++;
 
 	/* request more replies if necessary */
+	TIMER_START(&t_progress);
 	omx_progress_pull_on_recv_pull_reply_locked(iface, handle, idesc);
+	TIMER_STOP(&t_progress);
 	/* tell the sparse checker that the lock has been released by omx_progress_pull_on_recv_pull_reply_locked() */
 	__release(&handle->lock);
 
+	TIMER_START(&t_rem_copy);
 #ifndef OMX_NORECVCOPY
 	if (remaining_copy) {
 		/* fill segment pages, if something remains to be copied */
@@ -2172,6 +2265,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		}
 	}
 #endif /* OMX_NORECVCOPY */
+	TIMER_STOP(&t_rem_copy);
 
 	/* take the lock back to prepare to complete */
 	spin_lock(&handle->lock);
@@ -2188,6 +2282,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		goto out_with_endpoint;
 	}
 
+	TIMER_START(&t_bh_notify);
 	if (!handle->remaining_length && !handle->nr_missing_frames && !handle->host_copy_nr_frames) {
 		/* handle is done, notify the completion */
 		dprintk(PULL, "notifying pull completion\n");
@@ -2201,6 +2296,7 @@ omx_recv_pull_reply(struct omx_iface * iface,
 		omx_pull_handle_release(handle);
 		omx_endpoint_release(endpoint);
 	}
+	TIMER_STOP(&t_bh_notify);
 
 	err = 0;
 	goto out;

@@ -34,13 +34,15 @@
 
 struct omx_xen_page_cookie {
 	struct list_head node;
-	struct page *page;
+	uint32_t count;
+	struct page **pages;
 };
 
 int omx_xen_page_alloc(omx_xenif_t * omx_xenif, uint32_t count);
 void omx_xen_page_put_cookie(omx_xenif_t * omx_xenif,
 			     struct omx_xen_page_cookie *cookie);
-struct omx_xen_page_cookie *omx_xen_page_get_cookie(omx_xenif_t * omx_xenif);
+struct omx_xen_page_cookie *omx_xen_page_get_cookie(omx_xenif_t * omx_xenif, uint32_t count);
+int omx_xen_page_free_cookies(omx_xenif_t * omx_xenif);
 
 #endif				/* __omx_xenback_page_cookie_h__ */
 

@@ -71,11 +71,13 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_send_connect_reply);
 	omx_xen_timer_reset(&t_send_rndv);
 	omx_xen_timer_reset(&t_send_liback);
-        omx_xen_timer_reset(&t_create_reg);
-        omx_xen_timer_reset(&t_destroy_reg);
-        omx_xen_timer_reset(&t_reg_seg);
-        omx_xen_timer_reset(&t_dereg_seg);
-        omx_xen_timer_reset(&t_poke_dom0);
+	omx_xen_timer_reset(&t_create_reg);
+	omx_xen_timer_reset(&t_wait_destroy_reg);
+	omx_xen_timer_reset(&t_wait_create_reg);
+	omx_xen_timer_reset(&t_destroy_reg);
+	omx_xen_timer_reset(&t_reg_seg);
+	omx_xen_timer_reset(&t_dereg_seg);
+	omx_xen_timer_reset(&t_poke_dom0);
 
 	omx_xen_timer_reset(&t_recv_tiny);
 	omx_xen_timer_reset(&t_recv_medsmall);
@@ -87,9 +89,12 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_recv_liback);
 	omx_xen_timer_reset(&t_pull_done);
 	omx_xen_timer_reset(&t_pull_request);
+	omx_xen_timer_reset(&t_release);
+	omx_xen_timer_reset(&t_claim);
+	omx_xen_timer_reset(&t_grant);
+	omx_xen_timer_reset(&t_release_grant);
 
 }
-
 static void printk_timer(timers_t * timer, char *name)
 {
 	if (TIMER_COUNT(timer)) {
@@ -113,9 +118,11 @@ static void printk_timers(void)
 	printk_timer(&t_send_notify, var_name(t_send_notify));
 	printk_timer(&t_send_rndv, var_name(t_send_rndv));
 	printk_timer(&t_send_liback, var_name(t_send_liback));
-        printk_timer(&t_create_reg, var_name(t_create_reg));
-        printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
-        printk_timer(&t_poke_dom0, var_name(t_poke_dom0));
+	printk_timer(&t_create_reg, var_name(t_create_reg));
+	printk_timer(&t_wait_create_reg, var_name(t_wait_create_reg));
+	printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
+	printk_timer(&t_wait_destroy_reg, var_name(t_wait_destroy_reg));
+	printk_timer(&t_poke_dom0, var_name(t_poke_dom0));
 
 	printk_timer(&t_recv_tiny, var_name(t_recv_tiny));
 	printk_timer(&t_recv_medsmall, var_name(t_recv_medsmall));
@@ -127,6 +134,10 @@ static void printk_timers(void)
 	printk_timer(&t_recv_liback, var_name(t_recv_liback));
 	printk_timer(&t_pull_done, var_name(t_pull_done));
 	printk_timer(&t_pull_request, var_name(t_pull_request));
+	printk_timer(&t_release, var_name(t_release));
+	printk_timer(&t_release_grant, var_name(t_release_grant));
+	printk_timer(&t_claim, var_name(t_claim));
+	printk_timer(&t_grant, var_name(t_grant));
 
 }
 
@@ -356,6 +367,9 @@ int omx_xen_endpoint_ungrant_resources(struct omx_endpoint *endpoint)
 		     endpoint->recvq_gref, recvq_mfn);
 	}
 
+	gnttab_release_grant_reference(&endpoint->gref_head,
+				       endpoint->recvq_gref);
+
 	/* Release endpoint page grant */
 	endpoint_mfn = virt_to_mfn(endpoint);
 	/* Extra check, just to be sure nothing gets corrupt */
@@ -373,7 +387,7 @@ int omx_xen_endpoint_ungrant_resources(struct omx_endpoint *endpoint)
 	gnttab_end_foreign_access_ref(endpoint->endpoint_gref, 0);
 
 	gnttab_release_grant_reference(&endpoint->gref_head,
-				       endpoint->recvq_gref);
+				       endpoint->endpoint_gref);
 
 	gnttab_free_grant_references(endpoint->gref_head);
 
@@ -391,6 +405,7 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	struct omx_cmd_open_endpoint param;
 	struct omx_xenif_request *ring_req;
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
+	uint32_t request_id;
 	int ret;
 
 	dprintk_in();
@@ -411,7 +426,7 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	spin_lock(&endpoint->status_lock);
 	ret = -EBUSY;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_FREE) {
-		printk_err("status is %d\n", endpoint->status);
+		dprintk_inf("status is %d\n", endpoint->status);
 		spin_unlock(&endpoint->status_lock);
 		goto out;
 	}
@@ -438,7 +453,11 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	/* Prepare the message to the backend */
 
 	/* FIXME: maybe create a static inline function for this stuff ? */
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	fe->requests[request_id] = OMX_XEN_FRONTEND_STATUS_DOING;
+	ring_req->request_id = request_id;
+
 	ring_req->func = OMX_CMD_XEN_OPEN_ENDPOINT;
 	ring_req->board_index = param.board_index;
 	ring_req->eid = param.endpoint_index;
@@ -463,18 +482,24 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 
 	omx_poke_dom0(endpoint->fe, ring_req);
 	/* FIXME: find a better way to get notified that a backend response has come */
-	if (wait_for_backend_response
-	    (&endpoint->status, OMX_ENDPOINT_STATUS_INITIALIZING,
-	     &endpoint->status_lock)) {
+	if ((ret = wait_for_backend_response
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	     &endpoint->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
-	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
-		printk_err("Endpoint is busy\n");
+        dprintk_deb("ret = %d\n", ret);
+	if (fe->requests[request_id] != OMX_XEN_FRONTEND_STATUS_DONE) {
+		dprintk_inf("Endpoint %d status is %d\n", endpoint->status);
+		dprintk_inf("Request from backend returned: %d \n", fe->requests[request_id]);
 		ret = -EBUSY;
 		goto out_with_alloc;
 	}
+
+	spin_lock(&endpoint->status_lock);
+	endpoint->status = OMX_ENDPOINT_STATUS_OK;
+	spin_unlock(&endpoint->status_lock);
 
 	omx_xen_timer_reset(&endpoint->oneway);
 	omx_xen_timer_reset(&endpoint->otherway);
@@ -483,10 +508,8 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	goto out;
 
 out_with_alloc:
-	printk_err("Out with alloc\n");
 	omx_xen_endpoint_free_resources(endpoint);
 out_with_init:
-	printk_err("Out with init\n");
 	spin_lock(&endpoint->status_lock);
 	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
 	spin_unlock(&endpoint->status_lock);
@@ -540,6 +563,7 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 	struct omx_cmd_open_endpoint param;
 	struct omx_xenif_request *ring_req;
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
+	uint32_t request_id;
 	dprintk_in();
 
 	might_sleep();
@@ -565,7 +589,7 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 		/* not open, just free the structure */
 		printk_err("Endpoint already free:S\n");
 		spin_unlock(&endpoint->status_lock);
-		kfree(endpoint);
+		//kfree(endpoint);
 		/* FIXME: maybe this is where MPI gets stuck! */
 		ret = 0;
 		goto out;
@@ -576,7 +600,10 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 	/* Prepare the message to the backend */
 
 	/* FIXME: maybe create a static inline function for this stuff ? */
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	fe->requests[request_id] = OMX_XEN_FRONTEND_STATUS_DOING;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_CLOSE_ENDPOINT;
 	ring_req->board_index = param.board_index;
 	ring_req->eid = param.endpoint_index;
@@ -594,13 +621,14 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 	omx_poke_dom0(endpoint->fe, ring_req);
 
 	/* FIXME: find a better way to get notified that a backend response has come */
-	if (wait_for_backend_response
-	    (&endpoint->status, OMX_ENDPOINT_STATUS_CLOSING,
-	     &endpoint->status_lock)) {
+	if ((ret = wait_for_backend_response
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
+	     &endpoint->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
+        dprintk_deb("ret = %d\n", ret);
 
 	/* FIXME: maybe this is where MPI gets stuck! we don't call these functions! */
 	//omx_xen_endpoint_free_resources(endpoint);

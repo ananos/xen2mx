@@ -34,6 +34,7 @@
 #include <xen/page.h>
 
 #include "omx_common.h"
+#include "omx_endpoint.h"
 
 //#define EXTRA_DEBUG_OMX
 #include "omx_xen_debug.h"
@@ -41,6 +42,7 @@
 #include "omx_xen.h"
 #include "omx_xenfront.h"
 #include "omx_xenfront_helper.h"
+#include "omx_xenfront_endpoint.h"
 
 /* FIXME: Do we really need this global var ? */
 struct omx_xenfront_info *__omx_xen_frontend;
@@ -51,6 +53,7 @@ static int omx_xenfront_probe(struct xenbus_device *dev,
 	struct omx_xenfront_info *fe;
 	struct omx_xenif_sring *sring, *recv_sring;
 	int err = 0;
+	int i = 0;
 
 	dprintk_in();
 
@@ -63,6 +66,12 @@ static int omx_xenfront_probe(struct xenbus_device *dev,
 		goto out;
 	}
 	__omx_xen_frontend = fe;
+
+	for (i = 0; i < OMX_XEN_MAX_ENDPOINTS; i++) {
+		fe->endpoints[i] = NULL;
+	}
+
+        fe->requests = kzalloc(OMX_MAX_INFLIGHT_REQUESTS * sizeof(enum frontend_status), GFP_KERNEL);
 
         spin_lock_init(&fe->status_lock);
 

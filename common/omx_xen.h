@@ -33,9 +33,23 @@
 #define OMX_XEN_MAX_ENDPOINTS OMX_ENDPOINT_INDEX_MAX
 #define OMX_XEN_GRANT_PAGES_MAX 16
 
-/* FIXME: Don't miss this one!!!,
- * allocated memory in the backend rises exponentially  */
-#define OMX_XEN_COOKIES 1
+/*
+ * This option enables the use of prealloacted page sets for
+ * granting the guest's pages. Since the bottleneck for
+ * region registration is not memory allocation but the
+ * actual granting, enabling or disabling it doesn't change
+ * much, performance-wise.
+ */
+#define OMX_XEN_COOKIES
+
+/*
+ * Shortcut to region register/deregister
+ * FIXME: really buggy shortcut to poke the frontend about a region being ready
+ * for use or release. We set a status variable in the mapped instance of the
+ * endpoint structure in the backend and hope that the frontend sees that in
+ * time ;-)
+ */
+#define OMX_XEN_FE_SHORTCUT
 
 struct omx_cmd_xen_send_mediumsq_frag_done {
 	struct omx_evt_send_mediumsq_frag_done sq_frag_done;
@@ -251,6 +265,7 @@ struct omx_xenif_request {
 	uint32_t func;
 	uint32_t board_index;
 	uint32_t eid;
+	uint32_t request_id;
 	int ret;
 	union {
 		struct omx_ring_msg_register_user_segment cus;
@@ -291,6 +306,7 @@ struct omx_xenif_response {
 	uint32_t func;
 	uint32_t board_index;
 	uint32_t eid;
+	uint32_t request_id;
 	int ret;
 	union {
 		struct omx_ring_msg_register_user_segment cus;

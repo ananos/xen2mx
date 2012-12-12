@@ -61,11 +61,6 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 void omx_xen_user_region_destroy_segments(struct omx_xen_user_region *region,
 					  struct omx_endpoint *endpoint);
 
-int omx_xen_map_page(struct backend_info *be, uint32_t gref, void **vaddr,
-		     uint32_t * handle, struct page **page,
-		     struct omx_xen_page_cookie **cookie);
-int omx_xen_unmap_page(uint32_t handle, struct page *page);
-
 void omx_xen_user_region_release(struct omx_xen_user_region *region);
 struct omx_xen_user_region *omx_xen_user_region_acquire(const struct
 							omx_endpoint *endpoint,

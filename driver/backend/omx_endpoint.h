@@ -54,7 +54,11 @@ struct omx_endpoint {
 	uint8_t board_index;
 	uint8_t endpoint_index;
 	uint32_t session_id;
-	uint8_t special_status;
+
+#ifdef OMX_XEN_FE_SHORTCUT
+	uint32_t special_status_reg;
+	uint32_t special_status_dereg;
+#endif
 
 	pid_t opener_pid;
 	char opener_comm[TASK_COMM_LEN];
@@ -135,6 +139,14 @@ struct omx_endpoint {
 	struct page **xen_sendq_pages;
 	uint32_t xen_sendq_handle;
 	uint32_t *xen_sendq_handles;
+
+	struct gnttab_map_grant_ref *sendq_map;
+	struct gnttab_unmap_grant_ref *sendq_unmap;
+	struct gnttab_map_grant_ref *recvq_map;
+	struct gnttab_unmap_grant_ref *recvq_unmap;
+
+	struct omx_xen_page_cookie *recvq_cookie;
+	struct omx_xen_page_cookie *sendq_cookie;
 
 	struct vm_struct *xen_recvq_vm;
 	uint32_t xen_recvq_gref_size;

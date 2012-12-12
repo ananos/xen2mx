@@ -30,6 +30,8 @@
 #include "omx_reg.h"
 
 #define OMX_XENBACK_POLLING
+#define OMX_XEN_BACKEND_TIMEOUT 1000 * 1000
+
 #include "omx_xen_timers.h"
 #include "omx_xen.h"
 
@@ -128,11 +130,11 @@ struct omx_xen_user_region {
 		struct vm_struct *vm_gref[OMX_XEN_GRANT_PAGES_MAX];
 		grant_handle_t *handles;
 		uint8_t nr_parts;
-		//struct gnttab_map_grant_ref **map;
-		//struct gnttab_unmap_grant_ref **unmap;
+		struct gnttab_map_grant_ref *map;
+		struct gnttab_unmap_grant_ref *unmap;
 		uint32_t **gref_list;
 #ifdef OMX_XEN_COOKIES
-		struct omx_xen_page_cookie **cookies;
+		struct omx_xen_page_cookie *cookie;
 #endif
 		uint16_t gref_offset;
 		struct page **pages;
@@ -177,9 +179,9 @@ irqreturn_t omx_xenif_be_int(int irq, void *data);
 int omx_xenbk_thread(void *data);
 
 extern timers_t t_recv, t_rndv, t_notify, t_small, t_tiny, t_medium, t_connect, t_truc;
-extern timers_t t_pull_request, t_pull_reply, t_pull, t_handle;
+extern timers_t t_pull_request, t_pull_reply, t_pull, t_handle, t_try_dma, t_rem_copy, t_bh_notify, t_progress, t_fill_bl, t_other_bl, t_first_bl, t_handle_completed, t_reschedule, t_push_pending, t_poll_dma;
 extern timers_t t_send_tiny, t_send_small, t_send_medium, t_send_connect, t_send_notify, t_send_connect_reply, t_send_rndv, t_send_liback;
-extern timers_t t_create_reg, t_reg_seg, t_destroy_reg, t_dereg_seg;
+extern timers_t t_reg_seg, t_create_reg, t_dereg_seg, t_destroy_reg, t_alloc_pages, t_accept_grants, t_accept_gref_list, t_release_grants, t_release_gref_list, t_free_pages;
 
 #endif				/* __omx_xenback_h__ */
 

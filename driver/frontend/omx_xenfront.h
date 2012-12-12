@@ -31,6 +31,9 @@
 #include "omx_xen_timers.h"
 #include "omx_xen.h"
 
+#define OMX_MAX_INFLIGHT_REQUESTS 65536
+#define OMX_XEN_MAX_GRANT_COUNT 16384
+
 enum frontend_status {
 	OMX_XEN_FRONTEND_STATUS_DONE,
 	OMX_XEN_FRONTEND_STATUS_DOING,
@@ -57,6 +60,7 @@ struct omx_xenfront_info {
 	struct omx_board_info board_info;
 	struct omx_cmd_misc_peer_info peer_info;
 	enum frontend_status status;
+	enum frontend_status *requests;
 	spinlock_t status_lock;
 	wait_queue_head_t wq;
 
@@ -121,6 +125,8 @@ int omx_xen_endpoint_get_info(uint32_t board_index, uint32_t endpoint_index,
 int omx_xen_peer_lookup(uint32_t * index, uint64_t * board_addr, char *hostname,
 			uint32_t cmd);
 
+struct omx_xenif_request *omx_ring_get_request(struct omx_xenfront_info *fe);
+
 extern struct omx_xenfront_info *__omx_xen_frontend;
 
 void omx_xenif_interrupt(struct work_struct *work);
@@ -136,7 +142,7 @@ int omx_xen_set_hostname(uint32_t board_index, const char *hostname);
 //extern timers_t t_send_tiny, t_send_small, t_send_medium, t_send_connect, t_send_notify, t_send_connect_reply, t_send_rndv, t_send_liback;
 
 
-extern timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg;
+extern timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg, t_wait_create_reg, t_wait_destroy_reg, t_release, t_release_grant, t_claim, t_grant;
 extern timers_t t_poke_dom0;
 extern timers_t t_pull;
 extern timers_t t_send_tiny, t_send_small, t_send_mediumva,

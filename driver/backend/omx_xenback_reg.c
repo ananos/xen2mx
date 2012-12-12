@@ -32,9 +32,11 @@
 #include <xen/grant_table.h>
 #include <xen/interface/xen.h>
 #include <xen/interface/memory.h>
+#include <xen/interface/grant_table.h>
 #include <xen/interface/io/ring.h>
 #include <xen/interface/io/xenbus.h>
 #include <xen/page.h>
+#include <xen/balloon.h>
 
 #include <asm/page.h>
 #include <asm/pgalloc.h>
@@ -57,7 +59,7 @@
 #include "omx_xenback_reg.h"
 #include "omx_xenback_event.h"
 
-timers_t t_reg_seg, t_create_reg, t_dereg_seg, t_destroy_reg;
+timers_t t_reg_seg, t_create_reg, t_dereg_seg, t_destroy_reg, t_alloc_pages, t_accept_grants, t_accept_gref_list, t_release_grants, t_release_gref_list, t_free_pages;
 
 int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 				    uint32_t sid, uint8_t eid)
@@ -84,25 +86,24 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 
 	region = rcu_dereference_protected(endpoint->xen_regions[id], 1);
 	if (unlikely(!region)) {
-		dprintk_deb(
+		printk_err(
 		       "Open-MX: Cannot access non-existing region %d\n", id);
 		//ret = -EINVAL;
 		goto out;
 	}
 	seg = &region->segments[sid];
-	for (i = 0; i < seg->nr_pages; i++) {
-		struct page *page = seg->pages[i];
-		grant_handle_t handle = seg->handles[i];
 
-		//dprintk_deb("putting page %#lx, addr=%#lx\n", (unsigned long)page, page_address(page));
 
-		omx_xen_unmap_page(handle, page);
-#ifdef OMX_XEN_COOKIES
-		omx_xen_page_put_cookie(omx_xenif, seg->cookies[i]);
-#endif
-
+	TIMER_START(&t_release_grants);
+	if (!seg->unmap) {
+		printk_err("seg->unmap is NULL\n");
+		ret = -EINVAL;
+		goto out;
 	}
+	gnttab_unmap_refs(seg->unmap, NULL, seg->pages, seg->nr_pages);
+	TIMER_STOP(&t_release_grants);
 
+	TIMER_START(&t_release_gref_list);
 	for (k = 0; k < seg->nr_parts; k++) {
 #ifdef EXTRA_DEBUG_OMX
 		if (!seg->vm_gref) {
@@ -138,30 +139,36 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 		dprintk_deb("putting vm_area[%d] %#lx, handle = %#x \n", k,
 			    (unsigned long)seg->vm_gref[k], seg->all_handle[k]);
 		if (HYPERVISOR_grant_table_op
-		    (GNTTABOP_unmap_grant_ref, &ops, 1))
-			BUG();
+		    (GNTTABOP_unmap_grant_ref, &ops, 1)){
+			printk_err
+				("HYPERVISOR operation failed\n");
+			//BUG();
+		}
 		if (ops.status) {
 			printk_err
-			    ("HYPERVISOR unmap grant ref[%d] failed status = %d",
-			     k, ops.status);
-
+				("HYPERVISOR unmap grant ref[%d]=%#lx failed status = %d",
+				 k, seg->all_handle[k], ops.status);
 			ret = ops.status;
 			goto out;
 		}
-#if 1
+	}
+	TIMER_STOP(&t_release_gref_list);
+
+	TIMER_START(&t_free_pages);
+	for (k=0;k<seg->nr_parts;k++)
 		if (ops.status == GNTST_okay)
 			free_vm_area(seg->vm_gref[k]);
-#endif
-	}
 
-	dprintk_deb("freeing handles %#lx\n", (unsigned long)seg->handles);
-
+	kfree(seg->map);
+	kfree(seg->unmap);
 	kfree(seg->gref_list);
-	kfree(seg->handles);
-	kfree(seg->pages);
 #ifdef OMX_XEN_COOKIES
-	kfree(seg->cookies);
+	omx_xen_page_put_cookie(omx_xenif, seg->cookie);
+#else
+	free_xenballooned_pages(seg->nr_pages, seg->pages);
+	kfree(seg->pages);
 #endif
+	TIMER_STOP(&t_free_pages);
 
 out:
 	TIMER_STOP(&t_dereg_seg);
@@ -273,143 +280,6 @@ out:
 	return ret;
 }
 
-int omx_xen_unmap_page(uint32_t handle, struct page *page)
-{
-	int ret = 0;
-	struct gnttab_unmap_grant_ref ops;
-
-	//dprintk_in();
-
-#ifdef EXTRA_DEBUG_OMX
-	if (!page) {
-		printk_err("page is null\n");
-		ret = -EINVAL;
-		goto real_out;
-	}
-#endif
-#if 0
-	ops = kmalloc(sizeof(struct gnttab_unmap_grant_ref), GFP_KERNEL);
-	if (!ops) {
-		printk_err("ops is null\n");
-		ret = -ENOMEM;
-		goto real_out;
-	}
-#endif
-	gnttab_set_unmap_op(&ops, (unsigned long)pfn_to_kaddr(page_to_pfn(page)),
-			    GNTMAP_host_map, handle);
-
-#if 1
-
-	//if (ops2)
-	//      kfree(ops2);
-	//gnttab_set_unmap_op(&ops, (unsigned long)pfn_to_kaddr(page_to_pfn(page)), GNTMAP_host_map, handle);
-	//ops.host_addr = (unsigned long) pfn_to_kaddr(page_to_pfn(page));
-
-	if (HYPERVISOR_grant_table_op(GNTTABOP_unmap_grant_ref, &ops, 1))
-		BUG();
-	if (ops.status) {
-		printk_err
-		    ("HYPERVISOR unmap specific grant ref failed status = %d",
-		     ops.status);
-
-		ret = ops.status;
-		goto out;
-	}
-#endif
-#if 1
-	ret = m2p_remove_override(page, false);
-	if (ret) {
-		printk_err("m2p faileD!!!!!!!\n");
-		ret = -EFAULT;
-		goto out;
-	}
-#endif
-#if 0
-	if (ops->status == GNTST_okay)
-		//put_page(page);
-		if (page) {
-			//__free_page(page);
-		}
-#endif
-
-out:
-	//kfree(ops);
-//real_out:
-	//dprintk_out();
-	return ret;
-}
-
-int omx_xen_map_page(struct backend_info *be, uint32_t gref, void **vaddr,
-		     uint32_t * handle, struct page **retpage,
-		     struct omx_xen_page_cookie **cookie)
-{
-	int ret = 0;
-	struct page *page;
-	uint32_t mfn;
-	struct gnttab_map_grant_ref ops;
-	struct omx_xen_page_cookie *page_cookie;
-
-	ops.flags = GNTMAP_host_map;
-	ops.ref = gref;
-	ops.dom = be->remoteDomain;
-
-	*vaddr = NULL;
-
-	if (!cookie) {
-		page = alloc_page(GFP_KERNEL);
-	} else {
-		page_cookie = omx_xen_page_get_cookie(be->omx_xenif);
-		if (!page_cookie) {
-			printk_err("Not a valid cookie\n");
-			ret = -EINVAL;
-			goto out;
-		}
-		page = page_cookie->page;
-		*cookie = page_cookie;
-	}
-
-	if (!page) {
-		ret = -ENOMEM;
-		goto out;
-	}
-
-	ops.host_addr = (unsigned long)pfn_to_kaddr(page_to_pfn(page));
-
-	if (HYPERVISOR_grant_table_op(GNTTABOP_map_grant_ref, &ops, 1)) {
-		printk_err("HYPERVISOR map grant ref failed");
-		ret = -ENOSYS;
-		goto out;
-	}
-	if (ops.status) {
-		printk_err("HYPERVISOR map grant ref failed status = %d",
-			   ops.status);
-
-		ret = ops.status;
-		goto out;
-	}
-	mfn = ops.dev_bus_addr >> PAGE_SHIFT;
-	//mfn = PFN_DOWN(ops->dev_bus_addr);
-	//}
-
-#if 1
-	ret = m2p_add_override(mfn, page, NULL);
-	if (ret) {
-		printk_err("m2p failed!, ret = %d\n", ret);
-		goto out;
-	}
-#endif
-	if (retpage)
-		*retpage = page;
-	*vaddr = page_address(page);
-	*handle = ops.handle;
-
-	//kfree(ops);
-
-out:
-	//dprintk_out();
-	return ret;
-}
-
 int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 				  struct omx_ring_msg_register_user_segment *req)
 {
@@ -430,6 +300,8 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 	    gref[OMX_XEN_GRANT_PAGES_MAX];
 	uint64_t domU_vaddr;
 	int idx = 0, sidx = 0;
+	struct gnttab_map_grant_ref *map;
+	struct gnttab_unmap_grant_ref *unmap;
 
 	dprintk_in();
 
@@ -481,37 +353,55 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 	seg->nr_parts = nr_parts;
 	dprintk_deb("parts of gref list = %#x\n", nr_parts);
 
+	TIMER_START(&t_alloc_pages);
 	gref_list = kzalloc(sizeof(uint32_t *) * nr_parts, GFP_ATOMIC);
 	if (!gref_list) {
 		ret = -ENOMEM;
-		printk_err("gref list is cannot be allocated, ENOMEM!!!\n");
+		printk_err("gref list is NULL, ENOMEM!!!\n");
 		goto out;
 	}
 
+	map =
+	    kzalloc(sizeof(struct gnttab_map_grant_ref) * nr_pages,
+		    GFP_ATOMIC);
+	if (!map) {
+		ret = -ENOMEM;
+		printk_err(" map is NULL, ENOMEM!!!\n");
+		goto out;
+	}
+	unmap =
+	    kzalloc(sizeof(struct gnttab_unmap_grant_ref) * nr_pages,
+		    GFP_ATOMIC);
+	if (!unmap) {
+		ret = -ENOMEM;
+		printk_err(" unmap is NULL, ENOMEM!!!\n");
+		goto out;
+	}
+
+#ifdef OMX_XEN_COOKIES
+	seg->cookie = omx_xen_page_get_cookie(omx_xenif, nr_pages);
+	if (!seg->cookie) {
+		printk_err("cannot get cookie\n");
+		goto out;
+	}
+	page_list = seg->cookie->pages;
+#else
 	page_list = kzalloc(sizeof(struct page *) * nr_pages, GFP_ATOMIC);
 	if (!page_list) {
 		ret = -ENOMEM;
 		printk_err(" page list is NULL, ENOMEM!!!\n");
 		goto out;
 	}
-#ifdef OMX_XEN_COOKIES
-	seg->cookies =
-	    kzalloc(sizeof(struct omx_xen_page_cookie *) * nr_pages,
-		    GFP_ATOMIC);
-	if (!seg->cookies) {
-		ret = -ENOMEM;
-		printk_err(" page list is NULL, ENOMEM!!!\n");
+
+	ret = alloc_xenballooned_pages(nr_pages, page_list, false /* lowmem */);
+	if (ret) {
+		printk_err("cannot allocate xenballooned_pages\n");
 		goto out;
 	}
 #endif
+	TIMER_STOP(&t_alloc_pages);
 
-	seg->handles = kzalloc(sizeof(grant_ref_t) * nr_pages, GFP_ATOMIC);
-	if (!seg->handles) {
-		ret = -ENOMEM;
-		printk_err(" page list is NULL, ENOMEM!!!\n");
-		goto out;
-	}
-
+	TIMER_START(&t_accept_gref_list);
 	for (k = 0; k < nr_parts; k++) {
 		ret =
 		    omx_xen_accept_gref_list(omx_xenif, seg, gref[k], &vaddr,
@@ -528,6 +418,7 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 			goto out;
 		}
 	}
+	TIMER_STOP(&t_accept_gref_list);
 	seg->gref_list = gref_list;
 
 	seg->nr_pages = nr_pages;
@@ -536,47 +427,19 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 	i = 0;
 	idx = 0;
 	sidx = 0;
+	seg->map = map;
+	seg->unmap = unmap;
 	while (i < nr_pages) {
 		void *tmp_vaddr;
-		struct page *page;
+		unsigned long addr = (unsigned long)pfn_to_kaddr(page_to_pfn(page_list[i]));
 		if (sidx % 256 == 0)
 			dprintk_deb("gref_list[%d][%d] = %#x\n", idx, sidx,
 				    gref_list[idx][sidx]);
 
-		ret =
-		    omx_xen_map_page(omx_xenif->be, gref_list[idx][sidx],
-				     &tmp_vaddr, &seg->handles[i], NULL,
-#ifdef OMX_XEN_COOKIES
-				     &seg->cookies[i]);
-#else
-				     NULL);
-#endif
-		if (ret) {
-			printk_err("map page failed!, ret = %d\n", ret);
-			goto out;
-		}
 
-#ifdef EXTRA_DEBUG_OMX
-		if (sidx % 256 == 0)
-			dprintk_deb("%#lx\n", tmp_vaddr);
-		if (!virt_addr_valid(tmp_vaddr)) {
-			ret = -EINVAL;
-			goto out;
-		} else {
-#endif
-			page = virt_to_page(tmp_vaddr);
-#ifdef EXTRA_DEBUG_OMX
-		}
-		if (!page)
-			printk_err("No page found:(\n");
-		else {
-			if (sidx % 256 == 0)
-				dprintk_deb("page=%#lx\n", (unsigned long)page);
-#endif
-			page_list[i] = page;
-#ifdef EXTRA_DEBUG_OMX
-		}
-#endif
+		gnttab_set_map_op(&map[i], addr, GNTMAP_host_map,
+				  gref_list[idx][sidx], be->remoteDomain);
+		gnttab_set_unmap_op(&unmap[i], addr, GNTMAP_host_map, -1 /* handle */ );
 		i++;
 		if ((unlikely(i % nr_grefs == 0))) {
 			idx++;
@@ -584,9 +447,31 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 		} else {
 			sidx++;
 		}
+		//printk(KERN_INFO "idx=%d, i=%d, sidx=%d\n", idx, i, sidx);
 	}
+	TIMER_START(&t_accept_grants);
+        ret = gnttab_map_refs(map, NULL, page_list, nr_pages);
+        if (ret) {
+		printk_err("Error mapping, ret= %d\n", ret);
+                goto out;
+	}
+	TIMER_STOP(&t_accept_grants);
+
+        for (i = 0; i < nr_pages; i++) {
+                if (map[i].status) {
+                        ret = -EINVAL;
+			printk_err("idx %d, status =%d\n", i, map[i].status);
+			goto out;
+		}
+                else {
+                        //BUG_ON(map->map_ops[i].handle == -1);
+                        unmap[i].handle = map[i].handle;
+                        dprintk_deb("map handle=%d\n", map[i].handle);
+                }
+        }
+
 	seg->pages = page_list;
-	seg->nr_pages = i;
+	seg->nr_pages = nr_pages;
 	seg->length = length;
 	region->total_length += length;
 	dprintk_deb("total_length = %#lx, nrpages=%lu, pages = %#lx\n",
@@ -682,17 +567,17 @@ omx_xen_user_region_destroy_segments(struct omx_xen_user_region *region,
 void __omx_xen_user_region_last_release(struct kref *kref)
 {
 	dprintk_in();
-#if 0
+#if 1
 	struct omx_xen_user_region *region =
 	    container_of(kref, struct omx_xen_user_region, refcount);
-	//struct omx_endpoint *endpoint = region->endpoint;
+	struct omx_endpoint *endpoint = region->endpoint;
 
 	dprintk_deb("releasing the last reference on region %p, %#x\n", region,
 		    region->id);
 
 	/* FIXME, we can't release the segments region from the backend, we need to get
 	 * a frontend kick first:S Hence, we just decrease the refcount... Really impressive huh? */
-//#if 0
+#if 0
 	if (region->nr_vmalloc_segments && in_interrupt()) {
 		OMX_INIT_WORK(&region->destroy_work,
 			      omx_region_destroy_workfunc, region);
@@ -701,7 +586,7 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 		omx_user_region_destroy_segments(region);
 		kfree(region);
 	}
-//#endif
+#endif
 	//printk(KERN_INFO "Will free now the specified region\n");
 //#if 0
 	if (endpoint) {
