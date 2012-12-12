@@ -403,6 +403,7 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	struct omx_cmd_open_endpoint param;
 	struct omx_xenif_request *ring_req;
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
+	uint32_t request_id;
 	int ret;
 
 	dprintk_in();
@@ -423,7 +424,7 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	spin_lock(&endpoint->status_lock);
 	ret = -EBUSY;
 	if (endpoint->status != OMX_ENDPOINT_STATUS_FREE) {
-		printk_err("status is %d\n", endpoint->status);
+		dprintk_inf("status is %d\n", endpoint->status);
 		spin_unlock(&endpoint->status_lock);
 		goto out;
 	}
@@ -450,7 +451,11 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	/* Prepare the message to the backend */
 
 	/* FIXME: maybe create a static inline function for this stuff ? */
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	fe->requests[request_id] = OMX_XEN_FRONTEND_STATUS_DOING;
+	ring_req->request_id = request_id;
+
 	ring_req->func = OMX_CMD_XEN_OPEN_ENDPOINT;
 	ring_req->board_index = param.board_index;
 	ring_req->eid = param.endpoint_index;
@@ -476,18 +481,23 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	omx_poke_dom0(endpoint->fe, ring_req);
 	/* FIXME: find a better way to get notified that a backend response has come */
 	if ((ret = wait_for_backend_response
-	    (&endpoint->status, OMX_ENDPOINT_STATUS_INITIALIZING,
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
 	     &endpoint->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;
 		goto out;
 	}
         dprintk_deb("ret = %d\n", ret);
-	if (endpoint->status != OMX_ENDPOINT_STATUS_OK) {
-		printk_err("Endpoint is busy\n");
+	if (fe->requests[request_id] != OMX_XEN_FRONTEND_STATUS_DONE) {
+		dprintk_inf("Endpoint %d status is %d\n", endpoint->status);
+		dprintk_inf("Request from backend returned: %d \n", fe->requests[request_id]);
 		ret = -EBUSY;
 		goto out_with_alloc;
 	}
+
+	spin_lock(&endpoint->status_lock);
+	endpoint->status = OMX_ENDPOINT_STATUS_OK;
+	spin_unlock(&endpoint->status_lock);
 
 	omx_xen_timer_reset(&endpoint->oneway);
 	omx_xen_timer_reset(&endpoint->otherway);
@@ -496,10 +506,8 @@ omx_ioctl_xen_open_endpoint(struct omx_endpoint *endpoint, void __user * uparam)
 	goto out;
 
 out_with_alloc:
-	printk_err("Out with alloc\n");
 	omx_xen_endpoint_free_resources(endpoint);
 out_with_init:
-	printk_err("Out with init\n");
 	spin_lock(&endpoint->status_lock);
 	endpoint->status = OMX_ENDPOINT_STATUS_FREE;
 	spin_unlock(&endpoint->status_lock);
@@ -553,6 +561,7 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 	struct omx_cmd_open_endpoint param;
 	struct omx_xenif_request *ring_req;
 	struct omx_xenfront_info *fe = __omx_xen_frontend;
+	uint32_t request_id;
 	dprintk_in();
 
 	might_sleep();
@@ -578,7 +587,7 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 		/* not open, just free the structure */
 		printk_err("Endpoint already free:S\n");
 		spin_unlock(&endpoint->status_lock);
-		kfree(endpoint);
+		//kfree(endpoint);
 		/* FIXME: maybe this is where MPI gets stuck! */
 		ret = 0;
 		goto out;
@@ -589,7 +598,10 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 	/* Prepare the message to the backend */
 
 	/* FIXME: maybe create a static inline function for this stuff ? */
-	ring_req = RING_GET_REQUEST(&(fe->ring), fe->ring.req_prod_pvt++);
+	ring_req = omx_ring_get_request(fe);
+	request_id = (fe->ring.req_prod_pvt - 1) % OMX_MAX_INFLIGHT_REQUESTS;
+	fe->requests[request_id] = OMX_XEN_FRONTEND_STATUS_DOING;
+	ring_req->request_id = request_id;
 	ring_req->func = OMX_CMD_XEN_CLOSE_ENDPOINT;
 	ring_req->board_index = param.board_index;
 	ring_req->eid = param.endpoint_index;
@@ -608,7 +620,7 @@ omx_ioctl_xen_close_endpoint(struct omx_endpoint *endpoint,
 
 	/* FIXME: find a better way to get notified that a backend response has come */
 	if ((ret = wait_for_backend_response
-	    (&endpoint->status, OMX_ENDPOINT_STATUS_CLOSING,
+	    (&fe->requests[request_id], OMX_XEN_FRONTEND_STATUS_DOING,
 	     &endpoint->status_lock)) < 0) {
 		printk_err("Failed to wait\n");
 		ret = -EINVAL;

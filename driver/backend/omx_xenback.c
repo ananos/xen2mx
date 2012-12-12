@@ -839,6 +839,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			resp->data.endpoint.endpoint =
 			    req->data.endpoint.endpoint;
 			resp->eid = req->eid;
+			resp->request_id = req->request_id;
 			resp->board_index = req->board_index;
 			resp->ret = ret;
 
@@ -860,6 +861,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			//memset(&resp->data.endpoint, 0, sizeof(resp->data.endpoint));
 			resp->func = OMX_CMD_XEN_CLOSE_ENDPOINT;
 			resp->eid = req->eid;
+			resp->request_id = req->request_id;
 			resp->board_index = req->board_index;
 			resp->ret = ret;
 
@@ -978,7 +980,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 								    eid);
 
 				if (ret)
-					dprintk_deb
+					printk_err
 					    ("Failed to deregister user segment %u\n",
 					     sid);
 			}

@@ -1163,26 +1163,13 @@ again_send:
 					    ("Endpoint is null:S, ret = %d\n",
 					     ret);
 					//goto out;
-					//break;
-				}
-				//endpoint = resp->data.endpoint.endpoint;
-				if (ret || !endpoint) {
-					printk_err
-					    ("endpoint is not READY (ret = %d, closing)\n",
-					     ret);
-					endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;	/* FIXME */
-					omx_endpoint_close(endpoint, 0);
-					//goto out;
+					fe->requests[resp->request_id] = OMX_XEN_FRONTEND_STATUS_FAILED;
 					break;
 				}
 				dump_xen_ring_msg_endpoint(&resp->
 							   data.endpoint);
-				if (!ret) {
-					endpoint->status = OMX_ENDPOINT_STATUS_OK;	/* FIXME */
-				} else {
-					endpoint->status = OMX_ENDPOINT_STATUS_FREE;	/* FIXME */
-				}
 
+				fe->requests[resp->request_id] = OMX_XEN_FRONTEND_STATUS_DONE;
 				break;
 			}
 		case OMX_CMD_XEN_CLOSE_ENDPOINT:
@@ -1196,16 +1183,16 @@ again_send:
 				endpoint = omx_xenfront_get_endpoint(fe, resp);
 				if (ret || !endpoint) {
 					printk_err
-					    ("endpoint is not READY (ret = %d, closing)\n",
-					     ret);
-					endpoint->status = OMX_ENDPOINT_STATUS_CLOSING;	/* FIXME */
-					omx_endpoint_close(endpoint, 0);
+					    ("endpoint id=%u is not READY (ret = %d, closing)\n",
+					     resp->eid, ret);
+					fe->requests[resp->request_id] = OMX_XEN_FRONTEND_STATUS_FAILED;
 					//goto out;
 					break;
 				}
 				dump_xen_ring_msg_endpoint(&resp->
 							   data.endpoint);
 				endpoint->status = OMX_ENDPOINT_STATUS_OK;
+				fe->requests[resp->request_id] = OMX_XEN_FRONTEND_STATUS_DONE;
 				break;
 			}
 		case OMX_CMD_XEN_CREATE_USER_REGION:
