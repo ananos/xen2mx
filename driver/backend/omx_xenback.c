@@ -76,6 +76,12 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_destroy_reg);
 	omx_xen_timer_reset(&t_reg_seg);
 	omx_xen_timer_reset(&t_dereg_seg);
+	omx_xen_timer_reset(&t_alloc_pages);
+	omx_xen_timer_reset(&t_accept_grants);
+	omx_xen_timer_reset(&t_accept_gref_list);
+	omx_xen_timer_reset(&t_release_grants);
+	omx_xen_timer_reset(&t_release_gref_list);
+	omx_xen_timer_reset(&t_free_pages);
 }
 
 static void printk_timer(timers_t * timer, char *name)
@@ -116,6 +122,12 @@ static void printk_timers(void)
 	printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
 	printk_timer(&t_reg_seg, var_name(t_reg_seg));
 	printk_timer(&t_dereg_seg, var_name(t_dereg_seg));
+	printk_timer(&t_alloc_pages, var_name(t_alloc_pages));
+	printk_timer(&t_accept_grants, var_name(t_accept_grants));
+	printk_timer(&t_accept_gref_list, var_name(t_accept_gref_list));
+	printk_timer(&t_release_grants, var_name(t_release_grants));
+	printk_timer(&t_release_gref_list, var_name(t_release_gref_list));
+	printk_timer(&t_free_pages, var_name(t_free_pages));
 }
 
 int omx_xen_process_incoming_response(omx_xenif_t * omx_xenif,

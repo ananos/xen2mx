@@ -49,7 +49,8 @@
 #include "omx_xenfront_endpoint.h"
 #include "omx_xenfront_reg.h"
 
-timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg;
+timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg, t_wait_destroy_reg, t_grant, t_release_grant, t_claim, t_release;
+static int global_region_index = 0;
 /* FIXME: Get rid of these copied functions from omx_reg.c */
 static int
 omx_wrapper_user_region_add_segment(const struct omx_cmd_user_segment *useg,
@@ -335,7 +336,6 @@ omx_ioctl_wrapper_user_region_create(struct omx_endpoint *endpoint,
 	int ret, i;
 
 	dprintk_in();
-	TIMER_START(&t_create_reg);
 	if (unlikely(current->mm != endpoint->opener_mm)) {
 		printk(KERN_ERR "Tried to register from another process\n");
 		ret = -EFAULT;	/* the application does crap, behave as if it was a segfault */
@@ -454,7 +454,6 @@ out_with_region:
 out_with_usegs:
 	kfree(usegs);
 out:
-	TIMER_STOP(&t_create_reg);
 	dprintk_out();
 	return ret;
 }
@@ -643,8 +642,9 @@ static grant_ref_t omx_gnttab_claim_grant_reference(struct
 						    *cookie)
 {
 	grant_ref_t gref;
-
+	TIMER_START(&t_claim);
 	gref = gnttab_claim_grant_reference(&cookie->gref_head);
+	TIMER_STOP(&t_claim);
 
 	return gref;
 }
@@ -652,7 +652,9 @@ static grant_ref_t omx_gnttab_claim_grant_reference(struct
 static void omx_gnttab_release_grant_reference(struct omx_xenfront_gref_cookie
 					       *cookie, grant_ref_t gref)
 {
+	TIMER_START(&t_release);
 	gnttab_release_grant_reference(&cookie->gref_head, gref);
+	TIMER_STOP(&t_release);
 }
 
 /* This is where Xen2MX specific functions begin */
@@ -672,6 +674,7 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 	dprintk_in();
 
+	TIMER_START(&t_create_reg);
 	fe = endpoint->fe;
 	BUG_ON(!fe);
 
@@ -807,8 +810,10 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 			mfn = pfn_to_mfn(page_to_pfn(gref_page));
 
+			TIMER_START(&t_grant);
 			seg->all_gref[k] = gref;
 			gnttab_grant_foreign_access_ref(gref, 0, mfn, 0);
+			TIMER_STOP(&t_grant);
 
 			dprintk_deb("%s: all_gref[%d] = %#lx, mfn=%#lx\n",
 				    __func__, k, seg->all_gref[k], mfn);
@@ -846,8 +851,10 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 			if (seg->gref_list[j] <= 0)
 				printk_err("ref is %d\n", seg->gref_list[j]);
+			TIMER_START(&t_grant);
 			gnttab_grant_foreign_access_ref(seg->gref_list[j], 0,
 							mfn, 0);
+			TIMER_STOP(&t_grant);
 		}
 		/* FIXME: Do we need a barrier here ? */
 		wmb();
@@ -904,6 +911,7 @@ omx_ioctl_xen_user_region_create(struct omx_endpoint *endpoint,
 
 	ret = 0;
 out:
+	TIMER_STOP(&t_create_reg);
 	dprintk_out();
 	return ret;
 }
@@ -966,9 +974,10 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 			pfn = page_to_pfn(single_page);
 			mfn = pfn_to_mfn(pfn);
 
+			TIMER_START(&t_release_grant);
 			ret = gnttab_query_foreign_access(seg->gref_list[j]);
 			if (ret) {
-				printk_inf
+				dprintk_deb
 				    ("gref_list[%d] = %u, mfn=%#lx is still in use by the backend!\n",
 				     j, seg->gref_list[j], mfn);
 #ifdef EXTRA_DEBUG_OMX
@@ -988,6 +997,7 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 				continue;
 			}
 			//dprintk_deb( "%s: Releasing gref_list[%d]=%#lx\n", __func__,j, seg->gref_list[j]);
+			TIMER_STOP(&t_release_grant);
 			omx_gnttab_release_grant_reference(seg->gref_cookie,
 							   seg->gref_list[j]);
 			//gnttab_release_grant_reference(&seg->gref_head, seg->gref_list[j]);
@@ -1044,16 +1054,17 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 			dprintk_deb
 			    ("pending foreign access for part = %d, gref=%#lx\n",
 			     k, seg->all_gref[k]);
+			TIMER_START(&t_release_grant);
 			ret = gnttab_query_foreign_access(seg->all_gref[k]);
 			if (ret) {
-				printk_inf
+				dprintk_inf
 				    ("gref_list[%d] = %u, is still in use by the backend!\n",
 				     k, seg->all_gref[k]);
 			}
 			ret =
 			    gnttab_end_foreign_access_ref(seg->all_gref[k], 0);
 			if (!ret) {
-				printk_inf
+				dprintk_deb
 				    ("Can't end foreign access for gref_list[%d] = %u, is still in use by the backend!\n",
 				     k, seg->all_gref[k]);
 				/* FIXME: Do we really need to fail with -EBUSY ? */
@@ -1063,6 +1074,7 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 			dprintk_deb
 			    ("%s: Releasing gref_head=%#lx, all_gref[%d]=%#lx\n",
 			     __func__, *seg->gref_head, k, seg->all_gref[k]);
+			TIMER_STOP(&t_release_grant);
 			omx_gnttab_release_grant_reference(seg->gref_cookie,
 							   seg->all_gref[k]);
 		}
@@ -1129,6 +1141,7 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 			pfn = page_to_pfn(single_page);
 			mfn = pfn_to_mfn(pfn);
 
+			TIMER_START(&t_release_grant);
 			ret = gnttab_query_foreign_access(seg->gref_list[j]);
 			if (ret) {
 				printk_inf
@@ -1152,6 +1165,7 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 			}
 			dprintk_deb("%s: Releasing gref_list[%d]=%#lx\n",
 				    __func__, j, seg->gref_list[j]);
+			TIMER_STOP(&t_release_grant);
 			omx_gnttab_release_grant_reference(seg->gref_cookie,
 							   seg->gref_list[j]);
 		}
@@ -1197,6 +1211,7 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 			dprintk_deb
 			    ("pending foreign access for part = %d, gref=%#lx\n",
 			     k, seg->all_gref[k]);
+			TIMER_START(&t_release_grant);
 			ret = gnttab_query_foreign_access(seg->all_gref[k]);
 			if (ret) {
 				printk_inf
@@ -1213,6 +1228,7 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 			dprintk_deb
 			    ("%s: Releasing gref_head=%#lx all_gref[%d]=%#lx\n",
 			     __func__, seg->gref_head, k, seg->all_gref[k]);
+			TIMER_STOP(&t_release_grant);
 			omx_gnttab_release_grant_reference(seg->gref_cookie,
 							   seg->all_gref[k]);
 		}

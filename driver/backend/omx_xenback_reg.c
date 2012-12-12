@@ -59,7 +59,7 @@
 #include "omx_xenback_reg.h"
 #include "omx_xenback_event.h"
 
-timers_t t_reg_seg, t_create_reg, t_dereg_seg, t_destroy_reg;
+timers_t t_reg_seg, t_create_reg, t_dereg_seg, t_destroy_reg, t_alloc_pages, t_accept_grants, t_accept_gref_list, t_release_grants, t_release_gref_list, t_free_pages;
 
 int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 				    uint32_t sid, uint8_t eid)
@@ -93,8 +93,17 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 	}
 	seg = &region->segments[sid];
 
-	gnttab_unmap_refs(seg->unmap, NULL, seg->pages, seg->nr_pages);
 
+	TIMER_START(&t_release_grants);
+	if (!seg->unmap) {
+		printk_err("seg->unmap is NULL\n");
+		ret = -EINVAL;
+		goto out;
+	}
+	gnttab_unmap_refs(seg->unmap, NULL, seg->pages, seg->nr_pages);
+	TIMER_STOP(&t_release_grants);
+
+	TIMER_START(&t_release_gref_list);
 	for (k = 0; k < seg->nr_parts; k++) {
 #ifdef EXTRA_DEBUG_OMX
 		if (!seg->vm_gref) {
@@ -142,11 +151,13 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 			ret = ops.status;
 			goto out;
 		}
-#if 1
+	}
+	TIMER_STOP(&t_release_gref_list);
+
+	TIMER_START(&t_free_pages);
+	for (k=0;k<seg->nr_parts;k++)
 		if (ops.status == GNTST_okay)
 			free_vm_area(seg->vm_gref[k]);
-#endif
-	}
 
 	kfree(seg->map);
 	kfree(seg->unmap);
@@ -157,6 +168,7 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 	free_xenballooned_pages(seg->nr_pages, seg->pages);
 	kfree(seg->pages);
 #endif
+	TIMER_STOP(&t_free_pages);
 
 out:
 	TIMER_STOP(&t_dereg_seg);
@@ -341,6 +353,7 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 	seg->nr_parts = nr_parts;
 	dprintk_deb("parts of gref list = %#x\n", nr_parts);
 
+	TIMER_START(&t_alloc_pages);
 	gref_list = kzalloc(sizeof(uint32_t *) * nr_parts, GFP_ATOMIC);
 	if (!gref_list) {
 		ret = -ENOMEM;
@@ -386,7 +399,9 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 		goto out;
 	}
 #endif
+	TIMER_STOP(&t_alloc_pages);
 
+	TIMER_START(&t_accept_gref_list);
 	for (k = 0; k < nr_parts; k++) {
 		ret =
 		    omx_xen_accept_gref_list(omx_xenif, seg, gref[k], &vaddr,
@@ -403,6 +418,7 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 			goto out;
 		}
 	}
+	TIMER_STOP(&t_accept_gref_list);
 	seg->gref_list = gref_list;
 
 	seg->nr_pages = nr_pages;
@@ -433,11 +449,13 @@ int omx_xen_register_user_segment(omx_xenif_t * omx_xenif,
 		}
 		//printk(KERN_INFO "idx=%d, i=%d, sidx=%d\n", idx, i, sidx);
 	}
+	TIMER_START(&t_accept_grants);
         ret = gnttab_map_refs(map, NULL, page_list, nr_pages);
         if (ret) {
 		printk_err("Error mapping, ret= %d\n", ret);
                 goto out;
 	}
+	TIMER_STOP(&t_accept_grants);
 
         for (i = 0; i < nr_pages; i++) {
                 if (map[i].status) {

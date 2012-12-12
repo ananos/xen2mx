@@ -71,11 +71,12 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_send_connect_reply);
 	omx_xen_timer_reset(&t_send_rndv);
 	omx_xen_timer_reset(&t_send_liback);
-        omx_xen_timer_reset(&t_create_reg);
-        omx_xen_timer_reset(&t_destroy_reg);
-        omx_xen_timer_reset(&t_reg_seg);
-        omx_xen_timer_reset(&t_dereg_seg);
-        omx_xen_timer_reset(&t_poke_dom0);
+	omx_xen_timer_reset(&t_create_reg);
+	omx_xen_timer_reset(&t_wait_destroy_reg);
+	omx_xen_timer_reset(&t_destroy_reg);
+	omx_xen_timer_reset(&t_reg_seg);
+	omx_xen_timer_reset(&t_dereg_seg);
+	omx_xen_timer_reset(&t_poke_dom0);
 
 	omx_xen_timer_reset(&t_recv_tiny);
 	omx_xen_timer_reset(&t_recv_medsmall);
@@ -87,9 +88,12 @@ static void omx_xen_timers_reset(void)
 	omx_xen_timer_reset(&t_recv_liback);
 	omx_xen_timer_reset(&t_pull_done);
 	omx_xen_timer_reset(&t_pull_request);
+	omx_xen_timer_reset(&t_release);
+	omx_xen_timer_reset(&t_claim);
+	omx_xen_timer_reset(&t_grant);
+	omx_xen_timer_reset(&t_release_grant);
 
 }
-
 static void printk_timer(timers_t * timer, char *name)
 {
 	if (TIMER_COUNT(timer)) {
@@ -113,9 +117,10 @@ static void printk_timers(void)
 	printk_timer(&t_send_notify, var_name(t_send_notify));
 	printk_timer(&t_send_rndv, var_name(t_send_rndv));
 	printk_timer(&t_send_liback, var_name(t_send_liback));
-        printk_timer(&t_create_reg, var_name(t_create_reg));
-        printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
-        printk_timer(&t_poke_dom0, var_name(t_poke_dom0));
+	printk_timer(&t_create_reg, var_name(t_create_reg));
+	printk_timer(&t_destroy_reg, var_name(t_destroy_reg));
+	printk_timer(&t_wait_destroy_reg, var_name(t_wait_destroy_reg));
+	printk_timer(&t_poke_dom0, var_name(t_poke_dom0));
 
 	printk_timer(&t_recv_tiny, var_name(t_recv_tiny));
 	printk_timer(&t_recv_medsmall, var_name(t_recv_medsmall));
@@ -127,6 +132,10 @@ static void printk_timers(void)
 	printk_timer(&t_recv_liback, var_name(t_recv_liback));
 	printk_timer(&t_pull_done, var_name(t_pull_done));
 	printk_timer(&t_pull_request, var_name(t_pull_request));
+	printk_timer(&t_release, var_name(t_release));
+	printk_timer(&t_release_grant, var_name(t_release_grant));
+	printk_timer(&t_claim, var_name(t_claim));
+	printk_timer(&t_grant, var_name(t_grant));
 
 }
 

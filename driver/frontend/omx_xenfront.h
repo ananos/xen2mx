@@ -142,7 +142,7 @@ int omx_xen_set_hostname(uint32_t board_index, const char *hostname);
 //extern timers_t t_send_tiny, t_send_small, t_send_medium, t_send_connect, t_send_notify, t_send_connect_reply, t_send_rndv, t_send_liback;
 
 
-extern timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg;
+extern timers_t t_create_reg, t_destroy_reg, t_reg_seg, t_dereg_seg, t_wait_destroy_reg, t_release, t_release_grant, t_claim, t_grant;
 extern timers_t t_poke_dom0;
 extern timers_t t_pull;
 extern timers_t t_send_tiny, t_send_small, t_send_mediumva,
