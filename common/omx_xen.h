@@ -33,9 +33,14 @@
 #define OMX_XEN_MAX_ENDPOINTS OMX_ENDPOINT_INDEX_MAX
 #define OMX_XEN_GRANT_PAGES_MAX 16
 
-/* FIXME: Don't miss this one!!!,
- * allocated memory in the backend rises exponentially  */
-#define OMX_XEN_COOKIES 1
+/*
+ * This option enables the use of prealloacted page sets for
+ * granting the guest's pages. Since the bottleneck for
+ * region registration is not memory allocation but the
+ * actual granting, enabling or disabling it doesn't change
+ * much, performance-wise.
+ */
+#define OMX_XEN_COOKIES
 
 struct omx_cmd_xen_send_mediumsq_frag_done {
 	struct omx_evt_send_mediumsq_frag_done sq_frag_done;
