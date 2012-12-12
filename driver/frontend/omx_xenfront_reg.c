@@ -493,9 +493,8 @@ static int omx_xen_gnttab_really_alloc_grant_references(struct omx_xenfront_info
 	write_lock(&fe->gref_cookies_freelock);
 	list_add_tail(&cookie->node, &fe->gref_cookies_free);
 	write_unlock(&fe->gref_cookies_freelock);
-	printk
-	    (KERN_INFO
-	     "allocated, and appended to list, %#lx, count = %u (size=%u), gref_head = %#lx\n",
+	dprintk_deb
+	    ("allocated, and appended to list, %#lx, count = %u (size=%u), gref_head = %#lx\n",
 	     (unsigned long)cookie, count, count * 4, cookie->gref_head);
 
 out:
@@ -529,11 +528,27 @@ static int omx_xen_gnttab_free_grant_references(struct omx_xenfront_info *fe,
 						void **gref_cookie)
 {
 	int ret = 0, i = 0;
+	struct omx_xenfront_gref_cookie *cookie;
 
 	dprintk_in();
+#ifdef EXTRA_DEBUG_OMX
+	if (!gref_cookie) {
+		printk_err("Are you trying to free a NULL cookie????\n");
+		ret = -EINVAL;
+		goto out;
+	}
+	if (!*gref_cookie) {
+		printk_err("Still, you are out of your mind!!!\n");
+		ret = -EINVAL;
+		goto out;
+	}
+#endif
+	cookie = *gref_cookie;
+
 	dprintk_deb("gref_head = %lx, gref_cookie =%p\n",
-		    gref_cookie->gref_head, *gref_cookie);
-	omx_xenfront_gref_put_cookie(fe, *gref_cookie);
+		    cookie->gref_head, cookie);
+
+	omx_xenfront_gref_put_cookie(fe, cookie);
 out:
 	dprintk_out();
 	return ret;
