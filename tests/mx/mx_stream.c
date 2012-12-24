@@ -69,8 +69,8 @@ MX_MUTEX_T stream_mutex;
 #define DFLT_END   128
 #define MAX_LEN    (1024*1024*1024) 
 #define DFLT_ITER  1000
-#define NUM_RREQ   16  /* currently constrained by  MX_MCP_RDMA_HANDLES_CNT*/
-#define NUM_SREQ   16  /* currently constrained by  MX_MCP_RDMA_HANDLES_CNT*/
+#define NUM_RREQ   8  /* currently constrained by  MX_MCP_RDMA_HANDLES_CNT*/
+#define NUM_SREQ   8  /* currently constrained by  MX_MCP_RDMA_HANDLES_CNT*/
 
 #define DO_HANDSHAKE 1
 #define MATCH_VAL_MAIN (1 << 31)
