@@ -1008,6 +1008,7 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 				dprintk_deb
 				    ("gref_list[%d] = %u, mfn=%#lx is still in use by the backend!\n",
 				     j, seg->gref_list[j], mfn);
+				((struct omx_xenfront_gref_cookie*)seg->gref_cookie)->count--;
 #ifdef EXTRA_DEBUG_OMX
 				redo[j] = 1;
 #endif
@@ -1016,7 +1017,7 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 			ret =
 			    gnttab_end_foreign_access_ref(seg->gref_list[j], 0);
 			if (!ret) {
-				printk_inf
+				dprintk_deb
 				    ("Can't end foreign access for gref_list[%d] = %u, mfn=%#lx\n",
 				     j, seg->gref_list[j], mfn);
 #ifdef EXTRA_DEBUG_OMX
@@ -1047,16 +1048,17 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 
 			ret = gnttab_query_foreign_access(seg->gref_list[j]);
 			if (ret) {
-				printk_inf
+				dprintk_deb
 				    ("gref_list[%d] = %u, mfn=%#lx is still in use by the backend!\n",
 				     j, seg->gref_list[j], mfn);
-				goto out;
+				((struct omx_xenfront_gref_cookie*)seg->gref_cookie)->count--;
+				//goto out;
 			}
 
 			ret =
 			    gnttab_end_foreign_access_ref(seg->gref_list[j], 0);
 			if (!ret) {
-				printk_inf
+				dprintk_deb
 				    ("Can't end foreign access for gref_list[%d] = %u, mfn=%#lx\n",
 				     j, seg->gref_list[j], mfn);
 				dprintk_deb
@@ -1068,8 +1070,8 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 								   gref_list
 								   [j]);
 				/* FIXME: Do we really need to fail with -EBUSY ? */
-				ret = -EBUSY;
-				goto out;
+				//ret = -EBUSY;
+				//goto out;
 			}
 		}
 
@@ -1088,6 +1090,8 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 				dprintk_inf
 				    ("gref_list[%d] = %u, is still in use by the backend!\n",
 				     k, seg->all_gref[k]);
+				((struct omx_xenfront_gref_cookie*)seg->gref_cookie)->count--;
+				continue;
 			}
 			ret =
 			    gnttab_end_foreign_access_ref(seg->all_gref[k], 0);
@@ -1096,8 +1100,8 @@ omx_xen_user_region_release(struct omx_endpoint *endpoint, uint32_t region_id)
 				    ("Can't end foreign access for gref_list[%d] = %u, is still in use by the backend!\n",
 				     k, seg->all_gref[k]);
 				/* FIXME: Do we really need to fail with -EBUSY ? */
-				ret = -EBUSY;
-				goto out;
+				//ret = -EBUSY;
+				//goto out;
 			}
 			dprintk_deb
 			    ("%s: Releasing gref_head=%#lx, all_gref[%d]=%#lx\n",
@@ -1129,14 +1133,15 @@ out:
 	return ret;
 }
 
-void __omx_xen_user_region_last_release(struct kref *kref)
+//void __omx_xen_user_region_last_release(struct kref *kref)
+void __omx_xen_user_region_last_release(struct omx_user_region *region)
 {
 	int ret = 0, i = 0;
 	struct omx_cmd_destroy_user_region cmd;
 	//struct omx_user_region *region;
 	struct omx_user_region_segment *seg;
-	struct omx_user_region *region =
-	    container_of(kref, struct omx_user_region, xen_refcount);
+	//struct omx_user_region *region =
+	//    container_of(kref, struct omx_user_region, xen_refcount);
 	struct omx_endpoint *endpoint = region->endpoint;
 	struct omx_xenfront_info *fe = endpoint->fe;
 	struct omx_xenif_request *ring_req;
@@ -1172,9 +1177,10 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 			TIMER_START(&t_release_grant);
 			ret = gnttab_query_foreign_access(seg->gref_list[j]);
 			if (ret) {
-				printk_inf
+				dprintk_deb
 				    ("gref_list[%d] = %u, mfn=%#lx is still in use by the backend!\n",
 				     j, seg->gref_list[j], mfn);
+				((struct omx_xenfront_gref_cookie*)seg->gref_cookie)->count--;
 #ifdef EXTRA_DEBUG_OMX
 				redo[j] = 1;
 #endif
@@ -1183,7 +1189,7 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 			ret =
 			    gnttab_end_foreign_access_ref(seg->gref_list[j], 0);
 			if (!ret) {
-				printk_inf
+				dprintk_deb
 				    ("Can't end foreign access for gref_list[%d] = %u, mfn=%#lx\n",
 				     j, seg->gref_list[j], mfn);
 #ifdef EXTRA_DEBUG_OMX
@@ -1215,13 +1221,14 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 
 			//dprintk_deb( "%s: gref_list[%d] = %u, mfn=%#lx\n", __func__, j, seg->gref_list[j], mfn);
 			if (gnttab_query_foreign_access(seg->gref_list[j]))
-				printk_inf
+				dprintk_deb
 				    ("gref_list[%d] = %u, mfn=%#lx is still in use by the backend!\n",
 				     j, seg->gref_list[j], mfn);
+				((struct omx_xenfront_gref_cookie*)seg->gref_cookie)->count--;
 			ret =
 			    gnttab_end_foreign_access_ref(seg->gref_list[j], 0);
 			if (!ret)
-				printk_inf
+				dprintk_deb
 				    ("Can't end foreign access for gref_list[%d] = %u, mfn=%#lx\n",
 				     j, seg->gref_list[j], mfn);
 			dprintk_deb("%s: Releasing gref_list[%d]=%#lx\n",
@@ -1242,14 +1249,16 @@ void __omx_xen_user_region_last_release(struct kref *kref)
 			TIMER_START(&t_release_grant);
 			ret = gnttab_query_foreign_access(seg->all_gref[k]);
 			if (ret) {
-				printk_inf
+				dprintk_deb
 				    ("gref_list[%d] = %u, is still in use by the backend!\n",
 				     k, seg->all_gref[k]);
+				((struct omx_xenfront_gref_cookie*)seg->gref_cookie)->count--;
+				continue;
 			}
 			ret =
 			    gnttab_end_foreign_access_ref(seg->all_gref[k], 0);
 			if (!ret) {
-				printk_inf
+				dprintk_deb
 				    ("Can't end foreign access for gref_list[%d] = %u, is still in use by the backend!\n",
 				     k, seg->all_gref[k]);
 			}
@@ -1397,7 +1406,8 @@ omx_ioctl_xen_user_region_destroy(struct omx_endpoint *endpoint,
 		goto out;
 	}
 	region->uparam = uparam;
-	kref_put(&region->xen_refcount, __omx_xen_user_region_last_release);
+	//kref_put(&region->xen_refcount, __omx_xen_user_region_last_release);
+	__omx_xen_user_region_last_release(region);
 
 	/* Let the Open-MX function handle this properly */
 	//RCU_INIT_POINTER(endpoint->user_regions[cmd.id], NULL);
