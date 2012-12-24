@@ -678,6 +678,7 @@ int omx_xen_endpoint_open(struct backend_info *be,
 		spin_unlock_irq(&endpoint->status_lock);
 		goto out;
 	}
+	BUG_ON(!endpoint->iface);
 	spin_unlock_irq(&endpoint->status_lock);
 	endpoint->opener_pid = current->pid;
 	strncpy(endpoint->opener_comm, current->comm, TASK_COMM_LEN);
