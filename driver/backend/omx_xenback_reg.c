@@ -87,7 +87,7 @@ int omx_xen_deregister_user_segment(omx_xenif_t * omx_xenif, uint32_t id,
 	region = rcu_dereference_protected(endpoint->xen_regions[id], 1);
 	if (unlikely(!region)) {
 		printk_err(
-		       "Open-MX: Cannot access non-existing region %d\n", id);
+		       "%s: Cannot access non-existing region %d\n", __func__, id);
 		//ret = -EINVAL;
 		goto out;
 	}
@@ -201,8 +201,8 @@ int omx_xen_destroy_user_region(omx_xenif_t * omx_xenif, uint32_t id,
 
 	region = rcu_dereference_protected(endpoint->xen_regions[id], 1);
 	if (unlikely(!region)) {
-		dprintk_deb(
-		       "Open-MX: Cannot access non-existing region %d\n", id);
+		printk_err(
+		       "%s: Cannot access non-existing region %d\n", __func__, id);
 		//ret = -EINVAL;
 		goto out;
 	}
@@ -567,7 +567,7 @@ omx_xen_user_region_destroy_segments(struct omx_xen_user_region *region,
 void __omx_xen_user_region_last_release(struct kref *kref)
 {
 	dprintk_in();
-#if 1
+#if 0
 	struct omx_xen_user_region *region =
 	    container_of(kref, struct omx_xen_user_region, refcount);
 	struct omx_endpoint *endpoint = region->endpoint;
