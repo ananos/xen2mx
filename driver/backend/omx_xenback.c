@@ -898,6 +898,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			dprintk_deb
 			    ("received frontend request: OMX_CMD_XEN_CREATE_USER_REGION, param=%lx\n",
 			     sizeof(struct omx_ring_msg_create_user_region));
+			spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
 			id = req->data.cur.id;
 			eid = req->data.cur.eid;
 			vaddr = req->data.cur.vaddr;
@@ -969,6 +970,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 
 			wmb();
 #endif
+			spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 			break;
 		}
 	case OMX_CMD_XEN_DESTROY_USER_REGION:{
@@ -978,6 +980,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			int i;
 			struct omx_endpoint *endpoint;
 
+			spin_lock_irqsave(&omx_xenif->omx_ring_lock, flags);
 			dprintk_deb
 			    ("received frontend request: OMX_CMD_XEN_DESTROY_USER_REGION, param=%lx\n",
 			     sizeof(struct omx_ring_msg_destroy_user_region));
@@ -1047,6 +1050,7 @@ int omx_xenback_process_misc(omx_xenif_t * omx_xenif, uint32_t func, struct
 			wmb();
 #endif
 
+			spin_unlock_irqrestore(&omx_xenif->omx_ring_lock, flags);
 			break;
 		}
 	default:{
