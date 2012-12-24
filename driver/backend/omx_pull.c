@@ -52,7 +52,7 @@
 timers_t t_pull_request, t_pull_reply, t_pull, t_handle, t_try_dma, t_rem_copy, t_bh_notify, t_progress, t_fill_bl, t_other_bl, t_first_bl, t_handle_completed, t_reschedule, t_push_pending, t_poll_dma;
 /* In case of very large packets, we get some retransmissions... Thus we
  * increase the timer to make sure that it doesn't affect performance */
-#define OMX_PULL_RETRANSMIT_TIMEOUT_MS	10000
+#define OMX_PULL_RETRANSMIT_TIMEOUT_MS	1000
 #define OMX_PULL_RETRANSMIT_TIMEOUT_JIFFIES (OMX_PULL_RETRANSMIT_TIMEOUT_MS*HZ/1000)
 
 #ifdef OMX_MX_WIRE_COMPAT
@@ -264,8 +264,10 @@ __omx_pull_handle_last_release(struct kref * kref)
 		omx_xen_user_region_release(handle->xregion);
 	else
 #endif
-	if (!handle->xen)
+	if (!handle->xen) {
 		omx_user_region_release(handle->region);
+		BUG();
+	}
 
 	kfree(handle);
 	dprintk_out();
@@ -975,7 +977,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	struct omx_pull_handle * handle;
 	struct omx_user_region * region = NULL;
 	struct omx_xen_user_region * xregion = NULL;
-	struct omx_iface * iface = endpoint->iface;
+	struct omx_iface * iface;
 	struct sk_buff * skb, * skbs[] = { [0 ... OMX_PULL_BLOCK_DESCS_NR-1] = NULL };
 	uint32_t block_length;
 	uint32_t pulled_rdma_offset_in_frame;
@@ -992,13 +994,18 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 	}
 
 	if (unlikely(cmd.shared)) {
+		BUG();
 		err = omx_shared_pull(endpoint, &cmd);
 		goto out;
 	}
+	BUG_ON(!endpoint);
+	iface = endpoint->iface;
+	BUG_ON(!iface);
 
 	if (endpoint->xen) {
 		dprintk_deb("Xen endpoint!\n");
 		/* acquire the region */
+		BUG_ON(!endpoint);
 		xregion = omx_xen_user_region_acquire(endpoint, cmd.puller_rdma_id);
 		if (unlikely(!xregion)) {
 			printk_err("acquire region\n");
@@ -1007,7 +1014,7 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 		}
 	}
 	else {
-		//BUG(); /* never reach this point ATM */
+		BUG(); /* never reach this point ATM */
 		/* acquire the region */
 		region = omx_user_region_acquire(endpoint, cmd.puller_rdma_id);
 		if (unlikely(!region)) {
@@ -1033,6 +1040,8 @@ omx_ioctl_pull(struct omx_endpoint * endpoint,
 
 	}
 	/* create, acquire and lock the handle */
+	BUG_ON(region);
+	BUG_ON(!xregion);
 	handle = omx_pull_handle_create(endpoint, region, xregion, &cmd);
 	if (IS_ERR(handle)) {
 		printk_err("error in handle_create\n");
@@ -1271,7 +1280,7 @@ omx_xen_send_pull_reply_skb_destructor(struct sk_buff *skb)
 {
 	struct omx_xen_user_region * region = omx_get_skb_destructor_data(skb);
 	dprintk_in();
-	omx_xen_user_region_release(region);
+	//omx_xen_user_region_release(region);
 	dprintk_out();
 }
 
