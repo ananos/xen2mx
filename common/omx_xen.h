@@ -40,7 +40,7 @@
  * actual granting, enabling or disabling it doesn't change
  * much, performance-wise.
  */
-#define OMX_XEN_COOKIES
+//#define OMX_XEN_COOKIES
 
 /*
  * Shortcut to region register/deregister
@@ -49,7 +49,7 @@
  * endpoint structure in the backend and hope that the frontend sees that in
  * time ;-)
  */
-#define OMX_XEN_FE_SHORTCUT
+//#define OMX_XEN_FE_SHORTCUT
 
 struct omx_cmd_xen_send_mediumsq_frag_done {
 	struct omx_evt_send_mediumsq_frag_done sq_frag_done;
